@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700754715064,
+  "lastUpdate": 1700754886088,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0d7940670e4a633794db921a3e91bca74f8b3935",
-          "message": "chore(networking): improve connected peers count log",
-          "timestamp": "2023-07-18T07:05:45Z",
-          "tree_id": "1b504511ea06d57222a9e69541c1afaf2683e900",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d7940670e4a633794db921a3e91bca74f8b3935"
-        },
-        "date": 1689668233402,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.22,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 139,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5a22362b84d852a10a18aa63df5a6b4293f842fd",
+          "message": "chore: replace bootstrap with query specific kbucket",
+          "timestamp": "2023-11-23T14:53:32Z",
+          "tree_id": "c92d62a9111c9d32ad1e307c3e00679b221de769",
+          "url": "https://github.com/maidsafe/safe_network/commit/5a22362b84d852a10a18aa63df5a6b4293f842fd"
+        },
+        "date": 1700754885657,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 126,
             "unit": "MB"
           }
         ]
