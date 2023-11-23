@@ -21,6 +21,9 @@ const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 5;
 /// process. This is to make sure we don't flood the network with `FindNode` msgs.
 const LAST_PEER_ADDED_TIME_LIMIT: Duration = Duration::from_secs(180);
 
+/// A minumn interval to prevent bootstrap got triggered too often
+const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(30);
+
 /// The bootstrap interval to use if we haven't added any new peers in a while.
 const NO_PEER_ADDED_SLOWDOWN_INTERVAL: Duration = Duration::from_secs(300);
 
@@ -34,7 +37,7 @@ impl SwarmDriver {
             .should_we_bootstrap(self.connected_peers as u32, current_bootstrap_interval)
             .await;
         if should_bootstrap {
-            self.initiate_bootstrap();
+            self.trigger_network_discovery();
         }
         if let Some(new_interval) = &new_interval {
             debug!(
@@ -43,19 +46,6 @@ impl SwarmDriver {
             );
         }
         new_interval
-    }
-
-    /// Helper to initiate the Kademlia bootstrap process.
-    pub(crate) fn initiate_bootstrap(&mut self) {
-        match self.swarm.behaviour_mut().kademlia.bootstrap() {
-            Ok(query_id) => {
-                debug!("Initiated kad bootstrap process with query id {query_id:?}");
-                self.bootstrap.initiated();
-            }
-            Err(err) => {
-                error!("Failed to initiate kad bootstrap with error: {err:?}");
-            }
-        };
     }
 
     pub(crate) fn trigger_network_discovery(&mut self) {
@@ -68,30 +58,31 @@ impl SwarmDriver {
                 .kademlia
                 .get_closest_peers(addr.as_bytes());
         }
+        self.bootstrap.initiated();
     }
 }
 
 /// Tracks and helps with the continuous kad::bootstrapping process
 pub(crate) struct ContinuousBootstrap {
-    is_ongoing: bool,
     initial_bootstrap_done: bool,
     stop_bootstrapping: bool,
     last_peer_added_instant: Instant,
+    last_bootstrap_triggered: Option<Instant>,
 }
 
 impl ContinuousBootstrap {
     pub(crate) fn new() -> Self {
         Self {
-            is_ongoing: false,
             initial_bootstrap_done: false,
-            last_peer_added_instant: Instant::now(),
             stop_bootstrapping: false,
+            last_peer_added_instant: Instant::now(),
+            last_bootstrap_triggered: None,
         }
     }
 
     /// The Kademlia Bootstrap request has been sent successfully.
     pub(crate) fn initiated(&mut self) {
-        self.is_ongoing = true;
+        self.last_bootstrap_triggered = Some(Instant::now());
     }
 
     /// Notify about a newly added peer to the RT. This will help with slowing down the bootstrap process.
@@ -106,11 +97,6 @@ impl ContinuousBootstrap {
         } else {
             false
         }
-    }
-
-    /// A previous Kademlia Bootstrap process has been completed. Now a new bootstrap process can start.
-    pub(crate) fn completed(&mut self) {
-        self.is_ongoing = false;
     }
 
     /// Set the flag to stop any further re-bootstrapping.
@@ -134,7 +120,12 @@ impl ContinuousBootstrap {
         }
 
         // kad bootstrap process needs at least one peer in the RT be carried out.
-        let should_bootstrap = !self.is_ongoing && peers_in_rt >= 1;
+        let is_ongoing = if let Some(last_bootstrap_triggered) = self.last_bootstrap_triggered {
+            last_bootstrap_triggered.elapsed() < LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT
+        } else {
+            false
+        };
+        let should_bootstrap = !is_ongoing && peers_in_rt >= 1;
 
         // if it has been a while (LAST_PEER_ADDED_TIME_LIMIT) since we have added a new peer to our RT, then, slowdown
         // the bootstrapping process.

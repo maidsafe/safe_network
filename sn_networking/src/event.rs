@@ -860,6 +860,7 @@ impl SwarmDriver {
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
+            // Shall no longer receive this event
             kad::Event::OutboundQueryProgressed {
                 id,
                 result: QueryResult::Bootstrap(bootstrap_result),
@@ -870,10 +871,6 @@ impl SwarmDriver {
                 // here BootstrapOk::num_remaining refers to the remaining random peer IDs to query, one per
                 // bucket that still needs refreshing.
                 trace!("Kademlia Bootstrap with {id:?} progressed with {bootstrap_result:?} and step {step:?}");
-                if step.last {
-                    // inform the bootstrap process about the completion.
-                    self.bootstrap.completed();
-                }
             }
             kad::Event::RoutingUpdated {
                 peer,
@@ -890,7 +887,7 @@ impl SwarmDriver {
 
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
-                        self.initiate_bootstrap();
+                        self.trigger_network_discovery();
                     }
                     self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
