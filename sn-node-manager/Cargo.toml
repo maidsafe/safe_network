@@ -14,14 +14,12 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p-identity = { version="0.2.7", features = ["rand"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-# service-manager = "0.5.0"
-service-manager = { git = "https://github.com/jacderida/service-manager-rs.git", branch = "winsw-default-impl" }
-sn_rpc_client = { git = "https://github.com/jacderida/safe_network.git", branch = "sn-rpc-client-crate" }
-sn_protocol = "0.8.17"
+service-manager = "0.5.1"
+sn_node_rpc_client = "0.1.43" 
 sn-releases = "0.1.1"
 sysinfo = "0.29.10"
 tokio = { version = "1.26", features = ["full"] }
-uuid = { versino = "1.5.0", features = ["v4"] }
+uuid = { version = "1.5.0", features = ["v4"] }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
 nix = { version = "0.27.1", features = ["fs", "user"] }

@@ -30,5 +30,6 @@ fn cross_platform_service_install_and_control() {
         .success();
     // Right now we can't really do any validation. When we have a status command, we can check
     // that the services are running.
+    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("start").assert().success();
 }
