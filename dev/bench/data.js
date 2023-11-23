@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700750842023,
+  "lastUpdate": 1700752855690,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "df08c28a107feef1a997a8bb3bb60d78bdc3d486",
-          "message": "fix(replication): fix incorrect fetch timeout condition",
-          "timestamp": "2023-07-28T15:35:01Z",
-          "tree_id": "7c1703cae230c447716271c2b353a4ee68d9e5bb",
-          "url": "https://github.com/maidsafe/safe_network/commit/df08c28a107feef1a997a8bb3bb60d78bdc3d486"
-        },
-        "date": 1690577113572,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.846834564734793,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.033798083905196,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 24.765524484805315,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 15.679737828899322,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
+          "message": "test(node): increase timeout on gossipsub msg tests",
+          "timestamp": "2023-11-23T14:29:28Z",
+          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
+        },
+        "date": 1700752853821,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.146642605837997,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.043336407398282,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 14.196185896724312,
             "unit": "MiB/s"
           }
         ]
