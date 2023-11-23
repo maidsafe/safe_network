@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700757284364,
+  "lastUpdate": 1700757286794,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "434b73a3b25650e4104e589c3c956fb9b18580e9",
-          "message": "ci: remove publish checks as throwing false positives",
-          "timestamp": "2023-07-17T16:45:27+02:00",
-          "tree_id": "85f3e45b72d6bff81c2a7f077eefa5312698a365",
-          "url": "https://github.com/maidsafe/safe_network/commit/434b73a3b25650e4104e589c3c956fb9b18580e9"
-        },
-        "date": 1689606492622,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 230.81,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 170,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "0d7940670e4a633794db921a3e91bca74f8b3935",
           "message": "chore(networking): improve connected peers count log",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 165,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "11c29afcab912dffb83ee76d38a2dce0495421b8",
+          "message": "feat(networking): reduce batch size to 64\n\nThis should keep a lid on mem issues",
+          "timestamp": "2023-11-23T15:23:54Z",
+          "tree_id": "0ec33d82cfca3c35e3046c938202084379e17022",
+          "url": "https://github.com/maidsafe/safe_network/commit/11c29afcab912dffb83ee76d38a2dce0495421b8"
+        },
+        "date": 1700757285768,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 702,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 239,
             "unit": "MB"
           }
         ]
