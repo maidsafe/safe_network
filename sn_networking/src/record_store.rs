@@ -183,7 +183,7 @@ impl NodeRecordStore {
                 }
             } else {
                 // we should not prune, but warn as we're at max capacity
-                warn!("Record not stored. Maximum number of records reached. Current num_records: {num_records}");
+                warn!("Record not stored (key: {r:?}). Maximum number of records reached. Current num_records: {num_records}");
                 return Err(Error::MaxRecords);
             }
         }
