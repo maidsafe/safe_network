@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700753047989,
+  "lastUpdate": 1700754715064,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "e98253fb8bd4609e5c4874e9310fe553c1e03433",
-          "message": "chore(CI): more tracable wallet setup for memcheck",
-          "timestamp": "2023-07-31T12:23:05Z",
-          "tree_id": "93faa221b9e490e930c70c16094535abf9c765cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/e98253fb8bd4609e5c4874e9310fe553c1e03433"
-        },
-        "date": 1690826270701,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.875638684771374,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.033918956898621205,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 25.700643651395723,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 14.196185896724312,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5a22362b84d852a10a18aa63df5a6b4293f842fd",
+          "message": "chore: replace bootstrap with query specific kbucket",
+          "timestamp": "2023-11-23T14:53:32Z",
+          "tree_id": "c92d62a9111c9d32ad1e307c3e00679b221de769",
+          "url": "https://github.com/maidsafe/safe_network/commit/5a22362b84d852a10a18aa63df5a6b4293f842fd"
+        },
+        "date": 1700754713357,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.083716085745511,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 24.5089148907164,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 25.126604645146703,
             "unit": "MiB/s"
           }
         ]
