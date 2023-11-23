@@ -9,7 +9,10 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{get_gossip_client_and_wallet, node_restart, PAYING_WALLET_INITIAL_BALANCE};
+use crate::common::{
+    get_all_peer_ids, get_gossip_client_and_wallet, node_restart, NODE_COUNT,
+    PAYING_WALLET_INITIAL_BALANCE,
+};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use libp2p::{
@@ -35,7 +38,6 @@ use std::{
 use tonic::Request;
 use tracing::error;
 
-const NODE_COUNT: u8 = 25;
 const CHUNK_SIZE: usize = 1024;
 
 // VERIFICATION_DELAY is set based on the dead peer detection interval
@@ -57,7 +59,7 @@ const CHURN_COUNT: u8 = 4;
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
 const CHUNK_COUNT: usize = 5;
 
-type NodeIndex = u8;
+type NodeIndex = u32;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 
 #[tokio::test(flavor = "multi_thread")]
@@ -274,27 +276,6 @@ async fn verify_location(all_peers: &[PeerId]) -> Result<()> {
         println!("All the Records have been verified!");
         Ok(())
     }
-}
-
-// Returns all the PeerId for all the locally running nodes
-async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
-    let mut all_peers = Vec::new();
-
-    let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
-    for node_index in 1..NODE_COUNT + 1 {
-        addr.set_port(12000 + node_index as u16);
-        let endpoint = format!("https://{addr}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
-
-        // get the peer_id
-        let response = rpc_client
-            .node_info(Request::new(NodeInfoRequest {}))
-            .await?;
-        let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
-        all_peers.push(peer_id);
-    }
-    println!("Obtained the PeerId list for the locally running network with a node count of {NODE_COUNT}");
-    Ok(all_peers)
 }
 
 // Generate random Chunks and store them to the Network
