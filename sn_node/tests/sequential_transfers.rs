@@ -13,7 +13,7 @@ use common::{get_gossip_client_and_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
 use sn_logging::LogBuilder;
-use sn_transfers::{create_offline_transfer, rng, Hash, NanoTokens, UniquePubkey};
+use sn_transfers::{create_offline_transfer, rng, DerivationIndex, Hash, NanoTokens};
 
 #[tokio::test]
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
@@ -82,8 +82,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     let mut rng = rng::thread_rng();
 
-    let to2_unique_key = (amount, to2, UniquePubkey::random_derivation_index(&mut rng));
-    let to3_unique_key = (amount, to3, UniquePubkey::random_derivation_index(&mut rng));
+    let to2_unique_key = (amount, to2, DerivationIndex::random(&mut rng));
+    let to3_unique_key = (amount, to3, DerivationIndex::random(&mut rng));
     let reason_hash = Hash::default();
 
     let transfer_to_2 =

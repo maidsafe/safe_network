@@ -27,6 +27,15 @@ impl fmt::Debug for DerivationIndex {
     }
 }
 
+impl DerivationIndex {
+    // generates a random derivation index
+    pub fn random(rng: &mut impl RngCore) -> DerivationIndex {
+        let mut bytes = [0u8; 32];
+        rng.fill_bytes(&mut bytes);
+        DerivationIndex(bytes)
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
 pub struct UniquePubkey(PublicKey);
 
@@ -42,13 +51,6 @@ impl UniquePubkey {
     /// Returns `true` if the signature matches the message.
     pub fn verify<M: AsRef<[u8]>>(&self, sig: &bls::Signature, msg: M) -> bool {
         self.0.verify(sig, msg)
-    }
-
-    // generates a random derivation index
-    pub fn random_derivation_index(rng: &mut impl RngCore) -> DerivationIndex {
-        let mut bytes = [0u8; 32];
-        rng.fill_bytes(&mut bytes);
-        DerivationIndex(bytes)
     }
 
     pub fn public_key(&self) -> PublicKey {
@@ -199,6 +201,6 @@ impl MainSecretKey {
     }
 
     pub fn random_derived_key(&self, rng: &mut impl RngCore) -> DerivedSecretKey {
-        self.derive_key(&UniquePubkey::random_derivation_index(rng))
+        self.derive_key(&DerivationIndex::random(rng))
     }
 }
