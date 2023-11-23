@@ -167,7 +167,7 @@ impl NodeRecordStore {
             if incoming_record_key.distance(&self.local_key)
                 < furthest_record_key.distance(&self.local_key)
             {
-                trace!(
+                info!(
                     "{:?} will be pruned to make space for new record: {:?}",
                     PrettyPrintRecordKey::from(&furthest_record),
                     PrettyPrintRecordKey::from(r)
