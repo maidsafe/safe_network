@@ -624,10 +624,6 @@ impl SwarmDriver {
                     if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
                         bootstrap_interval = new_interval;
                     }
-                    // execute extra `kbucket targeted query` to make RT filled up more accurately
-                    let start = std::time::Instant::now();
-                    self.query_specific_kbucket();
-                    trace!("Query specific kbuckets handled in {:?}", start.elapsed());
                 }
             }
         }
