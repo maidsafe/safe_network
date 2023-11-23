@@ -438,9 +438,9 @@ jobs:
           log_file_prefix: safe_test_logs_churn
           platform: ${{ matrix.os }}
 
-  verify_data_location:
+  verify_data_location_routing_table:
       if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-      name: Verify data location
+      name: Verify data location and Routing Table
       runs-on: ${{ matrix.os }}
       strategy:
         matrix:
@@ -464,8 +464,8 @@ jobs:
           run: cargo build --release --features local-discovery --bin safenode --bin faucet
           timeout-minutes: 30
 
-        - name: Build data location test
-          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --no-run  
+        - name: Build data location and routing table tests
+          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run  
           timeout-minutes: 30
 
         - name: Start a local network
@@ -487,12 +487,20 @@ jobs:
               echo "SAFE_PEERS has been set to $SAFE_PEERS"
             fi
 
+        - name: Verify the routing tables of the nodes
+          run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          timeout-minutes: 5
+      
         - name: Verify the location of the data on the network (4 * 5 mins)
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture 
           env:
             CHURN_COUNT: 3
             SN_LOG: "all"
           timeout-minutes: 30
+
+        - name: Verify the routing tables of the nodes
+          run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          timeout-minutes: 5
 
         - name: Verify restart of nodes using rg
           shell: bash

@@ -24,8 +24,8 @@ use std::{
 use tonic::Request;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn verify_routing_tables() -> Result<()> {
-    let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("routing_table");
+async fn verify_routing_table() -> Result<()> {
+    let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_routing_table");
 
     let all_peers = get_all_peer_ids().await?;
     let mut all_failed_list = HashMap::new();
