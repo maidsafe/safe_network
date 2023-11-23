@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700746269160,
+  "lastUpdate": 1700746438486,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c80180cd0333f6feac940e4f3383498eabfdcd6a",
-          "message": "chore(networking): log all connected peer count",
-          "timestamp": "2023-07-17T13:52:52+02:00",
-          "tree_id": "b92a85f3c5c2180b07960333ac66460509829002",
-          "url": "https://github.com/maidsafe/safe_network/commit/c80180cd0333f6feac940e4f3383498eabfdcd6a"
-        },
-        "date": 1689596390897,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 26.5,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 152,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9e03980c8493f55a191b794400ba7794f7f3b76c",
+          "message": "chore(networking): improve logs around replication",
+          "timestamp": "2023-11-23T12:51:46Z",
+          "tree_id": "76f03da7a91fc7ed583e2657a1176ae18b29cbfa",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e03980c8493f55a191b794400ba7794f7f3b76c"
+        },
+        "date": 1700746438109,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 130,
             "unit": "MB"
           }
         ]
