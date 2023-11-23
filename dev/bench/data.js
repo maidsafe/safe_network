@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700754889859,
+  "lastUpdate": 1700757066223,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d3ba059d8abee2613ab914165da60998aa61db02",
-          "message": "chore: move PrettyPrintRecordKey to sn_protocol",
-          "timestamp": "2023-07-31T14:21:45Z",
-          "tree_id": "92a00f911ee0be375f47d385cc8a6fc396c05495",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3ba059d8abee2613ab914165da60998aa61db02"
-        },
-        "date": 1690836392939,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06162385880477022,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.032217918839249675,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6706605055195323,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 25.126604645146703,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "11c29afcab912dffb83ee76d38a2dce0495421b8",
+          "message": "feat(networking): reduce batch size to 64\n\nThis should keep a lid on mem issues",
+          "timestamp": "2023-11-23T15:23:54Z",
+          "tree_id": "0ec33d82cfca3c35e3046c938202084379e17022",
+          "url": "https://github.com/maidsafe/safe_network/commit/11c29afcab912dffb83ee76d38a2dce0495421b8"
+        },
+        "date": 1700757063716,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.075701335660173,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.68718055476045,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.88295619974811,
             "unit": "MiB/s"
           }
         ]
