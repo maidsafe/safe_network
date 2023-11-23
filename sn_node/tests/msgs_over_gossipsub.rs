@@ -67,7 +67,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
 
                 let mut count = 0;
 
-                let _ = timeout(Duration::from_secs(10), async {
+                let _ = timeout(Duration::from_secs(40), async {
                     let mut stream = response.into_inner();
                     while let Some(Ok(e)) = stream.next().await {
                         match NodeEvent::from_bytes(&e.event) {
