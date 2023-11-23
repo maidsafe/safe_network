@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700753043725,
+  "lastUpdate": 1700753045617,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c80180cd0333f6feac940e4f3383498eabfdcd6a",
-          "message": "chore(networking): log all connected peer count",
-          "timestamp": "2023-07-17T13:52:52+02:00",
-          "tree_id": "b92a85f3c5c2180b07960333ac66460509829002",
-          "url": "https://github.com/maidsafe/safe_network/commit/c80180cd0333f6feac940e4f3383498eabfdcd6a"
-        },
-        "date": 1689596394944,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 230.8,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 175,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 137,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
+          "message": "test(node): increase timeout on gossipsub msg tests",
+          "timestamp": "2023-11-23T14:29:28Z",
+          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
+        },
+        "date": 1700753044964,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 631,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 127,
             "unit": "MB"
           }
         ]
