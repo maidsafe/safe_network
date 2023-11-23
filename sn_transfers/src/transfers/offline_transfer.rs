@@ -8,7 +8,7 @@
 
 use crate::{
     rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
-    SignedSpend, Transaction, TransactionBuilder, UniquePubkey,
+    SignedSpend, Transaction, TransactionBuilder,
 };
 use crate::{Error, Result};
 
@@ -188,7 +188,7 @@ fn create_offline_transfer_with(
         .add_outputs(selected_inputs.recipients);
 
     let mut rng = rng::thread_rng();
-    let derivation_index = UniquePubkey::random_derivation_index(&mut rng);
+    let derivation_index = DerivationIndex::random(&mut rng);
     let change_id = change_to.new_unique_pubkey(&derivation_index);
     if !change.is_zero() {
         tx_builder = tx_builder.add_output(change, change_to, derivation_index);

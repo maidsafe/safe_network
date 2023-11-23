@@ -250,13 +250,7 @@ impl LocalWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| {
-                (
-                    amount,
-                    address,
-                    UniquePubkey::random_derivation_index(&mut rng),
-                )
-            })
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
             .collect();
 
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -296,16 +290,12 @@ impl LocalWallet {
         // create random derivation indexes for recipients
         let mut recipients_by_xor = BTreeMap::new();
         for (xorname, (main_pubkey, quote)) in price_map.iter() {
-            let storage_payee = (
-                quote.cost,
-                *main_pubkey,
-                UniquePubkey::random_derivation_index(&mut rng),
-            );
+            let storage_payee = (quote.cost, *main_pubkey, DerivationIndex::random(&mut rng));
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
                 *NETWORK_ROYALTIES_PK,
-                UniquePubkey::random_derivation_index(&mut rng),
+                DerivationIndex::random(&mut rng),
             );
 
             storage_cost = storage_cost
