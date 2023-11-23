@@ -383,8 +383,8 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Churn Test Run Failed"
 
-  verify_data_location:
-      name: Verify data location
+  verify_data_location_routing_table:
+      name: Verify data location and Routing Table
       runs-on: ${{ matrix.os }}
       strategy:
         matrix:
@@ -410,8 +410,8 @@ jobs:
           run: cargo build --release --features local-discovery --bin safenode --bin faucet
           timeout-minutes: 30
 
-        - name: Build data location test
-          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --no-run
+        - name: Build data location and routing table tests
+          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
           timeout-minutes: 30
 
         - name: Start a local network
@@ -423,12 +423,20 @@ jobs:
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
 
+        - name: Verify the Routing table of the nodes
+          run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
+          timeout-minutes: 5
+
         - name: Verify the location of the data on the network (approx 12 * 5 mins)
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
           env:
             CHURN_COUNT: 12
             SN_LOG: "all"
           timeout-minutes: 90
+
+        - name: Verify the routing tables of the nodes
+          run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          timeout-minutes: 5
         
         - name: Verify restart of nodes using rg
           shell: bash
