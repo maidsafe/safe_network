@@ -20,12 +20,28 @@ use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, KBucketsRequ
 use std::{
     collections::{HashMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
 };
 use tonic::Request;
+
+/// Sleep for sometime for the nodes for discover each other before verification
+/// Also can be set through the env variable of the same name.
+const SLEEP_BEFORE_VERIFICATION: Duration = Duration::from_secs(5);
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_routing_table() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_routing_table");
+
+    let sleep_duration = std::env::var("SLEEP_BEFORE_VERIFICATION")
+        .map(|value| {
+            value
+                .parse::<u64>()
+                .expect("Failed to prase sleep value into u64")
+        })
+        .map(Duration::from_secs)
+        .unwrap_or(SLEEP_BEFORE_VERIFICATION);
+    println!("Sleeping for {sleep_duration:?} before verification");
+    tokio::time::sleep(sleep_duration).await;
 
     let all_peers = get_all_peer_ids().await?;
     let mut all_failed_list = HashMap::new();

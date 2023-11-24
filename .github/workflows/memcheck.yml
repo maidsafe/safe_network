@@ -81,7 +81,9 @@ jobs:
 
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
-        timeout-minutes: 5
+        env:
+          SLEEP_BEFORE_VERIFICATION: 120
+        timeout-minutes: 10
 
       - name: Create and fund a wallet to pay for files storage
         run: |
@@ -118,7 +120,9 @@ jobs:
 
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
-        timeout-minutes: 5
+        env:
+          SLEEP_BEFORE_VERIFICATION: 120
+        timeout-minutes: 10
 
       - name: Verify restart of nodes using rg
         shell: bash
