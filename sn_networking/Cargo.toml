@@ -26,6 +26,7 @@ custom_debug = "~0.5.0"
 libp2p = {   version="0.53" ,  features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
+rayon = "1.8.0"
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_protocol = { path = "../sn_protocol", version = "0.8.29" }

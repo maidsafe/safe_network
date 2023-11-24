@@ -49,16 +49,20 @@ impl SwarmDriver {
     }
 
     pub(crate) fn trigger_network_discovery(&mut self) {
+        let now = Instant::now();
         // The query is just to trigger the network discovery,
         // hence no need to wait for a result.
-        for addr in &self.network_discovery_candidates {
+        for addr in self.network_discovery_candidates.candidates() {
             let _ = self
                 .swarm
                 .behaviour_mut()
                 .kademlia
                 .get_closest_peers(addr.as_bytes());
         }
+        self.network_discovery_candidates
+            .try_generate_new_candidates();
         self.bootstrap.initiated();
+        debug!("Trigger network discovery took {:?}", now.elapsed());
     }
 }
 
