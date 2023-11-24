@@ -623,7 +623,7 @@ impl SwarmDriver {
                 if current_closest.len() >= usize::from(K_VALUE) || step.last {
                     match get_closest_type {
                         PendingGetClosestType::NetworkDiscovery => self
-                            .network_discovery_candidates
+                            .network_discovery
                             .handle_get_closest_query(current_closest),
                         PendingGetClosestType::FunctionCall(sender) => {
                             sender
@@ -666,7 +666,7 @@ impl SwarmDriver {
 
                 match get_closest_type {
                     PendingGetClosestType::NetworkDiscovery => self
-                        .network_discovery_candidates
+                        .network_discovery
                         .handle_get_closest_query(current_closest),
                     PendingGetClosestType::FunctionCall(sender) => {
                         sender
