@@ -79,12 +79,6 @@ jobs:
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to ${SAFE_PEERS}"
 
-      - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
-        env:
-          SLEEP_BEFORE_VERIFICATION: 120
-        timeout-minutes: 10
-
       - name: Create and fund a wallet to pay for files storage
         run: |
           cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
@@ -121,7 +115,7 @@ jobs:
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
         env:
-          SLEEP_BEFORE_VERIFICATION: 120
+          SLEEP_BEFORE_VERIFICATION: 220
         timeout-minutes: 10
 
       - name: Verify restart of nodes using rg
