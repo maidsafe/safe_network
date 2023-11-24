@@ -4653,6 +4653,7 @@ dependencies = [
  "prometheus-client 0.22.0",
  "quickcheck",
  "rand",
+ "rayon",
  "rmp-serde",
  "serde",
  "sn_protocol",
