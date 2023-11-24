@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700818828492,
+  "lastUpdate": 1700819053572,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "e9563817660304eaa3fe5b5d5f3913a8c70125ef",
-          "message": "ci: ensure we use rust-cache v2 everywhere",
-          "timestamp": "2023-07-18T09:22:39Z",
-          "tree_id": "8996958b3a7759a84a6efcb0d98832a350e7b01f",
-          "url": "https://github.com/maidsafe/safe_network/commit/e9563817660304eaa3fe5b5d5f3913a8c70125ef"
-        },
-        "date": 1689679251764,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.89,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 96,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4a3034076fbd7eca3a0aa88d5729a0ba17e0ef07",
+          "message": "feat(cli): peers displayed as list",
+          "timestamp": "2023-11-24T08:34:07Z",
+          "tree_id": "71c6aaa9d9b524c3fdff58d2c8c4759bfb28bdcb",
+          "url": "https://github.com/maidsafe/safe_network/commit/4a3034076fbd7eca3a0aa88d5729a0ba17e0ef07"
+        },
+        "date": 1700819053172,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 98,
             "unit": "MB"
           }
         ]
