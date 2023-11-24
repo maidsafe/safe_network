@@ -18,7 +18,7 @@ use crate::{
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
     multiaddr_pop_p2p,
-    network_discovery::NetworkDiscoveryCandidates,
+    network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
@@ -504,7 +504,7 @@ impl NetworkBuilder {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             is_gossip_handler: false,
-            network_discovery_candidates: NetworkDiscoveryCandidates::new(&peer_id),
+            network_discovery: NetworkDiscovery::new(&peer_id),
         };
 
         Ok((
@@ -549,7 +549,7 @@ pub struct SwarmDriver {
     pub(crate) is_gossip_handler: bool,
     // A list of random `PeerId` candidates that falls into kbuckets,
     // This is to ensure a more accurate network discovery.
-    pub(crate) network_discovery_candidates: NetworkDiscoveryCandidates,
+    pub(crate) network_discovery: NetworkDiscovery,
 }
 
 impl SwarmDriver {
