@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700817361295,
+  "lastUpdate": 1700817578676,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "e51a8da0b645727b741251a8ca1e2b503913822b",
-          "message": "chore(networking): only log queries we started",
-          "timestamp": "2023-07-18T08:51:53Z",
-          "tree_id": "8b04fdf000f9d4af0bf692d44c181369ebf3397b",
-          "url": "https://github.com/maidsafe/safe_network/commit/e51a8da0b645727b741251a8ca1e2b503913822b"
-        },
-        "date": 1689675083054,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23.42,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "089bd51dd6694d8909972b42132729c35c63ebb6",
+          "message": "chore: introduce sn_rpc_client\n\nProvides a client which is a wrapper around the Protobuf-generated code and types. The intention is\nto avoid redefining that code in different places where the RPC protocol is used.\n\nRight now it doesn't implement the full protocol; for example, the node events stream is missing.\nHowever, it should serve as a starting point, and it is being used by the node manager.\n\nThe `sn_node_rpc_client` crate was extended so that it now doubles as a library and a binary, with\nthe client being added to the library. The binary was updated to use the client, where appropriate.",
+          "timestamp": "2023-11-24T08:33:03Z",
+          "tree_id": "b7507033998123a6931eb3fc039a39f80a530835",
+          "url": "https://github.com/maidsafe/safe_network/commit/089bd51dd6694d8909972b42132729c35c63ebb6"
+        },
+        "date": 1700817577835,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 96,
             "unit": "MB"
           }
         ]
