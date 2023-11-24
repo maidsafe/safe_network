@@ -52,7 +52,7 @@ impl SwarmDriver {
         let now = Instant::now();
         // The query is just to trigger the network discovery,
         // hence no need to wait for a result.
-        for addr in self.network_discovery_candidates.candidates() {
+        for addr in self.network_discovery.candidates() {
             let query_id = self
                 .swarm
                 .behaviour_mut()
@@ -63,8 +63,8 @@ impl SwarmDriver {
                 (PendingGetClosestType::NetworkDiscovery, Default::default()),
             );
         }
-        self.network_discovery_candidates
-            .try_generate_new_candidates();
+        // Refresh the candidate list to not query the same candidates over and over again.
+        self.network_discovery.try_refresh_candidates();
         self.bootstrap.initiated();
         debug!("Trigger network discovery took {:?}", now.elapsed());
     }

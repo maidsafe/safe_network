@@ -14,17 +14,23 @@ use std::{
     time::Instant,
 };
 
+// The number of PeerId to generate when starting an instance of NetworkDiscovery
 const INITIAL_GENERATION_ATTEMPTS: usize = 10_000;
+// The number of PeerId to generate during each invocation to refresh our candidates
 const GENERATION_ATTEMPTS: usize = 1_000;
+// The max number of PeerId to keep per bucket
 const MAX_PEERS_PER_BUCKET: usize = 5;
 
+/// Keep track of NetworkAddresses belonging to every bucket (if we can generate them with reasonable effort)
+/// which we can then query using Kad::GetClosestPeers to effectively fill our RT.
 #[derive(Debug, Clone)]
-pub(crate) struct NetworkDiscoveryCandidates {
+pub(crate) struct NetworkDiscovery {
     self_key: KBucketKey<PeerId>,
     candidates: HashMap<u32, VecDeque<NetworkAddress>>,
 }
 
-impl NetworkDiscoveryCandidates {
+impl NetworkDiscovery {
+    /// Create a new instance of NetworkDiscovery and tries to populate each bucket with random peers.
     pub(crate) fn new(self_peer_id: &PeerId) -> Self {
         let start = Instant::now();
         let self_key = KBucketKey::from(*self_peer_id);
@@ -64,7 +70,10 @@ impl NetworkDiscoveryCandidates {
         }
     }
 
-    pub(crate) fn try_generate_new_candidates(&mut self) {
+    /// Tries to refresh our current candidate list. The candidates at the front of the list are used when querying the
+    /// network, so if a new peer for that bucket is generated, the first candidate is removed and the new candidate
+    /// is inserted at the last
+    pub(crate) fn try_refresh_candidates(&mut self) {
         let candidates_vec = Self::generate_candidates(&self.self_key, GENERATION_ATTEMPTS);
         for (ilog2, candidate) in candidates_vec {
             match self.candidates.entry(ilog2) {
@@ -85,12 +94,15 @@ impl NetworkDiscoveryCandidates {
         }
     }
 
+    /// Returns one candidate per bucket
+    /// Todo: Limit the candidates to return. Favor the closest buckets.
     pub(crate) fn candidates(&self) -> impl Iterator<Item = &NetworkAddress> {
         self.candidates
             .values()
             .filter_map(|candidates| candidates.front())
     }
 
+    /// The result from the kad::GetClosestPeers are again used to update our kbuckets if they're not full.
     pub(crate) fn handle_get_closest_query(&mut self, closest_peers: HashSet<PeerId>) {
         let now = Instant::now();
         for peer in closest_peers {
@@ -121,6 +133,7 @@ impl NetworkDiscoveryCandidates {
         );
     }
 
+    /// Uses rayon to parallelize the generation
     fn generate_candidates(
         self_key: &KBucketKey<PeerId>,
         num_to_generate: usize,
