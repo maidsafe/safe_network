@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1700817578676,
+  "lastUpdate": 1700817580945,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0d7940670e4a633794db921a3e91bca74f8b3935",
-          "message": "chore(networking): improve connected peers count log",
-          "timestamp": "2023-07-18T07:05:45Z",
-          "tree_id": "1b504511ea06d57222a9e69541c1afaf2683e900",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d7940670e4a633794db921a3e91bca74f8b3935"
-        },
-        "date": 1689668237747,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 238.15,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 208,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 239,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "089bd51dd6694d8909972b42132729c35c63ebb6",
+          "message": "chore: introduce sn_rpc_client\n\nProvides a client which is a wrapper around the Protobuf-generated code and types. The intention is\nto avoid redefining that code in different places where the RPC protocol is used.\n\nRight now it doesn't implement the full protocol; for example, the node events stream is missing.\nHowever, it should serve as a starting point, and it is being used by the node manager.\n\nThe `sn_node_rpc_client` crate was extended so that it now doubles as a library and a binary, with\nthe client being added to the library. The binary was updated to use the client, where appropriate.",
+          "timestamp": "2023-11-24T08:33:03Z",
+          "tree_id": "b7507033998123a6931eb3fc039a39f80a530835",
+          "url": "https://github.com/maidsafe/safe_network/commit/089bd51dd6694d8909972b42132729c35c63ebb6"
+        },
+        "date": 1700817580054,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 748,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 243,
             "unit": "MB"
           }
         ]
