@@ -39,8 +39,8 @@ jobs:
         run: cargo build --release --bins
         timeout-minutes: 30
 
-      - name: Build churn tests
-        run: cargo test --release -p sn_node --test data_with_churn --no-run
+      - name: Build tests
+        run: cargo test --release -p sn_node --test data_with_churn --test verify_routing_table --no-run
         timeout-minutes: 30
 
       - name: Start a node instance that does not undergo churn
@@ -79,6 +79,10 @@ jobs:
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to ${SAFE_PEERS}"
 
+      - name: Verify the routing tables of the nodes
+        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
+        timeout-minutes: 5
+
       - name: Create and fund a wallet to pay for files storage
         run: |
           cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
@@ -111,6 +115,10 @@ jobs:
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
         timeout-minutes: 30
+
+      - name: Verify the routing tables of the nodes
+        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
+        timeout-minutes: 5
 
       - name: Verify restart of nodes using rg
         shell: bash
