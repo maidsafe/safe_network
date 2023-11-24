@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::SwarmDriver;
+use crate::{driver::PendingGetClosestType, SwarmDriver};
 use std::time::{Duration, Instant};
 use tokio::time::Interval;
 
@@ -53,11 +53,15 @@ impl SwarmDriver {
         // The query is just to trigger the network discovery,
         // hence no need to wait for a result.
         for addr in self.network_discovery_candidates.candidates() {
-            let _ = self
+            let query_id = self
                 .swarm
                 .behaviour_mut()
                 .kademlia
                 .get_closest_peers(addr.as_bytes());
+            let _ = self.pending_get_closest_peers.insert(
+                query_id,
+                (PendingGetClosestType::NetworkDiscovery, Default::default()),
+            );
         }
         self.network_discovery_candidates
             .try_generate_new_candidates();

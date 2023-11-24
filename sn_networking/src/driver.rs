@@ -64,7 +64,15 @@ use tracing::warn;
 /// List of expected record holders to be verified.
 pub(super) type ExpectedHoldersList = HashSet<PeerId>;
 
-type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
+/// The ways in which the Get Closest queries are used.
+pub(crate) enum PendingGetClosestType {
+    /// The network discovery method is present at the networking layer
+    /// Thus we can just process the queries made by NetworkDiscovery without using any channels
+    NetworkDiscovery,
+    /// These are queries made by a function at the upper layers and contains a channel to send the result back.
+    FunctionCall(oneshot::Sender<HashSet<PeerId>>),
+}
+type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId>)>;
 type PendingGetRecord = HashMap<
     QueryId,
     (

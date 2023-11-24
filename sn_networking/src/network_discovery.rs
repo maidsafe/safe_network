@@ -10,7 +10,7 @@ use libp2p::{kad::KBucketKey, PeerId};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sn_protocol::NetworkAddress;
 use std::{
-    collections::{hash_map::Entry, HashMap, VecDeque},
+    collections::{hash_map::Entry, HashMap, HashSet, VecDeque},
     time::Instant,
 };
 
@@ -89,6 +89,36 @@ impl NetworkDiscoveryCandidates {
         self.candidates
             .values()
             .filter_map(|candidates| candidates.front())
+    }
+
+    pub(crate) fn handle_get_closest_query(&mut self, closest_peers: HashSet<PeerId>) {
+        let now = Instant::now();
+        for peer in closest_peers {
+            let peer = NetworkAddress::from_peer(peer);
+            let peer_key = peer.as_kbucket_key();
+            if let Some(ilog2_distance) = peer_key.distance(&self.self_key).ilog2() {
+                match self.candidates.entry(ilog2_distance) {
+                    Entry::Occupied(mut entry) => {
+                        let entry = entry.get_mut();
+                        // extra check to make sure we don't insert the same peer again
+                        if entry.len() >= MAX_PEERS_PER_BUCKET && !entry.contains(&peer) {
+                            // pop the front (as it might have been already used for querying and insert the new one at the back
+                            let _ = entry.pop_front();
+                            entry.push_back(peer);
+                        } else {
+                            entry.push_back(peer);
+                        }
+                    }
+                    Entry::Vacant(entry) => {
+                        let _ = entry.insert(VecDeque::from([peer]));
+                    }
+                }
+            }
+        }
+        trace!(
+            "It took {:?} to NetworkDiscovery::handle get closest query",
+            now.elapsed()
+        );
     }
 
     fn generate_candidates(
