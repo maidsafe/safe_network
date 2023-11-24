@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    driver::SwarmDriver,
+    driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
     sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
@@ -512,9 +512,13 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .get_closest_peers(key.as_bytes());
-                let _ = self
-                    .pending_get_closest_peers
-                    .insert(query_id, (sender, Default::default()));
+                let _ = self.pending_get_closest_peers.insert(
+                    query_id,
+                    (
+                        PendingGetClosestType::FunctionCall(sender),
+                        Default::default(),
+                    ),
+                );
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
                 let _ = sender.send(self.get_all_local_peers());
