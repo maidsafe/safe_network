@@ -70,9 +70,7 @@ async fn verify_routing_table() -> Result<()> {
             })
             .collect::<HashMap<_, _>>();
 
-        let current_peer = *all_peers
-            .get(node_index as usize - 1)
-            .unwrap_or_else(|| panic!("Node should be present at index {}", node_index - 1));
+        let current_peer = all_peers[node_index as usize - 1];
         let current_peer_key = KBucketKey::from(current_peer);
 
         let mut failed_list = Vec::new();
