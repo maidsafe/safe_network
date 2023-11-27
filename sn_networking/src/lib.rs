@@ -53,7 +53,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     path::PathBuf,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -184,9 +184,10 @@ impl Network {
         self.get_closest_peers(key, false).await
     }
 
-    /// Returns the map of ilog2 distance of the Kbucket to the peers in that bucket
+    /// Returns a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
+    /// bucket.
     /// Does not include self
-    pub async fn get_kbuckets(&self) -> Result<HashMap<u32, Vec<PeerId>>> {
+    pub async fn get_kbuckets(&self) -> Result<BTreeMap<u32, Vec<PeerId>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender })?;
         receiver
