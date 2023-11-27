@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::rand::{distributions::Standard, Rng, RngCore};
+use crate::wallet::{Error, Result};
+
 use bls::{serde_impl::SerdeSecret, PublicKey, SecretKey, PK_SIZE};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -55,6 +57,15 @@ impl UniquePubkey {
 
     pub fn public_key(&self) -> PublicKey {
         self.0
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0.to_bytes())
+    }
+
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        let public_key = bls_public_from_hex(hex)?;
+        Ok(Self::new(public_key))
     }
 }
 
@@ -134,6 +145,15 @@ impl MainPubkey {
     pub fn public_key(&self) -> PublicKey {
         self.0
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0.to_bytes())
+    }
+
+    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
+        let public_key = bls_public_from_hex(hex)?;
+        Ok(Self::new(public_key))
+    }
 }
 
 /// A CashNote MainSecretKey is held by anyone who wants to
@@ -202,5 +222,40 @@ impl MainSecretKey {
 
     pub fn random_derived_key(&self, rng: &mut impl RngCore) -> DerivedSecretKey {
         self.derive_key(&DerivationIndex::random(rng))
+    }
+}
+
+/// Construct a BLS public key from a hex-encoded string.
+fn bls_public_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::PublicKey> {
+    let bytes = hex::decode(hex).map_err(|_| Error::FailedToDecodeHexToKey)?;
+    let bytes_fixed_len: [u8; bls::PK_SIZE] = bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| Error::FailedToParseBlsKey)?;
+    let pk = bls::PublicKey::from_bytes(bytes_fixed_len)?;
+    Ok(pk)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pubkeys_hex_conversion() -> eyre::Result<()> {
+        let sk = bls::SecretKey::random();
+        let pk = sk.public_key();
+        let main_pubkey = MainPubkey::new(pk);
+        let unique_pubkey =
+            main_pubkey.new_unique_pubkey(&DerivationIndex::random(&mut rand::thread_rng()));
+
+        let main_pubkey_hex = main_pubkey.to_hex();
+        let unique_pubkey_hex = unique_pubkey.to_hex();
+
+        let main_pubkey_from_hex = MainPubkey::from_hex(main_pubkey_hex)?;
+        let unique_pubkey_from_hex = UniquePubkey::from_hex(unique_pubkey_hex)?;
+
+        assert_eq!(main_pubkey, main_pubkey_from_hex);
+        assert_eq!(unique_pubkey, unique_pubkey_from_hex);
+        Ok(())
     }
 }

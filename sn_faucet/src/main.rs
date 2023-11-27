@@ -14,7 +14,7 @@ use faucet_server::run_faucet_server;
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
-use sn_transfers::{parse_main_pubkey, NanoTokens, Transfer};
+use sn_transfers::{MainPubkey, NanoTokens, Transfer};
 use std::path::PathBuf;
 use tracing::{error, info};
 use tracing_core::Level;
@@ -142,7 +142,7 @@ async fn claim_genesis(client: &Client) -> Result<()> {
 
 /// returns the hex-encoded transfer
 async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
-    let to = parse_main_pubkey(to)?;
+    let to = MainPubkey::from_hex(to)?;
     use std::str::FromStr;
     let amount = NanoTokens::from_str(amount)?;
     if amount.as_nano() == 0 {

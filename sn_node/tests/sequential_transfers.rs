@@ -41,7 +41,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     )
     .await?;
     println!("Verifying the transfer from first wallet...");
-    client.verify(&tokens).await?;
+    client.verify_cashnote(&tokens).await?;
     second_wallet.deposit_and_store_to_disk(&vec![tokens])?;
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("CashNotes deposited to second wallet: {second_wallet_balance}.");
@@ -109,8 +109,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let cash_notes_for_2: Vec<_> = transfer_to_2.created_cash_notes.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.created_cash_notes.clone();
 
-    let could_err1 = client.verify(&cash_notes_for_2[0]).await;
-    let could_err2 = client.verify(&cash_notes_for_3[0]).await;
+    let could_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
+    let could_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
     println!("Verifying at least one fails : {could_err1:?} {could_err2:?}");
     assert!(could_err1.is_err() || could_err2.is_err());
 

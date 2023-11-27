@@ -68,7 +68,7 @@ impl NetworkAddress {
     }
 
     /// Return a `NetworkAddress` representation of the `SpendAddress`.
-    pub fn from_cash_note_address(cash_note_address: SpendAddress) -> Self {
+    pub fn from_spend_address(cash_note_address: SpendAddress) -> Self {
         NetworkAddress::SpendAddress(cash_note_address)
     }
 
@@ -187,10 +187,10 @@ impl Debug for NetworkAddress {
                     chunk_address.xorname()
                 )
             }
-            NetworkAddress::SpendAddress(cash_note_address) => {
+            NetworkAddress::SpendAddress(spend_address) => {
                 format!(
                     "NetworkAddress::SpendAddress({:?} - ",
-                    cash_note_address.xorname()
+                    spend_address.to_hex()
                 )
             }
             NetworkAddress::RegisterAddress(register_address) => format!(
@@ -342,6 +342,7 @@ mod tests {
     use bls::rand::thread_rng;
     use bytes::Bytes;
     use libp2p::kad::{KBucketKey, RecordKey};
+    use sn_transfers::SpendAddress;
 
     // A struct that implements hex representation of RecordKey using `bytes::Bytes`
     struct OldRecordKeyPrint(RecordKey);
@@ -391,5 +392,17 @@ mod tests {
         let old_record_key = OldRecordKeyPrint(key);
 
         assert_eq!(format!("{pretty_key:?}"), format!("{old_record_key:?}"));
+    }
+
+    #[test]
+    fn verify_spend_addr_is_actionable() {
+        let xorname = xor_name::XorName::random(&mut thread_rng());
+        let spend_addr = SpendAddress::new(xorname);
+        let net_addr = NetworkAddress::from_spend_address(spend_addr);
+
+        let spend_addr_hex = spend_addr.to_hex();
+        let net_addr_fmt = format!("{}", net_addr);
+
+        assert!(net_addr_fmt.contains(&spend_addr_hex));
     }
 }

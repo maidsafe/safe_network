@@ -11,8 +11,8 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
-    parse_main_pubkey, CashNoteRedemption, Error as TransferError, LocalWallet, MainSecretKey,
-    NanoTokens, Transfer, WalletError,
+    CashNoteRedemption, Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens,
+    SpendAddress, Transfer, UniquePubkey, WalletError,
 };
 use std::{
     io::Read,
@@ -108,6 +108,18 @@ pub enum WalletCmds {
         #[clap(name = "path")]
         path: Option<PathBuf>,
     },
+    /// Verify a spend on the Network.
+    Verify {
+        /// The Network address or hex encoded UniquePubkey of the Spend to verify
+        #[clap(name = "address")]
+        spend_address: String,
+        /// Verify all the way to Genesis
+        ///
+        /// Used for auditing, note that this might take a very long time
+        /// Analogous to verifying the entire blockchain in Bitcoin
+        #[clap(long, default_value = "false")]
+        genesis: bool,
+    },
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -162,10 +174,37 @@ pub(crate) async fn wallet_cmds(
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
             listen_notifs_and_deposit(&wallet_dir, client, sk).await
         }
+        WalletCmds::Verify {
+            spend_address,
+            genesis,
+        } => verify(spend_address, genesis, client).await,
         cmd => Err(eyre!(
             "{cmd:?} has to be processed before connecting to the network"
         )),
     }
+}
+
+fn parse_pubkey_address(str_addr: &str) -> Result<SpendAddress> {
+    let pk_res = UniquePubkey::from_hex(str_addr);
+    let addr_res = SpendAddress::from_hex(str_addr);
+
+    match (pk_res, addr_res) {
+        (Ok(pk), _) => Ok(SpendAddress::from_unique_pubkey(&pk)),
+        (_, Ok(addr)) => Ok(addr),
+        _ => Err(eyre!("Failed to parse address: {str_addr}")),
+    }
+}
+
+/// Verify a spend on the Network.
+/// if genesis is true, verify all the way to Genesis, note that this might take A VERY LONG TIME
+async fn verify(spend_address: String, genesis: bool, client: &Client) -> Result<()> {
+    let addr = parse_pubkey_address(&spend_address)?;
+    match client.verify_spend(addr, genesis).await {
+        Ok(()) => println!("Spend verified to be stored and unique at {addr:?}"),
+        Err(e) => println!("Failed to verify spend at {addr:?}: {e}"),
+    }
+
+    Ok(())
 }
 
 fn address(root_dir: &Path) -> Result<()> {
@@ -269,7 +308,7 @@ async fn send(
             return Err(err.into());
         }
     };
-    let to = match parse_main_pubkey(to) {
+    let to = match MainPubkey::from_hex(to) {
         Ok(to) => to,
         Err(err) => {
             println!("Error while parsing the recipient's 'to' key: {err:?}");
@@ -444,4 +483,26 @@ fn try_decode_transfer_notif(msg: &[u8]) -> Result<(PublicKey, Vec<CashNoteRedem
     let key = PublicKey::from_bytes(key_bytes)?;
     let cashnote_redemptions: Vec<CashNoteRedemption> = rmp_serde::from_slice(&msg[PK_SIZE..])?;
     Ok((key, cashnote_redemptions))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sn_transfers::SpendAddress;
+
+    #[test]
+    fn test_parse_pubkey_address() -> eyre::Result<()> {
+        let public_key = SecretKey::random().public_key();
+        let unique_pk = UniquePubkey::new(public_key);
+        let spend_address = SpendAddress::from_unique_pubkey(&unique_pk);
+        let addr_hex = spend_address.to_hex();
+        let unique_pk_hex = unique_pk.to_hex();
+
+        let addr = parse_pubkey_address(&addr_hex)?;
+        assert_eq!(addr, spend_address);
+
+        let addr2 = parse_pubkey_address(&unique_pk_hex)?;
+        assert_eq!(addr2, spend_address);
+        Ok(())
+    }
 }

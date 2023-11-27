@@ -33,9 +33,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{
-    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, UniquePubkey,
-};
+use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
@@ -500,7 +498,7 @@ impl Client {
     ) -> Result<()> {
         let unique_pubkey = *spend.unique_pubkey();
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
-        let network_address = NetworkAddress::from_cash_note_address(cash_note_addr);
+        let network_address = NetworkAddress::from_spend_address(cash_note_addr);
 
         trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
         let key = network_address.to_record_key();
@@ -530,16 +528,12 @@ impl Client {
             .await?)
     }
 
-    /// Get a cash_note spend from network
-    pub async fn get_spend_from_network(
-        &self,
-        unique_pubkey: &UniquePubkey,
-    ) -> Result<SignedSpend> {
-        let address = SpendAddress::from_unique_pubkey(unique_pubkey);
-        let key = NetworkAddress::from_cash_note_address(address).to_record_key();
+    /// Get a spend from network
+    pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
+        let key = NetworkAddress::from_spend_address(address).to_record_key();
 
         trace!(
-            "Getting spend {unique_pubkey:?} with record_key {:?}",
+            "Getting spend at {address:?} with record_key {:?}",
             PrettyPrintRecordKey::from(&key)
         );
         let record = self
@@ -548,17 +542,17 @@ impl Client {
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(
-                    "unique_pubkey {unique_pubkey:?} errored: {err:?}"
+                    "failed to get spend at {address:?}: {err:?}"
                 ))
             })?;
         debug!(
-            "For spend {unique_pubkey:?} got record from the network, {:?}",
+            "For spend at {address:?} got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
 
         let header = RecordHeader::from_record(&record).map_err(|err| {
             Error::CouldNotVerifyTransfer(format!(
-                "Can't parse RecordHeader for the unique_pubkey {unique_pubkey:?} with error {err:?}"
+                "Can't parse RecordHeader for the spend at {address:?} with error {err:?}"
             ))
         })?;
 
@@ -566,7 +560,7 @@ impl Client {
             let mut deserialized_record = try_deserialize_record::<Vec<SignedSpend>>(&record)
                 .map_err(|err| {
                     Error::CouldNotVerifyTransfer(format!(
-                        "Can't deserialize record for the unique_pubkey {unique_pubkey:?} with error {err:?}"
+                        "Can't deserialize record for the spend at {address:?} with error {err:?}"
                     ))
                 })?;
 
@@ -574,30 +568,28 @@ impl Client {
                 0 => {
                     trace!("Found no spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                        "Fetched record shows no spend for cash_note {unique_pubkey:?}."
+                        "Fetched record shows no spend for cash_note {address:?}."
                     )))
                 }
                 1 => {
                     let signed_spend = deserialized_record.remove(0);
                     trace!("Spend get for address: {address:?} successful");
-                    if unique_pubkey == signed_spend.unique_pubkey() {
+                    if address == SpendAddress::from_unique_pubkey(signed_spend.unique_pubkey()) {
                         match signed_spend.verify(signed_spend.spent_tx_hash()) {
                             Ok(_) => {
-                                trace!(
-                                    "Verified signed spend got from networkfor {unique_pubkey:?}"
-                                );
+                                trace!("Verified signed spend got from network for {address:?}");
                                 Ok(signed_spend)
                             }
                             Err(err) => {
-                                warn!("Invalid signed spend got from network for {unique_pubkey:?}: {err:?}.");
+                                warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
                                 Err(Error::CouldNotVerifyTransfer(format!(
-                                "Spend failed verifiation for the unique_pubkey {unique_pubkey:?} with error {err:?}")))
+                                "Spend failed verifiation for the unique_pubkey {address:?} with error {err:?}")))
                             }
                         }
                     } else {
-                        warn!("Signed spend ({:?}) got from network mismatched the expected one {unique_pubkey:?}.", signed_spend.unique_pubkey());
+                        warn!("Signed spend ({:?}) got from network mismatched the expected one {address:?}.", signed_spend.unique_pubkey());
                         Err(Error::CouldNotVerifyTransfer(format!(
-                                "Signed spend ({:?}) got from network mismatched the expected one {unique_pubkey:?}.", signed_spend.unique_pubkey())))
+                                "Signed spend ({:?}) got from network mismatched the expected one {address:?}.", signed_spend.unique_pubkey())))
                     }
                 }
                 _ => {
@@ -606,7 +598,7 @@ impl Client {
                     let two = deserialized_record.remove(0);
                     error!("Found double spend for {address:?}");
                     Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the unique_pubkey {unique_pubkey:?} - {:?}: spend_one {:?} and spend_two {:?}",
+                "Found double spend for the unique_pubkey {address:?} - {:?}: spend_one {:?} and spend_two {:?}",
                 PrettyPrintRecordKey::from(&key), one.derived_key_sig, two.derived_key_sig
             )))
                 }

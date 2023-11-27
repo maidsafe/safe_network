@@ -12,8 +12,8 @@ use super::{error::Result, Client};
 use futures::{future::join_all, TryFutureExt};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend, Transfer,
-    UniquePubkey, WalletError, WalletResult,
+    CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend,
+    SpendAddress, Transfer, UniquePubkey, WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -306,6 +306,10 @@ impl Client {
                 "sending spend request to the network: {:?}: {spend_request:#?}",
                 spend_request.unique_pubkey()
             );
+            debug!(
+                "Spend key: {:?} is now being marked as spent on the Network",
+                spend_request.unique_pubkey().to_hex()
+            );
 
             let the_task = async move {
                 let cash_note_key = spend_request.unique_pubkey();
@@ -357,13 +361,19 @@ impl Client {
         Ok(cashnotes)
     }
 
-    pub async fn verify(&self, cash_note: &CashNote) -> WalletResult<()> {
+    /// Verify that the spends refered to in the CashNote exist on the network.
+    pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
         // transfer is considered valid in the network.
         let mut tasks = Vec::new();
         for spend in &cash_note.signed_spends {
-            tasks.push(self.get_spend_from_network(spend.unique_pubkey()));
+            let address = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
+            debug!(
+                "Getting spend for pubkey {:?} from network at {address:?}",
+                spend.unique_pubkey()
+            );
+            tasks.push(self.get_spend_from_network(address));
         }
 
         let mut received_spends = std::collections::BTreeSet::new();
@@ -381,6 +391,21 @@ impl Client {
         Err(WalletError::CouldNotVerifyTransfer(
             "The spends in network were not the same as the ones in the CashNote. The parents of this CashNote are probably double spends.".into(),
         ))
+    }
+
+    /// Verify that a spend is valid on the network.
+    /// Optionally verify its ancestors as well, all the way to genesis (might take a LONG time)
+    pub async fn verify_spend(&self, addr: SpendAddress, to_genesis: bool) -> WalletResult<()> {
+        let _spend = self
+            .get_spend_from_network(addr)
+            .await
+            .map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
+
+        if to_genesis {
+            todo!("Verify spend to genesis");
+        }
+
+        Ok(())
     }
 }
 
