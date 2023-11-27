@@ -4499,6 +4499,7 @@ dependencies = [
  "criterion 0.5.1",
  "custom_debug",
  "dirs-next",
+ "eyre",
  "hex",
  "indicatif",
  "libp2p 0.53.1",

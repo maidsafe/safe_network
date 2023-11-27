@@ -613,7 +613,7 @@ async fn query_content(
     match net_addr {
         NetworkAddress::SpendAddress(addr) => {
             if let Some(cash_note) = cash_notes.read().await.get(addr) {
-                match client.verify(cash_note).await {
+                match client.verify_cashnote(cash_note).await {
                     Ok(_) => Ok(()),
                     Err(err) => Err(Error::CouldNotVerifyTransfer(format!(
                         "Verification of cash_note {addr:?} failed with error: {err:?}"

@@ -355,7 +355,7 @@ impl Node {
         };
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
 
-        let key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
+        let key = NetworkAddress::from_spend_address(cash_note_addr).to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key);
         debug!(
             "validating and storing spends {:?} - {pretty_key:?}",
@@ -659,7 +659,7 @@ impl Node {
     ) -> Result<Option<Vec<SignedSpend>>, ProtocolError> {
         // get the UniquePubkey; used for validation
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
-        let record_key = NetworkAddress::from_cash_note_address(cash_note_addr).to_record_key();
+        let record_key = NetworkAddress::from_spend_address(cash_note_addr).to_record_key();
         debug!(
             "Validating and storing spend {cash_note_addr:?}, present_locally: {present_locally}"
         );

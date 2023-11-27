@@ -63,7 +63,7 @@ use data_payments::ContentPaymentsMap;
 pub use self::{
     data_payments::{Payment, PaymentQuote},
     error::{Error, Result},
-    keys::{bls_secret_from_hex, parse_main_pubkey},
+    keys::bls_secret_from_hex,
     local_store::LocalWallet,
 };
 pub(crate) use keys::store_new_keypair;
