@@ -50,9 +50,10 @@ impl SwarmDriver {
 
     pub(crate) fn trigger_network_discovery(&mut self) {
         let now = Instant::now();
-        // The query is just to trigger the network discovery,
-        // hence no need to wait for a result.
+        // Fetches the candidates and also generates new candidates
         for addr in self.network_discovery.candidates() {
+            // The query_id is tracked here. This is to update the candidate list of network_discovery with the newly
+            // found closest peers. It may fill up the candidate list of closer buckets which are harder to generate.
             let query_id = self
                 .swarm
                 .behaviour_mut()
@@ -63,8 +64,7 @@ impl SwarmDriver {
                 (PendingGetClosestType::NetworkDiscovery, Default::default()),
             );
         }
-        // Refresh the candidate list to not query the same candidates over and over again.
-        self.network_discovery.try_refresh_candidates();
+
         self.bootstrap.initiated();
         debug!("Trigger network discovery took {:?}", now.elapsed());
     }

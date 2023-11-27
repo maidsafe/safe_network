@@ -18,7 +18,7 @@ use libp2p::{
 use sn_logging::LogBuilder;
 use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, KBucketsRequest};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashSet},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     time::Duration,
 };
@@ -44,7 +44,7 @@ async fn verify_routing_table() -> Result<()> {
     tokio::time::sleep(sleep_duration).await;
 
     let all_peers = get_all_peer_ids().await?;
-    let mut all_failed_list = HashMap::new();
+    let mut all_failed_list = BTreeMap::new();
 
     for node_index in 1..NODE_COUNT + 1 {
         let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
@@ -68,7 +68,7 @@ async fn verify_routing_table() -> Result<()> {
                     .collect::<HashSet<_>>();
                 (ilog2, peers)
             })
-            .collect::<HashMap<_, _>>();
+            .collect::<BTreeMap<_, _>>();
 
         let current_peer = all_peers[node_index as usize - 1];
         let current_peer_key = KBucketKey::from(current_peer);

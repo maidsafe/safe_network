@@ -11,7 +11,7 @@ use rand::{thread_rng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sn_protocol::NetworkAddress;
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, HashSet},
     time::Instant,
 };
 
@@ -27,7 +27,7 @@ const MAX_PEERS_PER_BUCKET: usize = 5;
 #[derive(Debug, Clone)]
 pub(crate) struct NetworkDiscovery {
     self_key: KBucketKey<PeerId>,
-    candidates: HashMap<u32, Vec<NetworkAddress>>,
+    candidates: BTreeMap<u32, Vec<NetworkAddress>>,
 }
 
 impl NetworkDiscovery {
@@ -41,11 +41,10 @@ impl NetworkDiscovery {
             "Time to generate NetworkDiscoveryCandidates: {:?}",
             start.elapsed()
         );
-        let mut buckets_covered = candidates
+        let buckets_covered = candidates
             .iter()
             .map(|(ilog2, candidates)| (*ilog2, candidates.len()))
             .collect::<Vec<_>>();
-        buckets_covered.sort_by_key(|(ilog2, _)| *ilog2);
         info!("The generated network discovery candidates currently cover these ilog2 buckets: {buckets_covered:?}");
 
         Self {
@@ -54,19 +53,11 @@ impl NetworkDiscovery {
         }
     }
 
-    /// Tries to refresh our current candidate list. We replace the old ones with new if we find any.
-    pub(crate) fn try_refresh_candidates(&mut self) {
-        let candidates_vec = Self::generate_candidates(&self.self_key, GENERATION_ATTEMPTS);
-        for (ilog2, candidates) in candidates_vec {
-            self.insert_candidates(ilog2, candidates);
-        }
-    }
-
     /// The result from the kad::GetClosestPeers are again used to update our kbucket.
     pub(crate) fn handle_get_closest_query(&mut self, closest_peers: HashSet<PeerId>) {
         let now = Instant::now();
 
-        let candidates_map: HashMap<u32, Vec<NetworkAddress>> = closest_peers
+        let candidates_map: BTreeMap<u32, Vec<NetworkAddress>> = closest_peers
             .into_iter()
             .filter_map(|peer| {
                 let peer = NetworkAddress::from_peer(peer);
@@ -77,7 +68,7 @@ impl NetworkDiscovery {
                     .map(|ilog2| (ilog2, peer))
             })
             // To collect the NetworkAddresses into a vector.
-            .fold(HashMap::new(), |mut acc, (ilog2, peer)| {
+            .fold(BTreeMap::new(), |mut acc, (ilog2, peer)| {
                 acc.entry(ilog2).or_default().push(peer);
                 acc
             });
@@ -92,9 +83,11 @@ impl NetworkDiscovery {
         );
     }
 
-    /// Returns one random candidate per bucket
+    /// Returns one random candidate per bucket. Also tries to refresh the candidate list.
     /// Todo: Limit the candidates to return. Favor the closest buckets.
-    pub(crate) fn candidates(&self) -> Vec<&NetworkAddress> {
+    pub(crate) fn candidates(&mut self) -> Vec<&NetworkAddress> {
+        self.try_refresh_candidates();
+
         let mut rng = thread_rng();
         let mut op = Vec::with_capacity(self.candidates.len());
 
@@ -105,6 +98,14 @@ impl NetworkDiscovery {
         });
         op.extend(candidates);
         op
+    }
+
+    /// Tries to refresh our current candidate list. We replace the old ones with new if we find any.
+    fn try_refresh_candidates(&mut self) {
+        let candidates_vec = Self::generate_candidates(&self.self_key, GENERATION_ATTEMPTS);
+        for (ilog2, candidates) in candidates_vec {
+            self.insert_candidates(ilog2, candidates);
+        }
     }
 
     // Insert the new candidates and remove the old ones to maintain MAX_PEERS_PER_BUCKET.
@@ -136,7 +137,7 @@ impl NetworkDiscovery {
     fn generate_candidates(
         self_key: &KBucketKey<PeerId>,
         num_to_generate: usize,
-    ) -> HashMap<u32, Vec<NetworkAddress>> {
+    ) -> BTreeMap<u32, Vec<NetworkAddress>> {
         (0..num_to_generate)
             .into_par_iter()
             .filter_map(|_| {
@@ -148,15 +149,15 @@ impl NetworkDiscovery {
             // Since it is parallel iterator, the fold fn batches the items and will produce multiple outputs. So we
             // should use reduce fn to combine multiple outputs.
             .fold(
-                HashMap::new,
-                |mut acc: HashMap<u32, Vec<NetworkAddress>>, (ilog2, candidate)| {
+                BTreeMap::new,
+                |mut acc: BTreeMap<u32, Vec<NetworkAddress>>, (ilog2, candidate)| {
                     acc.entry(ilog2).or_default().push(candidate);
                     acc
                 },
             )
             .reduce(
-                HashMap::new,
-                |mut acc: HashMap<u32, Vec<NetworkAddress>>, map| {
+                BTreeMap::new,
+                |mut acc: BTreeMap<u32, Vec<NetworkAddress>>, map| {
                     for (ilog2, candidates) in map {
                         let entry = acc.entry(ilog2).or_default();
                         for candidate in candidates {
