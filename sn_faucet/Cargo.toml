@@ -10,6 +10,10 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.48"
 
+[features]
+# required to pass on flag to node builds
+quic = ["sn_client/quic"]
+
 [[bin]]
 path="src/main.rs"
 name="faucet"
