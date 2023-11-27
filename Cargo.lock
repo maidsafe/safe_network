@@ -4747,13 +4747,13 @@ dependencies = [
 name = "sn_registers"
 version = "0.3.3"
 dependencies = [
- "bincode",
  "blsttc",
  "crdts",
  "eyre",
  "hex",
  "proptest",
  "rand",
+ "rmp-serde",
  "self_encryption",
  "serde",
  "thiserror",
