@@ -4506,6 +4506,7 @@ dependencies = [
  "rand",
  "rayon",
  "reqwest",
+ "rmp-serde",
  "sn_build_info",
  "sn_client",
  "sn_logging",
@@ -4631,7 +4632,6 @@ version = "0.98.36"
 dependencies = [
  "assert_fs",
  "async-trait",
- "bincode",
  "blsttc",
  "bytes",
  "chrono",
