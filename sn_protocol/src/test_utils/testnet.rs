@@ -33,8 +33,10 @@ pub struct DeploymentInventory {
 impl DeploymentInventory {
     pub fn load() -> Result<Self> {
         let path = Self::get_deployment_path()?;
+        println!("SN_INVENTORY var set to {path:?}");
         let inventory_file = std::fs::read(path)?;
         let inventory = serde_json::from_slice(&inventory_file)?;
+        println!("Read DeploymentInventory");
         Ok(inventory)
     }
 
