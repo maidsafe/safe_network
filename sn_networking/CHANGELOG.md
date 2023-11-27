@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.20...sn_networking-v0.10.21) - 2023-11-27
+
+### Added
+- *(discovery)* use the results of the get_closest_query
+- *(discovery)* try to use random candidates from a bucket when available
+- *(rpc)* return the KBuckets map
+
+### Fixed
+- *(discovery)* insert newly seen candidates and return random candidates
+
+### Other
+- changes based on comment, use btreemap
+- *(discovery)* rename structs and add docs
+
 ## [0.10.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.19...sn_networking-v0.10.20) - 2023-11-23
 
 ### Added
