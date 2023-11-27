@@ -2,7 +2,9 @@ use crate::config::create_owned_dir;
 use color_eyre::Result;
 #[cfg(test)]
 use mockall::automock;
-use service_manager::{ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx};
+use service_manager::{
+    ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
+};
 use std::ffi::OsString;
 use std::net::{SocketAddr, TcpListener};
 use std::path::PathBuf;
@@ -33,6 +35,7 @@ pub trait ServiceControl {
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn install(&self, config: ServiceConfig) -> Result<()>;
     fn start(&self, service_name: &str) -> Result<()>;
+    fn stop(&self, service_name: &str) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
@@ -170,6 +173,13 @@ impl ServiceControl for NodeServiceManager {
         let label: ServiceLabel = service_name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
         manager.start(ServiceStartCtx { label })?;
+        Ok(())
+    }
+
+    fn stop(&self, service_name: &str) -> Result<()> {
+        let label: ServiceLabel = service_name.parse()?;
+        let manager = <dyn ServiceManager>::native()?;
+        manager.stop(ServiceStopCtx { label })?;
         Ok(())
     }
 
