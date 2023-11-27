@@ -2286,6 +2286,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.98.34](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.33...sn_node-v0.98.34) - 2023-11-27
+
+### Added
+- *(test)* impl routing table test
+- *(rpc)* return the KBuckets map
+
+### Fixed
+- *(discovery)* insert newly seen candidates and return random candidates
+- *(test)* sleep before verifying routing table
+
+### Other
+- changes based on comment, use btreemap
+- *(ci)* enable routing table test
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
