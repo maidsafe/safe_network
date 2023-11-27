@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use libp2p::{kad::KBucketKey, PeerId};
+use libp2p::{
+    kad::{KBucketKey, K_VALUE},
+    PeerId,
+};
 use rand::{thread_rng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sn_protocol::NetworkAddress;
@@ -28,6 +31,7 @@ const MAX_PEERS_PER_BUCKET: usize = 5;
 pub(crate) struct NetworkDiscovery {
     self_key: KBucketKey<PeerId>,
     candidates: BTreeMap<u32, Vec<NetworkAddress>>,
+    full_buckets: HashSet<u32>,
 }
 
 impl NetworkDiscovery {
@@ -50,6 +54,16 @@ impl NetworkDiscovery {
         Self {
             self_key,
             candidates,
+            full_buckets: Default::default(),
+        }
+    }
+
+    /// Provide the Vec<(ilog2, peers_in_bucket)> to update our struct about the buckets that are full.
+    pub(crate) fn update_kbucket_stats(&mut self, kbucket_stats: &Vec<(u32, usize)>) {
+        for (ilog2, peers_in_bucket) in kbucket_stats {
+            if *peers_in_bucket >= K_VALUE.get() {
+                let _ = self.full_buckets.insert(*ilog2);
+            }
         }
     }
 
@@ -84,6 +98,7 @@ impl NetworkDiscovery {
     }
 
     /// Returns one random candidate per bucket. Also tries to refresh the candidate list.
+    /// Does not return candidates from a full bucket.
     /// Todo: Limit the candidates to return. Favor the closest buckets.
     pub(crate) fn candidates(&mut self) -> Vec<&NetworkAddress> {
         self.try_refresh_candidates();
@@ -91,7 +106,11 @@ impl NetworkDiscovery {
         let mut rng = thread_rng();
         let mut op = Vec::with_capacity(self.candidates.len());
 
-        let candidates = self.candidates.values().filter_map(|candidates| {
+        let candidates = self.candidates.iter().filter_map(|(ilog2, candidates)| {
+            // do not return candidate from a full bucket
+            if self.full_buckets.contains(ilog2) {
+                return None;
+            }
             // get a random index each time
             let random_index = rng.gen::<usize>() % candidates.len();
             candidates.get(random_index)

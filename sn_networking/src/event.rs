@@ -445,7 +445,10 @@ impl SwarmDriver {
                         *dead_peer.node.key.preimage(),
                         self.connected_peers,
                     ));
-                    self.log_kbuckets(&failed_peer_id);
+                    let kbucket_stats = self.get_kbucket_stats();
+                    self.network_discovery.update_kbucket_stats(&kbucket_stats);
+
+                    self.log_kbuckets(&failed_peer_id, &kbucket_stats);
                     let _ = self.check_for_change_in_our_close_group();
                 }
             }
@@ -890,11 +893,15 @@ impl SwarmDriver {
                 ..
             } => {
                 event_string = "kad_event::RoutingUpdated";
+                let kbucket_stats = self.get_kbucket_stats();
+                self.network_discovery.update_kbucket_stats(&kbucket_stats);
+
                 if is_new_peer {
                     self.connected_peers = self.connected_peers.saturating_add(1);
 
                     info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
-                    self.log_kbuckets(&peer);
+
+                    self.log_kbuckets(&peer, &kbucket_stats);
 
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
@@ -908,7 +915,7 @@ impl SwarmDriver {
 
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.send_event(NetworkEvent::PeerRemoved(peer, self.connected_peers));
-                    self.log_kbuckets(&peer);
+                    self.log_kbuckets(&peer, &kbucket_stats);
                 }
                 let _ = self.check_for_change_in_our_close_group();
             }
@@ -1008,25 +1015,32 @@ impl SwarmDriver {
         Some(())
     }
 
-    fn log_kbuckets(&mut self, peer: &PeerId) {
+    // Returns the ilog2 distance and the number of entires in each bucket
+    fn get_kbucket_stats(&mut self) -> Vec<(u32, usize)> {
+        let mut kbucket_table_stats = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            let range = kbucket.range();
+            if let Some(ilog2_distance) = range.0.ilog2() {
+                kbucket_table_stats.push((ilog2_distance, kbucket.num_entries()));
+            } else {
+                // This shall never happen.
+                error!("bucket is ourself ???!!!");
+            }
+        }
+        kbucket_table_stats
+    }
+
+    // Get the stats using Self::get_kbucket_stats()
+    fn log_kbuckets(&mut self, peer: &PeerId, kbucket_stats: &Vec<(u32, usize)>) {
         let distance = NetworkAddress::from_peer(self.self_peer_id)
             .distance(&NetworkAddress::from_peer(*peer));
         info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
-        let mut kbucket_table_stats = vec![];
-        let mut index = 0;
-        let mut total_peers = 0;
-        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-            let range = kbucket.range();
-            total_peers += kbucket.num_entries();
-            if let Some(distance) = range.0.ilog2() {
-                kbucket_table_stats.push((index, kbucket.num_entries(), distance));
-            } else {
-                // This shall never happen.
-                error!("bucket #{index:?} is ourself ???!!!");
-            }
-            index += 1;
-        }
-        info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
+
+        let total_peers: usize = kbucket_stats.iter().map(|(_, num_peers)| num_peers).sum();
+        info!(
+            "kBucketTable has {:?} kbuckets {total_peers:?} peers, {kbucket_stats:?}",
+            kbucket_stats.len()
+        );
     }
 
     // Completes when any of the following condition reaches first:
