@@ -41,6 +41,12 @@ impl Node {
         // remove our peer id from the calculations here:
         let _we_were_there = closest_k_peers.remove(&self.network.peer_id);
 
+        // Only grab the closest nodes
+        let closest_k_peers = closest_k_peers
+            .into_iter()
+            .take(CLOSE_GROUP_SIZE + 2)
+            .collect::<Vec<_>>();
+
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
         self.record_metrics(Marker::IntervalReplicationTriggered);
 
