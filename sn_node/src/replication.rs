@@ -73,18 +73,6 @@ impl Node {
         Ok(())
     }
 
-    /// Add a list of keys to the Replication fetcher.
-    /// These keys are later fetched from network.
-    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    pub(crate) fn add_keys_to_replication_fetcher(
-        &self,
-        holder: PeerId,
-        keys: HashMap<NetworkAddress, RecordType>,
-    ) -> Result<()> {
-        self.network.add_keys_to_replication_fetcher(holder, keys)?;
-        Ok(())
-    }
-
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,

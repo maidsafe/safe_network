@@ -507,17 +507,41 @@ impl Node {
         Marker::NodeCmdReceived(&cmd).log();
         match cmd {
             Cmd::Replicate { holder, keys } => {
-                trace!(
-                    "Received replication list from {holder:?} of {} keys",
-                    keys.len()
-                );
+                let network = self.network.clone();
 
-                if let Some(peer_id) = holder.as_peer_id() {
-                    // todo: error is not propagated to the caller here
-                    let _ = self.add_keys_to_replication_fetcher(peer_id, keys);
-                } else {
-                    error!("Within the replication list, Can not parse peer_id from {holder:?}");
-                }
+                let _handle = spawn(async move {
+                    trace!(
+                        "Received replication list from {holder:?} of {} keys",
+                        keys.len()
+                    );
+
+                    if let Some(peer_id) = holder.as_peer_id() {
+                        let local_peers = match network
+                            .get_close_group_local_peers(&NetworkAddress::from_peer(
+                                network.peer_id,
+                            ))
+                            .await
+                        {
+                            Ok(peers) => peers,
+                            Err(err) => {
+                                error!("Failed to get close group local peers: {err:?}");
+                                return;
+                            }
+                        };
+
+                        // lets be sure we should handle this message
+                        if local_peers.contains(&peer_id) {
+                            // todo: error is not propagated to the caller here
+                            let _ = network.add_keys_to_replication_fetcher(peer_id, keys);
+                        } else {
+                            warn!("Received replication list from {peer_id:?} which is not in our close group");
+                        }
+                    } else {
+                        error!(
+                            "Within the replication list, Can not parse peer_id from {holder:?}"
+                        );
+                    }
+                });
             }
         };
     }
