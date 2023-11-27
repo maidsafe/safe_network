@@ -51,7 +51,7 @@ pub const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 const FORWARDER_CHOOSING_FACTOR: usize = 50;
 
 /// Interval to trigger replication on a random close_group peer
-const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(60);
+const PERIODIC_REPLICATION_INTERVAL: Duration = Duration::from_secs(180);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
