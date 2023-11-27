@@ -242,7 +242,7 @@ impl ChunkManager {
             .par_iter()
             .filter_map(|(path_xor, chunked_file)| {
                 let metadata_path = unpaid_dir.join(&path_xor.0).join(METADATA_FILE);
-                let metadata = bincode::serialize(&chunked_file.file_xor_addr)
+                let metadata = rmp_serde::to_vec(&chunked_file.file_xor_addr)
                     .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
                     .ok()?;
                 let mut metadata_file = File::create(&metadata_path)
@@ -643,7 +643,7 @@ impl ChunkManager {
         let metadata = fs::read(path)
             .map_err(|err| error!("Failed to read metadata with err {err:?}"))
             .ok()?;
-        let metadata: XorName = bincode::deserialize(&metadata)
+        let metadata: XorName = rmp_serde::from_slice(&metadata)
             .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
         Some(metadata)
