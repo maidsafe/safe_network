@@ -45,7 +45,7 @@ const CHUNK_SIZE: usize = 1024;
 // for the old peer to be removed from the routing table.
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
-const VERIFICATION_DELAY: Duration = Duration::from_secs(120);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(180);
 
 // Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 3;
