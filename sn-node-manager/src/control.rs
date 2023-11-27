@@ -1,6 +1,6 @@
 use crate::node::{InstalledNode, NodeStatus};
 use crate::service::ServiceControl;
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sn_node_rpc_client::RpcActions;
 
 pub async fn start(
@@ -38,6 +38,35 @@ pub async fn start(
     Ok(())
 }
 
+pub async fn stop(node: &mut InstalledNode, service_control: &dyn ServiceControl) -> Result<()> {
+    match node.status {
+        NodeStatus::Installed => Err(eyre!(
+            "Service {} has not been started since it was installed",
+            node.service_name
+        )),
+        NodeStatus::Running => {
+            let pid = node.pid.unwrap();
+            if service_control.is_service_process_running(pid) {
+                println!("Attempting to stop {}...", node.service_name);
+                service_control.stop(&node.service_name)?;
+                println!(
+                    "✓ Service {} with PID {} was stopped",
+                    node.service_name, pid
+                );
+            } else {
+                println!("✓ Service {} was already stopped", node.service_name);
+            }
+            node.pid = None;
+            node.status = NodeStatus::Stopped;
+            Ok(())
+        }
+        NodeStatus::Stopped => {
+            println!("✓ Service {} was already stopped", node.service_name);
+            Ok(())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,6 +77,7 @@ mod tests {
     use libp2p_identity::PeerId;
     use mockall::mock;
     use mockall::predicate::*;
+    use mockall::Sequence;
     use sn_node_rpc_client::{
         NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions,
     };
@@ -254,6 +284,108 @@ mod tests {
             )?),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn stop_should_stop_a_running_service() -> Result<()> {
+        let mut mock_service_control = MockServiceControl::new();
+
+        let mut seq = Sequence::new();
+        mock_service_control
+            .expect_is_service_process_running()
+            .with(eq(1000))
+            .times(1)
+            .returning(|_| true)
+            .in_sequence(&mut seq);
+        mock_service_control
+            .expect_stop()
+            .with(eq("Safenode service 1"))
+            .times(1)
+            .returning(|_| Ok(()))
+            .in_sequence(&mut seq);
+
+        let mut node = InstalledNode {
+            version: "0.98.1".to_string(),
+            service_name: "Safenode service 1".to_string(),
+            user: "safe".to_string(),
+            number: 1,
+            port: 8080,
+            rpc_port: 8081,
+            status: NodeStatus::Running,
+            pid: Some(1000),
+            peer_id: Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?),
+        };
+        stop(&mut node, &mock_service_control).await?;
+
+        assert_eq!(node.pid, None);
+        // The peer ID should be retained on a service stop.
+        assert_eq!(
+            node.peer_id,
+            Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR"
+            )?)
+        );
+        assert_matches!(node.status, NodeStatus::Stopped);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn stop_should_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
+        let mock_service_control = MockServiceControl::new();
+
+        let mut node = InstalledNode {
+            version: "0.98.1".to_string(),
+            service_name: "Safenode service 1".to_string(),
+            user: "safe".to_string(),
+            number: 1,
+            port: 8080,
+            rpc_port: 8081,
+            status: NodeStatus::Installed,
+            pid: None,
+            peer_id: None,
+        };
+
+        let result = stop(&mut node, &mock_service_control).await;
+
+        match result {
+            Ok(()) => panic!("This test should result in an error"),
+            Err(e) => {
+                assert_eq!(
+                    "The 'Safenode service 1' service has not been started since it was installed",
+                    e.to_string()
+                );
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn stop_should_return_ok_when_attempting_to_stop_service_that_was_already_stopped(
+    ) -> Result<()> {
+        let mock_service_control = MockServiceControl::new();
+
+        let mut node = InstalledNode {
+            version: "0.98.1".to_string(),
+            service_name: "Safenode service 1".to_string(),
+            user: "safe".to_string(),
+            number: 1,
+            port: 8080,
+            rpc_port: 8081,
+            status: NodeStatus::Stopped,
+            pid: None,
+            peer_id: None,
+        };
+
+        stop(&mut node, &mock_service_control).await?;
+
+        assert_eq!(node.pid, None);
+        assert_matches!(node.status, NodeStatus::Stopped);
 
         Ok(())
     }
