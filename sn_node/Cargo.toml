@@ -75,3 +75,4 @@ color-eyre = "0.6.2"
 [dev-dependencies]
 tempfile = "3.6.0"
 reqwest = { version="0.11.18", default-features=false, features = ["rustls"] }
+sn_protocol = { path = "../sn_protocol", version = "0.8.24", features = ["test-utils"]}

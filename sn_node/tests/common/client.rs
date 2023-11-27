@@ -7,17 +7,21 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use eyre::Result;
-use futures::future::join_all;
 use lazy_static::lazy_static;
 use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::test_utils::DeploymentInventory;
-use sn_transfers::{LocalWallet, NanoTokens};
-use std::path::Path;
+use sn_transfers::{LocalWallet, NanoTokens, Transfer};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::Path,
+};
 use tokio::sync::Mutex;
 use tracing::error;
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+/// The node count for a locally running network that the tests expect
+pub const LOCAL_NODE_COUNT: usize = 25;
 
 lazy_static! {
     // mutex to restrict access to faucet wallet from concurrent tests
@@ -27,6 +31,34 @@ lazy_static! {
 /// Load LocalWallet from dir
 pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
     LocalWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
+}
+
+/// Get the node count
+/// If SN_INVENTORY flag is passed, the node count is obtained from the the droplet
+/// else return the local node count
+pub fn get_node_count() -> usize {
+    match DeploymentInventory::load() {
+        Ok(inventory) => inventory.rpc_endpoints.len(),
+        Err(_) => LOCAL_NODE_COUNT,
+    }
+}
+
+/// Get the list of all RPC addresses
+/// If SN_INVENTORY flag is passed, the RPC addresses of all the droplet nodes are returned
+/// else generate local addresses for NODE_COUNT nodes
+pub fn get_all_rpc_addresses() -> Vec<SocketAddr> {
+    match DeploymentInventory::load() {
+        Ok(inventory) => inventory.rpc_endpoints,
+        Err(_) => {
+            let mut addresses = Vec::new();
+            for i in 1..LOCAL_NODE_COUNT + 1 {
+                let addr =
+                    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000 + i as u16);
+                addresses.push(addr);
+            }
+            addresses
+        }
+    }
 }
 
 /// Get a new Client.
@@ -50,7 +82,7 @@ pub async fn get_funded_wallet(
 ) -> Result<LocalWallet> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
-            Droplet::get_funded_wallet(root_dir, amount, inventory.faucet_address).await
+            Droplet::get_funded_wallet(client, root_dir, amount, inventory.faucet_address).await
         }
         Err(_) => NonDroplet::get_funded_wallet(client, from, root_dir, amount).await,
     }
@@ -67,7 +99,8 @@ pub async fn get_gossip_client_and_wallet(
         Ok(inventory) => {
             let client = Droplet::get_gossip_client(inventory.peers).await;
             let local_wallet =
-                Droplet::get_funded_wallet(root_dir, amount, inventory.faucet_address).await?;
+                Droplet::get_funded_wallet(&client, root_dir, amount, inventory.faucet_address)
+                    .await?;
             Ok((client, local_wallet))
         }
         Err(_) => {
@@ -154,37 +187,46 @@ impl Droplet {
 
     // Create a wallet at root_dir and fetch the amount from the faucet url
     pub async fn get_funded_wallet(
+        client: &Client,
         root_dir: &Path,
         amount: u64,
-        faucet_url: String,
+        faucet_socket: String,
     ) -> Result<LocalWallet> {
         let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
         let faucet_balance = 100 * 1_000_000_000; // Each request gives 100 SNT
-        let num_requests = std::cmp::min((amount + faucet_balance - 1) / faucet_balance, 1);
-        let num_requests = std::cmp::max(num_requests, 100); // max 100 req
+        let num_requests = std::cmp::max((amount + faucet_balance - 1) / faucet_balance, 1);
+        let num_requests = std::cmp::min(num_requests, 10); // max 10 req
 
         let mut local_wallet = get_wallet(root_dir).await;
+        let address_hex = hex::encode(local_wallet.address().to_bytes());
 
         println!(
-            "Getting {} tokens from the faucet...",
+            "Getting {} tokens from the faucet... num_requests:{num_requests}",
             NanoTokens::from(num_requests * 100 * 1_000_000_000)
         );
-        let mut tasks = Vec::new();
         for _ in 0..num_requests {
-            let faucet_url = faucet_url.clone();
-            let task = tokio::spawn(async move {
-                // Get cash_note from faucet
-                let cash_note = reqwest::get(&faucet_url).await?.text().await?;
-                let cash_note = sn_transfers::CashNote::from_hex(cash_note.trim())?;
-                Ok::<_, eyre::Report>(cash_note)
-            });
-            tasks.push(task);
-        }
+            let faucet_url = format!("http://{faucet_socket}/{address_hex}");
 
-        for result in join_all(tasks).await {
-            let cash_note = result??;
-            local_wallet.deposit_and_store_to_disk(&vec![cash_note])?;
+            // Get transfer from faucet
+            let transfer = reqwest::get(&faucet_url).await?.text().await?;
+            let transfer = match Transfer::from_hex(&transfer) {
+                Ok(transfer) => transfer,
+                Err(err) => {
+                    println!("Failed to parse transfer: {err:?}");
+                    println!("Transfer: \"{transfer}\"");
+                    return Err(err.into());
+                }
+            };
+            let cashnotes = match client.receive(&transfer, &local_wallet).await {
+                Ok(cashnotes) => cashnotes,
+                Err(err) => {
+                    println!("Failed to verify and redeem transfer: {err:?}");
+                    return Err(err.into());
+                }
+            };
+            println!("Successfully verified transfer.");
+            local_wallet.deposit_and_store_to_disk(&cashnotes)?;
         }
 
         Ok(local_wallet)
