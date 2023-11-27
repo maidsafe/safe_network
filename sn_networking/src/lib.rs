@@ -198,7 +198,7 @@ impl Network {
     /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
     /// Routing Table. It is ordered by increasing distance of the peers
     /// Note self peer_id is not included in the result.
-    pub async fn get_closest_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
+    pub async fn get_close_group_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetCloseGroupLocalPeers {
             key: key.clone(),
