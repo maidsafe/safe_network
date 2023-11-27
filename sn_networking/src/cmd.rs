@@ -25,7 +25,7 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     fmt::Debug,
 };
 use tokio::sync::oneshot;
@@ -53,9 +53,10 @@ pub enum SwarmCmd {
     GetAllLocalPeers {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
-    // Get the map of ilog2 distance of the Kbucket to the peers in that bucket
+    /// Get a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
+    /// bucket.
     GetKBuckets {
-        sender: oneshot::Sender<HashMap<u32, Vec<PeerId>>>,
+        sender: oneshot::Sender<BTreeMap<u32, Vec<PeerId>>>,
     },
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
@@ -524,7 +525,7 @@ impl SwarmDriver {
                 let _ = sender.send(self.get_all_local_peers());
             }
             SwarmCmd::GetKBuckets { sender } => {
-                let mut ilog2_kbuckets = HashMap::new();
+                let mut ilog2_kbuckets = BTreeMap::new();
                 for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
                     let range = kbucket.range();
                     if let Some(distance) = range.0.ilog2() {
