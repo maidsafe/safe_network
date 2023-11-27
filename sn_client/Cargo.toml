@@ -14,6 +14,8 @@ version = "0.98.20"
 default=[]
 local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
+# required to pass on flag to node builds
+quic = ["sn_networking/quic"]
 
 [dependencies]
 async-trait = "0.1"
