@@ -5,7 +5,7 @@ mod node;
 mod service;
 
 use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
-use crate::control::start;
+use crate::control::{start, stop};
 use crate::install::{install, InstallOptions};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
@@ -78,6 +78,18 @@ pub enum SubCmd {
         #[clap(long)]
         service_name: Option<String>,
     },
+    /// Stop an installed safenode service.
+    ///
+    /// If no peer ID(s) or service name(s) are supplied, all installed services will be stopped.
+    #[clap(name = "stop")]
+    Stop {
+        /// The peer ID of the service to stop.
+        #[clap(long)]
+        peer_id: Option<String>,
+        /// The name of the service to stop.
+        #[clap(long)]
+        service_name: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -139,18 +151,13 @@ async fn main() -> Result<()> {
                 return Err(eyre!("The start command must run as the root user"));
             }
 
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if service_name.is_some() && peer_id.is_some() {
-                return Err(eyre!("The service name and peer ID are mutually exclusive")
-                    .suggestion(
-                    "Please try again using either the peer ID or the service name, but not both.",
-                ));
-            }
+            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
 
             println!("=================================================");
             println!("             Start Safenode Services             ");
             println!("=================================================");
 
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if let Some(ref name) = service_name {
                 let node = node_registry
                     .installed_nodes
@@ -182,6 +189,54 @@ async fn main() -> Result<()> {
                     start(node, &NodeServiceManager {}, &rpc_client).await?;
                 }
             }
+
+            node_registry.save(&get_node_registry_path()?)?;
+
+            Ok(())
+        }
+        SubCmd::Stop {
+            peer_id,
+            service_name,
+        } => {
+            if !is_running_as_root() {
+                return Err(eyre!("The stop command must run as the root user"));
+            }
+
+            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
+
+            println!("=================================================");
+            println!("              Stop Safenode Services             ");
+            println!("=================================================");
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if let Some(ref name) = service_name {
+                let node = node_registry
+                    .installed_nodes
+                    .iter_mut()
+                    .find(|x| x.service_name == *name)
+                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
+                stop(node, &NodeServiceManager {}).await?;
+            } else if let Some(ref peer_id) = peer_id {
+                let peer_id = PeerId::from_str(peer_id)?;
+                let node = node_registry
+                    .installed_nodes
+                    .iter_mut()
+                    .find(|x| x.peer_id == Some(peer_id))
+                    .ok_or_else(|| {
+                        eyre!(format!(
+                            "Could not find node with peer ID '{}'",
+                            peer_id.to_string()
+                        ))
+                    })?;
+                stop(node, &NodeServiceManager {}).await?;
+            } else {
+                for node in node_registry.installed_nodes.iter_mut() {
+                    stop(node, &NodeServiceManager {}).await?;
+                }
+            }
+
+            node_registry.save(&get_node_registry_path()?)?;
+
             Ok(())
         }
     }
@@ -210,4 +265,18 @@ fn get_safenode_install_path() -> Result<PathBuf> {
         std::fs::create_dir_all(path.clone())?;
     }
     Ok(path)
+}
+
+fn validate_peer_id_and_service_name_args(
+    service_name: Option<String>,
+    peer_id: Option<String>,
+) -> Result<()> {
+    if service_name.is_some() && peer_id.is_some() {
+        return Err(
+            eyre!("The service name and peer ID are mutually exclusive").suggestion(
+                "Please try again using either the peer ID or the service name, but not both.",
+            ),
+        );
+    }
+    Ok(())
 }
