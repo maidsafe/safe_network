@@ -22,7 +22,7 @@ use tokio::task::JoinSet;
 impl Network {
     /// Gets a spend from the Network.
     pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
-        let key = NetworkAddress::from_cash_note_address(address).to_record_key();
+        let key = NetworkAddress::from_spend_address(address).to_record_key();
         let record = self
             .get_record_from_network(key, None, GetQuorum::All, re_attempt, Default::default())
             .await

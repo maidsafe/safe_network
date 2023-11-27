@@ -6,15 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{Error, Result};
+
 use super::UniquePubkey;
 
 use serde::{Deserialize, Serialize};
-use std::hash::Hash;
+use std::{fmt, hash::Hash};
 use xor_name::XorName;
 
 /// The address of a SignedSpend in the network.
 /// This is used to check if a CashNote is spent, note that the actual CashNote is not stored on the Network.
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct SpendAddress(XorName);
 
 impl SpendAddress {
@@ -31,5 +33,40 @@ impl SpendAddress {
     /// Return the name, which is the hash of `UniquePubkey`.
     pub fn xorname(&self) -> &XorName {
         &self.0
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0)
+    }
+
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        let bytes = hex::decode(hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
+        let xorname = XorName(
+            bytes
+                .try_into()
+                .map_err(|_| Error::HexDeserializationFailed("wrong string size".to_string()))?,
+        );
+        Ok(Self::new(xorname))
+    }
+}
+
+impl std::fmt::Debug for SpendAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SpendAddress({})", self.to_hex())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_spend_address_hex_conversions() -> eyre::Result<()> {
+        let mut rng = rand::thread_rng();
+        let spend_address = SpendAddress::new(XorName::random(&mut rng));
+        let hex = spend_address.to_hex();
+        let spend_address2 = SpendAddress::from_hex(&hex)?;
+        assert_eq!(spend_address, spend_address2);
+        Ok(())
     }
 }
