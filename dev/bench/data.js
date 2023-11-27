@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701096153484,
+  "lastUpdate": 1701096376482,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f318fae37225484e8eea92833422e7da34a8bd7c",
-          "message": "chore: remove un-used Query::GetRegister",
-          "timestamp": "2023-07-19T10:25:40Z",
-          "tree_id": "b6c9a9f2b4aff41d6b4cab93b2d9a3d1218fcd9e",
-          "url": "https://github.com/maidsafe/safe_network/commit/f318fae37225484e8eea92833422e7da34a8bd7c"
-        },
-        "date": 1689766502735,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 29.99,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 98,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "4360c79756145b0e1f2fca06b8a2546e88b4f7e7",
+          "message": "chore: increase routing table sleep before verification time",
+          "timestamp": "2023-11-27T13:59:55Z",
+          "tree_id": "5e7667d25df45cbff5499d646d49d7f80822097b",
+          "url": "https://github.com/maidsafe/safe_network/commit/4360c79756145b0e1f2fca06b8a2546e88b4f7e7"
+        },
+        "date": 1701096375608,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 125,
             "unit": "MB"
           }
         ]
