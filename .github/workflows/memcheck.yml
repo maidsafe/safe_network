@@ -115,7 +115,7 @@ jobs:
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
         env:
-          SLEEP_BEFORE_VERIFICATION: 220
+          SLEEP_BEFORE_VERIFICATION: 300
         timeout-minutes: 10
 
       - name: Verify restart of nodes using rg
