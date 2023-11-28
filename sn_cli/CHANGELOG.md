@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.26](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.25...sn_cli-v0.86.26) - 2023-11-28
+
+### Added
+- *(cli)* serialise chunks metadata on disk with MsgPack instead of bincode
+- *(royalties)* serialise royalties notifs with MsgPack instead of bincode
+
 ## [0.86.25](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.24...sn_cli-v0.86.25) - 2023-11-28
 
 ### Other
