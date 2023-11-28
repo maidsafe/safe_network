@@ -198,6 +198,12 @@ fn parse_pubkey_address(str_addr: &str) -> Result<SpendAddress> {
 /// Verify a spend on the Network.
 /// if genesis is true, verify all the way to Genesis, note that this might take A VERY LONG TIME
 async fn verify(spend_address: String, genesis: bool, client: &Client) -> Result<()> {
+    if genesis {
+        println!("Verifying spend all the way to Genesis, note that this might take a while...");
+    } else {
+        println!("Verifying spend...");
+    }
+
     let addr = parse_pubkey_address(&spend_address)?;
     match client.verify_spend(addr, genesis).await {
         Ok(()) => println!("Spend verified to be stored and unique at {addr:?}"),
@@ -209,8 +215,7 @@ async fn verify(spend_address: String, genesis: bool, client: &Client) -> Result
 
 fn address(root_dir: &Path) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
-    let address_hex = hex::encode(wallet.address().to_bytes());
-    println!("{address_hex}");
+    println!("{:?}", wallet.address());
     Ok(())
 }
 
@@ -222,7 +227,7 @@ fn balance(root_dir: &Path) -> Result<NanoTokens> {
 
 async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
-    let address_hex = hex::encode(wallet.address().to_bytes());
+    let address_hex = wallet.address().to_hex();
     let url = if !url.contains("://") {
         format!("{}://{}", "http", url)
     } else {

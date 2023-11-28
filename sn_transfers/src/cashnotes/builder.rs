@@ -97,7 +97,7 @@ impl TransactionBuilder {
                     spent_tx: spent_tx.clone(),
                     reason,
                     token: input.amount,
-                    cashnote_creation_tx: input_src_tx.clone(),
+                    parent_tx: input_src_tx.clone(),
                 };
                 let derived_key_sig = derived_key.sign(&spend.to_bytes());
                 signed_spends.insert(SignedSpend {

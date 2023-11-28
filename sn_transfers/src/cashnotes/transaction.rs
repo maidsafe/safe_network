@@ -113,25 +113,8 @@ impl Transaction {
         crate::Hash::from(hash)
     }
 
-    /// Check if every input has the signature over this very tx,
-    /// and that each public key of the inputs was the signer.
-    pub fn verify(&self) -> Result<()> {
-        // Verify that the tx has at least one input
-        if self.inputs.is_empty() {
-            return Err(Error::MissingTxInputs);
-        }
-
-        // Verify that each cashnote id is unique.
-        let id_count = self.inputs.len();
-        let unique_ids: BTreeSet<_> = self
-            .inputs
-            .iter()
-            .map(|input| input.unique_pubkey)
-            .collect();
-        if unique_ids.len() != id_count {
-            return Err(Error::UniquePubkeyNotUniqueAcrossInputs);
-        }
-
+    /// Quickly check is a transaction is balanced
+    fn verify_balanced(&self) -> Result<()> {
         // Check that the input and output tokens are equal.
         let input_sum: u64 = self
             .inputs
@@ -162,10 +145,10 @@ impl Transaction {
     /// trustless/verified way. I.e., the caller should not simply obtain a
     /// spend from a single peer, but must get the same spend from all in the close group.
     pub fn verify_against_inputs_spent(&self, signed_spends: &BTreeSet<SignedSpend>) -> Result<()> {
+        // check if we have spends for all inputs
         if signed_spends.is_empty() {
             return Err(Error::MissingTxInputs)?;
         }
-
         if signed_spends.len() != self.inputs.len() {
             return Err(Error::SignedSpendInputLenMismatch {
                 got: signed_spends.len(),
@@ -173,13 +156,18 @@ impl Transaction {
             });
         }
 
-        let spent_tx_hash = self.hash();
-
-        // Verify that each pubkey is unique in this transaction.
-        let unique_unique_pubkeys: BTreeSet<UniquePubkey> =
+        // Verify that each output is unique
+        let output_pks: BTreeSet<UniquePubkey> =
             self.outputs.iter().map(|o| (*o.unique_pubkey())).collect();
-        if unique_unique_pubkeys.len() != self.outputs.len() {
+        if output_pks.len() != self.outputs.len() {
             return Err(Error::UniquePubkeyNotUniqueAcrossOutputs);
+        }
+
+        // Verify that each input is unique
+        let input_pks: BTreeSet<UniquePubkey> =
+            self.inputs.iter().map(|i| (i.unique_pubkey())).collect();
+        if input_pks.len() != self.inputs.len() {
+            return Err(Error::UniquePubkeyNotUniqueAcrossInputs);
         }
 
         // Verify that each input has a corresponding signed spend.
@@ -194,25 +182,12 @@ impl Transaction {
         }
 
         // Verify that each signed spend is valid
+        let spent_tx_hash = self.hash();
         for signed_spend in signed_spends.iter() {
             signed_spend.verify(spent_tx_hash)?;
         }
 
-        // We must get the signed spends into the same order as inputs
-        // so that resulting amounts will be in the right order.
-        // Note: we could use itertools crate to sort in one loop.
-        let mut signed_spends_found: Vec<(usize, &SignedSpend)> = signed_spends
-            .iter()
-            .filter_map(|s| {
-                self.inputs
-                    .iter()
-                    .position(|m| m.unique_pubkey == *s.unique_pubkey())
-                    .map(|idx| (idx, s))
-            })
-            .collect();
-
-        signed_spends_found.sort_by_key(|s| s.0);
-
-        self.verify()
+        // Verify that the transaction is balanced
+        self.verify_balanced()
     }
 }
