@@ -2300,6 +2300,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - changes based on comment, use btreemap
 - *(ci)* enable routing table test
 
+## [0.98.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.34...sn_node-v0.98.35) - 2023-11-28
+
+### Added
+- *(test)* impl more functions for deployer tests
+
+### Other
+- *(test)* impl utils for Droplets/NonDroplets
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
