@@ -22,8 +22,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
@@ -104,8 +102,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
@@ -165,8 +161,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
@@ -209,8 +203,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
@@ -294,8 +286,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
@@ -400,8 +390,6 @@ jobs:
 
         - name: Install Rust
           uses: dtolnay/rust-toolchain@stable
-          with:
-            toolchain: stable
 
         - uses: Swatinem/rust-cache@v2
           continue-on-error: true
