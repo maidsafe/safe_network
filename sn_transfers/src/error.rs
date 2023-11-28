@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{NanoTokens, UniquePubkey};
+use crate::{Hash, NanoTokens, UniquePubkey};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
@@ -29,8 +29,8 @@ pub enum Error {
 
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
-    #[error("Transaction hash does not match the transaction signed by spentbook.")]
-    InvalidTransactionHash,
+    #[error("Transaction hash is different from the hash in the the Spend: {0:?} != {1:?}")]
+    TransactionHashMismatch(Hash, Hash),
     #[error("CashNote ciphers are not present in transaction outputs.")]
     CashNoteCiphersNotPresentInTransactionOutput,
     #[error("Output not found in transaction outputs.")]

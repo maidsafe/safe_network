@@ -38,7 +38,7 @@ impl DerivationIndex {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
 pub struct UniquePubkey(PublicKey);
 
 impl UniquePubkey {
@@ -66,6 +66,15 @@ impl UniquePubkey {
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
         let public_key = bls_public_from_hex(hex)?;
         Ok(Self::new(public_key))
+    }
+}
+
+/// Actionable way to print a UniquePubkey
+/// This way to print it is lengthier but allows to copy/paste it into the safe cli or other apps
+/// To use for verification purposes
+impl std::fmt::Debug for UniquePubkey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_hex())
     }
 }
 
@@ -116,7 +125,7 @@ impl DerivedSecretKey {
 /// the MainPubkey can also see that the UniquePubkey is related to this MainPubkey.
 /// The recipient can then use the received DerivationIndex to generate the DerivedSecretKey
 /// corresponding to that UniquePubkey, and thus unlock the value of the CashNote by using that DerivedSecretKey.
-#[derive(Copy, Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Serialize, Deserialize, Hash)]
+#[derive(Copy, PartialEq, Eq, Ord, PartialOrd, Clone, Serialize, Deserialize, Hash)]
 pub struct MainPubkey(pub PublicKey);
 
 impl MainPubkey {
@@ -153,6 +162,12 @@ impl MainPubkey {
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
         let public_key = bls_public_from_hex(hex)?;
         Ok(Self::new(public_key))
+    }
+}
+
+impl std::fmt::Debug for MainPubkey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_hex())
     }
 }
 

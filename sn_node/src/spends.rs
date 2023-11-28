@@ -69,7 +69,7 @@ pub(crate) fn check_parent_spends(
     signed_spend: &SignedSpend,
 ) -> Result<()> {
     // skip check if the spent CashNote is Genesis
-    if is_genesis_parent_tx(&signed_spend.spend.cashnote_creation_tx)
+    if is_genesis_parent_tx(&signed_spend.spend.parent_tx)
         && signed_spend.unique_pubkey() == &GENESIS_CASHNOTE.id
     {
         trace!(
@@ -82,14 +82,14 @@ pub(crate) fn check_parent_spends(
     // check that the spent CashNote is an output of the parent tx
     if !signed_spend
         .spend
-        .cashnote_creation_tx
+        .parent_tx
         .outputs
         .iter()
         .any(|o| o.unique_pubkey() == signed_spend.unique_pubkey())
     {
         return Err(Error::SpendParentTxInvalid(format!(
             "The CashNote we're trying to spend: {:?} is not an output of the parent tx: {:?}",
-            signed_spend, signed_spend.spend.cashnote_creation_tx
+            signed_spend, signed_spend.spend.parent_tx
         )));
     }
 
@@ -115,7 +115,7 @@ fn validate_parent_spends(
 ) -> Result<()> {
     // Check that the parent spends are all from the parent tx
     for parent_spend in parent_spends {
-        let tx_our_cash_note_was_created_in = signed_spend.cashnote_creation_tx_hash();
+        let tx_our_cash_note_was_created_in = signed_spend.parent_tx_hash();
         let tx_its_parents_where_spent_in = parent_spend.spent_tx_hash();
         if tx_our_cash_note_was_created_in != tx_its_parents_where_spent_in {
             return Err(Error::SpendParentTxInvalid(format!(
@@ -127,7 +127,7 @@ fn validate_parent_spends(
     // Here we check that the CashNote we're trying to spend was created in a valid tx
     if let Err(e) = signed_spend
         .spend
-        .cashnote_creation_tx
+        .parent_tx
         .verify_against_inputs_spent(parent_spends)
     {
         return Err(Error::SpendParentTxInvalid(format!(

@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::{Error, Result, Signature};
+use crate::{Error, Result, Signature, GENESIS_CASHNOTE};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -40,8 +40,8 @@ impl SignedSpend {
     }
 
     /// Get the hash of the transaction this CashNote was created in
-    pub fn cashnote_creation_tx_hash(&self) -> Hash {
-        self.spend.cashnote_creation_tx.hash()
+    pub fn parent_tx_hash(&self) -> Hash {
+        self.spend.parent_tx.hash()
     }
 
     /// Get Nano
@@ -64,16 +64,25 @@ impl SignedSpend {
 
     /// Verify this SignedSpend
     ///
-    /// Checks that the provided spent_tx_hash equals the input dst tx hash that was
+    /// Checks that the spend was indeed spent for the given Tx hash, and that it was
     /// signed by the DerivedSecretKey. Also verifies that that signature is
     /// valid for this SignedSpend.
     pub fn verify(&self, spent_tx_hash: Hash) -> Result<()> {
-        // Verify that input spent_tx_hash matches self.spent_tx_hash which was signed by the DerivedSecretKey of the input.
+        // verify that input spent_tx_hash matches self.spent_tx_hash
         if spent_tx_hash != self.spent_tx_hash() {
-            return Err(Error::InvalidTransactionHash);
+            if self.unique_pubkey() == &GENESIS_CASHNOTE.id {
+                // This is the genesis Spend, we can skip to the next part
+                // and check the signature
+            } else {
+                return Err(Error::TransactionHashMismatch(
+                    spent_tx_hash,
+                    self.spent_tx_hash(),
+                ));
+            }
         }
 
-        // The spend is signed by the DerivedSecretKey
+        // check signature
+        // the spend is signed by the DerivedSecretKey
         // corresponding to the UniquePubkey of the CashNote being spent.
         if self
             .spend
@@ -108,7 +117,7 @@ impl std::hash::Hash for SignedSpend {
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
     pub unique_pubkey: UniquePubkey,
-    /// The transaction that the input CashNote is being spent in.
+    /// The transaction that the input CashNote is being spent in (where it is an input)
     #[debug(skip)]
     pub spent_tx: Transaction,
     /// Reason why this CashNote was spent.
@@ -117,9 +126,9 @@ pub struct Spend {
     /// The amount of the input CashNote.
     #[debug(skip)]
     pub token: NanoTokens,
-    /// The transaction that the input CashNote was created in.
+    /// The transaction that the input CashNote was created in (where it is an output)
     #[debug(skip)]
-    pub cashnote_creation_tx: Transaction,
+    pub parent_tx: Transaction,
 }
 
 impl Spend {
@@ -131,7 +140,7 @@ impl Spend {
         bytes.extend(self.spent_tx.hash().as_ref());
         bytes.extend(self.reason.as_ref());
         bytes.extend(self.token.to_bytes());
-        bytes.extend(self.cashnote_creation_tx.hash().as_ref());
+        bytes.extend(self.parent_tx.hash().as_ref());
         bytes
     }
 

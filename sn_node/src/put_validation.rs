@@ -754,16 +754,16 @@ impl Node {
 
                 // Get parents
                 let mut parent_spends = BTreeSet::new();
-                if is_genesis_parent_tx(&signed_spend.spend.cashnote_creation_tx)
+                if is_genesis_parent_tx(&signed_spend.spend.parent_tx)
                     && signed_spend.unique_pubkey() == &GENESIS_CASHNOTE.id
                 {
                     trace!("GENESIS_CASHNOTE {cash_note_addr:?} doesn't have a parent");
                 } else {
                     trace!(
                         "Checking cash_note {cash_note_addr:?} parent transaction {:?}",
-                        signed_spend.spend.cashnote_creation_tx
+                        signed_spend.spend.parent_tx
                     );
-                    for parent_input in &signed_spend.spend.cashnote_creation_tx.inputs {
+                    for parent_input in &signed_spend.spend.parent_tx.inputs {
                         let parent_cash_note_address =
                             SpendAddress::from_unique_pubkey(&parent_input.unique_pubkey());
                         trace!(
