@@ -28,8 +28,8 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
-    swarm::SwarmEvent,
-    Multiaddr, PeerId,
+    swarm::{DialError, SwarmEvent},
+    Multiaddr, PeerId, TransportError,
 };
 
 use sn_protocol::{
@@ -432,21 +432,65 @@ impl SwarmDriver {
                 error,
                 connection_id,
             } => {
-                event_string = "Outgoing`ConnErr";
-                error!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
-                if let Some(dead_peer) = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .remove_peer(&failed_peer_id)
-                {
-                    self.connected_peers = self.connected_peers.saturating_sub(1);
-                    self.send_event(NetworkEvent::PeerRemoved(
-                        *dead_peer.node.key.preimage(),
-                        self.connected_peers,
-                    ));
-                    self.log_kbuckets(&failed_peer_id);
-                    let _ = self.check_for_change_in_our_close_group();
+                event_string = "OutgoingConnErr";
+                warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+
+                // fuly log the whole error
+                let should_clean_peer = match error {
+                    DialError::Transport(errors) => {
+                        let mut there_is_a_real_issue = false;
+                        for (_addr, err) in errors {
+                            error!("OutgoingTransport error : {err:?}");
+                            if let TransportError::MultiaddrNotSupported(addr) = err {
+                                there_is_a_real_issue = true
+                            }
+                        }
+                        there_is_a_real_issue
+                    }
+                    DialError::NoAddresses => {
+                        warn!("OutgoingConnectionError: No address provided");
+                        false
+                    }
+                    DialError::Aborted => {
+                        warn!("OutgoingConnectionError: Aborted");
+                        false
+                    }
+                    DialError::DialPeerConditionFalse(_) => {
+                        warn!("OutgoingConnectionError: DialPeerConditionFalse");
+                        false
+                    }
+                    DialError::LocalPeerId { endpoint, .. } => {
+                        error!(
+                            "OutgoingConnectionError: LocalPeerId: {}",
+                            endpoint_str(&endpoint)
+                        );
+                        true
+                    }
+                    DialError::WrongPeerId { obtained, endpoint } => {
+                        error!("OutgoingConnectionError: WrongPeerId: obtained: {obtained:?}, endpoint: {endpoint:?}");
+                        true
+                    }
+                    DialError::Denied { cause } => {
+                        error!("OutgoingConnectionError: Denied: {cause:?}");
+                        true
+                    }
+                };
+
+                if should_clean_peer {
+                    if let Some(dead_peer) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .remove_peer(&failed_peer_id)
+                    {
+                        self.connected_peers = self.connected_peers.saturating_sub(1);
+                        self.send_event(NetworkEvent::PeerRemoved(
+                            *dead_peer.node.key.preimage(),
+                            self.connected_peers,
+                        ));
+                        self.log_kbuckets(&failed_peer_id);
+                        let _ = self.check_for_change_in_our_close_group();
+                    }
                 }
             }
             SwarmEvent::IncomingConnectionError {
