@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.22](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.21...sn_transfers-v0.14.22) - 2023-11-28
+
+### Added
+- *(transfers)* serialise wallets and transfers data with MsgPack instead of bincode
+
 ## [0.14.21](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.20...sn_transfers-v0.14.21) - 2023-11-23
 
 ### Added
