@@ -16,10 +16,11 @@ use color_eyre::eyre::{eyre, Result};
 use libp2p::Multiaddr;
 use sn_client::Client;
 use sn_logging::LogBuilder;
-use sn_node::NodeEvent;
+use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
+    safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
+    TransferNotifsFilterRequest,
 };
 use sn_protocol::storage::SpendAddress;
 use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey};
@@ -236,6 +237,13 @@ pub async fn transfers_events(
             pk: pk.to_bytes().to_vec(),
         }))
         .await?;
+
+    let _ = node_client
+        .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
+            topic: ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(),
+        }))
+        .await?;
+
     let response = node_client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;
