@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701164548361,
+  "lastUpdate": 1701169722475,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "121cca741af89aede6a64db66aaa5a952b8dcf31",
-          "message": "chore(networking): improve data pruning\n\nwarn if booting relevant data, clarify error docs",
-          "timestamp": "2023-08-01T17:19:23+02:00",
-          "tree_id": "4d68c66e2e014bec2df78738dd3ec70b30c9356a",
-          "url": "https://github.com/maidsafe/safe_network/commit/121cca741af89aede6a64db66aaa5a952b8dcf31"
-        },
-        "date": 1690922960191,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06174883556272003,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.032181850826768325,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6185025733079748,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.5112747493318,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8",
+          "message": "chore: update deps",
+          "timestamp": "2023-11-28T10:15:23Z",
+          "tree_id": "567db30383071de6d6e1ed26fb8dc1665889d7ef",
+          "url": "https://github.com/maidsafe/safe_network/commit/199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8"
+        },
+        "date": 1701169720115,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.182451452792625,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.574456043439053,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 41.202423639848135,
             "unit": "MiB/s"
           }
         ]
