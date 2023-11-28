@@ -1,6 +1,7 @@
-use crate::node::{InstalledNode, NodeStatus};
+use crate::node::{InstalledNode, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
+use colored::Colorize;
 use sn_node_rpc_client::RpcActions;
 
 pub async fn start(
@@ -64,6 +65,67 @@ pub async fn stop(node: &mut InstalledNode, service_control: &dyn ServiceControl
             println!("✓ Service {} was already stopped", node.service_name);
             Ok(())
         }
+    }
+}
+
+pub async fn status(
+    node_registry: &mut NodeRegistry,
+    service_control: &dyn ServiceControl,
+    detailed_view: bool,
+) -> Result<()> {
+    // Again confirm that services which are marked running are still actually running.
+    // If they aren't we'll mark them as stopped.
+    for node in &mut node_registry.installed_nodes {
+        if let NodeStatus::Running = node.status {
+            if let Some(pid) = node.pid {
+                if !service_control.is_service_process_running(pid) {
+                    node.status = NodeStatus::Stopped;
+                    node.pid = None;
+                }
+            }
+        }
+    }
+
+    if detailed_view {
+        for node in &node_registry.installed_nodes {
+            println!("{} - {}", node.service_name, format_status(&node.status));
+            println!("\tVersion: {}", node.version);
+            println!(
+                "\tPeer ID: {}",
+                node.peer_id.map_or("-".to_string(), |p| p.to_string())
+            );
+            println!("\tPort: {}", node.port);
+            println!("\tRPC Port: {}", node.rpc_port);
+            println!(
+                "\tPID: {}",
+                node.pid.map_or("-".to_string(), |p| p.to_string())
+            );
+            println!("\tData path: {}", node.data_dir_path.to_string_lossy());
+            println!("\tLog path: {}", node.log_dir_path.to_string_lossy());
+        }
+    } else {
+        println!("{:<20} {:<52} {}", "Service Name", "Peer ID", "Status");
+        for node in &node_registry.installed_nodes {
+            let peer_id = node
+                .peer_id
+                .map_or_else(|| "-".to_string(), |p| p.to_string());
+            println!(
+                "{:<20} {:<52} {}",
+                node.service_name,
+                peer_id,
+                format_status(&node.status)
+            );
+        }
+    }
+
+    Ok(())
+}
+
+fn format_status(status: &NodeStatus) -> String {
+    match status {
+        NodeStatus::Running => "RUNNING".green().to_string(),
+        NodeStatus::Stopped => "STOPPED".red().to_string(),
+        NodeStatus::Installed => "INSTALLED".yellow().to_string(),
     }
 }
 
@@ -135,6 +197,8 @@ mod tests {
             status: NodeStatus::Installed,
             pid: None,
             peer_id: None,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -187,6 +251,8 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWAAqZWsjhdZTX7tniJ7Dwye3nEbp1dx1wE96sbgL51obs",
             )?),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -239,6 +305,8 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -282,6 +350,8 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -318,6 +388,8 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
         stop(&mut node, &mock_service_control).await?;
 
@@ -340,7 +412,7 @@ mod tests {
 
         let mut node = InstalledNode {
             version: "0.98.1".to_string(),
-            service_name: "Safenode service 1".to_string(),
+            service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
             port: 8080,
@@ -348,6 +420,8 @@ mod tests {
             status: NodeStatus::Installed,
             pid: None,
             peer_id: None,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
 
         let result = stop(&mut node, &mock_service_control).await;
@@ -356,7 +430,7 @@ mod tests {
             Ok(()) => panic!("This test should result in an error"),
             Err(e) => {
                 assert_eq!(
-                    "The 'Safenode service 1' service has not been started since it was installed",
+                    "Service safenode1 has not been started since it was installed",
                     e.to_string()
                 );
             }
@@ -380,6 +454,8 @@ mod tests {
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
         };
 
         stop(&mut node, &mock_service_control).await?;

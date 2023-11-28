@@ -3,7 +3,7 @@ use libp2p_identity::PeerId;
 use serde::de::Error as DeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -55,6 +55,8 @@ pub struct InstalledNode {
         deserialize_with = "deserialize_peer_id"
     )]
     pub peer_id: Option<PeerId>,
+    pub data_dir_path: PathBuf,
+    pub log_dir_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

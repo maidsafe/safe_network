@@ -109,6 +109,8 @@ pub async fn install(
             status: NodeStatus::Installed,
             pid: None,
             peer_id: None,
+            log_dir_path: service_log_dir_path.clone(),
+            data_dir_path: service_data_dir_path.clone(),
         });
 
         node_number += 1;
@@ -277,6 +279,14 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.installed_nodes[0].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode1")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[0].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode1")
+        );
         assert_matches!(
             node_registry.installed_nodes[0].status,
             NodeStatus::Installed
@@ -447,6 +457,14 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.installed_nodes[0].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode1")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[0].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode1")
+        );
         assert_matches!(
             node_registry.installed_nodes[0].status,
             NodeStatus::Installed
@@ -457,6 +475,14 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[1].number, 2);
         assert_eq!(node_registry.installed_nodes[1].port, 8082);
         assert_eq!(node_registry.installed_nodes[1].rpc_port, 8083);
+        assert_eq!(
+            node_registry.installed_nodes[1].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode2")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[1].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode2")
+        );
         assert_matches!(
             node_registry.installed_nodes[1].status,
             NodeStatus::Installed
@@ -467,8 +493,16 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[2].number, 3);
         assert_eq!(node_registry.installed_nodes[2].port, 8084);
         assert_eq!(node_registry.installed_nodes[2].rpc_port, 8085);
+        assert_eq!(
+            node_registry.installed_nodes[2].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode3")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[2].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode3")
+        );
         assert_matches!(
-            node_registry.installed_nodes[0].status,
+            node_registry.installed_nodes[2].status,
             NodeStatus::Installed
         );
 
@@ -576,6 +610,14 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[0].number, 1);
         assert_eq!(node_registry.installed_nodes[0].port, 8080);
         assert_eq!(node_registry.installed_nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.installed_nodes[0].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode1")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[0].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode1")
+        );
         assert_matches!(
             node_registry.installed_nodes[0].status,
             NodeStatus::Installed
@@ -601,6 +643,8 @@ mod tests {
                 status: NodeStatus::Installed,
                 pid: None,
                 peer_id: None,
+                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -699,6 +743,14 @@ mod tests {
         assert_eq!(node_registry.installed_nodes[1].number, 2);
         assert_eq!(node_registry.installed_nodes[1].port, 8082);
         assert_eq!(node_registry.installed_nodes[1].rpc_port, 8083);
+        assert_eq!(
+            node_registry.installed_nodes[1].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode2")
+        );
+        assert_eq!(
+            node_registry.installed_nodes[1].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode2")
+        );
         assert_matches!(
             node_registry.installed_nodes[0].status,
             NodeStatus::Installed
