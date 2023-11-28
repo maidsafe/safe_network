@@ -104,7 +104,7 @@ pub async fn status(
             println!("\tLog path: {}", node.log_dir_path.to_string_lossy());
         }
     } else {
-        println!("{:<20} {:<52} {}", "Service Name", "Peer ID", "Status");
+        println!("{:<20} {:<52} Status", "Service Name", "Peer ID");
         for node in &node_registry.installed_nodes {
             let peer_id = node
                 .peer_id

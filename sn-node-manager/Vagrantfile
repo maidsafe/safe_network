@@ -17,6 +17,14 @@ Vagrant.configure("2") do |config|
     ./rustup-init --default-toolchain stable --no-modify-path -y
     echo "source ~/.cargo/env" >> ~/.bashrc
   SHELL
+  config.vm.provision "shell", inline: <<-SHELL
+    curl -L -O https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
+    chmod +x rustup-init
+    ./rustup-init --default-toolchain stable --no-modify-path -y
+    echo "source ~/.cargo/env" >> ~/.bashrc
+    # Copy the binaries to a system-wide location for running tests as the root user
+    sudo cp ~/.cargo/bin/** /usr/local/bin
+  SHELL
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     mkdir -p ~/.vim/tmp/ ~/.vim/backup
     cat <<'EOF' > ~/.vimrc
