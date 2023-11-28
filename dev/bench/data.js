@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701188452978,
+  "lastUpdate": 1701188454485,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ed199e40331eabd1fcea2f4ac24e0d90e19fcf13",
-          "message": "feat: faucet integration in testnet bin",
-          "timestamp": "2023-07-19T10:43:23Z",
-          "tree_id": "4bf6f7666c177c41198f9f39b86d7fbfc3be33b1",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed199e40331eabd1fcea2f4ac24e0d90e19fcf13"
-        },
-        "date": 1689768944842,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 231.16,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 207,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 716,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 240,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "ff09ba917b11394df2e8da4e454668b0737620e3",
+          "message": "feat(chunks): serialise Chunks with MsgPack instead of bincode",
+          "timestamp": "2023-11-28T15:37:02Z",
+          "tree_id": "7490a3324aea1a052709f586e8bd0be4f99a3c6f",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff09ba917b11394df2e8da4e454668b0737620e3"
+        },
+        "date": 1701188454086,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 639,
             "unit": "MB"
           },
           {
