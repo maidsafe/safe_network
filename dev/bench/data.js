@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701169945262,
+  "lastUpdate": 1701188223160,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b5c09cdb650ce6e186108125b56021572d7148c3",
-          "message": "fix: relay attacks",
-          "timestamp": "2023-08-01T17:18:29+02:00",
-          "tree_id": "32e45184de3e023a59cc7bfef2fc4761af272f81",
-          "url": "https://github.com/maidsafe/safe_network/commit/b5c09cdb650ce6e186108125b56021572d7148c3"
-        },
-        "date": 1690923079277,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06156973347536615,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03214229136296768,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6368704327595505,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 41.202423639848135,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "ff09ba917b11394df2e8da4e454668b0737620e3",
+          "message": "feat(chunks): serialise Chunks with MsgPack instead of bincode",
+          "timestamp": "2023-11-28T15:37:02Z",
+          "tree_id": "7490a3324aea1a052709f586e8bd0be4f99a3c6f",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff09ba917b11394df2e8da4e454668b0737620e3"
+        },
+        "date": 1701188221487,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.192034157626379,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.36428196983648,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.31152860915453,
             "unit": "MiB/s"
           }
         ]
