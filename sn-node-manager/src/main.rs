@@ -5,7 +5,7 @@ mod node;
 mod service;
 
 use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
-use crate::control::{start, stop};
+use crate::control::{start, status, stop};
 use crate::install::{install, InstallOptions};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
@@ -77,6 +77,13 @@ pub enum SubCmd {
         /// The name of the service to start.
         #[clap(long)]
         service_name: Option<String>,
+    },
+    /// Get the status of installed services.
+    #[clap(name = "status")]
+    Status {
+        /// Set to display more details
+        #[clap(long)]
+        details: bool,
     },
     /// Stop an installed safenode service.
     ///
@@ -190,6 +197,17 @@ async fn main() -> Result<()> {
                 }
             }
 
+            node_registry.save(&get_node_registry_path()?)?;
+
+            Ok(())
+        }
+        SubCmd::Status { details } => {
+            println!("=================================================");
+            println!("                Safenode Services                ");
+            println!("=================================================");
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            status(&mut node_registry, &NodeServiceManager {}, details).await?;
             node_registry.save(&get_node_registry_path()?)?;
 
             Ok(())
