@@ -28,8 +28,8 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
-    swarm::SwarmEvent,
-    Multiaddr, PeerId,
+    swarm::{DialError, SwarmEvent},
+    Multiaddr, PeerId, TransportError,
 };
 
 use sn_protocol::{
@@ -432,21 +432,79 @@ impl SwarmDriver {
                 error,
                 connection_id,
             } => {
-                event_string = "Outgoing`ConnErr";
-                error!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
-                if let Some(dead_peer) = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .remove_peer(&failed_peer_id)
-                {
-                    self.connected_peers = self.connected_peers.saturating_sub(1);
-                    self.send_event(NetworkEvent::PeerRemoved(
-                        *dead_peer.node.key.preimage(),
-                        self.connected_peers,
-                    ));
-                    self.log_kbuckets(&failed_peer_id);
-                    let _ = self.check_for_change_in_our_close_group();
+                event_string = "OutgoingConnErr";
+                warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+
+                // we need to decide if this was a critical error and the peer should be removed from the routing table
+                let should_clean_peer = match error {
+                    DialError::Transport(errors) => {
+                        // as it's an outgoing error, if it's transport based we can assume it is _our_ fault
+                        // (eg, could not get a port for a tcp connection)
+                        // so we default to it not being a real issue
+                        let mut there_is_a_real_issue = false;
+                        for (_addr, err) in errors {
+                            error!("OutgoingTransport error : {err:?}");
+                            if let TransportError::MultiaddrNotSupported(addr) = err {
+                                warn!("Multiaddr not supported : {addr:?}");
+                                // if we can't dial a peer on a given address, we should remove it from the routing table
+                                there_is_a_real_issue = true
+                            }
+                        }
+                        there_is_a_real_issue
+                    }
+                    DialError::NoAddresses => {
+                        // We provided no address, and while we can't really blame the peer
+                        // we also can't connect, so we opt to cleanup...
+                        warn!("OutgoingConnectionError: No address provided");
+                        true
+                    }
+                    DialError::Aborted => {
+                        // not their fault
+                        warn!("OutgoingConnectionError: Aborted");
+                        false
+                    }
+                    DialError::DialPeerConditionFalse(_) => {
+                        // we could not dial due to an internal condition, so not their issue
+                        warn!("OutgoingConnectionError: DialPeerConditionFalse");
+                        false
+                    }
+                    DialError::LocalPeerId { endpoint, .. } => {
+                        // This is actually _us_ So we should remove this from the RT
+                        error!(
+                            "OutgoingConnectionError: LocalPeerId: {}",
+                            endpoint_str(&endpoint)
+                        );
+                        true
+                    }
+                    DialError::WrongPeerId { obtained, endpoint } => {
+                        // The peer id we attempted to dial was not the one we expected
+                        // cleanup
+                        error!("OutgoingConnectionError: WrongPeerId: obtained: {obtained:?}, endpoint: {endpoint:?}");
+                        true
+                    }
+                    DialError::Denied { cause } => {
+                        // The peer denied our connection
+                        // cleanup
+                        error!("OutgoingConnectionError: Denied: {cause:?}");
+                        true
+                    }
+                };
+
+                if should_clean_peer {
+                    if let Some(dead_peer) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .remove_peer(&failed_peer_id)
+                    {
+                        self.connected_peers = self.connected_peers.saturating_sub(1);
+                        self.send_event(NetworkEvent::PeerRemoved(
+                            *dead_peer.node.key.preimage(),
+                            self.connected_peers,
+                        ));
+                        self.log_kbuckets(&failed_peer_id);
+                        let _ = self.check_for_change_in_our_close_group();
+                    }
                 }
             }
             SwarmEvent::IncomingConnectionError {
