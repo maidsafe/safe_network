@@ -2308,6 +2308,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(test)* impl utils for Droplets/NonDroplets
 
+## [0.98.36](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.35...sn_node-v0.98.36) - 2023-11-28
+
+### Other
+- update deps
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
