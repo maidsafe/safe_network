@@ -16,9 +16,10 @@ use crate::common::{
 };
 use sn_client::{Client, ClientEvent, WalletClient};
 use sn_logging::LogBuilder;
-use sn_node::{NodeEvent, TRANSFER_NOTIF_TOPIC};
+use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, NodeEventsRequest, TransferNotifsFilterRequest,
+    safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
+    TransferNotifsFilterRequest,
 };
 use sn_transfers::{
     CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
@@ -211,8 +212,10 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     // this other node shall *not* receive any notification either since we don't set any pk as filter
     let handle_3 = spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false);
 
+    sleep(Duration::from_secs(20)).await;
+
     let num_of_chunks = chunks.len();
-    println!("Paying for {num_of_chunks} random addresses...");
+    println!("Paying for {num_of_chunks} chunks");
     let (_, storage_cost, royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
         .await?;
@@ -283,18 +286,26 @@ fn current_rewards_balance() -> Result<NanoTokens> {
 fn spawn_royalties_payment_listener(
     rpc_addr: SocketAddr,
     royalties_pk: PublicKey,
-    set_fiter: bool,
+    set_filter: bool,
 ) -> JoinHandle<Result<usize, eyre::Report>> {
     let endpoint = format!("https://{rpc_addr}");
     tokio::spawn(async move {
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
-        if set_fiter {
+
+        if set_filter {
             let _ = rpc_client
                 .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
                     pk: royalties_pk.to_bytes().to_vec(),
                 }))
                 .await?;
         }
+
+        let _ = rpc_client
+            .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
+                topic: ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(),
+            }))
+            .await?;
+
         let response = rpc_client
             .node_events(Request::new(NodeEventsRequest {}))
             .await?;
@@ -311,6 +322,7 @@ fn spawn_royalties_payment_listener(
                         println!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
+                            println!("Received {count} royalty notifs so far");
                         }
                     }
                     Ok(_) => { /* ignored */ }
@@ -337,7 +349,8 @@ fn spawn_royalties_payment_client_listener(
     let sk = SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)?;
     let mut wallet = LocalWallet::load_from_path(&temp_dir, Some(MainSecretKey::new(sk)))?;
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    client.subscribe_to_topic(TRANSFER_NOTIF_TOPIC.to_string())?;
+    client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())?;
+
     let mut events_receiver = client.events_channel();
 
     let handle = tokio::spawn(async move {

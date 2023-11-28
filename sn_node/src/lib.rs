@@ -56,7 +56,7 @@ mod spends;
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
     log_markers::Marker,
-    node::{NodeBuilder, NodeCmd, TRANSFER_NOTIF_TOPIC},
+    node::{NodeBuilder, NodeCmd, ROYALTY_TRANSFER_NOTIF_TOPIC},
 };
 
 use crate::error::{Error, Result};
