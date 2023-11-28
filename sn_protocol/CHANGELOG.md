@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.31](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.30...sn_protocol-v0.8.31) - 2023-11-28
+
+### Added
+- *(test)* impl more functions for deployer tests
+
+### Other
+- *(test)* impl utils for Droplets/NonDroplets
+
 ## [0.8.30](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.29...sn_protocol-v0.8.30) - 2023-11-27
 
 ### Added
