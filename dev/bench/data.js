@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701188223160,
+  "lastUpdate": 1701188452978,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "a5a728910a9c8acf24922c904a6f9c9e4f5f9916",
-          "message": "feat(testnet): enable the use of `CARGO_TARGET_DIR`",
-          "timestamp": "2023-07-19T17:48:51Z",
-          "tree_id": "85d8c65dc060c56233d7da6d041d90fb744aeb71",
-          "url": "https://github.com/maidsafe/safe_network/commit/a5a728910a9c8acf24922c904a6f9c9e4f5f9916"
-        },
-        "date": 1689793048731,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.95,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 112,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "ff09ba917b11394df2e8da4e454668b0737620e3",
+          "message": "feat(chunks): serialise Chunks with MsgPack instead of bincode",
+          "timestamp": "2023-11-28T15:37:02Z",
+          "tree_id": "7490a3324aea1a052709f586e8bd0be4f99a3c6f",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff09ba917b11394df2e8da4e454668b0737620e3"
+        },
+        "date": 1701188452616,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 113,
             "unit": "MB"
           }
         ]
