@@ -18,11 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
           
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
@@ -393,11 +390,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
      
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
@@ -423,4 +417,3 @@ jobs:
         run: |
           cargo criterion --message-format=json 2>&1 -p sn_transfers | tee -a output.txt
           cat output.txt 
-          

@@ -41,11 +41,7 @@ jobs:
       
 
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       # It's quite slow to install just by building it, but here we need a cross-platform solution.
       - shell: bash
         run: cargo install just
