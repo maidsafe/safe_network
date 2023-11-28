@@ -48,7 +48,7 @@ const CHUNK_SIZE: usize = 1024;
 const VERIFICATION_DELAY: Duration = Duration::from_secs(200);
 
 // Number of times to retry verification if it fails
-const VERIFICATION_ATTEMPTS: usize = 3;
+const VERIFICATION_ATTEMPTS: usize = 5;
 
 // Default number of churns that should be performed. After each churn, we
 // wait for VERIFICATION_DELAY time before verifying the data location.
