@@ -118,9 +118,9 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
             // Returns the address of the last datamap, and all the chunks produced.
             break (name, chunks);
         } else {
-            let size = bincode::serialized_size(&chunk)?;
-            let mut bytes = BytesMut::with_capacity(size as usize).writer();
-            bincode::serialize_into(&mut bytes, &chunk)?;
+            let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE).writer();
+            let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
+            chunk.serialize(&mut serialiser)?;
             let serialized_chunk = bytes.into_inner().freeze();
 
             let (data_map, next_encrypted_chunks) = self_encryption::encrypt(serialized_chunk)?;
@@ -137,9 +137,10 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
 }
 
 fn wrap_data_map(data_map: DataMapLevel) -> Result<Bytes> {
-    let size = bincode::serialized_size(&data_map)?;
-    let mut bytes = BytesMut::with_capacity(size as usize).writer();
-    bincode::serialize_into(&mut bytes, &data_map)?;
+    // we use an initial/starting size of 300 bytes as that's roughly the current size of a DataMapLevel instance.
+    let mut bytes = BytesMut::with_capacity(300).writer();
+    let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
+    data_map.serialize(&mut serialiser)?;
     Ok(bytes.into_inner().freeze())
 }
 
