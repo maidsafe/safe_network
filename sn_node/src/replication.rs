@@ -44,7 +44,8 @@ impl Node {
         // Only grab the closest nodes
         let closest_k_peers = closest_k_peers
             .into_iter()
-            .take(CLOSE_GROUP_SIZE + 2)
+            // add some leeway to allow for divergent knowledge
+            .take(CLOSE_GROUP_SIZE * 2)
             .collect::<Vec<_>>();
 
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
