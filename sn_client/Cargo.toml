@@ -17,7 +17,6 @@ open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 
 [dependencies]
 async-trait = "0.1"
-bincode = "1.3.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 custom_debug = "~0.5.0"
@@ -29,6 +28,7 @@ libp2p = {   version="0.53" ,  features = ["identify"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
+rmp-serde = "1.1.1"
 self_encryption = "~0.28.5"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_networking = { path = "../sn_networking", version = "0.10.22" }
