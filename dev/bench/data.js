@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701257391293,
+  "lastUpdate": 1701257392937,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31460,6 +31460,44 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 10,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "daniel.eades@seebyte.com",
+            "name": "Daniel Eades"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "36976fdf9e8d5f17032583b069175283ce2e73cb",
+          "message": "chore: add dependabot config for maintaining github actions",
+          "timestamp": "2023-11-29T10:19:56Z",
+          "tree_id": "68912461c8d3d8ba98f3d7d6f19ea69bef5b3a02",
+          "url": "https://github.com/maidsafe/safe_network/commit/36976fdf9e8d5f17032583b069175283ce2e73cb"
+        },
+        "date": 1701257392564,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7052,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 62797,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 8,
             "unit": "ms"
           }
         ]
