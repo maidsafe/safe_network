@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701263843918,
+  "lastUpdate": 1701263845982,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31498,6 +31498,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 8,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9cfd5584551fccb0c701ca7cca30bbe752297a8",
+          "message": "chore(node): increase node reward test timeout to match client wait",
+          "timestamp": "2023-11-29T13:58:27+01:00",
+          "tree_id": "f5f52603cc0306347010b05476d5a116515ee995",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9cfd5584551fccb0c701ca7cca30bbe752297a8"
+        },
+        "date": 1701263845371,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6208,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 68907,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 11,
             "unit": "ms"
           }
         ]
