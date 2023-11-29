@@ -153,7 +153,7 @@ impl NonDroplet {
         let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
 
         println!("Verifying the transfer from faucet...");
-        client.verify(&tokens).await?;
+        client.verify_cashnote(&tokens).await?;
         local_wallet.deposit_and_store_to_disk(&vec![tokens])?;
         assert_eq!(local_wallet.balance(), wallet_balance);
         println!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");

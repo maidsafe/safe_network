@@ -145,6 +145,11 @@ impl Transaction {
     /// trustless/verified way. I.e., the caller should not simply obtain a
     /// spend from a single peer, but must get the same spend from all in the close group.
     pub fn verify_against_inputs_spent(&self, signed_spends: &BTreeSet<SignedSpend>) -> Result<()> {
+        // verify that the tx has at least one input
+        if self.inputs.is_empty() {
+            return Err(Error::MissingTxInputs);
+        }
+
         // check if we have spends for all inputs
         if signed_spends.is_empty() {
             return Err(Error::MissingTxInputs)?;
@@ -160,14 +165,19 @@ impl Transaction {
         let output_pks: BTreeSet<UniquePubkey> =
             self.outputs.iter().map(|o| (*o.unique_pubkey())).collect();
         if output_pks.len() != self.outputs.len() {
-            return Err(Error::UniquePubkeyNotUniqueAcrossOutputs);
+            return Err(Error::UniquePubkeyNotUniqueInTx);
         }
 
         // Verify that each input is unique
         let input_pks: BTreeSet<UniquePubkey> =
             self.inputs.iter().map(|i| (i.unique_pubkey())).collect();
         if input_pks.len() != self.inputs.len() {
-            return Err(Error::UniquePubkeyNotUniqueAcrossInputs);
+            return Err(Error::UniquePubkeyNotUniqueInTx);
+        }
+
+        // Verify that inputs are different from outputs
+        if !input_pks.is_disjoint(&output_pks) {
+            return Err(Error::UniquePubkeyNotUniqueInTx);
         }
 
         // Verify that each input has a corresponding signed spend.

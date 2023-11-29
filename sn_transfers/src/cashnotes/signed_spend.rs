@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::{Error, Result, Signature, GENESIS_CASHNOTE};
+use crate::{Error, Result, Signature};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -70,15 +70,10 @@ impl SignedSpend {
     pub fn verify(&self, spent_tx_hash: Hash) -> Result<()> {
         // verify that input spent_tx_hash matches self.spent_tx_hash
         if spent_tx_hash != self.spent_tx_hash() {
-            if self.unique_pubkey() == &GENESIS_CASHNOTE.id {
-                // This is the genesis Spend, we can skip to the next part
-                // and check the signature
-            } else {
-                return Err(Error::TransactionHashMismatch(
-                    spent_tx_hash,
-                    self.spent_tx_hash(),
-                ));
-            }
+            return Err(Error::TransactionHashMismatch(
+                spent_tx_hash,
+                self.spent_tx_hash(),
+            ));
         }
 
         // check signature
