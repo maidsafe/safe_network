@@ -38,8 +38,9 @@ use libp2p::{
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
-        behaviour::toggle::Toggle, dial_opts::DialOpts, DialError, NetworkBehaviour,
-        StreamProtocol, Swarm,
+        behaviour::toggle::Toggle,
+        dial_opts::{DialOpts, PeerCondition},
+        DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
     Multiaddr, PeerId, Transport,
 };
@@ -653,7 +654,10 @@ impl SwarmDriver {
 
         let peer_id = multiaddr_pop_p2p(&mut addr);
         let opts = match peer_id {
-            Some(peer_id) => DialOpts::peer_id(peer_id).addresses(vec![addr]).build(),
+            Some(peer_id) => DialOpts::peer_id(peer_id)
+                .condition(PeerCondition::Always)
+                .addresses(vec![addr])
+                .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
         };
 
