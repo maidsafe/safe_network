@@ -8,7 +8,7 @@
 
 use super::error::{Error, Result};
 
-use crate::MainSecretKey;
+use crate::{MainPubkey, MainSecretKey};
 
 use hex::{decode, encode};
 use std::path::Path;
@@ -39,6 +39,27 @@ pub(super) fn get_main_key(wallet_dir: &Path) -> Result<Option<MainSecretKey>> {
     let secret = bls_secret_from_hex(secret_hex_bytes)?;
 
     Ok(Some(MainSecretKey::new(secret)))
+}
+
+/// Writes the public address (hex-encoded) to disk.
+pub(crate) fn store_new_pubkey(wallet_dir: &Path, main_pubkey: &MainPubkey) -> Result<()> {
+    let public_key_path = wallet_dir.join(MAIN_PUBKEY_FILENAME);
+    std::fs::write(public_key_path, encode(main_pubkey.to_bytes()))
+        .map_err(|e| Error::FailedToHexEncodeKey(e.to_string()))?;
+    Ok(())
+}
+
+/// Returns Some(sn_transfers::MainPubkey) or None if file doesn't exist. It assumes it's hex-encoded.
+pub(super) fn get_main_pubkey(wallet_dir: &Path) -> Result<Option<MainPubkey>> {
+    let path = wallet_dir.join(MAIN_PUBKEY_FILENAME);
+    if !path.is_file() {
+        return Ok(None);
+    }
+
+    let pk_hex_bytes = std::fs::read(&path)?;
+    let main_pk = MainPubkey::from_hex(pk_hex_bytes)?;
+
+    Ok(Some(main_pk))
 }
 
 /// Construct a BLS secret key from a hex-encoded string.

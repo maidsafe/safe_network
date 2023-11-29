@@ -39,6 +39,12 @@ pub enum Error {
     /// Failed to parse bytes into a bls key
     #[error("Unconfirmed transactions still persist even after retries")]
     UnconfirmedTxAfterRetries,
+    /// No main pub key found when loading wallet from path
+    #[error("No main pub key found when loading wallet from path: {0:#?}")]
+    NoPubKeyFound(std::path::PathBuf),
+    /// Main pub key doesn't match the key found when loading wallet from path
+    #[error("Main pub key doesn't match the key found when loading wallet from path: {0:#?}")]
+    PubKeyMismatch(std::path::PathBuf),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,

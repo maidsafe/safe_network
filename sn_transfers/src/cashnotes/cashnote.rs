@@ -94,6 +94,17 @@ impl CashNote {
         Ok(main_key.derive_key(&self.derivation_index()))
     }
 
+    /// Return UniquePubkey using MainPubkey supplied by caller.
+    /// Will return an error if the supplied MainPubkey does not match the
+    /// CashNote MainPubkey.
+    pub fn derived_pubkey(&self, main_pubkey: &MainPubkey) -> Result<UniquePubkey> {
+        if main_pubkey != self.main_pubkey() {
+            // FIXME!!!: specific error type
+            return Err(Error::MainSecretKeyDoesNotMatchMainPubkey);
+        }
+        Ok(main_pubkey.new_unique_pubkey(&self.derivation_index()))
+    }
+
     /// Return the derivation index that was used to derive UniquePubkey and corresponding DerivedSecretKey of a CashNote.
     pub fn derivation_index(&self) -> DerivationIndex {
         self.derivation_index
