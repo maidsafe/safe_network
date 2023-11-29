@@ -51,6 +51,8 @@ pub enum Error {
     UniquePubkeyNotFound,
     #[error("Main key does not match public address.")]
     MainSecretKeyDoesNotMatchMainPubkey,
+    #[error("Main pub key does not match.")]
+    MainPubkeyMismatch,
     #[error("Could not deserialize specified hex string to a CashNote: {0}")]
     HexDeserializationFailed(String),
     #[error("Could not serialize CashNote to hex: {0}")]

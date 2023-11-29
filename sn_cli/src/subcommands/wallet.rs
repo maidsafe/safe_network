@@ -389,15 +389,14 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
 }
 
 async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, pk_hex: String) -> Result<()> {
-    let mut wallet = match PublicKey::from_hex(&pk_hex) {
-        Ok(pk) => {
-            let main_pk = MainPubkey::new(pk);
+    let mut wallet = match MainPubkey::from_hex(&pk_hex) {
+        Ok(main_pk) => {
             let folder_name = format!("pk_{}_{}", &pk_hex[..6], &pk_hex[pk_hex.len() - 6..]);
             let wallet_dir = root_dir.join(folder_name);
             println!("Loading local wallet from: {}", wallet_dir.display());
             WatchOnlyWallet::load_from(&wallet_dir, main_pk)?
         }
-        Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
+        Err(err) => return Err(eyre!("Failed to parse hex-encoded public key: {err:?}")),
     };
 
     let main_pk = wallet.address();

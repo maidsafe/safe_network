@@ -32,11 +32,12 @@ pub struct WatchOnlyWallet {
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: PathBuf,
     /// The wallet containing all data, cash notes & transactions data that gets serialised and stored on disk.
-    pub(super) keyless_wallet: KeyLessWallet,
+    keyless_wallet: KeyLessWallet,
 }
 
 impl WatchOnlyWallet {
-    ///
+    #[cfg(test)]
+    // Creates a new instance (only in memory) with provided info
     pub(super) fn new(
         main_pubkey: MainPubkey,
         wallet_dir: &Path,
@@ -49,7 +50,7 @@ impl WatchOnlyWallet {
         }
     }
 
-    /// Loads a serialized wallet from a path.
+    /// Loads a serialized wallet from a given path and main pub key.
     pub fn load_from(wallet_dir: &Path, main_pubkey: MainPubkey) -> Result<Self> {
         let main_pubkey = match get_main_pubkey(wallet_dir)? {
             Some(pk) if pk != main_pubkey => {
@@ -57,8 +58,9 @@ impl WatchOnlyWallet {
             }
             Some(pk) => pk,
             None => {
-                store_new_pubkey(wallet_dir, &main_pubkey)?;
                 warn!("No main pub key found when loading wallet from path, storing it now: {main_pubkey:?}");
+                std::fs::create_dir_all(wallet_dir)?;
+                store_new_pubkey(wallet_dir, &main_pubkey)?;
                 main_pubkey
             }
         };
@@ -96,7 +98,7 @@ impl WatchOnlyWallet {
         &self.wallet_dir
     }
 
-    /// Deposit the given cash_notes on the wallet (without storing them to disk).
+    /// Deposit the given cash_notes onto the wallet (without storing them to disk).
     pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
         for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
@@ -163,7 +165,7 @@ impl WatchOnlyWallet {
         Ok(())
     }
 
-    ///
+    /// Return UniquePubkeys of cash_notes we own that are not yet spent.
     pub fn available_cash_notes(&self) -> &BTreeMap<UniquePubkey, NanoTokens> {
         &self.keyless_wallet.available_cash_notes
     }
@@ -173,14 +175,19 @@ impl WatchOnlyWallet {
         &mut self.keyless_wallet.available_cash_notes
     }
 
-    ///
+    /// Return the set of UnniquePubjkey's of spent cash notes.
     pub fn spent_cash_notes(&self) -> &BTreeSet<UniquePubkey> {
         &self.keyless_wallet.spent_cash_notes
     }
 
-    ///
-    pub fn spent_cash_notes_mut(&mut self) -> &mut BTreeSet<UniquePubkey> {
-        &mut self.keyless_wallet.spent_cash_notes
+    /// Insert provided UniquePubkey's into the set of spent cash notes.
+    pub fn insert_spent_cash_notes<'a, T>(&mut self, spent_cash_notes: T)
+    where
+        T: IntoIterator<Item = &'a UniquePubkey>,
+    {
+        for pk in spent_cash_notes {
+            let _ = self.keyless_wallet.spent_cash_notes.insert(*pk);
+        }
     }
 
     ///
@@ -216,15 +223,9 @@ impl WatchOnlyWallet {
         Ok(())
     }
 
-    /// reloads the wallet from disk.
-    fn reload(&mut self) -> Result<()> {
-        *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
-        Ok(())
-    }
-
     /// Locks the wallet and returns exclusive access to the wallet
     /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
-    pub fn lock(&self) -> Result<WalletExclusiveAccess> {
+    pub(super) fn lock(&self) -> Result<WalletExclusiveAccess> {
         let lock = wallet_lockfile_name(&self.wallet_dir);
         let file = OpenOptions::new()
             .create(true)
@@ -233,5 +234,11 @@ impl WatchOnlyWallet {
             .open(lock)?;
         file.lock_exclusive()?;
         Ok(file)
+    }
+
+    /// reloads the wallet from disk.
+    fn reload(&mut self) -> Result<()> {
+        *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
+        Ok(())
     }
 }

@@ -90,3 +90,15 @@ pub(super) struct KeyLessWallet {
     /// Cached proofs of storage transactions made to be used for uploading the paid content.
     payment_transactions: ContentPaymentsMap,
 }
+
+impl KeyLessWallet {
+    pub fn balance(&self) -> NanoTokens {
+        // loop through avaiable cash notes and get total token count
+        let mut balance = 0;
+        for (_unique_pubkey, value) in self.available_cash_notes.iter() {
+            balance += value.as_nano();
+        }
+
+        NanoTokens::from(balance)
+    }
+}
