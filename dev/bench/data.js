@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701253629711,
+  "lastUpdate": 1701253865750,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "e3bd53790e20ba312f00458cd3a3cbeb8f7bf724",
-          "message": "ci: fix issues in dbc spend test and memcheck workflow\n\nThe `local-discovery` feature was unintentionally removed from the client and node binaries for the\nDBC spend tests.\n\nFor the memcheck workflow, we had to prevent `SAFE_PEERS` from being reset in the new custom action\nbecause the node that's runner with heaptrack is the only one that stays consistent through the\ntest.",
-          "timestamp": "2023-07-20T18:43:41+01:00",
-          "tree_id": "3bc2fb528f299ed24ac575ee9431cdb51f75abb8",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3bd53790e20ba312f00458cd3a3cbeb8f7bf724"
-        },
-        "date": 1689876482263,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23.15,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 147,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f7188549fe8b1d91d5e5755a553d6224a536f3e0",
+          "message": "feat(networking): more properly handle outgoing errors\n\nDont penalise nodes for lack of local ports eg",
+          "timestamp": "2023-11-29T09:41:08Z",
+          "tree_id": "57b71eefdbb1b35edeba1fe054ba394d3f77d602",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7188549fe8b1d91d5e5755a553d6224a536f3e0"
+        },
+        "date": 1701253864899,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 90,
             "unit": "MB"
           }
         ]
