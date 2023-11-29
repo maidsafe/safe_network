@@ -268,10 +268,10 @@ impl SwarmDriver {
                                     .collect(),
                             };
 
+                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+
                             // Attempt to add the addresses to the routing table.
                             for multiaddr in &addrs {
-                                trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
-
                                 let _routing_update = self
                                     .swarm
                                     .behaviour_mut()
@@ -286,6 +286,7 @@ impl SwarmDriver {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
                                 // It could be that we are on a local network and have AutoNAT disabled.
                                 if let Some(autonat) = a.as_mut() {
+                                    trace!(%peer_id, ?addrs, "identify: attempting to add peer as server");
                                     for multiaddr in addrs {
                                         autonat.add_server(peer_id, Some(multiaddr));
                                     }
