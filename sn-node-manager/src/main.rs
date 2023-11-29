@@ -1,3 +1,11 @@
+// Copyright (C) 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 mod config;
 mod control;
 mod install;
@@ -44,7 +52,7 @@ pub enum SubCmd {
         ///  - macOS: /var/safenode-manager/services
         ///  - Windows: C:\ProgramData\safenode\services
         #[clap(long, verbatim_doc_comment)]
-        node_data_dir_path: Option<PathBuf>,
+        data_dir_path: Option<PathBuf>,
         /// Provide the path for the log directory for the installed node.
         ///
         /// This path is a prefix. Each installed node will have its own directory underneath it.
@@ -107,7 +115,7 @@ async fn main() -> Result<()> {
         SubCmd::Install {
             count,
             log_dir_path,
-            node_data_dir_path,
+            data_dir_path,
             user,
             version,
         } => {
@@ -124,8 +132,7 @@ async fn main() -> Result<()> {
             let service_manager = NodeServiceManager {};
             service_manager.create_service_user(&service_user)?;
 
-            let service_data_dir_path =
-                get_service_data_dir_path(node_data_dir_path, &service_user)?;
+            let service_data_dir_path = get_service_data_dir_path(data_dir_path, &service_user)?;
             let service_log_dir_path = get_service_log_dir_path(log_dir_path, &service_user)?;
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
