@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701274453389,
+  "lastUpdate": 1701278164549,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "6977ed35f66d4cfde79e5f1204aadb94be0176e5",
-          "message": "chore: reduce the wait after create faucet server\n\nThis is to confirm the delayed event handling is resolved.\nThe creation of faucet and balance update shall be completed\nquickly with the delaying resolved.",
-          "timestamp": "2023-08-03T15:29:30Z",
-          "tree_id": "7d2df7f5daad45f15397190739c24ff9948e67ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/6977ed35f66d4cfde79e5f1204aadb94be0176e5"
-        },
-        "date": 1691099110873,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06142402359653366,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03210792246246715,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6264239776918963,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.90666720027712,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "00601bce285b6af233e067b62fa1f670022a4465",
+          "message": "feat: most of nodes not subscribe to royalty_transfer topic",
+          "timestamp": "2023-11-29T16:28:40Z",
+          "tree_id": "fbdd5cf3f6010e8267ae90feff0d5bf04106738d",
+          "url": "https://github.com/maidsafe/safe_network/commit/00601bce285b6af233e067b62fa1f670022a4465"
+        },
+        "date": 1701278162754,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.020257256371019,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.074783686811923,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.94477861992865,
             "unit": "MiB/s"
           }
         ]
