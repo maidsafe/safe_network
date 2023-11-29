@@ -2352,6 +2352,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - most of nodes not subscribe to royalty_transfer topic
 
+## [0.98.44](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.43...sn_node-v0.98.44) - 2023-11-29
+
+### Added
+- *(node)* only parse replication list from close peers.
+
+### Other
+- *(node)* increase reverification delay
+- *(networking)* increase margin of acceptable replicaiton to precurse churn
+- *(networking)* add more leeway in replication candidate choices.
+- increase verification delay
+- *(node)* increase interval for interval_replication
+- *(networking)* reduce nodes receiving replication updates.
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
