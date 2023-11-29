@@ -77,6 +77,8 @@ pub enum SubCmd {
     /// Start an installed safenode service.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all installed services will be started.
+    ///
+    /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {
         /// The peer ID of the service to start.
@@ -96,6 +98,8 @@ pub enum SubCmd {
     /// Stop an installed safenode service.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all installed services will be stopped.
+    ///
+    /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
     Stop {
         /// The peer ID of the service to stop.
