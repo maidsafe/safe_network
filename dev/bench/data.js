@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701252072314,
+  "lastUpdate": 1701253629711,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5a0ebca184811bba8266334c403538a429705604",
-          "message": "fix: waiting to allow faucet server to be settled",
-          "timestamp": "2023-08-02T11:27:09Z",
-          "tree_id": "bfb0bc63f15c78ba69508566db78544953035abf",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a0ebca184811bba8266334c403538a429705604"
-        },
-        "date": 1690999144261,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.061600030879864855,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03213645868120236,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6309375985199077,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.9453784432419,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f7188549fe8b1d91d5e5755a553d6224a536f3e0",
+          "message": "feat(networking): more properly handle outgoing errors\n\nDont penalise nodes for lack of local ports eg",
+          "timestamp": "2023-11-29T09:41:08Z",
+          "tree_id": "57b71eefdbb1b35edeba1fe054ba394d3f77d602",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7188549fe8b1d91d5e5755a553d6224a536f3e0"
+        },
+        "date": 1701253627318,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.054292851161667,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 24.9756049935299,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.876972543726644,
             "unit": "MiB/s"
           }
         ]
