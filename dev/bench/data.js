@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701252066248,
+  "lastUpdate": 1701252069291,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "08fc3aecac15c0dbeea74199f8e47b955aa9e1bc",
-          "message": "feat: using kad::record for dbc spend ops",
-          "timestamp": "2023-07-19T12:18:26Z",
-          "tree_id": "0157417ad05d1207717187869790cbd536717784",
-          "url": "https://github.com/maidsafe/safe_network/commit/08fc3aecac15c0dbeea74199f8e47b955aa9e1bc"
-        },
-        "date": 1689773218453,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 243.11,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 193,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 240,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2",
+          "message": "fix: genesis check security flaw",
+          "timestamp": "2023-11-29T09:14:47Z",
+          "tree_id": "d37b84d9f74129c69d6ee6aeb7f6b6a626822ec2",
+          "url": "https://github.com/maidsafe/safe_network/commit/56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2"
+        },
+        "date": 1701252068077,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 694,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 236,
             "unit": "MB"
           }
         ]
