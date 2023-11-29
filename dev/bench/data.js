@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701253865750,
+  "lastUpdate": 1701253868363,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "a5a728910a9c8acf24922c904a6f9c9e4f5f9916",
-          "message": "feat(testnet): enable the use of `CARGO_TARGET_DIR`",
-          "timestamp": "2023-07-19T17:48:51Z",
-          "tree_id": "85d8c65dc060c56233d7da6d041d90fb744aeb71",
-          "url": "https://github.com/maidsafe/safe_network/commit/a5a728910a9c8acf24922c904a6f9c9e4f5f9916"
-        },
-        "date": 1689793052829,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 230.6,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 236,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f7188549fe8b1d91d5e5755a553d6224a536f3e0",
+          "message": "feat(networking): more properly handle outgoing errors\n\nDont penalise nodes for lack of local ports eg",
+          "timestamp": "2023-11-29T09:41:08Z",
+          "tree_id": "57b71eefdbb1b35edeba1fe054ba394d3f77d602",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7188549fe8b1d91d5e5755a553d6224a536f3e0"
+        },
+        "date": 1701253867162,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 641,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 246,
             "unit": "MB"
           }
         ]
