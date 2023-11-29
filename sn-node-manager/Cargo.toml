@@ -1,7 +1,11 @@
 [package]
 name = "sn-node-manager"
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 version = "0.1.0"
 edition = "2021"
+description = "A command-line application for installing, managing and operating `safenode` as a service."
+license = "GPL-3.0"
+repository = "https://github.com/maidsafe/safe_network"
 
 [[bin]]
 path="src/main.rs"
