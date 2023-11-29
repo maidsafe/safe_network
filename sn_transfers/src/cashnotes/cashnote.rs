@@ -99,8 +99,7 @@ impl CashNote {
     /// CashNote MainPubkey.
     pub fn derived_pubkey(&self, main_pubkey: &MainPubkey) -> Result<UniquePubkey> {
         if main_pubkey != self.main_pubkey() {
-            // FIXME!!!: specific error type
-            return Err(Error::MainSecretKeyDoesNotMatchMainPubkey);
+            return Err(Error::MainPubkeyMismatch);
         }
         Ok(main_pubkey.new_unique_pubkey(&self.derivation_index()))
     }
