@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701278380842,
+  "lastUpdate": 1701278382725,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "beb15f9ba34f85e93d97815a52d9be110bf43113",
-          "message": "fix(testnet): clean the whole safe dir\n\nAlso more test wallet creation in to that same safedir",
-          "timestamp": "2023-07-22T05:53:06Z",
-          "tree_id": "5feac39ecfce972533099201d761b380e7bf44c6",
-          "url": "https://github.com/maidsafe/safe_network/commit/beb15f9ba34f85e93d97815a52d9be110bf43113"
-        },
-        "date": 1690008758640,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 225.55,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 224,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 248,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "00601bce285b6af233e067b62fa1f670022a4465",
+          "message": "feat: most of nodes not subscribe to royalty_transfer topic",
+          "timestamp": "2023-11-29T16:28:40Z",
+          "tree_id": "fbdd5cf3f6010e8267ae90feff0d5bf04106738d",
+          "url": "https://github.com/maidsafe/safe_network/commit/00601bce285b6af233e067b62fa1f670022a4465"
+        },
+        "date": 1701278382363,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 648,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 240,
             "unit": "MB"
           }
         ]
