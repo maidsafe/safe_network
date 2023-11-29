@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701281755629,
+  "lastUpdate": 1701281758509,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4adf3051bc350fd93f00849fa59c0a1748ee358f",
-          "message": "feat(rpc): get addresses of the locally stored Records",
-          "timestamp": "2023-07-24T09:40:30Z",
-          "tree_id": "58d94fb1147f3620a5855b7fff02e4406caee6fd",
-          "url": "https://github.com/maidsafe/safe_network/commit/4adf3051bc350fd93f00849fa59c0a1748ee358f"
-        },
-        "date": 1690196326368,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 242.87,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 228,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 240,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "90893247327a40128b521d2bfc6edfee227ed526",
+          "message": "test(node): increase reverification delay",
+          "timestamp": "2023-11-29T17:16:46Z",
+          "tree_id": "a114b0b3478becff5babdafac55af31e2ec90cc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/90893247327a40128b521d2bfc6edfee227ed526"
+        },
+        "date": 1701281757475,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 732,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 330,
             "unit": "MB"
           }
         ]
