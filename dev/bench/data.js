@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701278164549,
+  "lastUpdate": 1701278380842,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "3fb62504886c8fd6282bc07b31f41ae3007cf405",
-          "message": "chore: improve logging, add address method to ClientRegister",
-          "timestamp": "2023-07-24T10:09:30Z",
-          "tree_id": "fb69ab11b51286767db39cdddd13d8bbf1407971",
-          "url": "https://github.com/maidsafe/safe_network/commit/3fb62504886c8fd6282bc07b31f41ae3007cf405"
-        },
-        "date": 1690197970997,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.15,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53",
           "message": "fix: default to http for url without schemes",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 89,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "00601bce285b6af233e067b62fa1f670022a4465",
+          "message": "feat: most of nodes not subscribe to royalty_transfer topic",
+          "timestamp": "2023-11-29T16:28:40Z",
+          "tree_id": "fbdd5cf3f6010e8267ae90feff0d5bf04106738d",
+          "url": "https://github.com/maidsafe/safe_network/commit/00601bce285b6af233e067b62fa1f670022a4465"
+        },
+        "date": 1701278380453,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 92,
             "unit": "MB"
           }
         ]
