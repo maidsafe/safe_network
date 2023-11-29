@@ -9,11 +9,11 @@ use super::{
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
-        get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
-        load_created_cash_note, store_created_cash_notes, store_unconfirmed_spend_requests,
-        store_wallet, wallet_lockfile_name,
+        get_unconfirmed_spend_requests, load_cash_notes_from_disk, load_created_cash_note,
+        store_created_cash_notes, store_unconfirmed_spend_requests,
     },
-    Error, KeyLessWallet, Result,
+    watch_only::WatchOnlyWallet,
+    Error, Result,
 };
 
 use crate::{
@@ -25,11 +25,10 @@ use crate::{
 };
 use xor_name::XorName;
 
-use fs2::FileExt;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
-    fs::{File, OpenOptions},
-    path::{Path, PathBuf},
+    fs::File,
+    path::Path,
 };
 
 const WALLET_DIR_NAME: &str = "wallet";
@@ -43,9 +42,7 @@ pub struct LocalWallet {
     /// all the tokens in the available_cash_notes.
     key: MainSecretKey,
     /// The wallet containing all data.
-    wallet: KeyLessWallet,
-    /// The dir of the wallet file, main key, public address, and new cash_notes.
-    wallet_dir: PathBuf,
+    watchonly_wallet: WatchOnlyWallet,
     /// These have not yet been successfully sent to the network
     /// and need to be, to reach network validity.
     unconfirmed_spend_requests: BTreeSet<SignedSpend>,
@@ -55,67 +52,48 @@ impl LocalWallet {
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
-        store_wallet(&self.wallet_dir, &self.wallet)?;
-        trace!("Releasing wallet lock");
-        std::mem::drop(exclusive_access);
-        Ok(())
+        self.watchonly_wallet.store(exclusive_access)
     }
 
     /// reloads the wallet from disk.
     fn reload(&mut self) -> Result<()> {
         // placeholder random MainSecretKey to take it out
         let current_key = std::mem::replace(&mut self.key, MainSecretKey::random());
-        let (key, wallet, unconfirmed_spend_requests) =
-            load_from_path(&self.wallet_dir, Some(current_key))?;
+        let wallet =
+            Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), Some(current_key))?;
 
         // and move the original back in
-        *self = Self {
-            key,
-            wallet,
-            wallet_dir: self.wallet_dir.to_path_buf(),
-            unconfirmed_spend_requests,
-        };
-        Ok(())
-    }
-
-    /// Attempts to reload the wallet from disk.
-    pub fn reload_from_disk_or_recreate(&mut self) -> Result<()> {
-        std::fs::create_dir_all(&self.wallet_dir)?;
-        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
-        trace!("Trying to lock wallet to get available cash_notes...");
-        let _exclusive_access = self.lock()?;
-        self.reload()?;
+        *self = wallet;
         Ok(())
     }
 
     /// Locks the wallet and returns exclusive access to the wallet
     /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
     pub fn lock(&self) -> Result<WalletExclusiveAccess> {
-        let lock = wallet_lockfile_name(&self.wallet_dir);
-        let file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(lock)?;
-        file.lock_exclusive()?;
-        Ok(file)
+        self.watchonly_wallet.lock()
     }
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_notes_to_disk(&self, cash_note: &[&CashNote]) -> Result<()> {
-        store_created_cash_notes(cash_note, &self.wallet_dir)
+    pub fn store_cash_notes_to_disk(&self, cash_notes: &[&CashNote]) -> Result<()> {
+        store_created_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
     }
 
     /// Store unconfirmed_spend_requests to disk.
     pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
-        store_unconfirmed_spend_requests(&self.wallet_dir, self.unconfirmed_spend_requests())
+        store_unconfirmed_spend_requests(
+            self.watchonly_wallet.wallet_dir(),
+            self.unconfirmed_spend_requests(),
+        )
     }
 
     /// Remove CashNote from available_cash_notes and add it to spent_cash_notes.
     pub fn mark_note_as_spent(&mut self, cash_note_id: UniquePubkey) {
-        self.wallet.available_cash_notes.remove(&cash_note_id);
-        self.wallet.spent_cash_notes.insert(cash_note_id);
+        self.watchonly_wallet
+            .available_cash_notes_mut()
+            .remove(&cash_note_id);
+        self.watchonly_wallet
+            .insert_spent_cash_notes(&[cash_note_id]);
     }
 
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
@@ -124,7 +102,7 @@ impl LocalWallet {
 
     /// Try to load any new cash_notes from the `cash_notes dir` in the wallet dir.
     pub fn try_load_cash_notes(&mut self) -> Result<()> {
-        let deposited = load_cash_notes_from_disk(&self.wallet_dir)?;
+        let deposited = load_cash_notes_from_disk(self.watchonly_wallet.wallet_dir())?;
         self.deposit_and_store_to_disk(&deposited)?;
         Ok(())
     }
@@ -135,14 +113,7 @@ impl LocalWallet {
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // This creates the main_key file if it doesn't exist.
-        let (key, wallet, unconfirmed_spend_requests) =
-            load_from_path(&wallet_dir, Some(main_key))?;
-        Ok(Self {
-            key,
-            wallet,
-            wallet_dir,
-            unconfirmed_spend_requests,
-        })
+        Self::load_from_path_and_key(&wallet_dir, Some(main_key))
     }
 
     /// Loads a serialized wallet from a path.
@@ -154,26 +125,14 @@ impl LocalWallet {
     /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
     pub fn try_load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let (key, wallet, unconfirmed_spend_requests) = load_from_path(&wallet_dir, None)?;
-        Ok(Self {
-            key,
-            wallet,
-            wallet_dir,
-            unconfirmed_spend_requests,
-        })
+        Self::load_from_path_and_key(&wallet_dir, None)
     }
 
     /// Loads a serialized wallet from a given path, no additional element will
     /// be added to the provided path and strictly taken as the wallet files location.
     pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
         std::fs::create_dir_all(wallet_dir)?;
-        let (key, wallet, unconfirmed_spend_requests) = load_from_path(wallet_dir, main_key)?;
-        Ok(Self {
-            key,
-            wallet,
-            wallet_dir: wallet_dir.to_path_buf(),
-            unconfirmed_spend_requests,
-        })
+        Self::load_from_path_and_key(wallet_dir, main_key)
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -195,7 +154,7 @@ impl LocalWallet {
     }
 
     pub fn balance(&self) -> NanoTokens {
-        self.wallet.balance()
+        self.watchonly_wallet.balance()
     }
 
     pub fn sign(&self, msg: &[u8]) -> bls::Signature {
@@ -216,8 +175,9 @@ impl LocalWallet {
 
         // get the available cash_notes
         let mut available_cash_notes = vec![];
-        for (id, _token) in self.wallet.available_cash_notes.iter() {
-            let held_cash_note = load_created_cash_note(id, &self.wallet_dir);
+        let wallet_dir = self.watchonly_wallet.wallet_dir().to_path_buf();
+        for (id, _token) in self.watchonly_wallet.available_cash_notes().iter() {
+            let held_cash_note = load_created_cash_note(id, &wallet_dir);
             if let Some(cash_note) = held_cash_note {
                 if let Ok(derived_key) = cash_note.derived_key(&self.key) {
                     available_cash_notes.push((cash_note.clone(), derived_key));
@@ -237,7 +197,7 @@ impl LocalWallet {
 
     /// Return the payment cash_note ids for the given content address name if cached.
     pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<&PaymentDetails> {
-        self.wallet.payment_transactions.get(name)
+        self.watchonly_wallet.get_payment_transaction(name)
     }
 
     /// Make a transfer and return all created cash_notes
@@ -379,7 +339,8 @@ impl LocalWallet {
                 quote,
             };
 
-            self.wallet.payment_transactions.insert(*xorname, payment);
+            self.watchonly_wallet
+                .insert_payment_transaction(*xorname, payment);
         }
 
         // write all changes to local wallet
@@ -401,23 +362,24 @@ impl LocalWallet {
             .collect();
 
         // Use retain to remove spent CashNotes in one pass, improving performance
-        self.wallet
-            .available_cash_notes
+        self.watchonly_wallet
+            .available_cash_notes_mut()
             .retain(|k, _| !spent_unique_pubkeys.contains(k));
-        for spent in spent_unique_pubkeys {
-            self.wallet.spent_cash_notes.insert(*spent);
-        }
+        self.watchonly_wallet
+            .insert_spent_cash_notes(spent_unique_pubkeys);
 
         if let Some(cash_note) = transfer.change_cash_note {
             let id = cash_note.unique_pubkey();
             let value = cash_note.value()?;
-            self.wallet.available_cash_notes.insert(id, value);
+            self.watchonly_wallet
+                .available_cash_notes_mut()
+                .insert(id, value);
             self.store_cash_notes_to_disk(&[&cash_note])?;
         }
 
         for cash_note in &transfer.created_cash_notes {
-            self.wallet
-                .cash_notes_created_for_others
+            self.watchonly_wallet
+                .cash_notes_created_for_others_mut()
                 .insert(cash_note.unique_pubkey());
         }
         // Store created CashNotes in a batch, improving IO performance
@@ -432,63 +394,17 @@ impl LocalWallet {
         Ok(())
     }
 
-    /// Store the given cash_notes on the wallet (without storing them to disk).
+    /// Deposit the given cash_notes on the wallet (without storing them to disk).
     pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
-        for cash_note in received_cash_notes {
-            let id = cash_note.unique_pubkey();
-
-            if self.wallet.spent_cash_notes.contains(&id) {
-                debug!("skipping: cash_note is spent");
-                continue;
-            }
-
-            if cash_note.derived_key(&self.key).is_err() {
-                debug!("skipping: cash_note is not our key");
-                continue;
-            }
-
-            let value = cash_note.value()?;
-            self.wallet.available_cash_notes.insert(id, value);
-        }
-
-        Ok(())
+        self.watchonly_wallet.deposit(received_cash_notes)
     }
 
     /// Store the given cash_notes to the `cash_notes` dir in the wallet dir.
     /// Update and store the updated wallet to disk
     /// This function locks the wallet to prevent concurrent processes from writing to it
     pub fn deposit_and_store_to_disk(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
-        if received_cash_notes.is_empty() {
-            return Ok(());
-        }
-
-        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
-        let exclusive_access = self.lock()?;
-        self.reload()?;
-        trace!("Wallet locked and loaded!");
-
-        for cash_note in received_cash_notes {
-            let id = cash_note.unique_pubkey();
-
-            if self.wallet.spent_cash_notes.contains(&id) {
-                debug!("skipping: cash_note is spent");
-                continue;
-            }
-
-            if cash_note.derived_key(&self.key).is_err() {
-                debug!("skipping: cash_note is not our key");
-                continue;
-            }
-
-            let value = cash_note.value()?;
-            self.wallet.available_cash_notes.insert(id, value);
-
-            self.store_cash_notes_to_disk(&[cash_note])?;
-        }
-
-        self.store(exclusive_access)?;
-
-        Ok(())
+        self.watchonly_wallet
+            .deposit_and_store_to_disk(received_cash_notes)
     }
 
     pub fn unwrap_transfer(&self, transfer: &Transfer) -> Result<Vec<CashNoteRedemption>> {
@@ -500,54 +416,29 @@ impl LocalWallet {
     pub fn derive_key(&self, derivation_index: &DerivationIndex) -> DerivedSecretKey {
         self.key.derive_key(derivation_index)
     }
-}
 
-/// Loads a serialized wallet from a path.
-fn load_from_path(
-    wallet_dir: &Path,
-    main_key: Option<MainSecretKey>,
-) -> Result<(MainSecretKey, KeyLessWallet, BTreeSet<SignedSpend>)> {
-    let key = match get_main_key(wallet_dir)? {
-        Some(key) => key,
-        None => {
-            let key = main_key.unwrap_or(MainSecretKey::random());
-            store_new_keypair(wallet_dir, &key)?;
-            warn!("No main key found when loading wallet from path, generating a new one with pubkey: {:?}", key.main_pubkey());
-            key
-        }
-    };
-    let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
-        Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
-        None => Default::default(),
-    };
-    let wallet = match get_wallet(wallet_dir)? {
-        Some(wallet) => {
-            debug!(
-                "Loaded wallet from {:#?} with balance {:?}",
-                wallet_dir,
-                wallet.balance()
-            );
-            wallet
-        }
-        None => {
-            let wallet = KeyLessWallet::default();
-            store_wallet(wallet_dir, &wallet)?;
-            wallet
-        }
-    };
+    /// Loads a serialized wallet from a path.
+    fn load_from_path_and_key(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
+        let key = match get_main_key(wallet_dir)? {
+            Some(key) => key,
+            None => {
+                let key = main_key.unwrap_or(MainSecretKey::random());
+                store_new_keypair(wallet_dir, &key)?;
+                warn!("No main key found when loading wallet from path, generating a new one with pubkey: {:?}", key.main_pubkey());
+                key
+            }
+        };
+        let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
+            Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
+            None => Default::default(),
+        };
+        let watchonly_wallet = WatchOnlyWallet::load_from(wallet_dir, key.main_pubkey())?;
 
-    Ok((key, wallet, unconfirmed_spend_requests))
-}
-
-impl KeyLessWallet {
-    pub fn balance(&self) -> NanoTokens {
-        // loop through avaiable cash notes and get total token count
-        let mut balance = 0;
-        for (_unique_pubkey, value) in self.available_cash_notes.iter() {
-            balance += value.as_nano();
-        }
-
-        NanoTokens::from(balance)
+        Ok(Self {
+            key,
+            watchonly_wallet,
+            unconfirmed_spend_requests,
+        })
     }
 }
 
@@ -555,10 +446,16 @@ impl KeyLessWallet {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{get_wallet, store_wallet, LocalWallet};
+    use super::LocalWallet;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
-        wallet::{data_payments::PaymentQuote, local_store::WALLET_DIR_NAME, KeyLessWallet},
+        wallet::{
+            data_payments::PaymentQuote,
+            local_store::WALLET_DIR_NAME,
+            wallet_file::{get_wallet, store_wallet},
+            watch_only::WatchOnlyWallet,
+            KeyLessWallet,
+        },
         MainSecretKey, NanoTokens, SpendAddress,
     };
     use assert_fs::TempDir;
@@ -596,18 +493,22 @@ mod tests {
 
         let deposit_only = LocalWallet {
             key,
+            watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-
-            wallet: KeyLessWallet::default(),
-            wallet_dir: dir.path().to_path_buf(),
         };
 
         assert_eq!(main_pubkey, deposit_only.address());
         assert_eq!(NanoTokens::zero(), deposit_only.balance());
 
-        assert!(deposit_only.wallet.available_cash_notes.is_empty());
-        assert!(deposit_only.wallet.cash_notes_created_for_others.is_empty());
-        assert!(deposit_only.wallet.spent_cash_notes.is_empty());
+        assert!(deposit_only
+            .watchonly_wallet
+            .available_cash_notes()
+            .is_empty());
+        assert!(deposit_only
+            .watchonly_wallet
+            .cash_notes_created_for_others()
+            .is_empty());
+        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -618,23 +519,29 @@ mod tests {
 
     #[tokio::test]
     async fn deposit_empty_list_does_nothing() -> Result<()> {
+        let key = MainSecretKey::random();
+        let main_pubkey = key.main_pubkey();
         let dir = create_temp_dir();
 
         let mut deposit_only = LocalWallet {
-            key: MainSecretKey::random(),
+            key,
+            watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-
-            wallet: KeyLessWallet::default(),
-            wallet_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![])?;
 
         assert_eq!(NanoTokens::zero(), deposit_only.balance());
 
-        assert!(deposit_only.wallet.available_cash_notes.is_empty());
-        assert!(deposit_only.wallet.cash_notes_created_for_others.is_empty());
-        assert!(deposit_only.wallet.spent_cash_notes.is_empty());
+        assert!(deposit_only
+            .watchonly_wallet
+            .available_cash_notes()
+            .is_empty());
+        assert!(deposit_only
+            .watchonly_wallet
+            .cash_notes_created_for_others()
+            .is_empty());
+        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -642,15 +549,14 @@ mod tests {
     #[tokio::test]
     async fn deposit_adds_cash_notes_that_belongs_to_the_wallet() -> Result<()> {
         let key = MainSecretKey::random();
+        let main_pubkey = key.main_pubkey();
         let genesis = create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
         let mut deposit_only = LocalWallet {
             key,
+            watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-
-            wallet: KeyLessWallet::default(),
-            wallet_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
@@ -662,16 +568,16 @@ mod tests {
 
     #[tokio::test]
     async fn deposit_does_not_add_cash_notes_not_belonging_to_the_wallet() -> Result<()> {
+        let key = MainSecretKey::random();
+        let main_pubkey = key.main_pubkey();
         let genesis = create_first_cash_note_from_key(&MainSecretKey::random())
             .expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
         let mut local_wallet = LocalWallet {
-            key: MainSecretKey::random(),
+            key,
+            watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-
-            wallet: KeyLessWallet::default(),
-            wallet_dir: dir.path().to_path_buf(),
         };
 
         local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
@@ -684,6 +590,7 @@ mod tests {
     #[tokio::test]
     async fn deposit_is_idempotent() -> Result<()> {
         let key = MainSecretKey::random();
+        let main_pubkey = key.main_pubkey();
         let genesis_0 =
             create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
         let genesis_1 =
@@ -692,9 +599,8 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key,
-            wallet: KeyLessWallet::default(),
+            watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            wallet_dir: dir.path().to_path_buf(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;
@@ -725,23 +631,38 @@ mod tests {
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, depositor.balance().as_nano());
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());
 
-        assert_eq!(1, depositor.wallet.available_cash_notes.len());
-        assert_eq!(0, depositor.wallet.cash_notes_created_for_others.len());
-        assert_eq!(0, depositor.wallet.spent_cash_notes.len());
+        assert_eq!(1, depositor.watchonly_wallet.available_cash_notes().len());
+        assert_eq!(
+            0,
+            depositor
+                .watchonly_wallet
+                .cash_notes_created_for_others()
+                .len()
+        );
+        assert_eq!(0, depositor.watchonly_wallet.spent_cash_notes().len());
 
-        assert_eq!(1, deserialized.wallet.available_cash_notes.len());
-        assert_eq!(0, deserialized.wallet.cash_notes_created_for_others.len());
-        assert_eq!(0, deserialized.wallet.spent_cash_notes.len());
+        assert_eq!(
+            1,
+            deserialized.watchonly_wallet.available_cash_notes().len()
+        );
+        assert_eq!(
+            0,
+            deserialized
+                .watchonly_wallet
+                .cash_notes_created_for_others()
+                .len()
+        );
+        assert_eq!(0, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = depositor
-            .wallet
-            .available_cash_notes
+            .watchonly_wallet
+            .available_cash_notes()
             .values()
             .last()
             .expect("There to be an available CashNote.");
         let b_available = deserialized
-            .wallet
-            .available_cash_notes
+            .watchonly_wallet
+            .available_cash_notes()
             .values()
             .last()
             .expect("There to be an available CashNote.");
@@ -815,41 +736,58 @@ mod tests {
             deserialized.balance().as_nano()
         );
 
-        assert_eq!(1, sender.wallet.available_cash_notes.len());
-        assert_eq!(1, sender.wallet.cash_notes_created_for_others.len());
-        assert_eq!(1, sender.wallet.spent_cash_notes.len());
+        assert_eq!(1, sender.watchonly_wallet.available_cash_notes().len());
+        assert_eq!(
+            1,
+            sender
+                .watchonly_wallet
+                .cash_notes_created_for_others()
+                .len()
+        );
+        assert_eq!(1, sender.watchonly_wallet.spent_cash_notes().len());
 
-        assert_eq!(1, deserialized.wallet.available_cash_notes.len());
-        assert_eq!(1, deserialized.wallet.cash_notes_created_for_others.len());
-        assert_eq!(1, deserialized.wallet.spent_cash_notes.len());
+        assert_eq!(
+            1,
+            deserialized.watchonly_wallet.available_cash_notes().len()
+        );
+        assert_eq!(
+            1,
+            deserialized
+                .watchonly_wallet
+                .cash_notes_created_for_others()
+                .len()
+        );
+        assert_eq!(1, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = sender
-            .wallet
-            .available_cash_notes
+            .watchonly_wallet
+            .available_cash_notes()
             .values()
             .last()
             .expect("There to be an available CashNote.");
         let b_available = deserialized
-            .wallet
-            .available_cash_notes
+            .watchonly_wallet
+            .available_cash_notes()
             .values()
             .last()
             .expect("There to be an available CashNote.");
         assert_eq!(a_available, b_available);
 
-        let a_created_for_others = &sender.wallet.cash_notes_created_for_others;
-        let b_created_for_others = &deserialized.wallet.cash_notes_created_for_others;
+        let a_created_for_others = sender.watchonly_wallet.cash_notes_created_for_others();
+        let b_created_for_others = deserialized
+            .watchonly_wallet
+            .cash_notes_created_for_others();
         assert_eq!(a_created_for_others, b_created_for_others);
 
         let a_spent = sender
-            .wallet
-            .spent_cash_notes
+            .watchonly_wallet
+            .spent_cash_notes()
             .iter()
             .last()
             .expect("There to be a spent CashNote.");
         let b_spent = deserialized
-            .wallet
-            .spent_cash_notes
+            .watchonly_wallet
+            .spent_cash_notes()
             .iter()
             .last()
             .expect("There to be a spent CashNote.");
@@ -896,21 +834,21 @@ mod tests {
         // Move the created cash_note to the recipient's received_cash_notes dir.
         std::fs::rename(created_cash_note_file, received_cash_note_file)?;
 
-        assert_eq!(0, recipient.wallet.balance().as_nano());
+        assert_eq!(0, recipient.balance().as_nano());
 
         recipient.try_load_cash_notes()?;
 
-        assert_eq!(1, recipient.wallet.available_cash_notes.len());
+        assert_eq!(1, recipient.watchonly_wallet.available_cash_notes().len());
 
         let available = recipient
-            .wallet
-            .available_cash_notes
+            .watchonly_wallet
+            .available_cash_notes()
             .keys()
             .last()
             .expect("There to be an available CashNote.");
 
         assert_eq!(available, &unique_pubkey);
-        assert_eq!(send_amount, recipient.wallet.balance().as_nano());
+        assert_eq!(send_amount, recipient.balance().as_nano());
 
         Ok(())
     }
