@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701257172770,
+  "lastUpdate": 1701257389733,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "21afa206e44718d1f77e0daf6d314a5b9ae724ba",
-          "message": "ci: update benchmark generation for faucet startup",
-          "timestamp": "2023-07-21T12:32:17+02:00",
-          "tree_id": "c37a28239fc7ac68251419aa65d731fe688d0182",
-          "url": "https://github.com/maidsafe/safe_network/commit/21afa206e44718d1f77e0daf6d314a5b9ae724ba"
-        },
-        "date": 1689937104471,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 35.94,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20400,6 +20371,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 90,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "daniel.eades@seebyte.com",
+            "name": "Daniel Eades"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "36976fdf9e8d5f17032583b069175283ce2e73cb",
+          "message": "chore: add dependabot config for maintaining github actions",
+          "timestamp": "2023-11-29T10:19:56Z",
+          "tree_id": "68912461c8d3d8ba98f3d7d6f19ea69bef5b3a02",
+          "url": "https://github.com/maidsafe/safe_network/commit/36976fdf9e8d5f17032583b069175283ce2e73cb"
+        },
+        "date": 1701257389333,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 106,
             "unit": "MB"
           }
         ]
