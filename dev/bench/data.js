@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701263619339,
+  "lastUpdate": 1701263841783,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "beb15f9ba34f85e93d97815a52d9be110bf43113",
-          "message": "fix(testnet): clean the whole safe dir\n\nAlso more test wallet creation in to that same safedir",
-          "timestamp": "2023-07-22T05:53:06Z",
-          "tree_id": "5feac39ecfce972533099201d761b380e7bf44c6",
-          "url": "https://github.com/maidsafe/safe_network/commit/beb15f9ba34f85e93d97815a52d9be110bf43113"
-        },
-        "date": 1690008756062,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.11,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 106,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9cfd5584551fccb0c701ca7cca30bbe752297a8",
+          "message": "chore(node): increase node reward test timeout to match client wait",
+          "timestamp": "2023-11-29T13:58:27+01:00",
+          "tree_id": "f5f52603cc0306347010b05476d5a116515ee995",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9cfd5584551fccb0c701ca7cca30bbe752297a8"
+        },
+        "date": 1701263841205,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 116,
             "unit": "MB"
           }
         ]
