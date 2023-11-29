@@ -52,7 +52,7 @@ const FORWARDER_CHOOSING_FACTOR: usize = 50;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
-const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 60;
+const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -531,18 +531,16 @@ impl Node {
                     );
 
                     if let Some(peer_id) = holder.as_peer_id() {
-                        let local_peers = match network
-                            .get_close_group_local_peers(&NetworkAddress::from_peer(
-                                network.peer_id,
-                            ))
-                            .await
-                        {
-                            Ok(peers) => peers,
-                            Err(err) => {
-                                error!("Failed to get close group local peers: {err:?}");
-                                return;
-                            }
-                        };
+                        let local_peers: Vec<_> =
+                            match network.get_closest_k_value_local_peers().await {
+                                // accept replication requests from the close_group * 2 peers away, giving us some margin
+                                // for replication on churn
+                                Ok(peers) => peers.into_iter().take(CLOSE_GROUP_SIZE * 2).collect(),
+                                Err(err) => {
+                                    error!("Failed to get close group local peers: {err:?}");
+                                    return;
+                                }
+                            };
 
                         // lets be sure we should handle this message
                         if local_peers.contains(&peer_id) {
