@@ -7,25 +7,26 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{driver::PendingGetClosestType, SwarmDriver};
+use libp2p::kad::K_VALUE;
 use std::time::{Duration, Instant};
 use tokio::time::Interval;
 
 /// The interval in which kad.bootstrap is called
-pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(5);
+pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Every BOOTSTRAP_CONNECTED_PEERS_STEP connected peer, we step up the BOOTSTRAP_INTERVAL to slow down bootstrapping
 /// process
-const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 5;
+const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 1;
 
 /// If the previously added peer has been before LAST_PEER_ADDED_TIME_LIMIT, then we should slowdown the bootstrapping
 /// process. This is to make sure we don't flood the network with `FindNode` msgs.
 const LAST_PEER_ADDED_TIME_LIMIT: Duration = Duration::from_secs(180);
 
 /// A minumn interval to prevent bootstrap got triggered too often
-const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(30);
+const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(1);
 
 /// The bootstrap interval to use if we haven't added any new peers in a while.
-const NO_PEER_ADDED_SLOWDOWN_INTERVAL: Duration = Duration::from_secs(300);
+const NO_PEER_ADDED_SLOWDOWN_INTERVAL: Duration = Duration::from_secs(30);
 
 impl SwarmDriver {
     pub(crate) async fn run_bootstrap_continuously(
@@ -138,7 +139,9 @@ impl ContinuousBootstrap {
         // if it has been a while (LAST_PEER_ADDED_TIME_LIMIT) since we have added a new peer to our RT, then, slowdown
         // the bootstrapping process.
         // Don't slow down if we haven't even added one peer to our RT.
-        if self.last_peer_added_instant.elapsed() > LAST_PEER_ADDED_TIME_LIMIT && peers_in_rt != 0 {
+        if self.last_peer_added_instant.elapsed() > LAST_PEER_ADDED_TIME_LIMIT
+            && peers_in_rt > K_VALUE.get() as u32
+        {
             info!(
                 "It has been {LAST_PEER_ADDED_TIME_LIMIT:?} since we last added a peer to RT. Slowing down the continuous bootstrapping process"
             );
