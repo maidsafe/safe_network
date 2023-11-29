@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701281373901,
+  "lastUpdate": 1701281755629,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53",
-          "message": "fix: default to http for url without schemes",
-          "timestamp": "2023-07-24T11:59:10Z",
-          "tree_id": "ca24f0c54246b1db4f6b4ca49089c49989fc6c9f",
-          "url": "https://github.com/maidsafe/safe_network/commit/5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53"
-        },
-        "date": 1690204576851,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 31.72,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 92,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "90893247327a40128b521d2bfc6edfee227ed526",
+          "message": "test(node): increase reverification delay",
+          "timestamp": "2023-11-29T17:16:46Z",
+          "tree_id": "a114b0b3478becff5babdafac55af31e2ec90cc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/90893247327a40128b521d2bfc6edfee227ed526"
+        },
+        "date": 1701281754537,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 97,
             "unit": "MB"
           }
         ]
