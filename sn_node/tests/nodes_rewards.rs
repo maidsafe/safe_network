@@ -302,7 +302,7 @@ fn spawn_royalties_payment_listener(
         let mut count = 0;
         let mut stream = response.into_inner();
 
-        let duration = Duration::from_secs(10);
+        let duration = Duration::from_secs(80);
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Some(Ok(e)) = stream.next().await {
