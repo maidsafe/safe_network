@@ -81,7 +81,7 @@ impl WalletClient {
     }
 
     /// Send tokens to another wallet.
-    /// Can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
     pub async fn send_cash_note(
         &mut self,
         amount: NanoTokens,
@@ -302,13 +302,9 @@ impl Client {
         let mut tasks = Vec::new();
 
         for spend_request in spend_requests {
-            trace!(
+            debug!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
                 spend_request.unique_pubkey()
-            );
-            debug!(
-                "Spend key: {:?} is now being marked as spent on the Network",
-                spend_request.unique_pubkey().to_hex()
             );
 
             let the_task = async move {
@@ -436,6 +432,18 @@ impl Client {
                 );
                 trace!("Spends for {parent_tx_hash:?} - {spends:?}");
 
+                // check if we reached the genesis Tx
+                if parent_tx == sn_transfers::GENESIS_CASHNOTE.src_tx
+                    && spends
+                        .iter()
+                        .all(|s| s.spend.unique_pubkey == sn_transfers::GENESIS_CASHNOTE.id)
+                    && spends.len() == 1
+                {
+                    debug!("Depth {depth} - Reached genesis Tx on one branch: {parent_tx_hash:?}");
+                    verified_tx.insert(parent_tx_hash);
+                    continue;
+                }
+
                 // verify tx with those spends
                 parent_tx
                     .verify_against_inputs_spent(&spends)
@@ -456,7 +464,7 @@ impl Client {
             depth += 1;
             let elapsed = start.elapsed();
             let n = verified_tx.len();
-            println!("Now at depth {depth} - Verified {n} transactions in {elapsed:?}")
+            println!("Now at depth {depth} - Verified {n} transactions in {elapsed:?}");
         }
 
         let elapsed = start.elapsed();

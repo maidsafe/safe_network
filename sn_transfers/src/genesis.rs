@@ -89,7 +89,7 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     let mut genesis_wallet = create_genesis_wallet();
 
     info!(
-        "Depositing genesis CashNote: {:#?}",
+        "Depositing genesis CashNote: {:?}",
         GENESIS_CASHNOTE.unique_pubkey()
     );
     genesis_wallet

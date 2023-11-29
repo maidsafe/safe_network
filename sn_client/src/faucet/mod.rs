@@ -65,8 +65,8 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     println!("Verifying the transfer from genesis...");
     debug!("Verifying the transfer from genesis...");
     if let Err(error) = client.verify_cashnote(&cash_note).await {
-        error!("Could not verify the transfer from genesis: {error:?}. Panicking.");
-        panic!("Could not verify the transfer from genesis: {error:?}");
+        error!("Could not verify the transfer from genesis: {error}. Panicking.");
+        panic!("Could not verify the transfer from genesis: {error}");
     } else {
         println!("Successfully verified the transfer from genesis on the second try.");
         info!("Successfully verified the transfer from genesis on the second try.");

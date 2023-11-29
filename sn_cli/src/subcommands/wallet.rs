@@ -111,7 +111,7 @@ pub enum WalletCmds {
     /// Verify a spend on the Network.
     Verify {
         /// The Network address or hex encoded UniquePubkey of the Spend to verify
-        #[clap(name = "address")]
+        #[clap(name = "spend")]
         spend_address: String,
         /// Verify all the way to Genesis
         ///

@@ -35,8 +35,8 @@ pub enum Error {
     CashNoteCiphersNotPresentInTransactionOutput,
     #[error("Output not found in transaction outputs.")]
     OutputNotFound,
-    #[error("UniquePubkey is not unique across all transaction outputs.")]
-    UniquePubkeyNotUniqueAcrossOutputs,
+    #[error("UniquePubkey is not unique across all transaction inputs and outputs.")]
+    UniquePubkeyNotUniqueInTx,
     #[error("The number of SignedSpend ({got}) does not match the number of inputs ({expected}).")]
     SignedSpendInputLenMismatch { got: usize, expected: usize },
     #[error("A SignedSpend UniquePubkey does not match an MlsagSignature UniquePubkey.")]
@@ -57,8 +57,6 @@ pub enum Error {
     InconsistentTransaction,
     #[error("The CashNote tx must have at least one input.")]
     MissingTxInputs,
-    #[error("CashNote id is not unique across all tx inputs.")]
-    UniquePubkeyNotUniqueAcrossInputs,
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
 
