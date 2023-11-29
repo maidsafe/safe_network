@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.23](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.22...sn_transfers-v0.14.23) - 2023-11-29
+
+### Added
+- verify all the way to genesis
+- verify spends through the cli
+
+### Fixed
+- genesis check security flaw
+
 ## [0.14.22](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.21...sn_transfers-v0.14.22) - 2023-11-28
 
 ### Added

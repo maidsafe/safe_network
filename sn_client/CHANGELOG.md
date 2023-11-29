@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.19...sn_client-v0.98.20) - 2023-11-29
+
+### Added
+- verify all the way to genesis
+- verify spends through the cli
+
+### Fixed
+- genesis check security flaw
+
 ## [0.98.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.18...sn_client-v0.98.19) - 2023-11-28
 
 ### Added

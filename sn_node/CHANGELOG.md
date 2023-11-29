@@ -2318,6 +2318,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(royalties)* serialise royalties notifs with MsgPack instead of bincode
 
+## [0.98.38](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.37...sn_node-v0.98.38) - 2023-11-29
+
+### Added
+- verify all the way to genesis
+- verify spends through the cli
+
+### Fixed
+- genesis check security flaw
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
