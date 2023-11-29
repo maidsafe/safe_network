@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701281758509,
+  "lastUpdate": 1701281762031,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31615,6 +31615,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 9,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "90893247327a40128b521d2bfc6edfee227ed526",
+          "message": "test(node): increase reverification delay",
+          "timestamp": "2023-11-29T17:16:46Z",
+          "tree_id": "a114b0b3478becff5babdafac55af31e2ec90cc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/90893247327a40128b521d2bfc6edfee227ed526"
+        },
+        "date": 1701281760909,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4454,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 64160,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
             "unit": "ms"
           }
         ]
