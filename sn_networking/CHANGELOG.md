@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.27](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.26...sn_networking-v0.10.27) - 2023-11-29
+
+### Added
+- *(node)* only parse replication list from close peers.
+
 ## [0.10.26](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.25...sn_networking-v0.10.26) - 2023-11-29
 
 ### Other
