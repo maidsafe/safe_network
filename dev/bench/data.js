@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701253868363,
+  "lastUpdate": 1701253870908,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31424,6 +31424,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 9,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f7188549fe8b1d91d5e5755a553d6224a536f3e0",
+          "message": "feat(networking): more properly handle outgoing errors\n\nDont penalise nodes for lack of local ports eg",
+          "timestamp": "2023-11-29T09:41:08Z",
+          "tree_id": "57b71eefdbb1b35edeba1fe054ba394d3f77d602",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7188549fe8b1d91d5e5755a553d6224a536f3e0"
+        },
+        "date": 1701253869985,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6479,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 66699,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 10,
             "unit": "ms"
           }
         ]
