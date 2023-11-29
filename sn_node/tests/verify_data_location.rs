@@ -45,10 +45,13 @@ const CHUNK_SIZE: usize = 1024;
 // for the old peer to be removed from the routing table.
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
-const VERIFICATION_DELAY: Duration = Duration::from_secs(200);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(120);
 
-// Number of times to retry verification if it fails
+/// Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 5;
+
+/// Length of time to wait before re-verifying the data location
+const REVERIFICATION_DELAY: Duration = Duration::from_secs(30);
 
 // Default number of churns that should be performed. After each churn, we
 // wait for VERIFICATION_DELAY time before verifying the data location.
@@ -253,7 +256,7 @@ async fn verify_location(all_peers: &[PeerId], node_rpc_addresses: &[SocketAddr]
                 .for_each(|(idx, peer)| println!("{idx} : {peer:?}"));
             verification_attempts += 1;
             println!("Sleeping before retrying verification");
-            tokio::time::sleep(Duration::from_secs(20)).await;
+            tokio::time::sleep(REVERIFICATION_DELAY).await;
         } else {
             // if successful, break out of the loop
             break;
