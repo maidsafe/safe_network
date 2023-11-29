@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701263841783,
+  "lastUpdate": 1701263843918,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "e3bd53790e20ba312f00458cd3a3cbeb8f7bf724",
-          "message": "ci: fix issues in dbc spend test and memcheck workflow\n\nThe `local-discovery` feature was unintentionally removed from the client and node binaries for the\nDBC spend tests.\n\nFor the memcheck workflow, we had to prevent `SAFE_PEERS` from being reset in the new custom action\nbecause the node that's runner with heaptrack is the only one that stays consistent through the\ntest.",
-          "timestamp": "2023-07-20T18:43:41+01:00",
-          "tree_id": "3bc2fb528f299ed24ac575ee9431cdb51f75abb8",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3bd53790e20ba312f00458cd3a3cbeb8f7bf724"
-        },
-        "date": 1689876486611,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 234.2,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 218,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 235,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9cfd5584551fccb0c701ca7cca30bbe752297a8",
+          "message": "chore(node): increase node reward test timeout to match client wait",
+          "timestamp": "2023-11-29T13:58:27+01:00",
+          "tree_id": "f5f52603cc0306347010b05476d5a116515ee995",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9cfd5584551fccb0c701ca7cca30bbe752297a8"
+        },
+        "date": 1701263843279,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 606,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 228,
             "unit": "MB"
           }
         ]
