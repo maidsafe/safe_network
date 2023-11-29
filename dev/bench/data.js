@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701274449905,
+  "lastUpdate": 1701274451630,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "21afa206e44718d1f77e0daf6d314a5b9ae724ba",
-          "message": "ci: update benchmark generation for faucet startup",
-          "timestamp": "2023-07-21T12:32:17+02:00",
-          "tree_id": "c37a28239fc7ac68251419aa65d731fe688d0182",
-          "url": "https://github.com/maidsafe/safe_network/commit/21afa206e44718d1f77e0daf6d314a5b9ae724ba"
-        },
-        "date": 1689937107023,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 240.72,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 235,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 228,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "abb32a6968a22428a60f396b48e48cb3b1ce7225",
+          "message": "chore: logging identify ops more accurately",
+          "timestamp": "2023-11-29T15:20:56Z",
+          "tree_id": "a31872f1919036d6a5013e5e04619b804cf09be1",
+          "url": "https://github.com/maidsafe/safe_network/commit/abb32a6968a22428a60f396b48e48cb3b1ce7225"
+        },
+        "date": 1701274451212,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 737,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 248,
             "unit": "MB"
           }
         ]
