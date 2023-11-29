@@ -57,6 +57,7 @@ mod error;
 mod keys;
 mod local_store;
 mod wallet_file;
+mod watch_only;
 
 use data_payments::ContentPaymentsMap;
 
@@ -65,13 +66,14 @@ pub use self::{
     error::{Error, Result},
     keys::bls_secret_from_hex,
     local_store::LocalWallet,
+    watch_only::WatchOnlyWallet,
 };
 pub(crate) use keys::store_new_keypair;
 
 use crate::{NanoTokens, UniquePubkey};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Default, serde::Serialize, serde::Deserialize)]
 /// This assumes the CashNotes are stored on disk
 pub(super) struct KeyLessWallet {
     /// These are the UniquePubkeys of cash_notes we've owned, that have been

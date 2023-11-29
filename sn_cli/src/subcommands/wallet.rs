@@ -12,7 +12,7 @@ use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
     CashNoteRedemption, Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens,
-    SpendAddress, Transfer, UniquePubkey, WalletError,
+    SpendAddress, Transfer, UniquePubkey, WalletError, WatchOnlyWallet,
 };
 use std::{
     io::Read,
@@ -96,14 +96,14 @@ pub enum WalletCmds {
     },
     /// Listen for transfer notifications from the network over gossipsub protocol.
     ///
-    /// Transfers will be deposited to a local wallet.
+    /// Transfers will be deposited to a local (watch-only) wallet.
     ///
-    /// Only cash notes owned by the public key corresponding to the provided SK will be accepted,
-    /// verified to be valid against the network, and deposited onto a locally stored wallet.
+    /// Only cash notes owned by the provided public key will be accepted, verified to be valid
+    /// against the network, and deposited onto a locally stored watch-only wallet.
     ReceiveOnline {
-        /// Hex-encoded main secret key
-        #[clap(name = "sk")]
-        sk: String,
+        /// Hex-encoded main public key
+        #[clap(name = "pk")]
+        pk: String,
         /// Optional path where to store the wallet
         #[clap(name = "path")]
         path: Option<PathBuf>,
@@ -170,9 +170,9 @@ pub(crate) async fn wallet_cmds(
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await,
         WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await,
-        WalletCmds::ReceiveOnline { sk, path } => {
+        WalletCmds::ReceiveOnline { pk, path } => {
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
-            listen_notifs_and_deposit(&wallet_dir, client, sk).await
+            listen_notifs_and_deposit(&wallet_dir, client, pk).await
         }
         WalletCmds::Verify {
             spend_address,
@@ -388,15 +388,14 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
     Ok(())
 }
 
-async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, sk: String) -> Result<()> {
-    let mut wallet = match SecretKey::from_hex(&sk) {
-        Ok(sk) => {
-            let pk_hex = sk.public_key().to_hex();
-            let main_sk = MainSecretKey::new(sk);
+async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, pk_hex: String) -> Result<()> {
+    let mut wallet = match PublicKey::from_hex(&pk_hex) {
+        Ok(pk) => {
+            let main_pk = MainPubkey::new(pk);
             let folder_name = format!("pk_{}_{}", &pk_hex[..6], &pk_hex[pk_hex.len() - 6..]);
             let wallet_dir = root_dir.join(folder_name);
             println!("Loading local wallet from: {}", wallet_dir.display());
-            LocalWallet::load_from_path(&wallet_dir, Some(main_sk))?
+            WatchOnlyWallet::load_from(&wallet_dir, main_pk)?
         }
         Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
     };

@@ -35,6 +35,7 @@ pub use transfers::create_offline_transfer;
 pub use wallet::bls_secret_from_hex;
 pub use wallet::{
     Error as WalletError, LocalWallet, Payment, PaymentQuote, Result as WalletResult,
+    WatchOnlyWallet,
 };
 
 // re-export crates used in our public API

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 use super::{
-    data_payments::{ContentPaymentsMap, PaymentDetails, PaymentQuote},
+    data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, get_wallet, load_cash_notes_from_disk,
@@ -530,7 +530,7 @@ fn load_from_path(
             wallet
         }
         None => {
-            let wallet = KeyLessWallet::new();
+            let wallet = KeyLessWallet::default();
             store_wallet(wallet_dir, &wallet)?;
             wallet
         }
@@ -540,17 +540,8 @@ fn load_from_path(
 }
 
 impl KeyLessWallet {
-    fn new() -> Self {
-        Self {
-            available_cash_notes: Default::default(),
-            cash_notes_created_for_others: Default::default(),
-            spent_cash_notes: Default::default(),
-            payment_transactions: ContentPaymentsMap::default(),
-        }
-    }
-
-    fn balance(&self) -> NanoTokens {
-        // loop through avaiable bcs and get total token count
+    pub fn balance(&self) -> NanoTokens {
+        // loop through avaiable cash notes and get total token count
         let mut balance = 0;
         for (_unique_pubkey, value) in self.available_cash_notes.iter() {
             balance += value.as_nano();
@@ -577,7 +568,7 @@ mod tests {
     #[tokio::test]
     async fn keyless_wallet_to_and_from_file() -> Result<()> {
         let key = MainSecretKey::random();
-        let mut wallet = KeyLessWallet::new();
+        let mut wallet = KeyLessWallet::default();
         let genesis = create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
 
         let dir = create_temp_dir();
@@ -607,7 +598,7 @@ mod tests {
             key,
             unconfirmed_spend_requests: Default::default(),
 
-            wallet: KeyLessWallet::new(),
+            wallet: KeyLessWallet::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
@@ -633,7 +624,7 @@ mod tests {
             key: MainSecretKey::random(),
             unconfirmed_spend_requests: Default::default(),
 
-            wallet: KeyLessWallet::new(),
+            wallet: KeyLessWallet::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
@@ -658,7 +649,7 @@ mod tests {
             key,
             unconfirmed_spend_requests: Default::default(),
 
-            wallet: KeyLessWallet::new(),
+            wallet: KeyLessWallet::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
@@ -679,7 +670,7 @@ mod tests {
             key: MainSecretKey::random(),
             unconfirmed_spend_requests: Default::default(),
 
-            wallet: KeyLessWallet::new(),
+            wallet: KeyLessWallet::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
 
@@ -701,7 +692,7 @@ mod tests {
 
         let mut deposit_only = LocalWallet {
             key,
-            wallet: KeyLessWallet::new(),
+            wallet: KeyLessWallet::default(),
             unconfirmed_spend_requests: Default::default(),
             wallet_dir: dir.path().to_path_buf(),
         };
