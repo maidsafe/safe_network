@@ -284,13 +284,18 @@ impl SwarmDriver {
                                 protocol.to_string().starts_with("/libp2p/autonat/")
                             }) {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
-                                // It could be that we are on a local network and have AutoNAT disabled.
-                                if let Some(autonat) = a.as_mut() {
+
+                                if a.as_mut().is_some() {
                                     debug!(%peer_id, ?addrs, "identify: attempting to add peer as server");
-                                    for multiaddr in addrs {
-                                        autonat.add_server(peer_id, Some(multiaddr));
-                                    }
                                 }
+
+                                // // It could be that we are on a local network and have AutoNAT disabled.
+                                // if let Some(autonat) = a.as_mut() {
+                                //     debug!(%peer_id, ?addrs, "identify: attempting to add peer as server");
+                                //     for multiaddr in addrs {
+                                //         autonat.add_server(peer_id, Some(multiaddr));
+                                //     }
+                                // }
                             }
                         }
                     }
