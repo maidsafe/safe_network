@@ -10,11 +10,8 @@ mod common;
 
 use assert_fs::TempDir;
 use common::{
-    client::{
-        get_all_rpc_addresses, get_funded_wallet, get_gossip_client_and_wallet, get_node_count,
-        get_wallet, PAYING_WALLET_INITIAL_BALANCE,
-    },
-    node_restart,
+    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart,
+    PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
@@ -31,6 +28,7 @@ use std::{
     fmt,
     fs::{create_dir_all, File},
     io::Write,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
@@ -87,7 +85,6 @@ async fn data_availability_during_churn() -> Result<()> {
     } else {
         TEST_DURATION
     };
-    let node_count = get_node_count();
 
     let churn_period = if let Ok(str) = std::env::var("TEST_TOTAL_CHURN_CYCLES") {
         println!("Using value set in 'TEST_TOTAL_CHURN_CYCLES' env var: {str}");
@@ -95,11 +92,7 @@ async fn data_availability_during_churn() -> Result<()> {
         test_duration / cycles
     } else {
         // Ensure at least some nodes got churned twice.
-        test_duration
-            / std::cmp::max(
-                CHURN_CYCLES * node_count as u32,
-                node_count as u32 + EXTRA_CHURN_COUNT,
-            )
+        test_duration / std::cmp::max(CHURN_CYCLES * NODE_COUNT, NODE_COUNT + EXTRA_CHURN_COUNT)
     };
     println!("Nodes will churn every {churn_period:?}");
 
@@ -500,25 +493,31 @@ fn churn_nodes_task(
 ) {
     let start = Instant::now();
     let _handle = tokio::spawn(async move {
-        let node_rpc_addresses = get_all_rpc_addresses();
-        'main: loop {
-            for rpc_address in node_rpc_addresses.iter() {
-                sleep(churn_period).await;
+        let mut node_index = 1;
+        let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+        loop {
+            sleep(churn_period).await;
 
-                // break out if we've run the duration of churn
-                if start.elapsed() > test_duration {
-                    println!("Test duration reached, stopping churn nodes task");
-                    break 'main;
-                }
+            // break out if we've run the duration of churn
+            if start.elapsed() > test_duration {
+                println!("Test duration reached, stopping churn nodes task");
+                break;
+            }
 
-                println!("Restarting node through its RPC service at {rpc_address}");
+            addr.set_port(12000 + node_index);
 
-                if let Err(err) = node_restart(rpc_address).await {
-                    println!("Failed to restart node with RPC endpoint {rpc_address}: {err}");
-                    continue;
-                }
+            println!("Restarting node through its RPC service at {addr}");
 
-                *churn_count.write().await += 1;
+            if let Err(err) = node_restart(addr).await {
+                println!("Failed to restart node with RPC endpoint {addr}: {err}");
+                continue;
+            }
+
+            *churn_count.write().await += 1;
+
+            node_index += 1;
+            if node_index > NODE_COUNT as u16 {
+                node_index = 1;
             }
         }
     });

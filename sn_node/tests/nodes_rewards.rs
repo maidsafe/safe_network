@@ -8,12 +8,7 @@
 
 mod common;
 
-use std::net::SocketAddr;
-
-use crate::common::{
-    client::{get_all_rpc_addresses, get_gossip_client_and_wallet},
-    random_content,
-};
+use crate::common::{client::get_gossip_client_and_wallet, random_content};
 use sn_client::{Client, ClientEvent, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
@@ -201,16 +196,21 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
         paying_wallet_dir.to_path_buf(),
         chunks_dir.path().to_path_buf(),
     )?;
-    let node_rpc_addresses = get_all_rpc_addresses();
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    let handle_1 = spawn_royalties_payment_listener(node_rpc_addresses[0], royalties_pk, true);
+    let handle_1 =
+        spawn_royalties_payment_listener("https://127.0.0.1:12001".to_string(), royalties_pk, true);
     // this other node shall *not* receive any notification since we set the wrong pk as filter
     let random_pk = SecretKey::random().public_key();
-    let handle_2 = spawn_royalties_payment_listener(node_rpc_addresses[1], random_pk, true);
+    let handle_2 =
+        spawn_royalties_payment_listener("https://127.0.0.1:12002".to_string(), random_pk, true);
     // this other node shall *not* receive any notification either since we don't set any pk as filter
-    let handle_3 = spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false);
+    let handle_3 = spawn_royalties_payment_listener(
+        "https://127.0.0.1:12003".to_string(),
+        royalties_pk,
+        false,
+    );
 
     sleep(Duration::from_secs(20)).await;
 
@@ -284,11 +284,10 @@ fn current_rewards_balance() -> Result<NanoTokens> {
 }
 
 fn spawn_royalties_payment_listener(
-    rpc_addr: SocketAddr,
+    endpoint: String,
     royalties_pk: PublicKey,
     set_filter: bool,
 ) -> JoinHandle<Result<usize, eyre::Report>> {
-    let endpoint = format!("https://{rpc_addr}");
     tokio::spawn(async move {
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
 

@@ -8,62 +8,63 @@
 
 mod common;
 
-use common::client::get_node_count;
 use eyre::Result;
-use rand::seq::SliceRandom;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NodeEventsRequest,
 };
-use std::{net::SocketAddr, time::Duration};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 use tokio::time::timeout;
 use tokio_stream::StreamExt;
 use tonic::Request;
 
-use crate::common::client::get_all_rpc_addresses;
-
+const NODES_SUBSCRIBED: u32 = NODE_COUNT / 2; // 12 out of 25 nodes will be subscribers
 const TEST_CYCLES: u8 = 20;
 
 #[tokio::test]
 async fn msgs_over_gossipsub() -> Result<()> {
     let _guard = LogBuilder::init_single_threaded_tokio_test("msgs_over_gossipsub");
-
-    let node_count = get_node_count();
-    let nodes_subscribed = node_count / 2; // 12 out of 25 nodes will be subscribers
-
-    let node_rpc_addresses = get_all_rpc_addresses()
-        .into_iter()
-        .enumerate()
-        .collect::<Vec<_>>();
+    let all_nodes_addrs: Vec<_> = (0..NODE_COUNT)
+        .map(|i| {
+            (
+                i,
+                SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001 + i as u16),
+            )
+        })
+        .collect();
 
     for c in 0..TEST_CYCLES {
         let topic = format!("TestTopic-{}", rand::random::<u64>());
         println!("Testing cicle {}/{TEST_CYCLES} - topic: {topic}", c + 1);
         println!("============================================================");
 
-        // get a random subset of `nodes_subscribed`` out of `node_count` nodes to subscribe to the topic
+        // get a random subset of NODES_SUBSCRIBED out of NODE_COUNT nodes to subscribe to the topic
         let mut rng = rand::thread_rng();
-        let random_subs_nodes: Vec<_> = node_rpc_addresses
-            .choose_multiple(&mut rng, nodes_subscribed)
-            .cloned()
-            .collect();
+        let random_subs_nodes: Vec<_> =
+            rand::seq::index::sample(&mut rng, NODE_COUNT as usize, NODES_SUBSCRIBED as usize)
+                .iter()
+                .map(|i| all_nodes_addrs[i])
+                .collect();
 
         let mut subs_handles = vec![];
-        for (node_index, rpc_addr) in random_subs_nodes.clone() {
+        for (node_index, addr) in random_subs_nodes.clone() {
             // request current node to subscribe to the topic
-            println!("Node #{node_index} ({rpc_addr}) subscribing to {topic} ...");
-            node_subscribe_to_topic(rpc_addr, topic.clone()).await?;
+            println!("Node #{node_index} ({addr}) subscribing to {topic} ...");
+            node_subscribe_to_topic(addr, topic.clone()).await?;
 
             let handle = tokio::spawn(async move {
-                let endpoint = format!("https://{rpc_addr}");
+                let endpoint = format!("https://{addr}");
                 let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
                 let response = rpc_client
                     .node_events(Request::new(NodeEventsRequest {}))
                     .await?;
 
-                let mut count: usize = 0;
+                let mut count: u32 = 0;
 
                 let _ = timeout(Duration::from_secs(40), async {
                     let mut stream = response.into_inner();
@@ -85,18 +86,17 @@ async fn msgs_over_gossipsub() -> Result<()> {
                 })
                 .await;
 
-                Ok::<usize, eyre::Error>(count)
+                Ok::<u32, eyre::Error>(count)
             });
 
-            subs_handles.push((node_index, rpc_addr, handle));
+            subs_handles.push((node_index, addr, handle));
         }
 
         tokio::time::sleep(Duration::from_secs(3)).await;
 
         // have all other nodes to publish each a different msg to that same topic
-        let mut other_nodes = node_rpc_addresses.clone();
-        other_nodes
-            .retain(|(node_index, _)| random_subs_nodes.iter().all(|(n, _)| n != node_index));
+        let mut other_nodes = all_nodes_addrs.clone();
+        other_nodes.retain(|node| random_subs_nodes.iter().all(|n| n != node));
         other_nodes_to_publish_on_topic(other_nodes, topic.clone()).await?;
 
         for (node_index, addr, handle) in subs_handles.into_iter() {
@@ -104,7 +104,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
             println!("Messages received by node {node_index}: {count}");
             assert_eq!(
                 count,
-                node_count - nodes_subscribed,
+                NODE_COUNT - NODES_SUBSCRIBED,
                 "Not enough messages received by node at index {}",
                 node_index
             );
@@ -140,7 +140,7 @@ async fn node_unsubscribe_from_topic(addr: SocketAddr, topic: String) -> Result<
 }
 
 async fn other_nodes_to_publish_on_topic(
-    nodes: Vec<(usize, SocketAddr)>,
+    nodes: Vec<(u32, SocketAddr)>,
     topic: String,
 ) -> Result<()> {
     for (node_index, addr) in nodes {

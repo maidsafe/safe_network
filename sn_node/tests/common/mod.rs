@@ -25,7 +25,7 @@ use sn_protocol::storage::ChunkAddress;
 use std::{
     fs::File,
     io::Write,
-    net::SocketAddr,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
 };
 use tonic::Request;
@@ -61,11 +61,13 @@ pub fn random_content(
     ))
 }
 
-// Returns all the PeerId for all the running nodes
-pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Vec<PeerId>> {
+// Returns all the PeerId for all the locally running nodes
+pub async fn get_all_peer_ids() -> Result<Vec<PeerId>> {
     let mut all_peers = Vec::new();
 
-    for addr in node_rpc_addresses {
+    let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+    for node_index in 1..NODE_COUNT + 1 {
+        addr.set_port(12000 + node_index as u16);
         let endpoint = format!("https://{addr}");
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
 
@@ -76,14 +78,11 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
         all_peers.push(peer_id);
     }
-    println!(
-        "Obtained the PeerId list for the running network with a node count of {}",
-        node_rpc_addresses.len()
-    );
+    println!("Obtained the PeerId list for the locally running network with a node count of {NODE_COUNT}");
     Ok(all_peers)
 }
 
-pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
+pub async fn node_restart(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let mut client = SafeNodeClient::connect(endpoint).await?;
 

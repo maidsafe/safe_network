@@ -9,7 +9,7 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{client::get_all_rpc_addresses, get_all_peer_ids};
+use crate::common::get_all_peer_ids;
 use color_eyre::Result;
 use libp2p::{
     kad::{KBucketKey, K_VALUE},
@@ -19,6 +19,7 @@ use sn_logging::LogBuilder;
 use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, KBucketsRequest};
 use std::{
     collections::{BTreeMap, HashSet},
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     time::Duration,
 };
 use tonic::Request;
@@ -42,13 +43,13 @@ async fn verify_routing_table() -> Result<()> {
     println!("Sleeping for {sleep_duration:?} before verification");
     tokio::time::sleep(sleep_duration).await;
 
-    let node_rpc_address = get_all_rpc_addresses();
-
-    let all_peers = get_all_peer_ids(&node_rpc_address).await?;
+    let all_peers = get_all_peer_ids().await?;
     let mut all_failed_list = BTreeMap::new();
 
-    for (node_index, rpc_address) in node_rpc_address.iter().enumerate() {
-        let endpoint = format!("https://{rpc_address}");
+    for node_index in 1..NODE_COUNT + 1 {
+        let mut addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12000);
+        addr.set_port(12000 + node_index as u16);
+        let endpoint = format!("https://{addr}");
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
 
         let response = rpc_client
@@ -69,7 +70,7 @@ async fn verify_routing_table() -> Result<()> {
             })
             .collect::<BTreeMap<_, _>>();
 
-        let current_peer = all_peers[node_index];
+        let current_peer = all_peers[node_index as usize - 1];
         let current_peer_key = KBucketKey::from(current_peer);
 
         let mut failed_list = Vec::new();
