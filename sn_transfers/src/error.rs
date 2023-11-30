@@ -27,6 +27,8 @@ pub enum Error {
     #[error("Failed to parse: {0}")]
     FailedToParseNanoToken(String),
 
+    #[error("Invalid Spend: value was tampered with {0:?}")]
+    InvalidSpendValue(UniquePubkey),
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
     #[error("Transaction hash is different from the hash in the the Spend: {0:?} != {1:?}")]
@@ -54,9 +56,11 @@ pub enum Error {
     #[error("Could not serialize CashNote to hex: {0}")]
     HexSerializationFailed(String),
     #[error("The input and output amounts of the tx do not match.")]
-    InconsistentTransaction,
+    UnbalancedTransaction,
     #[error("The CashNote tx must have at least one input.")]
     MissingTxInputs,
+    #[error("The spends don't match the inputs of the Transaction.")]
+    SpendsDoNotMatchInputs,
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
 

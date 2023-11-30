@@ -34,8 +34,8 @@ impl Input {
         v
     }
 
-    pub fn unique_pubkey(&self) -> UniquePubkey {
-        self.unique_pubkey
+    pub fn unique_pubkey(&self) -> &UniquePubkey {
+        &self.unique_pubkey
     }
 }
 
@@ -144,44 +144,50 @@ impl Transaction {
             })?;
 
         if input_sum != output_sum {
-            Err(Error::InconsistentTransaction)
+            Err(Error::UnbalancedTransaction)
         } else {
             Ok(())
         }
     }
 
-    /// Verifies a transaction including signed spends.
+    /// Verifies a transaction with Network held signed spends.
     ///
-    /// This function relies/assumes that the caller (wallet/client) obtains
-    /// the Transaction (held by every input spend's close group) in a
-    /// trustless/verified way. I.e., the caller should not simply obtain a
-    /// spend from a single peer, but must get the same spend from all in the close group.
+    /// This function assumes that the signed spends where previously fetched from the Network and where not double spent.
+    /// This function will verify that:
+    /// - the transaction is balanced (sum inputs = sum outputs)
+    /// - the inputs and outputs are unique
+    /// - the inputs and outputs are different
+    /// - the inputs have a corresponding signed spend
+    /// - those signed spends are valid and refer to this transaction
     pub fn verify_against_inputs_spent(&self, signed_spends: &BTreeSet<SignedSpend>) -> Result<()> {
         // verify that the tx has at least one input
         if self.inputs.is_empty() {
             return Err(Error::MissingTxInputs);
         }
 
-        // check if we have spends for all inputs
-        if signed_spends.is_empty() {
-            return Err(Error::MissingTxInputs)?;
-        }
-        if signed_spends.len() != self.inputs.len() {
-            return Err(Error::SignedSpendInputLenMismatch {
-                got: signed_spends.len(),
-                expected: self.inputs.len(),
-            });
+        // check spends match the inputs
+        let input_keys = self
+            .inputs
+            .iter()
+            .map(|i| i.unique_pubkey())
+            .collect::<BTreeSet<_>>();
+        let signed_spend_keys = signed_spends
+            .iter()
+            .map(|s| s.unique_pubkey())
+            .collect::<BTreeSet<_>>();
+        if input_keys != signed_spend_keys {
+            return Err(Error::SpendsDoNotMatchInputs);
         }
 
         // Verify that each output is unique
-        let output_pks: BTreeSet<UniquePubkey> =
-            self.outputs.iter().map(|o| (*o.unique_pubkey())).collect();
+        let output_pks: BTreeSet<&UniquePubkey> =
+            self.outputs.iter().map(|o| (o.unique_pubkey())).collect();
         if output_pks.len() != self.outputs.len() {
             return Err(Error::UniquePubkeyNotUniqueInTx);
         }
 
         // Verify that each input is unique
-        let input_pks: BTreeSet<UniquePubkey> =
+        let input_pks: BTreeSet<&UniquePubkey> =
             self.inputs.iter().map(|i| (i.unique_pubkey())).collect();
         if input_pks.len() != self.inputs.len() {
             return Err(Error::UniquePubkeyNotUniqueInTx);
@@ -190,17 +196,6 @@ impl Transaction {
         // Verify that inputs are different from outputs
         if !input_pks.is_disjoint(&output_pks) {
             return Err(Error::UniquePubkeyNotUniqueInTx);
-        }
-
-        // Verify that each input has a corresponding signed spend.
-        for signed_spend in signed_spends.iter() {
-            if !self
-                .inputs
-                .iter()
-                .any(|m| m.unique_pubkey == *signed_spend.unique_pubkey())
-            {
-                return Err(Error::SignedSpendInputIdMismatch);
-            }
         }
 
         // Verify that each signed spend is valid
