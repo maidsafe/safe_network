@@ -357,7 +357,9 @@ impl Client {
         Ok(cashnotes)
     }
 
-    /// Verify that the spends refered to in the CashNote exist on the network.
+    /// Verify that the spends referred to in the CashNote exist on the network.
+    /// If you are verifying the CashNote right after performing the transaction, it might cause Quorum error even
+    /// after re-attempts. So we should retry on upper layers or have a delay before verification.
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the

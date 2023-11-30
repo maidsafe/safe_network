@@ -1,9 +1,8 @@
-use super::{wallet::send, Result};
-use crate::Client;
-
-use sn_transfers::LocalWallet;
-use sn_transfers::{create_faucet_wallet, load_genesis_wallet};
-use sn_transfers::{CashNote, MainPubkey, NanoTokens};
+use super::{wallet::send, Client, Result};
+use sn_transfers::{
+    create_faucet_wallet, load_genesis_wallet, CashNote, LocalWallet, MainPubkey, NanoTokens,
+};
+use std::time::Duration;
 
 /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
 /// Note this will create a faucet having a Genesis balance
@@ -62,8 +61,11 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<L
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
     debug!("Faucet wallet balance: {}", faucet_wallet.balance());
 
-    println!("Verifying the transfer from genesis...");
-    debug!("Verifying the transfer from genesis...");
+    println!("Sleeping for 10s before verifying the transfer from genesis...");
+    debug!("Sleeping for 10s before verifying the transfer from genesis...");
+    // We do have re-attempts during verify cashnote, but since we're reading right after write, we might hit quorum
+    // error. So sleep before verify.
+    tokio::time::sleep(Duration::from_secs(10)).await;
     if let Err(error) = client.verify_cashnote(&cash_note).await {
         error!("Could not verify the transfer from genesis: {error}. Panicking.");
         panic!("Could not verify the transfer from genesis: {error}");
