@@ -245,11 +245,17 @@ async fn upload_files(
     // report errors
     let failed_uploads = chunk_manager.get_chunks();
     let failed_uploads_len = failed_uploads.len();
-    if failed_uploads_len != 0 {
+    let failed_payments_len = recorded_pay_errors.len();
+    let total_failures = failed_uploads_len + failed_payments_len;
+    if total_failures != 0 {
         println!("**************************************");
         println!("*              Failures              *");
         println!("**************************************");
-        info!("Failed to pay for chunks and failed to upload {failed_uploads_len} chunks.");
+        info!("Failed to pay for {failed_payments_len} chunks and failed to upload {failed_uploads_len} chunks.");
+        if failed_payments_len != 0 {
+            println!("Failed to pay for {failed_payments_len} chunks with:");
+            println!("{:#?}", recorded_pay_errors);
+        }
         if failed_uploads_len != 0 {
             println!("Failed to upload {failed_uploads_len} chunks with:");
             println!("{:#?}", recorded_upload_errors);
