@@ -13,7 +13,7 @@ use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, GetRecordCfg, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -115,9 +115,13 @@ impl Node {
                     trace!(
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
                     );
-                    node.network
-                        .get_record_from_network(key, None, Quorum::One, false, Default::default())
-                        .await?
+                    let get_cfg = GetRecordCfg {
+                        get_quorum: Quorum::One,
+                        re_attempt: false,
+                        target_record: None,
+                        expected_holders: Default::default(),
+                    };
+                    node.network.get_record_from_network(key, &get_cfg).await?
                 };
 
                 trace!(
