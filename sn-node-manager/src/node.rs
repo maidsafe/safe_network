@@ -16,8 +16,8 @@ use std::str::FromStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NodeStatus {
-    /// The node service has been installed but not started for the first time
-    Installed,
+    /// The node service has been added but not started for the first time
+    Added,
     /// Last time we checked the service was running
     Running,
     /// The node service has been stopped
@@ -49,7 +49,7 @@ where
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct InstalledNode {
+pub struct Node {
     pub version: String,
     pub service_name: String,
     pub user: String,
@@ -69,7 +69,7 @@ pub struct InstalledNode {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
-    pub installed_nodes: Vec<InstalledNode>,
+    pub nodes: Vec<Node>,
 }
 
 impl NodeRegistry {
@@ -82,9 +82,7 @@ impl NodeRegistry {
 
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
-            return Ok(NodeRegistry {
-                installed_nodes: vec![],
-            });
+            return Ok(NodeRegistry { nodes: vec![] });
         }
         let mut file = std::fs::File::open(path)?;
         let mut contents = String::new();

@@ -61,7 +61,6 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 - [Peers Acquisition](https://github.com/maidsafe/sn_peers_acqisition/blob/master/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/sn_build_info/blob/master/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
-
 ## Run your MaidSafe Local Test Network in 4 easy Steps
 Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
 <br>

@@ -8,16 +8,16 @@ As with other Safe-related components, Safenode Manager will shortly be availabl
 
 ## Commands
 
-### Install
+### Add
 
-- Command: `install`
-- Description: Downloads and installs `safenode` as a service.
+- Command: `add`
+- Description: Downloads `safenode` and sets up a new service.
 - Options:
-  - `--count`: Number of service instances to install. Optional. Default: 1.
+  - `--count`: Number of service instances to add. Optional. Default: 1.
   - `--data-dir-path`: Path for the data directory. Optional, with platform-specific defaults.
   - `--log-dir-path`: Path for the log directory. Optional, with platform-specific defaults.
   - `--user`: User account under which the service should run. Optional. Default: `safe`.
-  - `--version`: Version of `safenode` to install. Optional. Default: the latest version.
+  - `--version`: Version of `safenode` to add. Optional. Default: the latest version.
 - Usage: `safenode-manager install [OPTIONS]`
 
 This command must run as the root user on Linux/macOS and the Administrator user on Windows.
@@ -26,7 +26,7 @@ The default location for the node's data directory will be `/var/safenode-manage
 
 On Linux and macOS, a non-root user account, `safe`, will be created, and the service will run as this user. If you'd like to use a different user, override with the `--user` argument. This argument will have no effect on Windows, where the service will be running as the `LocalSystem` account.
 
-Nodes will not be started after they are installed.
+Nodes will not be started after they are added.
 
 The command can run as many times as you like to repeatedly add more nodes.
 
