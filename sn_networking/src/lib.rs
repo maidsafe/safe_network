@@ -20,7 +20,6 @@ mod metrics;
 #[cfg(feature = "open-metrics")]
 mod metrics_service;
 mod network_discovery;
-mod quorum;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
@@ -32,7 +31,6 @@ pub use self::{
     driver::{NetworkBuilder, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
-    quorum::GetQuorum,
     record_store::NodeRecordStore,
 };
 
@@ -337,7 +335,7 @@ impl Network {
         &self,
         key: RecordKey,
         target_record: Option<Record>,
-        quorum: GetQuorum,
+        quorum: Quorum,
         re_attempt: bool,
         expected_holders: ExpectedHoldersList,
     ) -> Result<Record> {
@@ -391,7 +389,7 @@ impl Network {
                 Err(Error::RecordNotEnoughCopies(returned_record)) => {
                     debug!("Not enough copies found yet for {pretty_key:?}");
                     // Only return when completed all attempts
-                    if verification_attempts >= total_attempts && matches!(quorum, GetQuorum::One) {
+                    if verification_attempts >= total_attempts && matches!(quorum, Quorum::One) {
                         if target_record.is_none()
                             || (target_record.is_some()
                                 && target_record == Some(returned_record.clone()))
@@ -539,17 +537,11 @@ impl Network {
             tokio::time::sleep(wait_duration).await;
             trace!("attempting to verify {pretty_key:?}");
 
-            let get_quorum = match quorum {
-                Quorum::One => GetQuorum::One,
-                Quorum::Majority => GetQuorum::Majority,
-                Quorum::All => GetQuorum::All,
-                Quorum::N(v) => GetQuorum::N(v),
-            };
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(
                 record.key.clone(),
                 verify_store,
-                get_quorum,
+                quorum,
                 true,
                 expected_holders,
             )

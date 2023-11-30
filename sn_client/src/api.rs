@@ -21,8 +21,7 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetQuorum, NetworkBuilder, NetworkEvent,
-    CLOSE_GROUP_SIZE,
+    multiaddr_is_global, Error as NetworkError, NetworkBuilder, NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -298,9 +297,9 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let quorum = if is_verifying {
-            GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
+            Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
         } else {
-            GetQuorum::One
+            Quorum::One
         };
         let maybe_record = self
             .network
@@ -450,7 +449,7 @@ impl Client {
 
         let record = self
             .network
-            .get_record_from_network(key, None, GetQuorum::One, true, expected_holders)
+            .get_record_from_network(key, None, Quorum::One, true, expected_holders)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -470,7 +469,7 @@ impl Client {
             .get_record_from_network(
                 key,
                 None,
-                GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
                 false,
                 Default::default(),
             )
@@ -538,7 +537,7 @@ impl Client {
         );
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key.clone(), None, Quorum::All, true, Default::default())
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(

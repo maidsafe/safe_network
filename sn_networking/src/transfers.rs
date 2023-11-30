@@ -6,17 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeSet;
-
-use crate::{GetQuorum, Network};
-
+use crate::Network;
+use libp2p::kad::Quorum;
 use sn_protocol::{
     error::{Error, Result},
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{CashNote, DerivationIndex, SignedSpend, Transaction, UniquePubkey};
-use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, Transfer};
+use sn_transfers::{
+    CashNote, CashNoteRedemption, DerivationIndex, LocalWallet, MainPubkey, SignedSpend,
+    Transaction, Transfer, UniquePubkey,
+};
+use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
 impl Network {
@@ -24,7 +25,7 @@ impl Network {
     pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let record = self
-            .get_record_from_network(key, None, GetQuorum::All, re_attempt, Default::default())
+            .get_record_from_network(key, None, Quorum::All, re_attempt, Default::default())
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!(

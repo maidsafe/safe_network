@@ -9,8 +9,7 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATE_RANGE,
+    sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use libp2p::{
@@ -106,7 +105,7 @@ pub enum SwarmCmd {
     GetNetworkRecord {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
-        quorum: GetQuorum,
+        quorum: Quorum,
         expected_holders: HashSet<PeerId>,
     },
     /// GetLocalStoreCost for this node

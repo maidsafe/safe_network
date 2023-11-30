@@ -8,11 +8,12 @@
 
 use crate::node::Node;
 use crate::{error::Result, log_markers::Marker};
+use libp2p::kad::Quorum;
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -115,13 +116,7 @@ impl Node {
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
                     );
                     node.network
-                        .get_record_from_network(
-                            key,
-                            None,
-                            GetQuorum::One,
-                            false,
-                            Default::default(),
-                        )
+                        .get_record_from_network(key, None, Quorum::One, false, Default::default())
                         .await?
                 };
 
