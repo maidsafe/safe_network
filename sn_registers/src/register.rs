@@ -155,7 +155,7 @@ impl Register {
     /// Returns a bytes version of the Register used for signing
     /// Use this API when you want to sign a Register withtout providing a secret key to the Register API
     pub fn bytes(&self) -> Result<Vec<u8>> {
-        rmp_serde::to_vec(self).map_err(|_| Error::SerialisationFailed)
+        bincode::serialize(self).map_err(|_| Error::SerialisationFailed)
     }
 
     /// Sign a Register into a SignedRegister
