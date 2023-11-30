@@ -34,7 +34,7 @@ use libp2p::quic;
 use libp2p::{
     autonat,
     identity::Keypair,
-    kad::{self, QueryId, Record, K_VALUE},
+    kad::{self, QueryId, Quorum, Record, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
@@ -48,10 +48,12 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{Request, Response},
-    NetworkAddress, PrettyPrintKBucketKey,
+    storage::RecordKind,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
     collections::{HashMap, HashSet},
+    fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
@@ -61,8 +63,7 @@ use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
-/// List of expected record holders to be verified.
-pub(super) type ExpectedHoldersList = HashSet<PeerId>;
+type ExpectedHoldersList = HashSet<PeerId>;
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -118,6 +119,51 @@ pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
     } else {
         full_str
     }
+}
+
+/// The various settings to apply to when fetching a record from network
+#[derive(Clone)]
+pub struct GetRecordCfg {
+    /// The query will result in an error if we get records less than the provided Quorum
+    pub get_quorum: Quorum,
+    /// If set to true, we retry upto GET_RETRY_ATTEMPTS times
+    pub re_attempt: bool,
+    /// Only return if we fetch the provided record.
+    pub target_record: Option<Record>,
+    /// Logs if the record was not fetched from the provided set of peers.
+    pub expected_holders: HashSet<PeerId>,
+}
+
+impl Debug for GetRecordCfg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut f = f.debug_struct("GetRecordCfg");
+        f.field("get_quorum", &self.get_quorum)
+            .field("re_attempt", &self.re_attempt);
+
+        match &self.target_record {
+            Some(record) => {
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
+                f.field("target_record", &pretty_key);
+            }
+            None => {
+                f.field("target_record", &"None");
+            }
+        };
+
+        f.field("expected_holders", &self.expected_holders).finish()
+    }
+}
+
+/// The various settings related to writing a record to the network.
+#[derive(Debug, Clone)]
+pub struct PutRecordCfg {
+    /// The quorum used by KAD PUT. This does not necessarily enforce any quorum, it just makes sure we deliver the PUT
+    /// the specified number of peers.
+    pub put_quorum: Quorum,
+    /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
+    pub re_attempt: bool,
+    /// Enables verification after writing. The RecordKind is used to determine the verification delay.
+    pub verification: Option<(RecordKind, GetRecordCfg)>,
 }
 
 /// NodeBehaviour struct
