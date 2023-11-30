@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -24,7 +24,7 @@ use libp2p::{
     autonat::{self, NatStatus},
     kad::{
         self, GetClosestPeersError, GetRecordError, GetRecordOk, InboundRequest, PeerRecord,
-        QueryId, QueryResult, Record, RecordKey, K_VALUE,
+        QueryId, QueryResult, Quorum, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -867,10 +867,10 @@ impl SwarmDriver {
                             })?;
 
                         let required_response_count = match quorum {
-                            GetQuorum::Majority => close_group_majority(),
-                            GetQuorum::All => CLOSE_GROUP_SIZE,
-                            GetQuorum::N(v) => v.into(),
-                            GetQuorum::One => 1,
+                            Quorum::Majority => close_group_majority(),
+                            Quorum::All => CLOSE_GROUP_SIZE,
+                            Quorum::N(v) => v.into(),
+                            Quorum::One => 1,
                         };
 
                         // if we've a split over the result xorname, then we don't attempt to resolve this here.
@@ -1133,10 +1133,10 @@ impl SwarmDriver {
                 };
 
             let expected_answers = match quorum {
-                GetQuorum::Majority => close_group_majority(),
-                GetQuorum::All => CLOSE_GROUP_SIZE,
-                GetQuorum::N(v) => v.get(),
-                GetQuorum::One => 1,
+                Quorum::Majority => close_group_majority(),
+                Quorum::All => CLOSE_GROUP_SIZE,
+                Quorum::N(v) => v.get(),
+                Quorum::One => 1,
             };
 
             let responded_peers = peer_list.len();
@@ -1188,7 +1188,7 @@ impl SwarmDriver {
             if expected_holders.is_empty() &&
                RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
                // Ensure that we only exit early if quorum is indeed for only one match
-               matches!(quorum, GetQuorum::One)
+               matches!(quorum, Quorum::One)
             {
                 // Stop the query; possibly stops more nodes from being queried.
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {

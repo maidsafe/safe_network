@@ -22,7 +22,7 @@ use crate::{
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    GetQuorum, Network, CLOSE_GROUP_SIZE,
+    Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "quic")]
@@ -78,7 +78,7 @@ type PendingGetRecord = HashMap<
     (
         oneshot::Sender<Result<Record>>,
         GetRecordResultMap,
-        GetQuorum,
+        Quorum,
         ExpectedHoldersList,
     ),
 >;
