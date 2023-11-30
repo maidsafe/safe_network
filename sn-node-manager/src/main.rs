@@ -6,15 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod add_service;
 mod config;
 mod control;
-mod install;
 mod node;
 mod service;
 
+use crate::add_service::{add, AddServiceOptions};
 use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
 use crate::control::{start, status, stop};
-use crate::install::{install, InstallOptions};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
@@ -35,11 +35,11 @@ pub(crate) struct Cmd {
 
 #[derive(Subcommand, Debug)]
 pub enum SubCmd {
-    /// Install safenode as a service.
+    /// Add one or more new safenode services.
     ///
     /// This command must run as the root/administrative user.
-    #[clap(name = "install")]
-    Install {
+    #[clap(name = "add")]
+    Add {
         /// The number of service instances
         #[clap(long)]
         count: Option<u16>,
@@ -116,7 +116,7 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
     match args.cmd {
-        SubCmd::Install {
+        SubCmd::Add {
             count,
             log_dir_path,
             data_dir_path,
@@ -142,8 +142,8 @@ async fn main() -> Result<()> {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
 
-            install(
-                InstallOptions {
+            add(
+                AddServiceOptions {
                     safenode_dir_path: get_safenode_install_path()?,
                     service_data_dir_path,
                     service_log_dir_path,
@@ -178,7 +178,7 @@ async fn main() -> Result<()> {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if let Some(ref name) = service_name {
                 let node = node_registry
-                    .installed_nodes
+                    .nodes
                     .iter_mut()
                     .find(|x| x.service_name == *name)
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
@@ -188,7 +188,7 @@ async fn main() -> Result<()> {
             } else if let Some(ref peer_id) = peer_id {
                 let peer_id = PeerId::from_str(peer_id)?;
                 let node = node_registry
-                    .installed_nodes
+                    .nodes
                     .iter_mut()
                     .find(|x| x.peer_id == Some(peer_id))
                     .ok_or_else(|| {
@@ -201,7 +201,7 @@ async fn main() -> Result<()> {
                 let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
                 start(node, &NodeServiceManager {}, &rpc_client).await?;
             } else {
-                for node in node_registry.installed_nodes.iter_mut() {
+                for node in node_registry.nodes.iter_mut() {
                     let rpc_client =
                         RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
                     start(node, &NodeServiceManager {}, &rpc_client).await?;
@@ -240,7 +240,7 @@ async fn main() -> Result<()> {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if let Some(ref name) = service_name {
                 let node = node_registry
-                    .installed_nodes
+                    .nodes
                     .iter_mut()
                     .find(|x| x.service_name == *name)
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
@@ -248,7 +248,7 @@ async fn main() -> Result<()> {
             } else if let Some(ref peer_id) = peer_id {
                 let peer_id = PeerId::from_str(peer_id)?;
                 let node = node_registry
-                    .installed_nodes
+                    .nodes
                     .iter_mut()
                     .find(|x| x.peer_id == Some(peer_id))
                     .ok_or_else(|| {
@@ -259,7 +259,7 @@ async fn main() -> Result<()> {
                     })?;
                 stop(node, &NodeServiceManager {}).await?;
             } else {
-                for node in node_registry.installed_nodes.iter_mut() {
+                for node in node_registry.nodes.iter_mut() {
                     stop(node, &NodeServiceManager {}).await?;
                 }
             }
