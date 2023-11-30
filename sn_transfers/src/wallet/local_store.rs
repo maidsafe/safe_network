@@ -405,7 +405,7 @@ impl LocalWallet {
             .available_cash_notes
             .retain(|k, _| !spent_unique_pubkeys.contains(k));
         for spent in spent_unique_pubkeys {
-            self.wallet.spent_cash_notes.insert(spent);
+            self.wallet.spent_cash_notes.insert(*spent);
         }
 
         if let Some(cash_note) = transfer.change_cash_note {

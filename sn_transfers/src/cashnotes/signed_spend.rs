@@ -64,9 +64,11 @@ impl SignedSpend {
 
     /// Verify this SignedSpend
     ///
-    /// Checks that the spend was indeed spent for the given Tx hash, and that it was
-    /// signed by the DerivedSecretKey. Also verifies that that signature is
-    /// valid for this SignedSpend.
+    /// Checks that
+    /// - the spend was indeed spent for the given Tx
+    /// - it was signed by the DerivedSecretKey that owns the CashNote for this Spend
+    /// - the signature is valid
+    /// - its value didn't change between the two transactions it is involved in (creation and spending)
     pub fn verify(&self, spent_tx_hash: Hash) -> Result<()> {
         // verify that input spent_tx_hash matches self.spent_tx_hash
         if spent_tx_hash != self.spent_tx_hash() {
@@ -74,6 +76,28 @@ impl SignedSpend {
                 spent_tx_hash,
                 self.spent_tx_hash(),
             ));
+        }
+
+        // check that the value of the spend wasn't tampered with
+        let claimed_value = self.spend.token;
+        let creation_value = self
+            .spend
+            .parent_tx
+            .outputs
+            .iter()
+            .find(|o| o.unique_pubkey == self.spend.unique_pubkey)
+            .map(|o| o.amount)
+            .unwrap_or(NanoTokens::zero());
+        let spent_value = self
+            .spend
+            .spent_tx
+            .inputs
+            .iter()
+            .find(|i| i.unique_pubkey == self.spend.unique_pubkey)
+            .map(|i| i.amount)
+            .unwrap_or(NanoTokens::zero());
+        if claimed_value != creation_value || creation_value != spent_value {
+            return Err(Error::InvalidSpendValue(*self.unique_pubkey()));
         }
 
         // check signature
