@@ -23,7 +23,7 @@ use sn_protocol::safenode_proto::{
     TransferNotifsFilterRequest,
 };
 use sn_protocol::storage::SpendAddress;
-use sn_transfers::{LocalWallet, MainPubkey, MainSecretKey};
+use sn_transfers::{MainPubkey, WatchOnlyWallet};
 use std::{fs, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
@@ -219,19 +219,19 @@ pub async fn transfers_events(
     log_cash_notes: Option<PathBuf>,
     bootstrap_peers: Option<Vec<Multiaddr>>,
 ) -> Result<()> {
-    let (client, mut wallet, pk) = match SecretKey::from_hex(&sk) {
-        Ok(sk) => {
-            let pk = sk.public_key();
-            let client = Client::new(sk.clone(), bootstrap_peers, true, None).await?;
-            let main_sk = MainSecretKey::new(sk);
+    let (client, mut wallet) = match MainPubkey::from_hex(&sk) {
+        Ok(main_pubkey) => {
+            let client = Client::new(SecretKey::random(), bootstrap_peers, true, None).await?;
             let wallet_dir = TempDir::new()?;
-            let wallet = LocalWallet::load_from_main_key(&wallet_dir, main_sk)?;
-            (client, wallet, pk)
+            let wallet = WatchOnlyWallet::load_from(&wallet_dir, main_pubkey)?;
+            (client, wallet)
         }
-        Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
+        Err(err) => return Err(eyre!("Failed to parse hex-encoded PK: {err:?}")),
     };
     let endpoint = format!("https://{addr}");
     let mut node_client = SafeNodeClient::connect(endpoint).await?;
+    let main_pk = wallet.address();
+    let pk = main_pk.public_key();
     let _ = node_client
         .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
             pk: pk.to_bytes().to_vec(),
@@ -257,7 +257,6 @@ pub async fn transfers_events(
     println!();
 
     let mut stream = response.into_inner();
-    let main_pk = MainPubkey(pk);
     while let Some(Ok(e)) = stream.next().await {
         let cash_notes = match NodeEvent::from_bytes(&e.event) {
             Ok(NodeEvent::TransferNotif {
