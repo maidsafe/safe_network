@@ -11,7 +11,6 @@ use super::{
     KeyLessWallet,
 };
 use crate::{CashNote, SignedSpend, SpendAddress, UniquePubkey};
-use serde::Serialize;
 use std::{
     collections::BTreeSet,
     fs,
@@ -28,8 +27,7 @@ const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
 pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
     let wallet_path = wallet_dir.join(WALLET_FILE_NAME);
     let mut file = fs::File::create(wallet_path)?;
-    let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
-    wallet.serialize(&mut serialiser)?;
+    bincode::serialize_into(&mut file, &wallet)?;
     Ok(())
 }
 
@@ -51,7 +49,7 @@ pub(super) fn get_wallet(wallet_dir: &Path) -> Result<Option<KeyLessWallet>> {
     }
 
     let bytes = fs::read(&path)?;
-    let wallet = rmp_serde::from_slice(&bytes)?;
+    let wallet = bincode::deserialize(&bytes)?;
 
     Ok(Some(wallet))
 }
@@ -64,8 +62,7 @@ pub(super) fn store_unconfirmed_spend_requests(
     let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
 
     let mut file = fs::File::create(unconfirmed_spend_requests_path)?;
-    let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
-    unconfirmed_spend_requests.serialize(&mut serialiser)?;
+    bincode::serialize_into(&mut file, &unconfirmed_spend_requests)?;
     Ok(())
 }
 
@@ -78,8 +75,8 @@ pub(super) fn get_unconfirmed_spend_requests(
         return Ok(None);
     }
 
-    let file = fs::File::open(&path)?;
-    let unconfirmed_spend_requests = rmp_serde::from_read(&file)?;
+    let reader = fs::File::open(&path)?;
+    let unconfirmed_spend_requests = bincode::deserialize_from(&reader)?;
 
     Ok(Some(unconfirmed_spend_requests))
 }

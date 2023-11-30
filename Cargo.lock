@@ -4791,6 +4791,7 @@ name = "sn_transfers"
 version = "0.14.23"
 dependencies = [
  "assert_fs",
+ "bincode",
  "blsttc",
  "criterion 0.4.0",
  "custom_debug",

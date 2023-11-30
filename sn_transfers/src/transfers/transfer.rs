@@ -109,14 +109,14 @@ impl Transfer {
         let mut bytes = hex::decode(hex).map_err(|_| Error::TransferDeserializationFailed)?;
         bytes.reverse();
         let transfer: Transfer =
-            rmp_serde::from_slice(&bytes).map_err(|_| Error::TransferDeserializationFailed)?;
+            bincode::deserialize(&bytes).map_err(|_| Error::TransferDeserializationFailed)?;
         Ok(transfer)
     }
 
     /// Serialize this `Transfer` instance to a readable hex string that a human can copy paste
     pub fn to_hex(&self) -> Result<String> {
         let mut serialized =
-            rmp_serde::to_vec(&self).map_err(|_| Error::TransferSerializationFailed)?;
+            bincode::serialize(&self).map_err(|_| Error::TransferSerializationFailed)?;
         serialized.reverse();
         Ok(hex::encode(serialized))
     }

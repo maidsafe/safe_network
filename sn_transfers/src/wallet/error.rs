@@ -64,12 +64,9 @@ pub enum Error {
     /// Bls error
     #[error("Bls error: {0}")]
     Bls(#[from] bls::error::Error),
-    /// MsgPack serialisation error
-    #[error("MsgPack serialisation error:: {0}")]
-    Serialisation(#[from] rmp_serde::encode::Error),
-    /// MsgPack deserialisation error
-    #[error("MsgPack deserialisation error:: {0}")]
-    Deserialisation(#[from] rmp_serde::decode::Error),
+    /// Bincode error
+    #[error("Bincode error:: {0}")]
+    Bincode(#[from] bincode::Error),
     /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),

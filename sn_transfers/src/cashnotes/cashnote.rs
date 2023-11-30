@@ -178,7 +178,7 @@ impl CashNote {
         let mut bytes =
             hex::decode(hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
         bytes.reverse();
-        let cashnote: CashNote = rmp_serde::from_slice(&bytes)
+        let cashnote: CashNote = bincode::deserialize(&bytes)
             .map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
         Ok(cashnote)
     }
@@ -186,7 +186,7 @@ impl CashNote {
     /// Serialize this `CashNote` instance to a hex string.
     pub fn to_hex(&self) -> Result<String, Error> {
         let mut serialized =
-            rmp_serde::to_vec(&self).map_err(|e| Error::HexSerializationFailed(e.to_string()))?;
+            bincode::serialize(&self).map_err(|e| Error::HexSerializationFailed(e.to_string()))?;
         serialized.reverse();
         Ok(hex::encode(serialized))
     }
