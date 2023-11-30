@@ -75,7 +75,10 @@ impl LocalWallet {
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_notes_to_disk(&self, cash_notes: &[&CashNote]) -> Result<()> {
+    pub fn store_cash_notes_to_disk<'a, T>(&self, cash_notes: T) -> Result<()>
+    where
+        T: IntoIterator<Item = &'a CashNote>,
+    {
         store_created_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
     }
 
@@ -89,11 +92,7 @@ impl LocalWallet {
 
     /// Remove CashNote from available_cash_notes and add it to spent_cash_notes.
     pub fn mark_note_as_spent(&mut self, cash_note_id: UniquePubkey) {
-        self.watchonly_wallet
-            .available_cash_notes_mut()
-            .remove(&cash_note_id);
-        self.watchonly_wallet
-            .insert_spent_cash_notes(&[cash_note_id]);
+        self.watchonly_wallet.mark_notes_as_spent(&[cash_note_id]);
     }
 
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
@@ -361,29 +360,20 @@ impl LocalWallet {
             .map(|input| input.unique_pubkey())
             .collect();
 
-        // Use retain to remove spent CashNotes in one pass, improving performance
         self.watchonly_wallet
-            .available_cash_notes_mut()
-            .retain(|k, _| !spent_unique_pubkeys.contains(k));
-        self.watchonly_wallet
-            .insert_spent_cash_notes(spent_unique_pubkeys);
+            .mark_notes_as_spent(spent_unique_pubkeys);
 
         if let Some(cash_note) = transfer.change_cash_note {
-            let id = cash_note.unique_pubkey();
-            let value = cash_note.value()?;
-            self.watchonly_wallet
-                .available_cash_notes_mut()
-                .insert(id, value);
-            self.store_cash_notes_to_disk(&[&cash_note])?;
+            self.watchonly_wallet.deposit(&[cash_note.clone()])?;
+            self.store_cash_notes_to_disk(&[cash_note])?;
         }
 
         for cash_note in &transfer.created_cash_notes {
             self.watchonly_wallet
-                .cash_notes_created_for_others_mut()
-                .insert(cash_note.unique_pubkey());
+                .insert_cash_note_created_for_others(cash_note.unique_pubkey());
         }
         // Store created CashNotes in a batch, improving IO performance
-        self.store_cash_notes_to_disk(&transfer.created_cash_notes.iter().collect::<Vec<_>>())?;
+        self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
@@ -818,7 +808,7 @@ mod tests {
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
-        sender.store_cash_notes_to_disk(&[&cash_note])?;
+        sender.store_cash_notes_to_disk(&[cash_note])?;
 
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&unique_pubkey).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));

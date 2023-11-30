@@ -86,10 +86,13 @@ pub(super) fn get_unconfirmed_spend_requests(
 
 /// Hex encode and write each `CashNote` to a separate file in respective
 /// recipient public address dir in the created cash_notes dir. Each file is named after the cash_note id.
-pub(super) fn store_created_cash_notes(
-    created_cash_notes: &[&CashNote],
+pub(super) fn store_created_cash_notes<'a, T>(
+    created_cash_notes: T,
     wallet_dir: &Path,
-) -> Result<()> {
+) -> Result<()>
+where
+    T: IntoIterator<Item = &'a CashNote>,
+{
     // The create cash_notes dir within the wallet dir.
     let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
     for cash_note in created_cash_notes {

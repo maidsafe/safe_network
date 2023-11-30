@@ -99,7 +99,10 @@ impl WatchOnlyWallet {
     }
 
     /// Deposit the given cash_notes onto the wallet (without storing them to disk).
-    pub fn deposit(&mut self, received_cash_notes: &Vec<CashNote>) -> Result<()> {
+    pub fn deposit<'a, T>(&mut self, received_cash_notes: T) -> Result<()>
+    where
+        T: IntoIterator<Item = &'a CashNote>,
+    {
         for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
 
@@ -149,7 +152,7 @@ impl WatchOnlyWallet {
             let value = cash_note.value()?;
             self.keyless_wallet.available_cash_notes.insert(id, value);
 
-            store_created_cash_notes(&[cash_note], &self.wallet_dir)?;
+            store_created_cash_notes([cash_note], &self.wallet_dir)?;
         }
 
         self.store(exclusive_access)
@@ -170,9 +173,15 @@ impl WatchOnlyWallet {
         &self.keyless_wallet.available_cash_notes
     }
 
-    ///
-    pub fn available_cash_notes_mut(&mut self) -> &mut BTreeMap<UniquePubkey, NanoTokens> {
-        &mut self.keyless_wallet.available_cash_notes
+    /// Remove referenced CashNotes from available_cash_notes and add it to spent_cash_notes.
+    pub fn mark_notes_as_spent<'a, T>(&mut self, unique_pubkeys: T)
+    where
+        T: IntoIterator<Item = &'a UniquePubkey>,
+    {
+        for k in unique_pubkeys {
+            self.keyless_wallet.available_cash_notes.remove(k);
+            self.keyless_wallet.spent_cash_notes.insert(*k);
+        }
     }
 
     /// Return the set of UnniquePubjkey's of spent cash notes.
@@ -190,22 +199,25 @@ impl WatchOnlyWallet {
         }
     }
 
-    ///
+    /// Return cash notes created for others
     pub fn cash_notes_created_for_others(&self) -> &BTreeSet<UniquePubkey> {
         &self.keyless_wallet.cash_notes_created_for_others
     }
 
-    ///
-    pub fn cash_notes_created_for_others_mut(&mut self) -> &mut BTreeSet<UniquePubkey> {
-        &mut self.keyless_wallet.cash_notes_created_for_others
+    /// Record pubkey as a cash note created for others
+    pub fn insert_cash_note_created_for_others(&mut self, unique_pubkey: UniquePubkey) {
+        let _ = self
+            .keyless_wallet
+            .cash_notes_created_for_others
+            .insert(unique_pubkey);
     }
 
-    ///
+    /// Return a payment transaction detail
     pub fn get_payment_transaction(&self, name: &XorName) -> Option<&PaymentDetails> {
         self.keyless_wallet.payment_transactions.get(name)
     }
 
-    ///
+    /// Insert a payment transaction
     pub fn insert_payment_transaction(&mut self, name: XorName, payment: PaymentDetails) {
         self.keyless_wallet
             .payment_transactions
