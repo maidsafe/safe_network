@@ -11,16 +11,18 @@ use crate::service::{ServiceConfig, ServiceControl};
 use color_eyre::Result;
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
+use libp2p::Multiaddr;
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 use std::sync::Arc;
 
 pub struct AddServiceOptions {
+    pub count: Option<u16>,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
+    pub peers: Vec<Multiaddr>,
     pub user: String,
-    pub count: Option<u16>,
     pub version: Option<String>,
 }
 
@@ -98,6 +100,7 @@ pub async fn add(
             service_user: install_options.user.clone(),
             log_dir_path: service_log_dir_path.clone(),
             data_dir_path: service_data_dir_path.clone(),
+            peers: install_options.peers.clone(),
         })?;
 
         added_service_data.push((
@@ -249,6 +252,7 @@ mod tests {
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
+        // let peers: Vec<Multiaddr> = vec![];
         mock_service_control
             .expect_install()
             .times(1)
@@ -260,17 +264,20 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
+        println!("about to call add...");
         add(
             AddServiceOptions {
+                count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
+                peers: vec![],
                 user: "safe".to_string(),
-                count: None,
                 version: None,
             },
             &mut node_registry,
@@ -378,6 +385,7 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -405,6 +413,7 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -432,17 +441,19 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         add(
             AddServiceOptions {
+                count: Some(3),
+                peers: vec![],
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 user: "safe".to_string(),
-                count: Some(3),
                 version: None,
             },
             &mut node_registry,
@@ -573,17 +584,19 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         add(
             AddServiceOptions {
+                count: None,
+                peers: vec![],
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 user: "safe".to_string(),
-                count: None,
                 version: Some(specific_version.to_string()),
             },
             &mut node_registry,
@@ -703,17 +716,19 @@ mod tests {
                 service_user: "safe".to_string(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+                peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
         add(
             AddServiceOptions {
+                count: None,
+                peers: vec![],
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 user: "safe".to_string(),
-                count: None,
                 version: None,
             },
             &mut node_registry,

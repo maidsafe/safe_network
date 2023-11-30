@@ -8,6 +8,7 @@
 
 use crate::config::create_owned_dir;
 use color_eyre::Result;
+use libp2p::Multiaddr;
 #[cfg(test)]
 use mockall::automock;
 use service_manager::{
@@ -27,6 +28,7 @@ pub struct ServiceConfig {
     pub service_user: String,
     pub log_dir_path: PathBuf,
     pub data_dir_path: PathBuf,
+    pub peers: Vec<Multiaddr>,
 }
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
@@ -156,24 +158,38 @@ impl ServiceControl for NodeServiceManager {
 
         let label: ServiceLabel = config.name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
+        let mut args = vec![
+            OsString::from("--port"),
+            OsString::from(config.node_port.to_string()),
+            OsString::from("--rpc"),
+            OsString::from(format!("127.0.0.1:{}", config.rpc_port)),
+            OsString::from("--root-dir"),
+            OsString::from(config.data_dir_path.to_string_lossy().to_string()),
+            OsString::from("--log-output-dest"),
+            OsString::from(config.log_dir_path.to_string_lossy().to_string()),
+        ];
+
+        if !config.peers.is_empty() {
+            let peers_str = config
+                .peers
+                .iter()
+                .map(|peer| peer.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+            args.push(OsString::from("--peer"));
+            args.push(OsString::from(peers_str));
+        }
+
         manager.install(ServiceInstallCtx {
             label: label.clone(),
             program: config.safenode_path.to_path_buf(),
-            args: vec![
-                OsString::from("--port"),
-                OsString::from(config.node_port.to_string()),
-                OsString::from("--rpc"),
-                OsString::from(format!("127.0.0.1:{}", config.rpc_port)),
-                OsString::from("--root-dir"),
-                OsString::from(config.data_dir_path.to_string_lossy().to_string()),
-                OsString::from("--log-output-dest"),
-                OsString::from(config.log_dir_path.to_string_lossy().to_string()),
-            ],
+            args,
             contents: None,
             username: Some(config.service_user.to_string()),
             working_directory: None,
             environment: None,
         })?;
+
         Ok(())
     }
 
