@@ -6,14 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::node::{InstalledNode, NodeRegistry, NodeStatus};
+use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use sn_node_rpc_client::RpcActions;
 
 pub async fn start(
-    node: &mut InstalledNode,
+    node: &mut Node,
     service_control: &dyn ServiceControl,
     rpc_client: &dyn RpcActions,
 ) -> Result<()> {
@@ -40,16 +40,16 @@ pub async fn start(
     node.peer_id = Some(node_info.peer_id);
     node.status = NodeStatus::Running;
 
-    println!("✓ Started {} service", node.service_name);
+    println!("{} Started {} service", "✓".green(), node.service_name);
     println!("  - Peer ID: {}", node_info.peer_id);
     println!("  - Logs: {}", node_info.log_path.to_string_lossy());
 
     Ok(())
 }
 
-pub async fn stop(node: &mut InstalledNode, service_control: &dyn ServiceControl) -> Result<()> {
+pub async fn stop(node: &mut Node, service_control: &dyn ServiceControl) -> Result<()> {
     match node.status {
-        NodeStatus::Installed => Err(eyre!(
+        NodeStatus::Added => Err(eyre!(
             "Service {} has not been started since it was installed",
             node.service_name
         )),
@@ -59,18 +59,28 @@ pub async fn stop(node: &mut InstalledNode, service_control: &dyn ServiceControl
                 println!("Attempting to stop {}...", node.service_name);
                 service_control.stop(&node.service_name)?;
                 println!(
-                    "✓ Service {} with PID {} was stopped",
-                    node.service_name, pid
+                    "{} Service {} with PID {} was stopped",
+                    "✓".green(),
+                    node.service_name,
+                    pid
                 );
             } else {
-                println!("✓ Service {} was already stopped", node.service_name);
+                println!(
+                    "{} Service {} was already stopped",
+                    "✓".green(),
+                    node.service_name
+                );
             }
             node.pid = None;
             node.status = NodeStatus::Stopped;
             Ok(())
         }
         NodeStatus::Stopped => {
-            println!("✓ Service {} was already stopped", node.service_name);
+            println!(
+                "{} Service {} was already stopped",
+                "✓".green(),
+                node.service_name
+            );
             Ok(())
         }
     }
@@ -83,7 +93,7 @@ pub async fn status(
 ) -> Result<()> {
     // Again confirm that services which are marked running are still actually running.
     // If they aren't we'll mark them as stopped.
-    for node in &mut node_registry.installed_nodes {
+    for node in &mut node_registry.nodes {
         if let NodeStatus::Running = node.status {
             if let Some(pid) = node.pid {
                 if !service_control.is_service_process_running(pid) {
@@ -95,7 +105,7 @@ pub async fn status(
     }
 
     if detailed_view {
-        for node in &node_registry.installed_nodes {
+        for node in &node_registry.nodes {
             println!("{} - {}", node.service_name, format_status(&node.status));
             println!("\tVersion: {}", node.version);
             println!(
@@ -113,7 +123,7 @@ pub async fn status(
         }
     } else {
         println!("{:<20} {:<52} Status", "Service Name", "Peer ID");
-        for node in &node_registry.installed_nodes {
+        for node in &node_registry.nodes {
             let peer_id = node
                 .peer_id
                 .map_or_else(|| "-".to_string(), |p| p.to_string());
@@ -133,14 +143,14 @@ fn format_status(status: &NodeStatus) -> String {
     match status {
         NodeStatus::Running => "RUNNING".green().to_string(),
         NodeStatus::Stopped => "STOPPED".red().to_string(),
-        NodeStatus::Installed => "INSTALLED".yellow().to_string(),
+        NodeStatus::Added => "ADDED".yellow().to_string(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{InstalledNode, NodeStatus};
+    use crate::node::{Node, NodeStatus};
     use crate::service::MockServiceControl;
     use assert_matches::assert_matches;
     use async_trait::async_trait;
@@ -195,14 +205,14 @@ mod tests {
             })
         });
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
             port: 8080,
             rpc_port: 8081,
-            status: NodeStatus::Installed,
+            status: NodeStatus::Added,
             pid: None,
             peer_id: None,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
@@ -247,7 +257,7 @@ mod tests {
             })
         });
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 2".to_string(),
             user: "safe".to_string(),
@@ -301,7 +311,7 @@ mod tests {
             })
         });
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -346,7 +356,7 @@ mod tests {
             })
         });
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -384,7 +394,7 @@ mod tests {
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -418,14 +428,14 @@ mod tests {
     async fn stop_should_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
         let mock_service_control = MockServiceControl::new();
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
             port: 8080,
             rpc_port: 8081,
-            status: NodeStatus::Installed,
+            status: NodeStatus::Added,
             pid: None,
             peer_id: None,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
@@ -452,7 +462,7 @@ mod tests {
     ) -> Result<()> {
         let mock_service_control = MockServiceControl::new();
 
-        let mut node = InstalledNode {
+        let mut node = Node {
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
