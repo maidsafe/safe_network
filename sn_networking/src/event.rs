@@ -286,7 +286,7 @@ impl SwarmDriver {
                                 let a = &mut self.swarm.behaviour_mut().autonat;
                                 // It could be that we are on a local network and have AutoNAT disabled.
                                 if let Some(autonat) = a.as_mut() {
-                                    trace!(%peer_id, ?addrs, "identify: attempting to add peer as server");
+                                    debug!(%peer_id, ?addrs, "identify: attempting to add peer as server");
                                     for multiaddr in addrs {
                                         autonat.add_server(peer_id, Some(multiaddr));
                                     }
@@ -400,7 +400,7 @@ impl SwarmDriver {
             } => {
                 event_string = "incoming";
 
-                trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
+                debug!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
@@ -410,7 +410,7 @@ impl SwarmDriver {
                 ..
             } => {
                 event_string = "ConnectionEstablished";
-                trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
+                debug!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -426,7 +426,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -491,6 +491,8 @@ impl SwarmDriver {
                     }
                 };
 
+                debug!("If {should_clean_peer:?} clean peer {failed_peer_id:?} with connection {connection_id:?}");
+
                 if should_clean_peer {
                     if let Some(dead_peer) = self
                         .swarm
@@ -527,7 +529,7 @@ impl SwarmDriver {
             other => {
                 event_string = "Other";
 
-                trace!("SwarmEvent has been ignored: {other:?}")
+                debug!("SwarmEvent has been ignored: {other:?}")
             }
         }
         trace!(
