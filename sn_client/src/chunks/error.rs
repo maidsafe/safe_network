@@ -30,10 +30,7 @@ pub enum Error {
     Io(#[from] io::Error),
 
     #[error(transparent)]
-    Serialisation(#[from] rmp_serde::encode::Error),
-
-    #[error(transparent)]
-    Deserialisation(#[from] rmp_serde::decode::Error),
+    Serialisation(#[from] Box<bincode::ErrorKind>),
 
     #[error("Cannot store empty file.")]
     EmptyFileProvided,

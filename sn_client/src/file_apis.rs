@@ -423,7 +423,7 @@ impl Files {
     /// the process repeats itself until it obtains the first level DataMapLevel.
     async fn unpack_chunk(&self, mut chunk: Chunk, batch_size: usize) -> Result<DataMap> {
         loop {
-            match rmp_serde::from_slice(chunk.value()).map_err(ChunksError::Deserialisation)? {
+            match bincode::deserialize(chunk.value()).map_err(ChunksError::Serialisation)? {
                 DataMapLevel::First(data_map) => {
                     return Ok(data_map);
                 }
@@ -432,8 +432,8 @@ impl Files {
                         .read_all(data_map, None, false, batch_size)
                         .await?
                         .unwrap();
-                    chunk = rmp_serde::from_slice(&serialized_chunk)
-                        .map_err(ChunksError::Deserialisation)?;
+                    chunk = bincode::deserialize(&serialized_chunk)
+                        .map_err(ChunksError::Serialisation)?;
                 }
             }
         }

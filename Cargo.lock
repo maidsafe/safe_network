@@ -4527,6 +4527,7 @@ name = "sn_client"
 version = "0.98.23"
 dependencies = [
  "async-trait",
+ "bincode",
  "blsttc",
  "bytes",
  "custom_debug",
@@ -4540,7 +4541,6 @@ dependencies = [
  "prometheus-client 0.22.0",
  "rand",
  "rayon",
- "rmp-serde",
  "self_encryption",
  "serde",
  "sn_networking",
