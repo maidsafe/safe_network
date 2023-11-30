@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::Network;
+use crate::{driver::GetRecordCfg, Network};
 use libp2p::kad::Quorum;
 use sn_protocol::{
     error::{Error, Result},
@@ -24,8 +24,14 @@ impl Network {
     /// Gets a spend from the Network.
     pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::All,
+            re_attempt,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
         let record = self
-            .get_record_from_network(key, None, Quorum::All, re_attempt, Default::default())
+            .get_record_from_network(key, &get_cfg)
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!(
