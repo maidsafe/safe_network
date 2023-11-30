@@ -47,7 +47,7 @@ const FORWARDER_CHOOSING_FACTOR: usize = 50;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
-const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
