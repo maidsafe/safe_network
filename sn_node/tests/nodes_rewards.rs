@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::{client::get_gossip_client_and_wallet, random_content};
+use crate::common::{get_gossip_client_and_wallet, random_content};
 use sn_client::{Client, ClientEvent, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};

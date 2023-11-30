@@ -9,7 +9,7 @@
 mod common;
 
 use assert_fs::TempDir;
-use common::client::{get_gossip_client_and_wallet, get_wallet};
+use common::{get_gossip_client_and_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
 use sn_logging::LogBuilder;

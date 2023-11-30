@@ -5,33 +5,110 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+
 #![allow(dead_code)]
 
-pub mod client;
-
-use bytes::Bytes;
-use eyre::{eyre, Result};
 use libp2p::PeerId;
-use rand::{
-    distributions::{Distribution, Standard},
-    Rng,
-};
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use sn_client::{Client, Files};
+use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client, Files};
+use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest,
 };
 use sn_protocol::storage::ChunkAddress;
+use sn_transfers::LocalWallet;
+
+use bytes::Bytes;
+use eyre::{eyre, Result};
+use lazy_static::lazy_static;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
+use sn_transfers::NanoTokens;
+use std::net::{IpAddr, Ipv4Addr};
 use std::{
     fs::File,
     io::Write,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::SocketAddr,
     path::{Path, PathBuf},
 };
+use tokio::sync::Mutex;
 use tonic::Request;
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
+
+pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+pub const NODE_COUNT: u32 = 25;
+
+const RPC_CONCURRENT_REQUESTS: usize = 20;
+
+lazy_static! {
+    // mutex to restrict access to faucet wallet from concurrent tests
+    static ref FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::new(());
+}
+
+///  Get a new Client for testing
+pub async fn get_gossip_client() -> Client {
+    let secret_key = bls::SecretKey::random();
+
+    let bootstrap_peers = if !cfg!(feature = "local-discovery") {
+        match std::env::var("SAFE_PEERS") {
+            Ok(str) => match parse_peer_addr(&str) {
+                Ok(peer) => Some(vec![peer]),
+                Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
+            },
+            Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
+        }
+    } else {
+        None
+    };
+
+    println!("Client bootstrap with peer {bootstrap_peers:?}");
+    Client::new(secret_key, bootstrap_peers, true, None)
+        .await
+        .expect("Client shall be successfully created.")
+}
+
+pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
+    LocalWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
+}
+
+pub async fn get_funded_wallet(
+    client: &Client,
+    from: LocalWallet,
+    root_dir: &Path,
+    amount: u64,
+) -> Result<LocalWallet> {
+    let wallet_balance = NanoTokens::from(amount);
+    let mut local_wallet = get_wallet(root_dir).await;
+
+    println!("Getting {wallet_balance} tokens from the faucet...");
+    let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
+
+    println!("Verifying the transfer from faucet...");
+    client.verify(&tokens).await?;
+    local_wallet.deposit_and_store_to_disk(&vec![tokens])?;
+    assert_eq!(local_wallet.balance(), wallet_balance);
+    println!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");
+
+    Ok(local_wallet)
+}
+
+/// Retrieve a client that is also listening for gossip
+pub async fn get_gossip_client_and_wallet(
+    root_dir: &Path,
+    amount: u64,
+) -> Result<(Client, LocalWallet)> {
+    let _guard = FAUCET_WALLET_MUTEX.lock().await;
+
+    let client = get_gossip_client().await;
+    let faucet = load_faucet_wallet_from_genesis_wallet(&client).await?;
+    let local_wallet = get_funded_wallet(&client, faucet, root_dir, amount).await?;
+
+    Ok((client, local_wallet))
+}
 
 pub fn random_content(
     client: &Client,

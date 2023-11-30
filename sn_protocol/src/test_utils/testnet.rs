@@ -31,7 +31,8 @@ pub struct DeploymentInventory {
 }
 
 impl DeploymentInventory {
-    pub fn load() -> Result<Self> {
+    #[allow(dead_code)]
+    pub fn from_json() -> Result<Self> {
         let path = Self::get_deployment_path()?;
         let inventory_file = std::fs::read(path)?;
         let inventory = serde_json::from_slice(&inventory_file)?;
@@ -40,6 +41,7 @@ impl DeploymentInventory {
 
     // Read the path from the env variable SN_INVENTORY
     // Else read deployment name from SN_INVENTORY
+    #[allow(dead_code)]
     fn get_deployment_path() -> Result<PathBuf> {
         let sn_inventory = env::var("SN_INVENTORY")
         .map_err(|_| eyre!("SN_INVENTORY not set. Provide either the deployment name or the direct path to the inventory.json file"))?;

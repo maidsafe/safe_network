@@ -10,7 +10,7 @@ mod common;
 
 use assert_fs::TempDir;
 use common::{
-    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart,
+    get_funded_wallet, get_gossip_client_and_wallet, get_wallet, node_restart, NODE_COUNT,
     PAYING_WALLET_INITIAL_BALANCE,
 };
 use eyre::{bail, eyre, Result};

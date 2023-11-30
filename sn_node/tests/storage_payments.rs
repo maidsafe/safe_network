@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::{client::get_gossip_client_and_wallet, random_content};
+use crate::common::{get_gossip_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
