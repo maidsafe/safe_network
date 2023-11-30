@@ -21,6 +21,7 @@ use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use libp2p_identity::PeerId;
 use sn_node_rpc_client::RpcClient;
+use sn_peers_acquisition::{parse_peers_args, PeersArgs};
 use sn_releases::SafeReleaseRepositoryInterface;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -63,6 +64,8 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
         /// The user the service should run as.
         ///
         /// If the account does not exist, it will be created.
@@ -118,8 +121,9 @@ async fn main() -> Result<()> {
     match args.cmd {
         SubCmd::Add {
             count,
-            log_dir_path,
             data_dir_path,
+            log_dir_path,
+            peers,
             user,
             version,
         } => {
@@ -144,11 +148,12 @@ async fn main() -> Result<()> {
 
             add(
                 AddServiceOptions {
+                    count,
+                    peers: parse_peers_args(peers).await?,
                     safenode_dir_path: get_safenode_install_path()?,
                     service_data_dir_path,
                     service_log_dir_path,
                     user: service_user,
-                    count,
                     version,
                 },
                 &mut node_registry,

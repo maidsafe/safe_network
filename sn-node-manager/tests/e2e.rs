@@ -35,11 +35,13 @@ fn cross_platform_service_install_and_control() {
     // An explicit version of `safenode` will be used to avoid any rate limiting from Github when
     // retrieving the latest version number.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
-    cmd.arg("install")
+    cmd.arg("add")
         .arg("--user")
         .arg(CI_USER)
         .arg("--count")
         .arg("3")
+        .arg("--peer")
+        .arg("/ip4/127.0.0.1/tcp/46091/p2p/12D3KooWAWnbQLxqspWeB3M8HB3ab3CSj6FYzsJxEG9XdVnGNCod")
         .arg("--version")
         .arg("0.98.27")
         .assert()
@@ -54,15 +56,15 @@ fn cross_platform_service_install_and_control() {
 
     assert_eq!(service_status[0].name, "safenode1");
     assert_eq!(service_status[0].peer_id, "-");
-    assert_eq!(service_status[0].status, "INSTALLED");
+    assert_eq!(service_status[0].status, "ADDED");
     assert_eq!(service_status[1].name, "safenode2");
     assert_eq!(service_status[1].peer_id, "-");
-    assert_eq!(service_status[1].status, "INSTALLED");
+    assert_eq!(service_status[1].status, "ADDED");
     assert_eq!(service_status[2].name, "safenode3");
     assert_eq!(service_status[2].peer_id, "-");
-    assert_eq!(service_status[2].status, "INSTALLED");
+    assert_eq!(service_status[2].status, "ADDED");
 
-    // Start each of the three installed services.
+    // Start each of the three services.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("start").assert().success();
     let output = Command::cargo_bin("safenode-manager")
@@ -89,7 +91,7 @@ fn cross_platform_service_install_and_control() {
         .map(|s| s.peer_id.clone())
         .collect::<Vec<String>>();
 
-    // Stop each of the three installed services.
+    // Stop each of the three services.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("stop").assert().success();
     let output = Command::cargo_bin("safenode-manager")
@@ -110,7 +112,7 @@ fn cross_platform_service_install_and_control() {
     assert_eq!(stop_status[2].status, "STOPPED");
     assert_eq!(stop_status[2].peer_id, peer_ids[2]);
 
-    // Start each of the three installed services again.
+    // Start each of the three services again.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("start").assert().success();
     let output = Command::cargo_bin("safenode-manager")
@@ -181,7 +183,7 @@ fn cross_platform_service_install_and_control() {
     assert_eq!(single_node_start_status[2].status, "RUNNING");
     assert_eq!(single_node_start_status[2].peer_id, peer_ids[2]);
 
-    // Finally, stop each of the three installed services.
+    // Finally, stop each of the three services.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("stop").assert().success();
     let output = Command::cargo_bin("safenode-manager")
