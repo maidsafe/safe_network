@@ -330,11 +330,11 @@ jobs:
             exit 1
           fi
           if (( $(echo "$total_long_handling > $total_long_handling_limit_ms" | bc -l) )); then
-            echo "Swarm_driver total long handling duration exceeded threshold: $total_long_handling ms"
+            echo "Swarm_driver total long handling duration exceeded threshold of $total_num_of_times_limit_hits: $total_long_handling ms"
             exit 1
           fi
           if (( $(echo "$average_handling_ms > $average_handling_limit_ms" | bc -l) )); then
-            echo "Swarm_driver average long handling time exceeded threshold: $average_handling_ms ms"
+            echo "Swarm_driver average long handling time exceeded threshold of $total_long_handling_limit_ms: $average_handling_ms ms"
             exit 1
           fi
 
