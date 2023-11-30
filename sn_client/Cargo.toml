@@ -26,7 +26,7 @@ futures = "~0.3.13"
 hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 itertools = "~0.11.0"
-libp2p = {   version="0.53" ,  features = ["identify"] }
+libp2p = {   version="=0.53.0" ,  features = ["identify"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
