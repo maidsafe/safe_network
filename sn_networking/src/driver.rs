@@ -448,24 +448,24 @@ impl NetworkBuilder {
         }
 
         // Disable AutoNAT if we are either running locally or a client.
-        let autonat = if !self.local && !is_client {
-            let cfg = libp2p::autonat::Config {
-                // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
-                boot_delay: Duration::from_secs(3),
-                // The time to wait for an AutoNAT server to respond.
-                // This is increased due to the fact that a server might take a while before it determines we are unreachable.
-                // There likely is a bug in libp2p AutoNAT that causes us to use this workaround.
-                // E.g. a TCP connection might only time out after 2 minutes, thus taking the server 2 minutes to determine we are unreachable.
-                timeout: Duration::from_secs(301),
-                // Defaults to 90. If we get a timeout and only have one server, we want to try again with the same server.
-                throttle_server_period: Duration::from_secs(15),
-                ..Default::default()
-            };
-            Some(libp2p::autonat::Behaviour::new(peer_id, cfg))
-        } else {
-            None
-        };
-        let autonat = Toggle::from(autonat);
+        // let autonat = if !self.local && !is_client {
+        //     let cfg = libp2p::autonat::Config {
+        //         // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
+        //         boot_delay: Duration::from_secs(3),
+        //         // The time to wait for an AutoNAT server to respond.
+        //         // This is increased due to the fact that a server might take a while before it determines we are unreachable.
+        //         // There likely is a bug in libp2p AutoNAT that causes us to use this workaround.
+        //         // E.g. a TCP connection might only time out after 2 minutes, thus taking the server 2 minutes to determine we are unreachable.
+        //         timeout: Duration::from_secs(301),
+        //         // Defaults to 90. If we get a timeout and only have one server, we want to try again with the same server.
+        //         throttle_server_period: Duration::from_secs(15),
+        //         ..Default::default()
+        //     };
+        //     Some(libp2p::autonat::Behaviour::new(peer_id, cfg))
+        // } else {
+        //     None
+        // };
+        let autonat = Toggle::from(None);
 
         let behaviour = NodeBehaviour {
             request_response,
