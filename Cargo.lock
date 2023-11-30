@@ -4491,6 +4491,7 @@ dependencies = [
 name = "sn_cli"
 version = "0.86.33"
 dependencies = [
+ "bincode",
  "blsttc",
  "bytes",
  "chrono",
