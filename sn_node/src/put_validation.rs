@@ -14,7 +14,6 @@ use crate::{
 };
 use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
-use serde::Serialize;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::CmdOk,
@@ -544,18 +543,22 @@ impl Node {
         trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
         let royalties_pk_bytes = royalties_pk.to_bytes();
 
-        let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len());
-        msg.extend_from_slice(&royalties_pk_bytes);
-        let mut msg = msg.writer();
-        let mut serialiser = rmp_serde::Serializer::new(&mut msg);
-        match royalties_cash_notes_r.serialize(&mut serialiser) {
-            Ok(()) => {
-                let msg = msg.into_inner().freeze();
-                if let Err(err) = self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg) {
-                    debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+        if let Ok(transfers_size) = bincode::serialized_size(&royalties_cash_notes_r) {
+            let mut msg =
+                BytesMut::with_capacity(royalties_pk_bytes.len() + transfers_size as usize);
+            msg.extend_from_slice(&royalties_pk_bytes);
+            let mut msg = msg.writer();
+            match bincode::serialize_into(&mut msg, &royalties_cash_notes_r) {
+                Ok(_) => {
+                    let msg = msg.into_inner().freeze();
+                    if let Err(err) = self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg) {
+                        debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                    }
                 }
+                Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
             }
-            Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+        } else {
+            warn!("Failed to get serialized_size for network royalties payment data to publish a notification over gossipsub for record {pretty_key}");
         }
 
         // check if the quote is valid

@@ -574,7 +574,7 @@ fn try_decode_transfer_notif(msg: &[u8], filter: PublicKey) -> eyre::Result<Opti
     );
     let key = PublicKey::from_bytes(key_bytes)?;
     if key == filter {
-        let cashnote_redemptions: Vec<CashNoteRedemption> = rmp_serde::from_slice(&msg[PK_SIZE..])?;
+        let cashnote_redemptions: Vec<CashNoteRedemption> = bincode::deserialize(&msg[PK_SIZE..])?;
         Ok(Some(NodeEvent::TransferNotif {
             key,
             cashnote_redemptions,

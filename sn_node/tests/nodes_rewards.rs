@@ -411,6 +411,6 @@ fn try_decode_transfer_notif(msg: &[u8]) -> eyre::Result<(PublicKey, Vec<CashNot
             .ok_or_else(|| eyre::eyre!("msg doesn't have enough bytes"))?,
     );
     let key = PublicKey::from_bytes(key_bytes)?;
-    let cashnote_redemptions: Vec<CashNoteRedemption> = rmp_serde::from_slice(&msg[PK_SIZE..])?;
+    let cashnote_redemptions: Vec<CashNoteRedemption> = bincode::deserialize(&msg[PK_SIZE..])?;
     Ok((key, cashnote_redemptions))
 }
