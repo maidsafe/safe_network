@@ -242,12 +242,12 @@ impl SwarmDriver {
                 match *iden {
                     // If the event is a Received event, handle the received peer information.
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        trace!(%peer_id, ?info, "identify: received info");
+                        debug!(%peer_id, ?info, "identify: received info");
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local
-                            || self.dialed_peers.contains(&peer_id)
-                                && info
+                            // || self.dialed_peers.contains(&peer_id)
+                                || info
                                     .agent_version
                                     .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
                         {
@@ -268,7 +268,7 @@ impl SwarmDriver {
                                     .collect(),
                             };
 
-                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+                            debug!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
                             for multiaddr in &addrs {
