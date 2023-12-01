@@ -961,7 +961,7 @@ impl SwarmDriver {
 
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
-                        self.trigger_network_discovery();
+                        // self.trigger_network_discovery();
                     }
                     self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
