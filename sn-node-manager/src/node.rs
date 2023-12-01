@@ -14,7 +14,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeStatus {
     /// The node service has been added but not started for the first time
     Added,
@@ -22,6 +22,8 @@ pub enum NodeStatus {
     Running,
     /// The node service has been stopped
     Stopped,
+    /// The node service has been removed
+    Removed,
 }
 
 fn serialize_peer_id<S>(value: &Option<PeerId>, serializer: S) -> Result<S::Ok, S::Error>
@@ -63,8 +65,8 @@ pub struct Node {
         deserialize_with = "deserialize_peer_id"
     )]
     pub peer_id: Option<PeerId>,
-    pub data_dir_path: PathBuf,
-    pub log_dir_path: PathBuf,
+    pub data_dir_path: Option<PathBuf>,
+    pub log_dir_path: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
