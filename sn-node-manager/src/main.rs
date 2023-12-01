@@ -14,7 +14,7 @@ mod service;
 
 use crate::add_service::{add, AddServiceOptions};
 use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
-use crate::control::{start, status, stop};
+use crate::control::{remove, start, status, stop};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
@@ -77,9 +77,26 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
-    /// Start an installed safenode service.
+    /// Remove a safenode service.
     ///
-    /// If no peer ID(s) or service name(s) are supplied, all installed services will be started.
+    /// Either a peer ID or the service name must be supplied.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "remove")]
+    Remove {
+        /// The peer ID of the service to remove.
+        #[clap(long)]
+        peer_id: Option<String>,
+        /// The name of the service to remove.
+        #[clap(long)]
+        service_name: Option<String>,
+        /// Set this flag to keep the nodes data and log directories.
+        #[clap(long)]
+        keep_directories: bool,
+    },
+    /// Start a safenode service.
+    ///
+    /// If no peer ID or service name are supplied, all installed services will be started.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
@@ -91,16 +108,16 @@ pub enum SubCmd {
         #[clap(long)]
         service_name: Option<String>,
     },
-    /// Get the status of installed services.
+    /// Get the status of services.
     #[clap(name = "status")]
     Status {
-        /// Set to display more details
+        /// Set this flag to display more details
         #[clap(long)]
         details: bool,
     },
     /// Stop an installed safenode service.
     ///
-    /// If no peer ID(s) or service name(s) are supplied, all installed services will be stopped.
+    /// If no peer ID or service name are supplied, all installed services will be stopped.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
@@ -128,7 +145,7 @@ async fn main() -> Result<()> {
             version,
         } => {
             if !is_running_as_root() {
-                return Err(eyre!("The install command must run as the root user"));
+                return Err(eyre!("The add command must run as the root user"));
             }
 
             println!("=================================================");
@@ -161,6 +178,50 @@ async fn main() -> Result<()> {
                 release_repo,
             )
             .await?;
+
+            node_registry.save(&get_node_registry_path()?)?;
+
+            Ok(())
+        }
+        SubCmd::Remove {
+            peer_id,
+            service_name,
+            keep_directories,
+        } => {
+            if !is_running_as_root() {
+                return Err(eyre!("The remove command must run as the root user"));
+            }
+            if peer_id.is_none() && service_name.is_none() {
+                return Err(eyre!("Either a peer ID or a service name must be supplied"));
+            }
+            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
+
+            println!("=================================================");
+            println!("           Remove Safenode Services              ");
+            println!("=================================================");
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if let Some(ref name) = service_name {
+                let node = node_registry
+                    .nodes
+                    .iter_mut()
+                    .find(|x| x.service_name == *name)
+                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
+                remove(node, &NodeServiceManager {}, keep_directories).await?;
+            } else if let Some(ref peer_id) = peer_id {
+                let peer_id = PeerId::from_str(peer_id)?;
+                let node = node_registry
+                    .nodes
+                    .iter_mut()
+                    .find(|x| x.peer_id == Some(peer_id))
+                    .ok_or_else(|| {
+                        eyre!(format!(
+                            "Could not find node with peer ID '{}'",
+                            peer_id.to_string()
+                        ))
+                    })?;
+                remove(node, &NodeServiceManager {}, keep_directories).await?;
+            }
 
             node_registry.save(&get_node_registry_path()?)?;
 

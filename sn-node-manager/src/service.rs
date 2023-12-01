@@ -13,6 +13,7 @@ use libp2p::Multiaddr;
 use mockall::automock;
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
+    ServiceUninstallCtx,
 };
 use std::ffi::OsString;
 use std::net::{SocketAddr, TcpListener};
@@ -42,10 +43,11 @@ pub struct ServiceConfig {
 pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
-    fn is_service_process_running(&self, pid: u32) -> bool;
     fn install(&self, config: ServiceConfig) -> Result<()>;
+    fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
+    fn uninstall(&self, service_name: &str) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
@@ -204,6 +206,13 @@ impl ServiceControl for NodeServiceManager {
         let label: ServiceLabel = service_name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
         manager.stop(ServiceStopCtx { label })?;
+        Ok(())
+    }
+
+    fn uninstall(&self, service_name: &str) -> Result<()> {
+        let label: ServiceLabel = service_name.parse()?;
+        let manager = <dyn ServiceManager>::native()?;
+        manager.uninstall(ServiceUninstallCtx { label })?;
         Ok(())
     }
 

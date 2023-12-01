@@ -92,8 +92,6 @@ killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --
 
 ## Token transfers
 
-Start a local network and a faucet as described above.
-
 - Get your wallet address
   `cargo run --release --bin safe -- wallet address`
 
@@ -214,6 +212,20 @@ Feel free to clone and modify this project. Pull requests are welcome.<br>You ca
 ## Conventional Commits
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
+
+### Remove
+
+- Command: `remove`
+- Description: Removes a `safenode` service.
+- Options:
+  - `--peer-id`: Peer ID of the service to remove. Optional.
+  - `--service-name`: Name of the service to remove. Optional.
+  - `--keep-directories`: Set this flag to keep the node's data and log directories. Optional.
+- Usage: `safenode-manager remove [OPTIONS]`
+
+This command must run as the root user on Linux/macOS and the Administrator user on Windows.
+
+Removes the node and its data/log directories. The node must be stopped before running this command.
 
 ## License
 

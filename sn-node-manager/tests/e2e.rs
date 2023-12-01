@@ -203,6 +203,21 @@ fn cross_platform_service_install_and_control() {
     assert_eq!(stop_status[2].name, "safenode3");
     assert_eq!(stop_status[2].status, "STOPPED");
     assert_eq!(stop_status[2].peer_id, peer_ids[2]);
+
+    // Remove a single node.
+    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    cmd.arg("remove")
+        .arg("--peer-id")
+        .arg(single_node_stop_status[0].peer_id.clone())
+        .assert()
+        .success();
+    let output = Command::cargo_bin("safenode-manager")
+        .unwrap()
+        .arg("status")
+        .output()
+        .expect("Could not retrieve service status");
+    let remove_status = parse_service_status(&output.stdout);
+    assert_eq!(remove_status.len(), 2);
 }
 
 fn parse_service_status(output: &[u8]) -> Vec<ServiceStatus> {

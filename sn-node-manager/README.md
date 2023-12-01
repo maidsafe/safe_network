@@ -68,6 +68,20 @@ Running the command with no arguments will stop every installed node that is not
 
 If started again, the node's data and peer ID will be retained.
 
+### Remove
+
+- Command: `remove`
+- Description: Removes a `safenode` service.
+- Options:
+  - `--peer-id`: Peer ID of the service to remove. Optional.
+  - `--service-name`: Name of the service to remove. Optional.
+  - `--keep-directories`: Set this flag to keep the node's data and log directories. Optional.
+- Usage: `safenode-manager remove [OPTIONS]`
+
+This command must run as the root user on Linux/macOS and the Administrator user on Windows.
+
+Removes the node and its data/log directories. The node must be stopped before running this command.
+
 ## License
 
 This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](LICENSE) http://www.gnu.org/licenses/gpl-3.0.en.html).
