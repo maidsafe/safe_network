@@ -518,8 +518,8 @@ impl Network {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
             // Use the MAX_REVERIFICATION_WAIT_TIME_S if it is a spend.
             let wait_duration = match record_kind {
-                // todo: remove the *3 once spend validation GET queries complete in reasonable times.
-                RecordKind::Spend => MAX_REVERIFICATION_WAIT_TIME_S * 3,
+                // todo: remove the *2 once spend validation GET queries complete in reasonable times.
+                RecordKind::Spend => MAX_REVERIFICATION_WAIT_TIME_S * 2,
                 _ => rand::thread_rng()
                     .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S),
             };
