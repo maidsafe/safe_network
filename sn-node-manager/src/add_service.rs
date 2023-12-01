@@ -121,8 +121,8 @@ pub async fn add(
             status: NodeStatus::Added,
             pid: None,
             peer_id: None,
-            log_dir_path: service_log_dir_path.clone(),
-            data_dir_path: service_data_dir_path.clone(),
+            log_dir_path: Some(service_log_dir_path.clone()),
+            data_dir_path: Some(service_data_dir_path.clone()),
         });
 
         node_number += 1;
@@ -295,11 +295,11 @@ mod tests {
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode1")
+            Some(node_logs_dir.to_path_buf().join("safenode1"))
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode1")
+            Some(node_data_dir.to_path_buf().join("safenode1"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
@@ -471,11 +471,11 @@ mod tests {
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode1")
+            Some(node_logs_dir.to_path_buf().join("safenode1"))
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode1")
+            Some(node_data_dir.to_path_buf().join("safenode1"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[1].version, latest_version);
@@ -486,11 +486,11 @@ mod tests {
         assert_eq!(node_registry.nodes[1].rpc_port, 8083);
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode2")
+            Some(node_logs_dir.to_path_buf().join("safenode2"))
         );
         assert_eq!(
             node_registry.nodes[1].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode2")
+            Some(node_data_dir.to_path_buf().join("safenode2"))
         );
         assert_matches!(node_registry.nodes[1].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[2].version, latest_version);
@@ -501,11 +501,11 @@ mod tests {
         assert_eq!(node_registry.nodes[2].rpc_port, 8085);
         assert_eq!(
             node_registry.nodes[2].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode3")
+            Some(node_logs_dir.to_path_buf().join("safenode3"))
         );
         assert_eq!(
             node_registry.nodes[2].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode3")
+            Some(node_data_dir.to_path_buf().join("safenode3"))
         );
         assert_matches!(node_registry.nodes[2].status, NodeStatus::Added);
 
@@ -614,11 +614,11 @@ mod tests {
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode1")
+            Some(node_logs_dir.to_path_buf().join("safenode1"))
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode1")
+            Some(node_data_dir.to_path_buf().join("safenode1"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
@@ -642,8 +642,8 @@ mod tests {
                 status: NodeStatus::Added,
                 pid: None,
                 peer_id: None,
-                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
-                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
+                data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -746,11 +746,11 @@ mod tests {
         assert_eq!(node_registry.nodes[1].rpc_port, 8083);
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
-            node_logs_dir.to_path_buf().join("safenode2")
+            Some(node_logs_dir.to_path_buf().join("safenode2"))
         );
         assert_eq!(
             node_registry.nodes[1].data_dir_path,
-            node_data_dir.to_path_buf().join("safenode2")
+            Some(node_data_dir.to_path_buf().join("safenode2"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
