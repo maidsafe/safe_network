@@ -24,7 +24,13 @@ impl Network {
     pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let record = self
-            .get_record_from_network(key, None, GetQuorum::All, re_attempt, Default::default())
+            .get_record_from_network(
+                key,
+                None,
+                GetQuorum::Majority,
+                re_attempt,
+                Default::default(),
+            )
             .await
             .map_err(|_| Error::SpendNotFound(address))?;
         debug!(
