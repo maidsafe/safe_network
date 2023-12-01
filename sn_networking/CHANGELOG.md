@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.27...sn_networking-v0.11.0) - 2023-12-01
+
+### Added
+- *(network)* use seperate PUT/GET configs
+
+### Other
+- *(ci)* fix CI build cache parsing error
+- *(network)* [**breaking**] use the Quorum struct provided by libp2p
+
 ## [0.10.27](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.10.26...sn_networking-v0.10.27) - 2023-11-29
 
 ### Added
