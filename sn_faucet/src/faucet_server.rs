@@ -36,6 +36,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
     claim_genesis(client).await.map_err(|err| {
+        println!("Faucet Server couldn't start as we failed to claim Genesis");
         eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
         error!("Faucet Server couldn't start as we failed to claim Genesis");
         err
