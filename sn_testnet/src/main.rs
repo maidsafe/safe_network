@@ -324,10 +324,8 @@ fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     args.push("--peer".to_string());
     args.push(gen_multi_addr);
     args.push("server".to_string());
-    testnet.launcher.launch(&launch_bin, args)?;
-    // The launch will immediately complete after fire the cmd out.
-    // Have to wait some extra time to allow the faucet to be properly created and funded
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    // wait for the faucet to complete
+    testnet.launcher.launch(&launch_bin, args, true)?;
     Ok(())
 }
 

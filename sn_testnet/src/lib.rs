@@ -36,7 +36,12 @@ pub const FAUCET_BIN_NAME: &str = "faucet.exe";
 /// launching processes.
 #[cfg_attr(test, automock)]
 pub trait NodeLauncher {
-    fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()>;
+    fn launch(
+        &self,
+        node_bin_path: &Path,
+        args: Vec<String>,
+        wait_till_completion: bool,
+    ) -> Result<()>;
 }
 
 /// This trait exists for unit testing.
@@ -53,13 +58,21 @@ pub trait RpcClient {
 #[derive(Default)]
 pub struct SafeNodeLauncher {}
 impl NodeLauncher for SafeNodeLauncher {
-    fn launch(&self, node_bin_path: &Path, args: Vec<String>) -> Result<()> {
+    fn launch(
+        &self,
+        node_bin_path: &Path,
+        args: Vec<String>,
+        wait_till_completion: bool,
+    ) -> Result<()> {
         debug!("Running {:#?} with args: {:#?}", node_bin_path, args);
-        Command::new(node_bin_path)
+        let mut child = Command::new(node_bin_path)
             .args(args)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;
+        if wait_till_completion {
+            child.wait()?;
+        }
         Ok(())
     }
 }
@@ -240,7 +253,7 @@ impl Testnet {
         launch_args.push(genesis_port.to_string());
 
         let launch_bin = self.get_launch_bin();
-        self.launcher.launch(&launch_bin, launch_args)?;
+        self.launcher.launch(&launch_bin, launch_args, false)?;
         info!(
             "Delaying for {} seconds before launching other nodes",
             self.node_launch_interval
@@ -286,7 +299,7 @@ impl Testnet {
                 node_args.clone(),
             )?;
             let launch_bin = self.get_launch_bin();
-            self.launcher.launch(&launch_bin, launch_args)?;
+            self.launcher.launch(&launch_bin, launch_args, false)?;
 
             if i < end {
                 info!(
@@ -357,7 +370,7 @@ mod test {
 
     fn setup_default_mocks() -> (MockNodeLauncher, MockRpcClient) {
         let mut node_launcher = MockNodeLauncher::new();
-        node_launcher.expect_launch().returning(|_, _| Ok(()));
+        node_launcher.expect_launch().returning(|_, _, _| Ok(()));
         let rpc_client = setup_default_rpc_client_mock();
         (node_launcher, rpc_client)
     }
@@ -449,8 +462,9 @@ mod test {
                     "--port".to_string(),
                     "11101".to_string(),
                 ]),
+                eq(false),
             )
-            .returning(|_, _| Ok(()));
+            .returning(|_, _, _| Ok(()));
         let peer_id = PeerId::from_public_key(&Keypair::generate_ed25519().public());
         let mut rpc_client = MockRpcClient::new();
         rpc_client
@@ -525,8 +539,9 @@ mod test {
                     "--port".to_string(),
                     "11101".to_string(),
                 ]),
+                eq(false),
             )
-            .returning(|_, _| Ok(()));
+            .returning(|_, _, _| Ok(()));
         let peer_id = PeerId::from_public_key(&Keypair::generate_ed25519().public());
         let mut rpc_client = MockRpcClient::new();
         rpc_client
@@ -631,8 +646,9 @@ mod test {
                         "--log-format".to_string(),
                         "json".to_string(),
                     ]),
+                    eq(false),
                 )
-                .returning(|_, _| Ok(()));
+                .returning(|_, _, _| Ok(()));
         }
         let rpc_client = setup_default_rpc_client_mock();
 
@@ -690,8 +706,9 @@ mod test {
                         "--log-format".to_string(),
                         "json".to_string(),
                     ]),
+                    eq(false),
                 )
-                .returning(|_, _| Ok(()));
+                .returning(|_, _, _| Ok(()));
         }
         let rpc_client = setup_default_rpc_client_mock();
 
@@ -735,8 +752,9 @@ mod test {
                         "--log-format".to_string(),
                         "json".to_string(),
                     ]),
+                    eq(false),
                 )
-                .returning(|_, _| Ok(()));
+                .returning(|_, _, _| Ok(()));
         }
         let rpc_client = setup_default_rpc_client_mock();
 
