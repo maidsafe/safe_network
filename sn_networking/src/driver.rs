@@ -208,7 +208,7 @@ impl NetworkBuilder {
     pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = kad::Config::default();
         let _ = kad_cfg
-            .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
+            .set_kbucket_inserts(libp2p::kad::BucketInserts::OnConnected)
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
             // this is a heavier operation than publication, so it is done less frequently
             // Set to `None` to ensure periodic replication disabled.
