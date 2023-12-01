@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701439007298,
+  "lastUpdate": 1701439010271,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20417,40 +20417,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "3fb62504886c8fd6282bc07b31f41ae3007cf405",
-          "message": "chore: improve logging, add address method to ClientRegister",
-          "timestamp": "2023-07-24T10:09:30Z",
-          "tree_id": "fb69ab11b51286767db39cdddd13d8bbf1407971",
-          "url": "https://github.com/maidsafe/safe_network/commit/3fb62504886c8fd6282bc07b31f41ae3007cf405"
-        },
-        "date": 1690197974147,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 231.96,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 234,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53",
           "message": "fix: default to http for url without schemes",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 330,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d8f6f4b6020c62100df639bad7f13ab40ee31a0f",
+          "message": "feat(testnet): wait till faucet server starts",
+          "timestamp": "2023-12-01T14:21:04+01:00",
+          "tree_id": "55bec5361bbae219949cdfa909151d1ddd687d7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d8f6f4b6020c62100df639bad7f13ab40ee31a0f"
+        },
+        "date": 1701439008750,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 634,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 285,
             "unit": "MB"
           }
         ]
