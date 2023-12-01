@@ -41,6 +41,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
         err
     })?;
 
+    // This println is used in sn_testnet to wait for the faucet to start.
     println!("Starting http server listening on port 8000...");
     debug!("Starting http server listening on port 8000...");
     for request in server.incoming_requests() {
