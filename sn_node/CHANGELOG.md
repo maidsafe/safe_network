@@ -2365,6 +2365,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* increase interval for interval_replication
 - *(networking)* reduce nodes receiving replication updates.
 
+## [0.99.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.98.44...sn_node-v0.99.0) - 2023-12-01
+
+### Added
+- *(network)* use seperate PUT/GET configs
+
+### Other
+- *(ci)* fix CI build cache parsing error
+- *(network)* [**breaking**] use the Quorum struct provided by libp2p
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
