@@ -91,8 +91,6 @@ const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so sho
 
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
-// Sets the keep-alive timeout of idle connections.
-const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The suffix is the version of the node.
 const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
@@ -106,7 +104,7 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
-const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(25);
+const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(5);
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
@@ -522,8 +520,7 @@ impl NetworkBuilder {
             autonat,
             gossipsub,
         };
-        let swarm_config = libp2p::swarm::Config::with_tokio_executor()
-            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        let swarm_config = libp2p::swarm::Config::with_tokio_executor();
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
