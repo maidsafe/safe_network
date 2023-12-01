@@ -514,15 +514,10 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if let Some((record_kind, get_cfg)) = &cfg.verification {
+        if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
-            // Use the MAX_REVERIFICATION_WAIT_TIME_S if it is a spend.
-            let wait_duration = match record_kind {
-                // todo: remove the *3 once spend validation GET queries complete in reasonable times.
-                RecordKind::Spend => MAX_REVERIFICATION_WAIT_TIME_S * 3,
-                _ => rand::thread_rng()
-                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S),
-            };
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
