@@ -399,7 +399,7 @@ impl SwarmDriver {
                 send_back_addr,
             } => {
                 event_string = "incoming";
-
+                info!("{:?}", self.swarm.network_info());
                 trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -411,6 +411,7 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
+                info!("{:?}", self.swarm.network_info());
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -426,6 +427,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
+                info!("{:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
@@ -435,6 +437,7 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+                info!("{:?}", self.swarm.network_info());
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
@@ -514,6 +517,7 @@ impl SwarmDriver {
                 send_back_addr,
                 error,
             } => {
+                info!("{:?}", self.swarm.network_info());
                 event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
             }
