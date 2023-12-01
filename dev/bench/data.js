@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701438585272,
+  "lastUpdate": 1701439007298,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "bochaco"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "d02e1cc975f68caadce385bf66b87515564f7a68",
-          "message": "test: prevent from self-encrypting same file twice in churn tests\n\nCo-authored-by: RolandSherwin <RolandSherwin@protonmail.com>",
-          "timestamp": "2023-07-24T13:41:38Z",
-          "tree_id": "f70e486d36b1269e86c2518df6e0cb433fb8faf6",
-          "url": "https://github.com/maidsafe/safe_network/commit/d02e1cc975f68caadce385bf66b87515564f7a68"
-        },
-        "date": 1690210834681,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.22,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 97,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d8f6f4b6020c62100df639bad7f13ab40ee31a0f",
+          "message": "feat(testnet): wait till faucet server starts",
+          "timestamp": "2023-12-01T14:21:04+01:00",
+          "tree_id": "55bec5361bbae219949cdfa909151d1ddd687d7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d8f6f4b6020c62100df639bad7f13ab40ee31a0f"
+        },
+        "date": 1701439006392,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 82,
             "unit": "MB"
           }
         ]
