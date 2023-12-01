@@ -350,9 +350,7 @@ impl SwarmDriver {
             } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
-                if !expected_holders.is_empty() {
-                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
-                }
+                debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
 
                 if self
                     .pending_get_record
