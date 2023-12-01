@@ -655,7 +655,7 @@ impl SwarmDriver {
         let peer_id = multiaddr_pop_p2p(&mut addr);
         let opts = match peer_id {
             Some(peer_id) => DialOpts::peer_id(peer_id)
-                .condition(PeerCondition::Always)
+                .condition(PeerCondition::Disconnected)
                 .addresses(vec![addr])
                 .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
