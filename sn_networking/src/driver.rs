@@ -18,7 +18,6 @@ use crate::{
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
     multiaddr_pop_p2p,
-    network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
