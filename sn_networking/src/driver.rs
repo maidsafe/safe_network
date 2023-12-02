@@ -547,7 +547,6 @@ impl NetworkBuilder {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             is_gossip_handler: false,
-            network_discovery: NetworkDiscovery::new(&peer_id),
         };
 
         Ok((
@@ -590,9 +589,6 @@ pub struct SwarmDriver {
     // (to ensure no miss-up by carrying out libp2p low level gossip forwarding),
     // they are not supposed to process the gossip msg that received from libp2p.
     pub(crate) is_gossip_handler: bool,
-    // A list of random `PeerId` candidates that falls into kbuckets,
-    // This is to ensure a more accurate network discovery.
-    pub(crate) network_discovery: NetworkDiscovery,
 }
 
 impl SwarmDriver {

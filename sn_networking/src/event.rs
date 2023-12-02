@@ -685,9 +685,9 @@ impl SwarmDriver {
                 current_closest.extend(new_peers);
                 if current_closest.len() >= usize::from(K_VALUE) || step.last {
                     match get_closest_type {
-                        PendingGetClosestType::NetworkDiscovery => self
-                            .network_discovery
-                            .handle_get_closest_query(current_closest),
+                        PendingGetClosestType::NetworkDiscovery => {
+                            warn!("CLEAN THIS UP");
+                        }
                         PendingGetClosestType::FunctionCall(sender) => {
                             sender
                                 .send(current_closest)
@@ -728,9 +728,9 @@ impl SwarmDriver {
                 }
 
                 match get_closest_type {
-                    PendingGetClosestType::NetworkDiscovery => self
-                        .network_discovery
-                        .handle_get_closest_query(current_closest),
+                    PendingGetClosestType::NetworkDiscovery => {
+                        warn!("CLEAN THIS UP");
+                    }
                     PendingGetClosestType::FunctionCall(sender) => {
                         sender
                             .send(current_closest)
@@ -961,7 +961,7 @@ impl SwarmDriver {
 
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
-                        self.trigger_network_discovery();
+                        self.initiate_bootstrap();
                     }
                     self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }

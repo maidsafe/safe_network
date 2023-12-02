@@ -37,7 +37,7 @@ impl SwarmDriver {
             .should_we_bootstrap(self.connected_peers as u32, current_bootstrap_interval)
             .await;
         if should_bootstrap {
-            self.trigger_network_discovery();
+            self.initiate_bootstrap();
         }
         if let Some(new_interval) = &new_interval {
             debug!(
@@ -48,25 +48,17 @@ impl SwarmDriver {
         new_interval
     }
 
-    pub(crate) fn trigger_network_discovery(&mut self) {
-        let now = Instant::now();
-        // Fetches the candidates and also generates new candidates
-        for addr in self.network_discovery.candidates() {
-            // The query_id is tracked here. This is to update the candidate list of network_discovery with the newly
-            // found closest peers. It may fill up the candidate list of closer buckets which are harder to generate.
-            let query_id = self
-                .swarm
-                .behaviour_mut()
-                .kademlia
-                .get_closest_peers(addr.as_bytes());
-            let _ = self.pending_get_closest_peers.insert(
-                query_id,
-                (PendingGetClosestType::NetworkDiscovery, Default::default()),
-            );
-        }
-
-        self.bootstrap.initiated();
-        debug!("Trigger network discovery took {:?}", now.elapsed());
+    /// Helper to initiate the Kademlia bootstrap process.
+    pub(crate) fn initiate_bootstrap(&mut self) {
+        match self.swarm.behaviour_mut().kademlia.bootstrap() {
+            Ok(query_id) => {
+                debug!("Initiated kad bootstrap process with query id {query_id:?}");
+                self.bootstrap.initiated();
+            }
+            Err(err) => {
+                error!("Failed to initiate kad bootstrap with error: {err:?}");
+            }
+        };
     }
 }
 
