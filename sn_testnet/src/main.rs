@@ -33,7 +33,7 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Help, Result};
 use std::{
     fs::remove_dir_all,
-    io::{BufRead, BufReader, ErrorKind},
+    io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
 };
@@ -323,7 +323,7 @@ fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     args.push("server".to_string());
 
     debug!("Launching faucet {bin_path:#?} with args: {args:#?}");
-    let mut child = Command::new(bin_path)
+    let _cmd = Command::new(bin_path)
         .args(args)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())

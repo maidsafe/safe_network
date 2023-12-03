@@ -15,7 +15,7 @@ use bytes::Bytes;
 use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record, K_VALUE},
+    kad::{Quorum, Record},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
@@ -250,13 +250,6 @@ impl Client {
                             self.peers_added
                         ));
                     }
-                }
-
-                let k_value = K_VALUE.into();
-                if self.peers_added >= k_value {
-                    trace!("Stopping further bootstrapping as we have {k_value:?} peers");
-                    // stop further bootstrapping
-                    self.network.stop_bootstrapping()?;
                 }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }

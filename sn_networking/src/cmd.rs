@@ -45,8 +45,6 @@ pub enum SwarmCmd {
         opts: DialOpts,
         sender: oneshot::Sender<Result<()>>,
     },
-    // Stop the continuous Kademlia Bootstrap process.
-    StopBootstrapping,
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
@@ -224,9 +222,6 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
                 write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {:?} }}", key)
-            }
-            SwarmCmd::StopBootstrapping => {
-                write!(f, "SwarmCmd::StopBootstrapping")
             }
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
@@ -500,9 +495,6 @@ impl SwarmDriver {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
-            }
-            SwarmCmd::StopBootstrapping => {
-                self.bootstrap.stop_bootstrapping();
             }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
                 let query_id = self
