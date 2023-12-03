@@ -325,25 +325,9 @@ fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     debug!("Launching faucet {bin_path:#?} with args: {args:#?}");
     let mut child = Command::new(bin_path)
         .args(args)
-        .stdout(Stdio::piped())
+        .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()?;
-
-    // wait till we get "Starting http server" msg
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| eyre!("Child process (faucet) did not have a handle to stdout"))?;
-    let reader = BufReader::new(stdout);
-
-    for line in reader.lines() {
-        let line = line?;
-        println!("{line}");
-        if line.contains("Starting http server") {
-            println!("Faucet Server started successfully!");
-            break;
-        }
-    }
 
     Ok(())
 }
