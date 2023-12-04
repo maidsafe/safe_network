@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701681007996,
+  "lastUpdate": 1701681031385,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b88b11edb5849eb289409b5292832dc8904f23eb",
-          "message": "feat(node): make the faucet and client use rustls as opposed to openssl\n\nno extra deps to add there",
-          "timestamp": "2023-07-25T12:58:53Z",
-          "tree_id": "6e87402c73ac2660b3eeed933030cf6020206732",
-          "url": "https://github.com/maidsafe/safe_network/commit/b88b11edb5849eb289409b5292832dc8904f23eb"
-        },
-        "date": 1690294721448,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 34.29,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 111,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "04bd0dfedf41737710fe1c672a5db80cd357737a",
+          "message": "chore(ci): build testnet bin during PR checks",
+          "timestamp": "2023-12-04T09:35:53+01:00",
+          "tree_id": "fbbc2b366dbd840028da4c5d3b763141bcc30f74",
+          "url": "https://github.com/maidsafe/safe_network/commit/04bd0dfedf41737710fe1c672a5db80cd357737a"
+        },
+        "date": 1701681030281,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 87,
             "unit": "MB"
           }
         ]
