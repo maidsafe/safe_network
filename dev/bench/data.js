@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701678640498,
+  "lastUpdate": 1701679045483,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "57227080465794a41451f1cb81c4139a9647cff6",
-          "message": "feat(node): fetch all spends for a payment proof concurrently to verify them",
-          "timestamp": "2023-07-25T06:47:50Z",
-          "tree_id": "870daca36465dbf7626199ecc3861ff4dde873e4",
-          "url": "https://github.com/maidsafe/safe_network/commit/57227080465794a41451f1cb81c4139a9647cff6"
-        },
-        "date": 1690272289967,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ffc62f58039c729270c1ff0126a198505900ac99",
+          "message": "chore(faucet): print on claim genesis error",
+          "timestamp": "2023-12-04T09:03:32+01:00",
+          "tree_id": "5fbabe46e3e522d9c6719574f86e4b58be1a0bbd",
+          "url": "https://github.com/maidsafe/safe_network/commit/ffc62f58039c729270c1ff0126a198505900ac99"
+        },
+        "date": 1701679045125,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 121,
             "unit": "MB"
           }
         ]
