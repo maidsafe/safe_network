@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701679045483,
+  "lastUpdate": 1701679046957,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53",
-          "message": "fix: default to http for url without schemes",
-          "timestamp": "2023-07-24T11:59:10Z",
-          "tree_id": "ca24f0c54246b1db4f6b4ca49089c49989fc6c9f",
-          "url": "https://github.com/maidsafe/safe_network/commit/5e7a0aac71c2b0f67998bd122fa4e88fa67a9e53"
-        },
-        "date": 1690204579791,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 237.36,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 233,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 285,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ffc62f58039c729270c1ff0126a198505900ac99",
+          "message": "chore(faucet): print on claim genesis error",
+          "timestamp": "2023-12-04T09:03:32+01:00",
+          "tree_id": "5fbabe46e3e522d9c6719574f86e4b58be1a0bbd",
+          "url": "https://github.com/maidsafe/safe_network/commit/ffc62f58039c729270c1ff0126a198505900ac99"
+        },
+        "date": 1701679046606,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 656,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 298,
             "unit": "MB"
           }
         ]
