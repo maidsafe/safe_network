@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -228,8 +228,6 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 event_string = "kad_event";
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
             // Handle the Identify event from the libp2p swarm.
@@ -652,7 +650,7 @@ impl SwarmDriver {
     }
 
     fn handle_kad_event(&mut self, kad_event: kad::Event) -> Result<()> {
-        #[cfg(feature = "open-metricss")]
+        #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&kad_event);
         let start = std::time::Instant::now();
         let event_string;
@@ -959,6 +957,7 @@ impl SwarmDriver {
                     info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
                     self.log_kbuckets(&peer);
 
+                    // This should only happen once
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
                         self.trigger_network_discovery();
@@ -1023,19 +1022,8 @@ impl SwarmDriver {
     fn check_for_change_in_our_close_group(&mut self) -> bool {
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
-        let new_closest_peers = {
-            match sort_peers_by_address(
-                &closest_k_peers,
-                &NetworkAddress::from_peer(self.self_peer_id),
-                CLOSE_GROUP_SIZE,
-            ) {
-                Err(error) => {
-                    debug!("Failed to sort peers by address: {error:?}");
-                    return false;
-                }
-                Ok(closest_k_peers) => closest_k_peers,
-            }
-        };
+        let new_closest_peers: Vec<_> =
+            closest_k_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
 
         let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
         let new_members: Vec<_> = new_closest_peers
@@ -1045,7 +1033,7 @@ impl SwarmDriver {
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
-            self.close_group = new_closest_peers.into_iter().cloned().collect();
+            self.close_group = new_closest_peers;
             let _ = self.update_record_distance_range();
             true
         } else {
