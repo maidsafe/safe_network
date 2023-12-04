@@ -99,11 +99,13 @@ async fn main() -> Result<()> {
         Some(bootstrap_peers)
     };
 
-    let joins_gossip = false;
+    // use gossipsub only for the wallet cmd that requires it.
+    let joins_gossipsub = matches!(opt.cmd, SubCmd::Wallet(WalletCmds::ReceiveOnline { .. }));
+
     let client = Client::new(
         secret_key,
         bootstrap_peers,
-        joins_gossip,
+        joins_gossipsub,
         opt.connection_timeout,
     )
     .await?;
@@ -116,13 +118,7 @@ async fn main() -> Result<()> {
             wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Files(cmds) => {
-            files_cmds(
-                cmds,
-                client.clone(),
-                &client_data_dir_path,
-                should_verify_store,
-            )
-            .await?
+            files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Register(cmds) => {
             register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
