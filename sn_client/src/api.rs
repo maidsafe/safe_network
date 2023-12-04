@@ -423,10 +423,17 @@ impl Client {
             target_record: record_to_verify,
             expected_holders,
         };
+
+        let verification = if verify_store {
+            Some((record_kind, verification_cfg))
+        } else {
+            None
+        };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
-            verification: Some((record_kind, verification_cfg)),
+            verification,
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
