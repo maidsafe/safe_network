@@ -42,7 +42,7 @@ use tokio::{
 /// serialised transfer info encrypted against the referenced public key.
 pub const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 
-/// Defines the percentage (1/50) of node to act as royalty_transfer_notify forwarder.
+/// Defines the percentage (ie 1/FORWARDER_CHOOSING_FACTOR th of all nodes) of nodes which will act as royalty_transfer_notify forwarder.
 const FORWARDER_CHOOSING_FACTOR: usize = 50;
 
 /// Interval to trigger replication of all records to all peers.
