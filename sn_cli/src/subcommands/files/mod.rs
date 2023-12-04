@@ -113,7 +113,8 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
+            let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
+            let file_api: Files = Files::new(client.clone(), download_dir.clone());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
@@ -127,7 +128,7 @@ pub(crate) async fn files_cmds(
                         &file_api,
                         &xor_name,
                         &name,
-                        root_dir,
+                        &download_dir,
                         show_holders,
                         batch_size,
                     )
@@ -436,7 +437,7 @@ async fn download_files(
 ) -> Result<()> {
     info!("Downloading with batch size of {}", batch_size);
     let uploaded_files_path = root_dir.join("uploaded_files");
-    let download_path = root_dir.join("downloaded_files");
+    let download_path = dirs_next::download_dir().unwrap_or(root_dir.join("downloaded_files"));
     std::fs::create_dir_all(download_path.as_path())?;
 
     let file = std::fs::File::open(&uploaded_files_path)?;
