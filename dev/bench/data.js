@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701439012884,
+  "lastUpdate": 1701678640498,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "cd0a2f9580df40690550df3b2bc2c389a596fb65",
-          "message": "feat: only fetch close enough data during Replication",
-          "timestamp": "2023-08-04T16:20:42Z",
-          "tree_id": "cc876300721b8dc318b45f9c89bac0ab1f7e3fc4",
-          "url": "https://github.com/maidsafe/safe_network/commit/cd0a2f9580df40690550df3b2bc2c389a596fb65"
-        },
-        "date": 1691188754676,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06163831738310222,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.032253152500515775,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.611786565565216,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.370432035150095,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ffc62f58039c729270c1ff0126a198505900ac99",
+          "message": "chore(faucet): print on claim genesis error",
+          "timestamp": "2023-12-04T09:03:32+01:00",
+          "tree_id": "5fbabe46e3e522d9c6719574f86e4b58be1a0bbd",
+          "url": "https://github.com/maidsafe/safe_network/commit/ffc62f58039c729270c1ff0126a198505900ac99"
+        },
+        "date": 1701678638822,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 4.9764036914211145,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.401478379961723,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.33637230198795,
             "unit": "MiB/s"
           }
         ]
