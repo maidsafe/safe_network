@@ -471,7 +471,7 @@ impl Client {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
         } else {
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
 
@@ -497,7 +497,7 @@ impl Client {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
         } else {
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
 
@@ -637,7 +637,7 @@ impl Client {
             }
         } else {
             error!("RecordKind mismatch while trying to retrieve a cash_note spend");
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Spend).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Spend).into())
         }
     }
 
@@ -731,9 +731,7 @@ fn get_register_from_record(record: Record) -> Result<SignedRegister> {
         Ok(register)
     } else {
         error!("RecordKind mismatch while trying to retrieve a signed register");
-        Err(Error::Protocol(ProtocolError::RecordKindMismatch(
-            RecordKind::Register,
-        )))
+        Err(NetworkError::RecordKindMismatch(RecordKind::Register).into())
     }
 }
 
