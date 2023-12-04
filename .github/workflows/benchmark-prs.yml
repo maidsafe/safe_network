@@ -54,6 +54,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -218,6 +219,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_benchmark
           platform: ubuntu-latest
+          build: true
 
       - name: Upload Faucet folder
         uses: actions/upload-artifact@main
