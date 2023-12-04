@@ -271,19 +271,34 @@ impl SwarmDriver {
                         // The dial shall trigger the same identify to be sent again and confirm
                         // peer is external accessable, hence safe to be added into RT.
                         if !self.local && peer_is_agent && !has_dialed {
-                            info!(%peer_id, ?addrs, "not dailed but received identify info, dailed back to confirm external accesable");
-                            if let Err(err) = self.swarm.dial(
-                                DialOpts::peer_id(peer_id)
-                                    .condition(PeerCondition::NotDialing)
-                                    .addresses(addrs.iter().cloned().collect())
-                                    .build(),
-                            ) {
-                                warn!(%peer_id, ?addrs, "dialing error: {err:?}");
+                            // Only need to dial back for not fulfilled kbucket
+                            let (kbucket_full, ilog2) = if let Some(kbucket) =
+                                self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
+                            {
+                                let ilog2 = kbucket.range().0.ilog2();
+                                let num_peers = kbucket.num_entries();
+                                (num_peers >= K_VALUE.into(), ilog2)
                             } else {
+                                // Function will return `None` if the given key refers to self
+                                // hence return true to skip further action.
+                                (true, None)
+                            };
+
+                            if !kbucket_full {
+                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dail back to confirm external accesable", ilog2);
                                 self.dialed_peers
                                     .push(peer_id)
                                     .map_err(|_| Error::CircularVecPopFrontError)?;
+                                if let Err(err) = self.swarm.dial(
+                                    DialOpts::peer_id(peer_id)
+                                        .condition(PeerCondition::NotDialing)
+                                        .addresses(addrs.iter().cloned().collect())
+                                        .build(),
+                                ) {
+                                    warn!(%peer_id, ?addrs, "dialing error: {err:?}");
+                                }
                             }
+
                             trace!(
                                 "SwarmEvent handled in {:?}: {event_string:?}",
                                 start.elapsed()
