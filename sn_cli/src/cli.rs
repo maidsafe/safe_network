@@ -76,6 +76,6 @@ pub(crate) struct Opt {
     /// Prevent verification of data storage on the network.
     ///
     /// This may increase operation speed, but offers no guarantees that operations were successful.
-    #[clap(global = true, short = 'n')]
+    #[clap(global = true, long = "no-verify", short = 'x')]
     pub no_verify: bool,
 }
