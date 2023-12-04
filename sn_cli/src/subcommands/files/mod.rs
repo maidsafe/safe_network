@@ -75,7 +75,7 @@ pub enum FilesCmds {
 
 pub(crate) async fn files_cmds(
     cmds: FilesCmds,
-    client: Client,
+    client: &Client,
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
@@ -112,7 +112,7 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let file_api: Files = Files::new(client, root_dir.to_path_buf());
+            let file_api: Files = Files::new(client.clone(), root_dir.to_path_buf());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
@@ -146,7 +146,7 @@ pub(crate) async fn files_cmds(
 /// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
-    client: Client,
+    client: &Client,
     root_dir: &Path,
     verify_store: bool,
     batch_size: usize,
