@@ -18,7 +18,6 @@ use crate::{
     event::NetworkEvent,
     event::{GetRecordResultMap, NodeEvent},
     multiaddr_pop_p2p,
-    network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
@@ -65,15 +64,7 @@ use tracing::warn;
 
 type ExpectedHoldersList = HashSet<PeerId>;
 
-/// The ways in which the Get Closest queries are used.
-pub(crate) enum PendingGetClosestType {
-    /// The network discovery method is present at the networking layer
-    /// Thus we can just process the queries made by NetworkDiscovery without using any channels
-    NetworkDiscovery,
-    /// These are queries made by a function at the upper layers and contains a channel to send the result back.
-    FunctionCall(oneshot::Sender<HashSet<PeerId>>),
-}
-type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (oneshot::Sender<HashSet<PeerId>>, HashSet<PeerId>)>;
 type PendingGetRecord = HashMap<
     QueryId,
     (
@@ -550,7 +541,6 @@ impl NetworkBuilder {
             // `identify` protocol to kick in and get them in the routing table.
             dialed_peers: CircularVec::new(63),
             is_gossip_handler: false,
-            network_discovery: NetworkDiscovery::new(&peer_id),
         };
 
         Ok((
@@ -593,9 +583,6 @@ pub struct SwarmDriver {
     // (to ensure no miss-up by carrying out libp2p low level gossip forwarding),
     // they are not supposed to process the gossip msg that received from libp2p.
     pub(crate) is_gossip_handler: bool,
-    // A list of random `PeerId` candidates that falls into kbuckets,
-    // This is to ensure a more accurate network discovery.
-    pub(crate) network_discovery: NetworkDiscovery,
 }
 
 impl SwarmDriver {

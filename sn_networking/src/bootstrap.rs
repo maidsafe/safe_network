@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{driver::PendingGetClosestType, SwarmDriver};
+use crate::SwarmDriver;
 use std::time::{Duration, Instant};
 use tokio::time::Interval;
 
@@ -50,20 +50,7 @@ impl SwarmDriver {
 
     pub(crate) fn trigger_network_discovery(&mut self) {
         let now = Instant::now();
-        // Fetches the candidates and also generates new candidates
-        for addr in self.network_discovery.candidates() {
-            // The query_id is tracked here. This is to update the candidate list of network_discovery with the newly
-            // found closest peers. It may fill up the candidate list of closer buckets which are harder to generate.
-            let query_id = self
-                .swarm
-                .behaviour_mut()
-                .kademlia
-                .get_closest_peers(addr.as_bytes());
-            let _ = self.pending_get_closest_peers.insert(
-                query_id,
-                (PendingGetClosestType::NetworkDiscovery, Default::default()),
-            );
-        }
+        let _query_id = self.swarm.behaviour_mut().kademlia.bootstrap();
 
         self.bootstrap.initiated();
         debug!("Trigger network discovery took {:?}", now.elapsed());

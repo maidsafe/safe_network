@@ -8,7 +8,7 @@
 
 use crate::{
     close_group_majority,
-    driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
+    driver::{truncate_patch_version, SwarmDriver},
     error::{Error, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
 };
@@ -350,6 +350,10 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
                 event_string = "gossip";
+                trace!(
+                    "Gossipsub event received {event:?} (is listening: {:?})",
+                    self.is_gossip_handler
+                );
 
                 #[cfg(feature = "open-metrics")]
                 self.network_metrics.record(&event);
@@ -669,7 +673,7 @@ impl SwarmDriver {
                     "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
                 );
 
-                let (get_closest_type, mut current_closest) =
+                let (sender, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
                         trace!(
                             "Can't locate query task {id:?}, it has likely been completed already."
@@ -684,20 +688,13 @@ impl SwarmDriver {
                 let new_peers: HashSet<PeerId> = closest_peers.peers.clone().into_iter().collect();
                 current_closest.extend(new_peers);
                 if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                    match get_closest_type {
-                        PendingGetClosestType::NetworkDiscovery => self
-                            .network_discovery
-                            .handle_get_closest_query(current_closest),
-                        PendingGetClosestType::FunctionCall(sender) => {
-                            sender
-                                .send(current_closest)
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                    }
+                    sender
+                        .send(current_closest)
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
                 } else {
                     let _ = self
                         .pending_get_closest_peers
-                        .insert(id, (get_closest_type, current_closest));
+                        .insert(id, (sender, current_closest));
                 }
             }
             // Handle GetClosestPeers timeouts
@@ -710,7 +707,7 @@ impl SwarmDriver {
                 event_string = "kad_event::get_closest_peers_err";
                 error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
-                let (get_closest_type, mut current_closest) =
+                let (sender, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
                         trace!(
                             "Can't locate query task {id:?}, it has likely been completed already."
@@ -727,16 +724,9 @@ impl SwarmDriver {
                     }
                 }
 
-                match get_closest_type {
-                    PendingGetClosestType::NetworkDiscovery => self
-                        .network_discovery
-                        .handle_get_closest_query(current_closest),
-                    PendingGetClosestType::FunctionCall(sender) => {
-                        sender
-                            .send(current_closest)
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-                    }
-                }
+                sender
+                    .send(current_closest)
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
             }
 
             // For `get_record` returning behaviour:

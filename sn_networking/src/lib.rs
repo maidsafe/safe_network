@@ -19,7 +19,6 @@ mod event;
 mod metrics;
 #[cfg(feature = "open-metrics")]
 mod metrics_service;
-mod network_discovery;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
