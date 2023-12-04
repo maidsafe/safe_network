@@ -10,7 +10,7 @@ use crate::error::Result;
 use crate::node::Node;
 use libp2p::kad::Quorum;
 use libp2p::{
-    kad::{Record, RecordKey, K_VALUE},
+    kad::{Record, RecordKey},
     PeerId,
 };
 use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE};
@@ -29,15 +29,6 @@ impl Node {
         trace!("Try trigger interval replication started@{start:?}");
         // Already contains self_peer_id
         let mut closest_k_peers = network.get_closest_k_value_local_peers().await?;
-
-        // Do not carry out replication if not many peers present.
-        if closest_k_peers.len() < K_VALUE.into() {
-            trace!(
-                "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                closest_k_peers.len()
-            );
-            return Ok(());
-        }
 
         // remove our peer id from the calculations here:
         let _we_were_there = closest_k_peers.remove(&network.peer_id);
@@ -163,15 +154,6 @@ impl Node {
 
             // remove ourself from these calculations
             let _we_were_there = closest_k_peers.remove(&network.peer_id);
-
-            // Do not carry out replication if not many peers present.
-            if closest_k_peers.len() < K_VALUE.into() {
-                trace!(
-                    "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                    closest_k_peers.len()
-                );
-                return;
-            }
 
             let data_addr = NetworkAddress::from_record_key(&paid_key);
 
