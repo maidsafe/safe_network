@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701680671015,
+  "lastUpdate": 1701680684811,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "cc7fc98bb2fcb330ab5be00a10e21e923d821e66",
-          "message": "fix: signature issue when owner was not signer",
-          "timestamp": "2023-08-07T09:22:53Z",
-          "tree_id": "a6577f4289d621f0b5c21d6d9a9be859025561f4",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc7fc98bb2fcb330ab5be00a10e21e923d821e66"
-        },
-        "date": 1691423994290,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06160013424820625,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.0321602589986804,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 2.6387815535485375,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.6328032831771,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "04bd0dfedf41737710fe1c672a5db80cd357737a",
+          "message": "chore(ci): build testnet bin during PR checks",
+          "timestamp": "2023-12-04T09:35:53+01:00",
+          "tree_id": "fbbc2b366dbd840028da4c5d3b763141bcc30f74",
+          "url": "https://github.com/maidsafe/safe_network/commit/04bd0dfedf41737710fe1c672a5db80cd357737a"
+        },
+        "date": 1701680682469,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 5.057058662671664,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 25.106766190560705,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 41.31389059920396,
             "unit": "MiB/s"
           }
         ]
