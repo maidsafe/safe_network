@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701681005846,
+  "lastUpdate": 1701681007996,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31732,6 +31732,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 12,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "96f4c2aae8b042ee1208824e8318bc1135e7aa33",
+          "message": "fix(testnet): dont be taking faucet stdout\n\nthis stops odd bugs around faucet stdout processing",
+          "timestamp": "2023-12-04T09:36:11+01:00",
+          "tree_id": "941fa5638eae963bb3e5189fb9281b064457042c",
+          "url": "https://github.com/maidsafe/safe_network/commit/96f4c2aae8b042ee1208824e8318bc1135e7aa33"
+        },
+        "date": 1701681007382,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5271,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 52724,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 10,
             "unit": "ms"
           }
         ]
