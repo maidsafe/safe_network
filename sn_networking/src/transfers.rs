@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{driver::GetRecordCfg, Network};
+use crate::{driver::GetRecordCfg, Error, Network, Result};
 use libp2p::kad::Quorum;
 use sn_protocol::{
-    error::{Error, Result},
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -30,22 +29,15 @@ impl Network {
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = self
-            .get_record_from_network(key, &get_cfg)
-            .await
-            .map_err(|_| Error::SpendNotFound(address))?;
+        let record = self.get_record_from_network(key, &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-        let header =
-            RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
+        let header = RecordHeader::from_record(&record)?;
 
         if let RecordKind::Spend = header.kind {
-            match try_deserialize_record::<Vec<SignedSpend>>(&record)
-                .map_err(|_| Error::SpendNotFound(address))?
-                .as_slice()
-            {
+            match try_deserialize_record::<Vec<SignedSpend>>(&record)?.as_slice() {
                 [one, two, ..] => {
                     error!("Found double spend for {address:?}");
                     Err(Error::DoubleSpendAttempt(
@@ -59,7 +51,7 @@ impl Network {
                 }
                 _ => {
                     trace!("Found no spend for {address:?}");
-                    Err(Error::SpendNotFound(address))
+                    Err(Error::NoSpendFoundInsideRecord(address))
                 }
             }
         } else {
@@ -82,9 +74,7 @@ impl Network {
     ) -> Result<Vec<CashNote>> {
         // get CashNoteRedemptions from encrypted Transfer
         trace!("Decyphering Transfer");
-        let cashnote_redemptions = wallet
-            .unwrap_transfer(transfer)
-            .map_err(|_| Error::FailedToDecypherTransfer)?;
+        let cashnote_redemptions = wallet.unwrap_transfer(transfer)?;
 
         self.verify_cash_notes_redemptions(wallet.address(), &cashnote_redemptions)
             .await

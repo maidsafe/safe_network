@@ -6,12 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{node::Node, Error, Result};
 use sn_networking::Network;
-use sn_protocol::error::Error as ProtocolError;
-use sn_protocol::NetworkAddress;
+use sn_protocol::{error::Error as ProtocolError, NetworkAddress};
 use sn_transfers::{NanoTokens, PaymentQuote};
-
-use crate::node::Node;
 
 /// The time in seconds that a quote is valid for
 const QUOTE_EXPIRATION_SECS: u64 = 3600;
@@ -50,29 +48,29 @@ impl Node {
         &self,
         quote: PaymentQuote,
         address: &NetworkAddress,
-    ) -> Result<(), ProtocolError> {
+    ) -> Result<()> {
         debug!("Verifying payment quote for {address:?}: {quote:?}");
 
         // check address
         if address.as_xorname().unwrap_or_default() != quote.content {
-            return Err(ProtocolError::InvalidQuoteContent);
+            return Err(Error::InvalidQuoteContent);
         }
 
         // check time
         let now = std::time::SystemTime::now();
         let dur_s = match now.duration_since(quote.timestamp) {
             Ok(t) => t.as_secs(),
-            Err(_) => return Err(ProtocolError::InvalidQuoteContent),
+            Err(_) => return Err(Error::InvalidQuoteContent),
         };
         if dur_s > QUOTE_EXPIRATION_SECS {
-            return Err(ProtocolError::QuoteExpired);
+            return Err(Error::QuoteExpired);
         }
 
         // check sig
         let bytes = PaymentQuote::bytes_for_signing(quote.content, quote.cost, quote.timestamp);
         let signature = quote.signature;
         if !self.network.verify(&bytes, &signature) {
-            return Err(ProtocolError::InvalidQuoteSignature);
+            return Err(Error::InvalidQuoteSignature);
         }
 
         Ok(())

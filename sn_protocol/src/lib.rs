@@ -25,6 +25,7 @@ pub mod test_utils;
 pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
+pub use error::Error;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
