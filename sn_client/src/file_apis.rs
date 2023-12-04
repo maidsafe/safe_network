@@ -293,12 +293,23 @@ impl Files {
             .await
             .expect("Failed to pay for storage for new file at {file_addr:?}");
 
-        // upload chunks
-        for (_chunk_name, chunk_path) in &chunks {
-            let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, false, false)
-                .await?;
-        }
+        // upload chunks in parrallel
+        let uploads: Vec<_> = chunks
+            .iter()
+            .map(|(_chunk_name, chunk_path)| {
+                let self_clone = self.clone();
+                async move {
+                    let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+                    self_clone
+                        .get_local_payment_and_upload_chunk(chunk, false, false)
+                        .await?;
+
+                    Ok::<_, Error>(())
+                }
+            })
+            .collect();
+
+        let _ = futures::future::join_all(uploads).await;
 
         let net_addr = NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr));
 
