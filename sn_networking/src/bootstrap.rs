@@ -108,7 +108,7 @@ impl ContinuousBootstrap {
     /// Returns `true` if we should carry out the Kademlia Bootstrap process immediately.
     /// Also optionally returns the new interval to re-bootstrap.
     pub(crate) async fn should_we_bootstrap(
-        &mut self,
+        &self,
         peers_in_rt: u32,
         current_interval: Duration,
     ) -> (bool, Option<Interval>) {

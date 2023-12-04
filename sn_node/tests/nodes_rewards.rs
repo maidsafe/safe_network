@@ -122,9 +122,12 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         chunks_dir.path().to_path_buf(),
     )?;
 
-    let handle = spawn_royalties_payment_client_listener(client.clone())?;
+    let num_of_chunks = chunks.len();
+    let handle = spawn_royalties_payment_client_listener(client.clone(), num_of_chunks)?;
 
     let num_of_chunks = chunks.len();
+
+    tracing::info!("Paying for {num_of_chunks} random addresses...");
     println!("Paying for {num_of_chunks} random addresses...");
     let (_, storage_cost, royalties_fees) = files_api
         .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
@@ -162,7 +165,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    let handle = spawn_royalties_payment_client_listener(client.clone())?;
+    let handle = spawn_royalties_payment_client_listener(client.clone(), 1)?;
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
@@ -205,12 +208,13 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    let handle_1 = spawn_royalties_payment_listener(node_rpc_addresses[0], royalties_pk, true);
+    let handle_1 =
+        spawn_royalties_payment_listener(node_rpc_addresses[0], royalties_pk, true, chunks.len());
     // this other node shall *not* receive any notification since we set the wrong pk as filter
     let random_pk = SecretKey::random().public_key();
-    let handle_2 = spawn_royalties_payment_listener(node_rpc_addresses[1], random_pk, true);
+    let handle_2 = spawn_royalties_payment_listener(node_rpc_addresses[1], random_pk, true, 0);
     // this other node shall *not* receive any notification either since we don't set any pk as filter
-    let handle_3 = spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false);
+    let handle_3 = spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false, 0);
 
     sleep(Duration::from_secs(20)).await;
 
@@ -287,6 +291,7 @@ fn spawn_royalties_payment_listener(
     rpc_addr: SocketAddr,
     royalties_pk: PublicKey,
     set_filter: bool,
+    expected_royalties: usize,
 ) -> JoinHandle<Result<usize, eyre::Report>> {
     let endpoint = format!("https://{rpc_addr}");
     tokio::spawn(async move {
@@ -313,7 +318,8 @@ fn spawn_royalties_payment_listener(
         let mut count = 0;
         let mut stream = response.into_inner();
 
-        let duration = Duration::from_secs(80);
+        let secs = expected_royalties as u64 * 10; // a reasonable min
+        let duration = Duration::from_secs(secs);
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Some(Ok(e)) = stream.next().await {
@@ -344,6 +350,7 @@ fn spawn_royalties_payment_listener(
 
 fn spawn_royalties_payment_client_listener(
     client: Client,
+    expected_royalties: usize,
 ) -> Result<JoinHandle<Result<(usize, NanoTokens), eyre::Report>>> {
     let temp_dir = assert_fs::TempDir::new()?;
     let sk = SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)?;
@@ -356,7 +363,9 @@ fn spawn_royalties_payment_client_listener(
     let handle = tokio::spawn(async move {
         let mut count = 0;
 
-        let duration = Duration::from_secs(80);
+        let secs = expected_royalties as u64 * 10; // a reasonable min
+        let duration = Duration::from_secs(secs);
+        tracing::info!("Awaiting transfers notifs for {duration:?}...");
         println!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Ok(event) = events_receiver.recv().await {
