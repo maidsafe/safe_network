@@ -69,6 +69,7 @@ jobs:
           faucet-path: target/release/faucet
           platform: ubuntu-latest
           set-safe-peers: false
+          build: true
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
@@ -206,6 +207,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_memcheck
           platform: ubuntu-latest
+          build: true
 
       - name: Check node memory usage
         shell: bash

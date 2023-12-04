@@ -149,6 +149,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -205,6 +206,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_e2e
           platform: ${{ matrix.os }}
+          build: true
 
   gossipsub:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -236,6 +238,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
@@ -248,6 +251,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_gossipsub_e2e
           platform: ${{ matrix.os }}
+          build: true
 
   spend_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -281,6 +285,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -319,6 +324,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_spend
           platform: ${{ matrix.os }}
+          build: true
 
   churn:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -356,6 +362,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -424,6 +431,7 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_churn
           platform: ${{ matrix.os }}
+          build: true
 
   verify_data_location_routing_table:
       if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -461,6 +469,7 @@ jobs:
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
 
         - name: Check SAFE_PEERS was set
           shell: bash
@@ -514,3 +523,4 @@ jobs:
             action: stop
             log_file_prefix: safe_test_logs_data_location
             platform: ${{ matrix.os }}
+            build: true
