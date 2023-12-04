@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701681001886,
+  "lastUpdate": 1701681005846,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "bochaco"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "d02e1cc975f68caadce385bf66b87515564f7a68",
-          "message": "test: prevent from self-encrypting same file twice in churn tests\n\nCo-authored-by: RolandSherwin <RolandSherwin@protonmail.com>",
-          "timestamp": "2023-07-24T13:41:38Z",
-          "tree_id": "f70e486d36b1269e86c2518df6e0cb433fb8faf6",
-          "url": "https://github.com/maidsafe/safe_network/commit/d02e1cc975f68caadce385bf66b87515564f7a68"
-        },
-        "date": 1690210839167,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 231.24,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 240,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 298,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "96f4c2aae8b042ee1208824e8318bc1135e7aa33",
+          "message": "fix(testnet): dont be taking faucet stdout\n\nthis stops odd bugs around faucet stdout processing",
+          "timestamp": "2023-12-04T09:36:11+01:00",
+          "tree_id": "941fa5638eae963bb3e5189fb9281b064457042c",
+          "url": "https://github.com/maidsafe/safe_network/commit/96f4c2aae8b042ee1208824e8318bc1135e7aa33"
+        },
+        "date": 1701681003342,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 603,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 276,
             "unit": "MB"
           }
         ]
