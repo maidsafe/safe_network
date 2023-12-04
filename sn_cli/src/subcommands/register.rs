@@ -21,7 +21,7 @@ pub enum RegisterCmds {
     Create {
         /// The name of the register to create. This could be the app's name.
         /// This is used along with your public key to derive the address of the register
-        #[clap(name = "name")]
+        #[clap(name = "name", short = 'n')]
         name: String,
     },
     Edit {
