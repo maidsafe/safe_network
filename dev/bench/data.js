@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701680684811,
+  "lastUpdate": 1701681001886,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": true,
-          "id": "77b67a9d6d16710f91bf53a7efc1238f3655473f",
-          "message": "chore: dep updates",
-          "timestamp": "2023-07-25T07:47:48Z",
-          "tree_id": "448d8c15f3681e36bfb19934ed0a03a660bff698",
-          "url": "https://github.com/maidsafe/safe_network/commit/77b67a9d6d16710f91bf53a7efc1238f3655473f"
-        },
-        "date": 1690275856891,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 31.02,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": false,
           "id": "b88b11edb5849eb289409b5292832dc8904f23eb",
           "message": "feat(node): make the faucet and client use rustls as opposed to openssl\n\nno extra deps to add there",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 121,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "96f4c2aae8b042ee1208824e8318bc1135e7aa33",
+          "message": "fix(testnet): dont be taking faucet stdout\n\nthis stops odd bugs around faucet stdout processing",
+          "timestamp": "2023-12-04T09:36:11+01:00",
+          "tree_id": "941fa5638eae963bb3e5189fb9281b064457042c",
+          "url": "https://github.com/maidsafe/safe_network/commit/96f4c2aae8b042ee1208824e8318bc1135e7aa33"
+        },
+        "date": 1701681000874,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 111,
             "unit": "MB"
           }
         ]
