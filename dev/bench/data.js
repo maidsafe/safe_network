@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701774334308,
+  "lastUpdate": 1701779015330,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "31b3ba7cc13a88079c92d6645d1c9a53cc98e95f",
-          "message": "fix(cli): remove manual faucet claim from benchmarking.\n\nlocal testnets already start a faucet and make that claim",
-          "timestamp": "2023-08-08T06:45:26+02:00",
-          "tree_id": "1abf5f4d1e455afcd8f4510c051f45170f0e90db",
-          "url": "https://github.com/maidsafe/safe_network/commit/31b3ba7cc13a88079c92d6645d1c9a53cc98e95f"
-        },
-        "date": 1691476079960,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06210404555679542,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6183409636933748,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.572130873333435,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.14638324226101,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "9e3b05a5e231397321257ad70067a0369cd41267",
+          "message": "fix: mark chunks as completed when no failures on retry",
+          "timestamp": "2023-12-05T11:44:29Z",
+          "tree_id": "15fbe1fd7aa1af48dcbce33a81cb0508e699e22a",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e3b05a5e231397321257ad70067a0369cd41267"
+        },
+        "date": 1701779013307,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1390689508804686,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8867295436604123,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.66528625994924,
             "unit": "MiB/s"
           }
         ]
