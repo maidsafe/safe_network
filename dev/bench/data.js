@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701784875408,
+  "lastUpdate": 1701785036013,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ed104f5590f87424b7c036e40a9f0ebe81ec7719",
-          "message": "refactor: centralising RecordKey creation logic to make sure we always use the same for all content type",
-          "timestamp": "2023-07-26T15:28:40Z",
-          "tree_id": "25b8208809b2a4eb75cf44c2c9633dd4a3c0a7aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed104f5590f87424b7c036e40a9f0ebe81ec7719"
-        },
-        "date": 1690394303822,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.61,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 110,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "2c132d2bfde6688229de13b92697feaa8f7e2f23",
+          "message": "fix: protect against amounts tampering and incomplete spends attack",
+          "timestamp": "2023-12-05T13:20:48Z",
+          "tree_id": "1acf660c63ee560dffab3161a50a8444bc07c025",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c132d2bfde6688229de13b92697feaa8f7e2f23"
+        },
+        "date": 1701785035095,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 91,
             "unit": "MB"
           }
         ]
