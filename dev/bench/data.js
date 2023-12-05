@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701783245855,
+  "lastUpdate": 1701783247539,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "cc7cca03bf7c2a7405db91aaf7c35a540958561d",
-          "message": "fix(replication): send out keys for replication if not empty",
-          "timestamp": "2023-07-25T18:36:10Z",
-          "tree_id": "86efdec182faa4c1cabdfb42c8549d3309c24abd",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc7cca03bf7c2a7405db91aaf7c35a540958561d"
-        },
-        "date": 1690313960079,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 232.4,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 225,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 150,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a1e69fa942c0f977bea36e813f0ca339221eab4a",
+          "message": "feat: not dial back for peers in full kbucket",
+          "timestamp": "2023-12-05T12:35:18Z",
+          "tree_id": "0395eac9b1eec40e52f63e4be18919cb1005169d",
+          "url": "https://github.com/maidsafe/safe_network/commit/a1e69fa942c0f977bea36e813f0ca339221eab4a"
+        },
+        "date": 1701783247091,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 682,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 154,
             "unit": "MB"
           }
         ]
