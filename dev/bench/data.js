@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701774330796,
+  "lastUpdate": 1701774332451,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b88b11edb5849eb289409b5292832dc8904f23eb",
-          "message": "feat(node): make the faucet and client use rustls as opposed to openssl\n\nno extra deps to add there",
-          "timestamp": "2023-07-25T12:58:53Z",
-          "tree_id": "6e87402c73ac2660b3eeed933030cf6020206732",
-          "url": "https://github.com/maidsafe/safe_network/commit/b88b11edb5849eb289409b5292832dc8904f23eb"
-        },
-        "date": 1690294725382,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 230.04,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 207,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 170,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "26ac756a72cad259ef9796f1a3274a9674c05f46",
+          "message": "chore(cli): print the failed uploads stats",
+          "timestamp": "2023-12-05T10:23:45Z",
+          "tree_id": "6e3e54da81ddbdd8e1a7c44a4ecc701b64fe8487",
+          "url": "https://github.com/maidsafe/safe_network/commit/26ac756a72cad259ef9796f1a3274a9674c05f46"
+        },
+        "date": 1701774332017,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 707,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 163,
             "unit": "MB"
           }
         ]
