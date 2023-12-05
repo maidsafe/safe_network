@@ -42,8 +42,7 @@ impl Debug for QueryResponse {
             } => {
                 write!(
                     f,
-                    "GetStoreCost(quote: {:?}, payment_address: {:?})",
-                    quote, payment_address
+                    "GetStoreCost(quote: {quote:?}, payment_address: {payment_address:?})"
                 )
             }
             QueryResponse::GetReplicatedRecord(result) => match result {
@@ -56,7 +55,7 @@ impl Debug for QueryResponse {
                     )
                 }
                 Err(err) => {
-                    write!(f, "GetReplicatedRecord(Err({:?}))", err)
+                    write!(f, "GetReplicatedRecord(Err({err:?}))")
                 }
             },
         }

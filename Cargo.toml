@@ -17,4 +17,5 @@ members = [
     "sn_transfers",
 ]
 
-[workspace.lints]
+[workspace.lints.clippy]
+uninlined_format_args = "warn"

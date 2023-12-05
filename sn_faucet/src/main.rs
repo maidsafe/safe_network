@@ -130,12 +130,12 @@ async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
 async fn claim_genesis(client: &Client) -> Result<()> {
     for i in 1..6 {
         if let Err(e) = load_faucet_wallet_from_genesis_wallet(client).await {
-            println!("Failed to claim genesis: {}", e);
+            println!("Failed to claim genesis: {e}");
         } else {
             println!("Genesis claimed!");
             return Ok(());
         }
-        println!("Trying to claiming genesis... attempt {}", i);
+        println!("Trying to claiming genesis... attempt {i}");
     }
     bail!("Failed to claim genesis")
 }

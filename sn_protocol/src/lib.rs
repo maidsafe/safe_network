@@ -240,7 +240,7 @@ pub struct PrettyPrintKBucketKey(pub Key<Vec<u8>>);
 impl std::fmt::Display for PrettyPrintKBucketKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for byte in self.0.hashed_bytes() {
-            f.write_fmt(format_args!("{:02x}", byte))?;
+            f.write_fmt(format_args!("{byte:02x}"))?;
         }
         Ok(())
     }
@@ -248,7 +248,7 @@ impl std::fmt::Display for PrettyPrintKBucketKey {
 
 impl std::fmt::Debug for PrettyPrintKBucketKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
@@ -320,7 +320,7 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
             Cow::Owned(owned_key) => owned_key.as_ref(),
         };
         for byte in record_key_bytes {
-            f.write_fmt(format_args!("{:02x}", byte))?;
+            f.write_fmt(format_args!("{byte:02x}"))?;
         }
 
         write!(
@@ -333,7 +333,7 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
 
 impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
@@ -364,7 +364,7 @@ mod tests {
 
     impl std::fmt::Debug for OldRecordKeyPrint {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self)
+            write!(f, "{self}")
         }
     }
 
@@ -375,13 +375,13 @@ mod tests {
     impl std::fmt::Display for OldKBucketKeyPrint {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             let kbucket_key_b = Bytes::from(self.0.hashed_bytes().to_vec());
-            write!(f, "{:64x}", kbucket_key_b)
+            write!(f, "{kbucket_key_b:64x}")
         }
     }
 
     impl std::fmt::Debug for OldKBucketKeyPrint {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self)
+            write!(f, "{self}")
         }
     }
 
@@ -402,7 +402,7 @@ mod tests {
         let net_addr = NetworkAddress::from_spend_address(spend_addr);
 
         let spend_addr_hex = spend_addr.to_hex();
-        let net_addr_fmt = format!("{}", net_addr);
+        let net_addr_fmt = format!("{net_addr}");
 
         assert!(net_addr_fmt.contains(&spend_addr_hex));
     }

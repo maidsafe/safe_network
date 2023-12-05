@@ -219,7 +219,7 @@ impl Node {
                         match net_event {
                             Some(event) => {
                                 let start = std::time::Instant::now();
-                                let event_string = format!("{:?}", event);
+                                let event_string = format!("{event:?}");
 
                                 self.handle_network_event(event, peers_connected);
                                 info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
@@ -279,7 +279,7 @@ impl Node {
     /// Spawns a thread for any likely long running tasks
     fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         let start = std::time::Instant::now();
-        let event_string = format!("{:?}", event);
+        let event_string = format!("{event:?}");
         trace!("Handling NetworkEvent {event_string:?}");
 
         match event {

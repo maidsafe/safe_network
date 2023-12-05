@@ -156,10 +156,10 @@ impl Debug for SwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SwarmCmd::StartListening { addr, .. } => {
-                write!(f, "SwarmCmd::StartListening {{ addr: {:?} }}", addr)
+                write!(f, "SwarmCmd::StartListening {{ addr: {addr:?} }}")
             }
             SwarmCmd::Dial { addr, .. } => {
-                write!(f, "SwarmCmd::Dial {{ addr: {:?} }}", addr)
+                write!(f, "SwarmCmd::Dial {{ addr: {addr:?} }}")
             }
             SwarmCmd::GetNetworkRecord {
                 key,
@@ -199,10 +199,10 @@ impl Debug for SwarmCmd {
                 )
             }
             SwarmCmd::GossipsubSubscribe(topic) => {
-                write!(f, "SwarmCmd::GossipsubSubscribe({:?})", topic)
+                write!(f, "SwarmCmd::GossipsubSubscribe({topic:?})")
             }
             SwarmCmd::GossipsubUnsubscribe(topic) => {
-                write!(f, "SwarmCmd::GossipsubUnsubscribe({:?})", topic)
+                write!(f, "SwarmCmd::GossipsubUnsubscribe({topic:?})")
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 write!(
@@ -213,16 +213,16 @@ impl Debug for SwarmCmd {
                 )
             }
             SwarmCmd::DialWithOpts { opts, .. } => {
-                write!(f, "SwarmCmd::DialWithOpts {{ opts: {:?} }}", opts)
+                write!(f, "SwarmCmd::DialWithOpts {{ opts: {opts:?} }}")
             }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
-                write!(f, "SwarmCmd::GetClosestPeers {{ key: {:?} }}", key)
+                write!(f, "SwarmCmd::GetClosestPeers {{ key: {key:?} }}")
             }
             SwarmCmd::GetClosestKLocalPeers { .. } => {
                 write!(f, "SwarmCmd::GetClosestKLocalPeers")
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
-                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {:?} }}", key)
+                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}")
             }
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
@@ -254,10 +254,10 @@ impl Debug for SwarmCmd {
                 )
             }
             SwarmCmd::SendResponse { resp, .. } => {
-                write!(f, "SwarmCmd::SendResponse resp: {:?}", resp)
+                write!(f, "SwarmCmd::SendResponse resp: {resp:?}")
             }
             SwarmCmd::SendRequest { req, peer, .. } => {
-                write!(f, "SwarmCmd::SendRequest req: {:?}, peer: {:?}", req, peer)
+                write!(f, "SwarmCmd::SendRequest req: {req:?}, peer: {peer:?}")
             }
             SwarmCmd::GossipHandler => {
                 write!(f, "SwarmCmd::GossipHandler")
