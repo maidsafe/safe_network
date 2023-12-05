@@ -131,6 +131,8 @@ impl WatchOnlyWallet {
             return Ok(());
         }
 
+        std::fs::create_dir_all(&self.wallet_dir)?;
+
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
         let exclusive_access = self.lock()?;
         self.reload()?;
@@ -158,11 +160,16 @@ impl WatchOnlyWallet {
         self.store(exclusive_access)
     }
 
+    /// Reloads the wallet from disk.
+    /// Note: this will drop any data held in memory and completely replaced with what's read fom disk.
+    pub fn reload(&mut self) -> Result<()> {
+        *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
+        Ok(())
+    }
+
     /// Attempts to reload the wallet from disk.
     pub fn reload_from_disk_or_recreate(&mut self) -> Result<()> {
         std::fs::create_dir_all(&self.wallet_dir)?;
-        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
-        trace!("Trying to lock wallet to get available cash_notes...");
         let _exclusive_access = self.lock()?;
         self.reload()?;
         Ok(())
@@ -226,8 +233,8 @@ impl WatchOnlyWallet {
 
     // Helpers
 
-    /// Stores the wallet to disk.
-    /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
+    // Stores the wallet to disk.
+    // This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     pub(super) fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
         store_wallet(&self.wallet_dir, &self.keyless_wallet)?;
         trace!("Releasing wallet lock");
@@ -235,8 +242,8 @@ impl WatchOnlyWallet {
         Ok(())
     }
 
-    /// Locks the wallet and returns exclusive access to the wallet
-    /// This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
+    // Locks the wallet and returns exclusive access to the wallet
+    // This lock prevents any other process from locking the wallet dir, effectively acts as a mutex for the wallet
     pub(super) fn lock(&self) -> Result<WalletExclusiveAccess> {
         let lock = wallet_lockfile_name(&self.wallet_dir);
         let file = OpenOptions::new()
@@ -247,10 +254,113 @@ impl WatchOnlyWallet {
         file.lock_exclusive()?;
         Ok(file)
     }
+}
 
-    /// reloads the wallet from disk.
-    fn reload(&mut self) -> Result<()> {
-        *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
+#[cfg(test)]
+mod tests {
+    use super::WatchOnlyWallet;
+    use crate::{
+        genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
+        wallet::KeyLessWallet,
+        MainSecretKey, NanoTokens,
+    };
+    use assert_fs::TempDir;
+    use eyre::Result;
+
+    #[test]
+    fn watchonly_wallet_basics() -> Result<()> {
+        let main_sk = MainSecretKey::random();
+        let main_pubkey = main_sk.main_pubkey();
+        let wallet_dir = TempDir::new()?;
+        let wallet = WatchOnlyWallet::new(main_pubkey, &wallet_dir, KeyLessWallet::default());
+
+        assert_eq!(wallet_dir.path(), wallet.wallet_dir());
+        assert_eq!(main_pubkey, wallet.address());
+        assert_eq!(NanoTokens::zero(), wallet.balance());
+        assert!(wallet.cash_notes_created_for_others().is_empty());
+        assert!(wallet.spent_cash_notes().is_empty());
+        assert!(wallet.available_cash_notes().is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn watchonly_wallet_to_and_from_file() -> Result<()> {
+        let main_sk = MainSecretKey::random();
+        let main_pubkey = main_sk.main_pubkey();
+        let cash_note = create_first_cash_note_from_key(&main_sk)?;
+        let wallet_dir = TempDir::new()?;
+
+        let mut wallet = WatchOnlyWallet::new(main_pubkey, &wallet_dir, KeyLessWallet::default());
+        wallet.deposit_and_store_to_disk(&vec![cash_note])?;
+
+        let deserialised = WatchOnlyWallet::load_from(&wallet_dir, main_pubkey)?;
+
+        assert_eq!(deserialised.wallet_dir(), wallet.wallet_dir());
+        assert_eq!(deserialised.address(), wallet.address());
+
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialised.balance().as_nano());
+
+        assert!(wallet.cash_notes_created_for_others().is_empty());
+        assert!(deserialised.cash_notes_created_for_others().is_empty());
+
+        assert!(wallet.spent_cash_notes().is_empty());
+        assert!(deserialised.spent_cash_notes().is_empty());
+
+        assert_eq!(1, wallet.available_cash_notes().len());
+        assert_eq!(1, deserialised.available_cash_notes().len());
+        assert_eq!(
+            deserialised.available_cash_notes(),
+            wallet.available_cash_notes()
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn watchonly_wallet_deposit_cash_notes() -> Result<()> {
+        let main_sk = MainSecretKey::random();
+        let main_pubkey = main_sk.main_pubkey();
+        let wallet_dir = TempDir::new()?;
+        let mut wallet = WatchOnlyWallet::new(main_pubkey, &wallet_dir, KeyLessWallet::default());
+
+        // depositing owned cash note shall be deposited and increase the balance
+        let owned_cash_note = create_first_cash_note_from_key(&main_sk)?;
+        wallet.deposit(&vec![owned_cash_note.clone()])?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+
+        // depositing non-owned cash note shall be dropped and not change the balance
+        let non_owned_cash_note = create_first_cash_note_from_key(&MainSecretKey::random())?;
+        wallet.deposit(&vec![non_owned_cash_note])?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+
+        // depositing is idempotent
+        wallet.deposit(&vec![owned_cash_note])?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn watchonly_wallet_reload() -> Result<()> {
+        let main_sk = MainSecretKey::random();
+        let main_pubkey = main_sk.main_pubkey();
+        let wallet_dir = TempDir::new()?;
+        let mut wallet = WatchOnlyWallet::new(main_pubkey, &wallet_dir, KeyLessWallet::default());
+
+        let cash_note = create_first_cash_note_from_key(&main_sk)?;
+        wallet.deposit(&vec![cash_note.clone()])?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+
+        wallet.reload()?;
+        assert_eq!(NanoTokens::zero(), wallet.balance());
+
+        wallet.deposit_and_store_to_disk(&vec![cash_note])?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        wallet.reload()?;
+        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+
         Ok(())
     }
 }
