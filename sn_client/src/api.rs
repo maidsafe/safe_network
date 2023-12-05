@@ -23,8 +23,8 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetRecordCfg, NetworkBuilder, NetworkEvent,
-    PutRecordCfg, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
+    NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -307,7 +307,7 @@ impl Client {
         let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
         let record = match maybe_record {
             Ok(r) => r,
-            Err(NetworkError::SplitRecord { result_map }) => {
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
                 return merge_split_register_records(address, &result_map)
             }
             Err(e) => {

@@ -22,7 +22,7 @@ use crate::{
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    Network, CLOSE_GROUP_SIZE,
+    GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "quic")]
@@ -77,7 +77,7 @@ type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId
 type PendingGetRecord = HashMap<
     QueryId,
     (
-        oneshot::Sender<Result<Record>>,
+        oneshot::Sender<std::result::Result<Record, GetRecordError>>,
         GetRecordResultMap,
         Quorum,
         ExpectedHoldersList,
