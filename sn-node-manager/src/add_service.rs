@@ -6,9 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::config::create_owned_dir;
 use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::{ServiceConfig, ServiceControl};
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::Multiaddr;
@@ -32,9 +33,6 @@ pub struct AddServiceOptions {
 ///
 /// There are several arguments that probably seem like they could be handled within the function,
 /// but they enable more controlled unit testing.
-///
-/// For the directory paths used in the install options, they should be created before this
-/// function is called, as they may require root or administrative access to write to.
 pub async fn add(
     install_options: AddServiceOptions,
     node_registry: &mut NodeRegistry,
@@ -74,8 +72,13 @@ pub async fn add(
         )
         .await?;
     pb.finish_with_message("Download complete");
-    let safenode_path =
-        release_repo.extract_release_archive(&archive_path, &install_options.safenode_dir_path)?;
+    let safenode_download_path =
+        release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
+    let safenode_file_name = safenode_download_path
+        .file_name()
+        .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
+        .to_string_lossy()
+        .to_string();
 
     let mut added_service_data = vec![];
     let current_node_count = node_registry.nodes.len() as u16;
@@ -89,12 +92,22 @@ pub async fn add(
         let service_data_dir_path = install_options
             .service_data_dir_path
             .join(service_name.clone());
+        let service_safenode_path = service_data_dir_path.join(safenode_file_name.clone());
         let service_log_dir_path = install_options
             .service_log_dir_path
             .join(service_name.clone());
+
+        create_owned_dir(service_data_dir_path.clone(), &install_options.user)?;
+        create_owned_dir(service_log_dir_path.clone(), &install_options.user)?;
+
+        std::fs::copy(
+            safenode_download_path.clone(),
+            service_safenode_path.clone(),
+        )?;
+
         service_control.install(ServiceConfig {
             name: service_name.clone(),
-            safenode_path: safenode_path.clone(),
+            safenode_path: service_safenode_path.clone(),
             node_port,
             rpc_port,
             service_user: install_options.user.clone(),
@@ -105,6 +118,7 @@ pub async fn add(
 
         added_service_data.push((
             service_name.clone(),
+            service_safenode_path.to_string_lossy().into_owned(),
             service_data_dir_path.to_string_lossy().into_owned(),
             service_log_dir_path.to_string_lossy().into_owned(),
             node_port,
@@ -123,18 +137,22 @@ pub async fn add(
             peer_id: None,
             log_dir_path: Some(service_log_dir_path.clone()),
             data_dir_path: Some(service_data_dir_path.clone()),
+            safenode_path: service_safenode_path,
         });
 
         node_number += 1;
     }
 
+    std::fs::remove_file(safenode_download_path)?;
+
     println!("Services Added:");
     for install in added_service_data.iter() {
         println!(" {} {}", "✓".green(), install.0);
-        println!("    - Data path: {}", install.1);
-        println!("    - Log path: {}", install.2);
-        println!("    - Service port: {}", install.3);
-        println!("    - RPC port: {}", install.4);
+        println!("    - Safenode path: {}", install.1);
+        println!("    - Data path: {}", install.2);
+        println!("    - Log path: {}", install.3);
+        println!("    - Service port: {}", install.4);
+        println!("    - RPC port: {}", install.5);
     }
 
     println!("[!] Note: newly added services have not been started");
@@ -162,11 +180,17 @@ mod tests {
     use mockall::mock;
     use mockall::predicate::*;
     use mockall::Sequence;
+    use predicates::prelude::*;
     use sn_releases::{
         ArchiveType, Platform, ProgressCallback, ReleaseType, Result as SnReleaseResult,
         SafeReleaseRepositoryInterface,
     };
     use std::path::Path;
+
+    #[cfg(not(target_os = "windows"))]
+    const SAFENODE_FILE_NAME: &str = "safenode";
+    #[cfg(target_os = "windows")]
+    const SAFENODE_FILE_NAME: &str = "safenode.exe";
 
     mock! {
         pub SafeReleaseRepository {}
@@ -186,6 +210,16 @@ mod tests {
         }
     }
 
+    #[cfg(target_os = "windows")]
+    fn get_username() -> String {
+        std::env::var("USERNAME").expect("Failed to get username")
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn get_username() -> String {
+        std::env::var("USER").expect("Failed to get username")
+    }
+
     #[tokio::test]
     async fn add_first_node_should_use_latest_version_and_add_one_service() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
@@ -198,6 +232,8 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child("safenode");
+        safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -225,9 +261,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = temp_dir.to_path_buf();
-        let safenode_install_path = safenode_install_dir_path.join("safenode");
-        let safenode_install_path_clone = safenode_install_path.clone();
+        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
         mock_release_repo
             .expect_extract_release_archive()
             .with(
@@ -235,10 +269,10 @@ mod tests {
                     "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
                     latest_version
                 ))),
-                eq(safenode_install_dir_path),
+                always(), // We will extract to a temporary directory
             )
             .times(1)
-            .returning(move |_, _| Ok(safenode_install_path.clone()))
+            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
             .in_sequence(&mut seq);
 
         mock_service_control
@@ -252,16 +286,18 @@ mod tests {
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
-        // let peers: Vec<Multiaddr> = vec![];
         mock_service_control
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode1".to_string(),
-                safenode_path: safenode_install_path_clone,
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
                 rpc_port: 8081,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 peers: vec![],
@@ -269,7 +305,6 @@ mod tests {
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
-        println!("about to call add...");
         add(
             AddServiceOptions {
                 count: None,
@@ -277,7 +312,7 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
-                user: "safe".to_string(),
+                user: get_username(),
                 version: None,
             },
             &mut node_registry,
@@ -286,10 +321,14 @@ mod tests {
         )
         .await?;
 
+        safenode_download_path.assert(predicate::path::missing());
+        node_data_dir.assert(predicate::path::is_dir());
+        node_logs_dir.assert(predicate::path::is_dir());
+
         assert_eq!(node_registry.nodes.len(), 1);
         assert_eq!(node_registry.nodes[0].version, latest_version);
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, "safe");
+        assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
@@ -319,6 +358,8 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child("safenode");
+        safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -346,9 +387,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = temp_dir.to_path_buf();
-        let safenode_install_path = safenode_install_dir_path.join("safenode");
-        let safenode_install_path_clone = safenode_install_path.clone();
+        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
         mock_release_repo
             .expect_extract_release_archive()
             .with(
@@ -356,10 +395,10 @@ mod tests {
                     "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
                     latest_version
                 ))),
-                eq(safenode_install_dir_path),
+                always(),
             )
             .times(1)
-            .returning(move |_, _| Ok(safenode_install_path.clone()))
+            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
             .in_sequence(&mut seq);
 
         // Expected calls for first installation
@@ -379,10 +418,13 @@ mod tests {
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode1".to_string(),
-                safenode_path: safenode_install_path_clone.clone(),
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
                 rpc_port: 8081,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 peers: vec![],
@@ -407,10 +449,13 @@ mod tests {
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode2".to_string(),
-                safenode_path: safenode_install_path_clone.clone(),
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode2")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8082,
                 rpc_port: 8083,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
                 peers: vec![],
@@ -435,10 +480,13 @@ mod tests {
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode3".to_string(),
-                safenode_path: safenode_install_path_clone,
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode3")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8084,
                 rpc_port: 8085,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
                 peers: vec![],
@@ -453,7 +501,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
-                user: "safe".to_string(),
+                user: get_username(),
                 version: None,
             },
             &mut node_registry,
@@ -465,7 +513,7 @@ mod tests {
         assert_eq!(node_registry.nodes.len(), 3);
         assert_eq!(node_registry.nodes[0].version, latest_version);
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, "safe");
+        assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
@@ -480,7 +528,7 @@ mod tests {
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[1].version, latest_version);
         assert_eq!(node_registry.nodes[1].service_name, "safenode2");
-        assert_eq!(node_registry.nodes[1].user, "safe");
+        assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
         assert_eq!(node_registry.nodes[1].port, 8082);
         assert_eq!(node_registry.nodes[1].rpc_port, 8083);
@@ -495,7 +543,7 @@ mod tests {
         assert_matches!(node_registry.nodes[1].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[2].version, latest_version);
         assert_eq!(node_registry.nodes[2].service_name, "safenode3");
-        assert_eq!(node_registry.nodes[2].user, "safe");
+        assert_eq!(node_registry.nodes[2].user, get_username());
         assert_eq!(node_registry.nodes[2].number, 3);
         assert_eq!(node_registry.nodes[2].port, 8084);
         assert_eq!(node_registry.nodes[2].rpc_port, 8085);
@@ -525,6 +573,8 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child("safenode");
+        safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -546,9 +596,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = temp_dir.to_path_buf();
-        let safenode_install_path = safenode_install_dir_path.join("safenode");
-        let safenode_install_path_clone = safenode_install_path.clone();
+        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
         mock_release_repo
             .expect_extract_release_archive()
             .with(
@@ -556,10 +604,10 @@ mod tests {
                     "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
                     specific_version
                 ))),
-                eq(safenode_install_dir_path),
+                always(),
             )
             .times(1)
-            .returning(move |_, _| Ok(safenode_install_path.clone()))
+            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
             .in_sequence(&mut seq);
 
         mock_service_control
@@ -578,10 +626,13 @@ mod tests {
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode1".to_string(),
-                safenode_path: safenode_install_path_clone,
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
                 rpc_port: 8081,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 peers: vec![],
@@ -596,7 +647,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
-                user: "safe".to_string(),
+                user: get_username(),
                 version: Some(specific_version.to_string()),
             },
             &mut node_registry,
@@ -608,7 +659,7 @@ mod tests {
         assert_eq!(node_registry.nodes.len(), 1);
         assert_eq!(node_registry.nodes[0].version, specific_version);
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, "safe");
+        assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(node_registry.nodes[0].rpc_port, 8081);
@@ -642,8 +693,17 @@ mod tests {
                 status: NodeStatus::Added,
                 pid: None,
                 peer_id: None,
+<<<<<<< HEAD
                 log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
                 data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+||||||| parent of 1a686eb (feat: each service instance to use its own binary)
+                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+=======
+                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+>>>>>>> 1a686eb (feat: each service instance to use its own binary)
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -651,6 +711,8 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child("safenode");
+        safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
         mock_release_repo
@@ -678,9 +740,7 @@ mod tests {
             })
             .in_sequence(&mut seq);
 
-        let safenode_install_dir_path = temp_dir.to_path_buf();
-        let safenode_install_path = safenode_install_dir_path.join("safenode");
-        let safenode_install_path_clone = safenode_install_path.clone();
+        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
         mock_release_repo
             .expect_extract_release_archive()
             .with(
@@ -688,10 +748,10 @@ mod tests {
                     "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
                     latest_version
                 ))),
-                eq(safenode_install_dir_path),
+                always(),
             )
             .times(1)
-            .returning(move |_, _| Ok(safenode_install_path.clone()))
+            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
             .in_sequence(&mut seq);
 
         mock_service_control
@@ -710,10 +770,13 @@ mod tests {
             .times(1)
             .with(eq(ServiceConfig {
                 name: "safenode2".to_string(),
-                safenode_path: safenode_install_path_clone,
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode2")
+                    .join(SAFENODE_FILE_NAME),
                 node_port: 8082,
                 rpc_port: 8083,
-                service_user: "safe".to_string(),
+                service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
                 peers: vec![],
@@ -728,7 +791,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
-                user: "safe".to_string(),
+                user: get_username(),
                 version: None,
             },
             &mut node_registry,
@@ -740,7 +803,7 @@ mod tests {
         assert_eq!(node_registry.nodes.len(), 2);
         assert_eq!(node_registry.nodes[1].version, latest_version);
         assert_eq!(node_registry.nodes[1].service_name, "safenode2");
-        assert_eq!(node_registry.nodes[1].user, "safe");
+        assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
         assert_eq!(node_registry.nodes[1].port, 8082);
         assert_eq!(node_registry.nodes[1].rpc_port, 8083);
