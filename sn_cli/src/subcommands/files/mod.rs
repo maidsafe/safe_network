@@ -166,7 +166,15 @@ async fn upload_files(
     if chunk_manager.is_chunks_empty() {
         // make sure we don't have any failed chunks in those
         let chunks = chunk_manager.already_put_chunks(&files_path)?;
-        let failed_chunks = client.verify_uploaded_chunks(chunks, batch_size).await?;
+        let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+
+        // mark the non-failed ones as completed
+        chunk_manager.mark_completed(
+            chunks
+                .into_iter()
+                .filter(|c| !failed_chunks.contains(c))
+                .map(|(xor, _)| xor),
+        );
 
         // if none are failed, we can return early
         if failed_chunks.is_empty() {

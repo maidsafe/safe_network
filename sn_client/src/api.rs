@@ -685,7 +685,7 @@ impl Client {
     /// Returns a vec of any chunks that could not be verified
     pub async fn verify_uploaded_chunks(
         &self,
-        chunks_paths: Vec<(XorName, PathBuf)>,
+        chunks_paths: &[(XorName, PathBuf)],
         batch_size: usize,
     ) -> Result<Vec<(XorName, PathBuf)>> {
         let mut failed_chunks = Vec::new();
