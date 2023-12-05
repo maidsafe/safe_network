@@ -21,5 +21,5 @@ pub enum Error {
     OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
 
     #[error("Could not configure logging: {0}")]
-    LoggingConfigurationError(String),
+    LoggingConfiguration(String),
 }
