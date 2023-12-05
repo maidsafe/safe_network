@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.37](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.36...sn_cli-v0.86.37) - 2023-12-05
+
+### Other
+- *(cli)* print the failed uploads stats
+- *(cli)* remove unpaid/paid distinction from chunk manager
+
 ## [0.86.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.35...sn_cli-v0.86.36) - 2023-12-05
 
 ### Other
