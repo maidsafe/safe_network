@@ -15,7 +15,7 @@ use crate::{
 use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 use serde::Serialize;
-use sn_networking::Error as NetworkError;
+use sn_networking::{get_singed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
@@ -704,7 +704,6 @@ impl Node {
                 }
 
                 // check the network if any spend has happened for the same unique_pubkey
-                // Does not return an error, instead the Vec<SignedSpend> is returned.
                 debug!("Check if any spend exist for the same unique_pubkey {cash_note_addr:?}");
                 let mut spends = match self.network.get_spend(cash_note_addr, false).await {
                     Ok(spend) => {
@@ -714,6 +713,33 @@ impl Node {
                     Err(NetworkError::DoubleSpendAttempt(spend1, spend2)) => {
                         warn!("Spends for {cash_note_addr:?} is a double-spend. Aggregating and storing them.");
                         vec![*spend1, *spend2]
+                    }
+                    Err(NetworkError::GetRecordError(GetRecordError::RecordNotEnoughCopies(
+                        record,
+                    ))) => {
+                        warn!("Spends for {cash_note_addr:?} resulted in a failed quorum. Trying to aggregate the spends in them.");
+                        match get_singed_spends_from_record(record) {
+                            Ok(spends) => spends,
+                            Err(err) => {
+                                error!("Error while trying to get signed spends out of a record for {cash_note_addr:?}: {err:?}");
+                                vec![]
+                            }
+                        }
+                    }
+                    Err(NetworkError::GetRecordError(GetRecordError::SplitRecord {
+                        result_map,
+                    })) => {
+                        let mut all_spends = vec![];
+                        warn!("Spends for {cash_note_addr:?} resulted in a split record. Trying to aggregate the spends in them.");
+                        for (_, (record, _)) in result_map.into_iter() {
+                            match get_singed_spends_from_record(record) {
+                                Ok(spends) => all_spends.extend(spends),
+                                Err(err) => {
+                                    error!("Error while trying to get signed spends out of a record for {cash_note_addr:?}: {err:?}");
+                                }
+                            };
+                        }
+                        all_spends
                     }
                     Err(err) => {
                         debug!("Fetching spend for the same unique_pubkey {cash_note_addr:?} returned: {err:?}");
