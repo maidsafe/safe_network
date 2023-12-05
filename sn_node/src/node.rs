@@ -475,7 +475,9 @@ impl Node {
                         .map_err(|_| ProtocolError::GetStoreCostFailed);
 
                     QueryResponse::GetStoreCost {
-                        quote: Self::create_quote_for_storecost(network, store_cost, &address),
+                        quote: store_cost.and_then(|cost| {
+                            Self::create_quote_for_storecost(network, cost, &address)
+                        }),
                         payment_address,
                     }
                 }
