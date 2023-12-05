@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{driver::GetRecordCfg, Error, Network, Result};
-use libp2p::kad::Quorum;
+use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
@@ -34,29 +34,23 @@ impl Network {
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-        let header = RecordHeader::from_record(&record)?;
 
-        if let RecordKind::Spend = header.kind {
-            match try_deserialize_record::<Vec<SignedSpend>>(&record)?.as_slice() {
-                [one, two, ..] => {
-                    error!("Found double spend for {address:?}");
-                    Err(Error::DoubleSpendAttempt(
-                        Box::new(one.to_owned()),
-                        Box::new(two.to_owned()),
-                    ))
-                }
-                [one] => {
-                    trace!("Spend get for address: {address:?} successful");
-                    Ok(one.clone())
-                }
-                _ => {
-                    trace!("Found no spend for {address:?}");
-                    Err(Error::NoSpendFoundInsideRecord(address))
-                }
+        match get_singed_spends_from_record(record)?.as_slice() {
+            [one, two, ..] => {
+                error!("Found double spend for {address:?}");
+                Err(Error::DoubleSpendAttempt(
+                    Box::new(one.to_owned()),
+                    Box::new(two.to_owned()),
+                ))
             }
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
-            Err(Error::RecordKindMismatch(RecordKind::Spend))
+            [one] => {
+                trace!("Spend get for address: {address:?} successful");
+                Ok(one.clone())
+            }
+            _ => {
+                trace!("Found no spend for {address:?}");
+                Err(Error::NoSpendFoundInsideRecord(address))
+            }
         }
     }
 
@@ -160,5 +154,17 @@ impl Network {
         }
 
         Ok(our_output_cash_notes)
+    }
+}
+
+/// Tries to get the signed spend out of a record.
+pub fn get_singed_spends_from_record(record: Record) -> Result<Vec<SignedSpend>> {
+    let header = RecordHeader::from_record(&record)?;
+    if let RecordKind::Spend = header.kind {
+        let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+        Ok(spends)
+    } else {
+        error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
+        Err(Error::RecordKindMismatch(RecordKind::Spend))
     }
 }

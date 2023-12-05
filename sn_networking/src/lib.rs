@@ -32,6 +32,7 @@ pub use self::{
     error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
+    transfers::get_singed_spends_from_record,
 };
 
 use bytes::Bytes;
@@ -396,6 +397,9 @@ impl Network {
                                 PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
                             ));
                         }
+                    } else if retry_attempts >= total_attempts {
+                        // return the record incase of failed quorum.
+                        return Err(GetRecordError::RecordNotEnoughCopies(returned_record).into());
                     }
                 }
                 Err(GetRecordError::RecordNotFound) => {
