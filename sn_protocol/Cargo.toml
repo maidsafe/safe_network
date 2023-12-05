@@ -39,3 +39,6 @@ xor_name = "5.0.0"
 # watch out updating this, protoc compiler needs to be installed on all build systems
 # arm builds + musl are very problematic
 tonic-build = { version = "~0.6.2" }
+
+[lints]
+workspace = true

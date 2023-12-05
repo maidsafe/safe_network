@@ -44,3 +44,6 @@ process-metrics = [
     "sysinfo",
     "tokio"
 ]
+
+[lints]
+workspace = true
