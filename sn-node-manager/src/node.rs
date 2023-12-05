@@ -67,6 +67,7 @@ pub struct Node {
     pub peer_id: Option<PeerId>,
     pub data_dir_path: Option<PathBuf>,
     pub log_dir_path: Option<PathBuf>,
+    pub safenode_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

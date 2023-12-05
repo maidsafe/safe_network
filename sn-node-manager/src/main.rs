@@ -166,8 +166,8 @@ async fn main() -> Result<()> {
             add(
                 AddServiceOptions {
                     count,
-                    peers: parse_peers_args(peers).await?,
-                    safenode_dir_path: get_safenode_install_path()?,
+                    peers: parse_peers_args(peers).await.unwrap_or(vec![]),
+                    safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
                     service_log_dir_path,
                     user: service_user,
