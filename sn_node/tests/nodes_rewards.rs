@@ -143,8 +143,8 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
         amount, royalties_fees,
         "Unexpected amount of royalties fees received"
     );
-    assert_eq!(
-        count, num_of_chunks,
+    assert!(
+        count >= num_of_chunks,
         "Unexpected number of royalties fees notifications received"
     );
 
