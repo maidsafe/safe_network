@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701770913497,
+  "lastUpdate": 1701771080186,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "82e490552ab569e33d93f7f3354bd1065ef1c7fa",
-          "message": "test(networking): add read loop to await async disk write\n\nverified puts write to disk in async manner now, returning immediately.\nSo a  straight afterwards is not guaranteed to succeed. Thus we\nadd a small but finate get loop before we assert",
-          "timestamp": "2023-07-25T13:39:11Z",
-          "tree_id": "4c611a7c66e1a7ce7ae06b501bc7cfd53988f3de",
-          "url": "https://github.com/maidsafe/safe_network/commit/82e490552ab569e33d93f7f3354bd1065ef1c7fa"
-        },
-        "date": 1690297434646,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 25.11,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "aeca48732f7e44e8a0e77312df82c0bcd319bde6",
+          "message": "test(node): update assert over royalty count\n\nIf a repayment happens we may top up, so the count could actually be higher",
+          "timestamp": "2023-12-05T09:32:32Z",
+          "tree_id": "1c92b8620a09d8c715153ff44c1ac82fe5b039e5",
+          "url": "https://github.com/maidsafe/safe_network/commit/aeca48732f7e44e8a0e77312df82c0bcd319bde6"
+        },
+        "date": 1701771079075,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 86,
             "unit": "MB"
           }
         ]
