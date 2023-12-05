@@ -678,10 +678,17 @@ impl Node {
                             "Checking parent input at {:?} - {parent_cash_note_address:?}",
                             parent_input.unique_pubkey(),
                         );
-                        let parent = self
+                        let parent = match self
                             .network
                             .get_spend(parent_cash_note_address, false)
-                            .await?;
+                            .await
+                        {
+                            Ok(parent) => parent,
+                            Err(err) => {
+                                error!("Error while getting parent spend {parent_cash_note_address:?} for cash_note addr {cash_note_addr:?}: {err:?}");
+                                return Err(err.into());
+                            }
+                        };
                         trace!(
                             "Got parent input at {:?} - {parent_cash_note_address:?}",
                             parent_input.unique_pubkey(),
