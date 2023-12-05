@@ -16,3 +16,5 @@ members = [
     "sn_testnet",
     "sn_transfers",
 ]
+
+[workspace.lints]

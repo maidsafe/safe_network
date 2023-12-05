@@ -31,3 +31,6 @@ tiny_http = { version="0.12", features = ["ssl-rustls"] }
 tokio = { version = "1.32.0", features = ["parking_lot", "rt"] }
 tracing = { version = "~0.1.26" }
 tracing-core = "0.1.30"
+
+[lints]
+workspace = true

@@ -44,3 +44,6 @@ bls = { package = "blsttc", version = "8.0.1" }
 libp2p-identity = { version="0.2.7", features = ["rand"] }
 quickcheck = "1.0.3"
 eyre = "0.6.8"
+
+[lints]
+workspace = true
