@@ -79,7 +79,7 @@ impl TracingLayers {
     pub(crate) fn fmt_layer(
         &mut self,
         default_logging_targets: Vec<(String, Level)>,
-        output_dest: LogOutputDest,
+        output_dest: &LogOutputDest,
         format: LogFormat,
         max_uncompressed_log_files: Option<usize>,
         max_compressed_log_files: Option<usize>,
@@ -93,7 +93,7 @@ impl TracingLayers {
                     .event_format(LogFormatter)
                     .boxed()
             }
-            LogOutputDest::Path(ref path) => {
+            LogOutputDest::Path(path) => {
                 std::fs::create_dir_all(path)?;
                 println!("Logging to directory: {path:?}");
 

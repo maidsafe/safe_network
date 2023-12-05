@@ -143,7 +143,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             }
             Ok(())
         }
-        WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.clone()),
+        WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.as_deref()),
         WalletCmds::Create { sk } => {
             let main_sk = match SecretKey::from_hex(sk) {
                 Ok(sk) => MainSecretKey::new(sk),
@@ -248,7 +248,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
     Ok(())
 }
 
-fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) -> Result<()> {
+fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<&str>) -> Result<()> {
     if read_from_stdin {
         return read_cash_note_from_stdin(root_dir);
     }
@@ -280,10 +280,10 @@ fn read_cash_note_from_stdin(root_dir: &Path) -> Result<()> {
     println!("Please paste your CashNote below:");
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input)?;
-    deposit_from_cash_note_hex(root_dir, input)
+    deposit_from_cash_note_hex(root_dir, &input)
 }
 
-fn deposit_from_cash_note_hex(root_dir: &Path, input: String) -> Result<()> {
+fn deposit_from_cash_note_hex(root_dir: &Path, input: &str) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir)?;
     let cash_note = sn_transfers::CashNote::from_hex(input.trim())?;
 
@@ -344,7 +344,7 @@ async fn send(
         }
     };
 
-    let transfer = Transfer::transfer_from_cash_note(cash_note)?.to_hex()?;
+    let transfer = Transfer::transfer_from_cash_note(&cash_note)?.to_hex()?;
     println!("The encrypted transfer has been successfully created.");
     println!("Please share this to the recipient:\n\n{transfer}\n");
     println!("The recipient can then use the 'receive' command to claim the funds.");

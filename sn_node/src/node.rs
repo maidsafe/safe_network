@@ -212,7 +212,7 @@ impl Node {
             let _ = replication_interval.tick().await; // first tick completes immediately
 
             loop {
-                let peers_connected = peers_connected.clone();
+                let peers_connected = &peers_connected;
 
                 tokio::select! {
                     net_event = network_event_receiver.recv() => {
@@ -277,7 +277,7 @@ impl Node {
 
     /// Handle a network event.
     /// Spawns a thread for any likely long running tasks
-    fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
+    fn handle_network_event(&self, event: NetworkEvent, peers_connected: &Arc<AtomicUsize>) {
         let start = std::time::Instant::now();
         let event_string = format!("{event:?}");
         trace!("Handling NetworkEvent {event_string:?}");
@@ -475,7 +475,7 @@ impl Node {
                         .map_err(|_| ProtocolError::GetStoreCostFailed);
 
                     QueryResponse::GetStoreCost {
-                        quote: Self::create_quote_for_storecost(network, store_cost, address),
+                        quote: Self::create_quote_for_storecost(network, store_cost, &address),
                         payment_address,
                     }
                 }

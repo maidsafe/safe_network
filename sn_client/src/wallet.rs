@@ -213,7 +213,7 @@ impl WalletClient {
         info!("Storecosts retrieved");
 
         // pay for records
-        self.pay_for_records(cost_map, verify_store).await
+        self.pay_for_records(&cost_map, verify_store).await
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
@@ -223,7 +223,7 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_records(
         &mut self,
-        cost_map: BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
+        cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         let total_cost = self.wallet.local_send_storage_payment(cost_map)?;

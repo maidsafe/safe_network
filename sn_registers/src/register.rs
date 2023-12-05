@@ -211,7 +211,7 @@ impl Register {
     pub fn write(
         &mut self,
         entry: Entry,
-        children: BTreeSet<EntryHash>,
+        children: &BTreeSet<EntryHash>,
         signer: &SecretKey,
     ) -> Result<(EntryHash, RegisterOp)> {
         self.check_entry_and_reg_sizes(&entry)?;
@@ -314,12 +314,12 @@ mod tests {
         // Different item from same replica's root shall having different entry_hash
         let item1 = random_register_entry();
         let item2 = random_register_entry();
-        let (entry_hash1_1, _) = replica1.write(item1.clone(), BTreeSet::new(), &authority_sk)?;
-        let (entry_hash1_2, _) = replica1.write(item2, BTreeSet::new(), &authority_sk)?;
+        let (entry_hash1_1, _) = replica1.write(item1.clone(), &BTreeSet::new(), &authority_sk)?;
+        let (entry_hash1_2, _) = replica1.write(item2, &BTreeSet::new(), &authority_sk)?;
         assert!(entry_hash1_1 != entry_hash1_2);
 
         // Same item from different replica's root shall remain same
-        let (entry_hash2_1, _) = replica2.write(item1, BTreeSet::new(), &authority_sk)?;
+        let (entry_hash2_1, _) = replica2.write(item1, &BTreeSet::new(), &authority_sk)?;
         assert_eq!(entry_hash1_1, entry_hash2_1);
 
         let mut parents = BTreeSet::new();
@@ -327,8 +327,8 @@ mod tests {
         let _ = parents.insert(entry_hash1_1);
         let item3 = random_register_entry();
         let item4 = random_register_entry();
-        let (entry_hash1_1_3, _) = replica1.write(item3, parents.clone(), &authority_sk)?;
-        let (entry_hash2_1_4, _) = replica2.write(item4, parents.clone(), &authority_sk)?;
+        let (entry_hash1_1_3, _) = replica1.write(item3, &parents, &authority_sk)?;
+        let (entry_hash2_1_4, _) = replica2.write(item4, &parents, &authority_sk)?;
         assert!(entry_hash1_1_3 != entry_hash2_1_4);
 
         Ok(())
@@ -353,7 +353,7 @@ mod tests {
 
         // And let's write an item to replica1 with autority1
         let item1 = random_register_entry();
-        let (_, op1) = replica1.write(item1, BTreeSet::new(), &authority_sk1)?;
+        let (_, op1) = replica1.write(item1, &BTreeSet::new(), &authority_sk1)?;
 
         // Let's assert current state on both replicas
         assert_eq!(replica1.size(), 1);
@@ -361,7 +361,7 @@ mod tests {
 
         // Concurrently write another item with authority2 on replica2
         let item2 = random_register_entry();
-        let (_, op2) = replica2.write(item2, BTreeSet::new(), &authority_sk2)?;
+        let (_, op2) = replica2.write(item2, &BTreeSet::new(), &authority_sk2)?;
 
         // Item should be writed on replica2
         assert_eq!(replica2.size(), 1);
@@ -371,7 +371,7 @@ mod tests {
         replica2.apply_op(op1)?;
 
         // Let's assert data convergence on both replicas
-        verify_data_convergence(vec![replica1, replica2], 2)?;
+        verify_data_convergence(&[replica1, replica2], 2)?;
 
         Ok(())
     }
@@ -384,16 +384,16 @@ mod tests {
         let entry2 = random_register_entry();
         let entry3 = random_register_entry();
 
-        let (entry1_hash, _) = register.write(entry1.clone(), BTreeSet::new(), sk)?;
+        let (entry1_hash, _) = register.write(entry1.clone(), &BTreeSet::new(), sk)?;
 
         // this creates a fork since entry1 is not set as child of entry2
-        let (entry2_hash, _) = register.write(entry2.clone(), BTreeSet::new(), sk)?;
+        let (entry2_hash, _) = register.write(entry2.clone(), &BTreeSet::new(), sk)?;
 
         // we'll write entry2 but having the entry1 and entry2 as children,
         // i.e. solving the fork created by them
-        let children = vec![entry1_hash, entry2_hash].into_iter().collect();
+        let children = [entry1_hash, entry2_hash].into_iter().collect();
 
-        let (entry3_hash, _) = register.write(entry3.clone(), children, sk)?;
+        let (entry3_hash, _) = register.write(entry3.clone(), &children, sk)?;
 
         assert_eq!(register.size(), 3);
 
@@ -474,7 +474,7 @@ mod tests {
             let (_hash, _op) = replica
                 .write(
                     random_register_entry(),
-                    BTreeSet::new(),
+                    &BTreeSet::new(),
                     &SecretKey::random(),
                 )
                 .context("Failed to write register entry")?;
@@ -482,7 +482,7 @@ mod tests {
 
         let excess_entry = replica.write(
             random_register_entry(),
-            BTreeSet::new(),
+            &BTreeSet::new(),
             &SecretKey::random(),
         );
 
@@ -536,15 +536,15 @@ mod tests {
     }
 
     // verify data convergence on a set of replicas and with the expected length
-    fn verify_data_convergence(replicas: Vec<Register>, expected_size: u64) -> Result<()> {
+    fn verify_data_convergence(replicas: &[Register], expected_size: u64) -> Result<()> {
         // verify all replicas have the same and expected size
-        for r in &replicas {
+        for r in replicas {
             assert_eq!(r.size(), expected_size);
         }
 
         // now verify that the items are the same in all replicas
         let r0 = &replicas[0];
-        for r in &replicas {
+        for r in replicas {
             assert_eq!(r.crdt, r0.crdt);
         }
 
@@ -610,10 +610,10 @@ mod tests {
             let (_, mut replica2) = replicas.remove(0);
 
             // Write an item on replicas
-            let (_, op) = replica1.write(random_register_entry(), BTreeSet::new(), &owner_sk)?;
+            let (_, op) = replica1.write(random_register_entry(), &BTreeSet::new(), &owner_sk)?;
             replica2.apply_op(op)?;
 
-            verify_data_convergence(vec![replica1, replica2], 1)?;
+            verify_data_convergence(&[replica1, replica2], 1)?;
         }
 
         #[test]
@@ -640,13 +640,13 @@ mod tests {
             let mut children = BTreeSet::new();
             for _data in dataset {
                 // Write an item on replica1
-                let (hash, op) = replica1.write(random_register_entry(), children.clone(), &owner_sk)?;
+                let (hash, op) = replica1.write(random_register_entry(), &children, &owner_sk)?;
                 // now apply that op to replica 2
                 replica2.apply_op(op)?;
                 children = vec![hash].into_iter().collect();
             }
 
-            verify_data_convergence(vec![replica1, replica2], dataset_length)?;
+            verify_data_convergence(&[replica1, replica2], dataset_length)?;
         }
 
         #[test]
@@ -675,17 +675,17 @@ mod tests {
             for _data in dataset {
                 // choose a random set of children
                 let num_of_children: usize = rng.gen();
-                let children: BTreeSet<_> = list_of_hashes.choose_multiple(&mut OsRng, num_of_children).cloned().collect();
+                let children = list_of_hashes.choose_multiple(&mut OsRng, num_of_children).cloned().collect();
 
                 // Write an item on replica1 using the randomly generated set of children
-                let (hash, op) = replica1.write(random_register_entry(), children, &owner_sk)?;
+                let (hash, op) = replica1.write(random_register_entry(), &children, &owner_sk)?;
 
                 // now apply that op to replica 2
                 replica2.apply_op(op)?;
                 list_of_hashes.push(hash);
             }
 
-            verify_data_convergence(vec![replica1, replica2], dataset_length)?;
+            verify_data_convergence(&[replica1, replica2], dataset_length)?;
         }
 
         #[test]
@@ -700,7 +700,7 @@ mod tests {
             let mut children = BTreeSet::new();
             for _data in dataset {
                 // first generate an op from one replica...
-                let (hash, op)= replicas[0].write(random_register_entry(), children, &owner_sk)?;
+                let (hash, op)= replicas[0].write(random_register_entry(), &children, &owner_sk)?;
 
                 // then apply this to all replicas
                 for replica in &mut replicas {
@@ -709,7 +709,7 @@ mod tests {
                 children = vec![hash].into_iter().collect();
             }
 
-            verify_data_convergence(replicas, dataset_length)?;
+            verify_data_convergence(&replicas, dataset_length)?;
 
         }
 
@@ -726,7 +726,7 @@ mod tests {
 
             let mut children = BTreeSet::new();
             for _data in dataset {
-                let (hash, op) = replicas[0].write(random_register_entry(), children, &owner_sk)?;
+                let (hash, op) = replicas[0].write(random_register_entry(), &children, &owner_sk)?;
                 ops.push(op);
                 children = vec![hash].into_iter().collect();
             }
@@ -741,7 +741,7 @@ mod tests {
                 }
             }
 
-            verify_data_convergence(replicas, dataset_length)?;
+            verify_data_convergence(&replicas, dataset_length)?;
         }
 
         #[test]
@@ -758,7 +758,7 @@ mod tests {
             for _data in dataset {
                 if let Some(replica) = replicas.choose_mut(&mut OsRng)
                 {
-                    let (hash, op) = replica.write(random_register_entry(), children, &owner_sk)?;
+                    let (hash, op) = replica.write(random_register_entry(), &children, &owner_sk)?;
                     ops.push(op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -777,7 +777,7 @@ mod tests {
                 }
             }
 
-            verify_data_convergence(replicas, dataset_length)?;
+            verify_data_convergence(&replicas, dataset_length)?;
         }
 
         #[test]
@@ -803,7 +803,7 @@ mod tests {
             let mut ops = vec![];
             let mut children = BTreeSet::new();
             for (_data, delivery_chance) in dataset {
-                let (hash, op)= replica1.write(random_register_entry(), children, &owner_sk)?;
+                let (hash, op)= replica1.write(random_register_entry(), &children, &owner_sk)?;
 
                 ops.push((op, delivery_chance));
                 children = vec![hash].into_iter().collect();
@@ -826,7 +826,7 @@ mod tests {
             }
 
             // now we converge
-            verify_data_convergence(vec![replica1, replica2], dataset_length)?;
+            verify_data_convergence(&[replica1, replica2], dataset_length)?;
         }
 
         #[test]
@@ -845,7 +845,7 @@ mod tests {
                 let index: usize = OsRng.gen_range(0..replicas.len());
                 let replica = &mut replicas[index];
 
-                let (hash, op)=replica.write(random_register_entry(), children, &owner_sk)?;
+                let (hash, op)=replica.write(random_register_entry(), &children, &owner_sk)?;
                 ops.push((op, delivery_chance));
                 children = vec![hash].into_iter().collect();
             }
@@ -870,7 +870,7 @@ mod tests {
                 }
             }
 
-            verify_data_convergence(replicas, dataset_length)?;
+            verify_data_convergence(&replicas, dataset_length)?;
         }
 
         #[test]
@@ -891,7 +891,7 @@ mod tests {
             for _data in dataset {
                 if let Some(replica) = replicas.choose_mut(&mut OsRng)
                 {
-                    let (hash, op)=replica.write(random_register_entry(), children, &owner_sk)?;
+                    let (hash, op)=replica.write(random_register_entry(), &children, &owner_sk)?;
                     ops.push(op);
                     children = vec![hash].into_iter().collect();
                 }
@@ -905,7 +905,7 @@ mod tests {
             // add bogus ops from bogus replica + bogus data
             let mut children = BTreeSet::new();
             for _data in bogus_dataset {
-                let (hash, bogus_op) = bogus_replica.write(random_register_entry(), children, &random_owner_sk)?;
+                let (hash, bogus_op) = bogus_replica.write(random_register_entry(), &children, &random_owner_sk)?;
                 bogus_replica.apply_op(bogus_op.clone())?;
                 ops.push(bogus_op);
                 children = vec![hash].into_iter().collect();
@@ -932,7 +932,7 @@ mod tests {
             // check we get an error per bogus datum per replica
             assert_eq!(err_count.len(), bogus_dataset_length * number_replicas);
 
-            verify_data_convergence(replicas, dataset_length as u64)?;
+            verify_data_convergence(&replicas, dataset_length as u64)?;
         }
     }
 

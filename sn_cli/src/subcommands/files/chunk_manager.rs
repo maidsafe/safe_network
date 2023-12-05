@@ -255,11 +255,7 @@ impl ChunkManager {
                 if !file_chunks_dir.exists() {
                     return None;
                 }
-                Self::read_file_chunks_dir(
-                    file_chunks_dir,
-                    path_xor.clone(),
-                    original_file_name.clone(),
-                )
+                Self::read_file_chunks_dir(file_chunks_dir, path_xor, original_file_name.clone())
             })
             .collect::<BTreeMap<_, _>>();
 
@@ -365,7 +361,7 @@ impl ChunkManager {
     // original_file_name: Used to create ChunkedFile
     fn read_file_chunks_dir(
         file_chunks_dir: PathBuf,
-        path_xor: PathXorName,
+        path_xor: &PathXorName,
         original_file_name: OsString,
     ) -> Option<(PathXorName, ChunkedFile)> {
         let mut file_xor_addr: Option<XorName> = None;
@@ -409,7 +405,7 @@ impl ChunkManager {
                 Some((
                     path_xor.clone(),
                     ChunkedFile {
-                        file_name: original_file_name.clone(),
+                        file_name: original_file_name,
                         file_xor_addr,
                         chunks,
                     },
@@ -560,7 +556,7 @@ mod tests {
         let file_chunks_dir = manager.artifacts_dir.join(&path_xor.0);
         let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
             file_chunks_dir,
-            path_xor.clone(),
+            &path_xor,
             chunked_file.file_name.to_owned(),
         )
         .expect("Folder and metadata should be present");
@@ -601,7 +597,7 @@ mod tests {
             let file_chunks_dir = manager_clone.artifacts_dir.join(path_xor.0.clone());
             let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
                 file_chunks_dir,
-                path_xor.clone(),
+                path_xor,
                 chunked_file.file_name.to_owned(),
             )
             .expect("Folder and metadata should be present");

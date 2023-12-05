@@ -128,7 +128,7 @@ impl ClientRegister {
             return Err(Error::ContentBranchDetected(children));
         }
 
-        self.write_atop(entry, children.into_iter().map(|(hash, _)| hash).collect())
+        self.write_atop(entry, &children.into_iter().map(|(hash, _)| hash).collect())
     }
 
     /// Write a new value onto the Register atop latest value.
@@ -144,14 +144,14 @@ impl ClientRegister {
             .map(|(hash, _)| hash)
             .collect();
 
-        self.write_atop(entry, children)
+        self.write_atop(entry, &children)
     }
 
     /// Write a new value onto the Register atop the set of braches/entries
     /// referenced by the provided list of their corresponding entry hash.
     /// Note you can use `write_merging_branches` API instead if you
     /// want to write atop all exiting branches/entries.
-    pub fn write_atop(&mut self, entry: &[u8], children: BTreeSet<EntryHash>) -> Result<()> {
+    pub fn write_atop(&mut self, entry: &[u8], children: &BTreeSet<EntryHash>) -> Result<()> {
         // check permissions first
         let public_key = self.client.signer_pk();
         self.register.check_user_permissions(public_key)?;
@@ -302,7 +302,7 @@ impl ClientRegister {
     pub async fn write_atop_online(
         &mut self,
         entry: &[u8],
-        children: BTreeSet<EntryHash>,
+        children: &BTreeSet<EntryHash>,
         verify_store: bool,
     ) -> Result<()> {
         self.write_atop(entry, children)?;

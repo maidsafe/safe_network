@@ -47,11 +47,8 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, _content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let prev_rewards_balance = current_rewards_balance()?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
@@ -116,11 +113,8 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, _content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let num_of_chunks = chunks.len();
     let handle = spawn_royalties_payment_client_listener(client.clone(), num_of_chunks).await?;
@@ -199,11 +193,8 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, _content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
     let node_rpc_addresses = get_all_rpc_addresses();
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
