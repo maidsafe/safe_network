@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Result};
+use crate::{
+    close_group_majority, Error, GetRecordCfg, GetRecordError, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
+};
 use libp2p::{
     kad::{
         self, KBucketDistance, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Quorum,
@@ -19,18 +22,14 @@ use std::collections::{hash_map::Entry, BTreeMap, HashMap, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
-use crate::{close_group_majority, GetRecordError, SwarmDriver, CLOSE_GROUP_SIZE};
-
 /// Using XorName to differentiate different record content under the same key.
 type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
-type ExpectedHoldersList = HashSet<PeerId>;
 pub(crate) type PendingGetRecord = HashMap<
     QueryId,
     (
         oneshot::Sender<std::result::Result<Record, GetRecordError>>,
         GetRecordResultMap,
-        Quorum,
-        ExpectedHoldersList,
+        GetRecordCfg,
     ),
 >;
 
@@ -77,12 +76,12 @@ impl SwarmDriver {
         };
 
         if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
-            let (_sender, result_map, quorum, expected_holders) = entry.get_mut();
+            let (_sender, result_map, cfg) = entry.get_mut();
 
             let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
-            if !expected_holders.is_empty() {
-                if expected_holders.remove(&peer_id) {
+            if !cfg.expected_holders.is_empty() {
+                if cfg.expected_holders.remove(&peer_id) {
                     debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
@@ -103,7 +102,7 @@ impl SwarmDriver {
                     1
                 };
 
-            let expected_answers = match quorum {
+            let expected_answers = match cfg.get_quorum {
                 Quorum::Majority => close_group_majority(),
                 Quorum::All => CLOSE_GROUP_SIZE,
                 Quorum::N(v) => v.get(),
@@ -113,12 +112,12 @@ impl SwarmDriver {
             trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
             if responded_peers >= expected_answers {
-                if !expected_holders.is_empty() {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
+                if !cfg.expected_holders.is_empty() {
+                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
                 }
 
                 // Remove the query task and consume the variables.
-                let (sender, result_map, _, _) = entry.remove();
+                let (sender, result_map, _) = entry.remove();
 
                 if result_map.len() == 1 {
                     sender
@@ -161,7 +160,7 @@ impl SwarmDriver {
         step: ProgressStep,
     ) -> Result<()> {
         // return error if the entry cannot be found
-        let (sender, result_map, _quorum, expected_holders) =
+        let (sender, result_map, cfg) =
             self.pending_get_record.remove(&query_id).ok_or_else(|| {
                 trace!(
                     "Can't locate query task {query_id:?}, it has likely been completed already."
@@ -201,10 +200,13 @@ impl SwarmDriver {
                 )
         };
 
-        if expected_holders.is_empty() {
+        if cfg.expected_holders.is_empty() {
             debug!("{log_string}");
         } else {
-            debug!("{log_string}, and {expected_holders:?} expected holders not responded");
+            debug!(
+                "{log_string}, and {:?} expected holders not responded",
+                cfg.expected_holders
+            );
         }
 
         sender
@@ -226,7 +228,7 @@ impl SwarmDriver {
             kad::GetRecordError::QuorumFailed { .. } => {}
             kad::GetRecordError::Timeout { key } => {
                 let pretty_key = PrettyPrintRecordKey::from(key);
-                let (sender, result_map, quorum, expected_holders) =
+                let (sender, result_map, cfg) =
                     self.pending_get_record.remove(&query_id).ok_or_else(|| {
                         trace!(
                             "Can't locate query task {query_id:?} for {pretty_key:?}, it has likely been completed already."
@@ -239,7 +241,7 @@ impl SwarmDriver {
                         })
                     })?;
 
-                let required_response_count = match quorum {
+                let required_response_count = match cfg.get_quorum {
                     Quorum::Majority => close_group_majority(),
                     Quorum::All => CLOSE_GROUP_SIZE,
                     Quorum::N(v) => v.into(),
@@ -270,7 +272,7 @@ impl SwarmDriver {
                     }
                 }
 
-                warn!("Get record task {query_id:?} for {pretty_key:?} returned insufficient responses. {expected_holders:?} did not return record");
+                warn!("Get record task {query_id:?} for {pretty_key:?} returned insufficient responses. {:?} did not return record", cfg.expected_holders);
                 // Otherwise report the timeout
                 sender
                     .send(Err(GetRecordError::QueryTimeout))
@@ -281,22 +283,19 @@ impl SwarmDriver {
         }
 
         // return error if the entry cannot be found
-        let (sender, _, _, expected_holders) =
-            self.pending_get_record.remove(&query_id).ok_or_else(|| {
-                trace!(
-                    "Can't locate query task {query_id:?}, it has likely been completed already."
-                );
-                Error::ReceivedKademliaEventDropped(kad::Event::OutboundQueryProgressed {
-                    id: query_id,
-                    result: QueryResult::GetRecord(Err(get_record_err.clone())),
-                    stats,
-                    step,
-                })
-            })?;
-        if expected_holders.is_empty() {
+        let (sender, _, cfg) = self.pending_get_record.remove(&query_id).ok_or_else(|| {
+            trace!("Can't locate query task {query_id:?}, it has likely been completed already.");
+            Error::ReceivedKademliaEventDropped(kad::Event::OutboundQueryProgressed {
+                id: query_id,
+                result: QueryResult::GetRecord(Err(get_record_err.clone())),
+                stats,
+                step,
+            })
+        })?;
+        if cfg.expected_holders.is_empty() {
             info!("Get record task {query_id:?} failed with error {get_record_err:?}");
         } else {
-            debug!("Get record task {query_id:?} failed with {expected_holders:?} expected holders not responded, error {get_record_err:?}");
+            debug!("Get record task {query_id:?} failed with {:?} expected holders not responded, error {get_record_err:?}", cfg.expected_holders);
         }
         sender
             .send(Err(GetRecordError::RecordNotFound))
@@ -317,12 +316,12 @@ impl SwarmDriver {
         peer_record: &PeerRecord,
     ) -> Result<bool> {
         if let Entry::Occupied(mut entry) = self.pending_get_record.entry(*query_id) {
-            let (_, _, quorum, expected_holders) = entry.get_mut();
+            let (_, _, cfg) = entry.get_mut();
 
-            if expected_holders.is_empty() &&
+            if cfg.expected_holders.is_empty() &&
                RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
                // Ensure that we only exit early if quorum is indeed for only one match
-               matches!(quorum, Quorum::One)
+               matches!(cfg.get_quorum, Quorum::One)
             {
                 // Stop the query; possibly stops more nodes from being queried.
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {
