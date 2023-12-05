@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701783249398,
+  "lastUpdate": 1701784875408,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "09954be0416c5b60cbcb6a3d43669af59ac44515",
-          "message": "feat(client): use CLOSE_GROUP for min conn counts on startup",
-          "timestamp": "2023-08-08T09:23:26Z",
-          "tree_id": "3303688a6890cfa04df024df1ae2cb467417cc3a",
-          "url": "https://github.com/maidsafe/safe_network/commit/09954be0416c5b60cbcb6a3d43669af59ac44515"
-        },
-        "date": 1691495631834,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06207515306283394,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6179910765075427,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.5719035383132507,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.50893553757448,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "2c132d2bfde6688229de13b92697feaa8f7e2f23",
+          "message": "fix: protect against amounts tampering and incomplete spends attack",
+          "timestamp": "2023-12-05T13:20:48Z",
+          "tree_id": "1acf660c63ee560dffab3161a50a8444bc07c025",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c132d2bfde6688229de13b92697feaa8f7e2f23"
+        },
+        "date": 1701784872929,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0975132888246606,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.453662319682059,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.691008108426566,
             "unit": "MiB/s"
           }
         ]
