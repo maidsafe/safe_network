@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701779197378,
+  "lastUpdate": 1701783098168,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2ae76a1679c3b88191d9acd9993313c43dab63e4",
-          "message": "chore(ci): do not upload benchmark logs",
-          "timestamp": "2023-08-08T06:56:41+02:00",
-          "tree_id": "56cac96957d0e91228c7f4d91621a8750d042dbe",
-          "url": "https://github.com/maidsafe/safe_network/commit/2ae76a1679c3b88191d9acd9993313c43dab63e4"
-        },
-        "date": 1691476805551,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0621008097678862,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6183206181916983,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.5724962987481075,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.66528625994924,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a1e69fa942c0f977bea36e813f0ca339221eab4a",
+          "message": "feat: not dial back for peers in full kbucket",
+          "timestamp": "2023-12-05T12:35:18Z",
+          "tree_id": "0395eac9b1eec40e52f63e4be18919cb1005169d",
+          "url": "https://github.com/maidsafe/safe_network/commit/a1e69fa942c0f977bea36e813f0ca339221eab4a"
+        },
+        "date": 1701783096434,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.7097817254221724,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.784881516397803,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.50893553757448,
             "unit": "MiB/s"
           }
         ]
