@@ -704,9 +704,12 @@ impl Node {
                         debug!("Got spend from network for the same unique_pubkey");
                         vec![spend]
                     }
-                    // Q: Should we not aggregate the double spends instead of using vec![]
+                    Err(NetworkError::DoubleSpendAttempt(spend1, spend2)) => {
+                        warn!("Spends for {cash_note_addr:?} is a double-spend. Aggregating and storing them.");
+                        vec![*spend1, *spend2]
+                    }
                     Err(err) => {
-                        debug!("fetching spend for the same unique_pubkey returned: {err:?}");
+                        debug!("Fetching spend for the same unique_pubkey {cash_note_addr:?} returned: {err:?}");
                         vec![]
                     }
                 };
