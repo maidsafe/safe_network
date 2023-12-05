@@ -25,3 +25,6 @@ xor_name = "5.0.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 proptest = { version = "1.0.0" }
 eyre = "0.6.8"
+
+[lints]
+workspace = true

@@ -12,3 +12,6 @@ version = "0.1.2"
 
 [build-dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
+
+[lints]
+workspace = true
