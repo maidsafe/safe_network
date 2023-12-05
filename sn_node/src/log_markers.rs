@@ -69,7 +69,7 @@ impl<'a> Marker<'a> {
     }
 
     /// Helper to log the FetchingKeysForReplication variant
-    pub fn fetching_keys_for_replication(keys: &Vec<(PeerId, RecordKey)>) -> Self {
+    pub fn fetching_keys_for_replication(keys: &[(PeerId, RecordKey)]) -> Self {
         Marker::FetchingKeysForReplication {
             fetching_keys_len: keys.len(),
         }

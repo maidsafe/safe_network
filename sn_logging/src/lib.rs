@@ -46,7 +46,7 @@ impl LogFormat {
         match val {
             "default" => Ok(LogFormat::Default),
             "json" => Ok(LogFormat::Json),
-            _ => Err(Error::LoggingConfigurationError(
+            _ => Err(Error::LoggingConfiguration(
                 "The only valid values for this argument are \"default\" or \"json\"".to_string(),
             )),
         }

@@ -218,9 +218,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
 
         let mut split = crate_log_level.split('=');
         let crate_name = split.next().ok_or_else(|| {
-            Error::LoggingConfigurationError(
-                "Could not obtain crate name in logging string".to_string(),
-            )
+            Error::LoggingConfiguration("Could not obtain crate name in logging string".to_string())
         })?;
         let log_level = split.next().unwrap_or("trace");
         targets.insert(crate_name.to_string(), get_log_level_from_str(log_level)?);
@@ -256,10 +254,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("sn_transfers".to_string(), Level::TRACE),
         ]);
     }
-    Ok(targets
-        .into_iter()
-        .map(|(crate_name, level)| (crate_name, level))
-        .collect())
+    Ok(targets.into_iter().collect())
 }
 
 fn get_log_level_from_str(log_level: &str) -> Result<Level> {
@@ -269,7 +264,7 @@ fn get_log_level_from_str(log_level: &str) -> Result<Level> {
         "trace" => Ok(Level::TRACE),
         "warn" => Ok(Level::WARN),
         "error" => Ok(Level::WARN),
-        _ => Err(Error::LoggingConfigurationError(format!(
+        _ => Err(Error::LoggingConfiguration(format!(
             "Log level {log_level} is not supported"
         ))),
     }

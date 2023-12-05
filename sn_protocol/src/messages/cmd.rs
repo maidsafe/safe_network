@@ -10,7 +10,7 @@
 use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
-pub use sn_transfers::{Hash, UniquePubkey};
+pub use sn_transfers::Hash;
 use std::collections::HashMap;
 
 /// Data and CashNote cmds - recording spends or creating, updating, and removing data.
