@@ -17,5 +17,12 @@ members = [
     "sn_transfers",
 ]
 
+[workspace.lints.rust]
+arithmetic_overflow = "forbid"
+mutable_transmutes = "forbid"
+no_mangle_const_items = "forbid"
+unknown_crate_types = "forbid"
+unsafe_code = "forbid"
+
 [workspace.lints.clippy]
 uninlined_format_args = "warn"
