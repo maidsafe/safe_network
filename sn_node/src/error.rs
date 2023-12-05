@@ -27,10 +27,10 @@ pub enum Error {
     Register(#[from] sn_registers::Error),
 
     #[error("WalletError error {0}")]
-    WalletError(#[from] WalletError),
+    Wallet(#[from] WalletError),
 
     #[error("Transfers Error {0}")]
-    TransfersError(#[from] sn_transfers::Error),
+    Transfers(#[from] sn_transfers::Error),
 
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,
