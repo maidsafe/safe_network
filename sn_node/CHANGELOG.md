@@ -2379,6 +2379,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.99.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.1...sn_node-v0.99.2) - 2023-12-05
+
+### Other
+- *(node)* update assert over royalty count
+- *(node)* refactor NetworkEvent handling
+- *(network)* allow replication even below K_VALUE peers
+- tie node reward test to number of data.
+- FORWARDER_CHOOSING_FACTOR docs
+- tie verification data test to repl time
+- *(node)* separation of cheap NetworkEvent handling
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
