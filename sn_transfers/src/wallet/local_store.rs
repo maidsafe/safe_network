@@ -140,7 +140,7 @@ impl LocalWallet {
         Ok(Self {
             key,
             wallet,
-            wallet_dir: wallet_dir.to_path_buf(),
+            wallet_dir,
             unconfirmed_spend_requests,
         })
     }
@@ -158,7 +158,7 @@ impl LocalWallet {
         Ok(Self {
             key,
             wallet,
-            wallet_dir: wallet_dir.to_path_buf(),
+            wallet_dir,
             unconfirmed_spend_requests,
         })
     }

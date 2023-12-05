@@ -554,12 +554,9 @@ mod tests {
 
         // 2. the folder should exists, but chunk removed
         let file_chunks_dir = manager.artifacts_dir.join(&path_xor.0);
-        let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
-            file_chunks_dir,
-            &path_xor,
-            chunked_file.file_name.to_owned(),
-        )
-        .expect("Folder and metadata should be present");
+        let (path_xor_from_dir, chunked_file_from_dir) =
+            ChunkManager::read_file_chunks_dir(file_chunks_dir, &path_xor, chunked_file.file_name)
+                .expect("Folder and metadata should be present");
         assert_eq!(chunked_file_from_dir.chunks.len(), total_chunks - 1);
         assert_eq!(chunked_file_from_dir.file_xor_addr, file_xor_addr);
         assert_eq!(path_xor_from_dir, path_xor);

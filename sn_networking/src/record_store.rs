@@ -796,7 +796,7 @@ mod tests {
             ..Default::default()
         };
         let self_id = PeerId::random();
-        let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
+        let mut store = NodeRecordStore::with_config(self_id, store_config, None);
 
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
