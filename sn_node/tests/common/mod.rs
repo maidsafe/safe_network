@@ -36,7 +36,7 @@ type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, Pat
 pub fn random_content(
     client: &Client,
     wallet_dir: PathBuf,
-    chunk_dir: PathBuf,
+    chunk_dir: &Path,
 ) -> ResultRandomContent {
     let mut rng = rand::thread_rng();
 
@@ -51,7 +51,7 @@ pub fn random_content(
     output_file.write_all(&random_length_content)?;
 
     let files_api = Files::new(client.clone(), wallet_dir);
-    let (file_addr, _file_size, chunks) = Files::chunk_file(&file_path, &chunk_dir)?;
+    let (file_addr, _file_size, chunks) = Files::chunk_file(&file_path, chunk_dir)?;
 
     Ok((
         files_api,

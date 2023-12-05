@@ -35,7 +35,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        match get_singed_spends_from_record(record)?.as_slice() {
+        match get_singed_spends_from_record(&record)?.as_slice() {
             [one, two, ..] => {
                 error!("Found double spend for {address:?}");
                 Err(Error::DoubleSpendAttempt(
@@ -158,10 +158,10 @@ impl Network {
 }
 
 /// Tries to get the signed spend out of a record.
-pub fn get_singed_spends_from_record(record: Record) -> Result<Vec<SignedSpend>> {
-    let header = RecordHeader::from_record(&record)?;
+pub fn get_singed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
+    let header = RecordHeader::from_record(record)?;
     if let RecordKind::Spend = header.kind {
-        let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+        let spends = try_deserialize_record::<Vec<SignedSpend>>(record)?;
         Ok(spends)
     } else {
         error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");

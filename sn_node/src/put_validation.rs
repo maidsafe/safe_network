@@ -64,7 +64,7 @@ impl Node {
                 // Writing chunk to disk takes time, hence try to execute it first.
                 // So that when the replicate target asking for the copy,
                 // the node can have a higher chance to respond.
-                let store_chunk_result = self.store_chunk(chunk);
+                let store_chunk_result = self.store_chunk(&chunk);
                 self.replicate_paid_record(record_key, RecordType::Chunk);
 
                 store_chunk_result
@@ -173,7 +173,7 @@ impl Node {
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
 
-                self.store_chunk(chunk)
+                self.store_chunk(&chunk)
             }
             RecordKind::Spend => self.validate_spend_record(record).await,
             RecordKind::Register => {
@@ -231,7 +231,7 @@ impl Node {
     }
 
     /// Store a `Chunk` to the RecordStore
-    pub(crate) fn store_chunk(&self, chunk: Chunk) -> Result<CmdOk> {
+    pub(crate) fn store_chunk(&self, chunk: &Chunk) -> Result<CmdOk> {
         let chunk_name = *chunk.name();
         let chunk_addr = *chunk.address();
 
@@ -718,7 +718,7 @@ impl Node {
                         record,
                     ))) => {
                         warn!("Spends for {cash_note_addr:?} resulted in a failed quorum. Trying to aggregate the spends in them.");
-                        match get_singed_spends_from_record(record) {
+                        match get_singed_spends_from_record(&record) {
                             Ok(spends) => spends,
                             Err(err) => {
                                 error!("Error while trying to get signed spends out of a record for {cash_note_addr:?}: {err:?}");
@@ -732,7 +732,7 @@ impl Node {
                         let mut all_spends = vec![];
                         warn!("Spends for {cash_note_addr:?} resulted in a split record. Trying to aggregate the spends in them.");
                         for (_, (record, _)) in result_map.into_iter() {
-                            match get_singed_spends_from_record(record) {
+                            match get_singed_spends_from_record(&record) {
                                 Ok(spends) => all_spends.extend(spends),
                                 Err(err) => {
                                     error!("Error while trying to get signed spends out of a record for {cash_note_addr:?}: {err:?}");

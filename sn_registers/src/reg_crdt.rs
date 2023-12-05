@@ -68,7 +68,7 @@ impl RegisterCrdt {
     pub(crate) fn write(
         &mut self,
         entry: Entry,
-        children: BTreeSet<EntryHash>,
+        children: &BTreeSet<EntryHash>,
     ) -> Result<(EntryHash, RegisterAddress, MerkleDagEntry<Entry>)> {
         let address = *self.address();
 
@@ -139,20 +139,20 @@ mod tests {
 
         let entry_1 = vec![0x1, 0x1];
         // Different RegisterCrdtImpl shall create same hashes for the same entry from root
-        let (entry_hash_1, _, _) = crdt_1.write(entry_1.clone(), parents.clone())?;
-        let (entry_hash_2, _, _) = crdt_2.write(entry_1, parents.clone())?;
+        let (entry_hash_1, _, _) = crdt_1.write(entry_1.clone(), &parents)?;
+        let (entry_hash_2, _, _) = crdt_2.write(entry_1, &parents)?;
         assert!(entry_hash_1 == entry_hash_2);
 
         let entry_2 = vec![0x2, 0x2];
         // RegisterCrdtImpl shall create different hashes for different entries from root
-        let (entry_hash_1_2, _, _) = crdt_1.write(entry_2, parents.clone())?;
+        let (entry_hash_1_2, _, _) = crdt_1.write(entry_2, &parents)?;
         assert!(entry_hash_1 != entry_hash_1_2);
 
         let entry_3 = vec![0x3, 0x3];
         // Different RegisterCrdtImpl shall create same hashes for the same entry from same parents
         let _ = parents.insert(entry_hash_1);
-        let (entry_hash_1_3, _, _) = crdt_1.write(entry_3.clone(), parents.clone())?;
-        let (entry_hash_2_3, _, _) = crdt_1.write(entry_3, parents)?;
+        let (entry_hash_1_3, _, _) = crdt_1.write(entry_3.clone(), &parents)?;
+        let (entry_hash_2_3, _, _) = crdt_1.write(entry_3, &parents)?;
         assert!(entry_hash_1_3 == entry_hash_2_3);
 
         Ok(())

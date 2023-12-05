@@ -103,7 +103,7 @@ impl LocalWallet {
 
     /// Stores the given cash_notes to the `created cash_notes dir` in the wallet dir.
     /// These can then be sent to the recipients out of band, over any channel preferred.
-    pub fn store_cash_notes_to_disk(&self, cash_note: Vec<&CashNote>) -> Result<()> {
+    pub fn store_cash_notes_to_disk(&self, cash_note: &[&CashNote]) -> Result<()> {
         store_created_cash_notes(cash_note, &self.wallet_dir)
     }
 
@@ -281,7 +281,7 @@ impl LocalWallet {
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
-        price_map: BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
+        price_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
         let mut rng = &mut rand::thread_rng();
         let mut storage_cost = NanoTokens::zero();
@@ -345,7 +345,7 @@ impl LocalWallet {
                 .clone();
             cashnotes_to_use.remove(&cash_note_for_node);
             let transfer_amount = cash_note_for_node.value()?;
-            let transfer_for_node = Transfer::transfer_from_cash_note(cash_note_for_node)?;
+            let transfer_for_node = Transfer::transfer_from_cash_note(&cash_note_for_node)?;
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
             let royalties_key = royalties_payee.1;
@@ -412,7 +412,7 @@ impl LocalWallet {
             let id = cash_note.unique_pubkey();
             let value = cash_note.value()?;
             self.wallet.available_cash_notes.insert(id, value);
-            self.store_cash_notes_to_disk(vec![&cash_note])?;
+            self.store_cash_notes_to_disk(&[&cash_note])?;
         }
 
         for cash_note in &transfer.created_cash_notes {
@@ -421,7 +421,7 @@ impl LocalWallet {
                 .insert(cash_note.unique_pubkey());
         }
         // Store created CashNotes in a batch, improving IO performance
-        self.store_cash_notes_to_disk(transfer.created_cash_notes.iter().collect())?;
+        self.store_cash_notes_to_disk(&transfer.created_cash_notes.iter().collect::<Vec<_>>())?;
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
@@ -483,7 +483,7 @@ impl LocalWallet {
             let value = cash_note.value()?;
             self.wallet.available_cash_notes.insert(id, value);
 
-            self.store_cash_notes_to_disk(vec![cash_note])?;
+            self.store_cash_notes_to_disk(&[cash_note])?;
         }
 
         self.store(exclusive_access)?;
@@ -889,7 +889,7 @@ mod tests {
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
-        sender.store_cash_notes_to_disk(vec![&cash_note])?;
+        sender.store_cash_notes_to_disk(&[&cash_note])?;
 
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&unique_pubkey).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
@@ -952,7 +952,7 @@ mod tests {
             (xor4, (key4a, PaymentQuote::test_dummy(xor4, 400.into()))),
         ]);
 
-        let (price, _) = sender.local_send_storage_payment(map.clone())?;
+        let (price, _) = sender.local_send_storage_payment(&map)?;
 
         let expected_price: u64 = map.values().map(|(_, quote)| quote.cost.as_nano()).sum();
         assert_eq!(price.as_nano(), expected_price);

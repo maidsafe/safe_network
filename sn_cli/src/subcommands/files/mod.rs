@@ -242,10 +242,10 @@ async fn upload_files(
 
         // upload paid chunks
         for join_result in join_all(upload_chunks_in_parallel(
-            file_api.clone(),
+            &file_api,
             chunks_batch.to_vec(),
             verify_store,
-            progress_bar.clone(),
+            &progress_bar,
             show_holders,
         ))
         .await
@@ -326,10 +326,10 @@ async fn upload_files(
 /// This spawns a task for each chunk to be uploaded, returns those handles.
 ///
 fn upload_chunks_in_parallel(
-    file_api: Files,
+    file_api: &Files,
     chunks_paths: Vec<(XorName, PathBuf)>,
     verify_store: bool,
-    progress_bar: ProgressBar,
+    progress_bar: &ProgressBar,
     show_holders: bool,
 ) -> Vec<JoinHandle<Result<()>>> {
     let mut upload_handles = Vec::new();

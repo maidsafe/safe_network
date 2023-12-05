@@ -232,8 +232,7 @@ impl Testnet {
         }
 
         let rpc_address = "127.0.0.1:12001".parse()?;
-        let mut launch_args =
-            self.get_launch_args("safenode-1".to_string(), Some(rpc_address), node_args)?;
+        let mut launch_args = self.get_launch_args("safenode-1", Some(rpc_address), node_args)?;
 
         let genesis_port: u16 = 11101;
         launch_args.push("--port".to_string());
@@ -268,7 +267,7 @@ impl Testnet {
     /// Returns an error if:
     /// * The node data directories cannot be created
     /// * The node process fails
-    pub fn launch_nodes(&mut self, number_of_nodes: usize, node_args: Vec<String>) -> Result<()> {
+    pub fn launch_nodes(&mut self, number_of_nodes: usize, node_args: &[String]) -> Result<()> {
         let start = if self.node_count == 0 {
             self.node_count + 2
         } else {
@@ -279,9 +278,9 @@ impl Testnet {
             info!("Launching node {i} of {end}...");
             let rpc_address = format!("127.0.0.1:{}", 12000 + i).parse()?;
             let launch_args = self.get_launch_args(
-                format!("safenode-{i}"),
+                &format!("safenode-{i}"),
                 Some(rpc_address),
-                node_args.clone(),
+                node_args.to_vec(),
             )?;
             let launch_bin = self.get_launch_bin();
             self.launcher.launch(&launch_bin, launch_args)?;
@@ -300,7 +299,7 @@ impl Testnet {
 
     fn get_launch_args(
         &self,
-        node_name: String,
+        node_name: &str,
         rpc_address: Option<SocketAddr>,
         node_args: Vec<String>,
     ) -> Result<Vec<String>> {
@@ -633,7 +632,7 @@ mod test {
             Box::new(node_launcher),
             Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--log-format".to_string(), "json".to_string()]);
+        let result = testnet.launch_nodes(20, &["--log-format".to_string(), "json".to_string()]);
 
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
@@ -692,7 +691,7 @@ mod test {
             Box::new(node_launcher),
             Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--log-format".to_string(), "json".to_string()]);
+        let result = testnet.launch_nodes(20, &["--log-format".to_string(), "json".to_string()]);
 
         assert!(result.is_ok());
         Ok(())
@@ -737,11 +736,11 @@ mod test {
             Box::new(node_launcher),
             Box::new(rpc_client),
         )?;
-        let result = testnet.launch_nodes(20, vec!["--log-format".to_string(), "json".to_string()]);
+        let result = testnet.launch_nodes(20, &["--log-format".to_string(), "json".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 20);
 
-        let result = testnet.launch_nodes(10, vec!["--log-format".to_string(), "json".to_string()]);
+        let result = testnet.launch_nodes(10, &["--log-format".to_string(), "json".to_string()]);
         assert!(result.is_ok());
         assert_eq!(testnet.node_count, 30);
         Ok(())

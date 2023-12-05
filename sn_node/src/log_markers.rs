@@ -15,7 +15,7 @@ use strum::Display;
 /// Public Markers for generating log output,
 /// These generate appropriate log level output and consistent strings.
 /// Changing these log markers is a breaking change.
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Display, Copy)]
 pub enum Marker<'a> {
     /// The node has started
     NodeConnectedToNetwork,
