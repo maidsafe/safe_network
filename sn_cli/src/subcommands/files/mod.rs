@@ -159,27 +159,38 @@ async fn upload_files(
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&files_path)?;
+    chunk_manager.chunk_path(&files_path, true)?;
 
-    // Return early if we have no chunks to upload
+    // Return early if we already uploaded them
+    let chunks_to_upload;
     if chunk_manager.is_chunks_empty() {
-        println!("All files were already uploaded and verified");
-        println!("**************************************");
-        println!("*          Uploaded Files            *");
-        println!("**************************************");
-        for (file_name, addr) in chunk_manager.verified_files() {
-            if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {addr:x}");
-                info!("Uploaded {file_name} to {addr:x}");
-            } else {
-                println!("\"{file_name:?}\" {addr:x}");
-                info!("Uploaded {file_name:?} to {addr:x}");
+        // make sure we don't have any failed chunks in those
+        let chunks = chunk_manager.already_put_chunks(&files_path)?;
+        let failed_chunks = client.verify_uploaded_chunks(chunks, batch_size).await?;
+
+        // if none are failed, we can return early
+        if failed_chunks.is_empty() {
+            println!("All files were already uploaded and verified");
+            println!("**************************************");
+            println!("*          Uploaded Files            *");
+            println!("**************************************");
+            for (file_name, addr) in chunk_manager.verified_files() {
+                if let Some(file_name) = file_name.to_str() {
+                    println!("\"{file_name}\" {addr:x}");
+                    info!("Uploaded {file_name} to {addr:x}");
+                } else {
+                    println!("\"{file_name:?}\" {addr:x}");
+                    info!("Uploaded {file_name:?} to {addr:x}");
+                }
             }
+            return Ok(());
         }
-        return Ok(());
+        println!("{:?} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...", failed_chunks.len());
+        chunks_to_upload = failed_chunks;
+    } else {
+        chunks_to_upload = chunk_manager.get_chunks();
     }
 
-    let chunks_to_upload = chunk_manager.get_chunks();
     let chunks_to_upload_len = chunks_to_upload.len();
 
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
