@@ -123,7 +123,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     )?;
 
     let num_of_chunks = chunks.len();
-    let handle = spawn_royalties_payment_client_listener(client.clone(), num_of_chunks)?;
+    let handle = spawn_royalties_payment_client_listener(client.clone(), num_of_chunks).await?;
 
     let num_of_chunks = chunks.len();
 
@@ -165,7 +165,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    let handle = spawn_royalties_payment_client_listener(client.clone(), 1)?;
+    let handle = spawn_royalties_payment_client_listener(client.clone(), 1).await?;
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
@@ -208,15 +208,21 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-    let handle_1 =
-        spawn_royalties_payment_listener(node_rpc_addresses[0], royalties_pk, true, chunks.len());
+    let handle_1 = spawn_royalties_payment_listener(
+        node_rpc_addresses[0],
+        royalties_pk,
+        true,
+        chunks.len(),
+        false,
+    )
+    .await;
     // this other node shall *not* receive any notification since we set the wrong pk as filter
     let random_pk = SecretKey::random().public_key();
-    let handle_2 = spawn_royalties_payment_listener(node_rpc_addresses[1], random_pk, true, 0);
+    let handle_2 =
+        spawn_royalties_payment_listener(node_rpc_addresses[1], random_pk, true, 0, false).await;
     // this other node shall *not* receive any notification either since we don't set any pk as filter
-    let handle_3 = spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false, 0);
-
-    sleep(Duration::from_secs(20)).await;
+    let handle_3 =
+        spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false, 0, true).await;
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} chunks");
@@ -287,14 +293,15 @@ fn current_rewards_balance() -> Result<NanoTokens> {
     Ok(total_rewards)
 }
 
-fn spawn_royalties_payment_listener(
+async fn spawn_royalties_payment_listener(
     rpc_addr: SocketAddr,
     royalties_pk: PublicKey,
     set_filter: bool,
     expected_royalties: usize,
+    need_extra_wait: bool,
 ) -> JoinHandle<Result<usize, eyre::Report>> {
     let endpoint = format!("https://{rpc_addr}");
-    tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
         let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
 
         if set_filter {
@@ -320,7 +327,7 @@ fn spawn_royalties_payment_listener(
 
         // if expected royalties is 0 or 1 we'll wait for 20s as a minimum,
         // otherwise we'll wait for 10s per expected royalty
-        let secs = std::max(20, expected_royalties as u64 * 10);
+        let secs = std::cmp::max(40, expected_royalties as u64 * 10);
 
         let duration = Duration::from_secs(secs);
         println!("Awaiting transfers notifs for {duration:?}...");
@@ -348,10 +355,17 @@ fn spawn_royalties_payment_listener(
         }
 
         Ok(count)
-    })
+    });
+
+    // small wait to ensure that the gossipsub subscription is in place
+    if need_extra_wait {
+        sleep(Duration::from_secs(20)).await;
+    }
+
+    handle
 }
 
-fn spawn_royalties_payment_client_listener(
+async fn spawn_royalties_payment_client_listener(
     client: Client,
     expected_royalties: usize,
 ) -> Result<JoinHandle<Result<(usize, NanoTokens), eyre::Report>>> {
@@ -368,7 +382,7 @@ fn spawn_royalties_payment_client_listener(
 
         // if expected royalties is 0 or 1 we'll wait for 20s as a minimum,
         // otherwise we'll wait for 10s per expected royalty
-        let secs = std::max(20, expected_royalties as u64 * 10);
+        let secs = std::cmp::max(40, expected_royalties as u64 * 10);
         let duration = Duration::from_secs(secs);
         tracing::info!("Awaiting transfers notifs for {duration:?}...");
         println!("Awaiting transfers notifs for {duration:?}...");
@@ -414,6 +428,9 @@ fn spawn_royalties_payment_client_listener(
 
         Ok((count, wallet.balance()))
     });
+
+    // small wait to ensure that the gossipsub subscription is in place
+    sleep(Duration::from_secs(20)).await;
 
     Ok(handle)
 }
