@@ -277,7 +277,7 @@ async fn data_availability_during_churn() -> Result<()> {
         "Not all content was queried successfully"
     );
 
-    println!("{:?} pieces of content queried", content_queried_count);
+    println!("{content_queried_count:?} pieces of content queried");
 
     assert_eq!(
         content_queried_count, uploaded_content_count,
@@ -426,8 +426,7 @@ fn store_chunks_task(
             };
 
             println!(
-                "Stores ({}) Chunk/s at cost: {cost:?} of file ({} bytes) at {addr:?} in {delay:?}",
-                chunks_len, chunk_size
+                "Stores ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
             );
             sleep(delay).await;
 

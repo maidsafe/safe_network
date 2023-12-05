@@ -822,8 +822,7 @@ mod tests {
         assert_eq!(
             price.cost.as_nano(),
             expected_price,
-            "price should be {}",
-            expected_price
+            "price should be {expected_price}"
         );
 
         Ok(())
@@ -842,7 +841,7 @@ mod tests {
                 addr,
                 PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
             ));
-            println!("price added {}", i);
+            println!("price added {i}");
         }
 
         // this should be the lowest price
@@ -856,8 +855,7 @@ mod tests {
         assert_eq!(
             price.cost.as_nano(),
             expected_price,
-            "price should be {}",
-            expected_price
+            "price should be {expected_price}"
         );
 
         Ok(())

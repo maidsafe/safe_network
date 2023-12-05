@@ -192,7 +192,7 @@ impl LogBuilder {
                     .join("safe")
                     .join("client")
                     .join("logs")
-                    .join(format!("log_{}", timestamp));
+                    .join(format!("log_{timestamp}"));
                 LogOutputDest::Path(path)
             }
             None => LogOutputDest::Stdout,

@@ -89,7 +89,7 @@ async fn main() -> Result<()> {
 
     println!("Connecting to the network w/peers:");
     for peer in &bootstrap_peers {
-        println!("{}", peer);
+        println!("{peer}");
     }
 
     let bootstrap_peers = if bootstrap_peers.is_empty() {

@@ -104,7 +104,7 @@ impl NodeRecordStore {
         let key_bytes = key.as_ref();
         let mut hex_string = String::with_capacity(key_bytes.len() * 2);
         for byte in key_bytes {
-            hex_string.push_str(&format!("{:02x}", byte));
+            hex_string.push_str(&format!("{byte:02x}"));
         }
         hex_string
     }
@@ -591,7 +591,7 @@ mod tests {
                 RecordKind::Chunk,
             ) {
                 Ok(value) => value.to_vec(),
-                Err(err) => panic!("Cannot generate record value {:?}", err),
+                Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {
                 key: ArbitraryKey::arbitrary(g).0,
@@ -715,7 +715,7 @@ mod tests {
                 RecordKind::Chunk,
             ) {
                 Ok(value) => value.to_vec(),
-                Err(err) => panic!("Cannot generate record value {:?}", err),
+                Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {
                 key: record_key.clone(),
@@ -810,7 +810,7 @@ mod tests {
                 RecordKind::Chunk,
             ) {
                 Ok(value) => value.to_vec(),
-                Err(err) => panic!("Cannot generate record value {:?}", err),
+                Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {
                 key: record_key.clone(),

@@ -108,7 +108,7 @@ mod tests {
 
         assert_eq!(addr, addr2);
 
-        let bad_hex = format!("{}0", hex);
+        let bad_hex = format!("{hex}0");
         let err = RegisterAddress::from_hex(&bad_hex);
         assert_eq!(err, Err(Error::HexDeserializeFailed));
     }
