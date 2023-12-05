@@ -2118,6 +2118,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(networking)* remove triggered bootstrap slowdown
 
+## [0.2.319](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.318...sn_testnet-v0.2.319) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.2.320](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.319...sn_testnet-v0.2.320) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.2.321](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.320...sn_testnet-v0.2.321) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.2.322](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.321...sn_testnet-v0.2.322) - 2023-12-05
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

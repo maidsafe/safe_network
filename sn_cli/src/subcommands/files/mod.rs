@@ -159,37 +159,56 @@ async fn upload_files(
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&files_path)?;
+    chunk_manager.chunk_path(&files_path, true)?;
 
-    // Return early if we have no files to pay/verify
-    if chunk_manager.is_unpaid_chunks_empty() && chunk_manager.is_paid_chunks_empty() {
-        println!("All files were already uploaded and verified");
-        println!("**************************************");
-        println!("*          Uploaded Files            *");
-        println!("**************************************");
-        for (file_name, addr) in chunk_manager.verified_files() {
-            if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {addr:x}");
-                info!("Uploaded {file_name} to {addr:x}");
-            } else {
-                println!("\"{file_name:?}\" {addr:x}");
-                info!("Uploaded {file_name:?} to {addr:x}");
+    // Return early if we already uploaded them
+    let chunks_to_upload;
+    if chunk_manager.is_chunks_empty() {
+        // make sure we don't have any failed chunks in those
+        let chunks = chunk_manager.already_put_chunks(&files_path)?;
+        let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+
+        // mark the non-failed ones as completed
+        chunk_manager.mark_completed(
+            chunks
+                .into_iter()
+                .filter(|c| !failed_chunks.contains(c))
+                .map(|(xor, _)| xor),
+        );
+
+        // if none are failed, we can return early
+        if failed_chunks.is_empty() {
+            println!("All files were already uploaded and verified");
+            println!("**************************************");
+            println!("*          Uploaded Files            *");
+            println!("**************************************");
+            for (file_name, addr) in chunk_manager.verified_files() {
+                if let Some(file_name) = file_name.to_str() {
+                    println!("\"{file_name}\" {addr:x}");
+                    info!("Uploaded {file_name} to {addr:x}");
+                } else {
+                    println!("\"{file_name:?}\" {addr:x}");
+                    info!("Uploaded {file_name:?} to {addr:x}");
+                }
             }
+            return Ok(());
         }
-        return Ok(());
+        println!("{:?} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...", failed_chunks.len());
+        chunks_to_upload = failed_chunks;
+    } else {
+        chunks_to_upload = chunk_manager.get_chunks();
     }
 
-    let unpaid_chunks_to_upload = chunk_manager.get_unpaid_chunks();
-    let unpaid_chunks_to_upload_len = unpaid_chunks_to_upload.len();
+    let chunks_to_upload_len = chunks_to_upload.len();
 
-    let progress_bar = get_progress_bar(unpaid_chunks_to_upload.len() as u64)?;
-    println!("Input was split into {unpaid_chunks_to_upload_len} chunks",);
+    let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
+    println!("Input was split into {chunks_to_upload_len} chunks",);
     println!("Will now attempt to upload them...");
 
     let mut total_cost = NanoTokens::zero();
     let mut total_royalties = NanoTokens::zero();
     let mut final_balance = file_api.wallet()?.balance();
-    let chunks_batches = unpaid_chunks_to_upload.chunks(batch_size);
+    let chunks_batches = chunks_to_upload.chunks(batch_size);
     let now = Instant::now();
     let mut recorded_pay_errors = vec![];
     let mut recorded_upload_errors = vec![];
@@ -236,19 +255,17 @@ async fn upload_files(
                 error!("Failed to upload a batch: {error}");
                 recorded_upload_errors.push(error);
             } else {
-                chunk_manager.mark_paid(chunks_batch.iter().map(|(xor, _)| *xor));
-                chunk_manager.mark_verified(chunks_batch.iter().map(|(xor, _)| *xor));
+                chunk_manager.mark_completed(chunks_batch.iter().map(|(xor, _)| *xor));
             }
         }
     }
     progress_bar.finish_and_clear();
 
     // report errors
-    let failed_payments = chunk_manager.get_unpaid_chunks();
-    let failed_uploads = chunk_manager.get_paid_chunks();
-    let failed_payments_len = failed_payments.len();
+    let failed_uploads = chunk_manager.get_chunks();
     let failed_uploads_len = failed_uploads.len();
-    let total_failures = failed_payments_len + failed_uploads_len;
+    let failed_payments_len = recorded_pay_errors.len();
+    let total_failures = failed_uploads_len + failed_payments_len;
     if total_failures != 0 {
         println!("**************************************");
         println!("*              Failures              *");
@@ -266,15 +283,15 @@ async fn upload_files(
 
     // log costs
     let elapsed = format_elapsed_time(now.elapsed());
-    println!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
-    info!("Uploaded {unpaid_chunks_to_upload_len} chunks in {elapsed}");
+    println!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
+    info!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
-    println!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks");
+    println!("Made payment of {total_cost} for {chunks_to_upload_len} chunks");
     println!("Made payment of {total_royalties} for royalties fees");
     println!("New wallet balance: {final_balance}");
-    info!("Made payment of {total_cost} for {unpaid_chunks_to_upload_len} chunks");
+    info!("Made payment of {total_cost} for {chunks_to_upload_len} chunks");
     info!("New wallet balance: {final_balance}");
 
     // log uploaded file information

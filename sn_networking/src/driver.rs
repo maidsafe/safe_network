@@ -544,11 +544,9 @@ impl NetworkBuilder {
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_get_record: Default::default(),
-            // We use 63 here, as in practice the capacity will be rounded to the nearest 2^n-1.
-            // Source: https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/8
-            // 63 will mean at least 63 most recent peers we have dialed, which should be allow for enough time for the
-            // `identify` protocol to kick in and get them in the routing table.
-            dialed_peers: CircularVec::new(63),
+            // We use 255 here which allows covering a network larger than 64k without any rotating.
+            // This is based on the libp2p kad::kBuckets peers distribution.
+            dialed_peers: CircularVec::new(255),
             is_gossip_handler: false,
             network_discovery: NetworkDiscovery::new(&peer_id),
         };

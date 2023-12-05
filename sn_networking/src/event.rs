@@ -28,7 +28,10 @@ use libp2p::{
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
-    swarm::{DialError, SwarmEvent},
+    swarm::{
+        dial_opts::{DialOpts, PeerCondition},
+        DialError, SwarmEvent,
+    },
     Multiaddr, PeerId, TransportError,
 };
 
@@ -242,30 +245,69 @@ impl SwarmDriver {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         trace!(%peer_id, ?info, "identify: received info");
 
-                        // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local
-                            || self.dialed_peers.contains(&peer_id)
-                                && info
-                                    .agent_version
-                                    .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR))
-                        {
-                            // If we're not in local mode, only add globally reachable addresses.
-                            // Strip the `/p2p/...` part of the multiaddresses.
-                            // Collect into a HashSet directly to avoid multiple allocations and handle deduplication.
-                            let addrs: HashSet<Multiaddr> = match self.local {
-                                true => info
-                                    .listen_addrs
-                                    .into_iter()
-                                    .map(|addr| multiaddr_strip_p2p(&addr))
-                                    .collect(),
-                                false => info
-                                    .listen_addrs
-                                    .into_iter()
-                                    .filter(multiaddr_is_global)
-                                    .map(|addr| multiaddr_strip_p2p(&addr))
-                                    .collect(),
+                        let has_dialed = self.dialed_peers.contains(&peer_id);
+                        let peer_is_agent = info
+                            .agent_version
+                            .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR));
+
+                        // If we're not in local mode, only add globally reachable addresses.
+                        // Strip the `/p2p/...` part of the multiaddresses.
+                        // Collect into a HashSet directly to avoid multiple allocations and handle deduplication.
+                        let addrs: HashSet<Multiaddr> = match self.local {
+                            true => info
+                                .listen_addrs
+                                .into_iter()
+                                .map(|addr| multiaddr_strip_p2p(&addr))
+                                .collect(),
+                            false => info
+                                .listen_addrs
+                                .into_iter()
+                                .filter(multiaddr_is_global)
+                                .map(|addr| multiaddr_strip_p2p(&addr))
+                                .collect(),
+                        };
+
+                        // When received an identify from un-dialed peer, try to dial it
+                        // The dial shall trigger the same identify to be sent again and confirm
+                        // peer is external accessable, hence safe to be added into RT.
+                        if !self.local && peer_is_agent && !has_dialed {
+                            // Only need to dial back for not fulfilled kbucket
+                            let (kbucket_full, ilog2) = if let Some(kbucket) =
+                                self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
+                            {
+                                let ilog2 = kbucket.range().0.ilog2();
+                                let num_peers = kbucket.num_entries();
+                                (num_peers >= K_VALUE.into(), ilog2)
+                            } else {
+                                // Function will return `None` if the given key refers to self
+                                // hence return true to skip further action.
+                                (true, None)
                             };
 
+                            if !kbucket_full {
+                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dail back to confirm external accesable", ilog2);
+                                self.dialed_peers
+                                    .push(peer_id)
+                                    .map_err(|_| Error::CircularVecPopFrontError)?;
+                                if let Err(err) = self.swarm.dial(
+                                    DialOpts::peer_id(peer_id)
+                                        .condition(PeerCondition::NotDialing)
+                                        .addresses(addrs.iter().cloned().collect())
+                                        .build(),
+                                ) {
+                                    warn!(%peer_id, ?addrs, "dialing error: {err:?}");
+                                }
+                            }
+
+                            trace!(
+                                "SwarmEvent handled in {:?}: {event_string:?}",
+                                start.elapsed()
+                            );
+                            return Ok(());
+                        }
+
+                        // If we are not local, we care only for peers that we dialed and thus are reachable.
+                        if self.local || has_dialed && peer_is_agent {
                             trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.

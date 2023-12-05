@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.41](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.40...sn_cli-v0.86.41) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.86.40](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.39...sn_cli-v0.86.40) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.86.39](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.38...sn_cli-v0.86.39) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.86.38](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.37...sn_cli-v0.86.38) - 2023-12-05
+
+### Added
+- allow for cli chunk put retries for un verifiable chunks
+
+### Fixed
+- mark chunks as completed when no failures on retry
+
+## [0.86.37](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.36...sn_cli-v0.86.37) - 2023-12-05
+
+### Other
+- *(cli)* print the failed uploads stats
+- *(cli)* remove unpaid/paid distinction from chunk manager
+
 ## [0.86.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.35...sn_cli-v0.86.36) - 2023-12-05
 
 ### Other

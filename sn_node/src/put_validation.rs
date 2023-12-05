@@ -766,7 +766,7 @@ impl Node {
                     );
                     for parent_input in &signed_spend.spend.parent_tx.inputs {
                         let parent_cash_note_address =
-                            SpendAddress::from_unique_pubkey(&parent_input.unique_pubkey());
+                            SpendAddress::from_unique_pubkey(parent_input.unique_pubkey());
                         trace!(
                             "Checking parent input at {:?} - {parent_cash_note_address:?}",
                             parent_input.unique_pubkey(),

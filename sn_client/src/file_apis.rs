@@ -204,48 +204,6 @@ impl Files {
         Ok((storage_cost, royalties_fees, new_balance))
     }
 
-    /// Verify that chunks were uploaded
-    ///
-    /// Returns a vec of any chunks that could not be verified
-    pub async fn verify_uploaded_chunks(
-        &self,
-        chunks_paths: Vec<(XorName, PathBuf)>,
-        batch_size: usize,
-    ) -> Result<Vec<(XorName, PathBuf)>> {
-        let mut failed_chunks = Vec::new();
-
-        for chunks_batch in chunks_paths.chunks(batch_size) {
-            // now we try and get batched chunks, keep track of any that fail
-            // Iterate over each uploaded chunk
-            let mut verify_handles = Vec::new();
-            for (name, path) in chunks_batch.iter().cloned() {
-                let client = self.client().clone();
-                // Spawn a new task to fetch each chunk concurrently
-                let handle = tokio::spawn(async move {
-                    let chunk_address: ChunkAddress = ChunkAddress::new(name);
-                    // make sure the chunk is stored
-                    let res = client.verify_chunk_stored(chunk_address).await;
-
-                    Ok::<_, ChunksError>(((name, path), res.is_err()))
-                });
-                verify_handles.push(handle);
-            }
-
-            // Await all fetch tasks and collect the results
-            let verify_results = join_all(verify_handles).await;
-
-            // Check for any errors during fetch
-            for result in verify_results {
-                if let ((chunk_addr, path), true) = result?? {
-                    warn!("Failed to fetch a chunk {chunk_addr:?}");
-                    failed_chunks.push((chunk_addr, path));
-                }
-            }
-        }
-
-        Ok(failed_chunks)
-    }
-
     // --------------------------------------------
     // ---------- Private helpers -----------------
     // --------------------------------------------
@@ -317,7 +275,10 @@ impl Files {
             return Ok((net_addr, storage_cost, royalties_fees));
         }
 
-        let mut failed_chunks = self.verify_uploaded_chunks(chunks, BATCH_SIZE).await?;
+        let mut failed_chunks = self
+            .client
+            .verify_uploaded_chunks(&chunks, BATCH_SIZE)
+            .await?;
         warn!("Failed chunks: {:?}", failed_chunks.len());
 
         while !failed_chunks.is_empty() {
@@ -357,7 +318,8 @@ impl Files {
             trace!("Chunks uploaded again....");
 
             failed_chunks = self
-                .verify_uploaded_chunks(failed_chunks, BATCH_SIZE)
+                .client
+                .verify_uploaded_chunks(&failed_chunks, BATCH_SIZE)
                 .await?;
         }
 

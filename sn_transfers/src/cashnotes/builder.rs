@@ -38,7 +38,7 @@ impl TransactionBuilder {
         input_src_tx: InputSrcTx,
     ) -> Self {
         self.input_details
-            .insert(input.unique_pubkey(), (derived_key, input_src_tx));
+            .insert(*input.unique_pubkey(), (derived_key, input_src_tx));
         self.inputs.push(input);
         self
     }
@@ -93,7 +93,7 @@ impl TransactionBuilder {
             if let Some((derived_key, input_src_tx)) = self.input_details.get(&input.unique_pubkey)
             {
                 let spend = Spend {
-                    unique_pubkey: input.unique_pubkey(),
+                    unique_pubkey: *input.unique_pubkey(),
                     spent_tx: spent_tx.clone(),
                     reason,
                     token: input.amount,
