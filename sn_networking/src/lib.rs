@@ -15,6 +15,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+mod get_record_handler;
 #[cfg(feature = "open-metrics")]
 mod metrics;
 #[cfg(feature = "open-metrics")]

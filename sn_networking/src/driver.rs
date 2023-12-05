@@ -16,13 +16,14 @@ use crate::{
     cmd::SwarmCmd,
     error::{Error, Result},
     event::NetworkEvent,
-    event::{GetRecordResultMap, NodeEvent},
+    event::NodeEvent,
+    get_record_handler::PendingGetRecord,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    GetRecordError, Network, CLOSE_GROUP_SIZE,
+    Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "quic")]
@@ -63,8 +64,6 @@ use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
-type ExpectedHoldersList = HashSet<PeerId>;
-
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
     /// The network discovery method is present at the networking layer
@@ -74,15 +73,6 @@ pub(crate) enum PendingGetClosestType {
     FunctionCall(oneshot::Sender<HashSet<PeerId>>),
 }
 type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId>)>;
-type PendingGetRecord = HashMap<
-    QueryId,
-    (
-        oneshot::Sender<std::result::Result<Record, GetRecordError>>,
-        GetRecordResultMap,
-        Quorum,
-        ExpectedHoldersList,
-    ),
->;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.

@@ -21,7 +21,7 @@ const BOOTSTRAP_CONNECTED_PEERS_STEP: u32 = 5;
 /// process. This is to make sure we don't flood the network with `FindNode` msgs.
 const LAST_PEER_ADDED_TIME_LIMIT: Duration = Duration::from_secs(180);
 
-/// A minumn interval to prevent bootstrap got triggered too often
+/// A minimum interval to prevent bootstrap got triggered too often
 const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(30);
 
 /// The bootstrap interval to use if we haven't added any new peers in a while.
