@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701803450737,
+  "lastUpdate": 1701803452579,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ed104f5590f87424b7c036e40a9f0ebe81ec7719",
-          "message": "refactor: centralising RecordKey creation logic to make sure we always use the same for all content type",
-          "timestamp": "2023-07-26T15:28:40Z",
-          "tree_id": "25b8208809b2a4eb75cf44c2c9633dd4a3c0a7aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed104f5590f87424b7c036e40a9f0ebe81ec7719"
-        },
-        "date": 1690394307905,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 231.68,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 218,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 184,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "32d264e31775de0b8be72bbea048889f656e38e9",
+          "message": "fix(node): get self spend should be aggregated even if it errors out",
+          "timestamp": "2023-12-05T18:27:58Z",
+          "tree_id": "2df25667d66006a7b35964d1437549686194a9cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/32d264e31775de0b8be72bbea048889f656e38e9"
+        },
+        "date": 1701803452200,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 593,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 154,
             "unit": "MB"
           }
         ]
