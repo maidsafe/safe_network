@@ -277,7 +277,7 @@ impl Files {
 
         let mut failed_chunks = self
             .client
-            .verify_uploaded_chunks(chunks, BATCH_SIZE)
+            .verify_uploaded_chunks(&chunks, BATCH_SIZE)
             .await?;
         warn!("Failed chunks: {:?}", failed_chunks.len());
 
@@ -319,7 +319,7 @@ impl Files {
 
             failed_chunks = self
                 .client
-                .verify_uploaded_chunks(failed_chunks, BATCH_SIZE)
+                .verify_uploaded_chunks(&failed_chunks, BATCH_SIZE)
                 .await?;
         }
 

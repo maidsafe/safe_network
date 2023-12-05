@@ -445,11 +445,6 @@ impl ChunkManager {
             .ok()?;
         Some(XorName(decoded_xorname))
     }
-
-    #[allow(dead_code)]
-    fn hex_encode_xorname(xorname: XorName) -> String {
-        hex::encode(xorname)
-    }
 }
 
 #[cfg(test)]
