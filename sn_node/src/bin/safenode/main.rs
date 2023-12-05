@@ -359,7 +359,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
     let log_appender_guard = {
         let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
         log_builder.output_dest(output_dest.clone());
-        log_builder.format(opt.log_format.clone().unwrap_or(LogFormat::Default));
+        log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
         if let Some(files) = opt.max_uncompressed_log_files {
             log_builder.max_uncompressed_log_files(files);
         }
@@ -377,7 +377,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
         let guard = rt.block_on(async {
             let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
             log_builder.output_dest(output_dest.clone());
-            log_builder.format(opt.log_format.clone().unwrap_or(LogFormat::Default));
+            log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
             if let Some(files) = opt.max_uncompressed_log_files {
                 log_builder.max_uncompressed_log_files(files);
             }

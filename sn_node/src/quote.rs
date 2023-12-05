@@ -18,12 +18,9 @@ impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
         store_cost: Result<NanoTokens, ProtocolError>,
-        address: NetworkAddress,
+        address: &NetworkAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
-        let cost = match store_cost {
-            Ok(cost) => cost,
-            Err(err) => return Err(err),
-        };
+        let cost = store_cost?;
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
         let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp);

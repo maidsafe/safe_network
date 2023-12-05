@@ -57,9 +57,9 @@ impl Transfer {
     /// Creates a Transfer from the given cash_note
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
     /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
-    pub fn transfer_from_cash_note(cash_note: CashNote) -> Result<Transfer> {
+    pub fn transfer_from_cash_note(cash_note: &CashNote) -> Result<Transfer> {
         let recipient = cash_note.main_pubkey;
-        let u = CashNoteRedemption::from_cash_note(&cash_note)?;
+        let u = CashNoteRedemption::from_cash_note(cash_note)?;
         let t = Transfer::create(vec![u], recipient)
             .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)

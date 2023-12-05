@@ -76,11 +76,8 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     let (client, paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
 
-    let (files_api, content_bytes, _random_content_addrs, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, content_bytes, _random_content_addrs, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
     let subset_len = chunks.len() / 3;
@@ -189,11 +186,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, _content_bytes, file_addr, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, _content_bytes, file_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     println!("Paying for {} random addresses...", chunks.len());
 
@@ -228,11 +222,8 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let (files_api, content_bytes, content_addr, chunks) = random_content(
-        &client,
-        paying_wallet_dir.to_path_buf(),
-        chunks_dir.path().to_path_buf(),
-    )?;
+    let (files_api, content_bytes, content_addr, chunks) =
+        random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let mut no_data_payments = BTreeMap::default();
     for (chunk_name, _) in chunks.iter() {
@@ -247,7 +238,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(no_data_payments)?;
+        .local_send_storage_payment(&no_data_payments)?;
 
     sleep(Duration::from_secs(5)).await;
 
@@ -343,7 +334,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(no_data_payments)?;
+        .local_send_storage_payment(&no_data_payments)?;
 
     // this should fail to store as the amount paid is not enough
     let (mut register, _cost, _royalties_fees) = client

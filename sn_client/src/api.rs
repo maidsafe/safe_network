@@ -305,10 +305,10 @@ impl Client {
             expected_holders: Default::default(),
         };
         let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
-        let record = match maybe_record {
+        let record = match &maybe_record {
             Ok(r) => r,
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
-                return merge_split_register_records(address, &result_map)
+                return merge_split_register_records(address, result_map)
             }
             Err(e) => {
                 warn!("Failed to get record at {address:?} from the network: {e:?}");
@@ -723,11 +723,11 @@ impl Client {
     }
 }
 
-fn get_register_from_record(record: Record) -> Result<SignedRegister> {
-    let header = RecordHeader::from_record(&record)?;
+fn get_register_from_record(record: &Record) -> Result<SignedRegister> {
+    let header = RecordHeader::from_record(record)?;
 
     if let RecordKind::Register = header.kind {
-        let register = try_deserialize_record::<SignedRegister>(&record)?;
+        let register = try_deserialize_record::<SignedRegister>(record)?;
         Ok(register)
     } else {
         error!("RecordKind mismatch while trying to retrieve a signed register");
@@ -745,7 +745,7 @@ fn merge_split_register_records(
     debug!("Got multiple records from the network for key: {pretty_key:?}");
     let mut all_registers = vec![];
     for (record, peers) in map.values() {
-        match get_register_from_record(record.clone()) {
+        match get_register_from_record(record) {
             Ok(r) => all_registers.push(r),
             Err(e) => {
                 warn!("Ignoring invalid register record found for {pretty_key:?} received from {peers:?}: {:?}", e);
@@ -796,23 +796,23 @@ mod tests {
         // prepare registers
         let mut register_root = Register::new(owner_pk, meta, Default::default());
         let (root_hash, _) =
-            register_root.write(b"root_entry".to_vec(), Default::default(), &owner_sk)?;
+            register_root.write(b"root_entry".to_vec(), &BTreeSet::default(), &owner_sk)?;
         let root = BTreeSet::from_iter(vec![root_hash]);
         let signed_root = register_root.clone().into_signed(&owner_sk)?;
 
         let mut register1 = register_root.clone();
-        let (_hash, op1) = register1.write(b"entry1".to_vec(), root.clone(), &owner_sk)?;
+        let (_hash, op1) = register1.write(b"entry1".to_vec(), &root, &owner_sk)?;
         let mut signed_register1 = signed_root.clone();
         signed_register1.add_op(op1)?;
 
         let mut register2 = register_root.clone();
-        let (_hash, op2) = register2.write(b"entry2".to_vec(), root.clone(), &owner_sk)?;
+        let (_hash, op2) = register2.write(b"entry2".to_vec(), &root, &owner_sk)?;
         let mut signed_register2 = signed_root.clone();
         signed_register2.add_op(op2)?;
 
         let mut register_bad = Register::new(owner_pk, meta, Default::default());
         let (_hash, _op_bad) =
-            register_bad.write(b"bad_root".to_vec(), Default::default(), &owner_sk)?;
+            register_bad.write(b"bad_root".to_vec(), &BTreeSet::default(), &owner_sk)?;
         let invalid_sig = register2.sign(&owner_sk)?; // steal sig from something else
         let signed_register_bad = SignedRegister::new(register_bad, invalid_sig);
 

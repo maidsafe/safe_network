@@ -87,12 +87,12 @@ pub(super) fn get_unconfirmed_spend_requests(
 /// Hex encode and write each `CashNote` to a separate file in respective
 /// recipient public address dir in the created cash_notes dir. Each file is named after the cash_note id.
 pub(super) fn store_created_cash_notes(
-    created_cash_notes: Vec<&CashNote>,
+    created_cash_notes: &[&CashNote],
     wallet_dir: &Path,
 ) -> Result<()> {
     // The create cash_notes dir within the wallet dir.
     let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
-    for cash_note in created_cash_notes.iter() {
+    for cash_note in created_cash_notes {
         let unique_pubkey_name =
             *SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));

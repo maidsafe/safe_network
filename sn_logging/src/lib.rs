@@ -35,7 +35,7 @@ impl std::fmt::Display for LogOutputDest {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum LogFormat {
     Default,
     Json,
@@ -106,7 +106,7 @@ impl LogBuilder {
         #[cfg(not(feature = "otlp"))]
         layers.fmt_layer(
             self.default_logging_targets,
-            self.output_dest,
+            &self.output_dest,
             self.format,
             self.max_uncompressed_log_files,
             self.max_compressed_log_files,
@@ -116,7 +116,7 @@ impl LogBuilder {
         {
             layers.fmt_layer(
                 self.default_logging_targets.clone(),
-                self.output_dest,
+                &self.output_dest,
                 self.format,
                 self.max_uncompressed_log_files,
                 self.max_compressed_log_files,
@@ -201,7 +201,7 @@ impl LogBuilder {
         let mut layers = TracingLayers::default();
 
         layers
-            .fmt_layer(vec![], output_dest, LogFormat::Default, None, None)
+            .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None)
             .expect("Failed to get TracingLayers");
         layers
     }

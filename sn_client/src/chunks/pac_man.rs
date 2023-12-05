@@ -106,7 +106,7 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
     // self encrypted into additional chunks, and now we have a new `DataMap`
     // which points to all of those additional chunks.. and so on.
     let mut chunks = vec![];
-    let mut chunk_content = wrap_data_map(DataMapLevel::First(data_map))?;
+    let mut chunk_content = wrap_data_map(&DataMapLevel::First(data_map))?;
 
     let (address, additional_chunks) = loop {
         let chunk = to_chunk(chunk_content);
@@ -129,14 +129,14 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
                 .map(|c| to_chunk(c.content.clone())) // no need to encrypt what is self-encrypted
                 .chain(chunks)
                 .collect();
-            chunk_content = wrap_data_map(DataMapLevel::Additional(data_map))?;
+            chunk_content = wrap_data_map(&DataMapLevel::Additional(data_map))?;
         }
     };
 
     Ok((address, additional_chunks))
 }
 
-fn wrap_data_map(data_map: DataMapLevel) -> Result<Bytes> {
+fn wrap_data_map(data_map: &DataMapLevel) -> Result<Bytes> {
     // we use an initial/starting size of 300 bytes as that's roughly the current size of a DataMapLevel instance.
     let mut bytes = BytesMut::with_capacity(300).writer();
     let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
