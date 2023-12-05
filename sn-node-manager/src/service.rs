@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::config::create_owned_dir;
 use color_eyre::Result;
 use libp2p::Multiaddr;
 #[cfg(test)]
@@ -155,9 +154,6 @@ impl ServiceControl for NodeServiceManager {
     }
 
     fn install(&self, config: ServiceConfig) -> Result<()> {
-        create_owned_dir(config.data_dir_path.to_path_buf(), &config.service_user)?;
-        create_owned_dir(config.log_dir_path.to_path_buf(), &config.service_user)?;
-
         let label: ServiceLabel = config.name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
         let mut args = vec![

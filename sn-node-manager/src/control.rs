@@ -281,6 +281,7 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -335,6 +336,7 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -389,6 +391,7 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -434,6 +437,7 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -472,6 +476,7 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
         stop(&mut node, &mock_service_control).await?;
 
@@ -504,6 +509,7 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
 
         let result = stop(&mut node, &mock_service_control).await;
@@ -538,6 +544,7 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
         };
 
         stop(&mut node, &mock_service_control).await?;
