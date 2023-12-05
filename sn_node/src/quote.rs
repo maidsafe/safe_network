@@ -17,17 +17,15 @@ const QUOTE_EXPIRATION_SECS: u64 = 3600;
 impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
-        store_cost: Result<NanoTokens, ProtocolError>,
+        cost: NanoTokens,
         address: &NetworkAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
-        let cost = store_cost?;
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
         let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp);
 
-        let signature = match network.sign(&bytes) {
-            Ok(s) => s,
-            Err(_) => return Err(ProtocolError::QuoteGenerationFailed),
+        let Ok(signature) = network.sign(&bytes) else {
+            return Err(ProtocolError::QuoteGenerationFailed);
         };
 
         let quote = PaymentQuote {
