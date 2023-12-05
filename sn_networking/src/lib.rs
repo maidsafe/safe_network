@@ -159,6 +159,7 @@ impl Network {
     }
 
     /// Dial the given peer at the given address.
+    /// This function will only be called for the bootstrap nodes.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::Dial { addr, sender })?;

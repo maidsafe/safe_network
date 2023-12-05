@@ -277,7 +277,23 @@ impl SwarmDriver {
                             {
                                 let ilog2 = kbucket.range().0.ilog2();
                                 let num_peers = kbucket.num_entries();
-                                (num_peers >= K_VALUE.into(), ilog2)
+                                let mut is_bucket_full = num_peers >= K_VALUE.into();
+
+                                // If the bucket contains any of a bootstrap node,
+                                // consider the bucket is not full and dial back
+                                // so that the bootstrap nodes can be replaced.
+                                if is_bucket_full {
+                                    if let Some(peers) = self.bootstrap_peers.get(&ilog2) {
+                                        if kbucket
+                                            .iter()
+                                            .any(|entry| peers.contains(entry.node.key.preimage()))
+                                        {
+                                            is_bucket_full = false;
+                                        }
+                                    }
+                                }
+
+                                (is_bucket_full, ilog2)
                             } else {
                                 // Function will return `None` if the given key refers to self
                                 // hence return true to skip further action.
@@ -308,6 +324,8 @@ impl SwarmDriver {
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed && peer_is_agent {
+                            self.remove_bootstrap_from_full(peer_id);
+
                             trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
@@ -1244,6 +1262,32 @@ impl SwarmDriver {
         }
 
         false
+    }
+
+    // if target bucket is full, remove a bootstrap node if presents.
+    fn remove_bootstrap_from_full(&mut self, peer_id: PeerId) {
+        let mut shall_removed = None;
+
+        if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
+            if kbucket.num_entries() >= K_VALUE.into() {
+                if let Some(peers) = self.bootstrap_peers.get(&kbucket.range().0.ilog2()) {
+                    for peer_entry in kbucket.iter() {
+                        if peers.contains(peer_entry.node.key.preimage()) {
+                            shall_removed = Some(*peer_entry.node.key.preimage());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(to_be_removed_bootstrap) = shall_removed {
+            trace!("Bootstrap node {to_be_removed_bootstrap:?} to be replaced by peer {peer_id:?}");
+            let _entry = self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .remove_peer(&to_be_removed_bootstrap);
+        }
     }
 }
 
