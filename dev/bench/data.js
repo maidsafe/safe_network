@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701783098168,
+  "lastUpdate": 1701783245855,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cc78d9c4505050078b301b9a72fc1358fa849e9b",
-          "message": "chore(networking): increase verification attempts for PUT records",
-          "timestamp": "2023-07-26T14:02:54Z",
-          "tree_id": "9551fb7257df30f8e329d5996adaba9949ebc04e",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc78d9c4505050078b301b9a72fc1358fa849e9b"
-        },
-        "date": 1690389081482,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 31.53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 98,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a1e69fa942c0f977bea36e813f0ca339221eab4a",
+          "message": "feat: not dial back for peers in full kbucket",
+          "timestamp": "2023-12-05T12:35:18Z",
+          "tree_id": "0395eac9b1eec40e52f63e4be18919cb1005169d",
+          "url": "https://github.com/maidsafe/safe_network/commit/a1e69fa942c0f977bea36e813f0ca339221eab4a"
+        },
+        "date": 1701783245418,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 110,
             "unit": "MB"
           }
         ]
