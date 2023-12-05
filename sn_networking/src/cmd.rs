@@ -9,8 +9,8 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    sort_peers_by_address, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATE_RANGE,
+    multiaddr_pop_p2p, sort_peers_by_address, GetRecordError, MsgResponder, NetworkEvent,
+    CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use libp2p::{
@@ -486,6 +486,15 @@ impl SwarmDriver {
                 };
             }
             SwarmCmd::Dial { addr, sender } => {
+                let mut addr_copy = addr.clone();
+                if let Some(peer_id) = multiaddr_pop_p2p(&mut addr_copy) {
+                    // Only consider the dial peer is bootstrap node when proper PeerId is provided.
+                    if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
+                        let ilog2 = kbucket.range().0.ilog2();
+                        let peers = self.bootstrap_peers.entry(ilog2).or_default();
+                        peers.insert(peer_id);
+                    }
+                }
                 let _ = match self.dial(addr) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
