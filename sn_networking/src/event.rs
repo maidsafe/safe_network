@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, GetRecordError, CLOSE_GROUP_SIZE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -23,8 +23,8 @@ use libp2p::metrics::Recorder;
 use libp2p::{
     autonat::{self, NatStatus},
     kad::{
-        self, GetClosestPeersError, GetRecordError, GetRecordOk, InboundRequest, PeerRecord,
-        QueryId, QueryResult, Quorum, Record, RecordKey, K_VALUE,
+        self, GetClosestPeersError, InboundRequest, PeerRecord, QueryId, QueryResult, Quorum,
+        Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -801,7 +801,7 @@ impl SwarmDriver {
             //            `ProgressStep::last` to be `true`
             kad::Event::OutboundQueryProgressed {
                 id,
-                result: QueryResult::GetRecord(Ok(GetRecordOk::FoundRecord(peer_record))),
+                result: QueryResult::GetRecord(Ok(kad::GetRecordOk::FoundRecord(peer_record))),
                 stats,
                 step,
             } => {
@@ -816,7 +816,7 @@ impl SwarmDriver {
             kad::Event::OutboundQueryProgressed {
                 id,
                 result:
-                    QueryResult::GetRecord(Ok(GetRecordOk::FinishedWithNoAdditionalRecord {
+                    QueryResult::GetRecord(Ok(kad::GetRecordOk::FinishedWithNoAdditionalRecord {
                         cache_candidates,
                     })),
                 stats,
@@ -831,9 +831,9 @@ impl SwarmDriver {
                     let (result, log_string) = if let Some((record, _)) = result_map.values().next()
                     {
                         let result = if num_of_versions == 1 {
-                            Err(Error::RecordNotEnoughCopies(record.clone()))
+                            Err(GetRecordError::RecordNotEnoughCopies(record.clone()))
                         } else {
-                            Err(Error::SplitRecord {
+                            Err(GetRecordError::SplitRecord {
                                 result_map: result_map.clone(),
                             })
                         };
@@ -844,7 +844,7 @@ impl SwarmDriver {
                             usize::from(step.count) - 1
                         ))
                     } else {
-                        (Err(Error::RecordNotFound),
+                        (Err(GetRecordError::RecordNotFound),
                         format!(
                             "Getting record task {id:?} completed with step count {:?}, but no copy found.",
                             step.count
@@ -871,12 +871,12 @@ impl SwarmDriver {
                 step,
             } => {
                 match err.clone() {
-                    GetRecordError::NotFound { key, closest_peers } => {
+                    kad::GetRecordError::NotFound { key, closest_peers } => {
                         event_string = "kad_event::GetRecordError::NotFound";
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
                         PrettyPrintRecordKey::from(&key));
                     }
-                    GetRecordError::QuorumFailed {
+                    kad::GetRecordError::QuorumFailed {
                         key,
                         records,
                         quorum,
@@ -889,7 +889,7 @@ impl SwarmDriver {
                             .collect_vec();
                         info!("Query task {id:?} QuorumFailed record {pretty_key:?} among peers {peers:?} with quorum {quorum:?}, {stats:?} - {step:?}");
                     }
-                    GetRecordError::Timeout { key } => {
+                    kad::GetRecordError::Timeout { key } => {
                         event_string = "kad_event::GetRecordError::Timeout";
                         let pretty_key = PrettyPrintRecordKey::from(&key);
 
@@ -922,7 +922,7 @@ impl SwarmDriver {
                         if result_map.len() > 1 {
                             warn!("Get record task {id:?} for {pretty_key:?} timed out with split result map");
                             sender
-                                .send(Err(Error::QueryTimeout))
+                                .send(Err(GetRecordError::QueryTimeout))
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
                             debug!(
                                 "KadEvent {event_string:?} completed after {:?}",
@@ -951,7 +951,7 @@ impl SwarmDriver {
                         warn!("Get record task {id:?} for {pretty_key:?} returned insufficient responses. {expected_holders:?} did not return record");
                         // Otherwise report the timeout
                         sender
-                            .send(Err(Error::QueryTimeout))
+                            .send(Err(GetRecordError::QueryTimeout))
                             .map_err(|_| Error::InternalMsgChannelDropped)?;
 
                         debug!(
@@ -970,7 +970,7 @@ impl SwarmDriver {
                         debug!("Get record task {id:?} failed with {expected_holders:?} expected holders not responded, error {err:?}");
                     }
                     sender
-                        .send(Err(Error::RecordNotFound))
+                        .send(Err(GetRecordError::RecordNotFound))
                         .map_err(|_| Error::InternalMsgChannelDropped)?;
                 }
             }
@@ -1191,7 +1191,7 @@ impl SwarmDriver {
                     let _ = sender.send(Ok(peer_record.record));
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let _ = sender.send(Err(Error::SplitRecord { result_map }));
+                    let _ = sender.send(Err(GetRecordError::SplitRecord { result_map }));
                 }
 
                 // Stop the query; possibly stops more nodes from being queried.

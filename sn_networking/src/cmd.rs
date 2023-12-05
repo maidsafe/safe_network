@@ -9,7 +9,8 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+    sort_peers_by_address, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use libp2p::{
@@ -102,7 +103,7 @@ pub enum SwarmCmd {
     /// carry out a verification that those holders do respond with a copy.
     GetNetworkRecord {
         key: RecordKey,
-        sender: oneshot::Sender<Result<Record>>,
+        sender: oneshot::Sender<std::result::Result<Record, GetRecordError>>,
         quorum: Quorum,
         expected_holders: HashSet<PeerId>,
     },

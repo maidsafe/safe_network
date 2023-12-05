@@ -29,7 +29,7 @@ use self::{cmd::SwarmCmd, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver},
-    error::Error,
+    error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
 };
@@ -382,7 +382,7 @@ impl Network {
                         ));
                     }
                 }
-                Err(Error::RecordNotEnoughCopies(returned_record)) => {
+                Err(GetRecordError::RecordNotEnoughCopies(returned_record)) => {
                     debug!("Not enough copies found yet for {pretty_key:?}");
                     // Only return when completed all attempts
                     if retry_attempts >= total_attempts && matches!(cfg.get_quorum, Quorum::One) {
@@ -398,7 +398,7 @@ impl Network {
                         }
                     }
                 }
-                Err(Error::RecordNotFound) => {
+                Err(GetRecordError::RecordNotFound) => {
                     // libp2p RecordNotFound does mean no holders answered.
                     // it does not actually mean the record does not exist.
                     // just that those asked did not have it
@@ -408,16 +408,16 @@ impl Network {
 
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
-                Err(Error::SplitRecord { result_map }) => {
+                Err(GetRecordError::SplitRecord { result_map }) => {
                     error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered split");
 
                     if retry_attempts >= total_attempts {
-                        return Err(Error::SplitRecord { result_map });
+                        return Err(GetRecordError::SplitRecord { result_map }.into());
                     }
                     warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
                 }
-                Err(error) => {
-                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered {error:?}");
+                Err(GetRecordError::QueryTimeout) => {
+                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered Timeout");
 
                     if retry_attempts >= total_attempts {
                         break;
@@ -435,7 +435,7 @@ impl Network {
             }
         }
 
-        Err(Error::RecordNotFound)
+        Err(GetRecordError::RecordNotFound.into())
     }
 
     /// Get the cost of storing the next record from the network
