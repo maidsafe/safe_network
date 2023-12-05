@@ -76,8 +76,9 @@ impl ChunkManager {
 
     /// Chunk all the files in the provided `files_path`
     /// These are stored to the CHUNK_ARTIFACTS_DIR
-    pub(crate) fn chunk_path(&mut self, files_path: &Path) -> Result<()> {
-        trace!("Starting to chunk {files_path:?} now.");
+    /// if read_cache is true, will take cache from previous runs into account
+    pub(crate) fn chunk_path(&mut self, files_path: &Path, read_cache: bool) -> Result<()> {
+        println!("Starting to chunk {files_path:?} now.");
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -107,7 +108,9 @@ impl ChunkManager {
         let total_files = self.files_to_chunk.len();
 
         // resume the chunks from the artifacts dir
-        self.resume_path();
+        if read_cache {
+            self.resume_path();
+        }
 
         // note the number of chunks that we've resumed
         self.resumed_chunk_count = self
@@ -345,6 +348,16 @@ impl ChunkManager {
         &self.verified_files
     }
 
+    /// Return the filename and the file's Xor address if all their chunks has been marked as
+    /// verified
+    pub(crate) fn already_put_chunks(
+        &mut self,
+        files_path: &Path,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        self.chunk_path(files_path, false)?;
+        Ok(self.get_chunks())
+    }
+
     // Try to read the chunks from `file_chunks_dir`
     // Returns the ChunkedFile if the metadata file exists
     // file_chunks_dir: artifacts_dir/path_xor
@@ -455,7 +468,7 @@ mod tests {
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
         let artifacts_dir = manager.artifacts_dir.clone();
         let _ = create_random_files(&random_files_dir, 1, 1)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
 
         let chunks = manager.get_chunks();
         // 1. 1mb file produces 4 chunks
@@ -523,7 +536,7 @@ mod tests {
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 1, 1)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
 
         let path_xor = manager.chunks.keys().next().unwrap().clone();
         let chunked_file = manager.chunks.values().next().unwrap().clone();
@@ -572,7 +585,7 @@ mod tests {
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
         // cloned after chunking
         let manager_clone = manager.clone();
 
@@ -614,10 +627,10 @@ mod tests {
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
 
         let mut new_manager = ChunkManager::new(&root_dir);
-        new_manager.chunk_path(&random_files_dir)?;
+        new_manager.chunk_path(&random_files_dir, true)?;
 
         // 1. make sure the chunk counts match
         let total_chunk_count = manager
@@ -641,7 +654,7 @@ mod tests {
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
 
         let total_chunks_count = manager
             .chunks
@@ -662,7 +675,7 @@ mod tests {
             .0;
         manager.mark_completed([removed_chunk].into_iter());
         let mut new_manager = ChunkManager::new(&root_dir);
-        new_manager.chunk_path(&random_files_dir)?;
+        new_manager.chunk_path(&random_files_dir, true)?;
 
         // 1. we should have 1 completed chunk and (total_chunks_count-1) incomplete chunks
         assert_eq!(manager.resumed_chunk_count, 0);
@@ -689,11 +702,11 @@ mod tests {
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
         manager.mark_completed_all();
 
         let mut new_manager = ChunkManager::new(&root_dir);
-        new_manager.chunk_path(&random_files_dir)?;
+        new_manager.chunk_path(&random_files_dir, true)?;
 
         // 1. we should have chunk entries, but 0 chunks inside them
         assert_eq!(new_manager.chunks.len(), 5);
@@ -721,7 +734,7 @@ mod tests {
 
         let mut random_files = create_random_files(&random_files_dir, 1, 1)?;
         let random_file = random_files.remove(0);
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
 
         let mut old_chunks_list = BTreeSet::new();
         for entry in WalkDir::new(&manager.artifacts_dir).into_iter().flatten() {
@@ -740,7 +753,7 @@ mod tests {
         fs::remove_file(&metadata_path)?;
 
         // use the same manager to chunk the path
-        manager.chunk_path(&random_files_dir)?;
+        manager.chunk_path(&random_files_dir, true)?;
         // nothing should be resumed
         assert_eq!(manager.resumed_chunk_count, 0);
         // but it should be re-chunked
