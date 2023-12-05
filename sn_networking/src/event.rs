@@ -965,6 +965,7 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
 
+                info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.connected_peers);
                 if old_peer.is_some() {
                     self.connected_peers = self.connected_peers.saturating_sub(1);
 

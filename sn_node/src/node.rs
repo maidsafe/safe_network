@@ -221,7 +221,7 @@ impl Node {
                                 let start = std::time::Instant::now();
                                 let event_string = format!("{:?}", event);
 
-                                self.handle_network_event(event, peers_connected).await ;
+                                self.handle_network_event(event, peers_connected);
                                 info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
 
                             }
@@ -277,53 +277,11 @@ impl Node {
 
     /// Handle a network event.
     /// Spawns a thread for any likely long running tasks
-    async fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
-        // when the node has not been connected to enough peers, it should not perform activities
-        // that might require peers in the RT to succeed.
-        let mut log_when_not_enough_peers = true;
+    fn handle_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         let start = std::time::Instant::now();
-        loop {
-            if peers_connected.load(Ordering::Relaxed) >= CLOSE_GROUP_SIZE {
-                break;
-            }
-            match &event {
-                // these activities requires the node to be connected to some peer to be able to carry
-                // out get kad.get_record etc. This happens during replication/PUT. So we should wait
-                // until we have enough nodes, else these might fail.
-                NetworkEvent::CmdRequestReceived { .. }
-                | NetworkEvent::QueryRequestReceived { .. }
-                | NetworkEvent::UnverifiedRecord(_)
-                | NetworkEvent::FailedToWrite(_)
-                | NetworkEvent::ResponseReceived { .. }
-                | NetworkEvent::KeysForReplication(_) => {
-                    if log_when_not_enough_peers {
-                        debug!("Waiting before processing certain NetworkEvent before reaching {CLOSE_GROUP_SIZE} peers");
-                    }
-                    log_when_not_enough_peers = false;
-                    tokio::time::sleep(Duration::from_millis(10)).await;
-                }
-                // These events do not need to wait until there are enough peers
-                NetworkEvent::PeerAdded(..)
-                | NetworkEvent::PeerRemoved(..)
-                | NetworkEvent::NewListenAddr(_)
-                | NetworkEvent::NatStatusChanged(_)
-                | NetworkEvent::GossipsubMsgReceived { .. }
-                | NetworkEvent::GossipsubMsgPublished { .. } => break,
-            }
-        }
         let event_string = format!("{:?}", event);
         trace!("Handling NetworkEvent {event_string:?}");
 
-        self.handle_sync_network_event(event, peers_connected);
-
-        trace!(
-            "NetworkEvent handled in {:?} : {event_string:?}",
-            start.elapsed()
-        );
-    }
-
-    /// Handle synchronous network events.
-    fn handle_sync_network_event(&self, event: NetworkEvent, peers_connected: Arc<AtomicUsize>) {
         match event {
             NetworkEvent::PeerAdded(peer_id, connected_peers) => {
                 // increment peers_connected and send ConnectedToNetwork event if have connected to K_VALUE peers
@@ -428,6 +386,10 @@ impl Node {
                 let events_channel = self.events_channel.clone();
 
                 if events_channel.receiver_count() == 0 {
+                    trace!(
+                        "NetworkEvent handled in {:?} : {event_string:?}",
+                        start.elapsed()
+                    );
                     return;
                 }
                 if topic == ROYALTY_TRANSFER_NOTIF_TOPIC {
@@ -451,6 +413,11 @@ impl Node {
                 }
             }
         }
+
+        trace!(
+            "NetworkEvent handled in {:?} : {event_string:?}",
+            start.elapsed()
+        );
     }
 
     // Handle the response that was not awaited at the call site
