@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701771082909,
+  "lastUpdate": 1701771085645,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -31810,6 +31810,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "aeca48732f7e44e8a0e77312df82c0bcd319bde6",
+          "message": "test(node): update assert over royalty count\n\nIf a repayment happens we may top up, so the count could actually be higher",
+          "timestamp": "2023-12-05T09:32:32Z",
+          "tree_id": "1c92b8620a09d8c715153ff44c1ac82fe5b039e5",
+          "url": "https://github.com/maidsafe/safe_network/commit/aeca48732f7e44e8a0e77312df82c0bcd319bde6"
+        },
+        "date": 1701771084640,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4256,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 70090,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 16,
             "unit": "ms"
           }
         ]
