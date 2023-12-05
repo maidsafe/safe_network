@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701789867941,
+  "lastUpdate": 1701789870519,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32005,6 +32005,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 12,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "2931d70b115b9b7b02ec0158f1da15db02413f19",
+          "message": "test(node): formalise small wait after starting payment listener",
+          "timestamp": "2023-12-05T14:43:04Z",
+          "tree_id": "cca5448a82bffde41ab0902d84ff6fae2a43f68d",
+          "url": "https://github.com/maidsafe/safe_network/commit/2931d70b115b9b7b02ec0158f1da15db02413f19"
+        },
+        "date": 1701789869634,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4395,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 68836,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 15,
             "unit": "ms"
           }
         ]
