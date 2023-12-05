@@ -348,7 +348,7 @@ mod tests {
         let perms = Permissions::new_with([authority1, authority2]);
 
         // Instantiate the same Register on two replicas
-        let mut replica1 = Register::new(authority_sk1.public_key(), meta, perms.clone());
+        let mut replica1 = Register::new(authority_sk1.public_key(), meta, perms);
         let mut replica2 = replica1.clone();
 
         // And let's write an item to replica1 with autority1

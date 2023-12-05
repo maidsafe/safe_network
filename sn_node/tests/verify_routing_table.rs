@@ -61,7 +61,6 @@ async fn verify_routing_table() -> Result<()> {
             .map(|(ilog2, peers)| {
                 let peers = peers
                     .peers
-                    .clone()
                     .into_iter()
                     .map(|peer_bytes| PeerId::from_bytes(&peer_bytes).unwrap())
                     .collect::<HashSet<_>>();
