@@ -7,10 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, GetRecordError, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -22,10 +21,7 @@ use libp2p::mdns;
 use libp2p::metrics::Recorder;
 use libp2p::{
     autonat::{self, NatStatus},
-    kad::{
-        self, GetClosestPeersError, InboundRequest, PeerRecord, QueryId, QueryResult, Quorum,
-        Record, RecordKey, K_VALUE,
-    },
+    kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
     swarm::{
@@ -37,23 +33,17 @@ use libp2p::{
 
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, Request, Response},
-    storage::RecordHeader,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::HashSet,
     fmt::{Debug, Formatter},
-    num::NonZeroUsize,
 };
 use tokio::sync::oneshot;
 use tracing::{info, warn};
-use xor_name::XorName;
 
 /// Our agent string has as a prefix that we can match against.
 const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
-
-/// Using XorName to differentiate different record content under the same key.
-pub(super) type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 
 /// NodeEvent enum
 #[derive(CustomDebug)]
@@ -797,26 +787,6 @@ impl SwarmDriver {
                 }
             }
 
-            // For `get_record` returning behaviour:
-            //   1, targeting a non-existing entry
-            //     there will only be one event of `kad::Event::OutboundQueryProgressed`
-            //     with `ProgressStep::last` to be `true`
-            //          `QueryStats::requests` to be 20 (K-Value)
-            //          `QueryStats::success` to be over majority of the requests
-            //          `err::NotFound::closest_peers` contains a list of CLOSE_GROUP_SIZE peers
-            //   2, targeting an existing entry
-            //     there will a sequence of (at least CLOSE_GROUP_SIZE) events of
-            //     `kad::Event::OutboundQueryProgressed` to be received
-            //     with `QueryStats::end` always being `None`
-            //          `ProgressStep::last` all to be `false`
-            //          `ProgressStep::count` to be increased with step of 1
-            //             capped and stopped at CLOSE_GROUP_SIZE, may have duplicated counts
-            //          `PeerRecord::peer` could be None to indicate from self
-            //             in which case it always use a duplicated `ProgressStep::count`
-            //     the sequence will be completed with `FinishedWithNoAdditionalRecord`
-            //     where: `cache_candidates`: being the peers supposed to hold the record but not
-            //            `ProgressStep::count`: to be `number of received copies plus one`
-            //            `ProgressStep::last` to be `true`
             kad::Event::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetRecord(Ok(kad::GetRecordOk::FoundRecord(peer_record))),
@@ -829,7 +799,7 @@ impl SwarmDriver {
                     PrettyPrintRecordKey::from(&peer_record.record.key),
                     peer_record.peer
                 );
-                self.accumulate_get_record_ok(id, peer_record, step.count);
+                self.accumulate_get_record_found(id, peer_record, stats, step)?;
             }
             kad::Event::OutboundQueryProgressed {
                 id,
@@ -842,57 +812,20 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::get_record::finished_no_additional";
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
-                if let Some((sender, result_map, _quorum, expected_holders)) =
-                    self.pending_get_record.remove(&id)
-                {
-                    let num_of_versions = result_map.len();
-                    let (result, log_string) = if let Some((record, _)) = result_map.values().next()
-                    {
-                        let result = if num_of_versions == 1 {
-                            Err(GetRecordError::RecordNotEnoughCopies(record.clone()))
-                        } else {
-                            Err(GetRecordError::SplitRecord {
-                                result_map: result_map.clone(),
-                            })
-                        };
-
-                        (result, format!(
-                            "Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
-                            PrettyPrintRecordKey::from(&record.key),
-                            usize::from(step.count) - 1
-                        ))
-                    } else {
-                        (Err(GetRecordError::RecordNotFound),
-                        format!(
-                            "Getting record task {id:?} completed with step count {:?}, but no copy found.",
-                            step.count
-                        ))
-                    };
-
-                    if expected_holders.is_empty() {
-                        debug!("{log_string}");
-                    } else {
-                        debug!(
-                            "{log_string}, and {expected_holders:?} expected holders not responded"
-                        );
-                    }
-
-                    sender
-                        .send(result)
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
-                }
+                self.handle_get_record_finished(id, cache_candidates, stats, step)?;
             }
             kad::Event::OutboundQueryProgressed {
                 id,
-                result: QueryResult::GetRecord(Err(err)),
+                result: QueryResult::GetRecord(Err(get_record_err)),
                 stats,
                 step,
             } => {
-                match err.clone() {
+                // log the errors
+                match &get_record_err {
                     kad::GetRecordError::NotFound { key, closest_peers } => {
                         event_string = "kad_event::GetRecordError::NotFound";
                         info!("Query task {id:?} NotFound record {:?} among peers {closest_peers:?}, {stats:?} - {step:?}",
-                        PrettyPrintRecordKey::from(&key));
+                        PrettyPrintRecordKey::from(key));
                     }
                     kad::GetRecordError::QuorumFailed {
                         key,
@@ -900,7 +833,7 @@ impl SwarmDriver {
                         quorum,
                     } => {
                         event_string = "kad_event::GetRecordError::QuorumFailed";
-                        let pretty_key = PrettyPrintRecordKey::from(&key);
+                        let pretty_key = PrettyPrintRecordKey::from(key);
                         let peers = records
                             .iter()
                             .map(|peer_record| peer_record.peer)
@@ -909,88 +842,14 @@ impl SwarmDriver {
                     }
                     kad::GetRecordError::Timeout { key } => {
                         event_string = "kad_event::GetRecordError::Timeout";
-                        let pretty_key = PrettyPrintRecordKey::from(&key);
+                        let pretty_key = PrettyPrintRecordKey::from(key);
 
                         debug!(
                             "Query task {id:?} timed out when looking for record {pretty_key:?}"
                         );
-
-                        let (sender, result_map, quorum, expected_holders) =
-                            self.pending_get_record.remove(&id).ok_or_else(|| {
-                                trace!(
-                                    "Can't locate query task {id:?} for {pretty_key:?}, it has likely been completed already."
-                                );
-                                Error::ReceivedKademliaEventDropped( kad::Event::OutboundQueryProgressed {
-                                    id,
-                                    result: QueryResult::GetRecord(Err(err.clone())),
-                                    stats,
-                                    step,
-                                })
-                            })?;
-
-                        let required_response_count = match quorum {
-                            Quorum::Majority => close_group_majority(),
-                            Quorum::All => CLOSE_GROUP_SIZE,
-                            Quorum::N(v) => v.into(),
-                            Quorum::One => 1,
-                        };
-
-                        // if we've a split over the result xorname, then we don't attempt to resolve this here.
-                        // Retry and resolve through normal flows without a timeout.
-                        if result_map.len() > 1 {
-                            warn!("Get record task {id:?} for {pretty_key:?} timed out with split result map");
-                            sender
-                                .send(Err(GetRecordError::QueryTimeout))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                            debug!(
-                                "KadEvent {event_string:?} completed after {:?}",
-                                start.elapsed()
-                            );
-
-                            return Ok(());
-                        }
-
-                        // if we have enough responses here, we can return the record
-                        if let Some((record, peers)) = result_map.values().next() {
-                            if peers.len() >= required_response_count {
-                                sender
-                                    .send(Ok(record.clone()))
-                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                                debug!(
-                                    "KadEvent {event_string:?} completed after {:?}",
-                                    start.elapsed()
-                                );
-
-                                return Ok(());
-                            }
-                        }
-
-                        warn!("Get record task {id:?} for {pretty_key:?} returned insufficient responses. {expected_holders:?} did not return record");
-                        // Otherwise report the timeout
-                        sender
-                            .send(Err(GetRecordError::QueryTimeout))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                        debug!(
-                            "KadEvent {event_string:?} completed after {:?}",
-                            start.elapsed()
-                        );
-                        return Ok(());
                     }
                 }
-
-                if let Some((sender, _, _, expected_holders)) = self.pending_get_record.remove(&id)
-                {
-                    if expected_holders.is_empty() {
-                        info!("Get record task {id:?} failed with error {err:?}");
-                    } else {
-                        debug!("Get record task {id:?} failed with {expected_holders:?} expected holders not responded, error {err:?}");
-                    }
-                    sender
-                        .send(Err(GetRecordError::RecordNotFound))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
-                }
+                self.handle_get_record_error(id, get_record_err, stats, step)?;
             }
             // Shall no longer receive this event
             kad::Event::OutboundQueryProgressed {
@@ -1139,129 +998,6 @@ impl SwarmDriver {
             index += 1;
         }
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
-    }
-
-    // Completes when any of the following condition reaches first:
-    // 1, Return whenever reached majority of CLOSE_GROUP_SIZE
-    // 2, In case of split, return with NotFound,
-    //    whenever `ProgressStep::count` hits CLOSE_GROUP_SIZE
-    fn accumulate_get_record_ok(
-        &mut self,
-        query_id: QueryId,
-        peer_record: PeerRecord,
-        count: NonZeroUsize,
-    ) {
-        if self.try_early_completion_for_chunk(&query_id, &peer_record) {
-            return;
-        }
-
-        let peer_id = if let Some(peer_id) = peer_record.peer {
-            peer_id
-        } else {
-            self.self_peer_id
-        };
-
-        if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
-            let (_sender, result_map, quorum, expected_holders) = entry.get_mut();
-
-            let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
-
-            if !expected_holders.is_empty() {
-                if expected_holders.remove(&peer_id) {
-                    debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
-                } else {
-                    debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an unexpected holder {peer_id:?}");
-                }
-            }
-
-            // Insert the record and the peer into the result_map.
-            let record_content_hash = XorName::from_content(&peer_record.record.value);
-            let responded_peers =
-                if let Entry::Occupied(mut entry) = result_map.entry(record_content_hash) {
-                    let (_, peer_list) = entry.get_mut();
-                    let _ = peer_list.insert(peer_id);
-                    peer_list.len()
-                } else {
-                    let mut peer_list = HashSet::new();
-                    let _ = peer_list.insert(peer_id);
-                    result_map.insert(record_content_hash, (peer_record.record.clone(), peer_list));
-                    1
-                };
-
-            let expected_answers = match quorum {
-                Quorum::Majority => close_group_majority(),
-                Quorum::All => CLOSE_GROUP_SIZE,
-                Quorum::N(v) => v.get(),
-                Quorum::One => 1,
-            };
-
-            trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
-
-            if responded_peers >= expected_answers {
-                if !expected_holders.is_empty() {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {expected_holders:?}");
-                }
-
-                // Remove the query task and consume the variables.
-                let (sender, result_map, _, _) = entry.remove();
-
-                if result_map.len() == 1 {
-                    let _ = sender.send(Ok(peer_record.record));
-                } else {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let _ = sender.send(Err(GetRecordError::SplitRecord { result_map }));
-                }
-
-                // Stop the query; possibly stops more nodes from being queried.
-                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(&query_id) {
-                    query.finish();
-                }
-            } else if usize::from(count) >= CLOSE_GROUP_SIZE {
-                debug!("For record {pretty_key:?} task {query_id:?}, got {count:?} with {} versions so far.",
-                    result_map.len());
-            }
-        }
-    }
-
-    // For chunk record which can be self-verifiable,
-    // complete the flow with the first copy that fetched.
-    // Return `true` if early completed, otherwise return `false`.
-    // Situations that can be early completed:
-    // 1, Not finding an entry within pending_get_record, i.e. no more further action required
-    // 2, For a `Chunk` that not required to verify expected holders,
-    //    whenever fetched a first copy that passed the self-verification.
-    fn try_early_completion_for_chunk(
-        &mut self,
-        query_id: &QueryId,
-        peer_record: &PeerRecord,
-    ) -> bool {
-        if let Entry::Occupied(mut entry) = self.pending_get_record.entry(*query_id) {
-            let (_, _, quorum, expected_holders) = entry.get_mut();
-
-            if expected_holders.is_empty() &&
-               RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
-               // Ensure that we only exit early if quorum is indeed for only one match
-               matches!(quorum, Quorum::One)
-            {
-                // Stop the query; possibly stops more nodes from being queried.
-                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {
-                    query.finish();
-                }
-
-                // Stop tracking the query task by removing the entry and consume the sender.
-                let (sender, ..) = entry.remove();
-                // A claimed Chunk type record can be trusted.
-                // Punishment of peer that sending corrupted Chunk type record
-                // maybe carried out by other verification mechanism.
-                let _ = sender.send(Ok(peer_record.record.clone()));
-                return true;
-            }
-        } else {
-            // A non-existing pending entry does not need to undertake any further action.
-            return true;
-        }
-
-        false
     }
 
     // if target bucket is full, remove a bootstrap node if presents.
