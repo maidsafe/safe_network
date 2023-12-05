@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.1...sn_client-v0.99.2) - 2023-12-05
+
+### Added
+- allow for cli chunk put retries for un verifiable chunks
+
+### Fixed
+- mark chunks as completed when no failures on retry
+
 ## [0.99.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.0...sn_client-v0.99.1) - 2023-12-05
 
 ### Fixed
