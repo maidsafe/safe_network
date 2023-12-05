@@ -275,10 +275,7 @@ impl SafeNode for SafeNodeRpcService {
         // Convert the message from Vec<u8> to Bytes
         let msg = Bytes::from(request.get_ref().msg.clone());
 
-        match self
-            .running_node
-            .publish_on_topic(topic.clone(), msg.clone())
-        {
+        match self.running_node.publish_on_topic(topic.clone(), msg) {
             Ok(()) => Ok(Response::new(GossipsubPublishResponse {})),
             Err(err) => Err(Status::new(
                 Code::Internal,

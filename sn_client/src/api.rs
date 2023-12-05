@@ -807,7 +807,7 @@ mod tests {
 
         let mut register2 = register_root.clone();
         let (_hash, op2) = register2.write(b"entry2".to_vec(), &root, &owner_sk)?;
-        let mut signed_register2 = signed_root.clone();
+        let mut signed_register2 = signed_root;
         signed_register2.add_op(op2)?;
 
         let mut register_bad = Register::new(owner_pk, meta, Default::default());

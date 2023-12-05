@@ -72,7 +72,7 @@ pub(crate) fn encrypt_large(
         .iter()
         .map(|chunk_info| {
             let chunk_file_path = output_dir.join(hex::encode(chunk_info.dst_hash));
-            (chunk_info.dst_hash, chunk_file_path.to_path_buf())
+            (chunk_info.dst_hash, chunk_file_path)
         })
         .collect();
 
