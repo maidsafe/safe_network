@@ -26,7 +26,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
                 .join("safe")
                 .join("client")
                 .join("logs")
-                .join(format!("log_{}", timestamp));
+                .join(format!("log_{timestamp}"));
             Ok(LogOutputDest::Path(dir))
         }
         // The path should be a directory, but we can't use something like `is_dir` to check

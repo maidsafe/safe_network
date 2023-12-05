@@ -173,7 +173,7 @@ pub fn create_first_cash_note_from_key(
 pub fn create_faucet_wallet() -> LocalWallet {
     let root_dir = get_faucet_dir();
 
-    println!("Loading faucet wallet... {:#?}", root_dir);
+    println!("Loading faucet wallet... {root_dir:#?}");
     LocalWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
 }
 

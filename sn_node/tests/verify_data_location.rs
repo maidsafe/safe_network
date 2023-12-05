@@ -241,14 +241,11 @@ async fn verify_location(all_peers: &[PeerId], node_rpc_addresses: &[SocketAddr]
             failed.iter().for_each(|(key, failed_peers)| {
                 failed_peers
                     .iter()
-                    .for_each(|peer| println!("Record {:?} is not stored inside {peer:?}", key,));
+                    .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}",));
             });
             println!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                println!(
-                    "Record {:?} is currently held by node indexes {node_index:?}",
-                    key
-                );
+                println!("Record {key:?} is currently held by node indexes {node_index:?}");
             });
             println!("Node index map:");
             all_peers

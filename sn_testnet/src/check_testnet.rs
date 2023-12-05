@@ -49,7 +49,7 @@ impl Display for NodeInfo {
         writeln!(f, "- Peer Id: {}", self.peer_id)?;
         writeln!(f, "- Listeners:")?;
         for addr in self.listeners.iter() {
-            writeln!(f, "   * {}", addr)?;
+            writeln!(f, "   * {addr}")?;
         }
         writeln!(f, "- Log dir: {}", self.log_path.display())
     }
@@ -107,8 +107,7 @@ pub async fn run(logs_path: &Path, node_count: u32) -> Result<()> {
 
         assert_eq!(
             peer_id, node_log_info.peer_id,
-            "Node at {} reported a mismatching PeerId: {}",
-            rpc_addr, peer_id
+            "Node at {rpc_addr} reported a mismatching PeerId: {peer_id}"
         );
 
         if node_info.listeners != node_log_info.listeners {

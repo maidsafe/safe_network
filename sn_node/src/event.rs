@@ -38,7 +38,7 @@ impl NodeEventsChannel {
 
     // Broadcast a new event, meant to be a helper only used by the sn_node's internals.
     pub(crate) fn broadcast(&self, event: NodeEvent) {
-        let event_string = format!("{:?}", event);
+        let event_string = format!("{event:?}");
         if let Err(err) = self.0.send(event) {
             trace!(
                 "Error occurred when trying to broadcast a node event ({event_string:?}): {err}"

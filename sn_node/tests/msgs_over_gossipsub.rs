@@ -105,8 +105,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
             assert_eq!(
                 count,
                 node_count - nodes_subscribed,
-                "Not enough messages received by node at index {}",
-                node_index
+                "Not enough messages received by node at index {node_index}"
             );
             node_unsubscribe_from_topic(addr, topic.clone()).await?;
         }

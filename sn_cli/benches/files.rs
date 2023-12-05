@@ -105,7 +105,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         // Wait little bit for the fund to be settled.
         std::thread::sleep(Duration::from_secs(10));
 
-        let mut group = c.benchmark_group(format!("Upload Benchmark {}MB", size));
+        let mut group = c.benchmark_group(format!("Upload Benchmark {size}MB"));
         group.sampling_mode(criterion::SamplingMode::Flat);
         // One sample may compose of multiple iterations, and this is decided by `measurement_time`.
         // Set this to a lower value to ensure each sample only contains one iteration.
@@ -116,7 +116,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         // Set the throughput to be reported in terms of bytes
         group.throughput(Throughput::Bytes(size * 1024 * 1024));
-        let bench_id = format!("safe files upload {}mb", size);
+        let bench_id = format!("safe files upload {size}mb");
         group.bench_function(bench_id, |b| {
             b.iter(|| safe_files_upload(temp_dir_path_str))
         });

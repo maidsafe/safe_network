@@ -233,7 +233,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
     } else {
         url
     };
-    let req_url = Url::parse(&format!("{}/{}", url, address_hex))?;
+    let req_url = Url::parse(&format!("{url}/{address_hex}"))?;
     println!("Requesting token for wallet address: {address_hex}...");
 
     let response = reqwest::get(req_url).await?;
@@ -243,10 +243,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
         receive(body, false, client, root_dir).await?;
         println!("Successfully got tokens from faucet.");
     } else {
-        println!(
-            "Failed to get tokens from faucet, server responded with: {:?}",
-            body
-        );
+        println!("Failed to get tokens from faucet, server responded with: {body:?}");
     }
     Ok(())
 }
@@ -271,7 +268,7 @@ fn deposit(root_dir: &Path, read_from_stdin: bool, cash_note: Option<String>) ->
     if deposited.is_zero() {
         println!("Nothing deposited.");
     } else if let Err(err) = wallet.deposit_and_store_to_disk(&vec![]) {
-        println!("Failed to store deposited ({deposited}) amount: {:?}", err);
+        println!("Failed to store deposited ({deposited}) amount: {err:?}");
     } else {
         println!("Deposited {deposited}.");
     }

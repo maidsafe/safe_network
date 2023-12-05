@@ -181,8 +181,8 @@ mod tests {
             xor_name,
             PrettyPrintKBucketKey(network_address.as_kbucket_key())
         );
-        println!("record_str: {}", record_str);
-        println!("xor_name_str: {}", xor_name_str);
+        println!("record_str: {record_str}");
+        println!("xor_name_str: {xor_name_str}");
         assert_eq!(record_str, xor_name_str);
     }
 }

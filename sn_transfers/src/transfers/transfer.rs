@@ -32,7 +32,7 @@ impl std::fmt::Debug for Transfer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NetworkRoyalties(cn_redemptions) => {
-                write!(f, "Transfer::NetworkRoyalties: {:?}", cn_redemptions)
+                write!(f, "Transfer::NetworkRoyalties: {cn_redemptions:?}")
             }
             Self::Encrypted(transfers) => {
                 // Iterate over the transfers and log the hash of each encrypted transfer
@@ -46,7 +46,7 @@ impl std::fmt::Debug for Transfer {
                     })
                     .collect();
                 // Write the encrypted transfers to the formatter
-                write!(f, "Transfer::Encrypted: {:?}", hashed)
+                write!(f, "Transfer::Encrypted: {hashed:?}")
             }
         }
     }

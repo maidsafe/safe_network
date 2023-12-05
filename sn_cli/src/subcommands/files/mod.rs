@@ -273,11 +273,11 @@ async fn upload_files(
         info!("Failed to pay for {failed_payments_len} chunks and failed to upload {failed_uploads_len} chunks.");
         if failed_payments_len != 0 {
             println!("Failed to pay for {failed_payments_len} chunks with:");
-            println!("{:#?}", recorded_pay_errors);
+            println!("{recorded_pay_errors:#?}");
         }
         if failed_uploads_len != 0 {
             println!("Failed to upload {failed_uploads_len} chunks with:");
-            println!("{:#?}", recorded_upload_errors);
+            println!("{recorded_upload_errors:#?}");
         }
     }
 
@@ -400,7 +400,7 @@ async fn download_files(
 
             uploaded_files.insert((xor_name, file_name.to_string()));
         } else {
-            println!("Skipping malformed line: {}", line);
+            println!("Skipping malformed line: {line}");
         }
     }
 
@@ -424,9 +424,9 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     let elapsed_minutes = elapsed_time.as_secs() / 60;
     let elapsed_seconds = elapsed_time.as_secs() % 60;
     if elapsed_minutes > 0 {
-        format!("{} minutes {} seconds", elapsed_minutes, elapsed_seconds)
+        format!("{elapsed_minutes} minutes {elapsed_seconds} seconds")
     } else {
-        format!("{} seconds", elapsed_seconds)
+        format!("{elapsed_seconds} seconds")
     }
 }
 
@@ -438,10 +438,7 @@ async fn download_file(
     show_holders: bool,
     batch_size: usize,
 ) {
-    println!(
-        "Downloading {file_name} from {:64x} with batch-size {batch_size}",
-        xorname
-    );
+    println!("Downloading {file_name} from {xorname:64x} with batch-size {batch_size}");
     debug!("Downloading {file_name} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
     match file_api
