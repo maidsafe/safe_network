@@ -15,7 +15,6 @@
     test(attr(deny(warnings)))
 )]
 // For explanation of lint checks, run `rustc -W help`.
-#![forbid(unsafe_code)]
 #![warn(
     missing_debug_implementations,
     missing_docs,

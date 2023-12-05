@@ -15,15 +15,6 @@
     html_favicon_url = "https://maidsafe.net/img/favicon.ico",
     test(attr(deny(warnings)))
 )]
-// Forbid some very bad patterns. Forbid is stronger than `deny`, preventing us from suppressing the
-// lint with `#[allow(...)]` et-all.
-#![forbid(
-    arithmetic_overflow,
-    mutable_transmutes,
-    no_mangle_const_items,
-    unknown_crate_types,
-    unsafe_code
-)]
 // Turn on some additional warnings to encourage good style.
 #![warn(
     missing_docs,
