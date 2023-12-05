@@ -1156,15 +1156,18 @@ impl SwarmDriver {
                 }
             }
 
+            // Insert the record and the peer into the result_map.
             let record_content_hash = XorName::from_content(&peer_record.record.value);
-            let peer_list =
-                if let Some((_, mut peer_list)) = result_map.remove(&record_content_hash) {
+            let responded_peers =
+                if let Entry::Occupied(mut entry) = result_map.entry(record_content_hash) {
+                    let (_, peer_list) = entry.get_mut();
                     let _ = peer_list.insert(peer_id);
-                    peer_list
+                    peer_list.len()
                 } else {
                     let mut peer_list = HashSet::new();
                     let _ = peer_list.insert(peer_id);
-                    peer_list
+                    result_map.insert(record_content_hash, (peer_record.record.clone(), peer_list));
+                    1
                 };
 
             let expected_answers = match quorum {
@@ -1174,10 +1177,7 @@ impl SwarmDriver {
                 Quorum::One => 1,
             };
 
-            let responded_peers = peer_list.len();
             trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
-
-            let _ = result_map.insert(record_content_hash, (peer_record.record.clone(), peer_list));
 
             if responded_peers >= expected_answers {
                 if !expected_holders.is_empty() {
