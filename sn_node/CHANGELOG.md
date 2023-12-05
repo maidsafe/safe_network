@@ -2415,6 +2415,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(node)* add min test time for reward listener tests
 - *(release)* sn_cli-v0.86.40/sn_transfers-v0.14.25/sn_faucet-v0.1.62/sn_client-v0.99.4/sn_networking-v0.11.3/sn_protocol-v0.8.36
 
+## [0.99.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.6...sn_node-v0.99.7) - 2023-12-05
+
+### Added
+- *(network)* use custom enum for get_record errors
+
+### Fixed
+- *(node)* get self spend should be aggregated even if it errors out
+- *(network)* if self is a double spend, aggregate and store them
+
+### Other
+- *(network)* log if parent spend returned an error
+- *(network)* avoid losing error info by converting them to a single type
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
