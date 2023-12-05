@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701803452579,
+  "lastUpdate": 1701803454456,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32044,6 +32044,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 15,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "32d264e31775de0b8be72bbea048889f656e38e9",
+          "message": "fix(node): get self spend should be aggregated even if it errors out",
+          "timestamp": "2023-12-05T18:27:58Z",
+          "tree_id": "2df25667d66006a7b35964d1437549686194a9cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/32d264e31775de0b8be72bbea048889f656e38e9"
+        },
+        "date": 1701803454060,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4445,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 66499,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
             "unit": "ms"
           }
         ]
