@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701789865592,
+  "lastUpdate": 1701789867941,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cc78d9c4505050078b301b9a72fc1358fa849e9b",
-          "message": "chore(networking): increase verification attempts for PUT records",
-          "timestamp": "2023-07-26T14:02:54Z",
-          "tree_id": "9551fb7257df30f8e329d5996adaba9949ebc04e",
-          "url": "https://github.com/maidsafe/safe_network/commit/cc78d9c4505050078b301b9a72fc1358fa849e9b"
-        },
-        "date": 1690389085444,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 250.18,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 223,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 158,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "2931d70b115b9b7b02ec0158f1da15db02413f19",
+          "message": "test(node): formalise small wait after starting payment listener",
+          "timestamp": "2023-12-05T14:43:04Z",
+          "tree_id": "cca5448a82bffde41ab0902d84ff6fae2a43f68d",
+          "url": "https://github.com/maidsafe/safe_network/commit/2931d70b115b9b7b02ec0158f1da15db02413f19"
+        },
+        "date": 1701789867055,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 724,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 184,
             "unit": "MB"
           }
         ]
