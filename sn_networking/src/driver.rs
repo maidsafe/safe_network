@@ -52,7 +52,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -549,6 +549,7 @@ impl NetworkBuilder {
             dialed_peers: CircularVec::new(255),
             is_gossip_handler: false,
             network_discovery: NetworkDiscovery::new(&peer_id),
+            bootstrap_peers: Default::default(),
         };
 
         Ok((
@@ -594,6 +595,7 @@ pub struct SwarmDriver {
     // A list of random `PeerId` candidates that falls into kbuckets,
     // This is to ensure a more accurate network discovery.
     pub(crate) network_discovery: NetworkDiscovery,
+    pub(crate) bootstrap_peers: BTreeMap<Option<u32>, HashSet<PeerId>>,
 }
 
 impl SwarmDriver {
