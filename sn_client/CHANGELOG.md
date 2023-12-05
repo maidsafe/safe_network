@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.4...sn_client-v0.99.5) - 2023-12-05
+
+### Added
+- *(network)* use custom enum for get_record errors
+
+### Other
+- *(network)* avoid losing error info by converting them to a single type
+
 ## [0.99.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.3...sn_client-v0.99.4) - 2023-12-05
 
 ### Other
