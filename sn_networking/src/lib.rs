@@ -77,9 +77,9 @@ pub const fn close_group_majority() -> usize {
 }
 
 /// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(5000);
+const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
 /// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(1500);
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(150);
 /// Number of attempts to GET a record
 const GET_RETRY_ATTEMPTS: usize = 3;
 /// Number of attempts to PUT a record
@@ -162,11 +162,6 @@ impl Network {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::Dial { addr, sender })?;
         receiver.await?
-    }
-
-    /// Stop the continuous Kademlia Bootstrapping process
-    pub fn stop_bootstrapping(&self) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::StopBootstrapping)
     }
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
@@ -514,15 +509,10 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if let Some((record_kind, get_cfg)) = &cfg.verification {
+        if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
-            // Use the MAX_REVERIFICATION_WAIT_TIME_S if it is a spend.
-            let wait_duration = match record_kind {
-                // todo: remove the *3 once spend validation GET queries complete in reasonable times.
-                RecordKind::Spend => MAX_REVERIFICATION_WAIT_TIME_S * 3,
-                _ => rand::thread_rng()
-                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S),
-            };
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;

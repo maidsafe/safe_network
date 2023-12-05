@@ -6,14 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::error::Result;
 use crate::node::Node;
-use crate::{error::Result, log_markers::Marker};
 use libp2p::kad::Quorum;
 use libp2p::{
-    kad::{Record, RecordKey, K_VALUE},
+    kad::{Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, CLOSE_GROUP_SIZE};
+use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -24,23 +24,14 @@ use tokio::task::{spawn, JoinHandle};
 
 impl Node {
     /// Sends _all_ record keys every interval to all peers.
-    pub(crate) async fn try_interval_replication(&self) -> Result<()> {
+    pub(crate) async fn try_interval_replication(network: Network) -> Result<()> {
         let start = std::time::Instant::now();
         trace!("Try trigger interval replication started@{start:?}");
         // Already contains self_peer_id
-        let mut closest_k_peers = self.network.get_closest_k_value_local_peers().await?;
-
-        // Do not carry out replication if not many peers present.
-        if closest_k_peers.len() < K_VALUE.into() {
-            trace!(
-                "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                closest_k_peers.len()
-            );
-            return Ok(());
-        }
+        let mut closest_k_peers = network.get_closest_k_value_local_peers().await?;
 
         // remove our peer id from the calculations here:
-        let _we_were_there = closest_k_peers.remove(&self.network.peer_id);
+        let _we_were_there = closest_k_peers.remove(&network.peer_id);
 
         // Only grab the closest nodes
         let closest_k_peers = closest_k_peers
@@ -50,13 +41,12 @@ impl Node {
             .collect::<Vec<_>>();
 
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
-        self.record_metrics(Marker::IntervalReplicationTriggered);
 
-        let our_peer_id = self.network.peer_id;
+        let our_peer_id = network.peer_id;
         let our_address = NetworkAddress::from_peer(our_peer_id);
 
         #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-        let all_records = self.network.get_all_local_record_addresses().await?;
+        let all_records = network.get_all_local_record_addresses().await?;
 
         if !all_records.is_empty() {
             debug!(
@@ -64,7 +54,16 @@ impl Node {
                 closest_k_peers.len()
             );
             for peer_id in closest_k_peers {
-                self.send_replicate_cmd_without_wait(&our_address, &peer_id, all_records.clone())?;
+                trace!(
+                    "Sending a replication list of {} keys to {peer_id:?} ",
+                    all_records.len()
+                );
+                let request = Request::Cmd(Cmd::Replicate {
+                    holder: our_address.clone(),
+                    keys: all_records.clone(),
+                });
+
+                network.send_req_ignore_reply(request, peer_id)?;
             }
         }
 
@@ -156,15 +155,6 @@ impl Node {
             // remove ourself from these calculations
             let _we_were_there = closest_k_peers.remove(&network.peer_id);
 
-            // Do not carry out replication if not many peers present.
-            if closest_k_peers.len() < K_VALUE.into() {
-                trace!(
-                    "Not having enough peers to start replication: {:?}/{K_VALUE:?}",
-                    closest_k_peers.len()
-                );
-                return;
-            }
-
             let data_addr = NetworkAddress::from_record_key(&paid_key);
 
             let sorted_based_on_addr = match sort_peers_by_address(
@@ -200,27 +190,5 @@ impl Node {
                 start.elapsed()
             );
         });
-    }
-
-    // Utility to send `Cmd::Replicate` without awaiting for the `Response` at the call site.
-    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    fn send_replicate_cmd_without_wait(
-        &self,
-        our_address: &NetworkAddress,
-        peer_id: &PeerId,
-        keys: HashMap<NetworkAddress, RecordType>,
-    ) -> Result<()> {
-        trace!(
-            "Sending a replication list of {} keys to {peer_id:?} ",
-            keys.len()
-        );
-        let request = Request::Cmd(Cmd::Replicate {
-            holder: our_address.clone(),
-            keys,
-        });
-
-        self.network.send_req_ignore_reply(request, *peer_id)?;
-
-        Ok(())
     }
 }

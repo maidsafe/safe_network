@@ -244,7 +244,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
         println!("Successfully got tokens from faucet.");
     } else {
         println!(
-            "Failed to get tokens from faucet, server responded with: {}",
+            "Failed to get tokens from faucet, server responded with: {:?}",
             body
         );
     }

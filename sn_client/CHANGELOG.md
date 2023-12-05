@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.0...sn_client-v0.99.1) - 2023-12-05
+
+### Fixed
+- *(client)* dont assume verification is always set w/ VerificationConfig
+
+### Other
+- tie node reward test to number of data.
+- *(networking)* remove triggered bootstrap slowdown
+
 ## [0.99.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.98.23...sn_client-v0.99.0) - 2023-12-01
 
 ### Added

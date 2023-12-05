@@ -15,7 +15,7 @@ use bytes::Bytes;
 use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record, K_VALUE},
+    kad::{Quorum, Record},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
@@ -251,13 +251,6 @@ impl Client {
                         ));
                     }
                 }
-
-                let k_value = K_VALUE.into();
-                if self.peers_added >= k_value {
-                    trace!("Stopping further bootstrapping as we have {k_value:?} peers");
-                    // stop further bootstrapping
-                    self.network.stop_bootstrapping()?;
-                }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
@@ -430,10 +423,17 @@ impl Client {
             target_record: record_to_verify,
             expected_holders,
         };
+
+        let verification = if verify_store {
+            Some((record_kind, verification_cfg))
+        } else {
+            None
+        };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
-            verification: Some((record_kind, verification_cfg)),
+            verification,
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
