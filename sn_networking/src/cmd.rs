@@ -9,8 +9,8 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_pop_p2p, sort_peers_by_address, GetRecordError, MsgResponder, NetworkEvent,
-    CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+    multiaddr_pop_p2p, sort_peers_by_address, GetRecordCfg, GetRecordError, MsgResponder,
+    NetworkEvent, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use libp2p::{
@@ -99,13 +99,10 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<HashMap<NetworkAddress, RecordType>>,
     },
     /// Get Record from the Kad network
-    /// Passing a non empty expected_holders list means to
-    /// carry out a verification that those holders do respond with a copy.
     GetNetworkRecord {
         key: RecordKey,
         sender: oneshot::Sender<std::result::Result<Record, GetRecordError>>,
-        quorum: Quorum,
-        expected_holders: HashSet<PeerId>,
+        cfg: GetRecordCfg,
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
@@ -162,12 +159,13 @@ impl Debug for SwarmCmd {
                 write!(f, "SwarmCmd::Dial {{ addr: {addr:?} }}")
             }
             SwarmCmd::GetNetworkRecord {
-                key,
-                quorum,
-                expected_holders,
-                ..
+                key, cfg: get_cfg, ..
             } => {
-                write!(f, "SwarmCmd::GetNetworkRecord {{ key: {:?}, quorum: {:?}, expected_holders: {:?} }}", PrettyPrintRecordKey::from(key), quorum, expected_holders)
+                write!(
+                    f,
+                    "SwarmCmd::GetNetworkRecord {{ key: {:?}, get_cfg: {get_cfg:?}",
+                    PrettyPrintRecordKey::from(key)
+                )
             }
             SwarmCmd::PutRecord { record, .. } => {
                 write!(
@@ -193,8 +191,7 @@ impl Debug for SwarmCmd {
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 write!(
                     f,
-                    "SwarmCmd::AddKeysToReplicationFetcher {{ holder: {:?}, keys_len: {:?} }}",
-                    holder,
+                    "SwarmCmd::AddKeysToReplicationFetcher {{ holder: {holder:?}, keys_len: {:?} }}",
                     keys.len()
                 )
             }
@@ -207,8 +204,7 @@ impl Debug for SwarmCmd {
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
                 write!(
                     f,
-                    "SwarmCmd::GossipsubPublish {{ topic_id: {:?}, msg len: {:?} }}",
-                    topic_id,
+                    "SwarmCmd::GossipsubPublish {{ topic_id: {topic_id:?}, msg len: {:?} }}",
                     msg.len()
                 )
             }
@@ -341,19 +337,19 @@ impl SwarmDriver {
             SwarmCmd::GetNetworkRecord {
                 key,
                 sender,
-                quorum,
-                expected_holders,
+                cfg: get_cfg,
             } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
-                debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
+                debug!(
+                    "Record {:?} with task {query_id:?} expected to be held by {:?}",
+                    PrettyPrintRecordKey::from(&key),
+                    get_cfg.expected_holders
+                );
 
                 if self
                     .pending_get_record
-                    .insert(
-                        query_id,
-                        (sender, Default::default(), quorum, expected_holders),
-                    )
+                    .insert(query_id, (sender, Default::default(), get_cfg))
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
@@ -363,7 +359,7 @@ impl SwarmDriver {
                 let total_records: usize = self
                     .pending_get_record
                     .iter()
-                    .map(|(_, (_, result_map, _quorum, _expected_holders))| result_map.len())
+                    .map(|(_, (_, result_map, _))| result_map.len())
                     .sum();
                 trace!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());

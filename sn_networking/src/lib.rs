@@ -352,8 +352,7 @@ impl Network {
             self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
                 key: key.clone(),
                 sender,
-                quorum: cfg.get_quorum,
-                expected_holders: cfg.expected_holders.clone(),
+                cfg: cfg.clone(),
             })?;
 
             match receiver.await.map_err(|e| {
