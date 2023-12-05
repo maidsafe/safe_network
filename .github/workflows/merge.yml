@@ -182,7 +182,7 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create baobao
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 10
