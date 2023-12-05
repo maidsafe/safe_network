@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701785036013,
+  "lastUpdate": 1701785038469,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "bce4d5516656a15aa4403f90cf5d32e93e5fa180",
-          "message": "feat(networking): record store prunes more frequently.\n\nWe now prune every 1/100 PUTs to keep space available\nmore clear, and remove unneeded data faster\n\nfixes #566",
-          "timestamp": "2023-07-26T12:32:14Z",
-          "tree_id": "eda9b1322a5262501d269d516a6fcece7679c601",
-          "url": "https://github.com/maidsafe/safe_network/commit/bce4d5516656a15aa4403f90cf5d32e93e5fa180"
-        },
-        "date": 1690379082145,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 229.31,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 154,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "2c132d2bfde6688229de13b92697feaa8f7e2f23",
+          "message": "fix: protect against amounts tampering and incomplete spends attack",
+          "timestamp": "2023-12-05T13:20:48Z",
+          "tree_id": "1acf660c63ee560dffab3161a50a8444bc07c025",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c132d2bfde6688229de13b92697feaa8f7e2f23"
+        },
+        "date": 1701785037526,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 633,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 158,
             "unit": "MB"
           }
         ]
