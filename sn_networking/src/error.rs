@@ -26,6 +26,26 @@ use xor_name::XorName;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// GetRecord Query errors
+#[derive(Debug, Error)]
+#[allow(missing_docs)]
+pub enum GetRecordError {
+    #[error("Get Record completed with non enough copies")]
+    RecordNotEnoughCopies(Record),
+
+    #[error("Record not found in the network")]
+    RecordNotFound,
+
+    // Avoid logging the whole `Record` content by accident
+    #[error("Split Record has {} different copies", result_map.len())]
+    SplitRecord {
+        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
+    },
+
+    #[error("Network query timed out")]
+    QueryTimeout,
+}
+
 /// Network Errors
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
@@ -52,18 +72,16 @@ pub enum Error {
     SigningFailed(#[from] libp2p::identity::SigningError),
 
     // ---------- Record Errors
-    #[error("Record header is incorrect")]
-    InCorrectRecordHeader,
+    // GetRecord query errors
+    #[error("GetRecord Query Error")]
+    GetRecordError(#[from] GetRecordError),
 
     // The RecordKind that was obtained did not match with the expected one
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
     RecordKindMismatch(RecordKind),
 
-    #[error("Get Record completed with non enough copies")]
-    RecordNotEnoughCopies(Record),
-
-    #[error("Record not found in the network")]
-    RecordNotFound,
+    #[error("Record header is incorrect")]
+    InCorrectRecordHeader,
 
     /// No put_record attempts were successfully verified.
     #[error("Could not retrieve the record after storing it: {0:}")]
@@ -72,11 +90,6 @@ pub enum Error {
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
     ReturnedRecordDoesNotMatch(PrettyPrintRecordKey<'static>),
 
-    // Avoid logging the whole `Record` content by accident
-    #[error("Split Record has {} different copies", result_map.len())]
-    SplitRecord {
-        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
-    },
     // ---------- Transfer Errors
     #[error("Failed to get transfer parent spend")]
     FailedToGetTransferParentSpend,
@@ -112,9 +125,6 @@ pub enum Error {
     GossipsubSubscriptionError(#[from] SubscriptionError),
 
     // ---------- Internal Network Errors
-    #[error("Network query timed out")]
-    QueryTimeout,
-
     #[error("Could not get enough peers ({required}) to satisfy the request, found {found}")]
     NotEnoughPeers { found: usize, required: usize },
 
