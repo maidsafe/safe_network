@@ -20,19 +20,17 @@ mod metrics;
 #[cfg(feature = "open-metrics")]
 mod metrics_service;
 mod network_discovery;
-mod quorum;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
 mod transfers;
 
-use self::{cmd::SwarmCmd, driver::ExpectedHoldersList, error::Result};
+use self::{cmd::SwarmCmd, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
-    driver::{NetworkBuilder, SwarmDriver},
+    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver},
     error::Error,
     event::{MsgResponder, NetworkEvent},
-    quorum::GetQuorum,
     record_store::NodeRecordStore,
 };
 
@@ -79,13 +77,13 @@ pub const fn close_group_majority() -> usize {
 }
 
 /// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(5000);
+const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
 /// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(1500);
-/// Number of attempts to verify a record
-const VERIFICATION_ATTEMPTS: usize = 3;
-/// Number of attempts to put a record
-const PUT_RECORD_RETRIES: usize = 10;
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(150);
+/// Number of attempts to GET a record
+const GET_RETRY_ATTEMPTS: usize = 3;
+/// Number of attempts to PUT a record
+const PUT_RETRY_ATTEMPTS: usize = 10;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -164,11 +162,6 @@ impl Network {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::Dial { addr, sender })?;
         receiver.await?
-    }
-
-    /// Stop the continuous Kademlia Bootstrapping process
-    pub fn stop_bootstrapping(&self) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::StopBootstrapping)
     }
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
@@ -336,27 +329,28 @@ impl Network {
     pub async fn get_record_from_network(
         &self,
         key: RecordKey,
-        target_record: Option<Record>,
-        quorum: GetQuorum,
-        re_attempt: bool,
-        expected_holders: ExpectedHoldersList,
+        cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let total_attempts = if re_attempt { VERIFICATION_ATTEMPTS } else { 1 };
+        let total_attempts = if cfg.re_attempt {
+            GET_RETRY_ATTEMPTS
+        } else {
+            1
+        };
 
-        let mut verification_attempts = 0;
+        let mut retry_attempts = 0;
         let pretty_key = PrettyPrintRecordKey::from(&key);
-        while verification_attempts < total_attempts {
-            verification_attempts += 1;
+        while retry_attempts < total_attempts {
+            retry_attempts += 1;
             info!(
-                "Getting record of {pretty_key:?} attempts {verification_attempts:?}/{total_attempts:?}",
+                "Getting record of {pretty_key:?} attempts {retry_attempts:?}/{total_attempts:?} with cfg {cfg:?}",
             );
 
             let (sender, receiver) = oneshot::channel();
             self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
                 key: key.clone(),
                 sender,
-                quorum,
-                expected_holders: expected_holders.clone(),
+                quorum: cfg.get_quorum,
+                expected_holders: cfg.expected_holders.clone(),
             })?;
 
             match receiver.await.map_err(|e| {
@@ -373,15 +367,15 @@ impl Network {
                     // 2, Fetched record matches the targeting record (when not chunk, as they are content addressed)
                     //
                     // Returning mismatched error when: completed all attempts
-                    if target_record.is_none()
-                        || (target_record.is_some()
+                    if cfg.target_record.is_none()
+                        || (cfg.target_record.is_some()
                             // we don't need to match the whole record if chunks, 
                             // payment data could differ, but chunks themselves'
                             // keys are from the chunk address
-                            && (target_record == Some(returned_record.clone()) || is_chunk))
+                            && (cfg.target_record == Some(returned_record.clone()) || is_chunk))
                     {
                         return Ok(returned_record);
-                    } else if verification_attempts >= total_attempts {
+                    } else if retry_attempts >= total_attempts {
                         info!("Error: Returned record does not match target");
                         return Err(Error::ReturnedRecordDoesNotMatch(
                             PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
@@ -391,10 +385,10 @@ impl Network {
                 Err(Error::RecordNotEnoughCopies(returned_record)) => {
                     debug!("Not enough copies found yet for {pretty_key:?}");
                     // Only return when completed all attempts
-                    if verification_attempts >= total_attempts && matches!(quorum, GetQuorum::One) {
-                        if target_record.is_none()
-                            || (target_record.is_some()
-                                && target_record == Some(returned_record.clone()))
+                    if retry_attempts >= total_attempts && matches!(cfg.get_quorum, Quorum::One) {
+                        if cfg.target_record.is_none()
+                            || (cfg.target_record.is_some()
+                                && cfg.target_record == Some(returned_record.clone()))
                         {
                             return Ok(returned_record);
                         } else {
@@ -408,24 +402,24 @@ impl Network {
                     // libp2p RecordNotFound does mean no holders answered.
                     // it does not actually mean the record does not exist.
                     // just that those asked did not have it
-                    if verification_attempts >= total_attempts {
+                    if retry_attempts >= total_attempts {
                         break;
                     }
 
                     warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
                 Err(Error::SplitRecord { result_map }) => {
-                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered split");
+                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered split");
 
-                    if verification_attempts >= total_attempts {
+                    if retry_attempts >= total_attempts {
                         return Err(Error::SplitRecord { result_map });
                     }
                     warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
                 }
                 Err(error) => {
-                    error!("Getting record {pretty_key:?} attempts #{verification_attempts}/{total_attempts} , encountered {error:?}");
+                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered {error:?}");
 
-                    if verification_attempts >= total_attempts {
+                    if retry_attempts >= total_attempts {
                         break;
                     }
                     warn!("Did not retrieve Record '{pretty_key:?}' from network!. Retrying...",);
@@ -433,7 +427,7 @@ impl Network {
             }
 
             // wait for a bit before re-trying
-            if re_attempt {
+            if cfg.re_attempt {
                 // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
                 let wait_duration = rand::thread_rng()
                     .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
@@ -469,35 +463,26 @@ impl Network {
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
-    /// If verify is on, retry PUT_RECORD_RETRIES times with a random wait between 1.5s and 5s
-    pub async fn put_record(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
-        expected_holders: ExpectedHoldersList,
-        quorum: Quorum,
-    ) -> Result<()> {
+    /// If verify is on, retry PUT_RETRY_ATTEMPTS times with a random wait between 1.5s and 5s
+    pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
         let mut last_err = Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned());
-
-        for retry in 1..PUT_RECORD_RETRIES + 1 {
+        let total_attempts = if cfg.re_attempt {
+            PUT_RETRY_ATTEMPTS
+        } else {
+            1
+        };
+        for retry in 1..total_attempts + 1 {
             info!(
-                "Attempting to PUT record with key: {pretty_key:?} to network (attempt: {retry:})"
+                "Attempting to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with cfg {cfg:?}"
             );
 
-            let res = self
-                .put_record_once(
-                    record.clone(),
-                    verify_store.clone(),
-                    expected_holders.clone(),
-                    quorum,
-                )
-                .await;
+            let res = self.put_record_once(record.clone(), cfg).await;
 
             match res {
                 Ok(_) => return Ok(()),
                 Err(e) => {
-                    warn!("Failed to PUT record with key: {pretty_key:?} to network (attempt: {retry:}) with error: {e:?}");
+                    warn!("Failed to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with error: {e:?}");
                     last_err = e;
                 }
             }
@@ -506,13 +491,7 @@ impl Network {
         Err(last_err)
     }
 
-    async fn put_record_once(
-        &self,
-        record: Record,
-        verify_store: Option<Record>,
-        expected_holders: ExpectedHoldersList,
-        quorum: Quorum,
-    ) -> Result<()> {
+    async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(&record_key);
         info!(
@@ -526,38 +505,26 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutRecord {
             record: record.clone(),
             sender,
-            quorum,
+            quorum: cfg.put_quorum,
         })?;
         let response = receiver.await?;
 
-        if verify_store.is_some() || !expected_holders.is_empty() {
+        if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
             let wait_duration = rand::thread_rng()
                 .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
-            trace!("attempting to verify {pretty_key:?}");
+            debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
 
-            let get_quorum = match quorum {
-                Quorum::One => GetQuorum::One,
-                Quorum::Majority => GetQuorum::Majority,
-                Quorum::All => GetQuorum::All,
-                Quorum::N(v) => GetQuorum::N(v),
-            };
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(
-                record.key.clone(),
-                verify_store,
-                get_quorum,
-                true,
-                expected_holders,
-            )
-            .await
-            .map_err(|e| {
-                warn!("Failed to verify record {pretty_key:?} was stored: {e:?}");
-                Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned())
-            })?;
+            self.get_record_from_network(record.key.clone(), get_cfg)
+                .await
+                .map_err(|e| {
+                    warn!("Failed to verify record {pretty_key:?} was stored: {e:?}");
+                    Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned())
+                })?;
         }
 
         response

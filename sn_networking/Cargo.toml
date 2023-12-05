@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.10.27"
+version = "0.11.1"
 
 [features]
 default=[]
@@ -23,14 +23,14 @@ futures = "~0.3.13"
 hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
 itertools = "~0.11.0"
 custom_debug = "~0.5.0"
-libp2p = {   version="0.53" ,  features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub"] }
+libp2p = { version="0.53", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_protocol = { path = "../sn_protocol", version = "0.8.33" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.23" }
+sn_protocol = { path = "../sn_protocol", version = "0.8.35" }
+sn_transfers = { path = "../sn_transfers", version = "0.14.24" }
 sysinfo = { version = "0.29.0", default-features = false, optional = true }
 thiserror = "1.0.23"
 tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }

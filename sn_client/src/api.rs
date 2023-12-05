@@ -15,14 +15,14 @@ use bytes::Bytes;
 use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record, K_VALUE},
+    kad::{Quorum, Record},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetQuorum, NetworkBuilder, NetworkEvent,
-    CLOSE_GROUP_SIZE,
+    multiaddr_is_global, Error as NetworkError, GetRecordCfg, NetworkBuilder, NetworkEvent,
+    PutRecordCfg, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -251,13 +251,6 @@ impl Client {
                         ));
                     }
                 }
-
-                let k_value = K_VALUE.into();
-                if self.peers_added >= k_value {
-                    trace!("Stopping further bootstrapping as we have {k_value:?} peers");
-                    // stop further bootstrapping
-                    self.network.stop_bootstrapping()?;
-                }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
@@ -298,14 +291,17 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let quorum = if is_verifying {
-            GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
+            Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
         } else {
-            GetQuorum::One
+            Quorum::One
         };
-        let maybe_record = self
-            .network
-            .get_record_from_network(key, None, quorum, true, Default::default())
-            .await;
+        let get_cfg = GetRecordCfg {
+            get_quorum: quorum,
+            re_attempt: true,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
+        let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
         let record = match maybe_record {
             Ok(r) => r,
             Err(NetworkError::SplitRecord { result_map }) => {
@@ -386,10 +382,10 @@ impl Client {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
 
+        let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
             key: key.clone(),
-            value: try_serialize_record(&(payment, chunk.clone()), RecordKind::ChunkWithPayment)?
-                .to_vec(),
+            value: try_serialize_record(&(payment, chunk.clone()), record_kind)?.to_vec(),
             publisher: None,
             expires: None,
         };
@@ -419,15 +415,27 @@ impl Client {
             None
         };
 
-        Ok(self
-            .network
-            .put_record(
-                record,
-                record_to_verify,
-                expected_holders,
-                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
-            )
-            .await?)
+        let verification_cfg = GetRecordCfg {
+            get_quorum: Quorum::N(
+                NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
+            ),
+            re_attempt: true,
+            target_record: record_to_verify,
+            expected_holders,
+        };
+
+        let verification = if verify_store {
+            Some((record_kind, verification_cfg))
+        } else {
+            None
+        };
+
+        let put_cfg = PutRecordCfg {
+            put_quorum: Quorum::All,
+            re_attempt: true,
+            verification,
+        };
+        Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -448,10 +456,13 @@ impl Client {
             Default::default()
         };
 
-        let record = self
-            .network
-            .get_record_from_network(key, None, GetQuorum::One, true, expected_holders)
-            .await?;
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::One,
+            re_attempt: true,
+            target_record: None,
+            expected_holders,
+        };
+        let record = self.network.get_record_from_network(key, &get_cfg).await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
             let chunk: Chunk = try_deserialize_record(&record)?;
@@ -465,15 +476,18 @@ impl Client {
     pub async fn verify_chunk_stored(&self, address: ChunkAddress) -> Result<Chunk> {
         info!("Verifying chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
+
+        let verification_cfg = GetRecordCfg {
+            get_quorum: Quorum::N(
+                NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
+            ),
+            re_attempt: false,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
         let record = self
             .network
-            .get_record_from_network(
-                key,
-                None,
-                GetQuorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
-                false,
-                Default::default(),
-            )
+            .get_record_from_network(key, &verification_cfg)
             .await?;
         let header = RecordHeader::from_record(&record)?;
         if let RecordKind::Chunk = header.kind {
@@ -502,9 +516,10 @@ impl Client {
 
         trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
         let key = network_address.to_record_key();
+        let record_kind = RecordKind::Spend;
         let record = Record {
             key,
-            value: try_serialize_record(&[spend], RecordKind::Spend)?.to_vec(),
+            value: try_serialize_record(&[spend], record_kind)?.to_vec(),
             publisher: None,
             expires: None,
         };
@@ -522,10 +537,18 @@ impl Client {
             (None, Default::default())
         };
 
-        Ok(self
-            .network
-            .put_record(record, record_to_verify, expected_holders, Quorum::All)
-            .await?)
+        let verification_cfg = GetRecordCfg {
+            get_quorum: Quorum::All,
+            re_attempt: true,
+            target_record: record_to_verify,
+            expected_holders,
+        };
+        let put_cfg = PutRecordCfg {
+            put_quorum: Quorum::All,
+            re_attempt: true,
+            verification: Some((record_kind, verification_cfg)),
+        };
+        Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
     /// Get a spend from network
@@ -536,9 +559,15 @@ impl Client {
             "Getting spend at {address:?} with record_key {:?}",
             PrettyPrintRecordKey::from(&key)
         );
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::All,
+            re_attempt: true,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
         let record = self
             .network
-            .get_record_from_network(key.clone(), None, GetQuorum::All, true, Default::default())
+            .get_record_from_network(key.clone(), &get_cfg)
             .await
             .map_err(|err| {
                 Error::CouldNotVerifyTransfer(format!(

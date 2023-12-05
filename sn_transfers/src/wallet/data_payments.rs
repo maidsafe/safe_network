@@ -13,9 +13,10 @@ use xor_name::XorName;
 
 use crate::{MainPubkey, NanoTokens, Transfer};
 
-#[derive(Clone, Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[derive(Clone, Serialize, Deserialize, Eq, PartialEq, custom_debug::Debug)]
 pub struct Payment {
     /// The transfers we make
+    #[debug(skip)]
     pub transfers: Vec<Transfer>,
     /// The Quote we're paying for
     pub quote: PaymentQuote,
@@ -64,6 +65,7 @@ pub struct PaymentQuote {
     /// the local node time when the quote was created
     pub timestamp: SystemTime,
     /// the node's signature of the 3 fields above
+    #[debug(skip)]
     pub signature: QuoteSignature,
 }
 

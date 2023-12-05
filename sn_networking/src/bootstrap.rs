@@ -74,7 +74,6 @@ impl SwarmDriver {
 /// Tracks and helps with the continuous kad::bootstrapping process
 pub(crate) struct ContinuousBootstrap {
     initial_bootstrap_done: bool,
-    stop_bootstrapping: bool,
     last_peer_added_instant: Instant,
     last_bootstrap_triggered: Option<Instant>,
 }
@@ -83,7 +82,6 @@ impl ContinuousBootstrap {
     pub(crate) fn new() -> Self {
         Self {
             initial_bootstrap_done: false,
-            stop_bootstrapping: false,
             last_peer_added_instant: Instant::now(),
             last_bootstrap_triggered: None,
         }
@@ -108,26 +106,13 @@ impl ContinuousBootstrap {
         }
     }
 
-    /// Set the flag to stop any further re-bootstrapping.
-    pub(crate) fn stop_bootstrapping(&mut self) {
-        self.stop_bootstrapping = true;
-    }
-
     /// Returns `true` if we should carry out the Kademlia Bootstrap process immediately.
     /// Also optionally returns the new interval to re-bootstrap.
     pub(crate) async fn should_we_bootstrap(
-        &mut self,
+        &self,
         peers_in_rt: u32,
         current_interval: Duration,
     ) -> (bool, Option<Interval>) {
-        // stop bootstrapping if flag is set
-        if self.stop_bootstrapping {
-            info!("stop_bootstrapping flag has been set to true. Disabling further bootstrapping");
-            let mut new_interval = tokio::time::interval(Duration::from_secs(86400));
-            new_interval.tick().await; // the first tick completes immediately
-            return (false, Some(new_interval));
-        }
-
         // kad bootstrap process needs at least one peer in the RT be carried out.
         let is_ongoing = if let Some(last_bootstrap_triggered) = self.last_bootstrap_triggered {
             last_bootstrap_triggered.elapsed() < LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT

@@ -29,7 +29,7 @@ pub struct RecordHeader {
     pub kind: RecordKind,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum RecordKind {
     Chunk,
     ChunkWithPayment,

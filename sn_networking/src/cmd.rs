@@ -9,8 +9,7 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    sort_peers_by_address, GetQuorum, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATE_RANGE,
+    sort_peers_by_address, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use libp2p::{
@@ -46,8 +45,6 @@ pub enum SwarmCmd {
         opts: DialOpts,
         sender: oneshot::Sender<Result<()>>,
     },
-    // Stop the continuous Kademlia Bootstrap process.
-    StopBootstrapping,
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
     GetAllLocalPeers {
@@ -106,7 +103,7 @@ pub enum SwarmCmd {
     GetNetworkRecord {
         key: RecordKey,
         sender: oneshot::Sender<Result<Record>>,
-        quorum: GetQuorum,
+        quorum: Quorum,
         expected_holders: HashSet<PeerId>,
     },
     /// GetLocalStoreCost for this node
@@ -225,9 +222,6 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
                 write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {:?} }}", key)
-            }
-            SwarmCmd::StopBootstrapping => {
-                write!(f, "SwarmCmd::StopBootstrapping")
             }
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
@@ -351,9 +345,7 @@ impl SwarmDriver {
             } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
-                if !expected_holders.is_empty() {
-                    debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
-                }
+                debug!("Record {:?} with task {query_id:?} expected to be held by {expected_holders:?}", PrettyPrintRecordKey::from(&key));
 
                 if self
                     .pending_get_record
@@ -503,9 +495,6 @@ impl SwarmDriver {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
-            }
-            SwarmCmd::StopBootstrapping => {
-                self.bootstrap.stop_bootstrapping();
             }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
                 let query_id = self

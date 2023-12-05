@@ -306,9 +306,6 @@ fn build_binaries(binaries_to_build: Vec<String>) -> Result<()> {
 
 /// Start the faucet from the provided bin_path and with the given bootstrap peer
 fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
-    let testnet = Testnet::configure().node_bin_path(bin_path).build()?;
-    let launch_bin = testnet.node_bin_path;
-
     // server should write logs to a different log dir
     let log_dir = dirs_next::data_dir()
         .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
@@ -324,10 +321,14 @@ fn run_faucet(gen_multi_addr: String, bin_path: PathBuf) -> Result<()> {
     args.push("--peer".to_string());
     args.push(gen_multi_addr);
     args.push("server".to_string());
-    testnet.launcher.launch(&launch_bin, args)?;
-    // The launch will immediately complete after fire the cmd out.
-    // Have to wait some extra time to allow the faucet to be properly created and funded
-    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    debug!("Launching faucet {bin_path:#?} with args: {args:#?}");
+    let _cmd = Command::new(bin_path)
+        .args(args)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()?;
+
     Ok(())
 }
 

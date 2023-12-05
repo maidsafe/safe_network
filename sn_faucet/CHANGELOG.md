@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.58](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.57...sn_faucet-v0.1.58) - 2023-12-05
+
+### Other
+- update dependencies
+
+## [0.1.57](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.56...sn_faucet-v0.1.57) - 2023-12-04
+
+### Added
+- *(testnet)* wait till faucet server starts
+
+### Other
+- *(faucet)* print on claim genesis error
+
+## [0.1.56](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.55...sn_faucet-v0.1.56) - 2023-12-01
+
+### Other
+- update dependencies
+
 ## [0.1.55](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.54...sn_faucet-v0.1.55) - 2023-11-29
 
 ### Other

@@ -10,7 +10,7 @@ use crate::{
     close_group_majority,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, GetQuorum, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -24,7 +24,7 @@ use libp2p::{
     autonat::{self, NatStatus},
     kad::{
         self, GetClosestPeersError, GetRecordError, GetRecordOk, InboundRequest, PeerRecord,
-        QueryId, QueryResult, Record, RecordKey, K_VALUE,
+        QueryId, QueryResult, Quorum, Record, RecordKey, K_VALUE,
     },
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -228,8 +228,6 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 event_string = "kad_event";
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&(kad_event));
                 self.handle_kad_event(kad_event)?;
             }
             // Handle the Identify event from the libp2p swarm.
@@ -399,7 +397,7 @@ impl SwarmDriver {
                 send_back_addr,
             } => {
                 event_string = "incoming";
-
+                info!("{:?}", self.swarm.network_info());
                 trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -411,6 +409,7 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
+                info!("{:?}", self.swarm.network_info());
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -426,6 +425,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
+                info!("{:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
             }
             SwarmEvent::OutgoingConnectionError {
@@ -435,6 +435,7 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+                info!("{:?}", self.swarm.network_info());
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
@@ -514,6 +515,7 @@ impl SwarmDriver {
                 send_back_addr,
                 error,
             } => {
+                info!("{:?}", self.swarm.network_info());
                 event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
             }
@@ -648,7 +650,7 @@ impl SwarmDriver {
     }
 
     fn handle_kad_event(&mut self, kad_event: kad::Event) -> Result<()> {
-        #[cfg(feature = "open-metricss")]
+        #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&kad_event);
         let start = std::time::Instant::now();
         let event_string;
@@ -867,10 +869,10 @@ impl SwarmDriver {
                             })?;
 
                         let required_response_count = match quorum {
-                            GetQuorum::Majority => close_group_majority(),
-                            GetQuorum::All => CLOSE_GROUP_SIZE,
-                            GetQuorum::N(v) => v.into(),
-                            GetQuorum::One => 1,
+                            Quorum::Majority => close_group_majority(),
+                            Quorum::All => CLOSE_GROUP_SIZE,
+                            Quorum::N(v) => v.into(),
+                            Quorum::One => 1,
                         };
 
                         // if we've a split over the result xorname, then we don't attempt to resolve this here.
@@ -955,6 +957,7 @@ impl SwarmDriver {
                     info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
                     self.log_kbuckets(&peer);
 
+                    // This should only happen once
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
                         self.trigger_network_discovery();
@@ -962,6 +965,7 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
 
+                info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.connected_peers);
                 if old_peer.is_some() {
                     self.connected_peers = self.connected_peers.saturating_sub(1);
 
@@ -1019,19 +1023,8 @@ impl SwarmDriver {
     fn check_for_change_in_our_close_group(&mut self) -> bool {
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
-        let new_closest_peers = {
-            match sort_peers_by_address(
-                &closest_k_peers,
-                &NetworkAddress::from_peer(self.self_peer_id),
-                CLOSE_GROUP_SIZE,
-            ) {
-                Err(error) => {
-                    debug!("Failed to sort peers by address: {error:?}");
-                    return false;
-                }
-                Ok(closest_k_peers) => closest_k_peers,
-            }
-        };
+        let new_closest_peers: Vec<_> =
+            closest_k_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
 
         let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
         let new_members: Vec<_> = new_closest_peers
@@ -1041,7 +1034,7 @@ impl SwarmDriver {
         if !new_members.is_empty() {
             debug!("The close group has been updated. The new members are {new_members:?}");
             debug!("New close group: {new_closest_peers:?}");
-            self.close_group = new_closest_peers.into_iter().cloned().collect();
+            self.close_group = new_closest_peers;
             let _ = self.update_record_distance_range();
             true
         } else {
@@ -1133,10 +1126,10 @@ impl SwarmDriver {
                 };
 
             let expected_answers = match quorum {
-                GetQuorum::Majority => close_group_majority(),
-                GetQuorum::All => CLOSE_GROUP_SIZE,
-                GetQuorum::N(v) => v.get(),
-                GetQuorum::One => 1,
+                Quorum::Majority => close_group_majority(),
+                Quorum::All => CLOSE_GROUP_SIZE,
+                Quorum::N(v) => v.get(),
+                Quorum::One => 1,
             };
 
             let responded_peers = peer_list.len();
@@ -1188,7 +1181,7 @@ impl SwarmDriver {
             if expected_holders.is_empty() &&
                RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
                // Ensure that we only exit early if quorum is indeed for only one match
-               matches!(quorum, GetQuorum::One)
+               matches!(quorum, Quorum::One)
             {
                 // Stop the query; possibly stops more nodes from being queried.
                 if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {

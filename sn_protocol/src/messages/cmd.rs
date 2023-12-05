@@ -20,7 +20,7 @@ use std::collections::HashMap;
 ///
 /// [`protocol`]: crate
 #[allow(clippy::large_enum_variant)]
-#[derive(Eq, PartialEq, Clone, Serialize, Deserialize, custom_debug::Debug)]
+#[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Cmd {
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.
     ///
@@ -29,9 +29,23 @@ pub enum Cmd {
         /// Holder of the replication keys.
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
-        #[debug(skip)]
         keys: HashMap<NetworkAddress, RecordType>,
     },
+}
+
+impl std::fmt::Debug for Cmd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cmd::Replicate { holder, keys } => {
+                let first_ten_keys: Vec<_> = keys.keys().take(10).collect();
+                f.debug_struct("Cmd::Replicate")
+                    .field("holder", holder)
+                    .field("keys_len", &keys.len())
+                    .field("first_ten_keys", &first_ten_keys)
+                    .finish()
+            }
+        }
+    }
 }
 
 impl Cmd {
