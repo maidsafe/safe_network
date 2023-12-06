@@ -115,14 +115,13 @@ impl SwarmDriver {
                 if !cfg.expected_holders.is_empty() {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
                 }
+                let cfg = cfg.clone();
 
                 // Remove the query task and consume the variables.
                 let (sender, result_map, _) = entry.remove();
 
                 if result_map.len() == 1 {
-                    sender
-                        .send(Ok(peer_record.record))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    Self::send_record_after_checking_target(sender, peer_record.record, &cfg)?;
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
                     sender
@@ -185,19 +184,17 @@ impl SwarmDriver {
                 })
             };
 
-            (result, format!(
+            (
+                result, format!(
                 "Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
                 PrettyPrintRecordKey::from(&record.key),
                 usize::from(step.count) - 1
             ))
         } else {
             (
-                    Err(GetRecordError::RecordNotFound),
-                    format!(
-                "Getting record task {query_id:?} completed with step count {:?}, but no copy found.",
-                step.count
-            ),
-                )
+                Err(GetRecordError::RecordNotFound),
+                format!("Getting record task {query_id:?} completed with step count {:?}, but no copy found.", step.count),
+            )
         };
 
         if cfg.expected_holders.is_empty() {
@@ -264,9 +261,7 @@ impl SwarmDriver {
                 // if we have enough responses here, we can return the record
                 if let Some((record, peers)) = result_map.values().next() {
                     if peers.len() >= required_response_count {
-                        sender
-                            .send(Ok(record.clone()))
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        Self::send_record_after_checking_target(sender, record.clone(), &cfg)?;
 
                         return Ok(());
                     }
@@ -303,6 +298,22 @@ impl SwarmDriver {
         Ok(())
     }
 
+    fn send_record_after_checking_target(
+        sender: oneshot::Sender<std::result::Result<Record, GetRecordError>>,
+        record: Record,
+        cfg: &GetRecordCfg,
+    ) -> Result<()> {
+        if cfg.target_record.is_none() || cfg.does_target_match(&record) {
+            sender
+                .send(Ok(record))
+                .map_err(|_| Error::InternalMsgChannelDropped)
+        } else {
+            sender
+                .send(Err(GetRecordError::ReturnedRecordDoesNotMatch(record)))
+                .map_err(|_| Error::InternalMsgChannelDropped)
+        }
+    }
+
     // For chunk record which can be self-verifiable,
     // complete the flow with the first copy that fetched.
     // Return `true` if early completed, otherwise return `false`.
@@ -333,6 +344,7 @@ impl SwarmDriver {
                 // A claimed Chunk type record can be trusted.
                 // Punishment of peer that sending corrupted Chunk type record
                 // maybe carried out by other verification mechanism.
+                // todo: should we call Self::send_record_after_checking_target?;
                 sender
                     .send(Ok(peer_record.record.clone()))
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
