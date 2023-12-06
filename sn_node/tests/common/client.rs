@@ -29,7 +29,7 @@ lazy_static! {
 }
 
 /// Load LocalWallet from dir
-pub async fn get_wallet(root_dir: &Path) -> LocalWallet {
+pub fn get_wallet(root_dir: &Path) -> LocalWallet {
     LocalWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
 }
 
@@ -147,7 +147,7 @@ impl NonDroplet {
         amount: u64,
     ) -> Result<LocalWallet> {
         let wallet_balance = NanoTokens::from(amount);
-        let mut local_wallet = get_wallet(root_dir).await;
+        let mut local_wallet = get_wallet(root_dir);
 
         println!("Getting {wallet_balance} tokens from the faucet...");
         let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
@@ -198,7 +198,7 @@ impl Droplet {
         let num_requests = std::cmp::max((amount + faucet_balance - 1) / faucet_balance, 1);
         let num_requests = std::cmp::min(num_requests, 10); // max 10 req
 
-        let mut local_wallet = get_wallet(root_dir).await;
+        let mut local_wallet = get_wallet(root_dir);
         let address_hex = hex::encode(local_wallet.address().to_bytes());
 
         println!(

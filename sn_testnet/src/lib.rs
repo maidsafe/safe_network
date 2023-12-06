@@ -151,8 +151,8 @@ impl TestnetBuilder {
                 .unwrap_or(DEFAULT_NODE_LAUNCH_INTERVAL),
             nodes_dir_path.clone(),
             self.flamegraph_mode,
-            Box::default() as Box<SafeNodeLauncher>,
-            Box::default() as Box<SafeRpcClient>,
+            Box::<SafeNodeLauncher>::default(),
+            Box::<SafeRpcClient>::default(),
         )?;
         Ok(testnet)
     }

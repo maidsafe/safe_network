@@ -28,7 +28,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     let second_wallet_balance = NanoTokens::from(first_wallet_balance / 2);
     println!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
     let second_wallet_dir = TempDir::new()?;
-    let mut second_wallet = get_wallet(second_wallet_dir.path()).await;
+    let mut second_wallet = get_wallet(second_wallet_dir.path());
 
     assert_eq!(second_wallet.balance(), NanoTokens::zero());
 
@@ -46,7 +46,7 @@ async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     assert_eq!(second_wallet.balance(), second_wallet_balance);
     println!("CashNotes deposited to second wallet: {second_wallet_balance}.");
 
-    let first_wallet = get_wallet(&first_wallet_dir).await;
+    let first_wallet = get_wallet(&first_wallet_dir);
     assert!(second_wallet_balance.as_nano() == first_wallet.balance().as_nano());
 
     Ok(())
@@ -65,10 +65,10 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
-    let second_wallet = get_wallet(second_wallet_dir.path()).await;
+    let second_wallet = get_wallet(second_wallet_dir.path());
     assert_eq!(second_wallet.balance(), NanoTokens::zero());
     let third_wallet_dir = TempDir::new()?;
-    let third_wallet = get_wallet(third_wallet_dir.path()).await;
+    let third_wallet = get_wallet(third_wallet_dir.path());
     assert_eq!(third_wallet.balance(), NanoTokens::zero());
 
     // manually forge two transfers of the same source
