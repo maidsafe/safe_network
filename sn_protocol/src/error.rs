@@ -17,6 +17,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
+    // ---------- Chunk Proof errors
+    #[error("Chunk does not exist {0:?}")]
+    ChunkDoesNotExist(NetworkAddress),
+
     // ---------- Register Errors
     #[error("Register not found: {0}")]
     RegisterNotFound(Box<RegisterAddress>),

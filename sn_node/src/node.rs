@@ -19,7 +19,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Cmd, CmdResponse, Query, QueryResponse, Response},
+    messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey};
@@ -364,6 +364,7 @@ impl Node {
 
                 let _handle = spawn(async move {
                     let res = Self::handle_query(&network, query, payment_address).await;
+                    trace!("Sending response {res:?}");
 
                     if let Err(error) = network.send_response(res, channel) {
                         error!("Error while sending response form query req: {error:?}");
@@ -504,6 +505,17 @@ impl Node {
                 }
 
                 QueryResponse::GetReplicatedRecord(result)
+            }
+            Query::GetChunkExistenceProof { key, nonce } => {
+                trace!("Got GetChunkExistenceProof for chunk {key:?}");
+
+                let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
+                if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
+                    let proof = ChunkProof::new(&record.value, nonce);
+                    result = Ok(proof)
+                }
+
+                QueryResponse::GetChunkExistenceProof(result)
             }
         };
         Response::Query(resp)
