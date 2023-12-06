@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701855732015,
+  "lastUpdate": 1701857333366,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d7576121b9d04be12c638e33cd25e961e41230f3",
-          "message": "fix: using proper close_group distance\n\nThis commit including following fixes:\n1, location_verification test using proper wallet initial balance\n2, within try_trigger_relocation, using ilog2 to decide whether a peer\n   is close enough to us to become a replication destination.\n3, in case of PeerRemoved, call try_trigger_replication as well",
-          "timestamp": "2023-08-10T10:50:26Z",
-          "tree_id": "978e5a25bb6f8d0f226ef55d4a1e233883c7bd71",
-          "url": "https://github.com/maidsafe/safe_network/commit/d7576121b9d04be12c638e33cd25e961e41230f3"
-        },
-        "date": 1691674522910,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06205831169652932,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6177117921758767,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.572045967531255,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.0095591155642,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "c1a3342944ba087361d1e02db975513d47854da2",
+          "message": "ci: remove old 'no-verify' flag from cli run.\n\nI'm not sure why it's needed there at all, so lets drop it",
+          "timestamp": "2023-12-06T09:09:14Z",
+          "tree_id": "56b5d1857b44d328ed6cfc8d64e1ead36587fd56",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1a3342944ba087361d1e02db975513d47854da2"
+        },
+        "date": 1701857330892,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1730142571520539,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7199392787714556,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 43.11780193054874,
             "unit": "MiB/s"
           }
         ]
