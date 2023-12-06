@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701857495091,
+  "lastUpdate": 1701857497526,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1d4a0be36bbbcfe775d08d96c86dfc304da2d1aa",
-          "message": "chore: adapt all logging to use pretty record key",
-          "timestamp": "2023-07-28T08:10:48Z",
-          "tree_id": "53c85669664fc08dd09022fafb449073286601c7",
-          "url": "https://github.com/maidsafe/safe_network/commit/1d4a0be36bbbcfe775d08d96c86dfc304da2d1aa"
-        },
-        "date": 1690551225992,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 245.49,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 194,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 174,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "c1a3342944ba087361d1e02db975513d47854da2",
+          "message": "ci: remove old 'no-verify' flag from cli run.\n\nI'm not sure why it's needed there at all, so lets drop it",
+          "timestamp": "2023-12-06T09:09:14Z",
+          "tree_id": "56b5d1857b44d328ed6cfc8d64e1ead36587fd56",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1a3342944ba087361d1e02db975513d47854da2"
+        },
+        "date": 1701857496642,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 640,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 162,
             "unit": "MB"
           }
         ]
