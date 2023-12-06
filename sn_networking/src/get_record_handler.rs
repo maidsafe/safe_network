@@ -195,9 +195,9 @@ impl SwarmDriver {
                 .send(result)
                 .map_err(|_| Error::InternalMsgChannelDropped)?;
         } else {
-            // Should we return a ReceivedKademliaEventDropped here? We manually perform `query.finish()` if we return
-            // early from accumulate fn. So the kad query should not make any more progress? Logging it here for now.
-            warn!("Can't locate query task {query_id:?} during GetRecord finished.");
+            // We manually perform `query.finish()` if we return early from accumulate fn.
+            // Thus we will still get FinishedWithNoAdditionalRecord.
+            trace!("Can't locate query task {query_id:?} during GetRecord finished. We might have already returned the result to the sender.");
         }
         Ok(())
     }
