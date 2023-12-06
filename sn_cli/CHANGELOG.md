@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.43](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.42...sn_cli-v0.86.43) - 2023-12-06
+
+### Other
+- remove some needless cloning
+- remove needless pass by value
+- use inline format args
+- add boilerplate for workspace lints
+
 ## [0.86.42](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.41...sn_cli-v0.86.42) - 2023-12-05
 
 ### Other

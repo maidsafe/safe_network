@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.26](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.25...sn_transfers-v0.14.26) - 2023-12-06
+
+### Other
+- remove some needless cloning
+- remove needless pass by value
+- use inline format args
+- add boilerplate for workspace lints
+
 ## [0.14.25](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.24...sn_transfers-v0.14.25) - 2023-12-05
 
 ### Fixed

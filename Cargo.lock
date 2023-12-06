@@ -4482,14 +4482,14 @@ checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "vergen",
 ]
 
 [[package]]
 name = "sn_cli"
-version = "0.86.42"
+version = "0.86.43"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4524,7 +4524,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.99.5"
+version = "0.99.6"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4557,7 +4557,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.1.64"
+version = "0.1.65"
 dependencies = [
  "blsttc",
  "clap 4.4.10",
@@ -4575,7 +4575,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.15"
+version = "0.2.16"
 dependencies = [
  "chrono",
  "dirs-next",
@@ -4598,7 +4598,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.11.4"
+version = "0.11.5"
 dependencies = [
  "async-trait",
  "blsttc",
@@ -4628,7 +4628,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.99.7"
+version = "0.99.8"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4680,7 +4680,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.1.61"
+version = "0.1.62"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4706,7 +4706,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "clap 4.4.10",
  "color-eyre",
@@ -4720,7 +4720,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.8.37"
+version = "0.8.38"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4746,7 +4746,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "blsttc",
  "crdts",
@@ -4764,7 +4764,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.323"
+version = "0.2.324"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
@@ -4788,7 +4788,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.14.25"
+version = "0.14.26"
 dependencies = [
  "assert_fs",
  "blsttc",
