@@ -206,7 +206,7 @@ jobs:
         shell: bash
         run: |
           ls -l target/release
-          target/release/safe --log-output-dest=data-dir files upload target/release/faucet -n
+          target/release/safe --log-output-dest=data-dir files upload target/release/faucet
 
       #########################
       ### Stop Network      ###
