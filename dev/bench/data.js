@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701803454456,
+  "lastUpdate": 1701855571571,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2802788428fc3c77ad2223f7b2c37eb204a94fc4",
-          "message": "chore: tweak the storage cost curve\n\nMake the curve more exponentially. Reduce the starting cost from\ntrillion to around 8 tokens, then more exponentially stepping\nincreased according to the stored records.",
-          "timestamp": "2023-08-10T09:13:43Z",
-          "tree_id": "a9d2ff71a8d100c165f9a519cda7a2f255d596fa",
-          "url": "https://github.com/maidsafe/safe_network/commit/2802788428fc3c77ad2223f7b2c37eb204a94fc4"
-        },
-        "date": 1691668714716,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06206370561348236,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6176198049396467,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.5713059832532772,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.94112147246978,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "f4ed662d52c49a823850403b9b9fe033f1bf4285",
+          "message": "refactor: add more workspace lints from node",
+          "timestamp": "2023-12-06T08:57:16Z",
+          "tree_id": "ba759abd9b785a5778833dd2b81e05d9ba780b5c",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4ed662d52c49a823850403b9b9fe033f1bf4285"
+        },
+        "date": 1701855569844,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.131880590541849,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8654861931299107,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.0095591155642,
             "unit": "MiB/s"
           }
         ]
