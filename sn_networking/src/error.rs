@@ -45,7 +45,7 @@ pub enum GetRecordError {
     #[error("Network query timed out")]
     QueryTimeout,
 
-    #[error("Record retrieved from the network does not match the one we attempted to store.")]
+    #[error("Record retrieved from the network does not match the provided target record.")]
     RecordDoesNotMatch(Record),
 }
 

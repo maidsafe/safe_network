@@ -153,8 +153,9 @@ impl Debug for GetRecordCfg {
 /// The various settings related to writing a record to the network.
 #[derive(Debug, Clone)]
 pub struct PutRecordCfg {
-    /// The quorum used by KAD PUT. This does not necessarily enforce any quorum, it just makes sure we deliver the PUT
-    /// the specified number of peers.
+    /// The quorum used by KAD PUT. KAD still sends out the request to all the peers set by the `replication_factor`, it
+    /// just makes sure that we get atleast `n` successful responses defined by the Quorum.
+    /// Our nodes currently send `Ok()` response for every KAD PUT. Thus this field does not do anything atm.
     pub put_quorum: Quorum,
     /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
     pub re_attempt: bool,
