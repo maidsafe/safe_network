@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.7...sn_networking-v0.11.8) - 2023-12-06
+
+### Other
+- *(network)* use PUT Quorum::One for chunks
+- *(network)* add docs for PUT Quorum
+- *(network)* move the retry attempt check to a single one
+- *(network)* add more docs to the get_record_handlers
+- *(network)* remove custom early completion for chunks
+- *(network)* check for target record during kad event handling
+- *(network)* keep the GetRecordCfg inside the SwarmDriver
+- *(network)* move get_record code to its own file
+
 ## [0.11.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.6...sn_networking-v0.11.7) - 2023-12-06
 
 ### Added
