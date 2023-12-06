@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir -p $BOOTSTRAP_NODE_DATA_PATH
           ./target/release/safenode \
-            --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local &
+            --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local --rpc=127.0.0.1:12001 &
           sleep 10
         env:
           SN_LOG: "all"
