@@ -66,6 +66,7 @@ jobs:
         with:
           action: start
           interval: 2000
+          join: true # Join the bootstrap node, set by the env var SAFE_PEERS
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest

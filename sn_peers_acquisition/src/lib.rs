@@ -39,7 +39,7 @@ pub struct PeersArgs {
     /// Peers can also be provided by an environment variable (see below), but the
     /// command-line argument (`--peer`) takes precedence. To pass multiple peers with the
     /// environment variable, separate them with commas.
-    #[clap(long = "peer", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr)]
+    #[clap(long = "peer", value_name = "multiaddr", env = SAFE_PEERS_ENV, value_delimiter = ',', value_parser = parse_peer_addr)]
     pub peers: Vec<Multiaddr>,
 
     /// Specify the URL to fetch the network contacts from.
@@ -73,16 +73,6 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     } else {
         vec![]
     };
-
-    if let Ok(safe_peers_str) = std::env::var(SAFE_PEERS_ENV) {
-        let peers_str = safe_peers_str.split(',');
-        for peer_str in peers_str {
-            match parse_peer_addr(peer_str) {
-                Ok(safe_peer) => peers.push(safe_peer),
-                Err(_) => println!("Failed to parse safe_peer from {peer_str:?}"),
-            }
-        }
-    }
 
     if peers.is_empty() {
         let err_str = "No peers given, 'local-discovery' and 'network-contacts' feature flags are disabled. We cannot connect to the network.";
