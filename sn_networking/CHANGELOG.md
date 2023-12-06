@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.6...sn_networking-v0.11.7) - 2023-12-06
+
+### Added
+- replace bootstrap node if bucket full
+
 ## [0.11.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.5...sn_networking-v0.11.6) - 2023-12-06
 
 ### Other
