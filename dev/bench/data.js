@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701857500004,
+  "lastUpdate": 1701864622876,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ad3e19768350e63e4a4d2cbf111f52ff4891a7de",
-          "message": "chore: optimize replication algorithm",
-          "timestamp": "2023-08-11T08:15:58Z",
-          "tree_id": "24ae160408635055492906986614088982d16cb1",
-          "url": "https://github.com/maidsafe/safe_network/commit/ad3e19768350e63e4a4d2cbf111f52ff4891a7de"
-        },
-        "date": 1691750964544,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.06210020034330716,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6187135329636017,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.5727962793677424,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 43.11780193054874,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "9eb9532bdd9379ac95632daf0279c92850eacc04",
+          "message": "test(wallet): adding unit tests for watch-only wallet impl.",
+          "timestamp": "2023-12-06T11:31:01Z",
+          "tree_id": "222673a042525ff0d3a661fcabb15b28a4b9f282",
+          "url": "https://github.com/maidsafe/safe_network/commit/9eb9532bdd9379ac95632daf0279c92850eacc04"
+        },
+        "date": 1701864620441,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2846564226466064,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9165576257464298,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.13985178294801,
             "unit": "MiB/s"
           }
         ]
