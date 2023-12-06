@@ -355,47 +355,39 @@ impl Network {
                 cfg: cfg.clone(),
             })?;
 
-            match receiver.await.map_err(|e| {
+            let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
-            })? {
-                Ok(returned_record) => {
+            })?;
+            // log the results
+            match &result {
+                Ok(_) => {
                     info!("Record returned: {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
-                    return Ok(returned_record);
                 }
-                Err(GetRecordError::RecordDoesNotMatch(returned_record)) => {
+                Err(GetRecordError::RecordDoesNotMatch(_)) => {
                     warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
-                    if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::RecordDoesNotMatch(returned_record).into());
-                    }
                 }
-                Err(GetRecordError::NotEnoughCopies(returned_record)) => {
+                Err(GetRecordError::NotEnoughCopies(_)) => {
                     warn!("Not enough copies found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
-                    if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::NotEnoughCopies(returned_record).into());
-                    }
                 }
+                // libp2p RecordNotFound does mean no holders answered.
+                // it does not actually mean the record does not exist.
+                // just that those asked did not have it
                 Err(GetRecordError::RecordNotFound) => {
                     warn!("No holder of record '{pretty_key:?}' found. Attempts: {retry_attempts:?}/{total_attempts:?}");
-                    // libp2p RecordNotFound does mean no holders answered.
-                    // it does not actually mean the record does not exist.
-                    // just that those asked did not have it
-                    if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::RecordNotFound.into());
-                    }
                 }
-                Err(GetRecordError::SplitRecord { result_map }) => {
+                Err(GetRecordError::SplitRecord { .. }) => {
                     error!("Encountered a split record for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
-
-                    if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::SplitRecord { result_map }.into());
-                    }
                 }
                 Err(GetRecordError::QueryTimeout) => {
                     error!("Encountered query timeout for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
-
+                }
+            };
+            match result {
+                Ok(record) => return Ok(record),
+                Err(err) => {
                     if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::QueryTimeout.into());
+                        return Err(err.into());
                     }
                 }
             }
