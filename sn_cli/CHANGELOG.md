@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.44](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.43...sn_cli-v0.86.44) - 2023-12-06
+
+### Added
+- *(cli)* enable gossipsub for client when wallet cmd requires it
+- *(wallet)* basic impl of a watch-only wallet API
+
+### Other
+- *(wallet)* major refactoring removing redundant and unused code
+- *(cli)* Fix duplicate use of 'n' short flag
+- *(cli)* All --name flags have short 'n' flag
+
 ## [0.86.43](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.42...sn_cli-v0.86.43) - 2023-12-06
 
 ### Other

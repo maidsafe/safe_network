@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.63](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.62...sn_node_rpc_client-v0.1.63) - 2023-12-06
+
+### Added
+- *(rpc-client)* use watch-only wallet for verifying transfers notifs
+
 ## [0.1.62](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.61...sn_node_rpc_client-v0.1.62) - 2023-12-06
 
 ### Other
