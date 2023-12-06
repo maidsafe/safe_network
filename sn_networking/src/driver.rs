@@ -124,6 +124,12 @@ pub struct GetRecordCfg {
     pub expected_holders: HashSet<PeerId>,
 }
 
+impl GetRecordCfg {
+    pub fn does_target_match(&self, record: &Record) -> bool {
+        self.target_record.as_ref().is_some_and(|t| t == record)
+    }
+}
+
 impl Debug for GetRecordCfg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut f = f.debug_struct("GetRecordCfg");
