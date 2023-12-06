@@ -17,7 +17,7 @@ use libp2p::{
     },
     PeerId,
 };
-use sn_protocol::{storage::RecordHeader, PrettyPrintRecordKey};
+use sn_protocol::PrettyPrintRecordKey;
 use std::collections::{hash_map::Entry, BTreeMap, HashMap, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
@@ -65,10 +65,6 @@ impl SwarmDriver {
         stats: QueryStats,
         step: ProgressStep,
     ) -> Result<()> {
-        if self.try_early_completion_for_chunk(&query_id, &peer_record)? {
-            return Ok(());
-        }
-
         let peer_id = if let Some(peer_id) = peer_record.peer {
             peer_id
         } else {
@@ -312,49 +308,5 @@ impl SwarmDriver {
                 .send(Err(GetRecordError::ReturnedRecordDoesNotMatch(record)))
                 .map_err(|_| Error::InternalMsgChannelDropped)
         }
-    }
-
-    // For chunk record which can be self-verifiable,
-    // complete the flow with the first copy that fetched.
-    // Return `true` if early completed, otherwise return `false`.
-    // Situations that can be early completed:
-    // 1, Not finding an entry within pending_get_record, i.e. no more further action required
-    // 2, For a `Chunk` that not required to verify expected holders,
-    //    whenever fetched a first copy that passed the self-verification.
-    fn try_early_completion_for_chunk(
-        &mut self,
-        query_id: &QueryId,
-        peer_record: &PeerRecord,
-    ) -> Result<bool> {
-        if let Entry::Occupied(mut entry) = self.pending_get_record.entry(*query_id) {
-            let (_, _, cfg) = entry.get_mut();
-
-            if cfg.expected_holders.is_empty() &&
-               RecordHeader::is_record_of_type_chunk(&peer_record.record).unwrap_or(false) &&
-               // Ensure that we only exit early if quorum is indeed for only one match
-               matches!(cfg.get_quorum, Quorum::One)
-            {
-                // Stop the query; possibly stops more nodes from being queried.
-                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(query_id) {
-                    query.finish();
-                }
-
-                // Stop tracking the query task by removing the entry and consume the sender.
-                let (sender, ..) = entry.remove();
-                // A claimed Chunk type record can be trusted.
-                // Punishment of peer that sending corrupted Chunk type record
-                // maybe carried out by other verification mechanism.
-                // todo: should we call Self::send_record_after_checking_target?;
-                sender
-                    .send(Ok(peer_record.record.clone()))
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
-                return Ok(true);
-            }
-        } else {
-            // A non-existing pending entry does not need to undertake any further action.
-            return Ok(true);
-        }
-
-        Ok(false)
     }
 }
