@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701866391912,
+  "lastUpdate": 1701866549873,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "e98253fb8bd4609e5c4874e9310fe553c1e03433",
-          "message": "chore(CI): more tracable wallet setup for memcheck",
-          "timestamp": "2023-07-31T12:23:05Z",
-          "tree_id": "93faa221b9e490e930c70c16094535abf9c765cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/e98253fb8bd4609e5c4874e9310fe553c1e03433"
-        },
-        "date": 1690826401425,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 23,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 114,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6",
+          "message": "feat: replace bootstrap node if bucket full",
+          "timestamp": "2023-12-06T11:40:53Z",
+          "tree_id": "b76db349c27e9d0553d2301999956e16148a09cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6"
+        },
+        "date": 1701866548832,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 95,
             "unit": "MB"
           }
         ]
