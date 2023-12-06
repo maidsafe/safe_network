@@ -363,18 +363,16 @@ impl Network {
                     info!("Record returned: {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
                     return Ok(returned_record);
                 }
-                Err(GetRecordError::ReturnedRecordDoesNotMatch(returned_record)) => {
+                Err(GetRecordError::RecordDoesNotMatch(returned_record)) => {
                     warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
                     if retry_attempts >= total_attempts {
-                        return Err(
-                            GetRecordError::ReturnedRecordDoesNotMatch(returned_record).into()
-                        );
+                        return Err(GetRecordError::RecordDoesNotMatch(returned_record).into());
                     }
                 }
-                Err(GetRecordError::RecordNotEnoughCopies(returned_record)) => {
+                Err(GetRecordError::NotEnoughCopies(returned_record)) => {
                     warn!("Not enough copies found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
                     if retry_attempts >= total_attempts {
-                        return Err(GetRecordError::RecordNotEnoughCopies(returned_record).into());
+                        return Err(GetRecordError::NotEnoughCopies(returned_record).into());
                     }
                 }
                 Err(GetRecordError::RecordNotFound) => {

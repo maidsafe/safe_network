@@ -714,9 +714,7 @@ impl Node {
                         warn!("Spends for {cash_note_addr:?} is a double-spend. Aggregating and storing them.");
                         vec![*spend1, *spend2]
                     }
-                    Err(NetworkError::GetRecordError(GetRecordError::RecordNotEnoughCopies(
-                        record,
-                    ))) => {
+                    Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies(record))) => {
                         warn!("Spends for {cash_note_addr:?} resulted in a failed quorum. Trying to aggregate the spends in them.");
                         match get_singed_spends_from_record(&record) {
                             Ok(spends) => spends,
@@ -740,6 +738,20 @@ impl Node {
                             };
                         }
                         all_spends
+                    }
+                    // get_spend does not set a target record, so this should not happen. But handling it if something
+                    // does change there.
+                    Err(NetworkError::GetRecordError(GetRecordError::RecordDoesNotMatch(
+                        returned_record,
+                    ))) => {
+                        warn!("Spends for {cash_note_addr:?} resulted in a record does not match error . Trying to aggregate the spends in them.");
+                        match get_singed_spends_from_record(&returned_record) {
+                            Ok(spends) => spends,
+                            Err(err) => {
+                                error!("Error while trying to get signed spends out of a record for {cash_note_addr:?}: {err:?}");
+                                vec![]
+                            }
+                        }
                     }
                     Err(err) => {
                         debug!("Fetching spend for the same unique_pubkey {cash_note_addr:?} returned: {err:?}");

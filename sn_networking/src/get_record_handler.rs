@@ -11,14 +11,11 @@ use crate::{
     CLOSE_GROUP_SIZE,
 };
 use libp2p::{
-    kad::{
-        self, KBucketDistance, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Quorum,
-        Record,
-    },
+    kad::{self, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Quorum, Record},
     PeerId,
 };
 use sn_protocol::PrettyPrintRecordKey;
-use std::collections::{hash_map::Entry, BTreeMap, HashMap, HashSet};
+use std::collections::{hash_map::Entry, HashMap, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
@@ -54,10 +51,12 @@ pub(crate) type PendingGetRecord = HashMap<
 //            `ProgressStep::count`: to be `number of received copies plus one`
 //            `ProgressStep::last` to be `true`
 impl SwarmDriver {
-    // Completes when any of the following condition reaches first:
-    // 1, Return whenever reached majority of CLOSE_GROUP_SIZE
-    // 2, In case of split, return with NotFound,
-    //    whenever `ProgressStep::count` hits CLOSE_GROUP_SIZE
+    // Accumulates the GetRecord query results
+    // If we get enough responses (quorum) for a record with the same content hash:
+    // - we return the Record after comparing with the target record. This might return RecordDoesNotMatch if the
+    // check fails.
+    // - if multiple content hashes are found, we return a SplitRecord Error
+    // And then we stop the kad query as we are done here.
     pub(crate) fn accumulate_get_record_found(
         &mut self,
         query_id: QueryId,
@@ -147,68 +146,69 @@ impl SwarmDriver {
         Ok(())
     }
 
+    // Handles the possible cases when a GetRecord Query completes.
+    // The accumulate_get_record_found returns the record if the quorum is satisfied, but, if we have reached this point
+    // then we did not get enough records or we got split records (which prevented the quorum to pass).
+    // Returns the following errors:
+    // RecordNotFound if the result_map is empty.
+    // NotEnoughCopies if there is only a single content hash version.
+    // SplitRecord if there are multiple content hash versions.
     pub(crate) fn handle_get_record_finished(
         &mut self,
         query_id: QueryId,
-        cache_candidates: BTreeMap<KBucketDistance, PeerId>,
-        stats: QueryStats,
         step: ProgressStep,
     ) -> Result<()> {
         // return error if the entry cannot be found
-        let (sender, result_map, cfg) =
-            self.pending_get_record.remove(&query_id).ok_or_else(|| {
-                trace!(
-                    "Can't locate query task {query_id:?}, it has likely been completed already."
-                );
-                Error::ReceivedKademliaEventDropped(kad::Event::OutboundQueryProgressed {
-                    id: query_id,
-                    result: QueryResult::GetRecord(Ok(
-                        kad::GetRecordOk::FinishedWithNoAdditionalRecord { cache_candidates },
-                    )),
-                    stats,
-                    step: step.clone(),
-                })
-            })?;
+        if let Some((sender, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
+            let num_of_versions = result_map.len();
+            let (result, log_string) = if let Some((record, _)) = result_map.values().next() {
+                let result = if num_of_versions == 1 {
+                    Err(GetRecordError::NotEnoughCopies(record.clone()))
+                } else {
+                    Err(GetRecordError::SplitRecord {
+                        result_map: result_map.clone(),
+                    })
+                };
 
-        let num_of_versions = result_map.len();
-        let (result, log_string) = if let Some((record, _)) = result_map.values().next() {
-            let result = if num_of_versions == 1 {
-                Err(GetRecordError::RecordNotEnoughCopies(record.clone()))
+                (
+                result,
+                format!("Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
+                    PrettyPrintRecordKey::from(&record.key), usize::from(step.count) - 1)
+                )
             } else {
-                Err(GetRecordError::SplitRecord {
-                    result_map: result_map.clone(),
-                })
-            };
-
-            (
-                result, format!(
-                "Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
-                PrettyPrintRecordKey::from(&record.key),
-                usize::from(step.count) - 1
-            ))
-        } else {
-            (
+                (
                 Err(GetRecordError::RecordNotFound),
                 format!("Getting record task {query_id:?} completed with step count {:?}, but no copy found.", step.count),
-            )
-        };
+                )
+            };
 
-        if cfg.expected_holders.is_empty() {
-            debug!("{log_string}");
+            if cfg.expected_holders.is_empty() {
+                debug!("{log_string}");
+            } else {
+                debug!(
+                    "{log_string}, and {:?} expected holders not responded",
+                    cfg.expected_holders
+                );
+            }
+
+            sender
+                .send(result)
+                .map_err(|_| Error::InternalMsgChannelDropped)?;
         } else {
-            debug!(
-                "{log_string}, and {:?} expected holders not responded",
-                cfg.expected_holders
-            );
+            // Should we return a ReceivedKademliaEventDropped here? We manually perform `query.finish()` if we return
+            // early from accumulate fn. So the kad query should not make any more progress? Logging it here for now.
+            warn!("Can't locate query task {query_id:?} during GetRecord finished.");
         }
-
-        sender
-            .send(result)
-            .map_err(|_| Error::InternalMsgChannelDropped)?;
-
         Ok(())
     }
 
+    /// Handles the possible cases when a kad GetRecord returns an error.
+    /// If we get NotFound/QuorumFailed, we return a RecordNotFound error. Kad currently does not enforce any quorum.
+    /// If we get a Timeout:
+    /// - return a QueryTimeout if we get a split record (?) if we have multiple content hashes.
+    /// - if the quorum is satisfied, we return the record after comparing it with the target record. This might return
+    /// RecordDoesNotMatch if the check fails.
+    /// - else we return q QueryTimeout error.
     pub(crate) fn handle_get_record_error(
         &mut self,
         query_id: QueryId,
@@ -217,9 +217,30 @@ impl SwarmDriver {
         step: ProgressStep,
     ) -> Result<()> {
         match &get_record_err {
-            kad::GetRecordError::NotFound { .. } => {}
-            kad::GetRecordError::QuorumFailed { .. } => {}
+            kad::GetRecordError::NotFound { .. } | kad::GetRecordError::QuorumFailed { .. } => {
+                // return error if the entry cannot be found
+                let (sender, _, cfg) =
+                self.pending_get_record.remove(&query_id).ok_or_else(|| {
+                    trace!("Can't locate query task {query_id:?}, it has likely been completed already.");
+                    Error::ReceivedKademliaEventDropped( kad::Event::OutboundQueryProgressed {
+                        id: query_id,
+                        result: QueryResult::GetRecord(Err(get_record_err.clone())),
+                        stats,
+                        step,
+                    })
+                })?;
+
+                if cfg.expected_holders.is_empty() {
+                    info!("Get record task {query_id:?} failed with error {get_record_err:?}");
+                } else {
+                    debug!("Get record task {query_id:?} failed with {:?} expected holders not responded, error {get_record_err:?}", cfg.expected_holders);
+                }
+                sender
+                    .send(Err(GetRecordError::RecordNotFound))
+                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+            }
             kad::GetRecordError::Timeout { key } => {
+                // return error if the entry cannot be found
                 let pretty_key = PrettyPrintRecordKey::from(key);
                 let (sender, result_map, cfg) =
                     self.pending_get_record.remove(&query_id).ok_or_else(|| {
@@ -243,6 +264,7 @@ impl SwarmDriver {
 
                 // if we've a split over the result xorname, then we don't attempt to resolve this here.
                 // Retry and resolve through normal flows without a timeout.
+                // todo: is the above still the case? Why don't we return a split record error.
                 if result_map.len() > 1 {
                     warn!(
                         "Get record task {query_id:?} for {pretty_key:?} timed out with split result map"
@@ -258,7 +280,6 @@ impl SwarmDriver {
                 if let Some((record, peers)) = result_map.values().next() {
                     if peers.len() >= required_response_count {
                         Self::send_record_after_checking_target(sender, record.clone(), &cfg)?;
-
                         return Ok(());
                     }
                 }
@@ -268,29 +289,9 @@ impl SwarmDriver {
                 sender
                     .send(Err(GetRecordError::QueryTimeout))
                     .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                return Ok(());
             }
         }
 
-        // return error if the entry cannot be found
-        let (sender, _, cfg) = self.pending_get_record.remove(&query_id).ok_or_else(|| {
-            trace!("Can't locate query task {query_id:?}, it has likely been completed already.");
-            Error::ReceivedKademliaEventDropped(kad::Event::OutboundQueryProgressed {
-                id: query_id,
-                result: QueryResult::GetRecord(Err(get_record_err.clone())),
-                stats,
-                step,
-            })
-        })?;
-        if cfg.expected_holders.is_empty() {
-            info!("Get record task {query_id:?} failed with error {get_record_err:?}");
-        } else {
-            debug!("Get record task {query_id:?} failed with {:?} expected holders not responded, error {get_record_err:?}", cfg.expected_holders);
-        }
-        sender
-            .send(Err(GetRecordError::RecordNotFound))
-            .map_err(|_| Error::InternalMsgChannelDropped)?;
         Ok(())
     }
 
@@ -305,7 +306,7 @@ impl SwarmDriver {
                 .map_err(|_| Error::InternalMsgChannelDropped)
         } else {
             sender
-                .send(Err(GetRecordError::ReturnedRecordDoesNotMatch(record)))
+                .send(Err(GetRecordError::RecordDoesNotMatch(record)))
                 .map_err(|_| Error::InternalMsgChannelDropped)
         }
     }

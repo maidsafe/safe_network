@@ -10,6 +10,7 @@ use crate::Error;
 
 use super::{error::Result, Client};
 use futures::{future::join_all, TryFutureExt};
+use sn_networking::GetRecordError;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend,
@@ -322,8 +323,8 @@ impl Client {
         for (cash_note_key, spend_attempt_result) in join_all(tasks).await {
             // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
             // This only happens if we're verifying the store
-            if let Err(Error::Network(sn_networking::Error::ReturnedRecordDoesNotMatch(
-                record_key,
+            if let Err(Error::Network(sn_networking::Error::GetRecordError(
+                GetRecordError::RecordDoesNotMatch(record_key),
             ))) = spend_attempt_result
             {
                 warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");

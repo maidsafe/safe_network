@@ -31,7 +31,7 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[allow(missing_docs)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
-    RecordNotEnoughCopies(Record),
+    NotEnoughCopies(Record),
 
     #[error("Record not found in the network")]
     RecordNotFound,
@@ -46,7 +46,7 @@ pub enum GetRecordError {
     QueryTimeout,
 
     #[error("Record retrieved from the network does not match the one we attempted to store.")]
-    ReturnedRecordDoesNotMatch(Record),
+    RecordDoesNotMatch(Record),
 }
 
 /// Network Errors

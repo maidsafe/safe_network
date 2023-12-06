@@ -812,7 +812,7 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::get_record::finished_no_additional";
                 trace!("Query task {id:?} of get_record completed with {stats:?} - {step:?} - {cache_candidates:?}");
-                self.handle_get_record_finished(id, cache_candidates, stats, step)?;
+                self.handle_get_record_finished(id, step)?;
             }
             kad::Event::OutboundQueryProgressed {
                 id,
