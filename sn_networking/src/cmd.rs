@@ -158,12 +158,10 @@ impl Debug for SwarmCmd {
             SwarmCmd::Dial { addr, .. } => {
                 write!(f, "SwarmCmd::Dial {{ addr: {addr:?} }}")
             }
-            SwarmCmd::GetNetworkRecord {
-                key, cfg: get_cfg, ..
-            } => {
+            SwarmCmd::GetNetworkRecord { key, cfg, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::GetNetworkRecord {{ key: {:?}, get_cfg: {get_cfg:?}",
+                    "SwarmCmd::GetNetworkRecord {{ key: {:?}, cfg: {cfg:?}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -334,22 +332,18 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
                 }
             }
-            SwarmCmd::GetNetworkRecord {
-                key,
-                sender,
-                cfg: get_cfg,
-            } => {
+            SwarmCmd::GetNetworkRecord { key, sender, cfg } => {
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 debug!(
                     "Record {:?} with task {query_id:?} expected to be held by {:?}",
                     PrettyPrintRecordKey::from(&key),
-                    get_cfg.expected_holders
+                    cfg.expected_holders
                 );
 
                 if self
                     .pending_get_record
-                    .insert(query_id, (sender, Default::default(), get_cfg))
+                    .insert(query_id, (sender, Default::default(), cfg))
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
