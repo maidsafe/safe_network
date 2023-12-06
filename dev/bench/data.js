@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701855730345,
+  "lastUpdate": 1701855732015,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32078,6 +32078,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 66499,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "f4ed662d52c49a823850403b9b9fe033f1bf4285",
+          "message": "refactor: add more workspace lints from node",
+          "timestamp": "2023-12-06T08:57:16Z",
+          "tree_id": "ba759abd9b785a5778833dd2b81e05d9ba780b5c",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4ed662d52c49a823850403b9b9fe033f1bf4285"
+        },
+        "date": 1701855731653,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4935,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 72088,
             "unit": "ms"
           },
           {
