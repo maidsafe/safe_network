@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701855728654,
+  "lastUpdate": 1701855730345,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "31cb0cc9ef00a1b71ab24eb4274da8e352833aab",
-          "message": "fix(network): close group should only contain CLOSE_GROUP_SIZE elements",
-          "timestamp": "2023-07-27T09:21:48Z",
-          "tree_id": "90e95bcffec413b88da42a6ae8c07dab956d61bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/31cb0cc9ef00a1b71ab24eb4274da8e352833aab"
-        },
-        "date": 1690459366745,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 229.99,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 215,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 154,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "f4ed662d52c49a823850403b9b9fe033f1bf4285",
+          "message": "refactor: add more workspace lints from node",
+          "timestamp": "2023-12-06T08:57:16Z",
+          "tree_id": "ba759abd9b785a5778833dd2b81e05d9ba780b5c",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4ed662d52c49a823850403b9b9fe033f1bf4285"
+        },
+        "date": 1701855729999,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 699,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 174,
             "unit": "MB"
           }
         ]
