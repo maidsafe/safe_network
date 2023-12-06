@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.4...sn_registers-v0.3.5) - 2023-12-06
+
+### Other
+- remove some needless cloning
+- remove needless pass by value
+- use inline format args
+- add boilerplate for workspace lints
+
 ## [0.3.4](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.3...sn_registers-v0.3.4) - 2023-11-28
 
 ### Added

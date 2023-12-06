@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.16](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.15...sn_logging-v0.2.16) - 2023-12-06
+
+### Other
+- remove needless pass by value
+- use inline format args
+- add boilerplate for workspace lints
+- address failing clippy::all lints
+
 ## [0.2.15](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.14...sn_logging-v0.2.15) - 2023-11-21
 
 ### Fixed

@@ -2428,6 +2428,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(network)* log if parent spend returned an error
 - *(network)* avoid losing error info by converting them to a single type
 
+## [0.99.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.7...sn_node-v0.99.8) - 2023-12-06
+
+### Other
+- add more workspace lints from node
+- remove some needless cloning
+- remove fake failure mode from function
+- remove needless pass by value
+- forbid unsafe idioms at workspace level
+- use inline format args
+- add boilerplate for workspace lints
+- address failing clippy::all lints
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

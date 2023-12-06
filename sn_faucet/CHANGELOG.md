@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.65](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.64...sn_faucet-v0.1.65) - 2023-12-06
+
+### Other
+- remove needless pass by value
+- use inline format args
+- add boilerplate for workspace lints
+
 ## [0.1.64](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.63...sn_faucet-v0.1.64) - 2023-12-05
 
 ### Other

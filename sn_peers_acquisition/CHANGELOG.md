@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.11...sn_peers_acquisition-v0.1.12) - 2023-12-06
+
+### Other
+- add boilerplate for workspace lints
+
 ## [0.1.11](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.10...sn_peers_acquisition-v0.1.11) - 2023-12-01
 
 ### Other
