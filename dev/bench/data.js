@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701864778566,
+  "lastUpdate": 1701864780946,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "1595c9b5061caae7ff0ddd7ec807108f12ad5064",
-          "message": "chore(readme): include faucet arg while launching testnet",
-          "timestamp": "2023-07-28T09:57:20Z",
-          "tree_id": "466d9c032927ab67b45431ea4e45d58a73e069bd",
-          "url": "https://github.com/maidsafe/safe_network/commit/1595c9b5061caae7ff0ddd7ec807108f12ad5064"
-        },
-        "date": 1690557048344,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 244.33,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 214,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 162,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "9eb9532bdd9379ac95632daf0279c92850eacc04",
+          "message": "test(wallet): adding unit tests for watch-only wallet impl.",
+          "timestamp": "2023-12-06T11:31:01Z",
+          "tree_id": "222673a042525ff0d3a661fcabb15b28a4b9f282",
+          "url": "https://github.com/maidsafe/safe_network/commit/9eb9532bdd9379ac95632daf0279c92850eacc04"
+        },
+        "date": 1701864780059,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 691,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 172,
             "unit": "MB"
           }
         ]
