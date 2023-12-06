@@ -40,7 +40,7 @@ use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
+    kad::{KBucketDistance, KBucketKey, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -48,7 +48,7 @@ use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Query, QueryResponse, Request, Response},
-    storage::{RecordHeader, RecordKind, RecordType},
+    storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
@@ -345,7 +345,7 @@ impl Network {
         while retry_attempts < total_attempts {
             retry_attempts += 1;
             info!(
-                "Getting record of {pretty_key:?} attempts {retry_attempts:?}/{total_attempts:?} with cfg {cfg:?}",
+                "Getting record of {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?} with cfg {cfg:?}",
             );
 
             let (sender, receiver) = oneshot::channel();
@@ -356,78 +356,49 @@ impl Network {
             })?;
 
             match receiver.await.map_err(|e| {
-                error!("When fetching record {pretty_key:?} , encountered a channel error {e:?}.");
+                error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
             })? {
                 Ok(returned_record) => {
-                    let header = RecordHeader::from_record(&returned_record)?;
-                    let is_chunk = matches!(header.kind, RecordKind::Chunk);
-                    info!("Record returned: {pretty_key:?}",);
-
-                    // Returning OK whenever fulfill one of the followings:
-                    // 1, No targeting record
-                    // 2, Fetched record matches the targeting record (when not chunk, as they are content addressed)
-                    //
-                    // Returning mismatched error when: completed all attempts
-                    if cfg.target_record.is_none()
-                        || (cfg.target_record.is_some()
-                            // we don't need to match the whole record if chunks, 
-                            // payment data could differ, but chunks themselves'
-                            // keys are from the chunk address
-                            && (cfg.target_record == Some(returned_record.clone()) || is_chunk))
-                    {
-                        return Ok(returned_record);
-                    } else if retry_attempts >= total_attempts {
-                        info!("Error: Returned record does not match target");
-                        return Err(Error::ReturnedRecordDoesNotMatch(
-                            PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
-                        ));
+                    info!("Record returned: {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    return Ok(returned_record);
+                }
+                Err(GetRecordError::ReturnedRecordDoesNotMatch(returned_record)) => {
+                    warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    if retry_attempts >= total_attempts {
+                        return Err(
+                            GetRecordError::ReturnedRecordDoesNotMatch(returned_record).into()
+                        );
                     }
                 }
                 Err(GetRecordError::RecordNotEnoughCopies(returned_record)) => {
-                    debug!("Not enough copies found yet for {pretty_key:?}");
-                    // Only return when completed all attempts
-                    if retry_attempts >= total_attempts && matches!(cfg.get_quorum, Quorum::One) {
-                        if cfg.target_record.is_none()
-                            || (cfg.target_record.is_some()
-                                && cfg.target_record == Some(returned_record.clone()))
-                        {
-                            return Ok(returned_record);
-                        } else {
-                            return Err(Error::ReturnedRecordDoesNotMatch(
-                                PrettyPrintRecordKey::from(&returned_record.key).into_owned(),
-                            ));
-                        }
-                    } else if retry_attempts >= total_attempts {
-                        // return the record incase of failed quorum.
+                    warn!("Not enough copies found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    if retry_attempts >= total_attempts {
                         return Err(GetRecordError::RecordNotEnoughCopies(returned_record).into());
                     }
                 }
                 Err(GetRecordError::RecordNotFound) => {
+                    warn!("No holder of record '{pretty_key:?}' found. Attempts: {retry_attempts:?}/{total_attempts:?}");
                     // libp2p RecordNotFound does mean no holders answered.
                     // it does not actually mean the record does not exist.
                     // just that those asked did not have it
                     if retry_attempts >= total_attempts {
-                        break;
+                        return Err(GetRecordError::RecordNotFound.into());
                     }
-
-                    warn!("No holder of record '{pretty_key:?}' found. Retrying the fetch ...",);
                 }
                 Err(GetRecordError::SplitRecord { result_map }) => {
-                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered split");
+                    error!("Encountered a split record for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
 
                     if retry_attempts >= total_attempts {
                         return Err(GetRecordError::SplitRecord { result_map }.into());
                     }
-                    warn!("Fetched split Record '{pretty_key:?}' from network!. Retrying...",);
                 }
                 Err(GetRecordError::QueryTimeout) => {
-                    error!("Getting record {pretty_key:?} attempts #{retry_attempts}/{total_attempts} , encountered Timeout");
+                    error!("Encountered query timeout for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
 
                     if retry_attempts >= total_attempts {
-                        break;
+                        return Err(GetRecordError::QueryTimeout.into());
                     }
-                    warn!("Did not retrieve Record '{pretty_key:?}' from network!. Retrying...",);
                 }
             }
 

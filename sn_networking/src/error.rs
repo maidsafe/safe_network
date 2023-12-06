@@ -44,6 +44,9 @@ pub enum GetRecordError {
 
     #[error("Network query timed out")]
     QueryTimeout,
+
+    #[error("Record retrieved from the network does not match the one we attempted to store.")]
+    ReturnedRecordDoesNotMatch(Record),
 }
 
 /// Network Errors
@@ -86,9 +89,6 @@ pub enum Error {
     /// No put_record attempts were successfully verified.
     #[error("Could not retrieve the record after storing it: {0:}")]
     FailedToVerifyRecordWasStored(PrettyPrintRecordKey<'static>),
-
-    #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
-    ReturnedRecordDoesNotMatch(PrettyPrintRecordKey<'static>),
 
     // ---------- Transfer Errors
     #[error("Failed to get transfer parent spend")]
