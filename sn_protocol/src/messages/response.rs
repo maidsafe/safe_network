@@ -8,6 +8,7 @@
 
 use crate::{error::Result, NetworkAddress};
 
+use super::ChunkProof;
 use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,11 @@ use std::fmt::Debug;
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
+    // ===== GetStoreCost =====
+    //
+    /// Response to [`GetStoreCost`]
+    ///
+    /// [`GetStoreCost`]: crate::messages::Query::GetStoreCost
     GetStoreCost {
         /// The store cost quote for storing the next record.
         quote: Result<PaymentQuote>,
@@ -32,6 +38,12 @@ pub enum QueryResponse {
     ///
     /// [`GetReplicatedRecord`]: crate::messages::Query::GetReplicatedRecord
     GetReplicatedRecord(Result<(NetworkAddress, Bytes)>),
+    // ===== ReplicatedRecord =====
+    //
+    /// Response to [`GetChunkExistenceProof`]
+    ///
+    /// [`GetChunkExistenceProof`]: crate::messages::Query::GetChunkExistenceProof
+    GetChunkExistenceProof(Result<ChunkProof>),
 }
 
 // Debug implementation for QueryResponse, to avoid printing Vec<u8>
@@ -61,6 +73,9 @@ impl Debug for QueryResponse {
                     write!(f, "GetReplicatedRecord(Err({err:?}))")
                 }
             },
+            QueryResponse::GetChunkExistenceProof(proof) => {
+                write!(f, "GetChunkExistenceProof(proof: {proof:?})")
+            }
         }
     }
 }

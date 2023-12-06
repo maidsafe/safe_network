@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::NetworkAddress;
-
+use crate::{messages::Nonce, NetworkAddress};
 use serde::{Deserialize, Serialize};
 
 /// Data queries - retrieving data and inspecting their structure.
@@ -32,6 +31,13 @@ pub enum Query {
         /// Key of the record to be fetched
         key: NetworkAddress,
     },
+    /// Get the proof that the chunk with the given NetworkAddress exists with the requested node.
+    GetChunkExistenceProof {
+        /// The Address of the chunk that we are trying to verify.
+        key: NetworkAddress,
+        /// The random nonce that the node uses to produce the Proof (i.e., hash(record+nonce))
+        nonce: Nonce,
+    },
 }
 
 impl Query {
@@ -40,8 +46,9 @@ impl Query {
         match self {
             Query::GetStoreCost(address) => address.clone(),
             // Shall not be called for this, as this is a `one-to-one` message,
-            // and the destionation shall be decided by the requester already.
+            // and the destination shall be decided by the requester already.
             Query::GetReplicatedRecord { key, .. } => key.clone(),
+            Query::GetChunkExistenceProof { key, .. } => key.clone(),
         }
     }
 }
@@ -54,6 +61,9 @@ impl std::fmt::Display for Query {
             }
             Query::GetReplicatedRecord { key, requester } => {
                 write!(f, "Query::GetStoreCost({requester:?} {key:?})")
+            }
+            Query::GetChunkExistenceProof { key, nonce } => {
+                write!(f, "Query::GetChunkExistenceProof({key:?} {nonce:?})")
             }
         }
     }

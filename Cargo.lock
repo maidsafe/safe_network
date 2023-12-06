@@ -4740,6 +4740,7 @@ dependencies = [
  "sn_registers",
  "sn_transfers",
  "thiserror",
+ "tiny-keccak",
  "tonic 0.6.2",
  "tonic-build",
  "tracing",

@@ -28,6 +28,7 @@ sha2 = "0.10.7"
 sn_transfers = { path = "../sn_transfers", version = "0.14.28" }
 sn_registers = { path = "../sn_registers", version = "0.3.5" }
 thiserror = "1.0.23"
+tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
 tracing = { version = "~0.1.26" }
 # # watch out updating this, protoc compiler needs to be installed on all build systems
 # # arm builds + musl are very problematic
