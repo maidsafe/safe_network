@@ -336,7 +336,7 @@ fn create_registers_task(
         // Create Registers at a higher frequency than the churning events
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
 
-        let paying_wallet = get_wallet(&paying_wallet_dir).await;
+        let paying_wallet = get_wallet(&paying_wallet_dir);
 
         let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 

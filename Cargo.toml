@@ -23,6 +23,12 @@ mutable_transmutes = "forbid"
 no_mangle_const_items = "forbid"
 unknown_crate_types = "forbid"
 unsafe_code = "forbid"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
 
 [workspace.lints.clippy]
 uninlined_format_args = "warn"
+unicode_not_nfc = "warn"
+unused_async = "warn"
