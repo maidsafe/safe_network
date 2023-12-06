@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701864622876,
+  "lastUpdate": 1701864778566,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "df08c28a107feef1a997a8bb3bb60d78bdc3d486",
-          "message": "fix(replication): fix incorrect fetch timeout condition",
-          "timestamp": "2023-07-28T15:35:01Z",
-          "tree_id": "7c1703cae230c447716271c2b353a4ee68d9e5bb",
-          "url": "https://github.com/maidsafe/safe_network/commit/df08c28a107feef1a997a8bb3bb60d78bdc3d486"
-        },
-        "date": 1690577297350,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.24,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 93,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "9eb9532bdd9379ac95632daf0279c92850eacc04",
+          "message": "test(wallet): adding unit tests for watch-only wallet impl.",
+          "timestamp": "2023-12-06T11:31:01Z",
+          "tree_id": "222673a042525ff0d3a661fcabb15b28a4b9f282",
+          "url": "https://github.com/maidsafe/safe_network/commit/9eb9532bdd9379ac95632daf0279c92850eacc04"
+        },
+        "date": 1701864777721,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 114,
             "unit": "MB"
           }
         ]
