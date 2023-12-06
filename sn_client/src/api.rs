@@ -434,7 +434,7 @@ impl Client {
         };
 
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
+            put_quorum: Quorum::One,
             re_attempt: true,
             verification,
         };
