@@ -6,13 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{Error, Result};
 use itertools::Itertools;
-use sn_protocol::{
-    error::{Error, Result},
-    storage::SpendAddress,
-};
-use sn_transfers::{is_genesis_parent_tx, GENESIS_CASHNOTE};
-use sn_transfers::{SignedSpend, UniquePubkey};
+use sn_protocol::storage::SpendAddress;
+use sn_transfers::{is_genesis_parent_tx, SignedSpend, UniquePubkey, GENESIS_CASHNOTE};
 use std::{
     collections::{BTreeSet, HashSet},
     iter::Iterator,

@@ -23,8 +23,8 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetRecordCfg, NetworkBuilder, NetworkEvent,
-    PutRecordCfg, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
+    NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -307,7 +307,7 @@ impl Client {
         let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
         let record = match maybe_record {
             Ok(r) => r,
-            Err(NetworkError::SplitRecord { result_map }) => {
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
                 return merge_split_register_records(address, &result_map)
             }
             Err(e) => {
@@ -471,7 +471,7 @@ impl Client {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
         } else {
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
 
@@ -497,7 +497,7 @@ impl Client {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
         } else {
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Chunk).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
 
@@ -637,7 +637,7 @@ impl Client {
             }
         } else {
             error!("RecordKind mismatch while trying to retrieve a cash_note spend");
-            Err(ProtocolError::RecordKindMismatch(RecordKind::Spend).into())
+            Err(NetworkError::RecordKindMismatch(RecordKind::Spend).into())
         }
     }
 
@@ -731,9 +731,7 @@ fn get_register_from_record(record: Record) -> Result<SignedRegister> {
         Ok(register)
     } else {
         error!("RecordKind mismatch while trying to retrieve a signed register");
-        Err(Error::Protocol(ProtocolError::RecordKindMismatch(
-            RecordKind::Register,
-        )))
+        Err(NetworkError::RecordKindMismatch(RecordKind::Register).into())
     }
 }
 

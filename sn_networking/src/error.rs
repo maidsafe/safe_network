@@ -13,7 +13,8 @@ use libp2p::{
     swarm::DialError,
     PeerId, TransportError,
 };
-use sn_protocol::{messages::Response, PrettyPrintRecordKey};
+use sn_protocol::{messages::Response, storage::RecordKind, PrettyPrintRecordKey};
+use sn_transfers::{SignedSpend, SpendAddress};
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -25,27 +26,62 @@ use xor_name::XorName;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Internal error.
+/// GetRecord Query errors
+#[derive(Debug, Error)]
+#[allow(missing_docs)]
+pub enum GetRecordError {
+    #[error("Get Record completed with non enough copies")]
+    RecordNotEnoughCopies(Record),
+
+    #[error("Record not found in the network")]
+    RecordNotFound,
+
+    // Avoid logging the whole `Record` content by accident
+    #[error("Split Record has {} different copies", result_map.len())]
+    SplitRecord {
+        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
+    },
+
+    #[error("Network query timed out")]
+    QueryTimeout,
+}
+
+/// Network Errors
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
-    #[error("Network query timed out")]
-    QueryTimeout,
+    #[error("Dial Error")]
+    DialError(#[from] DialError),
 
-    #[error("Close group size must be a non-zero usize")]
-    InvalidCloseGroupSize,
+    #[error("I/O error: {0}")]
+    Io(#[from] io::Error),
 
-    #[error("Could ont build the gossipsub config: {0}")]
-    GossipsubConfigError(String),
+    #[error("Kademlia Store error: {0}")]
+    KademliaStoreError(#[from] kad::store::Error),
 
-    #[error("Internal messaging channel was dropped")]
-    InternalMsgChannelDropped,
+    #[error("Transport Error")]
+    TransportError(#[from] TransportError<std::io::Error>),
 
-    #[error("Response received for a request not found in our local tracking map: {0}")]
-    ReceivedResponseDropped(OutboundRequestId),
+    #[error("SnProtocol Error")]
+    ProtocolError(#[from] sn_protocol::error::Error),
 
-    #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
-    OutgoingResponseDropped(Response),
+    #[error("Transfer Error {0}.")]
+    Transfers(#[from] sn_transfers::WalletError),
+
+    #[error("Failed to sign the message with the PeerId keypair")]
+    SigningFailed(#[from] libp2p::identity::SigningError),
+
+    // ---------- Record Errors
+    // GetRecord query errors
+    #[error("GetRecord Query Error")]
+    GetRecordError(#[from] GetRecordError),
+
+    // The RecordKind that was obtained did not match with the expected one
+    #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
+    RecordKindMismatch(RecordKind),
+
+    #[error("Record header is incorrect")]
+    InCorrectRecordHeader,
 
     /// No put_record attempts were successfully verified.
     #[error("Could not retrieve the record after storing it: {0:}")]
@@ -54,53 +90,46 @@ pub enum Error {
     #[error("Record retrieved from the network does not match the one we attempted to store {0:}")]
     ReturnedRecordDoesNotMatch(PrettyPrintRecordKey<'static>),
 
+    // ---------- Transfer Errors
+    #[error("Failed to get transfer parent spend")]
+    FailedToGetTransferParentSpend,
+
+    #[error("Transfer is invalid: {0}")]
+    InvalidTransfer(String),
+
+    // ---------- Spend Errors
+    #[error("Spend not found: {0:?}")]
+    NoSpendFoundInsideRecord(SpendAddress),
+
+    #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
+    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+
+    // ---------- Store Error
+    #[error("No Store Cost Responses")]
+    NoStoreCostResponses,
+
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
         path: PathBuf,
         source: std::io::Error,
     },
 
-    #[error("I/O error: {0}")]
-    Io(#[from] io::Error),
+    // ---------- GossipSub Errors
+    #[error("Could ont build the gossipsub config: {0}")]
+    GossipsubConfigError(String),
 
-    #[error("Transport Error")]
-    TransportError(#[from] TransportError<std::io::Error>),
+    #[error("Gossipsub publish Error: {0}")]
+    GossipsubPublishError(#[from] PublishError),
 
-    #[error("Dial Error")]
-    DialError(#[from] DialError),
+    #[error("Gossipsub subscribe Error: {0}")]
+    GossipsubSubscriptionError(#[from] SubscriptionError),
 
-    #[error("Outbound Error")]
-    OutboundError(#[from] OutboundFailure),
-
-    #[error("Kademlia Store error: {0}")]
-    KademliaStoreError(#[from] kad::store::Error),
-
-    #[error("A Kademlia event has been dropped: {0:?}")]
-    ReceivedKademliaEventDropped(kad::Event),
-
-    #[error("The oneshot::sender has been dropped")]
-    SenderDropped(#[from] oneshot::error::RecvError),
-
+    // ---------- Internal Network Errors
     #[error("Could not get enough peers ({required}) to satisfy the request, found {found}")]
     NotEnoughPeers { found: usize, required: usize },
 
-    #[error("Record was not found locally")]
-    RecordNotFound,
-
-    #[error("Get Record completed with non enough copies")]
-    RecordNotEnoughCopies(Record),
-
-    #[error("SnProtocol Error")]
-    ProtocolError(#[from] sn_protocol::error::Error),
-
-    #[error("No SwarmCmd channel capacity")]
-    NoSwarmCmdChannelCapacity,
-
-    #[error("No Store Cost Responses")]
-    NoStoreCostResponses,
-
-    #[error("Failed to sign the message with the PeerId keypair")]
-    SigningFailed(#[from] libp2p::identity::SigningError),
+    #[error("Close group size must be a non-zero usize")]
+    InvalidCloseGroupSize,
 
     #[error("Failed to pop from front of CircularVec")]
     CircularVecPopFrontError,
@@ -112,20 +141,24 @@ pub enum Error {
     #[error("Network Metric error")]
     NetworkMetricError,
 
-    #[error("Gossipsub publish Error: {0}")]
-    GossipsubPublishError(#[from] PublishError),
+    // ---------- Channel Errors
+    #[error("Outbound Error")]
+    OutboundError(#[from] OutboundFailure),
 
-    #[error("Gossipsub subscribe Error: {0}")]
-    GossipsubSubscriptionError(#[from] SubscriptionError),
+    #[error("A Kademlia event has been dropped: {0:?}")]
+    ReceivedKademliaEventDropped(kad::Event),
 
-    // Avoid logging the whole `Record` content by accident
-    #[error("Split Record has {} different copies", result_map.len())]
-    SplitRecord {
-        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
-    },
+    #[error("The oneshot::sender has been dropped")]
+    SenderDropped(#[from] oneshot::error::RecvError),
 
-    #[error("Record header is incorrect")]
-    InCorrectRecordHeader,
+    #[error("Internal messaging channel was dropped")]
+    InternalMsgChannelDropped,
+
+    #[error("Response received for a request not found in our local tracking map: {0}")]
+    ReceivedResponseDropped(OutboundRequestId),
+
+    #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
+    OutgoingResponseDropped(Response),
 }
 
 #[cfg(test)]

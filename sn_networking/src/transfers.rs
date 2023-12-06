@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{driver::GetRecordCfg, Network};
-use libp2p::kad::Quorum;
+use crate::{driver::GetRecordCfg, Error, Network, Result};
+use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
-    error::{Error, Result},
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -30,41 +29,28 @@ impl Network {
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = self
-            .get_record_from_network(key, &get_cfg)
-            .await
-            .map_err(|_| Error::SpendNotFound(address))?;
+        let record = self.get_record_from_network(key, &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-        let header =
-            RecordHeader::from_record(&record).map_err(|_| Error::SpendNotFound(address))?;
 
-        if let RecordKind::Spend = header.kind {
-            match try_deserialize_record::<Vec<SignedSpend>>(&record)
-                .map_err(|_| Error::SpendNotFound(address))?
-                .as_slice()
-            {
-                [one, two, ..] => {
-                    error!("Found double spend for {address:?}");
-                    Err(Error::DoubleSpendAttempt(
-                        Box::new(one.to_owned()),
-                        Box::new(two.to_owned()),
-                    ))
-                }
-                [one] => {
-                    trace!("Spend get for address: {address:?} successful");
-                    Ok(one.clone())
-                }
-                _ => {
-                    trace!("Found no spend for {address:?}");
-                    Err(Error::SpendNotFound(address))
-                }
+        match get_singed_spends_from_record(record)?.as_slice() {
+            [one, two, ..] => {
+                error!("Found double spend for {address:?}");
+                Err(Error::DoubleSpendAttempt(
+                    Box::new(one.to_owned()),
+                    Box::new(two.to_owned()),
+                ))
             }
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
-            Err(Error::RecordKindMismatch(RecordKind::Spend))
+            [one] => {
+                trace!("Spend get for address: {address:?} successful");
+                Ok(one.clone())
+            }
+            _ => {
+                trace!("Found no spend for {address:?}");
+                Err(Error::NoSpendFoundInsideRecord(address))
+            }
         }
     }
 
@@ -82,9 +68,7 @@ impl Network {
     ) -> Result<Vec<CashNote>> {
         // get CashNoteRedemptions from encrypted Transfer
         trace!("Decyphering Transfer");
-        let cashnote_redemptions = wallet
-            .unwrap_transfer(transfer)
-            .map_err(|_| Error::FailedToDecypherTransfer)?;
+        let cashnote_redemptions = wallet.unwrap_transfer(transfer)?;
 
         self.verify_cash_notes_redemptions(wallet.address(), &cashnote_redemptions)
             .await
@@ -170,5 +154,17 @@ impl Network {
         }
 
         Ok(our_output_cash_notes)
+    }
+}
+
+/// Tries to get the signed spend out of a record.
+pub fn get_singed_spends_from_record(record: Record) -> Result<Vec<SignedSpend>> {
+    let header = RecordHeader::from_record(&record)?;
+    if let RecordKind::Spend = header.kind {
+        let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+        Ok(spends)
+    } else {
+        error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
+        Err(Error::RecordKindMismatch(RecordKind::Spend))
     }
 }

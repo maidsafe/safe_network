@@ -14,7 +14,7 @@ use eyre::{eyre, Result};
 use rand::Rng;
 use sn_client::{Error as ClientError, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
-use sn_networking::Error as NetworkError;
+use sn_networking::{Error as NetworkError, GetRecordError};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{ChunkAddress, RegisterAddress},
@@ -261,7 +261,9 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
             files_api
                 .read_bytes(content_addr, None, false, BATCH_SIZE)
                 .await,
-            Err(ClientError::Network(NetworkError::RecordNotFound))
+            Err(ClientError::Network(NetworkError::GetRecordError(
+                GetRecordError::RecordNotFound
+            )))
         ),
         "read bytes should fail as we didn't store them"
     );

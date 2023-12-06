@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.3...sn_networking-v0.11.4) - 2023-12-05
+
+### Added
+- *(network)* use custom enum for get_record errors
+
+### Fixed
+- *(node)* get self spend should be aggregated even if it errors out
+
+### Other
+- *(network)* use HashMap entry to insert peer into the result_map
+- *(network)* avoid losing error info by converting them to a single type
+
 ## [0.11.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.2...sn_networking-v0.11.3) - 2023-12-05
 
 ### Other
