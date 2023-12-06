@@ -2440,6 +2440,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add boilerplate for workspace lints
 - address failing clippy::all lints
 
+## [0.99.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.8...sn_node-v0.99.9) - 2023-12-06
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

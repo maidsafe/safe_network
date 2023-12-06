@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.27](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.26...sn_transfers-v0.14.27) - 2023-12-06
+
+### Added
+- *(wallet)* basic impl of a watch-only wallet API
+
+### Other
+- *(wallet)* adding unit tests for watch-only wallet impl.
+- *(wallet)* another refactoring removing more redundant and unused wallet code
+- *(wallet)* major refactoring removing redundant and unused code
+
 ## [0.14.26](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.25...sn_transfers-v0.14.26) - 2023-12-06
 
 ### Other
