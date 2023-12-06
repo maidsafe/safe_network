@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701872331163,
+  "lastUpdate": 1701872487791,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d3ba059d8abee2613ab914165da60998aa61db02",
-          "message": "chore: move PrettyPrintRecordKey to sn_protocol",
-          "timestamp": "2023-07-31T14:21:45Z",
-          "tree_id": "92a00f911ee0be375f47d385cc8a6fc396c05495",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3ba059d8abee2613ab914165da60998aa61db02"
-        },
-        "date": 1690836564830,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 28.17,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 95,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "74b37c15125a81fbaa96b44550aa354414bf4aec",
+          "message": "chore(network): use PUT Quorum::One for chunks",
+          "timestamp": "2023-12-06T13:35:19Z",
+          "tree_id": "cf3be086078da04184a2fe110eeba2b03b5b7161",
+          "url": "https://github.com/maidsafe/safe_network/commit/74b37c15125a81fbaa96b44550aa354414bf4aec"
+        },
+        "date": 1701872487429,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 101,
             "unit": "MB"
           }
         ]
