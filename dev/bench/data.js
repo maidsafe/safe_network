@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701872489457,
+  "lastUpdate": 1701872491022,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32239,6 +32239,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 15,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "74b37c15125a81fbaa96b44550aa354414bf4aec",
+          "message": "chore(network): use PUT Quorum::One for chunks",
+          "timestamp": "2023-12-06T13:35:19Z",
+          "tree_id": "cf3be086078da04184a2fe110eeba2b03b5b7161",
+          "url": "https://github.com/maidsafe/safe_network/commit/74b37c15125a81fbaa96b44550aa354414bf4aec"
+        },
+        "date": 1701872490687,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5356,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 71080,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 13,
             "unit": "ms"
           }
         ]
