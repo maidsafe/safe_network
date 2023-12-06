@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 //! Data messages and their possible responses.
+mod chunk_proof;
 mod cmd;
 mod node_id;
 mod query;
@@ -14,6 +15,7 @@ mod register;
 mod response;
 
 pub use self::{
+    chunk_proof::{ChunkProof, Nonce},
     cmd::{Cmd, Hash},
     node_id::NodeId,
     query::Query,
