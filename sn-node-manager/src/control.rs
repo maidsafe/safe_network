@@ -10,7 +10,15 @@ use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
+use semver::Version;
 use sn_node_rpc_client::RpcActions;
+use std::path::PathBuf;
+
+pub enum UpgradeResult {
+    NotRequired,
+    Upgraded(String, String),
+    Error(String),
+}
 
 pub async fn start(
     node: &mut Node,
@@ -191,6 +199,7 @@ pub async fn remove(
         )?;
         node.data_dir_path = None;
         node.log_dir_path = None;
+        node.safenode_path = None;
     }
 
     node.status = NodeStatus::Removed;
@@ -198,6 +207,34 @@ pub async fn remove(
     println!("{} Service {} was removed", "✓".green(), node.service_name);
 
     Ok(())
+}
+
+pub async fn upgrade(
+    node: &mut Node,
+    upgraded_safenode_path: &PathBuf,
+    latest_version: &Version,
+    service_control: &dyn ServiceControl,
+    rpc_client: &dyn RpcActions,
+) -> Result<UpgradeResult> {
+    let current_version = Version::parse(&node.version)?;
+    if current_version == *latest_version {
+        return Ok(UpgradeResult::NotRequired);
+    }
+
+    stop(node, service_control).await?;
+    std::fs::copy(
+        upgraded_safenode_path,
+        node.safenode_path
+            .as_ref()
+            .ok_or_else(|| eyre!("Unable to obtain safenode path for current node"))?,
+    )?;
+    start(node, service_control, rpc_client).await?;
+    node.version = latest_version.to_string();
+
+    Ok(UpgradeResult::Upgraded(
+        current_version.to_string(),
+        latest_version.to_string(),
+    ))
 }
 
 fn format_status(status: &NodeStatus) -> String {
@@ -281,7 +318,9 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -336,7 +375,9 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -391,7 +432,9 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -437,7 +480,9 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -476,7 +521,9 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
         stop(&mut node, &mock_service_control).await?;
 
@@ -509,7 +556,9 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
 
         let result = stop(&mut node, &mock_service_control).await;
@@ -544,7 +593,9 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
 
         stop(&mut node, &mock_service_control).await?;
@@ -562,6 +613,8 @@ mod tests {
         log_dir.create_dir_all()?;
         let data_dir = temp_dir.child("safenode1-data");
         data_dir.create_dir_all()?;
+        let safenode_bin = data_dir.child("safenode");
+        safenode_bin.write_binary(b"fake safenode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
@@ -582,12 +635,14 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
+            safenode_path: Some(safenode_bin.to_path_buf()),
         };
 
         remove(&mut node, &mock_service_control, false).await?;
 
         assert_eq!(node.data_dir_path, None);
         assert_eq!(node.log_dir_path, None);
+        assert_eq!(node.safenode_path, None);
         assert_matches!(node.status, NodeStatus::Removed);
 
         log_dir.assert(predicate::path::missing());
@@ -619,6 +674,9 @@ mod tests {
             )?),
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+            safenode_path: Some(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )),
         };
 
         let result = remove(&mut node, &mock_service_control, false).await;
@@ -638,6 +696,8 @@ mod tests {
         log_dir.create_dir_all()?;
         let data_dir = temp_dir.child("safenode1-data");
         data_dir.create_dir_all()?;
+        let safenode_bin = data_dir.child("safenode");
+        safenode_bin.write_binary(b"fake safenode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
@@ -660,6 +720,7 @@ mod tests {
             )?),
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
+            safenode_path: Some(safenode_bin.to_path_buf()),
         };
 
         let result = remove(&mut node, &mock_service_control, false).await;
@@ -684,6 +745,8 @@ mod tests {
         log_dir.create_dir_all()?;
         let data_dir = temp_dir.child("safenode1-data");
         data_dir.create_dir_all()?;
+        let safenode_bin = data_dir.child("safenode");
+        safenode_bin.write_binary(b"fake safenode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
@@ -704,6 +767,7 @@ mod tests {
             peer_id: None,
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
+            safenode_path: Some(safenode_bin.to_path_buf()),
         };
 
         remove(&mut node, &mock_service_control, true).await?;

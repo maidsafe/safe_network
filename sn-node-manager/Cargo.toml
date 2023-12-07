@@ -18,6 +18,7 @@ color-eyre = "~0.6"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p = { version="0.53", features = [] }
 libp2p-identity = { version="0.2.7", features = ["rand"] }
+semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.5.1"
