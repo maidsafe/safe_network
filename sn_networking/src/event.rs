@@ -38,6 +38,7 @@ use sn_protocol::{
 use std::{
     collections::HashSet,
     fmt::{Debug, Formatter},
+    time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
 use tracing::{info, warn};
@@ -459,7 +460,12 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
-                info!("{:?}", self.swarm.network_info());
+                info!(%peer_id, ?connection_id, "ConnectionEstablished {:?}", self.swarm.network_info());
+
+                let _ = self.live_connected_peers.insert(
+                    connection_id,
+                    (peer_id, Instant::now() + Duration::from_secs(60)),
+                );
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -475,8 +481,9 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                info!("{:?}", self.swarm.network_info());
+                info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                let _ = self.live_connected_peers.remove(&connection_id);
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -582,6 +589,9 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
+
+        self.remove_outdated_connections();
+
         trace!(
             "SwarmEvent handled in {:?}: {event_string:?}",
             start.elapsed()
@@ -1023,6 +1033,36 @@ impl SwarmDriver {
                 .behaviour_mut()
                 .kademlia
                 .remove_peer(&to_be_removed_bootstrap);
+        }
+    }
+
+    // Remove outdated connection to a peer if it is not in the RT.
+    fn remove_outdated_connections(&mut self) {
+        let mut shall_removed = vec![];
+
+        self.live_connected_peers
+            .retain(|connection_id, (peer_id, timeout)| {
+                let shall_retained = *timeout > Instant::now();
+                if !shall_retained {
+                    shall_removed.push((*connection_id, *peer_id))
+                }
+                shall_retained
+            });
+
+        // Only remove outdated peer not in the RT
+        for (connection_id, peer_id) in shall_removed {
+            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
+                if kbucket
+                    .iter()
+                    .any(|peer_entry| peer_id == *peer_entry.node.key.preimage())
+                {
+                    // Skip the connection as peer presents in the RT.
+                    continue;
+                }
+            }
+
+            info!("Removing outdated connection {connection_id:?} to {peer_id:?}");
+            let _result = self.swarm.close_connection(connection_id);
         }
     }
 }
