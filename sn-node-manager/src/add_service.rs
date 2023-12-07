@@ -7,15 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::config::create_owned_dir;
+use crate::helpers::download_and_extract_safenode;
 use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::{ServiceConfig, ServiceControl};
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
-use indicatif::{ProgressBar, ProgressStyle};
 use libp2p::Multiaddr;
-use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::SafeReleaseRepositoryInterface;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 pub struct AddServiceOptions {
     pub count: Option<u16>,
@@ -39,41 +38,8 @@ pub async fn add(
     service_control: &dyn ServiceControl,
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
 ) -> Result<()> {
-    let pb = Arc::new(ProgressBar::new(0));
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")?
-        .progress_chars("#>-"));
-    let pb_clone = pb.clone();
-    let callback: Box<dyn Fn(u64, u64) + Send + Sync> = Box::new(move |downloaded, total| {
-        pb_clone.set_length(total);
-        pb_clone.set_position(downloaded);
-    });
-
-    let version = if let Some(version) = install_options.version {
-        version
-    } else {
-        println!("Retrieving latest version for safenode...");
-        release_repo
-            .get_latest_version(&ReleaseType::Safenode)
-            .await?
-    };
-
-    println!("Downloading safenode version {version}...");
-
-    let temp_dir_path = create_temp_dir()?;
-    let archive_path = release_repo
-        .download_release_from_s3(
-            &ReleaseType::Safenode,
-            &version,
-            &get_running_platform()?,
-            &ArchiveType::TarGz,
-            &temp_dir_path,
-            &callback,
-        )
-        .await?;
-    pb.finish_with_message("Download complete");
-    let safenode_download_path =
-        release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
+    let (safenode_download_path, version) =
+        download_and_extract_safenode(install_options.version, release_repo).await?;
     let safenode_file_name = safenode_download_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
@@ -137,7 +103,7 @@ pub async fn add(
             peer_id: None,
             log_dir_path: Some(service_log_dir_path.clone()),
             data_dir_path: Some(service_data_dir_path.clone()),
-            safenode_path: service_safenode_path,
+            safenode_path: Some(service_safenode_path),
         });
 
         node_number += 1;
@@ -158,16 +124,6 @@ pub async fn add(
     println!("[!] Note: newly added services have not been started");
 
     Ok(())
-}
-
-/// There is a `tempdir` crate that provides the same kind of functionality, but it was flagged for
-/// a security vulnerability.
-fn create_temp_dir() -> Result<PathBuf> {
-    let temp_dir = std::env::temp_dir();
-    let unique_dir_name = uuid::Uuid::new_v4().to_string();
-    let new_temp_dir = temp_dir.join(unique_dir_name);
-    std::fs::create_dir_all(&new_temp_dir)?;
-    Ok(new_temp_dir)
 }
 
 #[cfg(test)]
@@ -232,7 +188,7 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child("safenode");
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
@@ -358,7 +314,7 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child("safenode");
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
@@ -573,7 +529,7 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child("safenode");
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
@@ -693,17 +649,11 @@ mod tests {
                 status: NodeStatus::Added,
                 pid: None,
                 peer_id: None,
-<<<<<<< HEAD
                 log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
                 data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-||||||| parent of 1a686eb (feat: each service instance to use its own binary)
-                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
-                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-=======
-                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
-                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
->>>>>>> 1a686eb (feat: each service instance to use its own binary)
+                safenode_path: Some(PathBuf::from(
+                    "/var/safenode-manager/services/safenode1/safenode",
+                )),
             }],
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -711,7 +661,7 @@ mod tests {
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child("safenode");
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
