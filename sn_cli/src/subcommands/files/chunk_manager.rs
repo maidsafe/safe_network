@@ -78,7 +78,11 @@ impl ChunkManager {
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account
     pub(crate) fn chunk_path(&mut self, files_path: &Path, read_cache: bool) -> Result<()> {
-        println!("Starting to chunk {files_path:?} now.");
+        if !read_cache {
+            println!("Starting to chunk {files_path:?} now.");
+        } else {
+            println!("Starting to chunk/resume {files_path:?} now.");
+        }
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -146,9 +150,15 @@ impl ChunkManager {
             debug!(
                 "All files_to_chunk ({total_files:?}) were resumed. Returning the resumed chunks.",
             );
+            println!("Resumed all {total_files:?} files.");
             debug!("It took {:?} to resume all the files", now.elapsed());
             return Ok(());
         }
+        println!(
+            "Resumed {:?} files. Now chunking the rest of the {:?} files",
+            self.chunks.len(),
+            self.files_to_chunk.len()
+        );
 
         let progress_bar = get_progress_bar(total_files as u64)?;
         progress_bar.println(format!("Chunking {total_files} files..."));
