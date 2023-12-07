@@ -696,7 +696,7 @@ impl SwarmDriver {
         let opts = match peer_id {
             Some(peer_id) => DialOpts::peer_id(peer_id)
                 // If we have a peer ID, we can prevent simultaneous dials.
-                .condition(PeerCondition::NotDialing)
+                .condition(PeerCondition::Always)
                 .addresses(vec![addr])
                 .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
