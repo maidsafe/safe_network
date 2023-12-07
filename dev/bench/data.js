@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701964712269,
+  "lastUpdate": 1701964714991,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "e98253fb8bd4609e5c4874e9310fe553c1e03433",
-          "message": "chore(CI): more tracable wallet setup for memcheck",
-          "timestamp": "2023-07-31T12:23:05Z",
-          "tree_id": "93faa221b9e490e930c70c16094535abf9c765cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/e98253fb8bd4609e5c4874e9310fe553c1e03433"
-        },
-        "date": 1690826406572,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 243.17,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 218,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 166,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629",
+          "message": "fix(network): implement custom Debug for GetRecordError",
+          "timestamp": "2023-12-07T15:05:32Z",
+          "tree_id": "e7715178c496a67ff1da944cbed9509ca4c3b8e5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629"
+        },
+        "date": 1701964713831,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 640,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 151,
             "unit": "MB"
           }
         ]
