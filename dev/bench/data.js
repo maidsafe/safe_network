@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1701964563177,
+  "lastUpdate": 1701964712269,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5d620db0acfb6dc0ce432f622f3094f9cea0c0a4",
-          "message": "fix(test): fix failing unit test",
-          "timestamp": "2023-07-31T17:15:23Z",
-          "tree_id": "dbe32dad9835b33fcba811b6b9d60d21e9f01a58",
-          "url": "https://github.com/maidsafe/safe_network/commit/5d620db0acfb6dc0ce432f622f3094f9cea0c0a4"
-        },
-        "date": 1690846751264,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 25.69,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 101,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629",
+          "message": "fix(network): implement custom Debug for GetRecordError",
+          "timestamp": "2023-12-07T15:05:32Z",
+          "tree_id": "e7715178c496a67ff1da944cbed9509ca4c3b8e5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629"
+        },
+        "date": 1701964711104,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 91,
             "unit": "MB"
           }
         ]
