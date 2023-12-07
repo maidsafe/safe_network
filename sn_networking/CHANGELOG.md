@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.8...sn_networking-v0.11.9) - 2023-12-07
+
+### Fixed
+- *(network)* implement custom Debug for GetRecordError
+
 ## [0.11.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.7...sn_networking-v0.11.8) - 2023-12-06
 
 ### Other
