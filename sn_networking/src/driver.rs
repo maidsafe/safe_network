@@ -81,8 +81,6 @@ const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so sho
 
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
-// Sets the keep-alive timeout of idle connections.
-const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The suffix is the version of the node.
 const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
@@ -519,8 +517,7 @@ impl NetworkBuilder {
             autonat,
             gossipsub,
         };
-        let swarm_config = libp2p::swarm::Config::with_tokio_executor()
-            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        let swarm_config = libp2p::swarm::Config::with_tokio_executor();
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
