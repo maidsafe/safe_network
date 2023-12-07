@@ -17,6 +17,7 @@ use sn_protocol::{messages::Response, storage::RecordKind, PrettyPrintRecordKey}
 use sn_transfers::{SignedSpend, SpendAddress};
 use std::{
     collections::{HashMap, HashSet},
+    fmt::Debug,
     io,
     path::PathBuf,
 };
@@ -27,7 +28,7 @@ use xor_name::XorName;
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// GetRecord Query errors
-#[derive(Debug, Error)]
+#[derive(Error)]
 #[allow(missing_docs)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
@@ -47,6 +48,29 @@ pub enum GetRecordError {
 
     #[error("Record retrieved from the network does not match the provided target record.")]
     RecordDoesNotMatch(Record),
+}
+
+impl Debug for GetRecordError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotEnoughCopies(record) => {
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
+                f.debug_tuple("NotEnoughCopies").field(&pretty_key).finish()
+            }
+            Self::RecordNotFound => write!(f, "RecordNotFound"),
+            Self::SplitRecord { result_map } => f
+                .debug_struct("SplitRecord")
+                .field("result_map count", &result_map.len())
+                .finish(),
+            Self::QueryTimeout => write!(f, "QueryTimeout"),
+            Self::RecordDoesNotMatch(record) => {
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
+                f.debug_tuple("RecordDoesNotMatch")
+                    .field(&pretty_key)
+                    .finish()
+            }
+        }
+    }
 }
 
 /// Network Errors
