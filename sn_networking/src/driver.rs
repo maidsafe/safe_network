@@ -41,7 +41,7 @@ use libp2p::{
     swarm::{
         behaviour::toggle::Toggle,
         dial_opts::{DialOpts, PeerCondition},
-        DialError, NetworkBehaviour, StreamProtocol, Swarm,
+        ConnectionId, DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
     Multiaddr, PeerId, Transport,
 };
@@ -58,7 +58,7 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
@@ -547,6 +547,7 @@ impl NetworkBuilder {
             is_gossip_handler: false,
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
+            live_connected_peers: Default::default(),
         };
 
         Ok((
@@ -593,6 +594,9 @@ pub struct SwarmDriver {
     // This is to ensure a more accurate network discovery.
     pub(crate) network_discovery: NetworkDiscovery,
     pub(crate) bootstrap_peers: BTreeMap<Option<u32>, HashSet<PeerId>>,
+    // Peers that having live connection to. Any peer got contacted during kad network query
+    // will have live connection established. And they may not appear in the RT.
+    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
 }
 
 impl SwarmDriver {
