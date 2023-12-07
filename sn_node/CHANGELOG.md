@@ -2451,6 +2451,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(network)* add more docs to the get_record_handlers
 - *(release)* sn_cli-v0.86.45/sn_networking-v0.11.7/sn_faucet-v0.1.67/sn_client-v0.99.8
 
+## [0.99.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.10...sn_node-v0.99.11) - 2023-12-07
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
