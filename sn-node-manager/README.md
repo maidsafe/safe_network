@@ -82,6 +82,19 @@ This command must run as the root user on Linux/macOS and the Administrator user
 
 Removes the node and its data/log directories. The node must be stopped before running this command.
 
+### Upgrade
+
+- Command: `upgrade`
+- Description: Upgrades a `safenode` service to the latest version.
+- Options:
+  - `--peer_id`: Peer ID of the service to stop. Optional.
+  - `--service_name`: Name of the service to stop. Optional.
+- Usage: `safenode-manager upgrade [OPTIONS]`
+
+This command must run as the root user on Linux/macOS and the Administrator user on Windows.
+
+Running the command with no arguments will upgrade every node. The peer ID or service name can be used to upgrade a specific service.
+
 ## License
 
 This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](LICENSE) http://www.gnu.org/licenses/gpl-3.0.en.html).

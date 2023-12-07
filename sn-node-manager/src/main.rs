@@ -9,20 +9,24 @@
 mod add_service;
 mod config;
 mod control;
+mod helpers;
 mod node;
 mod service;
 
 use crate::add_service::{add, AddServiceOptions};
 use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
-use crate::control::{remove, start, status, stop};
+use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
+use crate::helpers::download_and_extract_safenode;
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
+use colored::Colorize;
 use libp2p_identity::PeerId;
+use semver::Version;
 use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
-use sn_releases::SafeReleaseRepositoryInterface;
+use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -96,15 +100,15 @@ pub enum SubCmd {
     },
     /// Start a safenode service.
     ///
-    /// If no peer ID or service name are supplied, all installed services will be started.
+    /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {
-        /// The peer ID of the service to start.
+        /// The peer ID of the service to start
         #[clap(long)]
         peer_id: Option<String>,
-        /// The name of the service to start.
+        /// The name of the service to start
         #[clap(long)]
         service_name: Option<String>,
     },
@@ -115,17 +119,31 @@ pub enum SubCmd {
         #[clap(long)]
         details: bool,
     },
-    /// Stop an installed safenode service.
+    /// Stop a safenode service.
     ///
-    /// If no peer ID or service name are supplied, all installed services will be stopped.
+    /// If no peer ID(s) or service name(s) are supplied, all services will be stopped.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
     Stop {
-        /// The peer ID of the service to stop.
+        /// The peer ID of the service to stop
         #[clap(long)]
         peer_id: Option<String>,
-        /// The name of the service to stop.
+        /// The name of the service to stop
+        #[clap(long)]
+        service_name: Option<String>,
+    },
+    /// Upgrade a safenode service.
+    ///
+    /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "upgrade")]
+    Upgrade {
+        /// The peer ID of the service to upgrade
+        #[clap(long)]
+        peer_id: Option<String>,
+        /// The name of the service to upgrade
         #[clap(long)]
         service_name: Option<String>,
     },
@@ -334,6 +352,156 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
+        SubCmd::Upgrade {
+            peer_id,
+            service_name,
+        } => {
+            if !is_running_as_root() {
+                return Err(eyre!("The upgrade command must run as the root user"));
+            }
+
+            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
+
+            println!("=================================================");
+            println!("           Upgrade Safenode Services             ");
+            println!("=================================================");
+
+            println!("Retrieving latest version of safenode...");
+            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+            let latest_version = release_repo
+                .get_latest_version(&ReleaseType::Safenode)
+                .await
+                .map(|v| Version::parse(&v).unwrap())?;
+            println!("Latest version is {latest_version}");
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            let any_nodes_need_upgraded = node_registry.nodes.iter().any(|n| {
+                let current_version = Version::parse(&n.version).unwrap();
+                current_version < latest_version
+            });
+
+            if !any_nodes_need_upgraded {
+                println!("{} All nodes are at the latest version", "✓".green());
+                return Ok(());
+            }
+
+            let (safenode_download_path, _) =
+                download_and_extract_safenode(Some(latest_version.to_string()), release_repo)
+                    .await?;
+
+            let mut upgrade_summary = Vec::new();
+
+            if let Some(ref name) = service_name {
+                let node = node_registry
+                    .nodes
+                    .iter_mut()
+                    .find(|x| x.service_name == *name)
+                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
+
+                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let result = upgrade(
+                    node,
+                    &safenode_download_path,
+                    &latest_version,
+                    &NodeServiceManager {},
+                    &rpc_client,
+                )
+                .await;
+
+                match result {
+                    Ok(upgrade_result) => {
+                        upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                    }
+                    Err(e) => {
+                        upgrade_summary.push((
+                            node.service_name.clone(),
+                            UpgradeResult::Error(format!("Error: {}", e)),
+                        ));
+                    }
+                }
+            } else if let Some(ref peer_id) = peer_id {
+                let peer_id = PeerId::from_str(peer_id)?;
+                let node = node_registry
+                    .nodes
+                    .iter_mut()
+                    .find(|x| x.peer_id == Some(peer_id))
+                    .ok_or_else(|| {
+                        eyre!(format!(
+                            "Could not find node with peer ID '{}'",
+                            peer_id.to_string()
+                        ))
+                    })?;
+
+                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let result = upgrade(
+                    node,
+                    &safenode_download_path,
+                    &latest_version,
+                    &NodeServiceManager {},
+                    &rpc_client,
+                )
+                .await;
+
+                match result {
+                    Ok(upgrade_result) => {
+                        upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                    }
+                    Err(e) => {
+                        upgrade_summary.push((
+                            node.service_name.clone(),
+                            UpgradeResult::Error(format!("Error: {}", e)),
+                        ));
+                    }
+                }
+            } else {
+                for node in node_registry.nodes.iter_mut() {
+                    let rpc_client =
+                        RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                    let result = upgrade(
+                        node,
+                        &safenode_download_path,
+                        &latest_version,
+                        &NodeServiceManager {},
+                        &rpc_client,
+                    )
+                    .await;
+
+                    match result {
+                        Ok(upgrade_result) => {
+                            upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                        }
+                        Err(e) => {
+                            upgrade_summary.push((
+                                node.service_name.clone(),
+                                UpgradeResult::Error(format!("Error: {}", e)),
+                            ));
+                        }
+                    }
+                }
+            }
+
+            node_registry.save(&get_node_registry_path()?)?;
+
+            println!("Upgrade summary:");
+            for (service_name, upgrade_result) in upgrade_summary {
+                match upgrade_result {
+                    UpgradeResult::NotRequired => {
+                        println!("- {service_name} was at the latest version");
+                    }
+                    UpgradeResult::Upgraded(previous_version, new_version) => {
+                        println!(
+                            "{} {service_name} upgraded from {previous_version} to {new_version}",
+                            "✓".green()
+                        );
+                    }
+                    UpgradeResult::Error(msg) => {
+                        println!("{} {service_name} was not upgraded: {}", "✕".red(), msg);
+                    }
+                }
+            }
+
+            Ok(())
+        }
     }
 }
 
@@ -346,20 +514,6 @@ fn is_running_as_root() -> bool {
 fn is_running_as_root() -> bool {
     // The Windows implementation for this will be much more complex.
     true
-}
-
-#[cfg(unix)]
-fn get_safenode_install_path() -> Result<PathBuf> {
-    Ok(PathBuf::from("/usr/local/bin"))
-}
-
-#[cfg(windows)]
-fn get_safenode_install_path() -> Result<PathBuf> {
-    let path = PathBuf::from("C:\\Program Files\\Maidsafe\\safenode");
-    if !path.exists() {
-        std::fs::create_dir_all(path.clone())?;
-    }
-    Ok(path)
 }
 
 fn validate_peer_id_and_service_name_args(
