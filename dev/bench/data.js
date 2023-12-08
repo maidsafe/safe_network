@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702029052221,
+  "lastUpdate": 1702029054842,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "34775754bdb26b9bb0abb47574c91138893d0f21",
-          "message": "ci: remove duplicate faucet after testnet start in bench gen",
-          "timestamp": "2023-08-01T07:38:23Z",
-          "tree_id": "3d5dfa2e8b2b456c2442cfea0e789f09bdf8ca1d",
-          "url": "https://github.com/maidsafe/safe_network/commit/34775754bdb26b9bb0abb47574c91138893d0f21"
-        },
-        "date": 1690899705076,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 259,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 162,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "4edbc084ec009fe8935e0c17bdec83437533d93a",
+          "message": "test: increase wait time for royalty transfers",
+          "timestamp": "2023-12-08T09:03:56Z",
+          "tree_id": "82924311e583e022c80d4c539c8c15da5072e5ec",
+          "url": "https://github.com/maidsafe/safe_network/commit/4edbc084ec009fe8935e0c17bdec83437533d93a"
+        },
+        "date": 1702029053723,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 626,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 156,
             "unit": "MB"
           }
         ]
