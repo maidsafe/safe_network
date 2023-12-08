@@ -370,9 +370,12 @@ pub(crate) fn start_rpc_service(
 
     let _handle = tokio::spawn(async move {
         // adding our service to our server.
-        Server::builder()
+        if let Err(e) = Server::builder()
             .add_service(SafeNodeServer::new(service))
             .serve(addr)
             .await
+        {
+            error!("RPC Server failed to start: {e}");
+        }
     });
 }
