@@ -453,8 +453,6 @@ impl NetworkBuilder {
         let gossipsub = if self.enable_gossip {
             // Gossipsub behaviour
             let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
-                // disable sending to ALL_PEERS subscribed to a topic, which is the default behaviour
-                .flood_publish(false)
                 // we don't currently require source peer id and/or signing
                 .validation_mode(libp2p::gossipsub::ValidationMode::Permissive)
                 // we use the hash of the msg content as the msg id to deduplicate them
@@ -467,6 +465,10 @@ impl NetworkBuilder {
                 })
                 // set the heartbeat interval to be higher than default 1sec
                 .heartbeat_interval(Duration::from_secs(5))
+                // default is 3sec, increase to 10sec to avoid false alert
+                .iwant_followup_time(Duration::from_secs(10))
+                // default is 10sec, increase to 60sec to reduce the risk of looping
+                .published_message_ids_cache_time(Duration::from_secs(60))
                 .build()
                 .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
 
