@@ -50,6 +50,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let (files_api, _content_bytes, content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
+    let chunks_len = chunks.len();
     let prev_rewards_balance = current_rewards_balance()?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
@@ -59,11 +60,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
     println!("Paid {rewards_paid:?} total rewards for the chunks");
 
-    let expected_rewards_balance = prev_rewards_balance
-        .checked_add(rewards_paid)
-        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
-
-    verify_rewards(expected_rewards_balance).await?;
+    verify_rewards(prev_rewards_balance, rewards_paid, chunks_len).await?;
 
     Ok(())
 }
@@ -93,11 +90,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         .await?;
     println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
-    let expected_rewards_balance = prev_rewards_balance
-        .checked_add(storage_cost)
-        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
-
-    verify_rewards(expected_rewards_balance).await?;
+    verify_rewards(prev_rewards_balance, storage_cost, 1).await?;
 
     Ok(())
 }
@@ -239,15 +232,22 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     Ok(())
 }
 
-async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
+async fn verify_rewards(
+    prev_rewards_balance: NanoTokens,
+    rewards_paid: NanoTokens,
+    put_record_count: usize,
+) -> Result<()> {
+    let expected_rewards_balance = prev_rewards_balance
+        .checked_add(rewards_paid)
+        .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
+
     let mut iteration = 0;
     let mut cur_rewards_history = Vec::new();
 
-    // An initial sleep to avoid access to the wallet file synced with the node operations.
-    // Ideally, there shall be wallet file locker to prevent handle multiple processes access.
-    sleep(Duration::from_secs(5)).await;
+    // An initial sleep to avoid access to allow for reward receipts to be processed
+    sleep(Duration::from_secs(20)).await;
 
-    while iteration < 15 {
+    while iteration < put_record_count {
         iteration += 1;
         println!("Current iteration {iteration}");
         let new_rewards_balance = current_rewards_balance()?;
@@ -255,7 +255,7 @@ async fn verify_rewards(expected_rewards_balance: NanoTokens) -> Result<()> {
             return Ok(());
         }
         cur_rewards_history.push(new_rewards_balance);
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs(10)).await;
     }
 
     Err(eyre!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}"))
