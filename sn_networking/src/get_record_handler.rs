@@ -7,11 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority, Error, GetRecordCfg, GetRecordError, Result, SwarmDriver,
-    CLOSE_GROUP_SIZE,
+    get_quorum_value, Error, GetRecordCfg, GetRecordError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
-    kad::{self, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Quorum, Record},
+    kad::{self, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Record},
     PeerId,
 };
 use sn_protocol::PrettyPrintRecordKey;
@@ -97,12 +96,7 @@ impl SwarmDriver {
                     1
                 };
 
-            let expected_answers = match cfg.get_quorum {
-                Quorum::Majority => close_group_majority(),
-                Quorum::All => CLOSE_GROUP_SIZE,
-                Quorum::N(v) => v.get(),
-                Quorum::One => 1,
-            };
+            let expected_answers = get_quorum_value(&cfg.get_quorum);
 
             trace!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
@@ -255,12 +249,7 @@ impl SwarmDriver {
                         })
                     })?;
 
-                let required_response_count = match cfg.get_quorum {
-                    Quorum::Majority => close_group_majority(),
-                    Quorum::All => CLOSE_GROUP_SIZE,
-                    Quorum::N(v) => v.into(),
-                    Quorum::One => 1,
-                };
+                let required_response_count = get_quorum_value(&cfg.get_quorum);
 
                 // if we've a split over the result xorname, then we don't attempt to resolve this here.
                 // Retry and resolve through normal flows without a timeout.

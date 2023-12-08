@@ -40,7 +40,7 @@ use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketDistance, KBucketKey, Record, RecordKey},
+    kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -736,6 +736,16 @@ fn get_fees_from_store_cost_responses(
     info!("Final fees calculated as: {lowest:?}");
     // we dont need to have the address outside of here for now
     Ok((lowest.1, lowest.2))
+}
+
+/// Get the value of the provided Quorum
+pub fn get_quorum_value(quorum: &Quorum) -> usize {
+    match quorum {
+        Quorum::Majority => close_group_majority(),
+        Quorum::All => CLOSE_GROUP_SIZE,
+        Quorum::N(v) => v.get(),
+        Quorum::One => 1,
+    }
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
