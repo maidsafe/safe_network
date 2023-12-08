@@ -268,11 +268,7 @@ impl Testnet {
     /// * The node data directories cannot be created
     /// * The node process fails
     pub fn launch_nodes(&mut self, number_of_nodes: usize, node_args: &[String]) -> Result<()> {
-        let start = if self.node_count == 0 {
-            self.node_count + 2
-        } else {
-            self.node_count + 1
-        };
+        let start = self.node_count + 1;
         let end = self.node_count + number_of_nodes;
         for i in start..=end {
             info!("Launching node {i} of {end}...");

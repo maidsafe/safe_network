@@ -346,10 +346,12 @@ async fn run_network(
         .build()?;
 
     let gen_multi_addr = testnet.launch_genesis(node_args.clone()).await?;
+    // This will start additional nodes from the right RPC ports.
+    testnet.node_count += 1;
 
     node_args.push("--peer".to_string());
     node_args.push(gen_multi_addr.clone());
-    testnet.launch_nodes(node_count as usize, &node_args)?;
+    testnet.launch_nodes(node_count as usize - 1, &node_args)?;
 
     sn_testnet::check_testnet::run(&testnet.nodes_dir_path, node_count).await?;
 
@@ -366,9 +368,7 @@ fn join_network(
         .node_bin_path(node_bin_path)
         .node_launch_interval(node_launch_interval)
         .build()?;
-    // The testnet::node_count is set to total_count - 1 to offset for the genesis.
-    // Then plus 2 for start. Hence need an offset 1 here.
-    testnet.launch_nodes(node_count as usize + 1, node_args)?;
+    testnet.launch_nodes(node_count as usize, node_args)?;
     Ok(())
 }
 
