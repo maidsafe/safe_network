@@ -142,7 +142,7 @@ impl NodeMetrics {
                     .inc();
             }
 
-            Marker::RecordRejected(_) => {
+            Marker::RecordRejected(_, _) => {
                 let _ = self.put_record_err.inc();
             }
 
