@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702024645106,
+  "lastUpdate": 1702024795193,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "34775754bdb26b9bb0abb47574c91138893d0f21",
-          "message": "ci: remove duplicate faucet after testnet start in bench gen",
-          "timestamp": "2023-08-01T07:38:23Z",
-          "tree_id": "3d5dfa2e8b2b456c2442cfea0e789f09bdf8ca1d",
-          "url": "https://github.com/maidsafe/safe_network/commit/34775754bdb26b9bb0abb47574c91138893d0f21"
-        },
-        "date": 1690899701162,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 29.16,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 91,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5990e3eb3bf29a48f2d026937c045732e223db57",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 1.6.0 to 5.4.4\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 1.6.0 to 5.4.4.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/f114310111fdbd07e99f47f9ca13d62b3ec98372...0d749a1a91d4770e983a7b8f83d4a3f0e7e0874e)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-12-08T09:24:40+01:00",
+          "tree_id": "ad3148231d8e1b8bc7720be52fc4e08527b2cda6",
+          "url": "https://github.com/maidsafe/safe_network/commit/5990e3eb3bf29a48f2d026937c045732e223db57"
+        },
+        "date": 1702024794790,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 84,
             "unit": "MB"
           }
         ]
