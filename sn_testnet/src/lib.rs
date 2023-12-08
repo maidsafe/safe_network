@@ -599,7 +599,7 @@ mod test {
         genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 2..=20 {
+        for i in 1..=20 {
             let rpc_port = 12000 + i;
             node_launcher
                 .expect_launch()
@@ -646,7 +646,7 @@ mod test {
         genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 2..=20 {
+        for i in 1..=20 {
             let rpc_port = 12000 + i;
             let graph_output_file_path = nodes_dir
                 .join(format!("safenode-{i}-flame.svg"))
@@ -703,7 +703,7 @@ mod test {
         genesis_node_dir.create_dir_all()?;
 
         let mut node_launcher = MockNodeLauncher::new();
-        for i in 2..=30 {
+        for i in 1..=30 {
             let rpc_port = 12000 + i;
             node_launcher
                 .expect_launch()
