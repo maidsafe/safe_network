@@ -16,8 +16,9 @@ use color_eyre::{
     eyre::{bail, eyre},
     Help, Result,
 };
+use futures::{stream::FuturesUnordered, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
-use libp2p::futures::future::join_all;
+
 use sn_client::{Client, Error as ClientError, Files, BATCH_SIZE};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
@@ -210,9 +211,22 @@ async fn upload_files(
     let mut final_balance = file_api.wallet()?.balance();
     let chunks_batches = chunks_to_upload.chunks(batch_size);
     let now = Instant::now();
-    let mut recorded_upload_errors = vec![];
+    // let mut recorded_upload_errors = vec![];
+
+    let mut uploading_chunks = FuturesUnordered::new();
 
     for chunks_batch in chunks_batches {
+        // while we dont have a full batch_size of ongoing uploading_chunks
+        // we can pay fo rthe next batch and carry on
+        while uploading_chunks.len() >= batch_size {
+            if let Some(Err(report)) = uploading_chunks.next().await {
+                // recorded_upload_errors.push(report);
+                error!("Failed to upload a chunk: {report}");
+                // bail!(report);
+                Err(report)?
+            }
+        }
+
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
         match file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect())
@@ -238,73 +252,115 @@ async fn upload_files(
         };
 
         // upload paid chunks
-        for join_result in join_all(upload_chunks_in_parallel(
+        let upload_tasks = upload_chunks_in_parallel(
             &file_api,
             chunks_batch.to_vec(),
             verify_store,
             &progress_bar,
             show_holders,
-        ))
-        .await
-        {
-            let upload_result = join_result?;
-            if let Err(error) = upload_result {
-                error!("Failed to upload a batch: {error}");
-                recorded_upload_errors.push(error);
-            } else {
-                chunk_manager.mark_completed(chunks_batch.iter().map(|(xor, _)| *xor));
+        );
+
+        for task in upload_tasks {
+            // if we have a full batch_size of ongoing uploading_chunks
+            // wait until there is space before we start adding more
+            //
+            // This should ensure that we're always uploading a full batch_size
+            // of chunks, instead of waiting on 1/2 stragglers
+            //
+            // We bail on _any_ error here as we want to stop the upload process
+            // and there are no more retries after this point
+            while uploading_chunks.len() >= batch_size {
+                if let Some(Err(report)) = uploading_chunks.next().await {
+                    // recorded_upload_errors.push(report);
+                    error!("Failed to upload a chunk: {report}");
+                    // bail!(Err(report));
+                    Err(report)?
+                }
             }
+
+            let mut chunk_manager = chunk_manager.clone();
+            let upload_and_cleanup = async move {
+                let upload_result = task.await?;
+
+                match upload_result {
+                    Err(error) => {
+                        // recorded_upload_errors
+                        error!("Failed to upload a chunk: {error}");
+                        // bail!("Failed to upload a chunk: {error}");
+                        Err(error)
+                    }
+                    Ok(xorname) => {
+                        // mark the chunk as completed
+                        chunk_manager.mark_completed(std::iter::once(xorname));
+                        Ok(())
+                    }
+                }
+            };
+
+            uploading_chunks.push(upload_and_cleanup);
         }
     }
+
+    // ensure we wait on any remaining uploading_chunks
+    while let Some(result) = uploading_chunks.next().await {
+        // finish everything there
+        if let Err(report) = result {
+            // recorded_upload_errors.push(report);
+            error!("Failed to upload a chunk: {report}");
+            bail!(report);
+        }
+    }
+
     progress_bar.finish_and_clear();
 
     let elapsed = format_elapsed_time(now.elapsed());
     // report errors
-    let failed_uploads = chunk_manager.get_chunks();
-    let failed_uploads_len = failed_uploads.len();
-    if failed_uploads_len != 0 {
-        println!("**************************************");
-        println!("*              Failures              *");
-        println!("**************************************");
-        info!("Failed to upload {failed_uploads_len} chunks.");
+    // let failed_uploads = chunk_manager.get_chunks();
+    // let failed_uploads_len = failed_uploads.len();
+    // if failed_uploads_len != 0 {
+    //     println!("**************************************");
+    //     println!("*              Failures              *");
+    //     println!("**************************************");
+    //     info!("Failed to upload {failed_uploads_len} chunks.");
 
-        if failed_uploads_len != 0 {
-            println!("Failed to upload {failed_uploads_len} chunks with:");
-            println!("{recorded_upload_errors:#?}");
+    //     if failed_uploads_len != 0 {
+    //         println!("Failed to upload {failed_uploads_len} chunks with:");
+    //         // println!("{recorded_upload_errors:#?}");
+    //     }
+    // } else {
+    // log uploaded file information
+    println!("**************************************");
+    println!("*          Uploaded Files            *");
+    println!("**************************************");
+    let file_names_path = root_dir.join("uploaded_files");
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(file_names_path)?;
+    for (file_name, addr) in chunk_manager.verified_files() {
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {addr:x}");
+            info!("Uploaded {file_name} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name}")?;
+        } else {
+            println!("\"{file_name:?}\" {addr:x}");
+            info!("Uploaded {file_name:?} to {addr:x}");
+            writeln!(file, "{addr:x}: {file_name:?}")?;
         }
-        println!("Upload took {elapsed}");
-        info!("Upload took {elapsed}");
-    } else {
-        // log uploaded file information
-        println!("**************************************");
-        println!("*          Uploaded Files            *");
-        println!("**************************************");
-        let file_names_path = root_dir.join("uploaded_files");
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .append(true)
-            .open(file_names_path)?;
-        for (file_name, addr) in chunk_manager.verified_files() {
-            if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {addr:x}");
-                info!("Uploaded {file_name} to {addr:x}");
-                writeln!(file, "{addr:x}: {file_name}")?;
-            } else {
-                println!("\"{file_name:?}\" {addr:x}");
-                info!("Uploaded {file_name:?} to {addr:x}");
-                writeln!(file, "{addr:x}: {file_name:?}")?;
-            }
-        }
-        file.flush()?;
-
-        // log costs
-        let elapsed = format_elapsed_time(now.elapsed());
-        println!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
-        info!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
     }
 
+    file.flush()?;
+
+    println!("Upload took {elapsed}");
+    info!("Upload took {elapsed}");
+
     // log costs
+    let elapsed = format_elapsed_time(now.elapsed());
+    println!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
+    info!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
+    // }
+
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
@@ -328,7 +384,7 @@ fn upload_chunks_in_parallel(
     verify_store: bool,
     progress_bar: &ProgressBar,
     show_holders: bool,
-) -> Vec<JoinHandle<Result<()>>> {
+) -> Vec<JoinHandle<Result<XorName>>> {
     let mut upload_handles = Vec::new();
     for (name, path) in chunks_paths.into_iter() {
         let file_api = file_api.clone();
@@ -357,14 +413,23 @@ async fn upload_chunk(
     verify_store: bool,
     progress_bar: ProgressBar,
     show_holders: bool,
-) -> Result<()> {
-    let (_, path) = chunk;
-    let chunk = Chunk::new(Bytes::from(tokio::fs::read(path).await?));
+) -> Result<XorName> {
+    let (xorname, path) = chunk;
+    let bytes = match tokio::fs::read(path.clone()).await {
+        Ok(bytes) => Bytes::from(bytes),
+        Err(error) => {
+            warn!("Chunk {xorname:?} could not be read from the system from {path:?}. 
+            Normally this happens if it has been uploaded, but the cleanup process was interrupted. Ignoring error: {error}");
+
+            return Ok(xorname);
+        }
+    };
+    let chunk = Chunk::new(bytes);
     file_api
         .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
         .await?;
     progress_bar.inc(1);
-    Ok(())
+    Ok(xorname)
 }
 
 async fn download_files(
