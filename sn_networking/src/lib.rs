@@ -433,7 +433,8 @@ impl Network {
     /// If verify is on, retry PUT_RETRY_ATTEMPTS times with a random wait between 1.5s and 5s
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
-        let mut last_err = Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned());
+        // Will be overwritten as Err(e) if any error is encountered.
+        let mut last_result = Ok(());
         let total_attempts = if cfg.re_attempt {
             PUT_RETRY_ATTEMPTS
         } else {
@@ -450,12 +451,12 @@ impl Network {
                 Ok(_) => return Ok(()),
                 Err(e) => {
                     warn!("Failed to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with error: {e:?}");
-                    last_err = e;
+                    last_result = Err(e);
                 }
             }
         }
 
-        Err(last_err)
+        last_result
     }
 
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
@@ -487,11 +488,7 @@ impl Network {
 
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(record.key.clone(), get_cfg)
-                .await
-                .map_err(|e| {
-                    warn!("Failed to verify record {pretty_key:?} was stored: {e:?}");
-                    Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned())
-                })?;
+                .await?;
         }
 
         response
