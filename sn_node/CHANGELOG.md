@@ -2466,6 +2466,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.99.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.13...sn_node-v0.99.14) - 2023-12-08
+
+### Other
+- increase wait time for royalty transfers
+- update reward test awaits
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
