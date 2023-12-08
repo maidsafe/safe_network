@@ -110,10 +110,6 @@ pub enum Error {
     #[error("Record header is incorrect")]
     InCorrectRecordHeader,
 
-    /// No put_record attempts were successfully verified.
-    #[error("Could not retrieve the record after storing it: {0:}")]
-    FailedToVerifyRecordWasStored(PrettyPrintRecordKey<'static>),
-
     // ---------- Transfer Errors
     #[error("Failed to get transfer parent spend")]
     FailedToGetTransferParentSpend,
