@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702028902135,
+  "lastUpdate": 1702029052221,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "686211f457f180c5ef5b766361a2f5b1ab440000",
-          "message": "chore(ci): do not use testnet_action to upload heapnode logs",
-          "timestamp": "2023-08-01T13:20:24Z",
-          "tree_id": "be479a6e2f7b74574a57a06b7d22caf2166f5390",
-          "url": "https://github.com/maidsafe/safe_network/commit/686211f457f180c5ef5b766361a2f5b1ab440000"
-        },
-        "date": 1690919250069,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 27.92,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 96,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "4edbc084ec009fe8935e0c17bdec83437533d93a",
+          "message": "test: increase wait time for royalty transfers",
+          "timestamp": "2023-12-08T09:03:56Z",
+          "tree_id": "82924311e583e022c80d4c539c8c15da5072e5ec",
+          "url": "https://github.com/maidsafe/safe_network/commit/4edbc084ec009fe8935e0c17bdec83437533d93a"
+        },
+        "date": 1702029050924,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 110,
             "unit": "MB"
           }
         ]
