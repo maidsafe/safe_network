@@ -98,6 +98,7 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
 }
 
 // should not be reachable, but needed for the compiler to be happy.
+#[allow(clippy::unused_async)]
 #[cfg(not(feature = "network-contacts"))]
 async fn get_network_contacts(_args: &PeersArgs) -> Result<Vec<Multiaddr>> {
     Ok(vec![])
