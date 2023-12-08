@@ -375,8 +375,7 @@ impl Node {
                     match self_clone.validate_and_store_record(record).await {
                         Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                         Err(err) => {
-                            self_clone.record_metrics(Marker::RecordRejected(&key));
-                            trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
+                            self_clone.record_metrics(Marker::RecordRejected(&key, &err));
                         }
                     }
                 });
