@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702024798642,
+  "lastUpdate": 1702026465292,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38",
-          "message": "feat: overpay by default to allow margin",
-          "timestamp": "2023-08-16T05:56:48Z",
-          "tree_id": "104ccef85597e240b5a421747104ee71ea83067f",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38"
-        },
-        "date": 1692177573333,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 2.8953041728888005,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 24.370712719270603,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 0.2835616551630987,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.1040459781778,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "78f3db49e18044e3cde0f234b6fa8cba685077ad",
+          "message": "chore(deps): bump actions/checkout from 3 to 4\n\nBumps [actions/checkout](https://github.com/actions/checkout) from 3 to 4.\n- [Release notes](https://github.com/actions/checkout/releases)\n- [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/actions/checkout/compare/v3...v4)\n\n---\nupdated-dependencies:\n- dependency-name: actions/checkout\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-12-08T08:23:23Z",
+          "tree_id": "ef4955ce139410b96e7f2f90384bc4b01c64aa25",
+          "url": "https://github.com/maidsafe/safe_network/commit/78f3db49e18044e3cde0f234b6fa8cba685077ad"
+        },
+        "date": 1702026463227,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0331988986861826,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.882543193986006,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.06414666149834,
             "unit": "MiB/s"
           }
         ]
