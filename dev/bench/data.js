@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702024795193,
+  "lastUpdate": 1702024796833,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d3ba059d8abee2613ab914165da60998aa61db02",
-          "message": "chore: move PrettyPrintRecordKey to sn_protocol",
-          "timestamp": "2023-07-31T14:21:45Z",
-          "tree_id": "92a00f911ee0be375f47d385cc8a6fc396c05495",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3ba059d8abee2613ab914165da60998aa61db02"
-        },
-        "date": 1690836568125,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 259.06,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 205,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 151,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5990e3eb3bf29a48f2d026937c045732e223db57",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 1.6.0 to 5.4.4\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 1.6.0 to 5.4.4.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/f114310111fdbd07e99f47f9ca13d62b3ec98372...0d749a1a91d4770e983a7b8f83d4a3f0e7e0874e)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-12-08T09:24:40+01:00",
+          "tree_id": "ad3148231d8e1b8bc7720be52fc4e08527b2cda6",
+          "url": "https://github.com/maidsafe/safe_network/commit/5990e3eb3bf29a48f2d026937c045732e223db57"
+        },
+        "date": 1702024796411,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 740,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 157,
             "unit": "MB"
           }
         ]
