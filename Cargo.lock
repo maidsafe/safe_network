@@ -4500,6 +4500,7 @@ dependencies = [
  "custom_debug",
  "dirs-next",
  "eyre",
+ "futures",
  "hex",
  "indicatif",
  "libp2p 0.53.1",
