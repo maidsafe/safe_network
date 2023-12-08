@@ -11,7 +11,7 @@ use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_node_rpc_client::RpcActions;
+use sn_node_rpc_client::{RpcActions, RpcClient};
 use std::path::PathBuf;
 
 pub enum UpgradeResult {
@@ -103,11 +103,27 @@ pub async fn status(
     // Again confirm that services which are marked running are still actually running.
     // If they aren't we'll mark them as stopped.
     for node in &mut node_registry.nodes {
+        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
         if let NodeStatus::Running = node.status {
             if let Some(pid) = node.pid {
+                // First we can try the PID we have now. If there is still a process running with
+                // that PID, we know the node is still running.
                 if !service_control.is_service_process_running(pid) {
-                    node.status = NodeStatus::Stopped;
-                    node.pid = None;
+                    // The process with the PID we had has died at some point. However, if the
+                    // service has been configured to restart on failures, it's possible that a new
+                    // process has been launched and hence we would have a new PID. We can use the
+                    // RPC service to try and retrieve it.
+                    match rpc_client.node_info().await {
+                        Ok(info) => {
+                            node.pid = Some(info.pid);
+                        }
+                        Err(_) => {
+                            // Finally, if there was an error communicating with the RPC client, we
+                            // can assume that this node is actually stopped.
+                            node.status = NodeStatus::Stopped;
+                            node.pid = None;
+                        }
+                    }
                 }
             }
         }
