@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702029054842,
+  "lastUpdate": 1702029057774,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32395,6 +32395,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 15,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "4edbc084ec009fe8935e0c17bdec83437533d93a",
+          "message": "test: increase wait time for royalty transfers",
+          "timestamp": "2023-12-08T09:03:56Z",
+          "tree_id": "82924311e583e022c80d4c539c8c15da5072e5ec",
+          "url": "https://github.com/maidsafe/safe_network/commit/4edbc084ec009fe8935e0c17bdec83437533d93a"
+        },
+        "date": 1702029056531,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4328,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 63956,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
             "unit": "ms"
           }
         ]
