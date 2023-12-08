@@ -210,7 +210,6 @@ async fn upload_files(
     let mut final_balance = file_api.wallet()?.balance();
     let chunks_batches = chunks_to_upload.chunks(batch_size);
     let now = Instant::now();
-    let mut recorded_pay_errors = vec![];
     let mut recorded_upload_errors = vec![];
 
     for chunks_batch in chunks_batches {
@@ -234,9 +233,7 @@ async fn upload_files(
                 bail!("Not enough balance in wallet to pay for chunk. We have {available:?} but need {required:?} to pay for the chunk");
             }
             Err(error) => {
-                error!("Failed to pay for chunks: {error}");
-                recorded_pay_errors.push(error);
-                continue;
+                bail!("Failed to pay for chunks: {error}");
             }
         };
 
@@ -265,17 +262,12 @@ async fn upload_files(
     // report errors
     let failed_uploads = chunk_manager.get_chunks();
     let failed_uploads_len = failed_uploads.len();
-    let failed_payments_len = recorded_pay_errors.len();
-    let total_failures = failed_uploads_len + failed_payments_len;
-    if total_failures != 0 {
+    if failed_uploads_len != 0 {
         println!("**************************************");
         println!("*              Failures              *");
         println!("**************************************");
-        info!("Failed to pay for {failed_payments_len} chunks and failed to upload {failed_uploads_len} chunks.");
-        if failed_payments_len != 0 {
-            println!("Failed to pay for {failed_payments_len} chunks with:");
-            println!("{recorded_pay_errors:#?}");
-        }
+        info!("Failed to upload {failed_uploads_len} chunks.");
+
         if failed_uploads_len != 0 {
             println!("Failed to upload {failed_uploads_len} chunks with:");
             println!("{recorded_upload_errors:#?}");
