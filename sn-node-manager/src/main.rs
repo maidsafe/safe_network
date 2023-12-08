@@ -70,6 +70,15 @@ pub enum SubCmd {
         log_dir_path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
+        /// Provide a safenode binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a safenode binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long)]
+        url: Option<String>,
         /// The user the service should run as.
         ///
         /// If the account does not exist, it will be created.
@@ -159,11 +168,20 @@ async fn main() -> Result<()> {
             data_dir_path,
             log_dir_path,
             peers,
+            url,
             user,
             version,
         } => {
             if !is_running_as_root() {
                 return Err(eyre!("The add command must run as the root user"));
+            }
+
+            if url.is_some() && version.is_some() {
+                return Err(
+                    eyre!("The url and version arguments are mutually exclusive").suggestion(
+                        "Please try again specifying either url or version, but not both.",
+                    ),
+                );
             }
 
             println!("=================================================");
@@ -188,6 +206,7 @@ async fn main() -> Result<()> {
                     safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
                     service_log_dir_path,
+                    url,
                     user: service_user,
                     version,
                 },
@@ -386,7 +405,7 @@ async fn main() -> Result<()> {
             }
 
             let (safenode_download_path, _) =
-                download_and_extract_safenode(Some(latest_version.to_string()), release_repo)
+                download_and_extract_safenode(None, Some(latest_version.to_string()), release_repo)
                     .await?;
 
             let mut upgrade_summary = Vec::new();

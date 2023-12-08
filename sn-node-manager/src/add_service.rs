@@ -22,6 +22,7 @@ pub struct AddServiceOptions {
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
     pub peers: Vec<Multiaddr>,
+    pub url: Option<String>,
     pub user: String,
     pub version: Option<String>,
 }
@@ -39,7 +40,8 @@ pub async fn add(
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
 ) -> Result<()> {
     let (safenode_download_path, version) =
-        download_and_extract_safenode(install_options.version, release_repo).await?;
+        download_and_extract_safenode(install_options.url, install_options.version, release_repo)
+            .await?;
     let safenode_file_name = safenode_download_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
@@ -162,6 +164,12 @@ mod tests {
                 download_dir: &Path,
                 callback: &ProgressCallback
             ) -> SnReleaseResult<PathBuf>;
+            async fn download_release(
+                &self,
+                url: &str,
+                dest_dir_path: &Path,
+                callback: &ProgressCallback,
+            ) -> SnReleaseResult<PathBuf>;
             fn extract_release_archive(&self, archive_path: &Path, extract_dir: &Path) -> SnReleaseResult<PathBuf>;
         }
     }
@@ -268,6 +276,7 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
+                url: None,
                 user: get_username(),
                 version: None,
             },
@@ -457,6 +466,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
+                url: None,
                 user: get_username(),
                 version: None,
             },
@@ -603,6 +613,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
+                url: None,
                 user: get_username(),
                 version: Some(specific_version.to_string()),
             },
@@ -741,6 +752,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
+                url: None,
                 user: get_username(),
                 version: None,
             },
@@ -764,6 +776,123 @@ mod tests {
         assert_eq!(
             node_registry.nodes[1].data_dir_path,
             Some(node_data_dir.to_path_buf().join("safenode2"))
+        );
+        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_should_add_a_service_with_safenode_from_a_url() -> Result<()> {
+        let mut mock_service_control = MockServiceControl::new();
+        let mut mock_release_repo = MockSafeReleaseRepository::new();
+
+        let url = "https://sn-node.s3.eu-west-2.amazonaws.com/jacderida/file-upload-address/safenode-charlie-x86_64-unknown-linux-musl.tar.gz";
+
+        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+        safenode_download_path.write_binary(b"fake safenode bin")?;
+
+        let mut seq = Sequence::new();
+
+        mock_release_repo
+            .expect_download_release()
+            .with(
+                eq(url),
+                always(), // Temporary directory which doesn't really matter
+                always(), // Callback for progress bar which also doesn't matter
+            )
+            .times(1)
+            .returning(move |_, _, _| {
+                Ok(PathBuf::from(
+                    "/tmp/safenode-charlie-x86_64-unknown-linux-musl.tar.gz",
+                ))
+            })
+            .in_sequence(&mut seq);
+
+        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
+        mock_release_repo
+            .expect_extract_release_archive()
+            .with(
+                eq(PathBuf::from(
+                    "/tmp/safenode-charlie-x86_64-unknown-linux-musl.tar.gz",
+                )),
+                always(), // We will extract to a temporary directory
+            )
+            .times(1)
+            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
+            .in_sequence(&mut seq);
+
+        mock_service_control
+            .expect_get_available_port()
+            .times(1)
+            .returning(|| Ok(8080))
+            .in_sequence(&mut seq);
+        mock_service_control
+            .expect_get_available_port()
+            .times(1)
+            .returning(|| Ok(8081))
+            .in_sequence(&mut seq);
+
+        mock_service_control
+            .expect_install()
+            .times(1)
+            .with(eq(ServiceConfig {
+                name: "safenode1".to_string(),
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
+                node_port: 8080,
+                rpc_port: 8081,
+                service_user: get_username(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                peers: vec![],
+            }))
+            .returning(|_| Ok(()))
+            .in_sequence(&mut seq);
+
+        add(
+            AddServiceOptions {
+                count: None,
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                peers: vec![],
+                url: Some(url.to_string()),
+                user: get_username(),
+                version: None,
+            },
+            &mut node_registry,
+            &mock_service_control,
+            Box::new(mock_release_repo),
+        )
+        .await?;
+
+        safenode_download_path.assert(predicate::path::missing());
+        node_data_dir.assert(predicate::path::is_dir());
+        node_logs_dir.assert(predicate::path::is_dir());
+
+        assert_eq!(node_registry.nodes.len(), 1);
+        assert_eq!(node_registry.nodes[0].version, "custom");
+        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+        assert_eq!(node_registry.nodes[0].user, get_username());
+        assert_eq!(node_registry.nodes[0].number, 1);
+        assert_eq!(node_registry.nodes[0].port, 8080);
+        assert_eq!(node_registry.nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.nodes[0].log_dir_path,
+            Some(node_logs_dir.to_path_buf().join("safenode1"))
+        );
+        assert_eq!(
+            node_registry.nodes[0].data_dir_path,
+            Some(node_data_dir.to_path_buf().join("safenode1"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 

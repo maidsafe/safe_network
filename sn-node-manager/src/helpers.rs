@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 pub async fn download_and_extract_safenode(
+    url: Option<String>,
     safenode_version: Option<String>,
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
 ) -> Result<(PathBuf, String)> {
@@ -26,28 +27,40 @@ pub async fn download_and_extract_safenode(
         pb_clone.set_position(downloaded);
     });
 
-    let version = if let Some(version) = safenode_version {
-        version
+    let temp_dir_path = create_temp_dir()?;
+
+    let (archive_path, version) = if let Some(url) = url {
+        println!("Retrieving safenode from {url}");
+        let archive_path = release_repo
+            .download_release(&url, &temp_dir_path, &callback)
+            .await?;
+        pb.finish_with_message("Download complete");
+        (archive_path, "custom".to_string())
     } else {
-        println!("Retrieving latest version for safenode...");
-        release_repo
-            .get_latest_version(&ReleaseType::Safenode)
-            .await?
+        let version = if let Some(version) = safenode_version {
+            version
+        } else {
+            println!("Retrieving latest version for safenode...");
+            release_repo
+                .get_latest_version(&ReleaseType::Safenode)
+                .await?
+        };
+
+        println!("Downloading safenode version {version}...");
+        let archive_path = release_repo
+            .download_release_from_s3(
+                &ReleaseType::Safenode,
+                &version,
+                &get_running_platform()?,
+                &ArchiveType::TarGz,
+                &temp_dir_path,
+                &callback,
+            )
+            .await?;
+        pb.finish_with_message("Download complete");
+        (archive_path, version)
     };
 
-    println!("Downloading safenode version {version}...");
-    let temp_dir_path = create_temp_dir()?;
-    let archive_path = release_repo
-        .download_release_from_s3(
-            &ReleaseType::Safenode,
-            &version,
-            &get_running_platform()?,
-            &ArchiveType::TarGz,
-            &temp_dir_path,
-            &callback,
-        )
-        .await?;
-    pb.finish_with_message("Download complete");
     let safenode_download_path =
         release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
 
