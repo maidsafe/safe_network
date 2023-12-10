@@ -154,9 +154,12 @@ impl Node {
 
     /// Store a pre-validated, and already paid record to the RecordStore
     pub(crate) async fn store_prepaid_record(&self, record: Record) -> Result<CmdOk> {
+        trace!("Storing prepaid record {record:?}");
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
+            // A separate flow handles payment for chunks and registers
             RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                warn!("Prepaid record came with Payment, which should be handled in another flow");
                 Err(Error::UnexpectedRecordWithPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
@@ -168,7 +171,7 @@ impl Node {
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
-
+                trace!("Chunk with addr {chunk.network_address:?} already exists?: {already_exists}");
                 if already_exists {
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
