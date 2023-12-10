@@ -13,7 +13,9 @@ use libp2p::{
     kad::{Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -37,7 +39,7 @@ impl Node {
         let closest_k_peers = closest_k_peers
             .into_iter()
             // add some leeway to allow for divergent knowledge
-            .take(CLOSE_GROUP_SIZE * 2)
+            .take(REPLICATE_RANGE)
             .collect::<Vec<_>>();
 
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
