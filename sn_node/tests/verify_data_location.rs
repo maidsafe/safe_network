@@ -137,12 +137,10 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
     let all_peers = all_peers.to_vec();
     println!("\nNode close groups:");
 
-    let all_peers_hashset = all_peers.iter().cloned().collect::<HashSet<_>>();
-
     for (node_index, peer) in all_peers.iter().enumerate() {
         let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
-        let closest_peers = sort_peers_by_key(&all_peers_hashset, &key, CLOSE_GROUP_SIZE)
-            .expect("failed to sort peer");
+        let closest_peers =
+            sort_peers_by_key(&all_peers, &key, CLOSE_GROUP_SIZE).expect("failed to sort peer");
         let closest_peers_idx = closest_peers
             .iter()
             .map(|&&peer| all_peers.iter().position(|&p| p == peer).unwrap())
@@ -174,9 +172,8 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
 
 // Fetches the record_holders and verifies that the record is stored by the actual closest peers to the RecordKey
 // It has a retry loop built in.
-async fn verify_location(all_peers: &[PeerId], node_rpc_addresses: &[SocketAddr]) -> Result<()> {
+async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAddr]) -> Result<()> {
     let mut failed = HashMap::new();
-    let all_peers_hashset = all_peers.iter().cloned().collect::<HashSet<_>>();
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {
@@ -185,11 +182,10 @@ async fn verify_location(all_peers: &[PeerId], node_rpc_addresses: &[SocketAddr]
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             let record_key = KBucketKey::from(key.to_vec());
-            let expected_holders =
-                sort_peers_by_key(&all_peers_hashset, &record_key, CLOSE_GROUP_SIZE)?
-                    .into_iter()
-                    .cloned()
-                    .collect::<BTreeSet<_>>();
+            let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
+                .into_iter()
+                .cloned()
+                .collect::<BTreeSet<_>>();
 
             let actual_holders = actual_holders_idx
                 .iter()

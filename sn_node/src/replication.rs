@@ -33,7 +33,7 @@ impl Node {
         let mut closest_k_peers = network.get_closest_k_value_local_peers().await?;
 
         // remove our peer id from the calculations here:
-        let _we_were_there = closest_k_peers.remove(&network.peer_id);
+        closest_k_peers.retain(|peer_id| peer_id != &network.peer_id);
 
         // Only grab the closest nodes
         let closest_k_peers = closest_k_peers
@@ -155,7 +155,7 @@ impl Node {
             };
 
             // remove ourself from these calculations
-            let _we_were_there = closest_k_peers.remove(&network.peer_id);
+            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id);
 
             let data_addr = NetworkAddress::from_record_key(&paid_key);
 

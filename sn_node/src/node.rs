@@ -527,7 +527,7 @@ impl Node {
                                 Ok(mut peers) => {
                                     // remove our peer id from the calculations here.
                                     // Allowing for a bit more sensitivity to changes in REPLICATION_RANGE
-                                    let _we_were_there = peers.remove(&network.peer_id);
+                                    peers.retain(|peer_id| peer_id != &network.peer_id);
                                     peers.into_iter().take(REPLICATE_RANGE).collect()
                                 }
                                 Err(err) => {
