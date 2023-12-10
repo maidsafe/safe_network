@@ -347,7 +347,8 @@ impl Node {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
-            NetworkEvent::KeysForReplication(keys) => {
+            NetworkEvent::KeysToFetchForReplication(keys) => {
+                info!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {

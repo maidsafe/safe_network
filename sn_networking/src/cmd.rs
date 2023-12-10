@@ -331,7 +331,7 @@ impl SwarmDriver {
                     self.replication_fetcher
                         .add_keys(holder, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
-                    self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+                    self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
                 }
             }
             SwarmCmd::GetNetworkRecord { key, sender, cfg } => {
@@ -442,7 +442,7 @@ impl SwarmDriver {
                             .replication_fetcher
                             .notify_about_new_put(key, record_type);
                         if !new_keys_to_fetch.is_empty() {
-                            self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
+                            self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                         }
                     }
                     Err(err) => return Err(err.into()),
@@ -548,9 +548,6 @@ impl SwarmDriver {
 
                 let _ = sender.send(closest_peers);
             }
-            // SwarmCmd::GetOurCloseGroup { sender } => {
-            //     let _ = sender.send(self.close_group.clone());
-            // }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
                 let _ = sender.send(self.get_closest_k_value_local_peers());
             }
