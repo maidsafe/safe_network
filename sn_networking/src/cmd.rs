@@ -269,8 +269,10 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
+    /// Checks suggested records against what we hold, so we only
+    /// enqueue what we do not have
     #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    fn select_new_replications(
+    fn select_non_existent_records_for_replications(
         &mut self,
         incoming_keys: &HashMap<NetworkAddress, RecordType>,
     ) -> Vec<(NetworkAddress, RecordType)> {
@@ -281,7 +283,7 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .record_addresses_ref();
-        let non_exist_keys: Vec<_> = incoming_keys
+        let non_existent_keys: Vec<_> = incoming_keys
             .iter()
             .filter(|(addr, record_type)| {
                 let key = addr.to_record_key();
@@ -296,27 +298,33 @@ impl SwarmDriver {
             })
             .collect();
 
-        info!("replicationing non_exist_keys: {non_exist_keys:?}");
+        trace!("Replicating non_existent_keys, about to check what is close: {non_existent_keys:?}");
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
-        non_exist_keys
+        let close_keys = non_existent_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
                 if self.is_in_close_range(key, &closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
+                    warn!("not in close range for key {key:?}");
                     None
                 }
             })
-            .collect()
+            .collect();
+
+        trace!("Final close keys for replication: {close_keys:?}");
+
+        close_keys
     }
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only handle those non-exist and in close range keys
-                let keys_to_store = self.select_new_replications(&keys);
+                let keys_to_store = self.select_non_existent_records_for_replications(&keys);
                 if keys_to_store.is_empty() {
+                    debug!("Empty keys to store after adding to");
                     return Ok(());
                 }
 
@@ -332,6 +340,8 @@ impl SwarmDriver {
                         .add_keys(holder, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
+                } else {
+                    trace!("no waiting keys to fetch from the network");
                 }
             }
             SwarmCmd::GetNetworkRecord { key, sender, cfg } => {

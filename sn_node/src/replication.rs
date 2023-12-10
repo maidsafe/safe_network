@@ -128,7 +128,10 @@ impl Node {
                 trace!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
-                let _ = node.store_prepaid_record(record).await?;
+                let result = node.store_prepaid_record(record).await?;
+                trace!(
+                    "Completed storing Replication Record {pretty_key:?} from network, result: {result:?}"
+                );
 
                 Ok(())
             });
