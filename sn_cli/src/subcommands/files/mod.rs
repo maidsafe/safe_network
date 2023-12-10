@@ -217,7 +217,7 @@ async fn upload_files(
 
     for chunks_batch in chunks_batches {
         // while we dont have a full batch_size of ongoing uploading_chunks
-        // we can pay fo rthe next batch and carry on
+        // we can pay for the next batch and carry on
         while uploading_chunks.len() >= batch_size {
             if let Some(result) = uploading_chunks.next().await {
                 // bail if we've had any errors so far
