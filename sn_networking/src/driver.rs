@@ -70,9 +70,9 @@ pub(crate) enum PendingGetClosestType {
     /// Thus we can just process the queries made by NetworkDiscovery without using any channels
     NetworkDiscovery,
     /// These are queries made by a function at the upper layers and contains a channel to send the result back.
-    FunctionCall(oneshot::Sender<HashSet<PeerId>>),
+    FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
-type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
@@ -671,8 +671,9 @@ impl SwarmDriver {
         all_peers
     }
 
-    // get closest k_value the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> HashSet<PeerId> {
+    /// get closest k_value the peers from our local RoutingTable. Contains self.
+    /// Is sorted for closeness to self.
+    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> Vec<PeerId> {
         let self_peer_id = self.self_peer_id.into();
         let peers = self
             .swarm

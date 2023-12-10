@@ -53,7 +53,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     path::PathBuf,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -91,7 +91,7 @@ const PUT_RETRY_ATTEMPTS: usize = 10;
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address<'a>(
-    peers: &'a HashSet<PeerId>,
+    peers: &'a Vec<PeerId>,
     address: &NetworkAddress,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
@@ -102,7 +102,7 @@ pub fn sort_peers_by_address<'a>(
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<'a, T>(
-    peers: &'a HashSet<PeerId>,
+    peers: &'a Vec<PeerId>,
     key: &KBucketKey<T>,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
@@ -243,7 +243,7 @@ impl Network {
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
     /// Also contains our own PeerId.
-    pub async fn get_closest_k_value_local_peers(&self) -> Result<HashSet<PeerId>> {
+    pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestKLocalPeers { sender })?;
 
@@ -642,7 +642,8 @@ impl Network {
         let mut closest_peers = k_bucket_peers;
         // ensure we're not including self here
         if client {
-            let _existed = closest_peers.remove(&self.peer_id);
+            // remove our peer id from the calculations here:
+            closest_peers.retain(|&x| x != self.peer_id);
         }
         if tracing::level_enabled!(tracing::Level::TRACE) {
             let close_peers_pretty_print: Vec<_> = closest_peers
