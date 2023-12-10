@@ -297,16 +297,22 @@ impl SwarmDriver {
             .collect();
 
         let closest_k_peers = self.get_closest_k_value_local_peers();
-        non_exist_keys
+
+        let close_keys = non_exist_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
                 if self.is_in_close_range(key, &closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
+                    warn!("not in close range for key {key:?}");
                     None
                 }
             })
-            .collect()
+            .collect();
+
+        info!("Final close keys: {close_keys:?}");
+
+        close_keys
     }
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
@@ -315,6 +321,7 @@ impl SwarmDriver {
                 // Only handle those non-exist and in close range keys
                 let keys_to_store = self.select_new_replications(&keys);
                 if keys_to_store.is_empty() {
+                    debug!("Empty keys to store");
                     return Ok(());
                 }
 
@@ -330,6 +337,8 @@ impl SwarmDriver {
                         .add_keys(holder, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+                } else {
+                    warn!("KeysToFetch empty after");
                 }
             }
             SwarmCmd::GetNetworkRecord { key, sender, cfg } => {
