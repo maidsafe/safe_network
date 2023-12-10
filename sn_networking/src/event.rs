@@ -129,7 +129,7 @@ pub enum NetworkEvent {
     // Peer has been removed from the Routing Table. And the number of connected peers.
     PeerRemoved(PeerId, usize),
     /// The records bearing these keys are to be fetched from the holder or the network
-    KeysForReplication(Vec<(PeerId, RecordKey)>),
+    KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -176,7 +176,7 @@ impl Debug for NetworkEvent {
                     "NetworkEvent::PeerRemoved({peer_id:?}, {connected_peers})"
                 )
             }
-            NetworkEvent::KeysForReplication(list) => {
+            NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();
                 write!(f, "NetworkEvent::KeysForReplication({keys_len:?})")
             }
@@ -974,6 +974,7 @@ impl SwarmDriver {
 
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the `distance_range`
+    /// Bases this off of the peers in self.close_group
     fn update_record_distance_range(&mut self) -> Option<()> {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let distance_range = self
