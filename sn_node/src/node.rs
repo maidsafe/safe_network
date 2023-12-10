@@ -16,7 +16,9 @@ use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, Response},
@@ -519,9 +521,14 @@ impl Node {
                     if let Some(peer_id) = holder.as_peer_id() {
                         let local_peers: Vec<_> =
                             match network.get_closest_k_value_local_peers().await {
-                                // accept replication requests from the close_group * 2 peers away, giving us some margin
+                                // accept replication requests from the REPLICATE_RANGE peers away, giving us some margin
                                 // for replication on churn
-                                Ok(peers) => peers.into_iter().take(CLOSE_GROUP_SIZE * 2).collect(),
+                                Ok(mut peers) => {
+                                    // remove our peer id from the calculations here.
+                                    // Allowing for a bit more sensitivity to changes in REPLICATION_RANGE
+                                    let _we_were_there = peers.remove(&network.peer_id);
+                                    peers.into_iter().take(REPLICATE_RANGE).collect()
+                                }
                                 Err(err) => {
                                     error!("Failed to get close group local peers: {err:?}");
                                     return;
@@ -533,7 +540,7 @@ impl Node {
                             // todo: error is not propagated to the caller here
                             let _ = network.add_keys_to_replication_fetcher(peer_id, keys);
                         } else {
-                            warn!("Received replication list from {peer_id:?} which is not in our close group");
+                            warn!("Received replication list from {peer_id:?} which is not in our close group. Ignored {keys:?}");
                         }
                     } else {
                         error!(

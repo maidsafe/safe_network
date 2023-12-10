@@ -296,7 +296,9 @@ impl SwarmDriver {
             })
             .collect();
 
+        info!("replicationing non_exist_keys: {non_exist_keys:?}");
         let closest_k_peers = self.get_closest_k_value_local_peers();
+
         non_exist_keys
             .into_iter()
             .filter_map(|(key, record_type)| {

@@ -950,6 +950,7 @@ impl SwarmDriver {
     /// Check for changes in our close group
     ///
     fn check_for_change_in_our_close_group(&mut self) -> bool {
+        // this includes self
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
         let new_closest_peers: Vec<_> =

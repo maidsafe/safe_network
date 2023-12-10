@@ -680,6 +680,8 @@ impl SwarmDriver {
     // get closest k_value the peers from our local RoutingTable. Contains self
     pub(crate) fn get_closest_k_value_local_peers(&mut self) -> HashSet<PeerId> {
         let self_peer_id = self.self_peer_id.into();
+
+        // get closest peers from buckets, sorted by increasing distance to us
         let peers = self
             .swarm
             .behaviour_mut()
