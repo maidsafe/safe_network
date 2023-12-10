@@ -25,7 +25,7 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fmt::Debug,
 };
 use tokio::sync::oneshot;
@@ -59,12 +59,12 @@ pub enum SwarmCmd {
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
     GetClosestKLocalPeers {
-        sender: oneshot::Sender<HashSet<PeerId>>,
+        sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Get closest peers from the network
     GetClosestPeersToAddressFromNetwork {
         key: NetworkAddress,
-        sender: oneshot::Sender<HashSet<PeerId>>,
+        sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Get closest peers from the local RoutingTable
     GetCloseGroupLocalPeers {
@@ -442,7 +442,9 @@ impl SwarmDriver {
                             .replication_fetcher
                             .notify_about_new_put(key, record_type);
                         if !new_keys_to_fetch.is_empty() {
-                            self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
+                            self.send_event(NetworkEvent::KeysToFetchForReplication(
+                                new_keys_to_fetch,
+                            ));
                         }
                     }
                     Err(err) => return Err(err.into()),
@@ -656,7 +658,7 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &HashSet<PeerId>) -> bool {
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &Vec<PeerId>) -> bool {
         if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
