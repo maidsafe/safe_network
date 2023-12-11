@@ -473,6 +473,7 @@ impl Node {
                             PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
                         )),
                         payment_address,
+                        peer_address: NetworkAddress::from_peer(network.peer_id),
                     }
                 } else {
                     let store_cost = network
@@ -485,6 +486,7 @@ impl Node {
                             Self::create_quote_for_storecost(network, cost, &address)
                         }),
                         payment_address,
+                        peer_address: NetworkAddress::from_peer(network.peer_id),
                     }
                 }
             }
