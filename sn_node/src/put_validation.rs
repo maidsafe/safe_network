@@ -69,7 +69,12 @@ impl Node {
                 // So that when the replicate target asking for the copy,
                 // the node can have a higher chance to respond.
                 let store_chunk_result = self.store_chunk(&chunk);
-                self.replicate_paid_record(record_key, RecordType::Chunk);
+
+                if store_chunk_result.is_ok() {
+                    Marker::ValidPaidChunkPutFromClient(&PrettyPrintRecordKey::from(&record.key))
+                        .log();
+                    self.replicate_paid_record(record_key, RecordType::Chunk);
+                }
 
                 store_chunk_result
             }
@@ -79,7 +84,15 @@ impl Node {
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
             }
-            RecordKind::Spend => self.validate_spend_record(record).await,
+            RecordKind::Spend => {
+                let record_key = record.key.clone();
+
+                let result = self.validate_spend_record(record).await;
+                if result.is_ok() {
+                    Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
+                }
+                result
+            }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -97,7 +110,14 @@ impl Node {
 
                 // store the update
                 trace!("Store update without payment as we already had register at {pretty_key:?}");
-                self.validate_and_store_register(register, true).await
+                let result = self.validate_and_store_register(register, true).await;
+
+                if result.is_ok() {
+                    Marker::ValidPaidRegisterPutFromClient(&pretty_key).log();
+                    // we dont try and force replicaiton here as there's state to be kept in sync
+                    // which we leave up to the client to enforce
+                }
+                result
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
