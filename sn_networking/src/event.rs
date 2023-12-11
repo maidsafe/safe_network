@@ -33,6 +33,7 @@ use libp2p::{
 
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, Request, Response},
+    storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -138,6 +139,8 @@ pub enum NetworkEvent {
     UnverifiedRecord(Record),
     /// Report failed write to cleanup record store
     FailedToWrite(RecordKey),
+    /// Report a completed write so we can safely add this to the record store now
+    CompletedWrite((RecordKey, RecordType)),
     /// Gossipsub message received
     GossipsubMsgReceived {
         /// Topic the message was published on
@@ -193,6 +196,13 @@ impl Debug for NetworkEvent {
             NetworkEvent::FailedToWrite(record_key) => {
                 let pretty_key = PrettyPrintRecordKey::from(record_key);
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
+            }
+            NetworkEvent::CompletedWrite((record_key, record_type)) => {
+                let pretty_key = PrettyPrintRecordKey::from(record_key);
+                write!(
+                    f,
+                    "NetworkEvent::CompletedWrite({pretty_key:?}, {record_type:?})"
+                )
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
