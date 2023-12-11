@@ -47,7 +47,7 @@ use libp2p::{
 use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
@@ -55,9 +55,9 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
+    time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
-use tracing::warn;
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -78,12 +78,14 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
+/// Max duration to wait for verification.
+const MAX_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(750);
 /// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(300);
+const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
 /// Number of attempts to GET a record
 const GET_RETRY_ATTEMPTS: usize = 3;
+/// Number of attempts to get a ChunkProof
+const GET_CHUNK_PROOF_RETRY_ATTEMPTS: usize = 3;
 /// Number of attempts to PUT a record
 const PUT_RETRY_ATTEMPTS: usize = 10;
 
@@ -252,6 +254,70 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Get the Chunk existence proof from the close nodes to the provided chunk address.
+    pub async fn verify_chunk_existence(
+        &self,
+        (chunk_address, nonce): (&NetworkAddress, Nonce),
+        expected_proof: ChunkProof,
+        quorum: Quorum,
+        re_attempt: bool,
+    ) -> Result<()> {
+        let total_attempts = if re_attempt {
+            GET_CHUNK_PROOF_RETRY_ATTEMPTS
+        } else {
+            1
+        };
+        let pretty_key = PrettyPrintRecordKey::from(&chunk_address.to_record_key()).into_owned();
+        let expected_n_verified = get_quorum_value(&quorum);
+
+        let mut close_nodes = Vec::new();
+        let mut retry_attempts = 0;
+        while retry_attempts < total_attempts {
+            retry_attempts += 1;
+            info!(
+                "Getting ChunkProof for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}",
+            );
+            // Do not query the closest_peers during every re-try attempt.
+            // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
+            // the Chunk, so query them again incase of a failure.
+            if retry_attempts % 2 == 0 {
+                close_nodes = self.get_closest_peers(chunk_address, true).await?;
+            }
+            let request = Request::Query(Query::GetChunkExistenceProof {
+                key: chunk_address.clone(),
+                nonce,
+            });
+            let responses = self
+                .send_and_get_responses(&close_nodes, &request, true)
+                .await;
+            let n_verified = responses
+                .into_iter()
+                .filter_map(|resp| {
+                    if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) =
+                        resp
+                    {
+                        if expected_proof.verify(&proof) {
+                            Some(())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .count();
+            debug!("Got {n_verified} verified chunk existence proofs for chunk_address {chunk_address:?}");
+
+            if n_verified >= expected_n_verified {
+                return Ok(());
+            }
+            debug!("The obtained {n_verified} verified proofs did not match the expected {expected_n_verified} verified proofs");
+        }
+
+        Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
+    }
+
+    /// Get the store costs from the majority of the closest peers to the provided RecordKey.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
@@ -262,7 +328,7 @@ impl Network {
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
-            .send_and_get_responses(close_nodes, &request, true)
+            .send_and_get_responses(&close_nodes, &request, true)
             .await;
 
         // loop over responses, generating an average fee and storing all responses along side
@@ -395,9 +461,9 @@ impl Network {
 
             // wait for a bit before re-trying
             if cfg.re_attempt {
-                // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+                // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT
                 let wait_duration = rand::thread_rng()
-                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                    .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
                 tokio::time::sleep(wait_duration).await;
             }
         }
@@ -478,9 +544,9 @@ impl Network {
         let response = receiver.await?;
 
         if let Some((_record_kind, get_cfg)) = &cfg.verification {
-            // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
+            // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT
             let wait_duration = rand::thread_rng()
-                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
@@ -677,7 +743,7 @@ impl Network {
     /// If `get_all_responses` is false, we return the first successful response that we get
     pub async fn send_and_get_responses(
         &self,
-        peers: Vec<PeerId>,
+        peers: &[PeerId],
         req: &Request,
         get_all_responses: bool,
     ) -> Vec<Result<Response>> {
