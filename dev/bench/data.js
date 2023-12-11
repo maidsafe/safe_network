@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702303803217,
+  "lastUpdate": 1702303805588,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "686211f457f180c5ef5b766361a2f5b1ab440000",
-          "message": "chore(ci): do not use testnet_action to upload heapnode logs",
-          "timestamp": "2023-08-01T13:20:24Z",
-          "tree_id": "be479a6e2f7b74574a57a06b7d22caf2166f5390",
-          "url": "https://github.com/maidsafe/safe_network/commit/686211f457f180c5ef5b766361a2f5b1ab440000"
-        },
-        "date": 1690919253315,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 270.18,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 202,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 178,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "cc8b312db3e52a8a90e88d09dd5fc0f272828cbe",
+          "message": "chore: gossipsub flood_publish and longer cache time to avoid loop",
+          "timestamp": "2023-12-11T13:23:12Z",
+          "tree_id": "cd18b4eb09b0663c5d70897a801d295f1652a97b",
+          "url": "https://github.com/maidsafe/safe_network/commit/cc8b312db3e52a8a90e88d09dd5fc0f272828cbe"
+        },
+        "date": 1702303804683,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 703,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 174,
             "unit": "MB"
           }
         ]
