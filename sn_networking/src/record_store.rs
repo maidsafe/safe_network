@@ -26,6 +26,7 @@ use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
     fs,
+    io::Read,
     path::{Path, PathBuf},
     vec,
 };
@@ -114,15 +115,65 @@ impl NodeRecordStore {
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
-        match fs::read(file_path) {
-            Ok(value) => {
+        // Open the file in read-only mode, but also try to open it in write mode.
+        // If the write mode succeeds, then the file is not being written to.
+        // If it fails, then the file is being written to.
+        // If we fail as the file is being written to, we have a small retry loop,
+        // waiting 50ms to try again up to 3 times.
+        let mut attempts = 0;
+        let mut file;
+        loop {
+            match fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(&file_path)
+            {
+                Ok(opened_file) => {
+                    if opened_file.metadata().map(|m| m.len()).unwrap_or(0) > 0 {
+                        trace!(
+                            "File was successfully opened and not being written to: {:?}",
+                            PrettyPrintRecordKey::from(key)
+                        );
+                        file = opened_file;
+                        break;
+                    }
+                }
+                Err(err) => {
+                    if err.kind() == std::io::ErrorKind::NotFound || attempts < 3 {
+                        attempts += 1;
+                        std::thread::sleep(std::time::Duration::from_millis(50));
+                        continue;
+                    } else {
+                        error!("File is being written to or does not exist. filename: {filename}, error: {err:?}");
+                        return None;
+                    }
+                }
+            }
+        }
+
+        // Read the contents of the file.
+        // First, get the metadata of the file to avoid allocation and resizing of the Vec.
+        let metadata = match file.metadata() {
+            Ok(metadata) => metadata,
+            Err(err) => {
+                error!("Error while reading file metadata. filename: {filename}, error: {err:?}");
+                return None;
+            }
+        };
+        // Create a buffer to read the file into.
+        let mut buffer = vec![0; metadata.len() as usize];
+
+        // Use the read method from the Read trait to read the file content into the buffer.
+        match file.read(&mut buffer) {
+            Ok(_) => {
                 debug!(
                     "Retrieved record from disk! filename: {filename} after {:?}",
                     start.elapsed()
                 );
+                // Create a new record with the contents of the file.
                 let record = Record {
                     key: key.clone(),
-                    value,
+                    value: buffer,
                     publisher: None,
                     expires: None,
                 };
