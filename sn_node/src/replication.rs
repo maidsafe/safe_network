@@ -146,6 +146,37 @@ impl Node {
         let _handle = spawn(async move {
             let start = std::time::Instant::now();
             let pretty_key = PrettyPrintRecordKey::from(&paid_key);
+
+            // first we wait until our own network store can return the record
+            // otherwise it may not be fully written yet
+            let mut retry_count = 0;
+            trace!("Checking we have successfully store paid record {pretty_key:?} in the store before replicating");
+            loop {
+                let record = match network.get_local_record(&paid_key).await {
+                    Ok(record) => record,
+                    Err(err) => {
+                        error!(
+                            "Replicating paid record {pretty_key:?} get_record_from_store errored: {err:?}"
+                        );
+                        return;
+                    }
+                };
+
+                if record.is_some() {
+                    break;
+                }
+
+                if retry_count > 10 {
+                    error!(
+                        "Could not record from store for replication: {pretty_key:?} after 10 retries"
+                    );
+                    break;
+                }
+
+                retry_count += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+
             trace!("Start replicate paid record {pretty_key:?} on store");
 
             // Already contains self_peer_id
