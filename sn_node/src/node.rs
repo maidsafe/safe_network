@@ -512,7 +512,12 @@ impl Node {
                 let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
                 if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
                     let proof = ChunkProof::new(&record.value, nonce);
+                    trace!("Chunk proof for {key:?} is {proof:?}");
                     result = Ok(proof)
+                } else {
+                    trace!(
+                        "Could not get ChunkProof for {key:?} as we don't have the record locally."
+                    );
                 }
 
                 QueryResponse::GetChunkExistenceProof(result)
