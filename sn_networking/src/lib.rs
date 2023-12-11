@@ -29,7 +29,7 @@ mod transfers;
 use self::{cmd::SwarmCmd, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
-    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver},
+    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
     error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
@@ -44,11 +44,11 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
-use rand::{thread_rng, Rng};
+use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordKind, RecordType},
+    storage::RecordType,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
@@ -257,7 +257,7 @@ impl Network {
     /// Get the Chunk existence proof from the close nodes to the provided chunk address.
     pub async fn verify_chunk_existence(
         &self,
-        chunk_address: &NetworkAddress,
+        chunk_address: NetworkAddress,
         nonce: Nonce,
         expected_proof: ChunkProof,
         quorum: Quorum,
@@ -282,7 +282,7 @@ impl Network {
             // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
             // the Chunk, so query them again incase of a failure.
             if retry_attempts % 2 == 0 {
-                close_nodes = self.get_closest_peers(chunk_address, true).await?;
+                close_nodes = self.get_closest_peers(&chunk_address, true).await?;
             }
             let request = Request::Query(Query::GetChunkExistenceProof {
                 key: chunk_address.clone(),
@@ -293,16 +293,19 @@ impl Network {
                 .await;
             let n_verified = responses
                 .into_iter()
-                .filter_map(|(_peer, resp)| {
+                .filter_map(|(peer, resp)| {
                     if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) =
                         resp
                     {
                         if expected_proof.verify(&proof) {
+                            debug!("Got a valid ChunkProof from {peer:?}");
                             Some(())
                         } else {
+                            warn!("Failed to verify the ChunkProof from {peer:?}. The chunk might have been tampered?");
                             None
                         }
                     } else {
+                        debug!("Did not get a valid response for the ChunkProof from {peer:?}");
                         None
                     }
                 })
@@ -312,7 +315,7 @@ impl Network {
             if n_verified >= expected_n_verified {
                 return Ok(());
             }
-            debug!("The obtained {n_verified} verified proofs did not match the expected {expected_n_verified} verified proofs");
+            warn!("The obtained {n_verified} verified proofs did not match the expected {expected_n_verified} verified proofs");
         }
 
         Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
@@ -544,7 +547,7 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if let Some((record_kind, get_cfg)) = &cfg.verification {
+        if let Some((verification_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT
             let wait_duration = rand::thread_rng()
                 .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
@@ -554,16 +557,15 @@ impl Network {
             debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
 
             // Verify the record is stored, requiring re-attempts
-            if let RecordKind::Chunk = record_kind {
-                // use ChunkProof when we are trying to verify a Chunk
-                let address = NetworkAddress::from_record_key(&record_key);
-                let random_nonce = thread_rng().gen::<u64>();
-
-                let expected_proof = ChunkProof::new(&record.value, random_nonce);
+            if let VerificationKind::ChunkProof {
+                expected_proof,
+                nonce,
+            } = verification_kind
+            {
                 self.verify_chunk_existence(
-                    &address,
-                    random_nonce,
-                    expected_proof,
+                    NetworkAddress::from_record_key(&record_key),
+                    *nonce,
+                    expected_proof.clone(),
                     get_cfg.get_quorum,
                     get_cfg.re_attempt,
                 )

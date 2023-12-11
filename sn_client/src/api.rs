@@ -25,7 +25,7 @@ use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
 use sn_networking::{
     multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
-    NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
+    NetworkEvent, PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -407,7 +407,18 @@ impl Client {
             // The `ChunkWithPayment` is only used to send out via PutRecord.
             // The holders shall only hold the `Chunk` copies.
             // Hence the fetched copies shall only be a `Chunk`
-            Some((RecordKind::Chunk, verification_cfg))
+
+            let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec();
+            let random_nonce = thread_rng().gen::<u64>();
+            let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
+
+            Some((
+                VerificationKind::ChunkProof {
+                    expected_proof,
+                    nonce: random_nonce,
+                },
+                verification_cfg,
+            ))
         } else {
             None
         };
@@ -465,7 +476,7 @@ impl Client {
         if let Err(err) = self
             .network
             .verify_chunk_existence(
-                &address,
+                address.clone(),
                 random_nonce,
                 expected_proof,
                 Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
@@ -527,7 +538,7 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
-            verification: Some((record_kind, verification_cfg)),
+            verification: Some((VerificationKind::Network, verification_cfg)),
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
