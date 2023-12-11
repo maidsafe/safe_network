@@ -298,7 +298,9 @@ impl SwarmDriver {
             })
             .collect();
 
-        trace!("Replicating non_existent_keys, about to check what is close: {non_existent_keys:?}");
+        trace!(
+            "Replicating non_existent_keys, about to check what is close: {non_existent_keys:?}"
+        );
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
         let close_keys = non_existent_keys

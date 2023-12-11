@@ -55,6 +55,10 @@ impl Node {
                 // Now that we've taken any money passed to us, regardless of the payment's validity,
                 // if we already have the data we can return early
                 if already_exists {
+                    // if we're receiving this chunk PUT again, and we have been paid,
+                    // we eagery retry replicaiton as it seems like other nodes are having trouble
+                    // did not manage to get this chunk as yet
+                    self.replicate_paid_record(record_key, RecordType::Chunk);
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
 
@@ -154,7 +158,7 @@ impl Node {
 
     /// Store a pre-validated, and already paid record to the RecordStore
     pub(crate) async fn store_prepaid_record(&self, record: Record) -> Result<CmdOk> {
-        trace!("Storing prepaid record {record:?}");
+        trace!("Storing prepaid record {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
@@ -171,7 +175,10 @@ impl Node {
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
-                trace!("Chunk with addr {chunk.network_address:?} already exists?: {already_exists}");
+                trace!(
+                    "Chunk with addr {:?} already exists?: {already_exists}",
+                    chunk.network_address()
+                );
                 if already_exists {
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
