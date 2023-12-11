@@ -26,7 +26,6 @@ mod record_store_api;
 mod replication_fetcher;
 mod transfers;
 
-use self::{cmd::SwarmCmd, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver},
@@ -36,6 +35,7 @@ pub use self::{
     transfers::get_singed_spends_from_record,
 };
 
+use self::{cmd::SwarmCmd, error::Result};
 use backoff::{Error as BackoffError, ExponentialBackoff};
 use bytes::Bytes;
 use futures::future::select_all;
@@ -45,11 +45,14 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
-use rand::{seq::SliceRandom, Rng};
+use rand::{
+    thread_rng,
+    {seq::SliceRandom, Rng},
+};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    storage::RecordType,
+    storage::{RecordKind, RecordType},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
@@ -260,7 +263,8 @@ impl Network {
     /// Get the Chunk existence proof from the close nodes to the provided chunk address.
     pub async fn verify_chunk_existence(
         &self,
-        (chunk_address, nonce): (&NetworkAddress, Nonce),
+        chunk_address: &NetworkAddress,
+        nonce: Nonce,
         expected_proof: ChunkProof,
         quorum: Quorum,
         re_attempt: bool,
@@ -530,7 +534,7 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if let Some((_record_kind, get_cfg)) = &cfg.verification {
+        if let Some((record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT
             let wait_duration = rand::thread_rng()
                 .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
@@ -540,8 +544,24 @@ impl Network {
             debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record.key.clone(), get_cfg)
+            if let RecordKind::Chunk = record_kind {
+                // use ChunkProof when we are trying to verify a Chunk
+                let address = NetworkAddress::from_record_key(&record_key);
+                let random_nonce = thread_rng().gen::<u64>();
+
+                let expected_proof = ChunkProof::new(&record.value, random_nonce);
+                self.verify_chunk_existence(
+                    &address,
+                    random_nonce,
+                    expected_proof,
+                    get_cfg.get_quorum,
+                    get_cfg.re_attempt,
+                )
                 .await?;
+            } else {
+                self.get_record_from_network(record.key.clone(), get_cfg)
+                    .await?;
+            }
         }
 
         response
