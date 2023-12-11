@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702303641499,
+  "lastUpdate": 1702303803217,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b5c09cdb650ce6e186108125b56021572d7148c3",
-          "message": "fix: relay attacks",
-          "timestamp": "2023-08-01T17:18:29+02:00",
-          "tree_id": "32e45184de3e023a59cc7bfef2fc4761af272f81",
-          "url": "https://github.com/maidsafe/safe_network/commit/b5c09cdb650ce6e186108125b56021572d7148c3"
-        },
-        "date": 1690923227602,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 25.34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 102,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "cc8b312db3e52a8a90e88d09dd5fc0f272828cbe",
+          "message": "chore: gossipsub flood_publish and longer cache time to avoid loop",
+          "timestamp": "2023-12-11T13:23:12Z",
+          "tree_id": "cd18b4eb09b0663c5d70897a801d295f1652a97b",
+          "url": "https://github.com/maidsafe/safe_network/commit/cc8b312db3e52a8a90e88d09dd5fc0f272828cbe"
+        },
+        "date": 1702303802232,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 92,
             "unit": "MB"
           }
         ]
