@@ -211,19 +211,27 @@ async fn upload_files(
     let mut final_balance = file_api.wallet()?.balance();
     let chunks_batches = chunks_to_upload.chunks(batch_size);
     let now = Instant::now();
-    // let mut recorded_upload_errors = vec![];
 
+    // Task set to add and remove chunks from the chunk manager
     let mut uploading_chunks = FuturesUnordered::new();
 
     for chunks_batch in chunks_batches {
         // while we dont have a full batch_size of ongoing uploading_chunks
         // we can pay fo rthe next batch and carry on
         while uploading_chunks.len() >= batch_size {
-            if let Some(Err(report)) = uploading_chunks.next().await {
-                // recorded_upload_errors.push(report);
-                error!("Failed to upload a chunk: {report}");
-                // bail!(report);
-                Err(report)?
+            if let Some(result) = uploading_chunks.next().await {
+                // bail if we've had any errors so far
+                match result? {
+                    // or cleanup via chunk_manager
+                    Ok(xorname) => {
+                        // mark the chunk as completed
+                        chunk_manager.mark_completed(std::iter::once(xorname));
+                    }
+                    Err(report) => {
+                        error!("Failed to upload a chunk: {report}");
+                        return Err(report);
+                    }
+                }
             }
         }
 
@@ -270,44 +278,39 @@ async fn upload_files(
             // We bail on _any_ error here as we want to stop the upload process
             // and there are no more retries after this point
             while uploading_chunks.len() >= batch_size {
-                if let Some(Err(report)) = uploading_chunks.next().await {
-                    // recorded_upload_errors.push(report);
-                    error!("Failed to upload a chunk: {report}");
-                    // bail!(Err(report));
-                    Err(report)?
+                if let Some(result) = uploading_chunks.next().await {
+                    match result? {
+                        Ok(xorname) => {
+                            // mark the chunk as completed
+                            chunk_manager.mark_completed(std::iter::once(xorname));
+                        }
+                        Err(report) => {
+                            // recorded_upload_errors.push(report);
+                            error!("Failed to upload a chunk: {report}");
+                            return Err(report);
+                        }
+                    }
                 }
             }
 
-            let mut chunk_manager = chunk_manager.clone();
-            let upload_and_cleanup = async move {
-                let upload_result = task.await?;
-
-                match upload_result {
-                    Err(error) => {
-                        // recorded_upload_errors
-                        error!("Failed to upload a chunk: {error}");
-                        // bail!("Failed to upload a chunk: {error}");
-                        Err(error)
-                    }
-                    Ok(xorname) => {
-                        // mark the chunk as completed
-                        chunk_manager.mark_completed(std::iter::once(xorname));
-                        Ok(())
-                    }
-                }
-            };
-
-            uploading_chunks.push(upload_and_cleanup);
+            uploading_chunks.push(task);
         }
     }
 
     // ensure we wait on any remaining uploading_chunks
     while let Some(result) = uploading_chunks.next().await {
-        // finish everything there
-        if let Err(report) = result {
-            // recorded_upload_errors.push(report);
-            error!("Failed to upload a chunk: {report}");
-            bail!(report);
+        // bail if we've errored so far
+        match result? {
+            // or cleanup via chunk_manager
+            Ok(xorname) => {
+                // mark the chunk as completed
+                chunk_manager.mark_completed(std::iter::once(xorname));
+            }
+            Err(report) => {
+                // recorded_upload_errors.push(report);
+                error!("Failed to upload a chunk: {report}");
+                bail!(report);
+            }
         }
     }
 
