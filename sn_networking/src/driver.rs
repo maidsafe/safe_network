@@ -48,8 +48,7 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::{
-    messages::{Request, Response},
-    storage::RecordKind,
+    messages::{ChunkProof, Nonce, Request, Response},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
@@ -159,8 +158,20 @@ pub struct PutRecordCfg {
     pub put_quorum: Quorum,
     /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
     pub re_attempt: bool,
-    /// Enables verification after writing. The RecordKind is used to determine the verification delay.
-    pub verification: Option<(RecordKind, GetRecordCfg)>,
+    /// Enables verification after writing. The VerificationKind is used to determine the method to use.
+    pub verification: Option<(VerificationKind, GetRecordCfg)>,
+}
+
+/// The methods in which verification on a PUT can be carried out.
+#[derive(Debug, Clone)]
+pub enum VerificationKind {
+    /// Uses the default KAD GET to perform verification.
+    Network,
+    /// Uses the hash based verification for chunks.
+    ChunkProof {
+        expected_proof: ChunkProof,
+        nonce: Nonce,
+    },
 }
 
 /// NodeBehaviour struct
