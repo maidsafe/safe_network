@@ -468,7 +468,8 @@ impl Client {
     }
 
     /// Verify if a `Chunk` is stored by expected nodes on the network.
-    pub async fn verify_chunk_stored(&self, address: NetworkAddress, chunk: &Chunk) -> Result<()> {
+    pub async fn verify_chunk_stored(&self, chunk: &Chunk) -> Result<()> {
+        let address = chunk.network_address();
         info!("Verifying chunk: {address:?}");
         let random_nonce = thread_rng().gen::<u64>();
         let record_value = try_serialize_record(&chunk, RecordKind::Chunk)?;
@@ -693,9 +694,7 @@ impl Client {
                 let handle = tokio::spawn(async move {
                     // make sure the chunk is stored;
                     let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));
-                    let res = client
-                        .verify_chunk_stored(chunk.network_address(), &chunk)
-                        .await;
+                    let res = client.verify_chunk_stored(&chunk).await;
 
                     Ok::<_, ChunksError>(((name, chunk_path), res.is_err()))
                 });
