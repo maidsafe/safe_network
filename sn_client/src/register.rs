@@ -10,7 +10,7 @@ use crate::{Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
 use libp2p::kad::{Quorum, Record};
-use sn_networking::{GetRecordCfg, PutRecordCfg};
+use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
@@ -398,7 +398,7 @@ impl ClientRegister {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
-            verification: Some((RecordKind::Register, verification_cfg)),
+            verification: Some((VerificationKind::Network, verification_cfg)),
         };
 
         // Register edits might exist so we cannot be sure that just because we get a record back that this should fail
