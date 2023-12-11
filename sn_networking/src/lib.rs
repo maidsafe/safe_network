@@ -292,7 +292,7 @@ impl Network {
                 .await;
             let n_verified = responses
                 .into_iter()
-                .filter_map(|resp| {
+                .filter_map(|(_peer, resp)| {
                     if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) =
                         resp
                     {
@@ -333,7 +333,7 @@ impl Network {
 
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
-        for response in responses.into_iter().flatten() {
+        for response in responses.into_values().flatten() {
             debug!(
                 "StoreCostReq for {record_address:?} received response: {:?}",
                 response
@@ -746,25 +746,30 @@ impl Network {
         peers: &[PeerId],
         req: &Request,
         get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
+    ) -> BTreeMap<PeerId, Result<Response>> {
         debug!("send_and_get_responses for {req:?}");
         let mut list_of_futures = peers
             .iter()
-            .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
+            .map(|peer| {
+                Box::pin(async {
+                    let resp = self.send_request(req.clone(), *peer).await;
+                    (*peer, resp)
+                })
+            })
             .collect::<Vec<_>>();
 
-        let mut responses = Vec::new();
+        let mut responses = BTreeMap::new();
         while !list_of_futures.is_empty() {
-            let (res, _, remaining_futures) = select_all(list_of_futures).await;
-            let res_string = match &res {
-                Ok(res) => format!("{res}"),
+            let ((peer, resp), _, remaining_futures) = select_all(list_of_futures).await;
+            let resp_string = match &resp {
+                Ok(resp) => format!("{resp}"),
                 Err(err) => format!("{err:?}"),
             };
-            debug!("Got response for the req: {req:?}, res: {res_string}");
-            if !get_all_responses && res.is_ok() {
-                return vec![res];
+            debug!("Got response from {peer:?} for the req: {req:?}, resp: {resp_string}");
+            if !get_all_responses && resp.is_ok() {
+                return BTreeMap::from([(peer, resp)]);
             }
-            responses.push(res);
+            responses.insert(peer, resp);
             list_of_futures = remaining_futures;
         }
 
