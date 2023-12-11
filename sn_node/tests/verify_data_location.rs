@@ -61,7 +61,7 @@ const CHURN_COUNT: u8 = 4;
 
 /// Default number of chunks that should be PUT to the network.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
-const CHUNK_COUNT: usize = 5;
+const CHUNK_COUNT: usize = 15;
 
 type NodeIndex = usize;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
