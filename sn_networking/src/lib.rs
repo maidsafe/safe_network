@@ -258,20 +258,7 @@ impl Network {
     ) -> Result<(MainPubkey, PaymentQuote)> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
-
-        // Sometimes we can get too many close node responses here.
-        // (Seemingly libp2p can return more than expected)
-        // We only want CLOSE_GROUP_SIZE peers at most
-        close_nodes.sort_by(|a, b| {
-            let a = NetworkAddress::from_peer(*a);
-            let b = NetworkAddress::from_peer(*b);
-            record_address
-                .distance(&a)
-                .cmp(&record_address.distance(&b))
-        });
-
-        close_nodes.truncate(close_group_majority());
+        let close_nodes = self.get_closest_peers(&record_address, true).await?;
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
@@ -289,20 +276,34 @@ impl Network {
                 Response::Query(QueryResponse::GetStoreCost {
                     quote: Ok(quote),
                     payment_address,
+                    peer_address,
                 }) => {
-                    all_costs.push((payment_address, quote));
+                    all_costs.push((peer_address, payment_address, quote));
                 }
                 Response::Query(QueryResponse::GetStoreCost {
                     quote: Err(ProtocolError::RecordExists(_)),
                     payment_address,
+                    peer_address,
                 }) => {
-                    all_costs.push((payment_address, PaymentQuote::zero()));
+                    all_costs.push((peer_address, payment_address, PaymentQuote::zero()));
                 }
                 _ => {
                     error!("Non store cost response received,  was {:?}", response);
                 }
             }
         }
+
+        // Sort all_costs by the NetworkAddress proximity to record_address
+        all_costs.sort_by(|(peer_address_a, _, _), (peer_address_b, _, _)| {
+            record_address
+                .distance(peer_address_a)
+                .cmp(&record_address.distance(peer_address_b))
+        });
+
+        // Ensure we dont have any further out nodes than `close_group_majority()`
+        // This should ensure that if we didnt get all responses from close nodes, we're less likely to be
+        // paying a node that is not in the CLOSE_GROUP
+        let all_costs = all_costs.into_iter().take(close_group_majority()).collect();
 
         get_fees_from_store_cost_responses(all_costs)
     }
@@ -709,18 +710,22 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return the lowest cost.
+/// Given `all_costs` it will return the closest / lowest cost
+/// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(MainPubkey, PaymentQuote)>,
+    mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<(MainPubkey, PaymentQuote)> {
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
-    all_costs.sort_by(|(pub_key_a, cost_a), (pub_key_b, cost_b)| {
-        match cost_a.cost.cmp(&cost_b.cost) {
-            std::cmp::Ordering::Equal => pub_key_a.cmp(pub_key_b),
+    all_costs.sort_by(
+        |(address_a, _main_key_a, cost_a), (address_b, _main_key_b, cost_b)| match cost_a
+            .cost
+            .cmp(&cost_b.cost)
+        {
+            std::cmp::Ordering::Equal => address_a.cmp(address_b),
             other => other,
-        }
-    });
+        },
+    );
 
     // get the lowest cost
     trace!("Got all costs: {all_costs:?}");
@@ -729,8 +734,8 @@ fn get_fees_from_store_cost_responses(
         .next()
         .ok_or(Error::NoStoreCostResponses)?;
     info!("Final fees calculated as: {lowest:?}");
-
-    Ok(lowest)
+    // we dont need to have the address outside of here for now
+    Ok((lowest.1, lowest.2))
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.
@@ -785,11 +790,12 @@ mod tests {
         for i in 1..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((
+                NetworkAddress::from_peer(PeerId::random()),
                 addr,
                 PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
             ));
         }
-        let expected_price = costs[0].1.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_nano();
         let (_key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
@@ -811,6 +817,7 @@ mod tests {
             // push random MainPubkey and Nano
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
             costs.push((
+                NetworkAddress::from_peer(PeerId::random()),
                 addr,
                 PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
             ));
@@ -818,7 +825,7 @@ mod tests {
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].1.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_nano();
 
         let (_key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),

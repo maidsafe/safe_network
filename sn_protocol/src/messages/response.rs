@@ -23,6 +23,8 @@ pub enum QueryResponse {
         quote: Result<PaymentQuote>,
         /// The cash_note MainPubkey to pay this node's store cost to.
         payment_address: MainPubkey,
+        /// Node's Peer Address
+        peer_address: NetworkAddress,
     },
     // ===== ReplicatedRecord =====
     //
@@ -39,10 +41,11 @@ impl Debug for QueryResponse {
             QueryResponse::GetStoreCost {
                 quote,
                 payment_address,
+                peer_address,
             } => {
                 write!(
                     f,
-                    "GetStoreCost(quote: {quote:?}, payment_address: {payment_address:?})"
+                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?})"
                 )
             }
             QueryResponse::GetReplicatedRecord(result) => match result {
