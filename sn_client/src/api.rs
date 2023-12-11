@@ -382,7 +382,7 @@ impl Client {
         chunk: Chunk,
         payment: Payment,
         verify_store: bool,
-        _show_holders: bool,
+        _show_holders: bool, // The holders are logged during ChunkProof verification by default. Todo: remove?
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
@@ -395,18 +395,29 @@ impl Client {
             expires: None,
         };
 
+        let verification = if verify_store {
+            let verification_cfg = GetRecordCfg {
+                get_quorum: Quorum::N(
+                    NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
+                ),
+                re_attempt: true,
+                target_record: None, // Not used since we use ChunkProof
+                expected_holders: Default::default(),
+            };
+            // The `ChunkWithPayment` is only used to send out via PutRecord.
+            // The holders shall only hold the `Chunk` copies.
+            // Hence the fetched copies shall only be a `Chunk`
+            Some((RecordKind::Chunk, verification_cfg))
+        } else {
+            None
+        };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             re_attempt: true,
-            verification: None,
+            verification,
         };
         self.network.put_record(record, &put_cfg).await?;
 
-        if verify_store {
-            tokio::time::sleep(Duration::from_millis(1500)).await;
-            self.verify_chunk_stored(chunk.network_address(), &chunk)
-                .await?;
-        }
         Ok(())
     }
 
@@ -454,7 +465,8 @@ impl Client {
         if let Err(err) = self
             .network
             .verify_chunk_existence(
-                (&address, random_nonce),
+                &address,
+                random_nonce,
                 expected_proof,
                 Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
                 false,
