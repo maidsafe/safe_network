@@ -16,9 +16,7 @@ use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_networking::{
-    Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
-};
+use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Cmd, CmdResponse, Query, QueryResponse, Response},
@@ -520,15 +518,14 @@ impl Node {
                     );
 
                     if let Some(peer_id) = holder.as_peer_id() {
+                        // accept replication requests from the K_VALUE peers away, giving us some margin for replication
                         let local_peers: Vec<_> =
                             match network.get_closest_k_value_local_peers().await {
-                                // accept replication requests from the REPLICATE_RANGE peers away, giving us some margin
                                 // for replication on churn
                                 Ok(mut peers) => {
                                     // remove our peer id from the calculations here.
-                                    // Allowing for a bit more sensitivity to changes in REPLICATION_RANGE
                                     peers.retain(|peer_id| peer_id != &network.peer_id);
-                                    peers.into_iter().take(REPLICATE_RANGE).collect()
+                                    peers
                                 }
                                 Err(err) => {
                                     error!("Failed to get close group local peers: {err:?}");
