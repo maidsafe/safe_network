@@ -22,12 +22,14 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
+use rand::{thread_rng, Rng};
 use sn_networking::{
     multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
     NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
+    messages::ChunkProof,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
         RecordKind, RegisterAddress, SpendAddress,
@@ -381,7 +383,7 @@ impl Client {
         chunk: Chunk,
         payment: Payment,
         verify_store: bool,
-        show_holders: bool,
+        _show_holders: bool,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
@@ -394,52 +396,19 @@ impl Client {
             expires: None,
         };
 
-        let expected_holders: HashSet<_> = if show_holders {
-            self.network
-                .get_closest_peers(&chunk.network_address(), true)
-                .await?
-                .iter()
-                .cloned()
-                .collect()
-        } else {
-            Default::default()
-        };
-
-        let record_to_verify = if verify_store {
-            // The `ChunkWithPayment` is only used to send out via PutRecord.
-            // The holders shall only hold the `Chunk` copies.
-            // Hence the fetched copies shall only be a `Chunk`
-            Some(Record {
-                key,
-                value: try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec(),
-                publisher: None,
-                expires: None,
-            })
-        } else {
-            None
-        };
-
-        let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::N(
-                NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
-            ),
-            re_attempt: true,
-            target_record: record_to_verify,
-            expected_holders,
-        };
-
-        let verification = if verify_store {
-            Some((record_kind, verification_cfg))
-        } else {
-            None
-        };
-
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             re_attempt: true,
-            verification,
+            verification: None,
         };
-        Ok(self.network.put_record(record, &put_cfg).await?)
+        self.network.put_record(record, &put_cfg).await?;
+
+        if verify_store {
+            tokio::time::sleep(Duration::from_millis(1500)).await;
+            self.verify_chunk_stored(chunk.network_address(), &chunk)
+                .await?;
+        }
+        Ok(())
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -477,29 +446,26 @@ impl Client {
     }
 
     /// Verify if a `Chunk` is stored by expected nodes on the network.
-    pub async fn verify_chunk_stored(&self, address: ChunkAddress) -> Result<Chunk> {
+    pub async fn verify_chunk_stored(&self, address: NetworkAddress, chunk: &Chunk) -> Result<()> {
         info!("Verifying chunk: {address:?}");
-        let key = NetworkAddress::from_chunk_address(address).to_record_key();
+        let random_nonce = thread_rng().gen::<u64>();
+        let record_value = try_serialize_record(&chunk, RecordKind::Chunk)?;
+        let expected_proof = ChunkProof::new(record_value.as_ref(), random_nonce);
 
-        let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::N(
-                NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
-            ),
-            re_attempt: false,
-            target_record: None,
-            expected_holders: Default::default(),
-        };
-        let record = self
+        if let Err(err) = self
             .network
-            .get_record_from_network(key, &verification_cfg)
-            .await?;
-        let header = RecordHeader::from_record(&record)?;
-        if let RecordKind::Chunk = header.kind {
-            let chunk: Chunk = try_deserialize_record(&record)?;
-            Ok(chunk)
-        } else {
-            Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
+            .verify_chunk_existence(
+                (&address, random_nonce),
+                expected_proof,
+                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                false,
+            )
+            .await
+        {
+            error!("Failed to verify the existence of chunk {address:?} with err {err:?}");
         }
+
+        Ok(())
     }
 
     /// Verify if a `Register` is stored by expected nodes on the network.
@@ -698,15 +664,17 @@ impl Client {
             // now we try and get batched chunks, keep track of any that fail
             // Iterate over each uploaded chunk
             let mut verify_handles = Vec::new();
-            for (name, path) in chunks_batch.iter().cloned() {
+            for (name, chunk_path) in chunks_batch.iter().cloned() {
                 let client = self.clone();
                 // Spawn a new task to fetch each chunk concurrently
                 let handle = tokio::spawn(async move {
-                    let chunk_address: ChunkAddress = ChunkAddress::new(name);
-                    // make sure the chunk is stored
-                    let res = client.verify_chunk_stored(chunk_address).await;
+                    // make sure the chunk is stored;
+                    let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));
+                    let res = client
+                        .verify_chunk_stored(chunk.network_address(), &chunk)
+                        .await;
 
-                    Ok::<_, ChunksError>(((name, path), res.is_err()))
+                    Ok::<_, ChunksError>(((name, chunk_path), res.is_err()))
                 });
                 verify_handles.push(handle);
             }

@@ -13,7 +13,7 @@ use libp2p::{
     swarm::DialError,
     PeerId, TransportError,
 };
-use sn_protocol::{messages::Response, storage::RecordKind, PrettyPrintRecordKey};
+use sn_protocol::{messages::Response, storage::RecordKind, NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::{SignedSpend, SpendAddress};
 use std::{
     collections::{HashMap, HashSet},
@@ -128,6 +128,10 @@ pub enum Error {
 
     #[error("Transfer is invalid: {0}")]
     InvalidTransfer(String),
+
+    // ---------- Chunk Errors
+    #[error("Failed to verify the ChunkProof with the provided quorum")]
+    FailedToVerifyChunkProof(NetworkAddress),
 
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
