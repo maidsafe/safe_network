@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.9...sn_networking-v0.11.10) - 2023-12-11
+
+### Added
+- close outdated connections to non-RT peers
+
+### Other
+- gossipsub flood_publish and longer cache time to avoid loop
+
 ## [0.11.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.8...sn_networking-v0.11.9) - 2023-12-07
 
 ### Fixed
