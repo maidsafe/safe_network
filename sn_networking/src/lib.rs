@@ -513,6 +513,16 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::RemoveFailedLocalRecord { key })
     }
 
+    /// Add a local record to the RecordStore after a successful write
+    pub fn add_record_as_stored_locally(
+        &self,
+        key: RecordKey,
+        record_type: RecordType,
+    ) -> Result<()> {
+        trace!("Removing Record locally, for {:?}", key);
+        self.send_swarm_cmd(SwarmCmd::AddLocalRecordAsStored { key, record_type })
+    }
+
     /// Returns true if a RecordKey is present locally in the RecordStore
     pub async fn is_record_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();

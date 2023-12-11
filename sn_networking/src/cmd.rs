@@ -128,6 +128,12 @@ pub enum SwarmCmd {
     RemoveFailedLocalRecord {
         key: RecordKey,
     },
+    /// Add a local record to the RecordStore's HashSet of stored records
+    /// This should be done after the record has been stored to disk
+    AddLocalRecordAsStored {
+        key: RecordKey,
+        record_type: RecordType,
+    },
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -183,6 +189,13 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(key)
+                )
+            }
+            SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
+                write!(
+                    f,
+                    "SwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -462,6 +475,12 @@ impl SwarmDriver {
                     Err(err) => return Err(err.into()),
                 };
             }
+            SwarmCmd::AddLocalRecordAsStored { key, record_type } => self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .mark_as_stored(key, record_type),
             SwarmCmd::RemoveFailedLocalRecord { key } => {
                 self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
