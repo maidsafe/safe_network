@@ -2507,6 +2507,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(networking)* solidify REPLICATION_RANGE use. exclude self_peer_id in some calcs
 - *(node)* improve RecordRejected logs
 
+## [0.100.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.0...sn_node-v0.100.1) - 2023-12-12
+
+### Added
+- *(node)* log if RPC server fails to start
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
