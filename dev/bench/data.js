@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702395331883,
+  "lastUpdate": 1702399258821,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2f5c4e24ddb91126d0bf6f8e345279a95e138f24",
-          "message": "feat: UTXO and Transfer",
-          "timestamp": "2023-08-18T08:25:14Z",
-          "tree_id": "33a10e10f0dab581363441238de59b40ddc092bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/2f5c4e24ddb91126d0bf6f8e345279a95e138f24"
-        },
-        "date": 1692352022568,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1788506207909062,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 10.886055276072907,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.3974169570793396,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.063517295517556,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "45c0ed319a53cb5927afd9f8d7d1deee86b36555",
+          "message": "feat(cli): skip payment and upload for existing chunks",
+          "timestamp": "2023-12-12T16:02:42Z",
+          "tree_id": "9e1f5d9017dc0ba44abeb005ce60e2ee3c4d6463",
+          "url": "https://github.com/maidsafe/safe_network/commit/45c0ed319a53cb5927afd9f8d7d1deee86b36555"
+        },
+        "date": 1702399256312,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3165942139198419,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.951172263254813,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.2288176171101,
             "unit": "MiB/s"
           }
         ]
