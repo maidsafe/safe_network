@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702395326945,
+  "lastUpdate": 1702395329288,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8dfe4b950ad0745a02bda2fd72afe34a8a9c49f2",
-          "message": "fix(ci): provide correct platform value",
-          "timestamp": "2023-08-02T08:14:10+02:00",
-          "tree_id": "4cdb1c6debd95343eddfe2533a5ee92139e5bd9f",
-          "url": "https://github.com/maidsafe/safe_network/commit/8dfe4b950ad0745a02bda2fd72afe34a8a9c49f2"
-        },
-        "date": 1690976984821,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 265.16,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 220,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 125,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
+          "message": "feat(node): log if RPC server fails to start",
+          "timestamp": "2023-12-12T14:58:46Z",
+          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
+          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
+        },
+        "date": 1702395328378,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 726,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 130,
             "unit": "MB"
           }
         ]
