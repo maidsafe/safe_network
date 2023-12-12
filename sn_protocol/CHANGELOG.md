@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.39...sn_protocol-v0.9.0) - 2023-12-12
+
+### Added
+- *(networking)* sort quotes by closest NetworkAddress before truncate
+
 ## [0.8.39](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.38...sn_protocol-v0.8.39) - 2023-12-06
 
 ### Other

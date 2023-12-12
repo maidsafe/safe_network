@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_node_rpc_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.71"
+version = "0.1.72"
 
 [[bin]]
 path="src/main.rs"
@@ -23,12 +23,12 @@ color-eyre = "0.6.2"
 hex = "~0.4.3"
 libp2p = { version="0.52", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", version = "0.99.11" }
+sn_client = { path = "../sn_client", version = "0.99.12" }
 sn_logging = { path = "../sn_logging", version = "0.2.16" }
-sn_node = { path = "../sn_node", version = "0.99.17" }
+sn_node = { path = "../sn_node", version = "0.100.0" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.1.13" }
-sn_protocol = { path = "../sn_protocol", version = "0.8.39" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.27" }
+sn_protocol = { path = "../sn_protocol", version = "0.9.0" }
+sn_transfers = { path = "../sn_transfers", version = "0.14.28" }
 thiserror = "1.0.23"
 # # watch out updating this, protoc compiler needs to be installed on all build systems
 # # arm builds + musl are very problematic

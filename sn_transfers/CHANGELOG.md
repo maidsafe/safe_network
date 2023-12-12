@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.28](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.27...sn_transfers-v0.14.28) - 2023-12-12
+
+### Added
+- *(transfers)* make wallet read resiliant to concurrent writes
+
 ## [0.14.27](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.26...sn_transfers-v0.14.27) - 2023-12-06
 
 ### Added
