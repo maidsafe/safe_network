@@ -128,4 +128,14 @@ impl UnifiedRecordStore {
             Self::Node(store) => store.set_distance_range(distance_range),
         }
     }
+
+    /// Mark the record as stored in the store.
+    /// This adds it to records set, so it can now be retrieved
+    /// (to be done after writes are finalised)
+    pub(crate) fn mark_as_stored(&mut self, k: RecordKey, record_type: RecordType) {
+        match self {
+            Self::Client(store) => store.mark_as_stored(k, record_type),
+            Self::Node(store) => store.mark_as_stored(k, record_type),
+        };
+    }
 }

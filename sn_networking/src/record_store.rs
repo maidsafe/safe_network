@@ -114,6 +114,7 @@ impl NodeRecordStore {
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
+        // we should only be reading if we know the record is written to disk properly
         match fs::read(file_path) {
             Ok(value) => {
                 debug!(
@@ -213,8 +214,21 @@ impl NodeRecordStore {
         &self.records
     }
 
-    /// Warning: PUTs a `Record` to the store without validation
+    /// The follow up to `put_verified`, this only registers the RecordKey
+    /// in the RecordStore records set. After this it should be safe
+    /// to return the record as stored.
+    pub(crate) fn mark_as_stored(&mut self, key: Key, record_type: RecordType) {
+        let _ = self.records.insert(
+            key.clone(),
+            (NetworkAddress::from_record_key(&key), record_type),
+        );
+    }
+
+    /// Warning: Write's a `Record` to disk without validation
     /// Should be used in context where the `Record` is trusted
+    ///
+    /// The record is marked as written to disk once `mark_as_stored` is called,
+    /// this avoids us returning half-written data or registering it as stored before it is.
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
@@ -223,37 +237,34 @@ impl NodeRecordStore {
 
         let filename = Self::key_to_hex(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
-        let _ = self.records.insert(
-            r.key.clone(),
-            (NetworkAddress::from_record_key(&r.key), record_type),
-        );
+
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);
         }
 
         let cloned_event_sender = self.event_sender.clone();
-
         tokio::spawn(async move {
-            match fs::write(&file_path, r.value) {
+            let event = match fs::write(&file_path, r.value) {
                 Ok(_) => {
-                    info!("Wrote record {record_key:?} to disk! filename: {filename}");
+                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
+                    NetworkEvent::CompletedWrite((r.key, record_type))
                 }
                 Err(err) => {
                     error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-
-                    if let Some(event_sender) = cloned_event_sender {
-                        if let Err(error) =
-                            event_sender.send(NetworkEvent::FailedToWrite(r.key)).await
-                        {
-                            error!("SwarmDriver failed to send event: {}", error);
-                        }
-                    } else {
-                        error!("Record store doesn't have event_sender could not log failed write to disk for {file_path:?}");
-                    }
+                    NetworkEvent::FailedToWrite(r.key)
                 }
+            };
+
+            // This happens after the write to disk is complete
+            if let Some(event_sender) = cloned_event_sender {
+                if let Err(error) = event_sender.send(event).await {
+                    error!("SwarmDriver failed to send event w/  {error:?}");
+                }
+            } else {
+                error!("Record store doesn't have event_sender could not send write events for {record_key:?} {file_path:?}");
             }
         });
 
@@ -461,6 +472,8 @@ impl ClientRecordStore {
         Ok(())
     }
 
+    pub(crate) fn mark_as_stored(&mut self, _r: Key, _t: RecordType) {}
+
     pub(crate) fn set_distance_range(&mut self, _distance_range: Distance) {}
 }
 
@@ -658,9 +671,15 @@ mod tests {
             panic!("Failed recevied the record for further verification");
         };
 
+        let returned_record_key = returned_record.key.clone();
+
         assert!(store
             .put_verified(returned_record, RecordType::Chunk)
             .is_ok());
+
+        // We must also mark the record as stored (which would be triggered after the async write in nodes
+        // via NetworkEvent::CompletedWrite)
+        store.mark_as_stored(returned_record_key, RecordType::Chunk);
 
         // loop over store.get max_iterations times to ensure async disk write had time to complete.
         let max_iterations = 10;
@@ -725,6 +744,10 @@ mod tests {
             };
             let retained_key = if i < max_records {
                 assert!(store.put_verified(record, RecordType::Chunk).is_ok());
+                // We must also mark the record as stored (which would be triggered after the async write in nodes
+                // via NetworkEvent::CompletedWrite)
+                store.mark_as_stored(record_key.clone(), RecordType::Chunk);
+
                 record_key
             } else {
                 // The list is already sorted by distance, hence always shall only prune the last one
@@ -736,10 +759,15 @@ mod tests {
                 {
                     // The new entry is closer, it shall replace the existing one
                     assert!(store.put_verified(record, RecordType::Chunk).is_ok());
+                    // We must also mark the record as stored (which would be triggered after the async write in nodes
+                    // via NetworkEvent::CompletedWrite)
+                    store.mark_as_stored(record_key.clone(), RecordType::Chunk);
+
                     (record_key, furthest_key)
                 } else {
                     // The new entry is farther away, it shall not replace the existing one
                     assert!(store.put_verified(record, RecordType::Chunk).is_err());
+
                     (furthest_key, record_key)
                 };
 
@@ -820,6 +848,9 @@ mod tests {
             };
             // The new entry is closer, it shall replace the existing one
             assert!(store.put_verified(record, RecordType::Chunk).is_ok());
+            // We must also mark the record as stored (which would be triggered after the async write in nodes
+            // via NetworkEvent::CompletedWrite)
+            store.mark_as_stored(record_key.clone(), RecordType::Chunk);
 
             stored_records.push(record_key);
             stored_records.sort_by(|a, b| {

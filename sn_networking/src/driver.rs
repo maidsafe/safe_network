@@ -41,7 +41,7 @@ use libp2p::{
     swarm::{
         behaviour::toggle::Toggle,
         dial_opts::{DialOpts, PeerCondition},
-        DialError, NetworkBehaviour, StreamProtocol, Swarm,
+        ConnectionId, DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
     Multiaddr, PeerId, Transport,
 };
@@ -58,7 +58,7 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
@@ -70,9 +70,9 @@ pub(crate) enum PendingGetClosestType {
     /// Thus we can just process the queries made by NetworkDiscovery without using any channels
     NetworkDiscovery,
     /// These are queries made by a function at the upper layers and contains a channel to send the result back.
-    FunctionCall(oneshot::Sender<HashSet<PeerId>>),
+    FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
-type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, HashSet<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
@@ -453,8 +453,6 @@ impl NetworkBuilder {
         let gossipsub = if self.enable_gossip {
             // Gossipsub behaviour
             let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
-                // disable sending to ALL_PEERS subscribed to a topic, which is the default behaviour
-                .flood_publish(false)
                 // we don't currently require source peer id and/or signing
                 .validation_mode(libp2p::gossipsub::ValidationMode::Permissive)
                 // we use the hash of the msg content as the msg id to deduplicate them
@@ -467,6 +465,10 @@ impl NetworkBuilder {
                 })
                 // set the heartbeat interval to be higher than default 1sec
                 .heartbeat_interval(Duration::from_secs(5))
+                // default is 3sec, increase to 10sec to avoid false alert
+                .iwant_followup_time(Duration::from_secs(10))
+                // default is 10sec, increase to 60sec to reduce the risk of looping
+                .published_message_ids_cache_time(Duration::from_secs(60))
                 .build()
                 .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
 
@@ -547,6 +549,7 @@ impl NetworkBuilder {
             is_gossip_handler: false,
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
+            live_connected_peers: Default::default(),
         };
 
         Ok((
@@ -593,6 +596,9 @@ pub struct SwarmDriver {
     // This is to ensure a more accurate network discovery.
     pub(crate) network_discovery: NetworkDiscovery,
     pub(crate) bootstrap_peers: BTreeMap<Option<u32>, HashSet<PeerId>>,
+    // Peers that having live connection to. Any peer got contacted during kad network query
+    // will have live connection established. And they may not appear in the RT.
+    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
 }
 
 impl SwarmDriver {
@@ -671,9 +677,12 @@ impl SwarmDriver {
         all_peers
     }
 
-    // get closest k_value the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> HashSet<PeerId> {
+    /// get closest k_value the peers from our local RoutingTable. Contains self.
+    /// Is sorted for closeness to self.
+    pub(crate) fn get_closest_k_value_local_peers(&mut self) -> Vec<PeerId> {
         let self_peer_id = self.self_peer_id.into();
+
+        // get closest peers from buckets, sorted by increasing distance to us
         let peers = self
             .swarm
             .behaviour_mut()

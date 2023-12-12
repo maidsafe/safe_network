@@ -140,7 +140,7 @@ impl Files {
         let (head_address, chunks_paths) = if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
             let mut bytes = Vec::new();
             let _ = file.read_to_end(&mut bytes)?;
-            let chunk = package_small(&SmallFile::new(bytes.into())?)?;
+            let chunk = package_small(SmallFile::new(bytes.into())?)?;
 
             // Write the result to disk
             let small_chunk_file_path = chunk_dir.join(hex::encode(*chunk.name()));
@@ -506,7 +506,7 @@ fn encrypt_large(
 
 /// Packages a [`SmallFile`] and returns the resulting address and the chunk.
 /// Does not store anything to the network.
-fn package_small(file: &SmallFile) -> Result<Chunk> {
+fn package_small(file: SmallFile) -> Result<Chunk> {
     let chunk = to_chunk(file.bytes());
     if chunk.value().len() >= self_encryption::MIN_ENCRYPTABLE_BYTES {
         return Err(ChunksError::SmallFilePaddingNeeded(chunk.value().len()).into());

@@ -33,11 +33,13 @@ use libp2p::{
 
 use sn_protocol::{
     messages::{Cmd, CmdResponse, Query, Request, Response},
+    storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
     collections::HashSet,
     fmt::{Debug, Formatter},
+    time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
 use tracing::{info, warn};
@@ -128,7 +130,7 @@ pub enum NetworkEvent {
     // Peer has been removed from the Routing Table. And the number of connected peers.
     PeerRemoved(PeerId, usize),
     /// The records bearing these keys are to be fetched from the holder or the network
-    KeysForReplication(Vec<(PeerId, RecordKey)>),
+    KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
     /// AutoNAT status changed
@@ -137,6 +139,8 @@ pub enum NetworkEvent {
     UnverifiedRecord(Record),
     /// Report failed write to cleanup record store
     FailedToWrite(RecordKey),
+    /// Report a completed write so we can safely add this to the record store now
+    CompletedWrite((RecordKey, RecordType)),
     /// Gossipsub message received
     GossipsubMsgReceived {
         /// Topic the message was published on
@@ -175,7 +179,7 @@ impl Debug for NetworkEvent {
                     "NetworkEvent::PeerRemoved({peer_id:?}, {connected_peers})"
                 )
             }
-            NetworkEvent::KeysForReplication(list) => {
+            NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();
                 write!(f, "NetworkEvent::KeysForReplication({keys_len:?})")
             }
@@ -192,6 +196,13 @@ impl Debug for NetworkEvent {
             NetworkEvent::FailedToWrite(record_key) => {
                 let pretty_key = PrettyPrintRecordKey::from(record_key);
                 write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
+            }
+            NetworkEvent::CompletedWrite((record_key, record_type)) => {
+                let pretty_key = PrettyPrintRecordKey::from(record_key);
+                write!(
+                    f,
+                    "NetworkEvent::CompletedWrite({pretty_key:?}, {record_type:?})"
+                )
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
@@ -459,7 +470,12 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
-                info!("{:?}", self.swarm.network_info());
+                info!(%peer_id, ?connection_id, "ConnectionEstablished {:?}", self.swarm.network_info());
+
+                let _ = self.live_connected_peers.insert(
+                    connection_id,
+                    (peer_id, Instant::now() + Duration::from_secs(60)),
+                );
 
                 if endpoint.is_dialer() {
                     self.dialed_peers
@@ -475,8 +491,9 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                info!("{:?}", self.swarm.network_info());
+                info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                let _ = self.live_connected_peers.remove(&connection_id);
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -582,6 +599,9 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
+
+        self.remove_outdated_connections();
+
         trace!(
             "SwarmEvent handled in {:?}: {event_string:?}",
             start.elapsed()
@@ -940,6 +960,7 @@ impl SwarmDriver {
     /// Check for changes in our close group
     ///
     fn check_for_change_in_our_close_group(&mut self) -> bool {
+        // this includes self
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
         let new_closest_peers: Vec<_> =
@@ -963,6 +984,7 @@ impl SwarmDriver {
 
     /// Set the acceptable range of record entry. A record is removed from the storage if the
     /// distance between the record and the node is greater than the `distance_range`
+    /// Bases this off of the peers in self.close_group
     fn update_record_distance_range(&mut self) -> Option<()> {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let distance_range = self
@@ -1023,6 +1045,36 @@ impl SwarmDriver {
                 .behaviour_mut()
                 .kademlia
                 .remove_peer(&to_be_removed_bootstrap);
+        }
+    }
+
+    // Remove outdated connection to a peer if it is not in the RT.
+    fn remove_outdated_connections(&mut self) {
+        let mut shall_removed = vec![];
+
+        self.live_connected_peers
+            .retain(|connection_id, (peer_id, timeout)| {
+                let shall_retained = *timeout > Instant::now();
+                if !shall_retained {
+                    shall_removed.push((*connection_id, *peer_id))
+                }
+                shall_retained
+            });
+
+        // Only remove outdated peer not in the RT
+        for (connection_id, peer_id) in shall_removed {
+            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
+                if kbucket
+                    .iter()
+                    .any(|peer_entry| peer_id == *peer_entry.node.key.preimage())
+                {
+                    // Skip the connection as peer presents in the RT.
+                    continue;
+                }
+            }
+
+            info!("Removing outdated connection {connection_id:?} to {peer_id:?}");
+            let _result = self.swarm.close_connection(connection_id);
         }
     }
 }

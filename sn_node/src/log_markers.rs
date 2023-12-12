@@ -10,6 +10,7 @@ use libp2p::{kad::RecordKey, PeerId};
 use sn_protocol::{messages::Cmd, PrettyPrintRecordKey};
 use std::time::Duration;
 // this gets us to_string easily enough
+use crate::Error;
 use strum::Display;
 
 /// Public Markers for generating log output,
@@ -56,8 +57,15 @@ pub enum Marker<'a> {
     /// Valid non-existing Spend record PUT from the network received and stored
     ValidSpendRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
 
+    /// Valid paid to us and royalty paid chunk stored
+    ValidPaidChunkPutFromClient(&'a PrettyPrintRecordKey<'a>),
+    /// Valid paid to us and royalty paid register stored
+    ValidPaidRegisterPutFromClient(&'a PrettyPrintRecordKey<'a>),
+    /// Valid spend stored
+    ValidSpendPutFromClient(&'a PrettyPrintRecordKey<'a>),
+
     /// Record rejected
-    RecordRejected(&'a PrettyPrintRecordKey<'a>),
+    RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),
 }
 
 impl<'a> Marker<'a> {

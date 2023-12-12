@@ -277,10 +277,13 @@ jobs:
         include:
           - os: ubuntu-latest
             node_data_path: /home/runner/.local/share/safe/node
+            safe_path: /home/runner/.local/share/safe
           - os: windows-latest
             node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
           - os: macos-latest
             node_data_path: /Users/runner/Library/Application Support/safe/node
+            safe_path: /Users/runner/Library/Application Support/safe
     steps:
       - uses: actions/checkout@v4
 
@@ -373,6 +376,18 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Churn Test Run Failed"
 
+      # Only error out after uploading the logs
+      - name: Don't log raw data
+        if: matrix.os != 'windows-latest' # causes error
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          then
+            echo "We are logging an extremely large data"
+            exit 1
+          fi
+
   verify_data_location_routing_table:
       name: Verify data location and Routing Table
       runs-on: ${{ matrix.os }}
@@ -381,10 +396,13 @@ jobs:
           include:
             - os: ubuntu-latest
               node_data_path: /home/runner/.local/share/safe/node
+              safe_path: /home/runner/.local/share/safe
             - os: windows-latest
               node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+              safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
             - os: macos-latest
               node_data_path: /Users/runner/Library/Application Support/safe/node
+              safe_path: /Users/runner/Library/Application Support/safe
       steps:
         - uses: actions/checkout@v4
 
@@ -461,3 +479,15 @@ jobs:
             SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
             SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
             SLACK_TITLE: "Nightly Data Location Test Run Failed"
+
+        # Only error out after uploading the logs
+        - name: Don't log raw data
+          if: matrix.os != 'windows-latest' # causes error
+          shell: bash
+          timeout-minutes: 10
+          run: |
+            if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+            then
+              echo "We are logging an extremely large data"
+              exit 1
+            fi

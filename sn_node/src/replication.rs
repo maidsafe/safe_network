@@ -13,7 +13,9 @@ use libp2p::{
     kad::{Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -31,13 +33,13 @@ impl Node {
         let mut closest_k_peers = network.get_closest_k_value_local_peers().await?;
 
         // remove our peer id from the calculations here:
-        let _we_were_there = closest_k_peers.remove(&network.peer_id);
+        closest_k_peers.retain(|peer_id| peer_id != &network.peer_id);
 
         // Only grab the closest nodes
         let closest_k_peers = closest_k_peers
             .into_iter()
             // add some leeway to allow for divergent knowledge
-            .take(CLOSE_GROUP_SIZE * 2)
+            .take(REPLICATE_RANGE)
             .collect::<Vec<_>>();
 
         trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
@@ -126,7 +128,10 @@ impl Node {
                 trace!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
-                let _ = node.store_prepaid_record(record).await?;
+                let result = node.store_prepaid_record(record).await?;
+                trace!(
+                    "Completed storing Replication Record {pretty_key:?} from network, result: {result:?}"
+                );
 
                 Ok(())
             });
@@ -134,26 +139,62 @@ impl Node {
         Ok(())
     }
 
-    /// Replicate a paid record to its close group peers.
-    pub(crate) fn replicate_paid_record(&self, paid_key: RecordKey, record_type: RecordType) {
+    /// Replicate a fresh record to its close group peers.
+    /// This should not be triggered by a record we receive via replicaiton fetch
+    pub(crate) fn replicate_valid_fresh_record(
+        &self,
+        paid_key: RecordKey,
+        record_type: RecordType,
+    ) {
         let network = self.network.clone();
 
         let _handle = spawn(async move {
             let start = std::time::Instant::now();
             let pretty_key = PrettyPrintRecordKey::from(&paid_key);
-            trace!("Start replicate paid record {pretty_key:?} on store");
+
+            // first we wait until our own network store can return the record
+            // otherwise it may not be fully written yet
+            let mut retry_count = 0;
+            trace!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
+            loop {
+                let record = match network.get_local_record(&paid_key).await {
+                    Ok(record) => record,
+                    Err(err) => {
+                        error!(
+                            "Replicating fresg record {pretty_key:?} get_record_from_store errored: {err:?}"
+                        );
+                        return;
+                    }
+                };
+
+                if record.is_some() {
+                    break;
+                }
+
+                if retry_count > 10 {
+                    error!(
+                        "Could not get record from store for replication: {pretty_key:?} after 10 retries"
+                    );
+                    break;
+                }
+
+                retry_count += 1;
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+
+            trace!("Start replication of fresh record {pretty_key:?} from store");
 
             // Already contains self_peer_id
             let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
                 Ok(peers) => peers,
                 Err(err) => {
-                    error!("Replicating paid record {pretty_key:?} get_closest_local_peers errored: {err:?}");
+                    error!("Replicating fresh record {pretty_key:?} get_closest_local_peers errored: {err:?}");
                     return;
                 }
             };
 
             // remove ourself from these calculations
-            let _we_were_there = closest_k_peers.remove(&network.peer_id);
+            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id);
 
             let data_addr = NetworkAddress::from_record_key(&paid_key);
 
@@ -165,7 +206,7 @@ impl Node {
                 Ok(result) => result,
                 Err(err) => {
                     error!(
-                            "When replicating paid record {pretty_key:?}, having error when sort {err:?}"
+                            "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
                         );
                     return;
                 }
@@ -177,7 +218,7 @@ impl Node {
             let keys = HashMap::from([(data_addr.clone(), record_type.clone())]);
 
             for peer_id in sorted_based_on_addr {
-                trace!("Replicating paid record {pretty_key:?} to {peer_id:?}");
+                trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
                 let request = Request::Cmd(Cmd::Replicate {
                     holder: our_address.clone(),
                     keys: keys.clone(),
@@ -186,7 +227,7 @@ impl Node {
                 let _ = network.send_req_ignore_reply(request, *peer_id);
             }
             trace!(
-                "Completed replicate paid record {pretty_key:?} on store, in {:?}",
+                "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
                 start.elapsed()
             );
         });

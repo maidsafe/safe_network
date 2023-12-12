@@ -25,7 +25,7 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fmt::Debug,
 };
 use tokio::sync::oneshot;
@@ -59,12 +59,12 @@ pub enum SwarmCmd {
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
     GetClosestKLocalPeers {
-        sender: oneshot::Sender<HashSet<PeerId>>,
+        sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Get closest peers from the network
     GetClosestPeersToAddressFromNetwork {
         key: NetworkAddress,
-        sender: oneshot::Sender<HashSet<PeerId>>,
+        sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Get closest peers from the local RoutingTable
     GetCloseGroupLocalPeers {
@@ -128,6 +128,12 @@ pub enum SwarmCmd {
     RemoveFailedLocalRecord {
         key: RecordKey,
     },
+    /// Add a local record to the RecordStore's HashSet of stored records
+    /// This should be done after the record has been stored to disk
+    AddLocalRecordAsStored {
+        key: RecordKey,
+        record_type: RecordType,
+    },
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -183,6 +189,13 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(key)
+                )
+            }
+            SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
+                write!(
+                    f,
+                    "SwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -269,8 +282,10 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
+    /// Checks suggested records against what we hold, so we only
+    /// enqueue what we do not have
     #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    fn select_new_replications(
+    fn select_non_existent_records_for_replications(
         &mut self,
         incoming_keys: &HashMap<NetworkAddress, RecordType>,
     ) -> Vec<(NetworkAddress, RecordType)> {
@@ -281,7 +296,7 @@ impl SwarmDriver {
             .kademlia
             .store_mut()
             .record_addresses_ref();
-        let non_exist_keys: Vec<_> = incoming_keys
+        let non_existent_keys: Vec<_> = incoming_keys
             .iter()
             .filter(|(addr, record_type)| {
                 let key = addr.to_record_key();
@@ -297,12 +312,14 @@ impl SwarmDriver {
             .collect();
 
         let closest_k_peers = self.get_closest_k_value_local_peers();
-        non_exist_keys
+
+        non_existent_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
                 if self.is_in_close_range(key, &closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
+                    warn!("not in close range for key {key:?}");
                     None
                 }
             })
@@ -313,8 +330,9 @@ impl SwarmDriver {
         match cmd {
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only handle those non-exist and in close range keys
-                let keys_to_store = self.select_new_replications(&keys);
+                let keys_to_store = self.select_non_existent_records_for_replications(&keys);
                 if keys_to_store.is_empty() {
+                    debug!("Empty keys to store after adding to");
                     return Ok(());
                 }
 
@@ -329,7 +347,9 @@ impl SwarmDriver {
                     self.replication_fetcher
                         .add_keys(holder, keys_to_store, all_keys);
                 if !keys_to_fetch.is_empty() {
-                    self.send_event(NetworkEvent::KeysForReplication(keys_to_fetch));
+                    self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
+                } else {
+                    trace!("no waiting keys to fetch from the network");
                 }
             }
             SwarmCmd::GetNetworkRecord { key, sender, cfg } => {
@@ -440,12 +460,20 @@ impl SwarmDriver {
                             .replication_fetcher
                             .notify_about_new_put(key, record_type);
                         if !new_keys_to_fetch.is_empty() {
-                            self.send_event(NetworkEvent::KeysForReplication(new_keys_to_fetch));
+                            self.send_event(NetworkEvent::KeysToFetchForReplication(
+                                new_keys_to_fetch,
+                            ));
                         }
                     }
                     Err(err) => return Err(err.into()),
                 };
             }
+            SwarmCmd::AddLocalRecordAsStored { key, record_type } => self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .mark_as_stored(key, record_type),
             SwarmCmd::RemoveFailedLocalRecord { key } => {
                 self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
@@ -546,9 +574,6 @@ impl SwarmDriver {
 
                 let _ = sender.send(closest_peers);
             }
-            // SwarmCmd::GetOurCloseGroup { sender } => {
-            //     let _ = sender.send(self.close_group.clone());
-            // }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
                 let _ = sender.send(self.get_closest_k_value_local_peers());
             }
@@ -657,7 +682,7 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &HashSet<PeerId>) -> bool {
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &Vec<PeerId>) -> bool {
         if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }

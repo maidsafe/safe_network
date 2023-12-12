@@ -42,8 +42,9 @@ use tokio::{
 /// serialised transfer info encrypted against the referenced public key.
 pub const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 
-/// Defines the percentage (ie 1/FORWARDER_CHOOSING_FACTOR th of all nodes) of nodes which will act as royalty_transfer_notify forwarder.
-const FORWARDER_CHOOSING_FACTOR: usize = 50;
+/// Defines the percentage (ie 1/FORWARDER_CHOOSING_FACTOR th of all nodes) of nodes
+/// which will act as royalty_transfer_notify forwarder.
+const FORWARDER_CHOOSING_FACTOR: usize = 10;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
@@ -338,13 +339,19 @@ impl Node {
                     error!("Failed to remove local record: {e:?}");
                 }
             }
+            NetworkEvent::CompletedWrite((key, record_type)) => {
+                if let Err(e) = self.network.add_record_as_stored_locally(key, record_type) {
+                    error!("Failed to add local record as stored: {e:?}");
+                }
+            }
             NetworkEvent::ResponseReceived { res } => {
                 trace!("NetworkEvent::ResponseReceived {res:?}");
                 if let Err(err) = self.handle_response(res) {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
-            NetworkEvent::KeysForReplication(keys) => {
+            NetworkEvent::KeysToFetchForReplication(keys) => {
+                info!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
@@ -374,8 +381,7 @@ impl Node {
                     match self_clone.validate_and_store_record(record).await {
                         Ok(cmdok) => trace!("UnverifiedRecord {key} stored with {cmdok:?}."),
                         Err(err) => {
-                            self_clone.record_metrics(Marker::RecordRejected(&key));
-                            trace!("UnverifiedRecord {key} failed to be stored with error {err:?}.")
+                            self_clone.record_metrics(Marker::RecordRejected(&key, &err));
                         }
                     }
                 });
@@ -467,6 +473,7 @@ impl Node {
                             PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
                         )),
                         payment_address,
+                        peer_address: NetworkAddress::from_peer(network.peer_id),
                     }
                 } else {
                     let store_cost = network
@@ -479,6 +486,7 @@ impl Node {
                             Self::create_quote_for_storecost(network, cost, &address)
                         }),
                         payment_address,
+                        peer_address: NetworkAddress::from_peer(network.peer_id),
                     }
                 }
             }
@@ -517,11 +525,15 @@ impl Node {
                     );
 
                     if let Some(peer_id) = holder.as_peer_id() {
+                        // accept replication requests from the K_VALUE peers away, giving us some margin for replication
                         let local_peers: Vec<_> =
                             match network.get_closest_k_value_local_peers().await {
-                                // accept replication requests from the close_group * 2 peers away, giving us some margin
                                 // for replication on churn
-                                Ok(peers) => peers.into_iter().take(CLOSE_GROUP_SIZE * 2).collect(),
+                                Ok(mut peers) => {
+                                    // remove our peer id from the calculations here.
+                                    peers.retain(|peer_id| peer_id != &network.peer_id);
+                                    peers
+                                }
                                 Err(err) => {
                                     error!("Failed to get close group local peers: {err:?}");
                                     return;
@@ -533,7 +545,7 @@ impl Node {
                             // todo: error is not propagated to the caller here
                             let _ = network.add_keys_to_replication_fetcher(peer_id, keys);
                         } else {
-                            warn!("Received replication list from {peer_id:?} which is not in our close group");
+                            warn!("Received replication list from {peer_id:?} which is not in our close group. Ignored {keys:?}");
                         }
                     } else {
                         error!(

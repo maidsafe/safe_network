@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.10...sn_networking-v0.12.0) - 2023-12-12
+
+### Added
+- *(networking)* sort quotes by closest NetworkAddress before truncate
+- *(networking)* add flow to mark record as stored post-write
+- *(networking)* do not return record if still being written
+- *(node)* try and replicate already existing records to neighbours
+
+### Fixed
+- *(networking)* return Vec for closest queries to reliably sort
+
+### Other
+- dont log all keys during replication
+- *(networking)* add replication logs
+- minor updates to naming for clarity of KeysToFetchForReplication
+- *(networking)* solidify REPLICATION_RANGE use. exclude self_peer_id in some calcs
+
+## [0.11.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.9...sn_networking-v0.11.10) - 2023-12-11
+
+### Added
+- close outdated connections to non-RT peers
+
+### Other
+- gossipsub flood_publish and longer cache time to avoid loop
+
 ## [0.11.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.11.8...sn_networking-v0.11.9) - 2023-12-07
 
 ### Fixed

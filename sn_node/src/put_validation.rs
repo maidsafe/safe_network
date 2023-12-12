@@ -55,6 +55,10 @@ impl Node {
                 // Now that we've taken any money passed to us, regardless of the payment's validity,
                 // if we already have the data we can return early
                 if already_exists {
+                    // if we're receiving this chunk PUT again, and we have been paid,
+                    // we eagery retry replicaiton as it seems like other nodes are having trouble
+                    // did not manage to get this chunk as yet
+                    self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
 
@@ -65,7 +69,12 @@ impl Node {
                 // So that when the replicate target asking for the copy,
                 // the node can have a higher chance to respond.
                 let store_chunk_result = self.store_chunk(&chunk);
-                self.replicate_paid_record(record_key, RecordType::Chunk);
+
+                if store_chunk_result.is_ok() {
+                    Marker::ValidPaidChunkPutFromClient(&PrettyPrintRecordKey::from(&record.key))
+                        .log();
+                    self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
+                }
 
                 store_chunk_result
             }
@@ -75,7 +84,20 @@ impl Node {
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
             }
-            RecordKind::Spend => self.validate_spend_record(record).await,
+            RecordKind::Spend => {
+                let record_key = record.key.clone();
+                let value_to_hash = record.value.clone();
+                let result = self.validate_spend_record(record).await;
+                if result.is_ok() {
+                    Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
+                    let content_hash = XorName::from_content(&value_to_hash);
+                    self.replicate_valid_fresh_record(
+                        record_key,
+                        RecordType::NonChunk(content_hash),
+                    );
+                }
+                result
+            }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
 
@@ -93,7 +115,14 @@ impl Node {
 
                 // store the update
                 trace!("Store update without payment as we already had register at {pretty_key:?}");
-                self.validate_and_store_register(register, true).await
+                let result = self.validate_and_store_register(register, true).await;
+
+                if result.is_ok() {
+                    Marker::ValidPaidRegisterPutFromClient(&pretty_key).log();
+                    // we dont try and force replicaiton here as there's state to be kept in sync
+                    // which we leave up to the client to enforce
+                }
+                result
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
@@ -154,9 +183,12 @@ impl Node {
 
     /// Store a pre-validated, and already paid record to the RecordStore
     pub(crate) async fn store_prepaid_record(&self, record: Record) -> Result<CmdOk> {
+        trace!("Storing prepaid record {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
+            // A separate flow handles payment for chunks and registers
             RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                warn!("Prepaid record came with Payment, which should be handled in another flow");
                 Err(Error::UnexpectedRecordWithPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
@@ -168,7 +200,10 @@ impl Node {
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
-
+                trace!(
+                    "Chunk with addr {:?} already exists?: {already_exists}",
+                    chunk.network_address()
+                );
                 if already_exists {
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
@@ -294,7 +329,7 @@ impl Node {
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
         if with_payment {
-            self.replicate_paid_record(key, RecordType::NonChunk(content_hash));
+            self.replicate_valid_fresh_record(key, RecordType::NonChunk(content_hash));
         }
 
         Ok(CmdOk::StoredSuccessfully)
