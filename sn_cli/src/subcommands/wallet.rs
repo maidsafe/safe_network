@@ -12,7 +12,7 @@ use color_eyre::{eyre::eyre, Result};
 use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
     CashNoteRedemption, Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens,
-    SpendAddress, Transfer, UniquePubkey, WalletError, WatchOnlyWallet,
+    SpendAddress, Transfer, UniquePubkey, WalletError, WatchOnlyWallet, GENESIS_CASHNOTE,
 };
 use std::{
     io::Read,
@@ -116,10 +116,14 @@ pub enum WalletCmds {
         /// Verify all the way to Genesis
         ///
         /// Used for auditing, note that this might take a very long time
-        /// Analogous to verifying the entire blockchain in Bitcoin
+        /// Analogous to verifying an UTXO through the entire blockchain in Bitcoin
         #[clap(long, default_value = "false")]
         genesis: bool,
     },
+    /// Audit the Currency
+    /// Note that this might take a very long time
+    /// Analogous to verifying the entire blockchain in Bitcoin
+    Audit,
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -174,6 +178,7 @@ pub(crate) async fn wallet_cmds(
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
             listen_notifs_and_deposit(&wallet_dir, client, pk).await
         }
+        WalletCmds::Audit => audit(client).await,
         WalletCmds::Verify {
             spend_address,
             genesis,
@@ -210,6 +215,13 @@ async fn verify(spend_address: String, genesis: bool, client: &Client) -> Result
         Err(e) => println!("Failed to verify spend at {addr:?}: {e}"),
     }
 
+    Ok(())
+}
+
+async fn audit(client: &Client) -> Result<()> {
+    println!("Auditing the Currency, note that this might take a very long time...");
+    let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
+    client.follow_spend(genesis_addr).await?;
     Ok(())
 }
 

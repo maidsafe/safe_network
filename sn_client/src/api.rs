@@ -572,10 +572,13 @@ impl Client {
             .network
             .get_record_from_network(key.clone(), &get_cfg)
             .await
-            .map_err(|err| {
-                Error::CouldNotVerifyTransfer(format!(
+            .map_err(|err| match err {
+                sn_networking::Error::GetRecordError(GetRecordError::RecordNotFound) => {
+                    Error::MissingSpendRecord(address)
+                }
+                _ => Error::CouldNotVerifyTransfer(format!(
                     "failed to get spend at {address:?}: {err:?}"
-                ))
+                )),
             })?;
         debug!(
             "For spend at {address:?} got record from the network, {:?}",

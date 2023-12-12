@@ -10,6 +10,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
 use sn_registers::{Entry, EntryHash};
+use sn_transfers::SpendAddress;
 use std::{collections::BTreeSet, time::Duration};
 use thiserror::Error;
 
@@ -53,6 +54,8 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+    #[error("There is no Spend record at this address: {0:?}")]
+    MissingSpendRecord(SpendAddress),
 
     #[error(
         "Content branches detected in the Register which need to be merged/resolved by user. \
