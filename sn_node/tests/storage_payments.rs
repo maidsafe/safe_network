@@ -127,7 +127,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // let's first pay only for a subset of the addresses
     let subset_len = random_content_addrs.len() / 3;
     println!("Paying for {subset_len} random addresses...",);
-    let (storage_cost, royalties_fees) = wallet_client
+    let ((storage_cost, royalties_fees), _) = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter().take(subset_len))
         .await?;
 
@@ -151,7 +151,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-    let (storage_cost, royalties_fees) = wallet_client
+    let ((storage_cost, royalties_fees), _) = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter())
         .await?;
     let total_cost = storage_cost

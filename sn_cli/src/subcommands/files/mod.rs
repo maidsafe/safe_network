@@ -167,6 +167,10 @@ async fn upload_files(
     if chunk_manager.is_chunks_empty() {
         // make sure we don't have any failed chunks in those
         let chunks = chunk_manager.already_put_chunks(&files_path)?;
+        println!(
+            "Files upload attempted previously, verifying {} chunks",
+            chunks.len()
+        );
         let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
 
         // mark the non-failed ones as completed
@@ -214,6 +218,7 @@ async fn upload_files(
 
     // Task set to add and remove chunks from the chunk manager
     let mut uploading_chunks = FuturesUnordered::new();
+    let mut total_exist_chunks = 0;
 
     for chunks_batch in chunks_batches {
         // while we dont have a full batch_size of ongoing uploading_chunks
@@ -236,11 +241,11 @@ async fn upload_files(
         }
 
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-        match file_api
+        let skipped_chunks = match file_api
             .pay_for_chunks(chunks_batch.iter().map(|(name, _)| *name).collect())
             .await
         {
-            Ok((storage_cost, royalties_fees, new_balance)) => {
+            Ok(((storage_cost, royalties_fees, new_balance), skipped_chunks)) => {
                 final_balance = new_balance;
                 total_cost = total_cost
                     .checked_add(storage_cost)
@@ -248,6 +253,7 @@ async fn upload_files(
                 total_royalties = total_royalties
                     .checked_add(royalties_fees)
                     .ok_or_else(|| eyre!("Unable to add cost to total royalties fees"))?;
+                skipped_chunks
             }
             Err(ClientError::Transfers(WalletError::Transfer(
                 TransfersError::NotEnoughBalance(available, required),
@@ -259,10 +265,17 @@ async fn upload_files(
             }
         };
 
+        let mut chunks_to_upload = chunks_batch.to_vec();
+        chunks_to_upload.retain(|(name, _)| !skipped_chunks.contains(name));
+
+        total_exist_chunks += skipped_chunks.len();
+        progress_bar.inc(skipped_chunks.len() as u64);
+        chunk_manager.mark_completed(skipped_chunks.into_iter());
+
         // upload paid chunks
         let upload_tasks = upload_chunks_in_parallel(
             &file_api,
-            chunks_batch.to_vec(),
+            chunks_to_upload,
             verify_store,
             &progress_bar,
             show_holders,
@@ -341,8 +354,8 @@ async fn upload_files(
     file.flush()?;
 
     let elapsed = format_elapsed_time(now.elapsed());
-    println!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
-    info!("Uploaded {chunks_to_upload_len} chunks in {elapsed}");
+    println!("Uploaded {chunks_to_upload_len} chunks (with {total_exist_chunks} exist chunks) in {elapsed}");
+    info!("Uploaded {chunks_to_upload_len} chunks (with {total_exist_chunks} exist chunks) in {elapsed}");
 
     println!("**************************************");
     println!("*          Payment Details           *");

@@ -188,11 +188,11 @@ impl Files {
     pub async fn pay_for_chunks(
         &self,
         chunks: Vec<XorName>,
-    ) -> Result<(NanoTokens, NanoTokens, NanoTokens)> {
+    ) -> Result<((NanoTokens, NanoTokens, NanoTokens), Vec<XorName>)> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let (storage_cost, royalties_fees) =
+        let ((storage_cost, royalties_fees), skipped_chunks) =
             wallet_client
                 .pay_for_storage(chunks.iter().map(|name| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
@@ -201,7 +201,7 @@ impl Files {
 
         wallet_client.store_local_wallet()?;
         let new_balance = wallet_client.balance();
-        Ok((storage_cost, royalties_fees, new_balance))
+        Ok(((storage_cost, royalties_fees, new_balance), skipped_chunks))
     }
 
     // --------------------------------------------
@@ -241,7 +241,7 @@ impl Files {
         verify: bool,
     ) -> Result<(NetworkAddress, NanoTokens, NanoTokens)> {
         // initial payment
-        let (mut storage_cost, mut royalties_fees) = self
+        let ((mut storage_cost, mut royalties_fees), _skipped) = self
             .wallet()?
             .pay_for_storage(
                 chunks
@@ -285,7 +285,7 @@ impl Files {
             info!("Repaying for {:?} chunks, so far paid {storage_cost} (royalties fees: {royalties_fees})", failed_chunks.len());
 
             // Now we pay again or top up, depending on the new current store cost is
-            let (new_storage_cost, new_royalties_fees) = self
+            let ((new_storage_cost, new_royalties_fees), _skipped) = self
                 .wallet()?
                 .pay_for_storage(failed_chunks.iter().map(|(addr, _path)| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*addr))
