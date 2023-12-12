@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702404111663,
+  "lastUpdate": 1702404239561,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "c261f3ef77f41c30709170e059c1aa689dee5211",
-          "message": "chore(node): remove peer_connected altogether during NodeEvent handler",
-          "timestamp": "2023-08-03T12:04:29Z",
-          "tree_id": "2d6ca842b7eacd52a9af10809e6289ba7c59c1d3",
-          "url": "https://github.com/maidsafe/safe_network/commit/c261f3ef77f41c30709170e059c1aa689dee5211"
-        },
-        "date": 1691091751456,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
+          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
+          "timestamp": "2023-12-12T17:23:18Z",
+          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
+          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
+        },
+        "date": 1702404238509,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 99,
             "unit": "MB"
           }
         ]
