@@ -311,12 +311,9 @@ impl SwarmDriver {
             })
             .collect();
 
-        trace!(
-            "Replicating non_existent_keys, about to check what is close: {non_existent_keys:?}"
-        );
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
-        let close_keys = non_existent_keys
+        non_existent_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
                 if self.is_in_close_range(key, &closest_k_peers) {
@@ -326,11 +323,7 @@ impl SwarmDriver {
                     None
                 }
             })
-            .collect();
-
-        trace!("Final close keys for replication: {close_keys:?}");
-
-        close_keys
+            .collect()
     }
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
