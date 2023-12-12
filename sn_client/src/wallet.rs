@@ -142,7 +142,7 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-    ) -> WalletResult<(NanoTokens, NanoTokens)> {
+    ) -> WalletResult<((NanoTokens, NanoTokens), Vec<XorName>)> {
         let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
         let mut last_err = "No retries".to_string();
@@ -166,11 +166,14 @@ impl WalletClient {
         Err(WalletError::CouldNotSendMoney(last_err))
     }
 
+    /// Existing chunks will have a store cost to be Zero.
+    /// The payement procedure shall be skipped, and the chunk upload as well.
+    /// Hence the list of existing chunks will be returned.
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> WalletResult<(NanoTokens, NanoTokens)> {
+    ) -> WalletResult<((NanoTokens, NanoTokens), Vec<XorName>)> {
         // get store cost from network in parrallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
@@ -190,12 +193,18 @@ impl WalletClient {
 
         // collect store costs
         let mut cost_map = BTreeMap::default();
+        let mut skipped_chunks = vec![];
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        let _ = cost_map.insert(xorname, cost);
-                        debug!("Storecost inserted into payment map for {content_addr:?}");
+                        if cost.1.cost == NanoTokens::zero() {
+                            skipped_chunks.push(xorname);
+                            debug!("Skipped existing chunk {content_addr:?}");
+                        } else {
+                            let _ = cost_map.insert(xorname, cost);
+                            debug!("Storecost inserted into payment map for {content_addr:?}");
+                        }
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
                     }
@@ -214,7 +223,10 @@ impl WalletClient {
         info!("Storecosts retrieved");
 
         // pay for records
-        self.pay_for_records(&cost_map, verify_store).await
+        Ok((
+            self.pay_for_records(&cost_map, verify_store).await?,
+            skipped_chunks,
+        ))
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.

@@ -453,16 +453,13 @@ impl Node {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
 
-                let record_exists = {
-                    if let Some(key) = address.as_record_key() {
-                        match network.is_record_key_present_locally(&key).await {
-                            Ok(res) => res,
-                            Err(error) => {
-                                error!("Problem getting record key's existence: {error:?}");
-                                false
-                            }
-                        }
-                    } else {
+                let record_exists = match network
+                    .is_record_key_present_locally(&address.to_record_key())
+                    .await
+                {
+                    Ok(res) => res,
+                    Err(error) => {
+                        error!("Problem getting record key's existence: {error:?}");
                         false
                     }
                 };

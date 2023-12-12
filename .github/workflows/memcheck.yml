@@ -10,6 +10,7 @@ on:
     branches: ["*"]
 
 env:
+  SAFE_DATA_PATH: /home/runner/.local/share/safe
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
@@ -97,6 +98,23 @@ jobs:
         run: |
           ls -l
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data.zip" --show-holders
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 25
+
+      # Uploading same file using different client shall not incur any payment neither uploads
+      # Note rg will throw an error directly in case of failed to find a matching pattern.
+      - name: Start a different client to upload the same file
+        run: |
+          mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
+          cat initial_balance_from_faucet_1.txt
+          cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
+          cat transfer_hex
+          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data.zip" --show-holders > second_upload.txt
+          cat second_upload.txt
+          rg "New wallet balance: 5000000.000000000" second_upload.txt -c --stats
         env:
           SN_LOG: "all"
         timeout-minutes: 25
