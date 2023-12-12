@@ -713,11 +713,7 @@ impl Node {
                             "Checking parent input at {:?} - {parent_cash_note_address:?}",
                             parent_input.unique_pubkey(),
                         );
-                        let parent = match self
-                            .network
-                            .get_spend(parent_cash_note_address, false)
-                            .await
-                        {
+                        let parent = match self.network.get_spend(parent_cash_note_address).await {
                             Ok(parent) => parent,
                             Err(err) => {
                                 error!("Error while getting parent spend {parent_cash_note_address:?} for cash_note addr {cash_note_addr:?}: {err:?}");
@@ -740,7 +736,7 @@ impl Node {
 
                 // check the network if any spend has happened for the same unique_pubkey
                 debug!("Check if any spend exist for the same unique_pubkey {cash_note_addr:?}");
-                let mut spends = match self.network.get_spend(cash_note_addr, false).await {
+                let mut spends = match self.network.get_spend(cash_note_addr).await {
                     Ok(spend) => {
                         debug!("Got spend from network for the same unique_pubkey");
                         vec![spend]

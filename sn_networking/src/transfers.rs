@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{driver::GetRecordCfg, Error, Network, Result};
+use crate::{close_group_majority, driver::GetRecordCfg, Error, GetRecordError, Network, Result};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
@@ -21,15 +21,38 @@ use tokio::task::JoinSet;
 
 impl Network {
     /// Gets a spend from the Network.
-    pub async fn get_spend(&self, address: SpendAddress, re_attempt: bool) -> Result<SignedSpend> {
+    ///
+    /// If we get a quorum error, we enable re-try
+    pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
-        let get_cfg = GetRecordCfg {
+        let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
-            re_attempt,
+            re_attempt: false,
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = self.get_record_from_network(key, &get_cfg).await?;
+        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
+            Ok(record) => record,
+            Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {
+                record,
+                expected,
+                got,
+            })) => {
+                // if majority holds the spend, it might be worth it to try again.
+                if got >= close_group_majority() {
+                    debug!("At least a majority nodes hold the spend {address:?}, so trying to get it again.");
+                    get_cfg.re_attempt = true;
+                    self.get_record_from_network(key, &get_cfg).await?
+                } else {
+                    return Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {
+                        record,
+                        expected,
+                        got,
+                    }));
+                }
+            }
+            Err(err) => return Err(err),
+        };
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
@@ -96,7 +119,7 @@ impl Network {
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
             let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend(addr, false).await });
+            let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
         }
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
