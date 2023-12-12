@@ -36,7 +36,7 @@ use libp2p::{
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     borrow::Cow,
-    fmt::{self, Debug, Display, Formatter},
+    fmt::{self, Debug, Display, Formatter, Write},
 };
 use xor_name::XorName;
 
@@ -199,8 +199,8 @@ impl Debug for NetworkAddress {
                 register_address.xorname()
             ),
             NetworkAddress::RecordKey(bytes) => format!(
-                "NetworkAddress::RecordKey({:?} - ",
-                PrettyPrintRecordKey::from(&RecordKey::new(bytes))
+                "NetworkAddress::RecordKey({} - ",
+                PrettyPrintRecordKey::from(&RecordKey::new(bytes)).no_kbucket_log()
             ),
         };
         write!(
@@ -310,6 +310,18 @@ impl<'a> PrettyPrintRecordKey<'a> {
         };
 
         PrettyPrintRecordKey { key: cloned_key }
+    }
+
+    pub fn no_kbucket_log(self) -> String {
+        let mut content = String::from("");
+        let record_key_bytes = match &self.key {
+            Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
+            Cow::Owned(owned_key) => owned_key.as_ref(),
+        };
+        for byte in record_key_bytes {
+            let _ = content.write_fmt(format_args!("{byte:02x}"));
+        }
+        content
     }
 }
 
