@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702399385231,
+  "lastUpdate": 1702399388275,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5a0ebca184811bba8266334c403538a429705604",
-          "message": "fix: waiting to allow faucet server to be settled",
-          "timestamp": "2023-08-02T11:27:09Z",
-          "tree_id": "bfb0bc63f15c78ba69508566db78544953035abf",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a0ebca184811bba8266334c403538a429705604"
-        },
-        "date": 1690999402712,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 258.5,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 205,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 130,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "45c0ed319a53cb5927afd9f8d7d1deee86b36555",
+          "message": "feat(cli): skip payment and upload for existing chunks",
+          "timestamp": "2023-12-12T16:02:42Z",
+          "tree_id": "9e1f5d9017dc0ba44abeb005ce60e2ee3c4d6463",
+          "url": "https://github.com/maidsafe/safe_network/commit/45c0ed319a53cb5927afd9f8d7d1deee86b36555"
+        },
+        "date": 1702399386638,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 647,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 116,
             "unit": "MB"
           }
         ]
