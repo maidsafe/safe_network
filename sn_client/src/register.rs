@@ -206,7 +206,7 @@ impl ClientRegister {
                 // Let's check if the user has already paid for this address first
                 let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
                 // Let's make the storage payment
-                (storage_cost, royalties_fees) = wallet_client
+                ((storage_cost, royalties_fees), _) = wallet_client
                     .pay_for_storage(std::iter::once(net_addr.clone()))
                     .await?;
                 let cost = storage_cost
