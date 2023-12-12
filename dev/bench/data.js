@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702386204002,
+  "lastUpdate": 1702395187536,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cd5d4d6c6c91c51581ff82db797599960e0de3d9",
-          "message": "fix(client): start bootstrap when we are connected to one peer",
-          "timestamp": "2023-08-17T21:55:04Z",
-          "tree_id": "0722835592666df3fd039960cc33e40fcc57ecce",
-          "url": "https://github.com/maidsafe/safe_network/commit/cd5d4d6c6c91c51581ff82db797599960e0de3d9"
-        },
-        "date": 1692314278150,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1843261169889299,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 10.571414459526594,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.427315020921209,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.10424292591619,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
+          "message": "feat(node): log if RPC server fails to start",
+          "timestamp": "2023-12-12T14:58:46Z",
+          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
+          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
+        },
+        "date": 1702395185159,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3032212362043978,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9442070258860955,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.063517295517556,
             "unit": "MiB/s"
           }
         ]
