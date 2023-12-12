@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702395329288,
+  "lastUpdate": 1702395331883,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32585,6 +32585,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 78533,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
+          "message": "feat(node): log if RPC server fails to start",
+          "timestamp": "2023-12-12T14:58:46Z",
+          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
+          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
+        },
+        "date": 1702395330986,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5246,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 75487,
             "unit": "ms"
           },
           {
