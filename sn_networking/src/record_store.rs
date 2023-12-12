@@ -284,7 +284,7 @@ impl NodeRecordStore {
 
         let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
-        debug!("Cost is now {cost:?}");
+        debug!("Cost is now {cost:?} for {relevant_records_len:?} records stored of {MAX_RECORDS_COUNT:?} max");
         NanoTokens::from(cost)
     }
 
