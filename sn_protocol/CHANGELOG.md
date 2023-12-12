@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.9.0...sn_protocol-v0.9.1) - 2023-12-12
+
+### Fixed
+- reduce duplicated kbucket part when logging NetworkAddress::RecordKey
+
 ## [0.9.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.8.39...sn_protocol-v0.9.0) - 2023-12-12
 
 ### Added
