@@ -368,8 +368,8 @@ impl Network {
                 Err(GetRecordError::RecordDoesNotMatch(_)) => {
                     warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
                 }
-                Err(GetRecordError::NotEnoughCopies(_)) => {
-                    warn!("Not enough copies found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
                 }
                 // libp2p RecordNotFound does mean no holders answered.
                 // it does not actually mean the record does not exist.

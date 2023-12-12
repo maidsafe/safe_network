@@ -749,8 +749,12 @@ impl Node {
                         warn!("Spends for {cash_note_addr:?} is a double-spend. Aggregating and storing them.");
                         vec![*spend1, *spend2]
                     }
-                    Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies(record))) => {
-                        warn!("Spends for {cash_note_addr:?} resulted in a failed quorum. Trying to aggregate the spends in them.");
+                    Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+                        record,
+                        expected,
+                        got,
+                    })) => {
+                        warn!("Spends for {cash_note_addr:?} resulted in a failed quorum ({got}/{expected}). Trying to aggregate the spends in them.");
                         match get_singed_spends_from_record(&record) {
                             Ok(spends) => spends,
                             Err(err) => {
