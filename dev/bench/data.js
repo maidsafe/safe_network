@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702404242201,
+  "lastUpdate": 1702404244940,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32668,6 +32668,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 16,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
+          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
+          "timestamp": "2023-12-12T17:23:18Z",
+          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
+          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
+        },
+        "date": 1702404243871,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5190,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 69315,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 13,
             "unit": "ms"
           }
         ]
