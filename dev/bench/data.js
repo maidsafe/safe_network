@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702399388275,
+  "lastUpdate": 1702399390847,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32629,6 +32629,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "45c0ed319a53cb5927afd9f8d7d1deee86b36555",
+          "message": "feat(cli): skip payment and upload for existing chunks",
+          "timestamp": "2023-12-12T16:02:42Z",
+          "tree_id": "9e1f5d9017dc0ba44abeb005ce60e2ee3c4d6463",
+          "url": "https://github.com/maidsafe/safe_network/commit/45c0ed319a53cb5927afd9f8d7d1deee86b36555"
+        },
+        "date": 1702399389960,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4660,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 75858,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 16,
             "unit": "ms"
           }
         ]
