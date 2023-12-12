@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702395187536,
+  "lastUpdate": 1702395326945,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "d50b3e841df7e6681f29898fb5b3a61c13d25cd4",
-          "message": "chore(node): remove unused mut",
-          "timestamp": "2023-08-03T11:17:58Z",
-          "tree_id": "a662faf8c2f4b8deb339a4410604081a78a610e4",
-          "url": "https://github.com/maidsafe/safe_network/commit/d50b3e841df7e6681f29898fb5b3a61c13d25cd4"
-        },
-        "date": 1691084462413,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 31.82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "68e9bce525d95dbdfa88eeb121d1a7a9ffddc835",
           "message": "chore(testnet): provide faucet log arg",
           "timestamp": "2023-08-03T11:48:22Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 100,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
+          "message": "feat(node): log if RPC server fails to start",
+          "timestamp": "2023-12-12T14:58:46Z",
+          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
+          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
+        },
+        "date": 1702395326115,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 90,
             "unit": "MB"
           }
         ]
