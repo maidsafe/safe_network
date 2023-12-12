@@ -74,6 +74,14 @@ Start a local network and a faucet as described above.
 - Receive tokens from a Transfer hex string
 `cargo run --release --bin safe -- wallet receive [transfer]`
 
+## Auditing
+
+- Verify a Spend on the Network (optionally recursively all the way back to genesis)
+`cargo run --release --bin safe -- wallet verify [--genesis] [spend address]`
+
+- Audit all the Spends on the Network from Genesis
+`cargo run --release --bin safe -- wallet audit`
+
 ## Using example app which exercises the Register APIs
 
 You can run the `registers` example client app from multiple consoles simultaneously,
