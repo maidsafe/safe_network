@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702399390847,
+  "lastUpdate": 1702404111663,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4a0324ed70dfcab6655167b8e358c20977de785b",
-          "message": "feat: remove client and node initial join flow\n- we rely on the lower layer kad bootstrap process instead",
-          "timestamp": "2023-08-18T14:28:36Z",
-          "tree_id": "7742345607a9bf0f1c60bca5f8ba79e973a69a40",
-          "url": "https://github.com/maidsafe/safe_network/commit/4a0324ed70dfcab6655167b8e358c20977de785b"
-        },
-        "date": 1692373993053,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.168443948919258,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 10.91803753435403,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.3987326462196923,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.2288176171101,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
+          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
+          "timestamp": "2023-12-12T17:23:18Z",
+          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
+          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
+        },
+        "date": 1702404107962,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2757709255260223,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9480301563809799,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.12412398317602,
             "unit": "MiB/s"
           }
         ]
