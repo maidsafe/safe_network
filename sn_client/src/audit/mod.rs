@@ -27,7 +27,7 @@ impl Client {
     /// ignoring all other branches.
     ///
     /// This is how the DAG it follows could look like:
-    /// ```
+    /// ```text
     ///              ... --
     ///                     \
     ///              ... ----                  ... --    
@@ -133,7 +133,7 @@ impl Client {
     /// Starting from Genesis, this amounts to Auditing the entire currency.
     /// This is how the DAG it follows could look like:
     ///
-    /// ```
+    /// ```text
     ///                                   -> Spend7 ---> UTXO_11
     ///                                 /
     /// Genesis -> Spend1 -----> Spend2 ---> Spend5 ---> UTXO_10
