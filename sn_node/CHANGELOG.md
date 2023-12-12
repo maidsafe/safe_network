@@ -2487,6 +2487,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.99.17...sn_node-v0.100.0) - 2023-12-12
+
+### Added
+- *(node)* replicate valid Spends to CLOSE_GROUP
+- *(networking)* sort quotes by closest NetworkAddress before truncate
+- *(networking)* add flow to mark record as stored post-write
+- *(node)* add log Marker for stored records
+- *(node)* only trigger replication on confirmed stored records
+- *(node)* accept replication from closest K_VALUE nodes
+- *(node)* try and replicate already existing records to neighbours
+
+### Fixed
+- *(networking)* return Vec for closest queries to reliably sort
+
+### Other
+- *(networking)* add replication logs
+- minor updates to naming for clarity of KeysToFetchForReplication
+- *(networking)* solidify REPLICATION_RANGE use. exclude self_peer_id in some calcs
+- *(node)* improve RecordRejected logs
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

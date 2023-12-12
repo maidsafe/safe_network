@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.54](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.53...sn_cli-v0.86.54) - 2023-12-12
+
+### Added
+- constant uploading across batches
+
+### Fixed
+- *(cli)* remove chunk_manager clone that is unsafe
+
+### Other
+- *(networking)* add replication logs
+- *(networking)* solidify REPLICATION_RANGE use. exclude self_peer_id in some calcs
+- *(cli)* bail early on any payment errors
+- *(cli)* only report uploaded files if no errors
+
 ## [0.86.53](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.52...sn_cli-v0.86.53) - 2023-12-12
 
 ### Other
