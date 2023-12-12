@@ -58,7 +58,7 @@ impl Node {
                     // if we're receiving this chunk PUT again, and we have been paid,
                     // we eagery retry replicaiton as it seems like other nodes are having trouble
                     // did not manage to get this chunk as yet
-                    self.replicate_paid_record(record_key, RecordType::Chunk);
+                    self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
                     return Ok(CmdOk::DataAlreadyPresent);
                 }
 
@@ -73,7 +73,7 @@ impl Node {
                 if store_chunk_result.is_ok() {
                     Marker::ValidPaidChunkPutFromClient(&PrettyPrintRecordKey::from(&record.key))
                         .log();
-                    self.replicate_paid_record(record_key, RecordType::Chunk);
+                    self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
                 }
 
                 store_chunk_result
@@ -86,10 +86,15 @@ impl Node {
             }
             RecordKind::Spend => {
                 let record_key = record.key.clone();
-
+                let value_to_hash = record.value.clone();
                 let result = self.validate_spend_record(record).await;
                 if result.is_ok() {
                     Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
+                    let content_hash = XorName::from_content(&value_to_hash);
+                    self.replicate_valid_fresh_record(
+                        record_key,
+                        RecordType::NonChunk(content_hash),
+                    );
                 }
                 result
             }
@@ -324,7 +329,7 @@ impl Node {
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
         if with_payment {
-            self.replicate_paid_record(key, RecordType::NonChunk(content_hash));
+            self.replicate_valid_fresh_record(key, RecordType::NonChunk(content_hash));
         }
 
         Ok(CmdOk::StoredSuccessfully)
