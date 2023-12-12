@@ -248,8 +248,7 @@ impl Files {
                     .iter()
                     .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
             )
-            .await
-            .expect("Failed to pay for storage for new file at {file_addr:?}");
+            .await?;
 
         // upload chunks in parrallel
         let uploads: Vec<_> = chunks
@@ -262,12 +261,17 @@ impl Files {
                         .get_local_payment_and_upload_chunk(chunk, false, false)
                         .await?;
 
-                    Ok::<_, Error>(())
+                    Ok::<(), Error>(())
                 }
             })
             .collect();
 
-        let _ = futures::future::join_all(uploads).await;
+        for upload in futures::future::join_all(uploads).await {
+            if let Err(err) = upload {
+                error!("Failed to get local payment and upload chunk with err {err:?}");
+                return Err(err);
+            }
+        }
 
         let net_addr = NetworkAddress::ChunkAddress(ChunkAddress::new(file_addr));
 
