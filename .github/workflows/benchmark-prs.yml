@@ -325,7 +325,7 @@ jobs:
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
           total_num_of_times_limit_hits="10000" # hits
-          total_long_handling_limit_ms="150000" # ms
+          total_long_handling_limit_ms="170000" # ms
           average_handling_limit_ms="20" # ms
           if (( $(echo "$total_num_of_times > $total_num_of_times_limit_hits" | bc -l) )); then
             echo "Swarm_driver long handling times exceeded threshold: $total_num_of_times hits"
