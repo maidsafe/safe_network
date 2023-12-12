@@ -7,7 +7,7 @@ This is the Safe Network as it was supposed to be, on a kademlia network, enable
 You'll need to set the `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
 You can do this automatically at network startup using the following command (if you have ripgrep installed)
 ```bash
-killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --build-node --build-faucet --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
+killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --build-node --build-faucet --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.local/share/safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
 ```
 
 This will set the env var for you and so you can run the client without needing to manually pass in `--peer` args.
@@ -34,8 +34,8 @@ Assuming you have `SAFE_PEERS` set as above:
 - Download files
 `cargo run --release --bin safe -- files download`
 
-Note that the names of the uploaded files will be inserted into a new text document with a file 
-name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of upload) which is placed in `$HOME/.safe/client/uploaded_files`. 
+Note that the names of the uploaded files will be inserted into a new text document with a file
+name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of upload) which is placed in `$HOME/.safe/client/uploaded_files`.
 When calling `files download`, the `uploaded_files` dir will be searched for documents containing the names of uploaded files.
 If you don't wish to download the same files multiple times, remove the text documents after the first download.
 
