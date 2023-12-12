@@ -155,9 +155,15 @@ impl SwarmDriver {
         // return error if the entry cannot be found
         if let Some((sender, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
             let num_of_versions = result_map.len();
-            let (result, log_string) = if let Some((record, _)) = result_map.values().next() {
+            let (result, log_string) = if let Some((record, from_peers)) =
+                result_map.values().next()
+            {
                 let result = if num_of_versions == 1 {
-                    Err(GetRecordError::NotEnoughCopies(record.clone()))
+                    Err(GetRecordError::NotEnoughCopies {
+                        record: record.clone(),
+                        expected: get_quorum_value(&cfg.get_quorum),
+                        got: from_peers.len(),
+                    })
                 } else {
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
