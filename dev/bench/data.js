@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702404239561,
+  "lastUpdate": 1702404242201,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20418,40 +20418,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "d50b3e841df7e6681f29898fb5b3a61c13d25cd4",
-          "message": "chore(node): remove unused mut",
-          "timestamp": "2023-08-03T11:17:58Z",
-          "tree_id": "a662faf8c2f4b8deb339a4410604081a78a610e4",
-          "url": "https://github.com/maidsafe/safe_network/commit/d50b3e841df7e6681f29898fb5b3a61c13d25cd4"
-        },
-        "date": 1691084466172,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 262.95,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 183,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "68e9bce525d95dbdfa88eeb121d1a7a9ffddc835",
           "message": "chore(testnet): provide faucet log arg",
           "timestamp": "2023-08-03T11:48:22Z",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 116,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
+          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
+          "timestamp": "2023-12-12T17:23:18Z",
+          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
+          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
+        },
+        "date": 1702404241131,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 718,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 121,
             "unit": "MB"
           }
         ]
