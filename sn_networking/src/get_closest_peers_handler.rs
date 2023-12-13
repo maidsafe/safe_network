@@ -16,10 +16,10 @@ use std::{
 use crate::CLOSE_GROUP_SIZE;
 
 // The entry is kept in the cache for the provided amount of time.
-const CACHE_RETAIN_TIME_LIMIT: Duration = Duration::from_secs(5);
+const CACHE_RETAIN_TIME_LIMIT: Duration = Duration::from_secs(20);
 
 // The maximum number of cache entries to keep.
-const MAX_CACHE_ENTRIES: usize = 100;
+const MAX_CACHE_ENTRIES: usize = 200;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct CacheGetClosest {
