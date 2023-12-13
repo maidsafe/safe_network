@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702404244940,
+  "lastUpdate": 1702460091584,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "david.irvine@maidsafe.net",
-            "name": "David Irvine",
-            "username": "dirvine"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "55421d3881188bd44dd693ba591a5bfb3c5d52cf",
-          "message": "chore: update circular vec to handle errors.\n\nAlso update replication fetchers to not use is_some_and (unstable)",
-          "timestamp": "2023-08-21T11:45:48Z",
-          "tree_id": "372ee9bf5f7bab01e90598f6a4fde217046db244",
-          "url": "https://github.com/maidsafe/safe_network/commit/55421d3881188bd44dd693ba591a5bfb3c5d52cf"
-        },
-        "date": 1692623354180,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.192177638371307,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.108638558363696,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.4282176065749361,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.12412398317602,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075",
+          "message": "chore: udeps and gitignore",
+          "timestamp": "2023-12-13T08:42:47Z",
+          "tree_id": "178f222bc534ea2ad530e775787bf24e7078d73d",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075"
+        },
+        "date": 1702460089746,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3288305756020597,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9064178954028475,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.56007130115375,
             "unit": "MiB/s"
           }
         ]
