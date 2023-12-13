@@ -208,8 +208,7 @@ async fn upload_files(
     let chunks_to_upload_len = chunks_to_upload.len();
 
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
-    println!("Input was split into {chunks_to_upload_len} chunks",);
-    println!("Will now attempt to upload them...");
+    println!("Uploading {chunks_to_upload_len} chunks",);
 
     let mut total_cost = NanoTokens::zero();
     let mut total_royalties = NanoTokens::zero();
@@ -235,12 +234,67 @@ async fn upload_files(
         batch_size,
     };
 
+    // Max amount of sequential payment failures before we bail
+    let max_sequential_payment_fails = 3;
+    let mut sequential_payment_fails = 0;
+
     for chunks_batch in chunks_batches {
-        handle_chunk_batch(&mut upload_params, chunks_batch).await?;
+        if sequential_payment_fails >= max_sequential_payment_fails {
+            bail!("Too many sequential payment failures ({sequential_payment_fails}). Aborting upload process.");
+        }
+        // if the payment fails, we can continue to the next batch
+        let res = handle_chunk_batch(&mut upload_params, chunks_batch).await;
+        if let Err(error) = res {
+            match error.downcast::<ClientError>()? {
+                ClientError::Transfers(WalletError::Transfer(
+                    TransfersError::NotEnoughBalance(available, required),
+                )) => {
+                    bail!("Not enough balance in wallet to pay for chunk. We have {available:?} but need {required:?} to pay for the chunk");
+                }
+                ClientError::CouldNotVerifyTransfer(err) => {
+                    warn!(
+                        "Failed to verify transfer validity in the network. Chunk batch will be retried... {err:?}"
+                    );
+                    println!(
+                        "Failed to verify transfer validity in the network. Chunk batch will be retried..."
+                    );
+                    sequential_payment_fails += 1;
+                    continue;
+                }
+                error => {
+                    bail!("Failed to upload chunk batch: {error}");
+                }
+            }
+        } else {
+            res?
+        }
     }
 
     // ensure we wait on any remaining uploading_chunks
     progress_uploading_chunks(&mut upload_params, true).await?;
+
+    let retries = 3;
+    let mut retry_count = 0;
+    let mut failed_chunks = upload_params.chunk_manager.get_chunks();
+    while !failed_chunks.is_empty() && retry_count < retries {
+        warn!(
+            "Retrying failed chunks {:?}, attempt {retry_count}/{retries}...",
+            failed_chunks.len()
+        );
+        println!(
+            "Retrying failed chunks {:?}, attempt {retry_count}/{retries}...",
+            failed_chunks.len()
+        );
+        retry_count += 1;
+        let batches = failed_chunks.chunks(batch_size);
+        for chunks_batch in batches {
+            handle_chunk_batch(&mut upload_params, chunks_batch).await?;
+        }
+        // ensure we wait on any remaining uploading_chunks w/ drain_all
+        progress_uploading_chunks(&mut upload_params, true).await?;
+        // update failed chunks
+        failed_chunks = upload_params.chunk_manager.get_chunks();
+    }
 
     progress_bar.finish_and_clear();
 
@@ -322,8 +376,7 @@ async fn progress_uploading_chunks(params: &mut UploadParams<'_>, drain_all: boo
                         .mark_completed(std::iter::once(xorname));
                 }
                 Err(report) => {
-                    error!("Failed to upload a chunk: {report}");
-                    return Err(report);
+                    warn!("Failed to upload a chunk: {report}");
                 }
             }
         } else {
@@ -362,15 +415,7 @@ async fn handle_chunk_batch(
                 .ok_or_else(|| eyre!("Unable to add cost to total royalties fees"))?;
             skipped_chunks
         }
-        Err(ClientError::Transfers(WalletError::Transfer(TransfersError::NotEnoughBalance(
-            available,
-            required,
-        )))) => {
-            bail!("Not enough balance in wallet to pay for chunk. We have {available:?} but need {required:?} to pay for the chunk");
-        }
-        Err(error) => {
-            bail!("Failed to pay for chunks: {error}");
-        }
+        Err(error) => return Err(eyre!(error)),
     };
 
     let mut chunks_to_upload = chunks_batch.to_vec();
