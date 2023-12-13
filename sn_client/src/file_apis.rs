@@ -43,7 +43,7 @@ pub struct Files {
 type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
 
 // Defines the size of batch for the parallel downloading of data.
-pub const BATCH_SIZE: usize = 64;
+pub const BATCH_SIZE: usize = 16;
 
 impl Files {
     /// Create file apis instance.
