@@ -10,9 +10,9 @@ use super::Client;
 use crate::Error;
 
 use futures::future::join_all;
-use petgraph::dot::{Config, Dot};
+use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
-use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
+use sn_transfers::{NanoTokens, SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// A DAG representing the spends from a specific Spend all the way to the UTXOs.
@@ -32,7 +32,7 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Default, Debug, Clone)]
 pub struct SpendDag {
     /// A directed graph of spend addresses
-    dag: DiGraph<SpendAddress, bool>,
+    dag: DiGraph<SpendAddress, NanoTokens>,
     /// All the spends refered to in the dag along with their index in the dag, indexed by their SpendAddress
     spends: BTreeMap<SpendAddress, Vec<(Option<SignedSpend>, usize)>>,
 }
@@ -73,6 +73,7 @@ impl SpendDag {
         };
 
         // link to ancestors
+        let spend_amount = spend.token();
         for ancestor in spend.spend.parent_tx.inputs.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(&ancestor.unique_pubkey);
 
@@ -85,7 +86,7 @@ impl SpendDag {
             // link to ancestor
             for (_, idx) in spends_at_addr {
                 let ancestor_idx = NodeIndex::new(*idx);
-                self.dag.update_edge(ancestor_idx, node_idx, false);
+                self.dag.update_edge(ancestor_idx, node_idx, *spend_amount);
             }
         }
 
@@ -102,7 +103,8 @@ impl SpendDag {
             // link to descendant
             for (_, idx) in spends_at_addr {
                 let descendant_idx = NodeIndex::new(*idx);
-                self.dag.update_edge(node_idx, descendant_idx, false);
+                self.dag
+                    .update_edge(node_idx, descendant_idx, descendant.amount);
             }
         }
     }
@@ -123,7 +125,7 @@ impl SpendDag {
     }
 
     pub fn dump_dot_format(&self) -> String {
-        format!("{:?}", Dot::with_config(&self.dag, &[Config::EdgeNoLabel]))
+        format!("{:?}", Dot::with_config(&self.dag, &[]))
     }
 }
 
