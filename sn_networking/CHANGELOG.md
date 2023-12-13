@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.1...sn_networking-v0.12.2) - 2023-12-13
+
+### Other
+- *(networking)* include record count and max records in logfile output
+
 ## [0.12.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.0...sn_networking-v0.12.1) - 2023-12-12
 
 ### Other
