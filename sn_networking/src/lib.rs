@@ -277,16 +277,18 @@ impl Network {
         let mut close_nodes = Vec::new();
         let mut retry_attempts = 0;
         while retry_attempts < total_attempts {
+            // the check should happen before incrementing retry_attempts
+            if retry_attempts % 2 == 0 {
+                // Do not query the closest_peers during every re-try attempt.
+                // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
+                // the Chunk, so query them again incase of a failure.
+                close_nodes = self.get_closest_peers(&chunk_address, true).await?;
+            }
             retry_attempts += 1;
             info!(
                 "Getting ChunkProof for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}",
             );
-            // Do not query the closest_peers during every re-try attempt.
-            // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
-            // the Chunk, so query them again incase of a failure.
-            if retry_attempts % 2 == 0 {
-                close_nodes = self.get_closest_peers(&chunk_address, true).await?;
-            }
+
             let request = Request::Query(Query::GetChunkExistenceProof {
                 key: chunk_address.clone(),
                 nonce,
