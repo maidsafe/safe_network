@@ -738,7 +738,7 @@ impl SwarmDriver {
                 );
 
                 if let Entry::Occupied(mut entry) = self.pending_get_closest_peers.entry(id) {
-                    let (_, current_closest) = entry.get_mut();
+                    let (_, _, current_closest) = entry.get_mut();
 
                     // TODO: consider order the result and terminate when reach any of the
                     //       following criteria:
@@ -746,7 +746,10 @@ impl SwarmDriver {
                     //   2, `stats.duration()` is longer than a defined period
                     current_closest.extend(closest_peers.peers.clone());
                     if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                        let (get_closest_type, current_closest) = entry.remove();
+                        let (get_closest_type, key, current_closest) = entry.remove();
+                        // store it to the cache before sending
+                        self.cache_get_closest_peers.insert(key, &current_closest);
+
                         match get_closest_type {
                             PendingGetClosestType::NetworkDiscovery => self
                                 .network_discovery
@@ -773,7 +776,7 @@ impl SwarmDriver {
                 event_string = "kad_event::get_closest_peers_err";
                 error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
-                let (get_closest_type, mut current_closest) =
+                let (get_closest_type, key, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
                         trace!(
                             "Can't locate query task {id:?}, it has likely been completed already."
@@ -790,6 +793,8 @@ impl SwarmDriver {
                     }
                 }
 
+                // store it to the cache before sending
+                self.cache_get_closest_peers.insert(key, &current_closest);
                 match get_closest_type {
                     PendingGetClosestType::NetworkDiscovery => self
                         .network_discovery

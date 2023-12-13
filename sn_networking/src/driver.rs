@@ -17,6 +17,7 @@ use crate::{
     error::{Error, Result},
     event::NetworkEvent,
     event::NodeEvent,
+    get_closest_peers_handler::CacheGetClosest,
     get_record_handler::PendingGetRecord,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
@@ -71,7 +72,7 @@ pub(crate) enum PendingGetClosestType {
     /// These are queries made by a function at the upper layers and contains a channel to send the result back.
     FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
-type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, NetworkAddress, Vec<PeerId>)>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
@@ -551,6 +552,7 @@ impl NetworkBuilder {
             network_metrics,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
+            cache_get_closest_peers: Default::default(),
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
             pending_get_record: Default::default(),
@@ -593,6 +595,7 @@ pub struct SwarmDriver {
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
+    pub(crate) cache_get_closest_peers: CacheGetClosest,
     pub(crate) pending_get_closest_peers: PendingGetClosest,
     pub(crate) pending_requests:
         HashMap<OutboundRequestId, Option<oneshot::Sender<Result<Response>>>>,

@@ -525,18 +525,30 @@ impl SwarmDriver {
                 };
             }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
-                let query_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_closest_peers(key.as_bytes());
-                let _ = self.pending_get_closest_peers.insert(
-                    query_id,
-                    (
-                        PendingGetClosestType::FunctionCall(sender),
-                        Default::default(),
-                    ),
-                );
+                if let Some(closest_peers) = self.cache_get_closest_peers.get(&key) {
+                    debug!("Got the closest peers for {key:?} from cache");
+                    sender
+                        .send(closest_peers.clone())
+                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                } else {
+                    let query_id = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .get_closest_peers(key.as_bytes());
+                    debug!(
+                        "Getting the closest peers for {key:?} from the network with {query_id:?}"
+                    );
+
+                    let _ = self.pending_get_closest_peers.insert(
+                        query_id,
+                        (
+                            PendingGetClosestType::FunctionCall(sender),
+                            key,
+                            Default::default(),
+                        ),
+                    );
+                }
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
                 let _ = sender.send(self.get_all_local_peers());

@@ -15,6 +15,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+mod get_closest_peers_handler;
 mod get_record_handler;
 #[cfg(feature = "open-metrics")]
 mod metrics;

@@ -19,10 +19,10 @@ open-metrics=["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
 [dependencies]
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
+custom_debug = "~0.5.0"
 futures = "~0.3.13"
 hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
 itertools = "~0.11.0"
-custom_debug = "~0.5.0"
 libp2p = { version="0.53", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
