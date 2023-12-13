@@ -542,7 +542,7 @@ impl Node {
                             // todo: error is not propagated to the caller here
                             let _ = network.add_keys_to_replication_fetcher(peer_id, keys);
                         } else {
-                            warn!("Received replication list from {peer_id:?} which is not in our close group. Ignored {keys:?}");
+                            warn!("Received replication list from {peer_id:?} which is not in our close group. Ignored {:?}", keys.len());
                         }
                     } else {
                         error!(
