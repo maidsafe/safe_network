@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// mod spend_dag;
+mod spend_dag;
 
 use super::{
     error::{Error, Result},
@@ -157,12 +157,12 @@ impl Client {
             .get_spend_from_network(spend_addr)
             .await
             .map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
-        println!("Now at gen 0 - Found first spend: {spend_addr:#?}");
+        println!("Generation 0 - Found first spend: {spend_addr:#?}");
 
         // use iteration instead of recursion to avoid stack overflow
         let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
         let mut all_utxos = BTreeSet::new();
-        let mut verified_spends_count = 1;
+        let mut verified_tx = BTreeSet::new();
         let mut gen = 0;
         let start = std::time::Instant::now();
 
@@ -171,7 +171,7 @@ impl Client {
             let mut next_gen_spends = BTreeSet::new();
             let mut next_gen_utxos = BTreeSet::new();
 
-            for descendant_tx in txs_to_follow {
+            for descendant_tx in txs_to_follow.iter() {
                 let descendant_tx_hash = descendant_tx.hash();
                 let descendant_keys = descendant_tx
                     .outputs
@@ -208,20 +208,23 @@ impl Client {
             let elapsed = start.elapsed();
             let u = next_gen_utxos.len();
             let s = next_gen_spends.len();
-            verified_spends_count += s;
             println!("Generation {gen} - Found {u} UTXOs and {s} Spends in {elapsed:?}");
             debug!("Generation {gen} - UTXOs: {:#?}", next_gen_utxos);
             debug!("Generation {gen} - Spends: {:#?}", next_gen_spends);
-
-            // on to next generation
             all_utxos.extend(next_gen_utxos);
-            txs_to_follow = next_gen_tx;
+
+            // only verify tx we haven't already verified
+            verified_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
+            txs_to_follow = next_gen_tx
+                .into_iter()
+                .filter(|tx| !verified_tx.contains(&tx.hash()))
+                .collect();
         }
 
         let elapsed = start.elapsed();
         let n = all_utxos.len();
-        let s = verified_spends_count;
-        println!("Finished auditing! Through {gen} generations, found {n} UTXOs and verified {s} Spends in {elapsed:?}");
+        let tx = verified_tx.len();
+        println!("Finished auditing! Through {gen} generations, found {n} UTXOs and verified {tx} Transactions in {elapsed:?}");
         Ok(all_utxos)
     }
 }
