@@ -81,7 +81,7 @@ pub const fn close_group_majority() -> usize {
 /// Max duration to wait for verification
 const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
 /// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(150);
+const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(300);
 /// Number of attempts to GET a record
 const GET_RETRY_ATTEMPTS: usize = 3;
 /// Number of attempts to PUT a record
