@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702460091584,
+  "lastUpdate": 1702460232995,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "6977ed35f66d4cfde79e5f1204aadb94be0176e5",
-          "message": "chore: reduce the wait after create faucet server\n\nThis is to confirm the delayed event handling is resolved.\nThe creation of faucet and balance update shall be completed\nquickly with the delaying resolved.",
-          "timestamp": "2023-08-03T15:29:30Z",
-          "tree_id": "7d2df7f5daad45f15397190739c24ff9948e67ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/6977ed35f66d4cfde79e5f1204aadb94be0176e5"
-        },
-        "date": 1691099348090,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 24.73,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 99,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075",
+          "message": "chore: udeps and gitignore",
+          "timestamp": "2023-12-13T08:42:47Z",
+          "tree_id": "178f222bc534ea2ad530e775787bf24e7078d73d",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075"
+        },
+        "date": 1702460232404,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 154,
             "unit": "MB"
           }
         ]
