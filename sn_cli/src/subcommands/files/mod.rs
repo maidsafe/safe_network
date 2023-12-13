@@ -48,6 +48,11 @@ pub enum FilesCmds {
         /// Default to be not showing.
         #[clap(long, name = "show_holders", default_value = "false")]
         show_holders: bool,
+        /// The retry_count for retrying failed chunks
+        /// during payment and upload processing.
+        /// Defaults to 3 retry passes over unsuccessful chunks.
+        #[clap(long, default_value = "3", short = 'r')]
+        max_retries: usize,
     },
     Download {
         /// The name to apply to the downloaded file.
@@ -85,6 +90,7 @@ pub(crate) async fn files_cmds(
             path,
             batch_size,
             show_holders,
+            max_retries,
         } => {
             upload_files(
                 path,
@@ -93,6 +99,7 @@ pub(crate) async fn files_cmds(
                 verify_store,
                 batch_size,
                 show_holders,
+                max_retries,
             )
             .await?
         }
@@ -153,6 +160,7 @@ async fn upload_files(
     verify_store: bool,
     batch_size: usize,
     show_holders: bool,
+    max_retries: usize,
 ) -> Result<()> {
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
 
@@ -273,16 +281,15 @@ async fn upload_files(
     // ensure we wait on any remaining uploading_chunks
     progress_uploading_chunks(&mut upload_params, true).await?;
 
-    let retries = 3;
     let mut retry_count = 0;
     let mut failed_chunks = upload_params.chunk_manager.get_chunks();
-    while !failed_chunks.is_empty() && retry_count < retries {
+    while !failed_chunks.is_empty() && retry_count < max_retries {
         warn!(
-            "Retrying failed chunks {:?}, attempt {retry_count}/{retries}...",
+            "Retrying failed chunks {:?}, attempt {retry_count}/{max_retries}...",
             failed_chunks.len()
         );
         println!(
-            "Retrying failed chunks {:?}, attempt {retry_count}/{retries}...",
+            "Retrying failed chunks {:?}, attempt {retry_count}/{max_retries}...",
             failed_chunks.len()
         );
         retry_count += 1;
