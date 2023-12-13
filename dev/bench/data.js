@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702476699048,
+  "lastUpdate": 1702476825673,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "31b3ba7cc13a88079c92d6645d1c9a53cc98e95f",
-          "message": "fix(cli): remove manual faucet claim from benchmarking.\n\nlocal testnets already start a faucet and make that claim",
-          "timestamp": "2023-08-08T06:45:26+02:00",
-          "tree_id": "1abf5f4d1e455afcd8f4510c051f45170f0e90db",
-          "url": "https://github.com/maidsafe/safe_network/commit/31b3ba7cc13a88079c92d6645d1c9a53cc98e95f"
-        },
-        "date": 1691477381006,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 63.574017,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 92,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "10c55f1c1c81fab9eb19dd99989a3282d1046ae7",
+          "message": "fix: update README paths to use .local/share/safe",
+          "timestamp": "2023-12-13T15:00:00+01:00",
+          "tree_id": "bb6e2230bd361a41f884c68aa5d8810fe2687db7",
+          "url": "https://github.com/maidsafe/safe_network/commit/10c55f1c1c81fab9eb19dd99989a3282d1046ae7"
+        },
+        "date": 1702476825308,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 95,
             "unit": "MB"
           }
         ]
