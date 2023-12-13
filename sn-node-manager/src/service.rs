@@ -43,6 +43,7 @@ pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, config: ServiceConfig) -> Result<()>;
+    fn is_port_free(&self, port: u16) -> bool;
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
@@ -140,6 +141,10 @@ impl ServiceControl for NodeServiceManager {
     #[cfg(target_os = "windows")]
     fn create_service_user(&self, _username: &str) -> Result<()> {
         Ok(())
+    }
+
+    fn is_port_free(&self, port: u16) -> bool {
+        TcpListener::bind(("127.0.0.1", port)).is_ok()
     }
 
     fn is_service_process_running(&self, pid: u32) -> bool {

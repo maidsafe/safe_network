@@ -70,6 +70,20 @@ pub enum SubCmd {
         log_dir_path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
+        /// Specify a port for the node to run on.
+        ///
+        /// If not used, a port will be selected at random.
+        ///
+        /// This option only applies when a single service is being added.
+        #[clap(long)]
+        port: Option<u16>,
+        /// Specify a port for the node's RPC service to run on.
+        ///
+        /// If not used, a port will be selected at random.
+        ///
+        /// This option only applies when a single service is being added.
+        #[clap(long)]
+        rpc_port: Option<u16>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -168,6 +182,8 @@ async fn main() -> Result<()> {
             data_dir_path,
             log_dir_path,
             peers,
+            port,
+            rpc_port,
             url,
             user,
             version,
@@ -203,6 +219,8 @@ async fn main() -> Result<()> {
                 AddServiceOptions {
                     count,
                     peers: parse_peers_args(peers).await.unwrap_or(vec![]),
+                    port,
+                    rpc_port,
                     safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
                     service_log_dir_path,
