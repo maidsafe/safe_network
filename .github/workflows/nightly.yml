@@ -52,7 +52,7 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources"
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" -r 0
         env:
           SN_LOG: "all"
         timeout-minutes: 2

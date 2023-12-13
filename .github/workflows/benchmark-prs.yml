@@ -72,7 +72,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip
+        run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip -r 0
         env:
           SN_LOG: "all"
 
@@ -206,7 +206,7 @@ jobs:
         shell: bash
         run: |
           ls -l target/release
-          target/release/safe --log-output-dest=data-dir files upload target/release/faucet
+          target/release/safe --log-output-dest=data-dir files upload target/release/faucet -r 0
 
       #########################
       ### Stop Network      ###
