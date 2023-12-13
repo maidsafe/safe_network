@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.14...sn_client-v0.99.15) - 2023-12-13
+
+### Added
+- add amounts to edges
+- audit DAG collection and visualization
+- cli double spends audit from genesis
+
+### Fixed
+- docs
+
+### Other
+- udeps and gitignore
+
 ## [0.99.14](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.13...sn_client-v0.99.14) - 2023-12-12
 
 ### Other
