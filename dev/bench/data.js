@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702476827233,
+  "lastUpdate": 1702476828809,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32785,6 +32785,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 17,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "10c55f1c1c81fab9eb19dd99989a3282d1046ae7",
+          "message": "fix: update README paths to use .local/share/safe",
+          "timestamp": "2023-12-13T15:00:00+01:00",
+          "tree_id": "bb6e2230bd361a41f884c68aa5d8810fe2687db7",
+          "url": "https://github.com/maidsafe/safe_network/commit/10c55f1c1c81fab9eb19dd99989a3282d1046ae7"
+        },
+        "date": 1702476828456,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4139,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 64749,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 15,
             "unit": "ms"
           }
         ]
