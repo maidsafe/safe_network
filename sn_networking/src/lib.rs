@@ -541,14 +541,28 @@ impl Network {
             record.value.len()
         );
 
-        // Waiting for a response to avoid flushing to network too quick that causing choke
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::PutRecord {
-            record: record.clone(),
-            sender,
-            quorum: cfg.put_quorum,
-        })?;
-        let response = receiver.await?;
+        // use `put_to` if specified, else use `put`
+        let response = if let Some((network_address, client)) = &cfg.put_to {
+            let closest_peers = self.get_closest_peers(network_address, *client).await?;
+
+            let (sender, receiver) = oneshot::channel();
+            self.send_swarm_cmd(SwarmCmd::PutRecordTo {
+                record: record.clone(),
+                to_peers: closest_peers,
+                sender,
+                quorum: cfg.put_quorum,
+            })?;
+            receiver.await?
+        } else {
+            // Waiting for a response to avoid flushing to network too quick that causing choke
+            let (sender, receiver) = oneshot::channel();
+            self.send_swarm_cmd(SwarmCmd::PutRecord {
+                record: record.clone(),
+                sender,
+                quorum: cfg.put_quorum,
+            })?;
+            receiver.await?
+        };
 
         if let Some((verification_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT

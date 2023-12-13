@@ -159,6 +159,9 @@ pub struct PutRecordCfg {
     pub put_quorum: Quorum,
     /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
     pub re_attempt: bool,
+    /// Put the record using KAD::put_to closest_peers(network_address) instead of using an iterative query.
+    /// Mark true if it is client
+    pub put_to: Option<(NetworkAddress, bool)>,
     /// Enables verification after writing. The VerificationKind is used to determine the method to use.
     pub verification: Option<(VerificationKind, GetRecordCfg)>,
 }

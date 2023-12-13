@@ -385,7 +385,8 @@ impl Client {
         _show_holders: bool, // The holders are logged during ChunkProof verification by default. Todo: remove?
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
-        let key = chunk.network_address().to_record_key();
+        let network_address = chunk.network_address();
+        let key = network_address.to_record_key();
 
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
@@ -425,6 +426,7 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             re_attempt: true,
+            put_to: Some((network_address, true)),
             verification,
         };
         self.network.put_record(record, &put_cfg).await?;
@@ -539,6 +541,7 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
+            put_to: Some((network_address, true)),
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
         Ok(self.network.put_record(record, &put_cfg).await?)

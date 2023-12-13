@@ -119,6 +119,13 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
+    /// Put record to the specified peers in the network.
+    PutRecordTo {
+        record: Record,
+        to_peers: Vec<PeerId>,
+        sender: oneshot::Sender<Result<()>>,
+        quorum: Quorum,
+    },
     /// Put record to the local RecordStore
     PutLocalRecord {
         record: Record,
@@ -175,6 +182,13 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::PutRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(&record.key)
+                )
+            }
+            SwarmCmd::PutRecordTo { record, .. } => {
+                write!(
+                    f,
+                    "SwarmCmd::PutRecordTo {{ key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
@@ -411,7 +425,7 @@ impl SwarmDriver {
                     .put_record(record, quorum)
                 {
                     Ok(request_id) => {
-                        trace!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
+                        trace!("Sent record {record_key:?} to network. Request id: {request_id:?}");
                         Ok(())
                     }
                     Err(error) => {
@@ -421,6 +435,29 @@ impl SwarmDriver {
                 };
 
                 if let Err(err) = sender.send(res) {
+                    error!("Could not send response to PutRecord cmd: {:?}", err);
+                }
+            }
+            SwarmCmd::PutRecordTo {
+                record,
+                to_peers,
+                sender,
+                quorum,
+            } => {
+                let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
+                trace!(
+                    "Putting record sized: {:?} with key: {:?} to the peers {to_peers:?}",
+                    record.value.len(),
+                    record_key
+                );
+                let request_id = self.swarm.behaviour_mut().kademlia.put_record_to(
+                    record,
+                    to_peers.into_iter(),
+                    quorum,
+                );
+                trace!("Sent record {record_key:?} to network using kad_put_to. Request id: {request_id:?}");
+
+                if let Err(err) = sender.send(Ok(())) {
                     error!("Could not send response to PutRecord cmd: {:?}", err);
                 }
             }
