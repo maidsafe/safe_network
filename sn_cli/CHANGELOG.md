@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.58](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.57...sn_cli-v0.86.58) - 2023-12-13
+
+### Added
+- audit DAG collection and visualization
+- cli double spends audit from genesis
+
 ## [0.86.57](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.56...sn_cli-v0.86.57) - 2023-12-12
 
 ### Other
