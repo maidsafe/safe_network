@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.17...sn_client-v0.99.18) - 2023-12-14
+
+### Other
+- *(test)* fix log messages during churn test
+
 ## [0.99.17](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.16...sn_client-v0.99.17) - 2023-12-14
 
 ### Added

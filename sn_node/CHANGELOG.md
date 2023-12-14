@@ -2547,6 +2547,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.8...sn_node-v0.100.9) - 2023-12-14
+
+### Other
+- *(network)* return error with more info during quorum failure
+- *(test)* fix log messages during churn test
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
