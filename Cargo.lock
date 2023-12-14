@@ -4542,6 +4542,7 @@ name = "sn_client"
 version = "0.99.18"
 dependencies = [
  "async-trait",
+ "backoff",
  "blsttc",
  "bytes",
  "custom_debug",
