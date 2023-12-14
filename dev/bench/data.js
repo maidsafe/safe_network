@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702556588889,
+  "lastUpdate": 1702556590325,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "20ea0a69d87f43c70963b4dbce97e0169f2aef3d",
-          "message": "fix: fixes to allow upload file works properly\n\nThis commit contains couple of fixes to make upload file\nwithout verification works as expected.\n1, Avoid extra wait on spend existence check via get_record\n2, Pause between batch uploads to allow network settle down\n3, Avoid out of index panic when try parse RecordHead",
-          "timestamp": "2023-08-22T10:27:56Z",
-          "tree_id": "a53852d01fd1dd71b9d3f42f4946c6471b5f5168",
-          "url": "https://github.com/maidsafe/safe_network/commit/20ea0a69d87f43c70963b4dbce97e0169f2aef3d"
-        },
-        "date": 1692704737866,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 75.710464,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 63,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 124,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
+          "message": "chore(cli): make sequential payment fail limit a const",
+          "timestamp": "2023-12-14T11:43:34Z",
+          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
+        },
+        "date": 1702556589989,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 736,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 132,
             "unit": "MB"
           }
         ]
