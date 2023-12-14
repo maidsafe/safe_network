@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702556457048,
+  "lastUpdate": 1702556588889,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "37ed749758eef212a013b5495629ef3f0797a883",
-          "message": "chore(deps): bump rustls-webpki from 0.101.3 to 0.101.4\n\nBumps [rustls-webpki](https://github.com/rustls/webpki) from 0.101.3 to 0.101.4.\n- [Release notes](https://github.com/rustls/webpki/releases)\n- [Commits](https://github.com/rustls/webpki/compare/v/0.101.3...v/0.101.4)\n\n---\nupdated-dependencies:\n- dependency-name: rustls-webpki\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2023-08-24T13:08:44Z",
-          "tree_id": "877456b29c5a83cfa64fb73de49436425e3d5d91",
-          "url": "https://github.com/maidsafe/safe_network/commit/37ed749758eef212a013b5495629ef3f0797a883"
-        },
-        "date": 1692887733485,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 37.040127,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
+          "message": "chore(cli): make sequential payment fail limit a const",
+          "timestamp": "2023-12-14T11:43:34Z",
+          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
+        },
+        "date": 1702556588555,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 90,
             "unit": "MB"
           }
         ]
