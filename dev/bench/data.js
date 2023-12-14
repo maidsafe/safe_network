@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702556590325,
+  "lastUpdate": 1702556591911,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -32975,6 +32975,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 65808,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
+          "message": "chore(cli): make sequential payment fail limit a const",
+          "timestamp": "2023-12-14T11:43:34Z",
+          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
+        },
+        "date": 1702556591549,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5054,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 75550,
             "unit": "ms"
           },
           {
