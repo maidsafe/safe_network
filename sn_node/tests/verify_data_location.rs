@@ -20,7 +20,7 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Files};
+use sn_client::{Client, FilesApi};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::safenode_proto::{
@@ -270,7 +270,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
-    let file_api = Files::new(client, wallet_dir);
+    let file_api = FilesApi::new(client, wallet_dir);
 
     let mut uploaded_chunks_count = 0;
     loop {
@@ -289,7 +289,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut output_file = File::create(file_path.clone())?;
         output_file.write_all(&random_bytes)?;
 
-        let (file_addr, _file_size, chunks) = Files::chunk_file(&file_path, chunks_dir.path())?;
+        let (file_addr, _file_size, chunks) = FilesApi::chunk_file(&file_path, chunks_dir.path())?;
 
         println!(
             "Paying storage for ({}) new Chunk/s of file ({} bytes) at {file_addr:?}",

@@ -75,4 +75,11 @@ pub enum Error {
 
     #[error("Could not connect to the network in {0:?}")]
     ConnectionTimeout(Duration),
+
+    // ----------- files error
+    #[error("Too many sequential upload payment failures")]
+    SequentialUploadPaymentError,
+
+    #[error("Could not send files event")]
+    CouldNotSendFilesEvent,
 }

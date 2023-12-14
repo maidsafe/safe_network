@@ -9,7 +9,7 @@
 use crate::subcommands::files::get_progress_bar;
 use color_eyre::{eyre::bail, Result};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::Files;
+use sn_client::FilesApi;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -173,7 +173,7 @@ impl ChunkManager {
                     }
                 };
 
-                match Files::chunk_file(path, &file_chunks_dir) {
+                match FilesApi::chunk_file(path, &file_chunks_dir) {
                     Ok((file_xor_addr, size, chunks)) => {
                         progress_bar.clone().inc(1);
                         debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {file_xor_addr:?} of size {size}, and chunks len: {}", chunks.len());

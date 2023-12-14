@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
+use crate::{
     chunks::{to_chunk, DataMapLevel, Error as ChunksError, SmallFile},
     error::{Error, Result},
     Client, WalletClient,
@@ -35,7 +35,7 @@ use xor_name::XorName;
 
 /// File APIs.
 #[derive(Clone)]
-pub struct Files {
+pub struct FilesApi {
     client: Client,
     wallet_dir: PathBuf,
 }
@@ -45,7 +45,7 @@ type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
 // Defines the size of batch for the parallel downloading of data.
 pub const BATCH_SIZE: usize = 64;
 
-impl Files {
+impl FilesApi {
     /// Create file apis instance.
     pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
         Self { client, wallet_dir }
@@ -505,7 +505,7 @@ fn encrypt_large(
     file_path: &Path,
     output_dir: &Path,
 ) -> Result<(XorName, Vec<(XorName, PathBuf)>)> {
-    Ok(super::chunks::encrypt_large(file_path, output_dir)?)
+    Ok(crate::chunks::encrypt_large(file_path, output_dir)?)
 }
 
 /// Packages a [`SmallFile`] and returns the resulting address and the chunk.

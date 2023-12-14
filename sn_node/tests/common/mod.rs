@@ -17,7 +17,7 @@ use rand::{
     Rng,
 };
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use sn_client::{Client, Files};
+use sn_client::{Client, FilesApi};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest,
 };
@@ -31,7 +31,7 @@ use std::{
 use tonic::Request;
 use xor_name::XorName;
 
-type ResultRandomContent = Result<(Files, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
+type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
 pub fn random_content(
     client: &Client,
@@ -50,8 +50,8 @@ pub fn random_content(
     let mut output_file = File::create(file_path.clone())?;
     output_file.write_all(&random_length_content)?;
 
-    let files_api = Files::new(client.clone(), wallet_dir);
-    let (file_addr, _file_size, chunks) = Files::chunk_file(&file_path, chunk_dir)?;
+    let files_api = FilesApi::new(client.clone(), wallet_dir);
+    let (file_addr, _file_size, chunks) = FilesApi::chunk_file(&file_path, chunk_dir)?;
 
     Ok((
         files_api,
