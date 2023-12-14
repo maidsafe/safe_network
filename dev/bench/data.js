@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702545876395,
+  "lastUpdate": 1702546000887,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38",
-          "message": "feat: overpay by default to allow margin",
-          "timestamp": "2023-08-16T05:56:48Z",
-          "tree_id": "104ccef85597e240b5a421747104ee71ea83067f",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38"
-        },
-        "date": 1692178501934,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 65.25747,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 96,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "786b5b62328894c116492f147680d5ecf16aa6c6",
+          "message": "ci: prevent retries on ci runs w/ '-r 0'\n\nAka 0 retries",
+          "timestamp": "2023-12-14T08:40:55Z",
+          "tree_id": "a2961a3150832bf6e31448f5bbbefb725e9b8f07",
+          "url": "https://github.com/maidsafe/safe_network/commit/786b5b62328894c116492f147680d5ecf16aa6c6"
+        },
+        "date": 1702546000045,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 87,
             "unit": "MB"
           }
         ]
