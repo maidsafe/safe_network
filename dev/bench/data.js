@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702483661861,
+  "lastUpdate": 1702545876395,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "37ed749758eef212a013b5495629ef3f0797a883",
-          "message": "chore(deps): bump rustls-webpki from 0.101.3 to 0.101.4\n\nBumps [rustls-webpki](https://github.com/rustls/webpki) from 0.101.3 to 0.101.4.\n- [Release notes](https://github.com/rustls/webpki/releases)\n- [Commits](https://github.com/rustls/webpki/compare/v/0.101.3...v/0.101.4)\n\n---\nupdated-dependencies:\n- dependency-name: rustls-webpki\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2023-08-24T13:08:44Z",
-          "tree_id": "877456b29c5a83cfa64fb73de49436425e3d5d91",
-          "url": "https://github.com/maidsafe/safe_network/commit/37ed749758eef212a013b5495629ef3f0797a883"
-        },
-        "date": 1692887445139,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.14573357661584604,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1776945649496755,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 12.55573083904391,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.21666201187873,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "786b5b62328894c116492f147680d5ecf16aa6c6",
+          "message": "ci: prevent retries on ci runs w/ '-r 0'\n\nAka 0 retries",
+          "timestamp": "2023-12-14T08:40:55Z",
+          "tree_id": "a2961a3150832bf6e31448f5bbbefb725e9b8f07",
+          "url": "https://github.com/maidsafe/safe_network/commit/786b5b62328894c116492f147680d5ecf16aa6c6"
+        },
+        "date": 1702545873917,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3326417770070837,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9279261961859384,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.42322220573339,
             "unit": "MiB/s"
           }
         ]
