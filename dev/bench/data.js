@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702552667234,
+  "lastUpdate": 1702552691966,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "2308b58e97574f25025f371ae7a59b34349ba62c",
-          "message": "fix(network): reject large records before sending out to network",
-          "timestamp": "2023-08-22T17:08:47Z",
-          "tree_id": "75719e31b98ca53c78c405531d751556873a4816",
-          "url": "https://github.com/maidsafe/safe_network/commit/2308b58e97574f25025f371ae7a59b34349ba62c"
-        },
-        "date": 1692728402728,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 37.863422,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 94,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "189a9089b6570706ae07d8276bfa6f25b788073f",
+          "message": "chore(network): return error with more info during quorum failure",
+          "timestamp": "2023-12-14T10:36:18Z",
+          "tree_id": "fc2166d2bbe8f7dc0aa0c607118b8e160a0d20f9",
+          "url": "https://github.com/maidsafe/safe_network/commit/189a9089b6570706ae07d8276bfa6f25b788073f"
+        },
+        "date": 1702552690958,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 88,
             "unit": "MB"
           }
         ]
