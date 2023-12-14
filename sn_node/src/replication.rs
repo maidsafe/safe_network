@@ -6,16 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::error::Result;
-use crate::node::Node;
-use libp2p::kad::Quorum;
+use crate::{error::Result, node::Node};
 use libp2p::{
-    kad::{Record, RecordKey},
+    kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{
-    sort_peers_by_address, GetRecordCfg, Network, CLOSE_GROUP_SIZE, REPLICATE_RANGE,
-};
+use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, REPLICATE_RANGE};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -201,7 +197,7 @@ impl Node {
             let sorted_based_on_addr = match sort_peers_by_address(
                 &closest_k_peers,
                 &data_addr,
-                CLOSE_GROUP_SIZE,
+                REPLICATE_RANGE,
             ) {
                 Ok(result) => result,
                 Err(err) => {
