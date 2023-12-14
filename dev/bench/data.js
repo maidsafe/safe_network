@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702563323084,
+  "lastUpdate": 1702570955120,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9c687c1d9f490b8f9f70551da73a46f018bda84d",
-          "message": "chore: cargo fmt and clippy",
-          "timestamp": "2023-08-30T12:32:26Z",
-          "tree_id": "7abf0dbe714347c36258ebfb20b2b2fab9e91c48",
-          "url": "https://github.com/maidsafe/safe_network/commit/9c687c1d9f490b8f9f70551da73a46f018bda84d"
-        },
-        "date": 1693414243801,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.003413963817712515,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03412894434587737,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.489787398271895,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.44595972089822,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "7808046377062a5fde078c9e32ba30eacd2eb317",
+          "message": "chore(deps): bump github/codeql-action from 2 to 3\n\nBumps [github/codeql-action](https://github.com/github/codeql-action) from 2 to 3.\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/v2...v3)\n\n---\nupdated-dependencies:\n- dependency-name: github/codeql-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-12-14T15:43:21Z",
+          "tree_id": "a4944f4592b331559a31de139a525a0bb06fc2be",
+          "url": "https://github.com/maidsafe/safe_network/commit/7808046377062a5fde078c9e32ba30eacd2eb317"
+        },
+        "date": 1702570953236,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2706326257298557,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.94157365384841,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.12250959619956,
             "unit": "MiB/s"
           }
         ]
