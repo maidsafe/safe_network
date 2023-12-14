@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702552691966,
+  "lastUpdate": 1702552694207,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38",
-          "message": "feat: overpay by default to allow margin",
-          "timestamp": "2023-08-16T05:56:48Z",
-          "tree_id": "104ccef85597e240b5a421747104ee71ea83067f",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d84c587a53be88b06fa91c1c07ed3a5a3ed4a38"
-        },
-        "date": 1692178503655,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 368.70145,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 206,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 118,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "189a9089b6570706ae07d8276bfa6f25b788073f",
+          "message": "chore(network): return error with more info during quorum failure",
+          "timestamp": "2023-12-14T10:36:18Z",
+          "tree_id": "fc2166d2bbe8f7dc0aa0c607118b8e160a0d20f9",
+          "url": "https://github.com/maidsafe/safe_network/commit/189a9089b6570706ae07d8276bfa6f25b788073f"
+        },
+        "date": 1702552693377,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 740,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 124,
             "unit": "MB"
           }
         ]
