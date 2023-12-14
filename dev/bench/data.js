@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702556591911,
+  "lastUpdate": 1702563180445,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "aed@countermail.com",
-            "name": "Lu",
-            "username": "aed900"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "300dc94641f7255cab62821d2284dfca15576d4d",
-          "message": "fix(node): refactoring code\n\nRefactored code related to the \"add feature flag for tcp/quic\" commit for this PR.",
-          "timestamp": "2023-08-29T09:21:27Z",
-          "tree_id": "bce41fe5b4a1b5ddcbe0e8600c885bf1c4eb083b",
-          "url": "https://github.com/maidsafe/safe_network/commit/300dc94641f7255cab62821d2284dfca15576d4d"
-        },
-        "date": 1693316985893,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.00341955067692468,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03431857312157173,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.4604898802103925,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 35.21537799058577,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "3675d0f3bb02538fb77d90d05c8113691f48f788",
+          "message": "chore(cli): make upload summary printout clearer",
+          "timestamp": "2023-12-14T13:33:27Z",
+          "tree_id": "b5069598ca5e7bfcbe36a60cab1dc6c42b759b15",
+          "url": "https://github.com/maidsafe/safe_network/commit/3675d0f3bb02538fb77d90d05c8113691f48f788"
+        },
+        "date": 1702563178635,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2914699334490414,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9507564167623874,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.44595972089822,
             "unit": "MiB/s"
           }
         ]
