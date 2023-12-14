@@ -56,6 +56,7 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
+    time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
@@ -79,13 +80,16 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_MS: std::time::Duration = std::time::Duration::from_millis(750);
-/// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(300);
+/// Max duration for all GET attempts
+const MAX_GET_RETRY_DURATION_MS: u64 = 6800;
+const MAX_GET_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS);
+/// Max duration for all PUT attempts
+const MAX_PUT_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS * 3);
 
-/// Number of attempts to PUT a record
-const PUT_RETRY_ATTEMPTS: usize = 3;
+/// Max duration to wait for verification
+const MAX_REVERIFICATION_WAIT_TIME_MS: Duration = Duration::from_millis(750);
+/// Min duration to wait for verification
+const MIN_REVERIFICATION_WAIT_TIME_MS: Duration = Duration::from_millis(300);
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -335,7 +339,10 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let result = backoff::future::retry(ExponentialBackoff::default(), || async {
+        backoff::future::retry(ExponentialBackoff{
+            max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
+            ..Default::default()
+        }, || async {
             let pretty_key = PrettyPrintRecordKey::from(&key);
             info!(
                 "Getting record of {pretty_key:?}. with cfg {cfg:?}",
@@ -382,11 +389,9 @@ impl Network {
                     return Err(BackoffError::Permanent(Error::from(e)))
                 }
             }
-            Ok(result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})?)
+            result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})
         })
-        .await;
-
-        Ok(result.map_err(|err| Error::from(err))?)
+        .await
     }
 
     /// Get the cost of storing the next record from the network
@@ -417,30 +422,29 @@ impl Network {
     /// If verify is on, retry PUT_RETRY_ATTEMPTS times with a random wait between 1.5s and 5s
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
-        // Will be overwritten as Err(e) if any error is encountered.
-        let mut last_result = Ok(());
-        let total_attempts = if cfg.re_attempt {
-            PUT_RETRY_ATTEMPTS
-        } else {
-            1
-        };
-        for retry in 1..total_attempts + 1 {
+
+        backoff::future::retry(ExponentialBackoff{
+            max_elapsed_time: Some(MAX_PUT_RETRY_DURATION),
+            ..Default::default()
+        }, || async {
+
             info!(
-                "Attempting to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with cfg {cfg:?}"
+                "Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}, retrying via backoff..."
             );
+            self.put_record_once(record.clone(), cfg).await.map_err(|err|
+            {
+                warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
-            let res = self.put_record_once(record.clone(), cfg).await;
-
-            match res {
-                Ok(_) => return Ok(()),
-                Err(e) => {
-                    warn!("Failed to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with error: {e:?}");
-                    last_result = Err(e);
+                if cfg.re_attempt {
+                    BackoffError::Transient { err, retry_after: Some(Duration::from_millis(rand::thread_rng().gen_range(1500..5000))) }
+                } else {
+                    BackoffError::Permanent(err)
                 }
-            }
-        }
 
-        last_result
+            })
+        }).await
+
+        // Err(last_err)
     }
 
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
@@ -464,7 +468,7 @@ impl Network {
         if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
             let wait_duration = rand::thread_rng()
-                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_MS);
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_MS..MAX_REVERIFICATION_WAIT_TIME_MS);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
