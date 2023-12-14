@@ -208,9 +208,9 @@ mod tests {
         let network_address = NetworkAddress::from_chunk_address(address);
         let record_key = network_address.to_record_key();
         let record_str = format!("{}", PrettyPrintRecordKey::from(&record_key));
+        let xor_name_str = &format!("{xor_name:64x}")[0..6]; // only the first 6 chars are logged
         let xor_name_str = format!(
-            "{:64x}({:?})",
-            xor_name,
+            "{xor_name_str}({:?})",
             PrettyPrintKBucketKey(network_address.as_kbucket_key())
         );
         println!("record_str: {record_str}");

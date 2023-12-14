@@ -184,23 +184,23 @@ impl Debug for NetworkAddress {
             }
             NetworkAddress::ChunkAddress(chunk_address) => {
                 format!(
-                    "NetworkAddress::ChunkAddress({:?} - ",
-                    chunk_address.xorname()
+                    "NetworkAddress::ChunkAddress({} - ",
+                    &chunk_address.to_hex()[0..6]
                 )
             }
             NetworkAddress::SpendAddress(spend_address) => {
                 format!(
-                    "NetworkAddress::SpendAddress({:?} - ",
-                    spend_address.to_hex()
+                    "NetworkAddress::SpendAddress({} - ",
+                    &spend_address.to_hex()[0..6]
                 )
             }
             NetworkAddress::RegisterAddress(register_address) => format!(
-                "NetworkAddress::RegisterAddress({:?} - ",
-                register_address.xorname()
+                "NetworkAddress::RegisterAddress({} - ",
+                &register_address.to_hex()[0..6]
             ),
             NetworkAddress::RecordKey(bytes) => format!(
                 "NetworkAddress::RecordKey({} - ",
-                PrettyPrintRecordKey::from(&RecordKey::new(bytes)).no_kbucket_log()
+                &PrettyPrintRecordKey::from(&RecordKey::new(bytes)).no_kbucket_log()[0..6]
             ),
         };
         write!(
@@ -331,7 +331,8 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
             Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
             Cow::Owned(owned_key) => owned_key.as_ref(),
         };
-        for byte in record_key_bytes {
+        // print the first 6 chars
+        for byte in record_key_bytes.iter().take(3) {
             f.write_fmt(format_args!("{byte:02x}"))?;
         }
 
@@ -345,6 +346,7 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
 
 impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // same as display
         write!(f, "{self}")
     }
 }
@@ -365,10 +367,10 @@ mod tests {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             let b: Vec<u8> = self.0.as_ref().to_vec();
             let record_key_b = Bytes::from(b);
+            let record_key_str = &format!("{record_key_b:64x}")[0..6]; // only the first 6 chars are logged
             write!(
                 f,
-                "{:64x}({:?})",
-                record_key_b,
+                "{record_key_str}({:?})",
                 OldKBucketKeyPrint(NetworkAddress::from_record_key(&self.0).as_kbucket_key())
             )
         }
@@ -413,9 +415,9 @@ mod tests {
         let spend_addr = SpendAddress::new(xorname);
         let net_addr = NetworkAddress::from_spend_address(spend_addr);
 
-        let spend_addr_hex = spend_addr.to_hex();
+        let spend_addr_hex = &spend_addr.to_hex()[0..6]; // we only log the first 6 chars
         let net_addr_fmt = format!("{net_addr}");
 
-        assert!(net_addr_fmt.contains(&spend_addr_hex));
+        assert!(net_addr_fmt.contains(spend_addr_hex));
     }
 }
