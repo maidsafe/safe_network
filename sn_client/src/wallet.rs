@@ -9,6 +9,7 @@
 use crate::Error;
 
 use super::{error::Result, Client};
+use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use sn_networking::GetRecordError;
 use sn_protocol::NetworkAddress;
@@ -23,16 +24,12 @@ use std::{
 };
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
-
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
 pub struct WalletClient {
     client: Client,
     wallet: LocalWallet,
 }
-
-/// Number of retries for data payments
-const DATA_PAYMENT_RETRIES: usize = 3;
 
 impl WalletClient {
     /// Create a new wallet client.
@@ -145,10 +142,11 @@ impl WalletClient {
     ) -> WalletResult<((NanoTokens, NanoTokens), Vec<XorName>)> {
         let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
+        let mut backoff = ExponentialBackoff::default();
         let mut last_err = "No retries".to_string();
 
-        for retry in 0..DATA_PAYMENT_RETRIES {
-            trace!("Paying for storage (retry: {retry}) for: {:?}", c);
+        while let Some(delay) = backoff.next_backoff() {
+            trace!("Paying for storage (w/backoff retries) for: {:?}", c);
             match self
                 .pay_for_storage_once(c.clone().into_iter(), verify_store)
                 .await
@@ -157,12 +155,11 @@ impl WalletClient {
                 Err(WalletError::CouldNotSendMoney(err)) => {
                     warn!("Attempt to pay for data failed: {err:?}");
                     last_err = err;
-                    sleep(Duration::from_secs(1)).await;
+                    sleep(delay).await;
                 }
                 Err(err) => return Err(err),
             }
         }
-
         Err(WalletError::CouldNotSendMoney(last_err))
     }
 
