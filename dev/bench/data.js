@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702575733002,
+  "lastUpdate": 1702575865711,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695",
-          "message": "fix(workspace): use new feature resolver\n- more details here: https://doc.rust-lang.org/cargo/reference/resolver.html#feature-resolver-version-2",
-          "timestamp": "2023-08-25T10:06:24Z",
-          "tree_id": "1bea59ab174b80af5f5b2ca762790084b8838e4a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695"
-        },
-        "date": 1692974752081,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 38.354942,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "aed@countermail.com",
             "name": "Lu",
             "username": "aed900"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 90,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "afc93dbae71d1e8bdf18753a83fc3399d57c9a30",
+          "message": "chore(protocol): print the first six hex characters for every address type",
+          "timestamp": "2023-12-14T16:56:05Z",
+          "tree_id": "defa178672a671158af738ea413e20055bac7f3c",
+          "url": "https://github.com/maidsafe/safe_network/commit/afc93dbae71d1e8bdf18753a83fc3399d57c9a30"
+        },
+        "date": 1702575864867,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 86,
             "unit": "MB"
           }
         ]
