@@ -52,7 +52,7 @@ impl SpendAddress {
 
 impl std::fmt::Debug for SpendAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SpendAddress({})", self.to_hex())
+        write!(f, "SpendAddress({})", &self.to_hex()[0..6])
     }
 }
 
