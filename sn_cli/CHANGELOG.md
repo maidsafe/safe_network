@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.61...sn_cli-v0.86.62) - 2023-12-14
+
+### Added
+- *(cli)* cli arg for controlling chunk retries
+- *(cli)* simple retry mechanism for remaining chunks
+
+### Other
+- prevent retries on ci runs w/ '-r 0'
+
 ## [0.86.61](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.60...sn_cli-v0.86.61) - 2023-12-13
 
 ### Other
