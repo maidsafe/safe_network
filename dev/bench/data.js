@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702546005506,
+  "lastUpdate": 1702552530197,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e",
-          "message": "chore: rust 1.72.0 fixes",
-          "timestamp": "2023-08-24T16:14:55Z",
-          "tree_id": "c428a2e1a3c80db3915b47721af3d1a2ed8e1eb6",
-          "url": "https://github.com/maidsafe/safe_network/commit/7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e"
-        },
-        "date": 1692897579477,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11812468731173048,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9176627479413746,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 12.659207568794187,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.42322220573339,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "13fdb583210623e16124641268611499ba605263",
+          "message": "chore(cli): make wallet address easy to copy",
+          "timestamp": "2023-12-14T10:35:30Z",
+          "tree_id": "fdee44788c985e802ec895fc9504c6cffb82a6e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/13fdb583210623e16124641268611499ba605263"
+        },
+        "date": 1702552528216,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2886670516171597,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9301737586146557,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.961043214052694,
             "unit": "MiB/s"
           }
         ]
