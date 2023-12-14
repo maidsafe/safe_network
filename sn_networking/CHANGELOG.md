@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.4...sn_networking-v0.12.5) - 2023-12-14
+
+### Added
+- *(networking)* add backoff to PUT retries
+- *(networking)* use backoff for get_record
+
 ## [0.12.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.3...sn_networking-v0.12.4) - 2023-12-14
 
 ### Fixed
