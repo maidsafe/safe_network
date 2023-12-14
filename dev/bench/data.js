@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702552696617,
+  "lastUpdate": 1702556457048,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695",
-          "message": "fix(workspace): use new feature resolver\n- more details here: https://doc.rust-lang.org/cargo/reference/resolver.html#feature-resolver-version-2",
-          "timestamp": "2023-08-25T10:06:24Z",
-          "tree_id": "1bea59ab174b80af5f5b2ca762790084b8838e4a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f9bb98a690dc4d54c1d199a9ac3db2fa7a1a3695"
-        },
-        "date": 1692974442050,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0034394282456069116,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03448686566388808,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.581160047804242,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.90229966459294,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
+          "message": "chore(cli): make sequential payment fail limit a const",
+          "timestamp": "2023-12-14T11:43:34Z",
+          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
+        },
+        "date": 1702556455102,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2891631626890687,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.920238055322061,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 35.21537799058577,
             "unit": "MiB/s"
           }
         ]
