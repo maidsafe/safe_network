@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.29](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.28...sn_transfers-v0.14.29) - 2023-12-14
+
+### Other
+- *(protocol)* print the first six hex characters for every address type
+
 ## [0.14.28](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.27...sn_transfers-v0.14.28) - 2023-12-12
 
 ### Added
