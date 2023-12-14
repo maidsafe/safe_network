@@ -331,16 +331,17 @@ async fn upload_files(
     file.flush()?;
 
     let elapsed = format_elapsed_time(now.elapsed());
-    println!("Uploaded {chunks_to_upload_len} chunks (with {total_existing_chunks} exist chunks) in {elapsed}");
-    info!("Uploaded {chunks_to_upload_len} chunks (with {total_existing_chunks} exist chunks) in {elapsed}");
+    let uploaded_chunks = chunks_to_upload_len - total_existing_chunks;
+    println!("Among {chunks_to_upload_len} chunks, find {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
+    info!("Among {chunks_to_upload_len} chunks, find {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
 
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
-    println!("Made payment of {total_cost} for {chunks_to_upload_len} chunks");
+    println!("Made payment of {total_cost} for {uploaded_chunks} chunks");
     println!("Made payment of {total_royalties} for royalties fees");
     println!("New wallet balance: {final_balance}");
-    info!("Made payment of {total_cost} for {chunks_to_upload_len} chunks");
+    info!("Made payment of {total_cost} for {uploaded_chunks} chunks");
     info!("New wallet balance: {final_balance}");
 
     Ok(())
