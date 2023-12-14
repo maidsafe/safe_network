@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702552530197,
+  "lastUpdate": 1702552562154,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "e4124573565afcd14687ea28aaed9e3508bf5444",
-          "message": "test(cli): verify bench uploads once more",
-          "timestamp": "2023-08-24T17:30:34Z",
-          "tree_id": "68243d5abe382b2b942ec1d9634f8875b7473095",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4124573565afcd14687ea28aaed9e3508bf5444"
-        },
-        "date": 1692913675844,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0034229187610809093,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.03450696523761083,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.438813631504415,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.961043214052694,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "189a9089b6570706ae07d8276bfa6f25b788073f",
+          "message": "chore(network): return error with more info during quorum failure",
+          "timestamp": "2023-12-14T10:36:18Z",
+          "tree_id": "fc2166d2bbe8f7dc0aa0c607118b8e160a0d20f9",
+          "url": "https://github.com/maidsafe/safe_network/commit/189a9089b6570706ae07d8276bfa6f25b788073f"
+        },
+        "date": 1702552559669,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3073653583442297,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9546631279467552,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.90229966459294,
             "unit": "MiB/s"
           }
         ]
