@@ -37,6 +37,7 @@ tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
+backoff = { version = "0.4.0", features = ["tokio"] }
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
