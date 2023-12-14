@@ -144,13 +144,34 @@ impl Network {
         // check Txs and parent spends are valid
         trace!("Validating parent spends");
         for tx in parent_txs {
+            let tx_inputs_keys: Vec<_> = tx.inputs.iter().map(|i| i.unique_pubkey()).collect();
+
+            // get the missing inputs spends from the network
+            let mut tasks = JoinSet::new();
+            for input_key in tx_inputs_keys {
+                if parent_spends.iter().any(|s| s.unique_pubkey() == input_key) {
+                    continue;
+                }
+                let self_clone = self.clone();
+                let addr = SpendAddress::from_unique_pubkey(input_key);
+                let _ = tasks.spawn(async move { self_clone.get_spend(addr, false).await });
+            }
+            while let Some(result) = tasks.join_next().await {
+                let signed_spend = result
+                    .map_err(|_| Error::FailedToGetTransferParentSpend)?
+                    .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
+                let _ = parent_spends.insert(signed_spend.clone());
+            }
+
+            // verify the Tx against the inputs spends
             let input_spends = parent_spends
                 .iter()
                 .filter(|s| s.spent_tx_hash() == tx.hash())
                 .cloned()
                 .collect();
-            tx.verify_against_inputs_spent(&input_spends)
-                .map_err(|e| Error::InvalidTransfer(format!("Payment parent Tx invalid: {e}")))?;
+            tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
+                Error::InvalidTransfer(format!("Payment parent Tx {:?} invalid: {e}", tx.hash()))
+            })?;
         }
 
         Ok(our_output_cash_notes)

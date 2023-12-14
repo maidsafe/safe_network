@@ -124,9 +124,13 @@ pub enum WalletCmds {
     /// Note that this might take a very long time
     /// Analogous to verifying the entire blockchain in Bitcoin
     Audit {
-        /// Dump Audit DAG in dot format on stdout
+        /// EXPERIMENTAL Dump Audit DAG in dot format on stdout
         #[clap(long, default_value = "false")]
         dot: bool,
+        /// EXPERIMENTAL Find and redeem all Network Royalties
+        /// only works if the wallet has the Network Royalties private key
+        #[clap(long, default_value = "false")]
+        royalties: bool,
     },
 }
 
@@ -182,7 +186,7 @@ pub(crate) async fn wallet_cmds(
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
             listen_notifs_and_deposit(&wallet_dir, client, pk).await
         }
-        WalletCmds::Audit { dot } => audit(client, dot).await,
+        WalletCmds::Audit { dot, royalties } => audit(client, dot, royalties, root_dir).await,
         WalletCmds::Verify {
             spend_address,
             genesis,
@@ -222,7 +226,7 @@ async fn verify(spend_address: String, genesis: bool, client: &Client) -> Result
     Ok(())
 }
 
-async fn audit(client: &Client, to_dot: bool) -> Result<()> {
+async fn audit(client: &Client, to_dot: bool, find_royalties: bool, root_dir: &Path) -> Result<()> {
     let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
 
     if to_dot {
@@ -230,7 +234,9 @@ async fn audit(client: &Client, to_dot: bool) -> Result<()> {
         println!("{}", dag.dump_dot_format());
     } else {
         println!("Auditing the Currency, note that this might take a very long time...");
-        client.follow_spend(genesis_addr).await?;
+        client
+            .follow_spend(genesis_addr, find_royalties, root_dir)
+            .await?;
     }
 
     Ok(())

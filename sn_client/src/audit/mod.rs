@@ -14,8 +14,11 @@ use super::{
 };
 
 use futures::future::join_all;
-use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
-use std::{collections::BTreeSet, iter::Iterator};
+use sn_transfers::{
+    CashNoteRedemption, SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
+    NETWORK_ROYALTIES_PK,
+};
+use std::{collections::BTreeSet, iter::Iterator, path::Path};
 
 impl Client {
     /// Verify that a spend is valid on the network.
@@ -152,6 +155,8 @@ impl Client {
     pub async fn follow_spend(
         &self,
         spend_addr: SpendAddress,
+        find_royalties: bool,
+        root_dir: &Path,
     ) -> WalletResult<BTreeSet<SpendAddress>> {
         let first_spend = self
             .get_spend_from_network(spend_addr)
@@ -199,6 +204,10 @@ impl Client {
                         .map(|s| SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey)),
                 );
 
+                // look for royalties
+                self.redeem_royalties(find_royalties, &spends, root_dir)
+                    .await;
+
                 // add new descendant spends to next gen
                 next_gen_tx.extend(spends.into_iter().map(|s| s.spend.spent_tx));
             }
@@ -226,6 +235,65 @@ impl Client {
         let tx = verified_tx.len();
         println!("Finished auditing! Through {gen} generations, found {n} UTXOs and verified {tx} Transactions in {elapsed:?}");
         Ok(all_utxos)
+    }
+
+    /// This function serves as a proof of concept of royalties collection
+    async fn redeem_royalties(
+        &self,
+        find_royalties: bool,
+        spends: &Vec<SignedSpend>,
+        root_dir: &Path,
+    ) {
+        if !find_royalties {
+            return;
+        }
+
+        // Turn those royalties into a Transfer and redeems them
+        // This involves encrypting/decrypting the Transfer, which is a waste
+        // This involves re-verifying, which we don't need as we're already auditing
+        // This prints out a Transfer for each royalty, which is not ideal but keeps the transfers reasonnably small
+        // This might print out duplicates as it doens't keep track of what's coming, but that's ok as the cli will know what to do with them
+        // It is sub-optimial, but it's a working proof of concept that will need to be refined.
+        // If we decide to adopt this, we will need to turn this indentation space ship into a proper piece of optimized code.
+        let mut count = 0;
+        let royalties_key = *NETWORK_ROYALTIES_PK;
+        let mut wallet =
+            sn_transfers::LocalWallet::load_from(root_dir).expect("Failed to load wallet");
+        for spend in spends {
+            for derivation_idx in spend.spend.network_royalties.iter() {
+                count += 1;
+                let spend_addr = SpendAddress::from_unique_pubkey(&spend.spend.unique_pubkey);
+                let royalties = vec![CashNoteRedemption::new(*derivation_idx, spend_addr)];
+                match Transfer::create(royalties, royalties_key) {
+                    Ok(transfer) => {
+                        let unique_key = royalties_key.new_unique_pubkey(derivation_idx);
+                        println!("Identified royalties token: {unique_key:?}");
+                        match self.receive(&transfer, &wallet).await {
+                            Ok(cn) => {
+                                println!(
+                                    "Successfully received royalties CashNotes, depositing..."
+                                );
+                                let old_balance = wallet.balance();
+                                if let Err(e) = wallet.deposit_and_store_to_disk(&cn) {
+                                    println!("Failed to store redeemed royalties CashNotes: {e}");
+                                } else {
+                                    let new_balance = wallet.balance();
+                                    println!("Successfully deposited royalties CashNotes, new balance: {new_balance} (was {old_balance})");
+                                }
+                            }
+                            Err(e) => {
+                                println!("Failed to redeem royalties CashNotes: {e}");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error creating royalties transfer: {e}");
+                    }
+                }
+            }
+        }
+
+        println!("Found {count:?} royalties");
     }
 }
 
