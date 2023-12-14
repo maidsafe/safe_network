@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.3...sn_networking-v0.12.4) - 2023-12-14
+
+### Fixed
+- *(network)* return a map of responses instead of a vec
+- *(network)* remove unused error and don't mask get record errors
+- *(network)* get quourum value fn
+
+### Other
+- *(network)* return error with more info during quorum failure
+- *(network)* use the entry API instead of remove and insert
+
 ## [0.12.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.2...sn_networking-v0.12.3) - 2023-12-14
 
 ### Other

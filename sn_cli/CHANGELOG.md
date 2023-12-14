@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.62...sn_cli-v0.86.63) - 2023-12-14
+
+### Other
+- *(cli)* make wallet address easy to copy
+- *(cli)* peer list is not printed to stdout
+
 ## [0.86.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.61...sn_cli-v0.86.62) - 2023-12-14
 
 ### Added
