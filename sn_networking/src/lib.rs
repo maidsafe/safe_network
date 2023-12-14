@@ -36,6 +36,7 @@ pub use self::{
     transfers::get_singed_spends_from_record,
 };
 
+use backoff::{Error as BackoffError, ExponentialBackoff};
 use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
@@ -79,13 +80,12 @@ pub const fn close_group_majority() -> usize {
 }
 
 /// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
+const MAX_REVERIFICATION_WAIT_TIME_MS: std::time::Duration = std::time::Duration::from_millis(750);
 /// Min duration to wait for verification
 const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(300);
-/// Number of attempts to GET a record
-const GET_RETRY_ATTEMPTS: usize = 3;
+
 /// Number of attempts to PUT a record
-const PUT_RETRY_ATTEMPTS: usize = 10;
+const PUT_RETRY_ATTEMPTS: usize = 3;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -335,74 +335,58 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let total_attempts = if cfg.re_attempt {
-            GET_RETRY_ATTEMPTS
-        } else {
-            1
-        };
-
-        let mut retry_attempts = 0;
-        let pretty_key = PrettyPrintRecordKey::from(&key);
-        while retry_attempts < total_attempts {
-            retry_attempts += 1;
+        let result = backoff::future::retry(ExponentialBackoff::default(), || async {
+            let pretty_key = PrettyPrintRecordKey::from(&key);
             info!(
-                "Getting record of {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?} with cfg {cfg:?}",
+                "Getting record of {pretty_key:?}. with cfg {cfg:?}",
             );
-
             let (sender, receiver) = oneshot::channel();
             self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
                 key: key.clone(),
                 sender,
                 cfg: cfg.clone(),
-            })?;
-
+            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
             let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
-            })?;
+            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
+
             // log the results
             match &result {
                 Ok(_) => {
-                    info!("Record returned: {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    info!("Record returned: {pretty_key:?}. Retrying via backoff...");
                 }
                 Err(GetRecordError::RecordDoesNotMatch(_)) => {
-                    warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    warn!("The returned record does not match target {pretty_key:?}. Retrying via backoff...");
                 }
                 Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
-                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Retying via backoff...");
                 }
                 // libp2p RecordNotFound does mean no holders answered.
                 // it does not actually mean the record does not exist.
                 // just that those asked did not have it
                 Err(GetRecordError::RecordNotFound) => {
-                    warn!("No holder of record '{pretty_key:?}' found. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    warn!("No holder of record '{pretty_key:?}' found. Retrying via backoff...");
                 }
                 Err(GetRecordError::SplitRecord { .. }) => {
-                    error!("Encountered a split record for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    error!("Encountered a split record for {pretty_key:?} Retrying via backoff...");
                 }
                 Err(GetRecordError::QueryTimeout) => {
-                    error!("Encountered query timeout for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    error!("Encountered query timeout for {pretty_key:?} Retrying via backoff...");
                 }
             };
-            match result {
-                Ok(record) => return Ok(record),
-                Err(err) => {
-                    if retry_attempts >= total_attempts {
-                        return Err(err.into());
-                    }
+
+            // if we dont want to retry, throw permanent error
+            if !cfg.re_attempt {
+                if let Err(e) = result {
+                    return Err(BackoffError::Permanent(Error::from(e)))
                 }
             }
+            Ok(result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})?)
+        })
+        .await;
 
-            // wait for a bit before re-trying
-            if cfg.re_attempt {
-                // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
-                let wait_duration = rand::thread_rng()
-                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
-                tokio::time::sleep(wait_duration).await;
-            }
-        }
-
-        Err(GetRecordError::RecordNotFound.into())
+        Ok(result.map_err(|err| Error::from(err))?)
     }
 
     /// Get the cost of storing the next record from the network
@@ -480,7 +464,7 @@ impl Network {
         if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
             let wait_duration = rand::thread_rng()
-                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_MS);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
