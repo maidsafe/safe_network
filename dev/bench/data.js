@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702575865711,
+  "lastUpdate": 1702575868068,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20417,40 +20417,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": true,
-          "id": "7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e",
-          "message": "chore: rust 1.72.0 fixes",
-          "timestamp": "2023-08-24T16:14:55Z",
-          "tree_id": "c428a2e1a3c80db3915b47721af3d1a2ed8e1eb6",
-          "url": "https://github.com/maidsafe/safe_network/commit/7b863cd9e11ecaa51e6ec042f077b17bdbeb3f1e"
-        },
-        "date": 1692897854420,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 86.528,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 73,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": false,
           "id": "e4124573565afcd14687ea28aaed9e3508bf5444",
           "message": "test(cli): verify bench uploads once more",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 135,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "afc93dbae71d1e8bdf18753a83fc3399d57c9a30",
+          "message": "chore(protocol): print the first six hex characters for every address type",
+          "timestamp": "2023-12-14T16:56:05Z",
+          "tree_id": "defa178672a671158af738ea413e20055bac7f3c",
+          "url": "https://github.com/maidsafe/safe_network/commit/afc93dbae71d1e8bdf18753a83fc3399d57c9a30"
+        },
+        "date": 1702575867154,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 700,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 130,
             "unit": "MB"
           }
         ]
