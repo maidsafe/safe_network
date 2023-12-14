@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702571085835,
+  "lastUpdate": 1702571087307,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "37ed749758eef212a013b5495629ef3f0797a883",
-          "message": "chore(deps): bump rustls-webpki from 0.101.3 to 0.101.4\n\nBumps [rustls-webpki](https://github.com/rustls/webpki) from 0.101.3 to 0.101.4.\n- [Release notes](https://github.com/rustls/webpki/releases)\n- [Commits](https://github.com/rustls/webpki/compare/v/0.101.3...v/0.101.4)\n\n---\nupdated-dependencies:\n- dependency-name: rustls-webpki\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2023-08-24T13:08:44Z",
-          "tree_id": "877456b29c5a83cfa64fb73de49436425e3d5d91",
-          "url": "https://github.com/maidsafe/safe_network/commit/37ed749758eef212a013b5495629ef3f0797a883"
-        },
-        "date": 1692887735394,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 90.24717,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 126,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "7808046377062a5fde078c9e32ba30eacd2eb317",
+          "message": "chore(deps): bump github/codeql-action from 2 to 3\n\nBumps [github/codeql-action](https://github.com/github/codeql-action) from 2 to 3.\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/v2...v3)\n\n---\nupdated-dependencies:\n- dependency-name: github/codeql-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2023-12-14T15:43:21Z",
+          "tree_id": "a4944f4592b331559a31de139a525a0bb06fc2be",
+          "url": "https://github.com/maidsafe/safe_network/commit/7808046377062a5fde078c9e32ba30eacd2eb317"
+        },
+        "date": 1702571086900,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 712,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 135,
             "unit": "MB"
           }
         ]
