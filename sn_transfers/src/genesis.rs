@@ -146,7 +146,7 @@ pub fn create_first_cash_note_from_key(
             main_pubkey,
             derivation_index,
         )
-        .build(reason)
+        .build(reason, vec![])
         .map_err(|err| {
             Error::GenesisCashNoteError(format!(
                 "Failed to build the CashNote transaction for genesis CashNote: {err}",

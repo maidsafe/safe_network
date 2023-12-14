@@ -176,6 +176,7 @@ impl Transaction {
             .map(|s| s.unique_pubkey())
             .collect::<BTreeSet<_>>();
         if input_keys != signed_spend_keys {
+            debug!("SpendsDoNotMatchInputs: {input_keys:#?} != {signed_spend_keys:#?}");
             return Err(Error::SpendsDoNotMatchInputs);
         }
 

@@ -8,7 +8,7 @@
 
 use crate::{
     rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens,
-    SignedSpend, Transaction, TransactionBuilder,
+    SignedSpend, Transaction, TransactionBuilder, NETWORK_ROYALTIES_PK,
 };
 use crate::{Error, Result};
 
@@ -183,10 +183,18 @@ fn create_offline_transfer_with(
         let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.src_tx);
     }
 
+    // gather the network_royalties derivation indexes
+    let network_royalties: Vec<DerivationIndex> = selected_inputs
+        .recipients
+        .iter()
+        .filter(|(_, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
+        .map(|(_, _, derivation_index)| *derivation_index)
+        .collect();
+
+    // Build the transaction and create change cash_note if needed
     let mut tx_builder = TransactionBuilder::default()
         .add_inputs(inputs)
         .add_outputs(selected_inputs.recipients);
-
     let mut rng = rng::thread_rng();
     let derivation_index = DerivationIndex::random(&mut rng);
     let change_id = change_to.new_unique_pubkey(&derivation_index);
@@ -195,7 +203,7 @@ fn create_offline_transfer_with(
     }
 
     // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder.build(reason_hash)?;
+    let cash_note_builder = tx_builder.build(reason_hash, network_royalties)?;
 
     let tx = cash_note_builder.spent_tx.clone();
 

@@ -83,7 +83,11 @@ impl TransactionBuilder {
     }
 
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.
-    pub fn build(self, reason: Hash) -> Result<CashNoteBuilder> {
+    pub fn build(
+        self,
+        reason: Hash,
+        network_royalties: Vec<DerivationIndex>,
+    ) -> Result<CashNoteBuilder> {
         let spent_tx = Transaction {
             inputs: self.inputs,
             outputs: self.outputs,
@@ -98,6 +102,7 @@ impl TransactionBuilder {
                     reason,
                     token: input.amount,
                     parent_tx: input_src_tx.clone(),
+                    network_royalties: network_royalties.clone(),
                 };
                 let derived_key_sig = derived_key.sign(&spend.to_bytes());
                 signed_spends.insert(SignedSpend {
