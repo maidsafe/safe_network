@@ -304,6 +304,7 @@ impl Client {
             target_record: None,
             expected_holders: Default::default(),
         };
+
         let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
         let record = match &maybe_record {
             Ok(r) => r,
