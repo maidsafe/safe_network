@@ -32,6 +32,9 @@ use std::{
 use tokio::task::JoinHandle;
 use xor_name::XorName;
 
+/// The maximum number of sequential payment failures before aborting the upload process.
+const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
+
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
     Upload {
@@ -242,12 +245,10 @@ async fn upload_files(
         batch_size,
     };
 
-    // Max amount of sequential payment failures before we bail
-    let max_sequential_payment_fails = 3;
     let mut sequential_payment_fails = 0;
 
     for chunks_batch in chunks_batches {
-        if sequential_payment_fails >= max_sequential_payment_fails {
+        if sequential_payment_fails >= MAX_SEQUENTIAL_PAYMENT_FAILS {
             bail!("Too many sequential payment failures ({sequential_payment_fails}). Aborting upload process.");
         }
         // if the payment fails, we can continue to the next batch
