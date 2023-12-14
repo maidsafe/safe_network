@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::{Error, Result, Signature};
+use crate::{DerivationIndex, Error, Result, Signature};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -148,6 +148,9 @@ pub struct Spend {
     /// The transaction that the input CashNote was created in (where it is an output)
     #[debug(skip)]
     pub parent_tx: Transaction,
+    /// Data to claim the Network Royalties (if any) from the Spend's descendants (outputs in spent_tx)
+    #[debug(skip)]
+    pub network_royalties: Vec<DerivationIndex>,
 }
 
 impl Spend {
