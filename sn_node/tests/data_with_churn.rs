@@ -18,7 +18,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, WalletClient, BATCH_SIZE};
+use sn_client::{Client, Error, FilesApi, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -378,7 +378,7 @@ fn store_chunks_task(
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
-        let file_api = Files::new(client, paying_wallet_dir);
+        let file_api = FilesApi::new(client, paying_wallet_dir);
         let mut rng = OsRng;
 
         loop {
@@ -398,7 +398,7 @@ fn store_chunks_task(
                 .expect("failed to write to temp chunk file");
 
             let (addr, _file_size, chunks) =
-                Files::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
+                FilesApi::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
 
             println!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
@@ -629,7 +629,7 @@ async fn query_content(
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
+            let file_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
             let _ = file_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
             Ok(())
         }
