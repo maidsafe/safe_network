@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.19...sn_client-v0.99.20) - 2023-12-14
+
+### Other
+- updated the following local packages: sn_networking, sn_protocol, sn_registers, sn_transfers
+
 ## [0.99.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.18...sn_client-v0.99.19) - 2023-12-14
 
 ### Added
