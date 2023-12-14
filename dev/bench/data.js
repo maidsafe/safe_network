@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702552664053,
+  "lastUpdate": 1702552665551,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "8939ea8f983db39b980ad1ea27821b981e8c901f",
-          "message": "fix(ci): provide `node_data_path` for each OS",
-          "timestamp": "2023-08-14T18:23:51Z",
-          "tree_id": "da2314ccb6d86a88f55a1c2773e908ad3569e34e",
-          "url": "https://github.com/maidsafe/safe_network/commit/8939ea8f983db39b980ad1ea27821b981e8c901f"
-        },
-        "date": 1692051782011,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 366.7886,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 240,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30595,6 +30561,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 696,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 118,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "13fdb583210623e16124641268611499ba605263",
+          "message": "chore(cli): make wallet address easy to copy",
+          "timestamp": "2023-12-14T10:35:30Z",
+          "tree_id": "fdee44788c985e802ec895fc9504c6cffb82a6e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/13fdb583210623e16124641268611499ba605263"
+        },
+        "date": 1702552665177,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 640,
             "unit": "MB"
           },
           {
