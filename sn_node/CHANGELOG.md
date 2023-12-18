@@ -2585,6 +2585,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(client)* add docs to the Files struct
 
+## [0.100.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.14...sn_node-v0.100.15) - 2023-12-18
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
