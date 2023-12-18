@@ -16,7 +16,9 @@ use color_eyre::{
     Help, Result,
 };
 use indicatif::{ProgressBar, ProgressStyle};
-use sn_client::{Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE};
+use sn_client::{
+    Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+};
 use sn_protocol::storage::ChunkAddress;
 use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
@@ -50,8 +52,7 @@ pub enum FilesCmds {
         show_holders: bool,
         /// The retry_count for retrying failed chunks
         /// during payment and upload processing.
-        /// Defaults to 3 retry passes over unsuccessful chunks.
-        #[clap(long, default_value = "3", short = 'r')]
+        #[clap(long, default_value_t = MAX_UPLOAD_RETRIES, short = 'r')]
         max_retries: usize,
     },
     Download {
@@ -221,13 +222,11 @@ async fn upload_files(
 
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
     let total_existing_chunks = Arc::new(AtomicU64::new(0));
-    let mut files = Files::new(
-        files_api,
-        batch_size,
-        verify_store,
-        show_holders,
-        max_retries,
-    );
+    let mut files = Files::new(files_api)
+        .set_batch_size(batch_size)
+        .set_verify_store(verify_store)
+        .set_show_holders(show_holders)
+        .set_max_retries(max_retries);
     let mut upload_event_rx = files.get_upload_events();
     // keep track of the progress in a separate task
     let progress_bar_clone = progress_bar.clone();

@@ -199,7 +199,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    let mut files = Files::new(files_api.clone(), BATCH_SIZE, true, true, 3);
+    let mut files = Files::new(files_api.clone()).set_show_holders(true);
     files.upload_chunks(chunks).await?;
 
     files_api
