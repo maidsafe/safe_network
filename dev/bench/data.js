@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702915131167,
+  "lastUpdate": 1702915132698,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9c687c1d9f490b8f9f70551da73a46f018bda84d",
-          "message": "chore: cargo fmt and clippy",
-          "timestamp": "2023-08-30T12:32:26Z",
-          "tree_id": "7abf0dbe714347c36258ebfb20b2b2fab9e91c48",
-          "url": "https://github.com/maidsafe/safe_network/commit/9c687c1d9f490b8f9f70551da73a46f018bda84d"
-        },
-        "date": 1693414528080,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 88.244225,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 80,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 125,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
+          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
+          "timestamp": "2023-12-18T15:12:43Z",
+          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
+        },
+        "date": 1702915132243,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 762,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 120,
             "unit": "MB"
           }
         ]
