@@ -387,10 +387,6 @@ impl LocalWallet {
             self.store_cash_notes_to_disk(&[cash_note])?;
         }
 
-        for cash_note in &transfer.created_cash_notes {
-            self.watchonly_wallet
-                .insert_cash_note_created_for_others(cash_note.unique_pubkey());
-        }
         // Store created CashNotes in a batch, improving IO performance
         self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
 
@@ -513,11 +509,6 @@ mod tests {
             .watchonly_wallet
             .available_cash_notes()
             .is_empty());
-        assert!(deposit_only
-            .watchonly_wallet
-            .cash_notes_created_for_others()
-            .is_empty());
-        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -546,11 +537,6 @@ mod tests {
             .watchonly_wallet
             .available_cash_notes()
             .is_empty());
-        assert!(deposit_only
-            .watchonly_wallet
-            .cash_notes_created_for_others()
-            .is_empty());
-        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -641,27 +627,11 @@ mod tests {
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());
 
         assert_eq!(1, depositor.watchonly_wallet.available_cash_notes().len());
-        assert_eq!(
-            0,
-            depositor
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(0, depositor.watchonly_wallet.spent_cash_notes().len());
 
         assert_eq!(
             1,
             deserialized.watchonly_wallet.available_cash_notes().len()
         );
-        assert_eq!(
-            0,
-            deserialized
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(0, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = depositor
             .watchonly_wallet
@@ -746,27 +716,11 @@ mod tests {
         );
 
         assert_eq!(1, sender.watchonly_wallet.available_cash_notes().len());
-        assert_eq!(
-            1,
-            sender
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(1, sender.watchonly_wallet.spent_cash_notes().len());
 
         assert_eq!(
             1,
             deserialized.watchonly_wallet.available_cash_notes().len()
         );
-        assert_eq!(
-            1,
-            deserialized
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(1, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = sender
             .watchonly_wallet
@@ -781,26 +735,6 @@ mod tests {
             .last()
             .expect("There to be an available CashNote.");
         assert_eq!(a_available, b_available);
-
-        let a_created_for_others = sender.watchonly_wallet.cash_notes_created_for_others();
-        let b_created_for_others = deserialized
-            .watchonly_wallet
-            .cash_notes_created_for_others();
-        assert_eq!(a_created_for_others, b_created_for_others);
-
-        let a_spent = sender
-            .watchonly_wallet
-            .spent_cash_notes()
-            .iter()
-            .last()
-            .expect("There to be a spent CashNote.");
-        let b_spent = deserialized
-            .watchonly_wallet
-            .spent_cash_notes()
-            .iter()
-            .last()
-            .expect("There to be a spent CashNote.");
-        assert_eq!(a_spent, b_spent);
 
         Ok(())
     }

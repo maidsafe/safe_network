@@ -60,6 +60,8 @@ mod wallet_file;
 mod watch_only;
 
 use data_payments::ContentPaymentsMap;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 pub use self::{
     data_payments::{Payment, PaymentQuote},
@@ -71,34 +73,19 @@ pub use self::{
 pub(crate) use keys::store_new_keypair;
 
 use crate::{NanoTokens, UniquePubkey};
-use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Default, serde::Serialize, serde::Deserialize)]
-/// This assumes the CashNotes are stored on disk
+#[derive(Default, Serialize, Deserialize)]
 pub(super) struct KeyLessWallet {
-    /// These are the UniquePubkeys of cash_notes we've owned, that have been
-    /// spent when sending tokens to other addresses.
-    spent_cash_notes: BTreeSet<UniquePubkey>,
-    /// These are the UniquePubkeys of cash_notes we own that are not yet spent.
     available_cash_notes: BTreeMap<UniquePubkey, NanoTokens>,
-    /// These are the UniquePubkeys of cash_notes we've created by
-    /// sending tokens to other addresses.
-    /// They are not owned by us, but we
-    /// keep them here so we can track our
-    /// transfer history.
-    cash_notes_created_for_others: BTreeSet<UniquePubkey>,
-    /// Cached proofs of storage transactions made to be used for uploading the paid content.
     payment_transactions: ContentPaymentsMap,
 }
 
 impl KeyLessWallet {
     pub fn balance(&self) -> NanoTokens {
-        // loop through avaiable cash notes and get total token count
         let mut balance = 0;
         for (_unique_pubkey, value) in self.available_cash_notes.iter() {
             balance += value.as_nano();
         }
-
         NanoTokens::from(balance)
     }
 }
