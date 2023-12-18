@@ -18,7 +18,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, FilesApi, WalletClient, BATCH_SIZE};
+use sn_client::{Client, Error, Files, FilesApi, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -408,29 +408,24 @@ fn store_chunks_task(
             sleep(delay).await;
 
             let chunks_len = chunks.len();
+            let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let (addr, cost) = match file_api
-                .pay_and_upload_bytes_test(chunk_name, chunks.clone(), true)
-                .await
-            {
-                Ok((addr, storage_cost, royalties_fees)) => {
-                    let cost = storage_cost
-                        .checked_add(royalties_fees)
-                        .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
-
-                    (addr, cost)
-                }
-                Err(err) => {
-                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
-                }
-            };
+            let mut files = Files::new(file_api.clone(), BATCH_SIZE, true, true, 3);
+            if let Err(err) = files.upload_chunks(chunks).await {
+                bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
+            }
+            let royalties = files.get_upload_royalty_fees();
+            let storage_cost = files.get_upload_storage_cost();
+            let cost = royalties
+                .checked_add(storage_cost)
+                .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
             println!(
-                "Stores ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
+                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
             );
             sleep(delay).await;
 
-            for (chunk_name, _chunk_path) in chunks {
+            for chunk_name in chunks_name {
                 content
                     .write()
                     .await
