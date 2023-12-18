@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702895983217,
+  "lastUpdate": 1702896113934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "aed@countermail.com",
-            "name": "Lu",
-            "username": "aed900"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "300dc94641f7255cab62821d2284dfca15576d4d",
-          "message": "fix(node): refactoring code\n\nRefactored code related to the \"add feature flag for tcp/quic\" commit for this PR.",
-          "timestamp": "2023-08-29T09:21:27Z",
-          "tree_id": "bce41fe5b4a1b5ddcbe0e8600c885bf1c4eb083b",
-          "url": "https://github.com/maidsafe/safe_network/commit/300dc94641f7255cab62821d2284dfca15576d4d"
-        },
-        "date": 1693317267419,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 37.740543,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ece4febff0c2a1a67eb9c250d35dd2909b20cdc6",
+          "message": "chore(client): add docs to the Files struct",
+          "timestamp": "2023-12-18T09:54:20Z",
+          "tree_id": "c24d65f2b525b99eaa970d73d4847f18ebb880e4",
+          "url": "https://github.com/maidsafe/safe_network/commit/ece4febff0c2a1a67eb9c250d35dd2909b20cdc6"
+        },
+        "date": 1702896113540,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 89,
             "unit": "MB"
           }
         ]
