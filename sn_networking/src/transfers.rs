@@ -177,7 +177,7 @@ impl Network {
                 }
                 let self_clone = self.clone();
                 let addr = SpendAddress::from_unique_pubkey(input_key);
-                let _ = tasks.spawn(async move { self_clone.get_spend(addr, false).await });
+                let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
             }
             while let Some(result) = tasks.join_next().await {
                 let signed_spend = result

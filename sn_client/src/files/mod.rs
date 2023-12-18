@@ -321,15 +321,9 @@ impl Files {
         for chunk_info in chunks_to_upload.into_iter() {
             let files_api = self.api.clone();
             let verify_store = self.verify_store;
-            let show_holders = self.show_holders;
 
             // Spawn a task for each chunk to be uploaded
-            let handle = tokio::spawn(Self::upload_chunk(
-                files_api,
-                chunk_info,
-                verify_store,
-                show_holders,
-            ));
+            let handle = tokio::spawn(Self::upload_chunk(files_api, chunk_info, verify_store));
             self.progress_uploading_chunks(false).await?;
 
             self.uploading_chunks.push(handle);
@@ -386,7 +380,6 @@ impl Files {
         files_api: FilesApi,
         chunk_info: ChunkInfo,
         verify_store: bool,
-        show_holders: bool,
     ) -> (ChunkInfo, Result<()>) {
         let chunk_address = ChunkAddress::new(chunk_info.name);
         let bytes = match tokio::fs::read(chunk_info.path.clone()).await {
@@ -400,7 +393,7 @@ impl Files {
         };
         let chunk = Chunk::new(bytes);
         match files_api
-            .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
+            .get_local_payment_and_upload_chunk(chunk, verify_store)
             .await
         {
             Ok(()) => (chunk_info, Ok(())),

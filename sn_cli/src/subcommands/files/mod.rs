@@ -48,10 +48,6 @@ pub enum FilesCmds {
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
-        /// Flagging whether to show the holders of the uploaded chunks.
-        /// Default to be not showing.
-        #[clap(long, name = "show_holders", default_value = "false")]
-        show_holders: bool,
         /// The retry_count for retrying failed chunks
         /// during payment and upload processing.
         #[clap(long, default_value_t = MAX_UPLOAD_RETRIES, short = 'r')]
@@ -92,7 +88,6 @@ pub(crate) async fn files_cmds(
         FilesCmds::Upload {
             path,
             batch_size,
-            show_holders,
             max_retries,
         } => {
             upload_files(
@@ -101,7 +96,6 @@ pub(crate) async fn files_cmds(
                 root_dir.to_path_buf(),
                 verify_store,
                 batch_size,
-                show_holders,
                 max_retries,
             )
             .await?
@@ -162,7 +156,6 @@ async fn upload_files(
     root_dir: PathBuf,
     verify_store: bool,
     batch_size: usize,
-    show_holders: bool,
     max_retries: usize,
 ) -> Result<()> {
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
@@ -227,7 +220,6 @@ async fn upload_files(
     let mut files = Files::new(files_api)
         .set_batch_size(batch_size)
         .set_verify_store(verify_store)
-        .set_show_holders(show_holders)
         .set_max_retries(max_retries);
     let mut upload_event_rx = files.get_upload_events();
     // keep track of the progress in a separate task
