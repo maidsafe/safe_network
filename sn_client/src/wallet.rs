@@ -102,7 +102,7 @@ impl WalletClient {
             )));
         } else {
             // clear unconfirmed txs
-            self.wallet.clear_unconfirmed_spend_requests();
+            self.wallet.clear_confirmed_spend_requests();
         }
 
         // return the first CashNote (assuming there is only one because we only sent to one recipient)
@@ -264,7 +264,7 @@ impl WalletClient {
             )));
         } else {
             info!("Spend has completed: {:?}", spend_attempt_result);
-            self.wallet.clear_unconfirmed_spend_requests();
+            self.wallet.clear_confirmed_spend_requests();
         }
 
         Ok(total_cost)
@@ -282,7 +282,7 @@ impl WalletClient {
             .await
             .is_ok()
         {
-            self.wallet.clear_unconfirmed_spend_requests();
+            self.wallet.clear_confirmed_spend_requests();
             // We might want to be _really_ sure and do the below
             // as well, but it's not necessary.
             // use crate::domain::wallet::VerifyingClient;

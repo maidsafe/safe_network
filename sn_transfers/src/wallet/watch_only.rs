@@ -180,7 +180,7 @@ impl WatchOnlyWallet {
         &self.keyless_wallet.available_cash_notes
     }
 
-    /// Remove referenced CashNotes from available_cash_notes and add it to spent_cash_notes.
+    /// Remove referenced CashNotes from available_cash_notes
     pub fn mark_notes_as_spent<'a, T>(&mut self, unique_pubkeys: T)
     where
         T: IntoIterator<Item = &'a UniquePubkey>,
