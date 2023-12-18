@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702915005616,
+  "lastUpdate": 1702915131167,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0ffaa0792124756cf879c823a9a99fed3f35ef4e",
-          "message": "chore(docs): adjust --peer docs",
-          "timestamp": "2023-08-30T15:42:50Z",
-          "tree_id": "917829a84c37d6d3d9ec8e08c2d74796cbbd52c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/0ffaa0792124756cf879c823a9a99fed3f35ef4e"
-        },
-        "date": 1693426267747,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 43.835392,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20394,6 +20365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/295fe84bbe00ed6592961fbb0e03e11de23db446"
         },
         "date": 1702903185542,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
+          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
+          "timestamp": "2023-12-18T15:12:43Z",
+          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
+        },
+        "date": 1702915130783,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
