@@ -20,7 +20,7 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Files, FilesApi, BATCH_SIZE};
+use sn_client::{Client, Files, FilesApi};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::safenode_proto::{
@@ -298,7 +298,9 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         );
 
         let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
-        let mut files = Files::new(files_api.clone(), BATCH_SIZE, false, true, 3);
+        let mut files = Files::new(files_api.clone())
+            .set_show_holders(true)
+            .set_verify_store(false);
         files.upload_chunks(chunks).await?;
         uploaded_chunks_count += 1;
 

@@ -25,6 +25,7 @@ use xor_name::XorName;
 
 // Defines the size of batch for the parallel downloading of data.
 pub const BATCH_SIZE: usize = 64;
+pub const MAX_UPLOAD_RETRIES: usize = 3;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
@@ -67,18 +68,12 @@ pub struct Files {
 }
 
 impl Files {
-    pub fn new(
-        files_api: FilesApi,
-        batch_size: usize,
-        verify_store: bool,
-        show_holders: bool,
-        max_retries: usize,
-    ) -> Self {
+    pub fn new(files_api: FilesApi) -> Self {
         Self {
-            batch_size,
-            verify_store,
-            show_holders,
-            max_retries,
+            batch_size: BATCH_SIZE,
+            verify_store: true,
+            show_holders: false,
+            max_retries: MAX_UPLOAD_RETRIES,
             api: files_api,
             failed_chunks: Default::default(),
             uploading_chunks: Default::default(),
@@ -88,6 +83,25 @@ impl Files {
             event_sender: None,
             logged_event_sender_absence: false,
         }
+    }
+    pub fn set_batch_size(mut self, batch_size: usize) -> Self {
+        self.batch_size = batch_size;
+        self
+    }
+
+    pub fn set_verify_store(mut self, verify_store: bool) -> Self {
+        self.verify_store = verify_store;
+        self
+    }
+
+    pub fn set_show_holders(mut self, show_holders: bool) -> Self {
+        self.show_holders = show_holders;
+        self
+    }
+
+    pub fn set_max_retries(mut self, max_retries: usize) -> Self {
+        self.max_retries = max_retries;
+        self
     }
 
     // new rx per upload session.
