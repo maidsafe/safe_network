@@ -158,7 +158,6 @@ impl FilesApi {
         &self,
         chunk: Chunk,
         verify_store: bool,
-        show_holders: bool,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?}");
@@ -172,7 +171,7 @@ impl FilesApi {
         );
 
         self.client
-            .store_chunk(chunk, payment, verify_store, show_holders)
+            .store_chunk(chunk, payment, verify_store)
             .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
@@ -219,7 +218,7 @@ impl FilesApi {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, verify, false)
+            self.get_local_payment_and_upload_chunk(chunk, verify)
                 .await?;
         }
 
