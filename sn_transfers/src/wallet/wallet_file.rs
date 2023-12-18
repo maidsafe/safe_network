@@ -144,6 +144,26 @@ where
     Ok(())
 }
 
+/// Hex encode and remove each `CashNote` from a separate file in respective
+pub(super) fn remove_cash_notes<'a, T>(cash_notes: T, wallet_dir: &Path) -> Result<()>
+where
+    T: IntoIterator<Item = &'a UniquePubkey>,
+{
+    // The create cash_notes dir within the wallet dir.
+    let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
+    for cash_note_key in cash_notes {
+        let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&cash_note_key).xorname();
+        let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
+
+        debug!("Removing cash note from: {:?}", created_cash_notes_path);
+
+        let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
+
+        fs::remove_file(cash_note_file_path)?;
+    }
+    Ok(())
+}
+
 /// Loads all the cash_notes found in the cash_notes dir.
 pub(super) fn load_cash_notes_from_disk(wallet_dir: &Path) -> Result<Vec<CashNote>> {
     let cash_notes_path = match std::env::var("CASHNOTES_PATH") {
