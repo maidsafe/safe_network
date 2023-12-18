@@ -16,6 +16,8 @@ use color_eyre::{
     Help, Result,
 };
 use indicatif::{ProgressBar, ProgressStyle};
+use rand::{seq::SliceRandom, thread_rng};
+
 use sn_client::{
     Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
@@ -173,8 +175,7 @@ async fn upload_files(
     chunk_manager.chunk_path(&files_path, true)?;
 
     // Return early if we already uploaded them
-    let chunks_to_upload;
-    if chunk_manager.is_chunks_empty() {
+    let mut chunks_to_upload = if chunk_manager.is_chunks_empty() {
         // make sure we don't have any failed chunks in those
         let chunks = chunk_manager.already_put_chunks(&files_path)?;
         println!(
@@ -209,10 +210,15 @@ async fn upload_files(
             return Ok(());
         }
         println!("{:?} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...", failed_chunks.len());
-        chunks_to_upload = failed_chunks;
+        failed_chunks
     } else {
-        chunks_to_upload = chunk_manager.get_chunks();
-    }
+        chunk_manager.get_chunks()
+    };
+
+    // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
+    // having multiple client instances uploading the same target.
+    let mut rng = thread_rng();
+    chunks_to_upload.shuffle(&mut rng);
 
     let chunks_to_upload_names = chunks_to_upload
         .iter()
