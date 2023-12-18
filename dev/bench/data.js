@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702903189063,
+  "lastUpdate": 1702915005616,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "c8983fadc3dfc98e073b93904ca8eed09b295be6",
-          "message": "fix: correct bench download calculation",
-          "timestamp": "2023-08-31T11:28:17Z",
-          "tree_id": "9f214c04fd4f60123aef0b7ae65a742d3ca93cb0",
-          "url": "https://github.com/maidsafe/safe_network/commit/c8983fadc3dfc98e073b93904ca8eed09b295be6"
-        },
-        "date": 1693485725773,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.16087489477550687,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5745993611367199,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 5.051592543634029,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.83829649808304,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
+          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
+          "timestamp": "2023-12-18T15:12:43Z",
+          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
+        },
+        "date": 1702915003624,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.283060202706356,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9306730808502006,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 36.62393484888614,
             "unit": "MiB/s"
           }
         ]
