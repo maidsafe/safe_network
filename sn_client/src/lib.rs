@@ -25,10 +25,7 @@ pub use self::{
     error::Error,
     event::{ClientEvent, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
-    files::{
-        api::{FilesApi, BATCH_SIZE},
-        FileUploadEvent, Files,
-    },
+    files::{api::FilesApi, FileUploadEvent, Files, BATCH_SIZE},
     register::ClientRegister,
     wallet::{send, WalletClient},
 };

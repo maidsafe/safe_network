@@ -18,7 +18,7 @@ use color_eyre::{
 use indicatif::{ProgressBar, ProgressStyle};
 use sn_client::{Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE};
 use sn_protocol::storage::ChunkAddress;
-use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
+use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
     io::prelude::*,
@@ -220,10 +220,7 @@ async fn upload_files(
     let chunks_to_upload_len = chunks_to_upload.len();
 
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
-    let total_cost = Arc::new(AtomicU64::new(0));
     let total_existing_chunks = Arc::new(AtomicU64::new(0));
-    let total_royalties = Arc::new(AtomicU64::new(0));
-    let final_balance = Arc::new(AtomicU64::new(files_api.wallet()?.balance().as_nano()));
     let mut files = Files::new(
         files_api,
         batch_size,
@@ -234,10 +231,7 @@ async fn upload_files(
     let mut upload_event_rx = files.get_upload_events();
     // keep track of the progress in a separate task
     let progress_bar_clone = progress_bar.clone();
-    let total_cost_clone = total_cost.clone();
     let total_existing_chunks_clone = total_existing_chunks.clone();
-    let total_royalties_clone = total_royalties.clone();
-    let final_balance_clone = final_balance.clone();
     tokio::spawn(async move {
         while let Some(event) = upload_event_rx.recv().await {
             match event {
@@ -248,17 +242,7 @@ async fn upload_files(
                     let _ = total_existing_chunks_clone.fetch_add(1, Ordering::Relaxed);
                     progress_bar_clone.inc(1);
                 }
-
-                FileUploadEvent::PayedForChunks {
-                    storage_cost,
-                    royalty_fees,
-                    new_balance,
-                } => {
-                    let _ = total_cost_clone.fetch_add(storage_cost.as_nano(), Ordering::Relaxed);
-                    let _ =
-                        total_royalties_clone.fetch_add(royalty_fees.as_nano(), Ordering::Relaxed);
-                    final_balance_clone.store(new_balance.as_nano(), Ordering::Relaxed);
-                }
+                FileUploadEvent::PayedForChunks { .. } => {}
                 FileUploadEvent::FailedToUpload(_addr) => {}
             }
         }
@@ -312,9 +296,9 @@ async fn upload_files(
 
     let elapsed = format_elapsed_time(now.elapsed());
     let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
-    let total_cost = NanoTokens::from(total_cost.load(Ordering::Relaxed));
-    let total_royalties = NanoTokens::from(total_royalties.load(Ordering::Relaxed));
-    let final_balance = NanoTokens::from(final_balance.load(Ordering::Relaxed));
+    let total_storage_cost = files.get_upload_storage_cost();
+    let total_royalty_fees = files.get_upload_royalty_fees();
+    let final_balance = files.get_upload_final_balance();
 
     let uploaded_chunks = chunks_to_upload_len - total_existing_chunks as usize;
     println!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
@@ -323,10 +307,10 @@ async fn upload_files(
     println!("**************************************");
     println!("*          Payment Details           *");
     println!("**************************************");
-    println!("Made payment of {total_cost} for {uploaded_chunks} chunks");
-    println!("Made payment of {total_royalties} for royalties fees");
+    println!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
+    println!("Made payment of {total_royalty_fees} for royalties fees");
     println!("New wallet balance: {final_balance}");
-    info!("Made payment of {total_cost} for {uploaded_chunks} chunks");
+    info!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
     info!("New wallet balance: {final_balance}");
 
     Ok(())
