@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702903054978,
+  "lastUpdate": 1702903185941,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "953d793983c221503bfe2b3acf2b0a180d669e71",
-          "message": "chore(networking): increase FETCH_TIMEOUT to 10s",
-          "timestamp": "2023-08-30T15:48:44Z",
-          "tree_id": "3723b4dd4bfc265ebb36749a056a715f1cab0bcb",
-          "url": "https://github.com/maidsafe/safe_network/commit/953d793983c221503bfe2b3acf2b0a180d669e71"
-        },
-        "date": 1693424539092,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 59.35104,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "295fe84bbe00ed6592961fbb0e03e11de23db446",
+          "message": "feat(cli): random shuffle upload chunks to allow clients co-operation",
+          "timestamp": "2023-12-18T11:56:01Z",
+          "tree_id": "7322482124e89bcbe6d1922a3c4f339d9f52cd09",
+          "url": "https://github.com/maidsafe/safe_network/commit/295fe84bbe00ed6592961fbb0e03e11de23db446"
+        },
+        "date": 1702903185542,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 84,
             "unit": "MB"
           }
         ]
