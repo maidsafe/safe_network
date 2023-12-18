@@ -10,7 +10,7 @@ use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, load_cash_notes_from_disk, load_created_cash_note,
-        store_created_cash_notes, store_unconfirmed_spend_requests,
+        remove_cash_notes, store_created_cash_notes, store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
     Error, Result,
@@ -81,6 +81,13 @@ impl LocalWallet {
     {
         store_created_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
     }
+    /// Removes the given cash_notes from the `created cash_notes dir` in the wallet dir.
+    pub fn remove_cash_notes_from_disk<'a, T>(&self, cash_notes: T) -> Result<()>
+    where
+        T: IntoIterator<Item = &'a UniquePubkey>,
+    {
+        remove_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
+    }
 
     /// Store unconfirmed_spend_requests to disk.
     pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
@@ -144,11 +151,23 @@ impl LocalWallet {
 
     /// To remove a specific spend from the requests, if eg, we see one spend is _bad_
     pub fn clear_specific_spend_request(&mut self, unique_pub_key: UniquePubkey) {
+        if let Err(error) = self.remove_cash_notes_from_disk(vec![&unique_pub_key]) {
+            warn!("Could not clean spend {unique_pub_key:?} due to {error:?}");
+        }
+
         self.unconfirmed_spend_requests
             .retain(|signed_spend| signed_spend.spend.unique_pubkey.ne(&unique_pub_key))
     }
 
-    pub fn clear_unconfirmed_spend_requests(&mut self) {
+    /// Once spends are verified we can clear them and clean up
+    pub fn clear_confirmed_spend_requests(&mut self) {
+        if let Err(error) = self.remove_cash_notes_from_disk(
+            self.unconfirmed_spend_requests
+                .iter()
+                .map(|s| &s.spend.unique_pubkey),
+        ) {
+            warn!("Could not clean confirmed spent cash_notes due to {error:?}");
+        }
         self.unconfirmed_spend_requests = Default::default();
     }
 
@@ -361,7 +380,7 @@ impl LocalWallet {
             .collect();
 
         self.watchonly_wallet
-            .mark_notes_as_spent(spent_unique_pubkeys);
+            .mark_notes_as_spent(spent_unique_pubkeys.clone());
 
         if let Some(cash_note) = transfer.change_cash_note {
             self.watchonly_wallet.deposit(&[cash_note.clone()])?;
