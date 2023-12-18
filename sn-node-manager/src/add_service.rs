@@ -225,7 +225,10 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
@@ -353,7 +356,10 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
 
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
@@ -571,7 +577,10 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
 
         let specific_version = "0.95.0";
         let temp_dir = assert_fs::TempDir::new()?;
@@ -708,6 +717,7 @@ mod tests {
                     "/var/safenode-manager/services/safenode1/safenode",
                 )),
             }],
+            faucet_pid: None,
         };
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("safenode1");
@@ -833,7 +843,10 @@ mod tests {
 
         let url = "https://sn-node.s3.eu-west-2.amazonaws.com/jacderida/file-upload-address/safenode-charlie-x86_64-unknown-linux-musl.tar.gz";
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
         node_data_dir.create_dir_all()?;
@@ -950,7 +963,10 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
@@ -1082,7 +1098,10 @@ mod tests {
     async fn add_node_should_return_error_if_custom_port_is_in_use() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
         node_data_dir.create_dir_all()?;
@@ -1134,7 +1153,10 @@ mod tests {
     async fn add_node_should_return_error_if_custom_rpc_port_is_in_use() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
 
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
         node_data_dir.create_dir_all()?;
@@ -1193,7 +1215,10 @@ mod tests {
     #[tokio::test]
     async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_service_is_used(
     ) -> Result<()> {
-        let mut node_registry = NodeRegistry { nodes: vec![] };
+        let mut node_registry = NodeRegistry {
+            nodes: vec![],
+            faucet_pid: None,
+        };
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
         node_data_dir.create_dir_all()?;

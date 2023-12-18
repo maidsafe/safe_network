@@ -316,6 +316,7 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("~/.local/share/safe/service1"),
                 log_path: PathBuf::from("~/.local/share/safe/service1/logs"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
@@ -371,6 +372,7 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1001,
                 peer_id: PeerId::from_str("12D3KooWAAqZWsjhdZTX7tniJ7Dwye3nEbp1dx1wE96sbgL51obs")?,
+                data_path: PathBuf::from("~/.local/share/safe/service1"),
                 log_path: PathBuf::from("~/.local/share/safe/service1/logs"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1),
@@ -428,6 +430,7 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1001,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("~/.local/share/safe/service1"),
                 log_path: PathBuf::from("~/.local/share/safe/service1/logs"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(24 * 60 * 60),
@@ -476,6 +479,7 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1002,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("~/.local/share/safe/service1"),
                 log_path: PathBuf::from("~/.local/share/safe/service1/logs"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1),

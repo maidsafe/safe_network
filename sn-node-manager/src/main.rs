@@ -10,13 +10,15 @@ mod add_service;
 mod config;
 mod control;
 mod helpers;
+mod local;
 mod node;
 mod service;
 
 use crate::add_service::{add, AddServiceOptions};
-use crate::config::{get_node_registry_path, get_service_data_dir_path, get_service_log_dir_path};
+use crate::config::*;
 use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
 use crate::helpers::download_and_extract_safenode;
+use crate::local::{kill_network, run_network};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
@@ -104,6 +106,13 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
+    /// Kill the running local network.
+    #[clap(name = "kill")]
+    Kill {
+        /// Set this flag to keep the node's data and log directories.
+        #[clap(long)]
+        keep_directories: bool,
+    },
     /// Remove a safenode service.
     ///
     /// Either a peer ID or the service name must be supplied.
@@ -117,9 +126,28 @@ pub enum SubCmd {
         /// The name of the service to remove.
         #[clap(long)]
         service_name: Option<String>,
-        /// Set this flag to keep the nodes data and log directories.
+        /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
         keep_directories: bool,
+    },
+    /// Run a local network.
+    ///
+    /// This will run safenode processes on the current machine to form a local network. A faucet
+    /// service will also run for dispensing tokens.
+    ///
+    /// Paths can be supplied for safenode and faucet binaries, but otherwise, the latest versions
+    /// will be downloaded.
+    #[clap(name = "run")]
+    Run {
+        /// The number of nodes to run.
+        #[clap(long)]
+        count: Option<u16>,
+        /// A path to a faucet binary
+        #[clap(long)]
+        faucet_path: PathBuf,
+        /// A path to a safenode binary
+        #[clap(long)]
+        node_path: PathBuf,
     },
     /// Start a safenode service.
     ///
@@ -238,6 +266,17 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
+        SubCmd::Kill { keep_directories } => {
+            let local_reg_path = &get_local_node_registry_path()?;
+            let local_node_registry = NodeRegistry::load(local_reg_path)?;
+            if local_node_registry.nodes.is_empty() {
+                println!("No local network is currently running");
+            } else {
+                kill_network(&local_node_registry, keep_directories)?;
+                std::fs::remove_file(local_reg_path)?;
+            }
+            Ok(())
+        }
         SubCmd::Remove {
             peer_id,
             service_name,
@@ -279,6 +318,22 @@ async fn main() -> Result<()> {
             }
 
             node_registry.save(&get_node_registry_path()?)?;
+
+            Ok(())
+        }
+        SubCmd::Run {
+            count,
+            faucet_path,
+            node_path,
+        } => {
+            let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
+            if !local_node_registry.nodes.is_empty() {
+                return Err(eyre!("A local network is already running")
+                    .suggestion("Use the kill command to destroy the network then try again"));
+            }
+
+            run_network(&mut local_node_registry, &node_path, &faucet_path, count).await?;
+            local_node_registry.save(&get_local_node_registry_path()?)?;
 
             Ok(())
         }
@@ -334,13 +389,23 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Status { details } => {
-            println!("=================================================");
-            println!("                Safenode Services                ");
-            println!("=================================================");
-
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            status(&mut node_registry, &NodeServiceManager {}, details).await?;
-            node_registry.save(&get_node_registry_path()?)?;
+            if !node_registry.nodes.is_empty() {
+                println!("=================================================");
+                println!("                Safenode Services                ");
+                println!("=================================================");
+                status(&mut node_registry, &NodeServiceManager {}, details).await?;
+                node_registry.save(&get_node_registry_path()?)?;
+            }
+
+            let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
+            if !local_node_registry.nodes.is_empty() {
+                println!("=================================================");
+                println!("                Local Network                    ");
+                println!("=================================================");
+                status(&mut local_node_registry, &NodeServiceManager {}, details).await?;
+                local_node_registry.save(&get_local_node_registry_path()?)?;
+            }
 
             Ok(())
         }
