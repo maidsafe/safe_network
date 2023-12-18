@@ -61,6 +61,11 @@ impl SafeNode for SafeNodeRpcService {
         let resp = Response::new(NodeInfoResponse {
             peer_id: self.running_node.peer_id().to_bytes(),
             log_dir: self.log_dir.clone(),
+            data_dir: self
+                .running_node
+                .root_dir_path()
+                .to_string_lossy()
+                .to_string(),
             pid: process::id(),
             bin_version: env!("CARGO_PKG_VERSION").to_string(),
             uptime_secs: self.started_instant.elapsed().as_secs(),
@@ -352,7 +357,7 @@ impl SafeNode for SafeNodeRpcService {
 
 pub(crate) fn start_rpc_service(
     addr: SocketAddr,
-    log_dir: &str,
+    log_dir_path: &str,
     running_node: RunningNode,
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
@@ -360,7 +365,7 @@ pub(crate) fn start_rpc_service(
     // creating a service
     let service = SafeNodeRpcService {
         addr,
-        log_dir: log_dir.to_string(),
+        log_dir: log_dir_path.to_string(),
         running_node,
         ctrl_tx,
         started_instant,

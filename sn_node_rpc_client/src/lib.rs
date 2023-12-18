@@ -20,6 +20,7 @@ pub struct NodeInfo {
     pub pid: u32,
     pub peer_id: PeerId,
     pub log_path: PathBuf,
+    pub data_path: PathBuf,
     pub version: String,
     pub uptime: Duration,
 }
@@ -71,6 +72,7 @@ impl RpcActions for RpcClient {
             pid: node_info_resp.pid,
             peer_id,
             log_path: PathBuf::from(node_info_resp.log_dir.clone()),
+            data_path: PathBuf::from(node_info_resp.data_dir.clone()),
             version: node_info_resp.bin_version.clone(),
             uptime: Duration::from_secs(node_info_resp.uptime_secs),
         };
