@@ -9,6 +9,7 @@
 use crate::{
     chunks::{to_chunk, DataMapLevel, Error as ChunksError, SmallFile},
     error::{Error, Result},
+    files::BATCH_SIZE,
     Client, WalletClient,
 };
 use bytes::Bytes;
@@ -41,9 +42,6 @@ pub struct FilesApi {
 }
 
 type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
-
-// Defines the size of batch for the parallel downloading of data.
-pub const BATCH_SIZE: usize = 64;
 
 impl FilesApi {
     /// Create file apis instance.
