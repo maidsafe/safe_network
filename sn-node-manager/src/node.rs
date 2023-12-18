@@ -73,6 +73,7 @@ pub struct Node {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
     pub nodes: Vec<Node>,
+    pub faucet_pid: Option<u32>,
 }
 
 impl NodeRegistry {
@@ -85,7 +86,10 @@ impl NodeRegistry {
 
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
-            return Ok(NodeRegistry { nodes: vec![] });
+            return Ok(NodeRegistry {
+                nodes: vec![],
+                faucet_pid: None,
+            });
         }
         let mut file = std::fs::File::open(path)?;
         let mut contents = String::new();
