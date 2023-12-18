@@ -15,13 +15,16 @@ use crate::{
 use bytes::Bytes;
 use futures::{stream::FuturesUnordered, StreamExt};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::NanoTokens;
+use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{collections::HashSet, path::PathBuf};
 use tokio::{
     sync::mpsc::{self},
     task::JoinHandle,
 };
 use xor_name::XorName;
+
+// Defines the size of batch for the parallel downloading of data.
+pub const BATCH_SIZE: usize = 64;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
@@ -44,16 +47,21 @@ struct ChunkInfo {
 }
 
 pub struct Files {
+    // Configurations
     batch_size: usize,
     verify_store: bool,
     show_holders: bool,
     max_retries: usize,
-
+    // API
     api: FilesApi,
-
+    // Uploads
     failed_chunks: HashSet<ChunkInfo>,
     uploading_chunks: FuturesUnordered<JoinHandle<(ChunkInfo, Result<()>)>>,
-
+    // Upload stats
+    upload_storage_cost: NanoTokens,
+    upload_royalty_fees: NanoTokens,
+    upload_final_balance: NanoTokens,
+    // Events
     event_sender: Option<mpsc::Sender<FileUploadEvent>>,
     logged_event_sender_absence: bool,
 }
@@ -74,6 +82,9 @@ impl Files {
             api: files_api,
             failed_chunks: Default::default(),
             uploading_chunks: Default::default(),
+            upload_storage_cost: NanoTokens::zero(),
+            upload_royalty_fees: NanoTokens::zero(),
+            upload_final_balance: NanoTokens::zero(),
             event_sender: None,
             logged_event_sender_absence: false,
         }
@@ -87,6 +98,19 @@ impl Files {
 
         event_receiver
     }
+
+    pub fn get_upload_storage_cost(&self) -> NanoTokens {
+        self.upload_storage_cost
+    }
+
+    pub fn get_upload_final_balance(&self) -> NanoTokens {
+        self.upload_final_balance
+    }
+
+    pub fn get_upload_royalty_fees(&self) -> NanoTokens {
+        self.upload_royalty_fees
+    }
+
     pub async fn upload_chunks(&mut self, chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
         // make sure we log that the event sender is absent atleast once
         self.logged_event_sender_absence = false;
@@ -192,6 +216,25 @@ impl Files {
             .await
         {
             Ok(((storage_cost, royalty_fees, new_balance), skipped_chunks)) => {
+                // store the stats and emit event too
+                self.upload_storage_cost = self
+                    .upload_storage_cost
+                    .checked_add(storage_cost)
+                    .ok_or(ClientError::Transfers(WalletError::from(
+                        TransfersError::ExcessiveNanoValue,
+                    )))?;
+                self.upload_royalty_fees = self
+                    .upload_royalty_fees
+                    .checked_add(royalty_fees)
+                    .ok_or(ClientError::Transfers(WalletError::from(
+                        TransfersError::ExcessiveNanoValue,
+                    )))?;
+                self.upload_final_balance = self
+                    .upload_final_balance
+                    .checked_add(new_balance)
+                    .ok_or(ClientError::Transfers(WalletError::from(
+                        TransfersError::ExcessiveNanoValue,
+                    )))?;
                 self.send_event(FileUploadEvent::PayedForChunks {
                     storage_cost,
                     royalty_fees,
@@ -217,13 +260,13 @@ impl Files {
 
         // upload paid chunks
         for chunk_info in chunks_to_upload.into_iter() {
-            let file_api = self.api.clone();
+            let files_api = self.api.clone();
             let verify_store = self.verify_store;
             let show_holders = self.show_holders;
 
             // Spawn a task for each chunk to be uploaded
             let handle = tokio::spawn(Self::upload_chunk(
-                file_api,
+                files_api,
                 chunk_info,
                 verify_store,
                 show_holders,
@@ -281,7 +324,7 @@ impl Files {
     /// Store chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
     /// If verify_store is true, we will attempt to fetch the chunks from the network to verify it is stored.
     async fn upload_chunk(
-        file_api: FilesApi,
+        files_api: FilesApi,
         chunk_info: ChunkInfo,
         verify_store: bool,
         show_holders: bool,
@@ -297,7 +340,7 @@ impl Files {
             }
         };
         let chunk = Chunk::new(bytes);
-        match file_api
+        match files_api
             .get_local_payment_and_upload_chunk(chunk, verify_store, show_holders)
             .await
         {
