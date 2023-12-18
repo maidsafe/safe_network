@@ -8,13 +8,14 @@
 
 mod common;
 
-use std::net::SocketAddr;
-
 use crate::common::{
     client::{get_all_rpc_addresses, get_gossip_client_and_wallet},
     random_content,
 };
-use sn_client::{Client, ClientEvent, Files, WalletClient, BATCH_SIZE};
+use assert_fs::TempDir;
+use bls::{PublicKey, SecretKey, PK_SIZE};
+use eyre::{eyre, Result};
+use sn_client::{Client, ClientEvent, Files, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
@@ -24,17 +25,14 @@ use sn_protocol::safenode_proto::{
 use sn_transfers::{
     CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
 };
-use xor_name::XorName;
-
-use assert_fs::TempDir;
-use bls::{PublicKey, SecretKey, PK_SIZE};
-use eyre::{eyre, Result};
+use std::net::SocketAddr;
 use tokio::{
     task::JoinHandle,
     time::{sleep, timeout, Duration},
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
+use xor_name::XorName;
 
 #[tokio::test]
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
@@ -54,7 +52,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
-    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    let mut files = Files::new(files_api.clone()).set_show_holders(true);
     files.upload_chunks(chunks).await?;
     let storage_cost = files.get_upload_storage_cost();
 
@@ -116,7 +114,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     tracing::info!("Paying for {num_of_chunks} random addresses...");
     println!("Paying for {num_of_chunks} random addresses...");
-    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    let mut files = Files::new(files_api.clone()).set_show_holders(true);
     files.upload_chunks(chunks).await?;
     let storage_cost = files.get_upload_storage_cost();
     let royalties_fees = files.get_upload_royalty_fees();
@@ -211,7 +209,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} chunks");
-    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    let mut files = Files::new(files_api.clone()).set_show_holders(true);
     files.upload_chunks(chunks).await?;
     let storage_cost = files.get_upload_storage_cost();
     let royalties_fees = files.get_upload_royalty_fees();
