@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.70](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.69...sn_cli-v0.86.70) - 2023-12-18
+
+### Added
+- *(cli)* random shuffle upload chunks to allow clients co-operation
+
 ## [0.86.69](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.68...sn_cli-v0.86.69) - 2023-12-18
 
 ### Other
