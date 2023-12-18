@@ -152,7 +152,7 @@ where
     // The create cash_notes dir within the wallet dir.
     let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
     for cash_note_key in cash_notes {
-        let unique_pubkey_name = *SpendAddress::from_unique_pubkey(&cash_note_key).xorname();
+        let unique_pubkey_name = *SpendAddress::from_unique_pubkey(cash_note_key).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
         debug!("Removing cash note from: {:?}", created_cash_notes_path);
