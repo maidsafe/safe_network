@@ -20,7 +20,7 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, FilesApi};
+use sn_client::{Client, Files, FilesApi, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::safenode_proto::{
@@ -270,7 +270,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
-    let file_api = FilesApi::new(client, wallet_dir);
+    let files_api = FilesApi::new(client, wallet_dir);
 
     let mut uploaded_chunks_count = 0;
     loop {
@@ -298,9 +298,8 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         );
 
         let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
-        file_api
-            .pay_and_upload_bytes_test(file_addr, chunks, false)
-            .await?;
+        let mut files = Files::new(files_api.clone(), BATCH_SIZE, false, true, 3);
+        files.upload_chunks(chunks).await?;
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {file_addr:?} / {key:?}");

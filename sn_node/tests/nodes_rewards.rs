@@ -14,7 +14,7 @@ use crate::common::{
     client::{get_all_rpc_addresses, get_gossip_client_and_wallet},
     random_content,
 };
-use sn_client::{Client, ClientEvent, WalletClient};
+use sn_client::{Client, ClientEvent, Files, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
@@ -47,20 +47,20 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) =
+    let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let chunks_len = chunks.len();
     let prev_rewards_balance = current_rewards_balance()?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
-    let (_file_addr, rewards_paid, _royalties_fees) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, true)
-        .await?;
+    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    files.upload_chunks(chunks).await?;
+    let storage_cost = files.get_upload_storage_cost();
 
-    println!("Paid {rewards_paid:?} total rewards for the chunks");
+    println!("Paid {storage_cost:?} total rewards for the chunks");
 
-    verify_rewards(prev_rewards_balance, rewards_paid, chunks_len).await?;
+    verify_rewards(prev_rewards_balance, storage_cost, chunks_len).await?;
 
     Ok(())
 }
@@ -106,7 +106,7 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) =
+    let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let num_of_chunks = chunks.len();
@@ -116,9 +116,10 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     tracing::info!("Paying for {num_of_chunks} random addresses...");
     println!("Paying for {num_of_chunks} random addresses...");
-    let (_, storage_cost, royalties_fees) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
-        .await?;
+    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    files.upload_chunks(chunks).await?;
+    let storage_cost = files.get_upload_storage_cost();
+    let royalties_fees = files.get_upload_royalty_fees();
 
     println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
@@ -186,7 +187,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
 
-    let (files_api, _content_bytes, content_addr, chunks) =
+    let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
     let node_rpc_addresses = get_all_rpc_addresses();
 
@@ -210,9 +211,11 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} chunks");
-    let (_, storage_cost, royalties_fees) = files_api
-        .pay_and_upload_bytes_test(*content_addr.xorname(), chunks, false)
-        .await?;
+    let mut files = Files::new(files_api, BATCH_SIZE, true, true, 3);
+    files.upload_chunks(chunks).await?;
+    let storage_cost = files.get_upload_storage_cost();
+    let royalties_fees = files.get_upload_royalty_fees();
+
     println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
     let count_1 = handle_1.await??;
