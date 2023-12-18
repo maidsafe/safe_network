@@ -359,9 +359,9 @@ impl Client {
                         .await?;
                 let reg_address = reg.address();
 
-                total_cost = total_cost.checked_add(top_up_cost).ok_or(Error::Transfers(
-                    sn_transfers::WalletError::from(sn_transfers::Error::ExcessiveNanoValue),
-                ))?;
+                total_cost = total_cost
+                    .checked_add(top_up_cost)
+                    .ok_or(Error::TotalPriceTooHigh)?;
                 total_royalties =
                     total_cost
                         .checked_add(royalties_top_up)

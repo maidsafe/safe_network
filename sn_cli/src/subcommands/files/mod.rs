@@ -122,7 +122,7 @@ pub(crate) async fn files_cmds(
             }
 
             let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
-            let file_api: FilesApi = FilesApi::new(client.clone(), download_dir.clone());
+            let files_api: FilesApi = FilesApi::new(client.clone(), download_dir.clone());
 
             match (file_name, file_addr) {
                 (Some(name), Some(address)) => {
@@ -133,7 +133,7 @@ pub(crate) async fn files_cmds(
                             .expect("Failed to parse XorName from hex string"),
                     );
                     download_file(
-                        &file_api,
+                        &files_api,
                         &xor_name,
                         &name,
                         &download_dir,
@@ -144,7 +144,7 @@ pub(crate) async fn files_cmds(
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&file_api, root_dir, show_holders, batch_size).await?
+                    download_files(&files_api, root_dir, show_holders, batch_size).await?
                 }
             }
         }
@@ -242,7 +242,9 @@ async fn upload_files(
                     progress_bar_clone.inc(1);
                 }
                 FileUploadEvent::PayedForChunks { .. } => {}
-                FileUploadEvent::FailedToUpload(_addr) => {}
+                // Do not increment the progress bar of a chunk upload failure as the event can be emitted multiple
+                // times for a single chunk if re-attempts is enabled.
+                FileUploadEvent::FailedToUpload(_) => {}
             }
         }
     });
@@ -262,7 +264,7 @@ async fn upload_files(
         }
     }
     progress_bar.finish_and_clear();
-    let failed_chunks = files.failed_chunks();
+    let failed_chunks = files.get_failed_chunks();
     chunk_manager.mark_completed(
         chunks_to_upload_names
             .into_iter()
@@ -316,7 +318,7 @@ async fn upload_files(
 }
 
 async fn download_files(
-    file_api: &FilesApi,
+    files_api: &FilesApi,
     root_dir: &Path,
     show_holders: bool,
     batch_size: usize,
@@ -351,7 +353,7 @@ async fn download_files(
 
     for (xorname, file_name) in uploaded_files.iter() {
         download_file(
-            file_api,
+            files_api,
             xorname,
             file_name,
             &download_path,
@@ -376,7 +378,7 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
 }
 
 async fn download_file(
-    file_api: &FilesApi,
+    files_api: &FilesApi,
     xorname: &XorName,
     file_name: &String,
     download_path: &Path,
@@ -386,7 +388,7 @@ async fn download_file(
     println!("Downloading {file_name} from {xorname:64x} with batch-size {batch_size}");
     debug!("Downloading {file_name} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
-    match file_api
+    match files_api
         .read_bytes(
             ChunkAddress::new(*xorname),
             Some(downloaded_file_path.clone()),

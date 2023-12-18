@@ -15,7 +15,7 @@ use crate::{
 use bytes::Bytes;
 use futures::{stream::FuturesUnordered, StreamExt};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
+use sn_transfers::NanoTokens;
 use std::{collections::HashSet, path::PathBuf};
 use tokio::{
     sync::mpsc::{self},
@@ -23,13 +23,16 @@ use tokio::{
 };
 use xor_name::XorName;
 
-// Defines the size of batch for the parallel downloading of data.
+/// `BATCH_SIZE` determines the number of chunks that are processed in parallel during the payment and upload process.
 pub const BATCH_SIZE: usize = 64;
+
+/// The maximum number of retries to perform on a failed chunk.
 pub const MAX_UPLOAD_RETRIES: usize = 3;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
 
+/// The events emitted from the upload process.
 pub enum FileUploadEvent {
     Uploaded(ChunkAddress),
     AlreadyExistsInNetwork(ChunkAddress),
@@ -38,6 +41,7 @@ pub enum FileUploadEvent {
         royalty_fees: NanoTokens,
         new_balance: NanoTokens,
     },
+    /// This event can be emitted multiple times for a single ChunkAddress if retries are enabled.
     FailedToUpload(ChunkAddress),
 }
 
@@ -47,6 +51,9 @@ struct ChunkInfo {
     path: PathBuf,
 }
 
+/// `Files` provides functionality for uploading and downloading chunks with support for retries and queuing.
+/// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.
+/// To modify the configuration, use the provided setter methods (`set_...` functions).
 pub struct Files {
     // Configurations
     batch_size: usize,
@@ -68,6 +75,8 @@ pub struct Files {
 }
 
 impl Files {
+    /// Creates a new instance of `Files` with the default configuration.
+    /// To modify the configuration, use the provided setter methods (`set_...` functions).
     pub fn new(files_api: FilesApi) -> Self {
         Self {
             batch_size: BATCH_SIZE,
@@ -84,27 +93,42 @@ impl Files {
             logged_event_sender_absence: false,
         }
     }
+
+    /// Sets the default batch size that determines the number of chunks that are processed in parallel during the
+    /// payment and upload process.
+    ///
+    /// By default, this option is set to the constant `BATCH_SIZE: usize = 64`.
     pub fn set_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = batch_size;
         self
     }
 
+    /// Sets the option to verify the chunks after they have been uploaded.
+    ///
+    /// By default, this option is set to true.
     pub fn set_verify_store(mut self, verify_store: bool) -> Self {
         self.verify_store = verify_store;
         self
     }
 
+    /// Sets the option to display the holders that are expected to be holding a chunk during verification.
+    ///
+    /// By default, this option is set to false.
     pub fn set_show_holders(mut self, show_holders: bool) -> Self {
         self.show_holders = show_holders;
         self
     }
 
+    /// Sets the maximum number of retries to perform if a chunk fails to upload.
+    ///
+    /// By default, this option is set to the constant `MAX_UPLOAD_RETRIES: usize = 3`.
     pub fn set_max_retries(mut self, max_retries: usize) -> Self {
         self.max_retries = max_retries;
         self
     }
 
-    // new rx per upload session.
+    /// Returns a receiver for file upload events.
+    /// This method is optional and the upload process can be performed without it.
     pub fn get_upload_events(&mut self) -> mpsc::Receiver<FileUploadEvent> {
         let (event_sender, event_receiver) = mpsc::channel(10);
         // should we return error if an sender is already set?
@@ -113,22 +137,41 @@ impl Files {
         event_receiver
     }
 
+    /// Returns the total amount of fees paid for storage after the upload completes.
     pub fn get_upload_storage_cost(&self) -> NanoTokens {
         self.upload_storage_cost
     }
-
-    pub fn get_upload_final_balance(&self) -> NanoTokens {
-        self.upload_final_balance
-    }
-
+    /// Returns the total amount of royalties paid after the upload completes.
     pub fn get_upload_royalty_fees(&self) -> NanoTokens {
         self.upload_royalty_fees
     }
 
+    /// Returns the final wallet balance after the upload completes.
+    pub fn get_upload_final_balance(&self) -> NanoTokens {
+        self.upload_final_balance
+    }
+
+    /// get the set of failed chunks that could not be uploaded
+    pub fn get_failed_chunks(&self) -> HashSet<XorName> {
+        self.failed_chunks
+            .clone()
+            .into_iter()
+            .map(|chunk_info| chunk_info.name)
+            .collect()
+    }
+
+    /// Uploads the provided chunks to the network.
+    /// If you want to track the upload progress, use the `get_upload_events` method.
     pub async fn upload_chunks(&mut self, chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
         // make sure we log that the event sender is absent atleast once
         self.logged_event_sender_absence = false;
-        // new fn to upload chunks
+
+        // clean up the trackers/stats
+        self.failed_chunks = Default::default();
+        self.uploading_chunks = Default::default();
+        self.upload_storage_cost = NanoTokens::zero();
+        self.upload_royalty_fees = NanoTokens::zero();
+        self.upload_final_balance = NanoTokens::zero();
 
         let result = self.upload(chunks).await;
 
@@ -137,14 +180,6 @@ impl Files {
         drop(sender);
 
         result
-    }
-
-    pub fn failed_chunks(&self) -> HashSet<XorName> {
-        self.failed_chunks
-            .clone()
-            .into_iter()
-            .map(|chunk_info| chunk_info.name)
-            .collect()
     }
 
     async fn upload(&mut self, chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
@@ -156,17 +191,25 @@ impl Files {
                 .into_iter()
                 .map(|(name, path)| ChunkInfo { name, path }),
         );
+        let n_batches = {
+            let total_elements = chunk_batches.len();
+            // to get +1 if there is a remainder
+            (total_elements + self.batch_size - 1) / self.batch_size
+        };
+        let mut batch = 1;
         let chunk_batches = chunk_batches.chunks(self.batch_size);
 
         for chunks_batch in chunk_batches {
+            trace!("Uploading batch {batch}/{n_batches}");
             if sequential_payment_fails >= MAX_SEQUENTIAL_PAYMENT_FAILS {
                 return Err(ClientError::SequentialUploadPaymentError);
             }
             // if the payment fails, we can continue to the next batch
             let res = self.handle_chunk_batch(chunks_batch).await;
+            batch += 1;
             match res {
                 Ok(()) => {
-                    trace!("Uploaded a batch");
+                    trace!("Uploaded batch {batch}/{n_batches}");
                 }
                 Err(err) => match err {
                     ClientError::CouldNotVerifyTransfer(err) => {
@@ -234,21 +277,12 @@ impl Files {
                 self.upload_storage_cost = self
                     .upload_storage_cost
                     .checked_add(storage_cost)
-                    .ok_or(ClientError::Transfers(WalletError::from(
-                        TransfersError::ExcessiveNanoValue,
-                    )))?;
+                    .ok_or(ClientError::TotalPriceTooHigh)?;
                 self.upload_royalty_fees = self
                     .upload_royalty_fees
                     .checked_add(royalty_fees)
-                    .ok_or(ClientError::Transfers(WalletError::from(
-                        TransfersError::ExcessiveNanoValue,
-                    )))?;
-                self.upload_final_balance = self
-                    .upload_final_balance
-                    .checked_add(new_balance)
-                    .ok_or(ClientError::Transfers(WalletError::from(
-                        TransfersError::ExcessiveNanoValue,
-                    )))?;
+                    .ok_or(ClientError::TotalPriceTooHigh)?;
+                self.upload_final_balance = new_balance;
                 self.send_event(FileUploadEvent::PayedForChunks {
                     storage_cost,
                     royalty_fees,
