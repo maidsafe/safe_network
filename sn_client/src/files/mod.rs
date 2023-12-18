@@ -34,15 +34,21 @@ const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
 
 /// The events emitted from the upload process.
 pub enum FileUploadEvent {
+    /// Uploaded a Chunk to the network
     Uploaded(ChunkAddress),
+    /// The Chunk already exists in the network, skipping upload.
     AlreadyExistsInNetwork(ChunkAddress),
+    /// Failed to upload a chunk to the network. This event can be emitted multiple times for a single ChunkAddress
+    ///  if retries are enabled.
+    FailedToUpload(ChunkAddress),
+    /// Payment for a batch of chunk has been made.
     PayedForChunks {
         storage_cost: NanoTokens,
         royalty_fees: NanoTokens,
         new_balance: NanoTokens,
     },
-    /// This event can be emitted multiple times for a single ChunkAddress if retries are enabled.
-    FailedToUpload(ChunkAddress),
+    /// The upload process has terminated with an error.
+    Error,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -175,7 +181,12 @@ impl Files {
 
         let result = self.upload(chunks).await;
 
-        // drop the sender
+        // send an event indicating that the upload process completed with an error
+        if result.is_err() {
+            self.send_event(FileUploadEvent::Error).await?;
+        }
+
+        // drop the sender to close the channel.
         let sender = self.event_sender.take();
         drop(sender);
 
