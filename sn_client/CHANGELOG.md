@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.20...sn_client-v0.99.21) - 2023-12-18
+
+### Added
+- *(client)* update the Files config via setters
+- *(client)* track the upload stats inside Files
+- *(client)* move upload retry logic from CLI to client
+
+### Fixed
+- *(test)* use the Files struct to upload chunks
+
+### Other
+- *(client)* add docs to the Files struct
+
 ## [0.99.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.19...sn_client-v0.99.20) - 2023-12-14
 
 ### Other
