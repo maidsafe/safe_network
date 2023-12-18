@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702915132698,
+  "lastUpdate": 1702915134398,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33253,6 +33253,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 14,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
+          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
+          "timestamp": "2023-12-18T15:12:43Z",
+          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
+        },
+        "date": 1702915133971,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4694,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 73442,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 15,
             "unit": "ms"
           }
         ]
