@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.90"
+version = "0.1.91"
 
 [features]
 # required to pass on flag to node builds
