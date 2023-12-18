@@ -624,8 +624,8 @@ async fn query_content(
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            let file_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = file_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
+            let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
+            let _ = files_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
