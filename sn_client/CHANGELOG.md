@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.21...sn_client-v0.99.22) - 2023-12-18
+
+### Added
+- *(transfers)* add api for cleaning up CashNotes
+
 ## [0.99.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.20...sn_client-v0.99.21) - 2023-12-18
 
 ### Added
