@@ -21,6 +21,7 @@ message NodeInfoResponse {
   string log_dir = 3;
   string bin_version = 4;
   uint64 uptime_secs = 5;
+  string data_dir = 6;
 }
 
 // Information about how this node's connections to the network and peers
