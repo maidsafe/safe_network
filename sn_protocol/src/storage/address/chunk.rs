@@ -7,11 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use serde::{Deserialize, Serialize};
-use std::hash::Hash;
+use std::{fmt, hash::Hash};
 use xor_name::XorName;
 
 /// Address of a Chunk
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct ChunkAddress(XorName);
 
 impl ChunkAddress {
@@ -23,5 +23,15 @@ impl ChunkAddress {
     /// Returns the name.
     pub fn xorname(&self) -> &XorName {
         &self.0
+    }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0)
+    }
+}
+
+impl std::fmt::Debug for ChunkAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ChunkAddress({})", &self.to_hex()[0..6])
     }
 }

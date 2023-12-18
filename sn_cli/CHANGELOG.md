@@ -6,6 +6,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.67](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.66...sn_cli-v0.86.67) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.86.66](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.65...sn_cli-v0.86.66) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.86.65](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.64...sn_cli-v0.86.65) - 2023-12-14
+
+### Other
+- *(cli)* make upload summary printout clearer
+
+## [0.86.64](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.63...sn_cli-v0.86.64) - 2023-12-14
+
+### Other
+- *(cli)* make sequential payment fail limit a const
+
+## [0.86.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.62...sn_cli-v0.86.63) - 2023-12-14
+
+### Other
+- *(cli)* make wallet address easy to copy
+- *(cli)* peer list is not printed to stdout
+
+## [0.86.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.61...sn_cli-v0.86.62) - 2023-12-14
+
+### Added
+- *(cli)* cli arg for controlling chunk retries
+- *(cli)* simple retry mechanism for remaining chunks
+
+### Other
+- prevent retries on ci runs w/ '-r 0'
+
+## [0.86.61](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.60...sn_cli-v0.86.61) - 2023-12-13
+
+### Other
+- *(cli)* refactor upload_files
+
+## [0.86.60](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.59...sn_cli-v0.86.60) - 2023-12-13
+
+### Other
+- update dependencies
+
 ## [0.86.59](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.58...sn_cli-v0.86.59) - 2023-12-13
 
 ### Added

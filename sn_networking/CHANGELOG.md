@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.5...sn_networking-v0.12.6) - 2023-12-14
+
+### Other
+- *(protocol)* print the first six hex characters for every address type
+
+## [0.12.5](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.4...sn_networking-v0.12.5) - 2023-12-14
+
+### Added
+- *(networking)* add backoff to PUT retries
+- *(networking)* use backoff for get_record
+
+## [0.12.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.3...sn_networking-v0.12.4) - 2023-12-14
+
+### Fixed
+- *(network)* return a map of responses instead of a vec
+- *(network)* remove unused error and don't mask get record errors
+- *(network)* get quourum value fn
+
+### Other
+- *(network)* return error with more info during quorum failure
+- *(network)* use the entry API instead of remove and insert
+
+## [0.12.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.2...sn_networking-v0.12.3) - 2023-12-14
+
+### Other
+- *(networking)* increase min verification wait to 300ms
+
+## [0.12.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.1...sn_networking-v0.12.2) - 2023-12-13
+
+### Other
+- *(networking)* include record count and max records in logfile output
+
 ## [0.12.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.0...sn_networking-v0.12.1) - 2023-12-12
 
 ### Other

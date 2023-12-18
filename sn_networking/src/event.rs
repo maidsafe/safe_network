@@ -37,7 +37,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
-    collections::HashSet,
+    collections::{hash_map::Entry, HashSet},
     fmt::{Debug, Formatter},
     time::{Duration, Instant},
 };
@@ -737,35 +737,30 @@ impl SwarmDriver {
                     "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
                 );
 
-                let (get_closest_type, mut current_closest) =
-                    self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
-                        trace!(
-                            "Can't locate query task {id:?}, it has likely been completed already."
-                        );
-                        Error::ReceivedKademliaEventDropped(event.clone())
-                    })?;
+                if let Entry::Occupied(mut entry) = self.pending_get_closest_peers.entry(id) {
+                    let (_, current_closest) = entry.get_mut();
 
-                // TODO: consider order the result and terminate when reach any of the
-                //       following criteria:
-                //   1, `stats.num_pending()` is 0
-                //   2, `stats.duration()` is longer than a defined period
-                let new_peers: HashSet<PeerId> = closest_peers.peers.clone().into_iter().collect();
-                current_closest.extend(new_peers);
-                if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                    match get_closest_type {
-                        PendingGetClosestType::NetworkDiscovery => self
-                            .network_discovery
-                            .handle_get_closest_query(current_closest),
-                        PendingGetClosestType::FunctionCall(sender) => {
-                            sender
-                                .send(current_closest)
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    // TODO: consider order the result and terminate when reach any of the
+                    //       following criteria:
+                    //   1, `stats.num_pending()` is 0
+                    //   2, `stats.duration()` is longer than a defined period
+                    current_closest.extend(closest_peers.peers.clone());
+                    if current_closest.len() >= usize::from(K_VALUE) || step.last {
+                        let (get_closest_type, current_closest) = entry.remove();
+                        match get_closest_type {
+                            PendingGetClosestType::NetworkDiscovery => self
+                                .network_discovery
+                                .handle_get_closest_query(current_closest),
+                            PendingGetClosestType::FunctionCall(sender) => {
+                                sender
+                                    .send(current_closest)
+                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            }
                         }
                     }
                 } else {
-                    let _ = self
-                        .pending_get_closest_peers
-                        .insert(id, (get_closest_type, current_closest));
+                    trace!("Can't locate query task {id:?}, it has likely been completed already.");
+                    return Err(Error::ReceivedKademliaEventDropped(event.clone()));
                 }
             }
             // Handle GetClosestPeers timeouts

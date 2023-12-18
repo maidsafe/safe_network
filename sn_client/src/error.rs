@@ -54,6 +54,7 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+
     #[error("There is no Spend record at this address: {0:?}")]
     MissingSpendRecord(SpendAddress),
 

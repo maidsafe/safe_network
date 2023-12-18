@@ -87,10 +87,10 @@ async fn main() -> Result<()> {
 
     let bootstrap_peers = parse_peers_args(opt.peers).await?;
 
-    println!("Connecting to the network w/peers:");
-    for peer in &bootstrap_peers {
-        println!("{peer}");
-    }
+    println!(
+        "Connecting to the network with {} peers:",
+        bootstrap_peers.len()
+    );
 
     let bootstrap_peers = if bootstrap_peers.is_empty() {
         // empty vec is returned if `local-discovery` flag is provided

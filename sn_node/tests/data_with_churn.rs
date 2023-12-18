@@ -314,7 +314,7 @@ fn create_cash_note_task(
             let cash_note = wallet_client
                 .send_cash_note(NanoTokens::from(10), dest_pk, true)
                 .await
-                .expect("Failed to send CashNote to {dest_pk}");
+                .unwrap_or_else(|_| panic!("Failed to send CashNote to {dest_pk:?}"));
 
             let cash_note_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
             let net_addr = NetworkAddress::SpendAddress(cash_note_addr);

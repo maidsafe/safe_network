@@ -32,7 +32,11 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[allow(missing_docs)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
-    NotEnoughCopies(Record),
+    NotEnoughCopies {
+        record: Record,
+        expected: usize,
+        got: usize,
+    },
 
     #[error("Record not found in the network")]
     RecordNotFound,
@@ -53,14 +57,22 @@ pub enum GetRecordError {
 impl Debug for GetRecordError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotEnoughCopies(record) => {
+            Self::NotEnoughCopies {
+                record,
+                expected,
+                got,
+            } => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                f.debug_tuple("NotEnoughCopies").field(&pretty_key).finish()
+                f.debug_struct("NotEnoughCopies")
+                    .field("record_key", &pretty_key)
+                    .field("expected", &expected)
+                    .field("got", &got)
+                    .finish()
             }
             Self::RecordNotFound => write!(f, "RecordNotFound"),
             Self::SplitRecord { result_map } => f
                 .debug_struct("SplitRecord")
-                .field("result_map count", &result_map.len())
+                .field("result_map_count", &result_map.len())
                 .finish(),
             Self::QueryTimeout => write!(f, "QueryTimeout"),
             Self::RecordDoesNotMatch(record) => {
@@ -100,7 +112,7 @@ pub enum Error {
 
     // ---------- Record Errors
     // GetRecord query errors
-    #[error("GetRecord Query Error")]
+    #[error("GetRecord Query Error {0:?}")]
     GetRecordError(#[from] GetRecordError),
 
     // The RecordKind that was obtained did not match with the expected one
@@ -109,10 +121,6 @@ pub enum Error {
 
     #[error("Record header is incorrect")]
     InCorrectRecordHeader,
-
-    /// No put_record attempts were successfully verified.
-    #[error("Could not retrieve the record after storing it: {0:}")]
-    FailedToVerifyRecordWasStored(PrettyPrintRecordKey<'static>),
 
     // ---------- Transfer Errors
     #[error("Failed to get transfer parent spend")]
@@ -200,9 +208,9 @@ mod tests {
         let network_address = NetworkAddress::from_chunk_address(address);
         let record_key = network_address.to_record_key();
         let record_str = format!("{}", PrettyPrintRecordKey::from(&record_key));
+        let xor_name_str = &format!("{xor_name:64x}")[0..6]; // only the first 6 chars are logged
         let xor_name_str = format!(
-            "{:64x}({:?})",
-            xor_name,
+            "{xor_name_str}({:?})",
             PrettyPrintKBucketKey(network_address.as_kbucket_key())
         );
         println!("record_str: {record_str}");

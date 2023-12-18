@@ -36,11 +36,12 @@ pub use self::{
     transfers::get_singed_spends_from_record,
 };
 
+use backoff::{Error as BackoffError, ExponentialBackoff};
 use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
-    kad::{KBucketDistance, KBucketKey, Record, RecordKey},
+    kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
@@ -55,6 +56,7 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
+    time::Duration,
 };
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
@@ -78,14 +80,16 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
+/// Max duration for all GET attempts
+const MAX_GET_RETRY_DURATION_MS: u64 = 6800;
+const MAX_GET_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS);
+/// Max duration for all PUT attempts
+const MAX_PUT_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS * 3);
+
 /// Max duration to wait for verification
-const MAX_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(750);
+const MAX_REVERIFICATION_WAIT_TIME_MS: Duration = Duration::from_millis(750);
 /// Min duration to wait for verification
-const MIN_REVERIFICATION_WAIT_TIME_S: std::time::Duration = std::time::Duration::from_millis(150);
-/// Number of attempts to GET a record
-const GET_RETRY_ATTEMPTS: usize = 3;
-/// Number of attempts to PUT a record
-const PUT_RETRY_ATTEMPTS: usize = 10;
+const MIN_REVERIFICATION_WAIT_TIME_MS: Duration = Duration::from_millis(300);
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -267,7 +271,7 @@ impl Network {
 
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
-        for response in responses.into_iter().flatten() {
+        for response in responses.into_values().flatten() {
             debug!(
                 "StoreCostReq for {record_address:?} received response: {:?}",
                 response
@@ -335,74 +339,59 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let total_attempts = if cfg.re_attempt {
-            GET_RETRY_ATTEMPTS
-        } else {
-            1
-        };
-
-        let mut retry_attempts = 0;
-        let pretty_key = PrettyPrintRecordKey::from(&key);
-        while retry_attempts < total_attempts {
-            retry_attempts += 1;
+        backoff::future::retry(ExponentialBackoff{
+            max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
+            ..Default::default()
+        }, || async {
+            let pretty_key = PrettyPrintRecordKey::from(&key);
             info!(
-                "Getting record of {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?} with cfg {cfg:?}",
+                "Getting record of {pretty_key:?}. with cfg {cfg:?}",
             );
-
             let (sender, receiver) = oneshot::channel();
             self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
                 key: key.clone(),
                 sender,
                 cfg: cfg.clone(),
-            })?;
-
+            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
             let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
-            })?;
+            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
+
             // log the results
             match &result {
                 Ok(_) => {
-                    info!("Record returned: {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    info!("Record returned: {pretty_key:?}. Retrying via backoff...");
                 }
                 Err(GetRecordError::RecordDoesNotMatch(_)) => {
-                    warn!("The returned record does not match target {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    warn!("The returned record does not match target {pretty_key:?}. Retrying via backoff...");
                 }
-                Err(GetRecordError::NotEnoughCopies(_)) => {
-                    warn!("Not enough copies found yet for {pretty_key:?}. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Retying via backoff...");
                 }
                 // libp2p RecordNotFound does mean no holders answered.
                 // it does not actually mean the record does not exist.
                 // just that those asked did not have it
                 Err(GetRecordError::RecordNotFound) => {
-                    warn!("No holder of record '{pretty_key:?}' found. Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    warn!("No holder of record '{pretty_key:?}' found. Retrying via backoff...");
                 }
                 Err(GetRecordError::SplitRecord { .. }) => {
-                    error!("Encountered a split record for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    error!("Encountered a split record for {pretty_key:?} Retrying via backoff...");
                 }
                 Err(GetRecordError::QueryTimeout) => {
-                    error!("Encountered query timeout for {pretty_key:?} Attempts: {retry_attempts:?}/{total_attempts:?}");
+                    error!("Encountered query timeout for {pretty_key:?} Retrying via backoff...");
                 }
             };
-            match result {
-                Ok(record) => return Ok(record),
-                Err(err) => {
-                    if retry_attempts >= total_attempts {
-                        return Err(err.into());
-                    }
+
+            // if we dont want to retry, throw permanent error
+            if !cfg.re_attempt {
+                if let Err(e) = result {
+                    return Err(BackoffError::Permanent(Error::from(e)))
                 }
             }
-
-            // wait for a bit before re-trying
-            if cfg.re_attempt {
-                // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
-                let wait_duration = rand::thread_rng()
-                    .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
-                tokio::time::sleep(wait_duration).await;
-            }
-        }
-
-        Err(GetRecordError::RecordNotFound.into())
+            result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})
+        })
+        .await
     }
 
     /// Get the cost of storing the next record from the network
@@ -433,29 +422,29 @@ impl Network {
     /// If verify is on, retry PUT_RETRY_ATTEMPTS times with a random wait between 1.5s and 5s
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
-        let mut last_err = Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned());
-        let total_attempts = if cfg.re_attempt {
-            PUT_RETRY_ATTEMPTS
-        } else {
-            1
-        };
-        for retry in 1..total_attempts + 1 {
+
+        backoff::future::retry(ExponentialBackoff{
+            max_elapsed_time: Some(MAX_PUT_RETRY_DURATION),
+            ..Default::default()
+        }, || async {
+
             info!(
-                "Attempting to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with cfg {cfg:?}"
+                "Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}, retrying via backoff..."
             );
+            self.put_record_once(record.clone(), cfg).await.map_err(|err|
+            {
+                warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
-            let res = self.put_record_once(record.clone(), cfg).await;
-
-            match res {
-                Ok(_) => return Ok(()),
-                Err(e) => {
-                    warn!("Failed to PUT record with key: {pretty_key:?} to network. Attempts {retry:?}/{total_attempts:?} with error: {e:?}");
-                    last_err = e;
+                if cfg.re_attempt {
+                    BackoffError::Transient { err, retry_after: Some(Duration::from_millis(rand::thread_rng().gen_range(1500..5000))) }
+                } else {
+                    BackoffError::Permanent(err)
                 }
-            }
-        }
 
-        Err(last_err)
+            })
+        }).await
+
+        // Err(last_err)
     }
 
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
@@ -479,7 +468,7 @@ impl Network {
         if let Some((_record_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_REVERIFICATION_WAIT_TIME_S and MIN_REVERIFICATION_WAIT_TIME_S
             let wait_duration = rand::thread_rng()
-                .gen_range(MIN_REVERIFICATION_WAIT_TIME_S..MAX_REVERIFICATION_WAIT_TIME_S);
+                .gen_range(MIN_REVERIFICATION_WAIT_TIME_MS..MAX_REVERIFICATION_WAIT_TIME_MS);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
             tokio::time::sleep(wait_duration).await;
@@ -487,11 +476,7 @@ impl Network {
 
             // Verify the record is stored, requiring re-attempts
             self.get_record_from_network(record.key.clone(), get_cfg)
-                .await
-                .map_err(|e| {
-                    warn!("Failed to verify record {pretty_key:?} was stored: {e:?}");
-                    Error::FailedToVerifyRecordWasStored(pretty_key.clone().into_owned())
-                })?;
+                .await?;
         }
 
         response
@@ -683,25 +668,30 @@ impl Network {
         peers: Vec<PeerId>,
         req: &Request,
         get_all_responses: bool,
-    ) -> Vec<Result<Response>> {
+    ) -> BTreeMap<PeerId, Result<Response>> {
         debug!("send_and_get_responses for {req:?}");
         let mut list_of_futures = peers
             .iter()
-            .map(|peer| Box::pin(self.send_request(req.clone(), *peer)))
+            .map(|peer| {
+                Box::pin(async {
+                    let resp = self.send_request(req.clone(), *peer).await;
+                    (*peer, resp)
+                })
+            })
             .collect::<Vec<_>>();
 
-        let mut responses = Vec::new();
+        let mut responses = BTreeMap::new();
         while !list_of_futures.is_empty() {
-            let (res, _, remaining_futures) = select_all(list_of_futures).await;
-            let res_string = match &res {
-                Ok(res) => format!("{res}"),
+            let ((peer, resp), _, remaining_futures) = select_all(list_of_futures).await;
+            let resp_string = match &resp {
+                Ok(resp) => format!("{resp}"),
                 Err(err) => format!("{err:?}"),
             };
-            debug!("Got response for the req: {req:?}, res: {res_string}");
-            if !get_all_responses && res.is_ok() {
-                return vec![res];
+            debug!("Got response from {peer:?} for the req: {req:?}, resp: {resp_string}");
+            if !get_all_responses && resp.is_ok() {
+                return BTreeMap::from([(peer, resp)]);
             }
-            responses.push(res);
+            responses.insert(peer, resp);
             list_of_futures = remaining_futures;
         }
 
@@ -736,6 +726,16 @@ fn get_fees_from_store_cost_responses(
     info!("Final fees calculated as: {lowest:?}");
     // we dont need to have the address outside of here for now
     Ok((lowest.1, lowest.2))
+}
+
+/// Get the value of the provided Quorum
+pub fn get_quorum_value(quorum: &Quorum) -> usize {
+    match quorum {
+        Quorum::Majority => close_group_majority(),
+        Quorum::All => CLOSE_GROUP_SIZE,
+        Quorum::N(v) => v.get(),
+        Quorum::One => 1,
+    }
 }
 
 /// Verifies if `Multiaddr` contains IPv4 address that is not global.

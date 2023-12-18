@@ -27,7 +27,7 @@ pub struct RegisterAddress {
 
 impl Display for RegisterAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({:?})", self.to_hex(), self.xorname())
+        write!(f, "{}({:?})", &self.to_hex()[0..6], self.xorname())
     }
 }
 
@@ -35,8 +35,8 @@ impl Debug for RegisterAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "RegisterAddress({:?}) {{ meta: {:?}, owner: {:?} }}",
-            self.xorname(),
+            "RegisterAddress({}) {{ meta: {:?}, owner: {:?} }}",
+            &self.to_hex()[0..6],
             self.meta,
             self.owner
         )

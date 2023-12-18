@@ -2532,6 +2532,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.5...sn_node-v0.100.6) - 2023-12-13
+
+### Other
+- update dependencies
+
+## [0.100.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.6...sn_node-v0.100.7) - 2023-12-13
+
+### Other
+- remove large log
+
+## [0.100.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.7...sn_node-v0.100.8) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.100.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.8...sn_node-v0.100.9) - 2023-12-14
+
+### Other
+- *(network)* return error with more info during quorum failure
+- *(test)* fix log messages during churn test
+
+## [0.100.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.9...sn_node-v0.100.10) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.100.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.10...sn_node-v0.100.11) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.100.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.11...sn_node-v0.100.12) - 2023-12-14
+
+### Other
+- update dependencies
+
+## [0.100.13](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.12...sn_node-v0.100.13) - 2023-12-14
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

@@ -263,7 +263,7 @@ async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()>
         url
     };
     let req_url = Url::parse(&format!("{url}/{address_hex}"))?;
-    println!("Requesting token for wallet address: {address_hex}...");
+    println!("Requesting token for wallet address: {address_hex}");
 
     let response = reqwest::get(req_url).await?;
     let is_ok = response.status().is_success();
