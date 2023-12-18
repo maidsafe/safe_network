@@ -383,7 +383,6 @@ impl Client {
         chunk: Chunk,
         payment: Payment,
         verify_store: bool,
-        _show_holders: bool, // The holders are logged during ChunkProof verification by default. Todo: remove?
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
