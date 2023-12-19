@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.92](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.91...sn_node_rpc_client-v0.1.92) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.1.91](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.90...sn_node_rpc_client-v0.1.91) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.1.90](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.89...sn_node_rpc_client-v0.1.90) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.1.89](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.88...sn_node_rpc_client-v0.1.89) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.1.88](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.87...sn_node_rpc_client-v0.1.88) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.1.87](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.86...sn_node_rpc_client-v0.1.87) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.1.86](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.85...sn_node_rpc_client-v0.1.86) - 2023-12-18
+
+### Other
+- update dependencies
+
 ## [0.1.85](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.84...sn_node_rpc_client-v0.1.85) - 2023-12-14
 
 ### Other

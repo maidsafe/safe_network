@@ -10,7 +10,7 @@ use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, load_cash_notes_from_disk, load_created_cash_note,
-        store_created_cash_notes, store_unconfirmed_spend_requests,
+        remove_cash_notes, store_created_cash_notes, store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
     Error, Result,
@@ -81,6 +81,13 @@ impl LocalWallet {
     {
         store_created_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
     }
+    /// Removes the given cash_notes from the `created cash_notes dir` in the wallet dir.
+    pub fn remove_cash_notes_from_disk<'a, T>(&self, cash_notes: T) -> Result<()>
+    where
+        T: IntoIterator<Item = &'a UniquePubkey>,
+    {
+        remove_cash_notes(cash_notes, self.watchonly_wallet.wallet_dir())
+    }
 
     /// Store unconfirmed_spend_requests to disk.
     pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
@@ -144,11 +151,23 @@ impl LocalWallet {
 
     /// To remove a specific spend from the requests, if eg, we see one spend is _bad_
     pub fn clear_specific_spend_request(&mut self, unique_pub_key: UniquePubkey) {
+        if let Err(error) = self.remove_cash_notes_from_disk(vec![&unique_pub_key]) {
+            warn!("Could not clean spend {unique_pub_key:?} due to {error:?}");
+        }
+
         self.unconfirmed_spend_requests
             .retain(|signed_spend| signed_spend.spend.unique_pubkey.ne(&unique_pub_key))
     }
 
-    pub fn clear_unconfirmed_spend_requests(&mut self) {
+    /// Once spends are verified we can clear them and clean up
+    pub fn clear_confirmed_spend_requests(&mut self) {
+        if let Err(error) = self.remove_cash_notes_from_disk(
+            self.unconfirmed_spend_requests
+                .iter()
+                .map(|s| &s.spend.unique_pubkey),
+        ) {
+            warn!("Could not clean confirmed spent cash_notes due to {error:?}");
+        }
         self.unconfirmed_spend_requests = Default::default();
     }
 
@@ -361,17 +380,13 @@ impl LocalWallet {
             .collect();
 
         self.watchonly_wallet
-            .mark_notes_as_spent(spent_unique_pubkeys);
+            .mark_notes_as_spent(spent_unique_pubkeys.clone());
 
         if let Some(cash_note) = transfer.change_cash_note {
             self.watchonly_wallet.deposit(&[cash_note.clone()])?;
             self.store_cash_notes_to_disk(&[cash_note])?;
         }
 
-        for cash_note in &transfer.created_cash_notes {
-            self.watchonly_wallet
-                .insert_cash_note_created_for_others(cash_note.unique_pubkey());
-        }
         // Store created CashNotes in a batch, improving IO performance
         self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
 
@@ -494,11 +509,6 @@ mod tests {
             .watchonly_wallet
             .available_cash_notes()
             .is_empty());
-        assert!(deposit_only
-            .watchonly_wallet
-            .cash_notes_created_for_others()
-            .is_empty());
-        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -527,11 +537,6 @@ mod tests {
             .watchonly_wallet
             .available_cash_notes()
             .is_empty());
-        assert!(deposit_only
-            .watchonly_wallet
-            .cash_notes_created_for_others()
-            .is_empty());
-        assert!(deposit_only.watchonly_wallet.spent_cash_notes().is_empty());
 
         Ok(())
     }
@@ -622,27 +627,11 @@ mod tests {
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());
 
         assert_eq!(1, depositor.watchonly_wallet.available_cash_notes().len());
-        assert_eq!(
-            0,
-            depositor
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(0, depositor.watchonly_wallet.spent_cash_notes().len());
 
         assert_eq!(
             1,
             deserialized.watchonly_wallet.available_cash_notes().len()
         );
-        assert_eq!(
-            0,
-            deserialized
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(0, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = depositor
             .watchonly_wallet
@@ -727,27 +716,11 @@ mod tests {
         );
 
         assert_eq!(1, sender.watchonly_wallet.available_cash_notes().len());
-        assert_eq!(
-            1,
-            sender
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(1, sender.watchonly_wallet.spent_cash_notes().len());
 
         assert_eq!(
             1,
             deserialized.watchonly_wallet.available_cash_notes().len()
         );
-        assert_eq!(
-            1,
-            deserialized
-                .watchonly_wallet
-                .cash_notes_created_for_others()
-                .len()
-        );
-        assert_eq!(1, deserialized.watchonly_wallet.spent_cash_notes().len());
 
         let a_available = sender
             .watchonly_wallet
@@ -762,26 +735,6 @@ mod tests {
             .last()
             .expect("There to be an available CashNote.");
         assert_eq!(a_available, b_available);
-
-        let a_created_for_others = sender.watchonly_wallet.cash_notes_created_for_others();
-        let b_created_for_others = deserialized
-            .watchonly_wallet
-            .cash_notes_created_for_others();
-        assert_eq!(a_created_for_others, b_created_for_others);
-
-        let a_spent = sender
-            .watchonly_wallet
-            .spent_cash_notes()
-            .iter()
-            .last()
-            .expect("There to be a spent CashNote.");
-        let b_spent = deserialized
-            .watchonly_wallet
-            .spent_cash_notes()
-            .iter()
-            .last()
-            .expect("There to be a spent CashNote.");
-        assert_eq!(a_spent, b_spent);
 
         Ok(())
     }

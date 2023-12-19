@@ -6,6 +6,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.74](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.73...sn_cli-v0.86.74) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.86.73](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.72...sn_cli-v0.86.73) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.86.72](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.71...sn_cli-v0.86.72) - 2023-12-19
+
+### Fixed
+- *(cli)* mark chunk completion as soon as we upload each chunk
+
+## [0.86.71](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.70...sn_cli-v0.86.71) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.86.70](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.69...sn_cli-v0.86.70) - 2023-12-18
+
+### Added
+- *(cli)* random shuffle upload chunks to allow clients co-operation
+
+## [0.86.69](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.68...sn_cli-v0.86.69) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.86.68](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.67...sn_cli-v0.86.68) - 2023-12-18
+
+### Added
+- *(client)* update the Files config via setters
+- *(client)* track the upload stats inside Files
+- *(client)* move upload retry logic from CLI to client
+
+### Other
+- *(client)* add docs to the Files struct
+- *(cli)* use the new client Files api to upload chunks
+
 ## [0.86.67](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.66...sn_cli-v0.86.67) - 2023-12-14
 
 ### Other

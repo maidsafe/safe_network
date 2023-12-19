@@ -18,7 +18,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, WalletClient, BATCH_SIZE};
+use sn_client::{Client, Error, Files, FilesApi, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -378,7 +378,7 @@ fn store_chunks_task(
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
-        let file_api = Files::new(client, paying_wallet_dir);
+        let files_api = FilesApi::new(client, paying_wallet_dir);
         let mut rng = OsRng;
 
         loop {
@@ -398,7 +398,7 @@ fn store_chunks_task(
                 .expect("failed to write to temp chunk file");
 
             let (addr, _file_size, chunks) =
-                Files::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
+                FilesApi::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
 
             println!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
@@ -408,29 +408,24 @@ fn store_chunks_task(
             sleep(delay).await;
 
             let chunks_len = chunks.len();
+            let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let (addr, cost) = match file_api
-                .pay_and_upload_bytes_test(chunk_name, chunks.clone(), true)
-                .await
-            {
-                Ok((addr, storage_cost, royalties_fees)) => {
-                    let cost = storage_cost
-                        .checked_add(royalties_fees)
-                        .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
-
-                    (addr, cost)
-                }
-                Err(err) => {
-                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
-                }
-            };
+            let mut files = Files::new(files_api.clone()).set_show_holders(true);
+            if let Err(err) = files.upload_chunks(chunks).await {
+                bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
+            }
+            let royalties = files.get_upload_royalty_fees();
+            let storage_cost = files.get_upload_storage_cost();
+            let cost = royalties
+                .checked_add(storage_cost)
+                .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
             println!(
-                "Stores ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
+                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
             );
             sleep(delay).await;
 
-            for (chunk_name, _chunk_path) in chunks {
+            for chunk_name in chunks_name {
                 content
                     .write()
                     .await
@@ -629,8 +624,8 @@ async fn query_content(
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            let file_api = Files::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = file_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
+            let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
+            let _ = files_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

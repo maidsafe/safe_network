@@ -66,6 +66,7 @@ pub enum Error {
 
     #[error("The provided amount contains zero nanos")]
     AmountIsZero,
+
     /// CashNote add would overflow
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
@@ -75,4 +76,10 @@ pub enum Error {
 
     #[error("Could not connect to the network in {0:?}")]
     ConnectionTimeout(Duration),
+
+    #[error("Too many sequential upload payment failures")]
+    SequentialUploadPaymentError,
+
+    #[error("Could not send files event")]
+    CouldNotSendFilesEvent,
 }

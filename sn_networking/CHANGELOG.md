@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.7...sn_networking-v0.12.8) - 2023-12-19
+
+### Fixed
+- no retry_after to avoid looping
+
+## [0.12.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.6...sn_networking-v0.12.7) - 2023-12-18
+
+### Other
+- updated the following local packages: sn_transfers
+
 ## [0.12.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.5...sn_networking-v0.12.6) - 2023-12-14
 
 ### Other

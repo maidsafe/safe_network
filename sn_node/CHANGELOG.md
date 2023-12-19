@@ -2573,6 +2573,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.13...sn_node-v0.100.14) - 2023-12-18
+
+### Added
+- *(client)* update the Files config via setters
+- *(client)* move upload retry logic from CLI to client
+
+### Fixed
+- *(test)* use the Files struct to upload chunks
+
+### Other
+- *(client)* add docs to the Files struct
+
+## [0.100.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.14...sn_node-v0.100.15) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.100.16](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.15...sn_node-v0.100.16) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.100.17](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.16...sn_node-v0.100.17) - 2023-12-18
+
+### Other
+- update dependencies
+
+## [0.100.18](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.17...sn_node-v0.100.18) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.100.19](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.18...sn_node-v0.100.19) - 2023-12-19
+
+### Other
+- update dependencies
+
+## [0.100.20](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.19...sn_node-v0.100.20) - 2023-12-19
+
+### Fixed
+- *(test)* tests should try to load just the faucet wallet
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

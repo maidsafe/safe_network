@@ -12,7 +12,7 @@ use crate::common::{client::get_gossip_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
-use sn_client::{Error as ClientError, WalletClient, BATCH_SIZE};
+use sn_client::{Error as ClientError, Files, WalletClient, BATCH_SIZE};
 use sn_logging::LogBuilder;
 use sn_networking::{Error as NetworkError, GetRecordError};
 use sn_protocol::{
@@ -199,9 +199,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    files_api
-        .pay_and_upload_bytes_test(*file_addr.xorname(), chunks, true)
-        .await?;
+    let mut files = Files::new(files_api.clone()).set_show_holders(true);
+    files.upload_chunks(chunks).await?;
 
     files_api
         .read_bytes(file_addr, None, false, BATCH_SIZE)

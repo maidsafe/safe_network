@@ -18,7 +18,7 @@ use super::{
 use crate::{CashNote, MainPubkey, NanoTokens, UniquePubkey};
 use fs2::FileExt;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fs::OpenOptions,
     path::{Path, PathBuf},
 };
@@ -106,11 +106,6 @@ impl WatchOnlyWallet {
         for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
 
-            if self.keyless_wallet.spent_cash_notes.contains(&id) {
-                debug!("skipping: cash_note is spent");
-                continue;
-            }
-
             if cash_note.derived_pubkey(&self.main_pubkey).is_err() {
                 debug!("skipping: cash_note is not our key");
                 continue;
@@ -140,11 +135,6 @@ impl WatchOnlyWallet {
 
         for cash_note in received_cash_notes {
             let id = cash_note.unique_pubkey();
-
-            if self.keyless_wallet.spent_cash_notes.contains(&id) {
-                debug!("skipping: cash_note is spent");
-                continue;
-            }
 
             if cash_note.derived_pubkey(&self.main_pubkey).is_err() {
                 debug!("skipping: cash_note is not our key");
@@ -180,43 +170,14 @@ impl WatchOnlyWallet {
         &self.keyless_wallet.available_cash_notes
     }
 
-    /// Remove referenced CashNotes from available_cash_notes and add it to spent_cash_notes.
+    /// Remove referenced CashNotes from available_cash_notes
     pub fn mark_notes_as_spent<'a, T>(&mut self, unique_pubkeys: T)
     where
         T: IntoIterator<Item = &'a UniquePubkey>,
     {
         for k in unique_pubkeys {
             self.keyless_wallet.available_cash_notes.remove(k);
-            self.keyless_wallet.spent_cash_notes.insert(*k);
         }
-    }
-
-    /// Return the set of UnniquePubjkey's of spent cash notes.
-    pub fn spent_cash_notes(&self) -> &BTreeSet<UniquePubkey> {
-        &self.keyless_wallet.spent_cash_notes
-    }
-
-    /// Insert provided UniquePubkey's into the set of spent cash notes.
-    pub fn insert_spent_cash_notes<'a, T>(&mut self, spent_cash_notes: T)
-    where
-        T: IntoIterator<Item = &'a UniquePubkey>,
-    {
-        for pk in spent_cash_notes {
-            let _ = self.keyless_wallet.spent_cash_notes.insert(*pk);
-        }
-    }
-
-    /// Return cash notes created for others
-    pub fn cash_notes_created_for_others(&self) -> &BTreeSet<UniquePubkey> {
-        &self.keyless_wallet.cash_notes_created_for_others
-    }
-
-    /// Record pubkey as a cash note created for others
-    pub fn insert_cash_note_created_for_others(&mut self, unique_pubkey: UniquePubkey) {
-        let _ = self
-            .keyless_wallet
-            .cash_notes_created_for_others
-            .insert(unique_pubkey);
     }
 
     /// Return a payment transaction detail
@@ -277,8 +238,6 @@ mod tests {
         assert_eq!(wallet_dir.path(), wallet.wallet_dir());
         assert_eq!(main_pubkey, wallet.address());
         assert_eq!(NanoTokens::zero(), wallet.balance());
-        assert!(wallet.cash_notes_created_for_others().is_empty());
-        assert!(wallet.spent_cash_notes().is_empty());
         assert!(wallet.available_cash_notes().is_empty());
 
         Ok(())
@@ -301,12 +260,6 @@ mod tests {
 
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialised.balance().as_nano());
-
-        assert!(wallet.cash_notes_created_for_others().is_empty());
-        assert!(deserialised.cash_notes_created_for_others().is_empty());
-
-        assert!(wallet.spent_cash_notes().is_empty());
-        assert!(deserialised.spent_cash_notes().is_empty());
 
         assert_eq!(1, wallet.available_cash_notes().len());
         assert_eq!(1, deserialised.available_cash_notes().len());
