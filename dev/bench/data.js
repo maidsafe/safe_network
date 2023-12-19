@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702990585583,
+  "lastUpdate": 1702990587345,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b1c88b7746efabd86d7c3b09b3244a533b733abd",
-          "message": "feat(cli): expose 'concurrency' flag",
-          "timestamp": "2023-08-31T08:49:53Z",
-          "tree_id": "e32c3a11ea51effa94a974584e26e34d2dd5686e",
-          "url": "https://github.com/maidsafe/safe_network/commit/b1c88b7746efabd86d7c3b09b3244a533b733abd"
-        },
-        "date": 1693479199286,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1359.7778,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1293,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 122,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4936795c12c0e5b903c22fd4003fa8bcd036f735",
+          "message": "fix(test): tests should try to load just the faucet wallet\n- We start a faucet server before each test, so we should be not trying\n  to load the genesis wallet again, instead try to wait for the faucet\n  wallet to get filled in by the faucet_server",
+          "timestamp": "2023-12-19T12:17:13Z",
+          "tree_id": "f570bb2c76dd2f89056554e3ab5a4207406df75a",
+          "url": "https://github.com/maidsafe/safe_network/commit/4936795c12c0e5b903c22fd4003fa8bcd036f735"
+        },
+        "date": 1702990586723,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 678,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 119,
             "unit": "MB"
           }
         ]
