@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702978627628,
+  "lastUpdate": 1702978629257,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "953d793983c221503bfe2b3acf2b0a180d669e71",
-          "message": "chore(networking): increase FETCH_TIMEOUT to 10s",
-          "timestamp": "2023-08-30T15:48:44Z",
-          "tree_id": "3723b4dd4bfc265ebb36749a056a715f1cab0bcb",
-          "url": "https://github.com/maidsafe/safe_network/commit/953d793983c221503bfe2b3acf2b0a180d669e71"
-        },
-        "date": 1693424541238,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1160.4991,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1113,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 120,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "af40983e24315b001f10610600093054b05450ee",
+          "message": "fix(cli): mark chunk completion as soon as we upload each chunk",
+          "timestamp": "2023-12-19T08:46:47Z",
+          "tree_id": "7293749b21b06611c0907a924f2b07972a257113",
+          "url": "https://github.com/maidsafe/safe_network/commit/af40983e24315b001f10610600093054b05450ee"
+        },
+        "date": 1702978628849,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 720,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 114,
             "unit": "MB"
           }
         ]
