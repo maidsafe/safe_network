@@ -84,7 +84,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
 
     let (_register, storage_cost, _royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false, false)
         .await?;
     println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
@@ -155,7 +155,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false, false)
         .await?;
     println!("Random Register created, paid {storage_cost}/{royalties_fees}");
 
