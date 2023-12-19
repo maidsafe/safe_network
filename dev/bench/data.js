@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702995871102,
+  "lastUpdate": 1702998151665,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "63d4a0117c348b691a19a1649f85dc186ab1ac9d",
-          "message": "fix(cli): don't try to create wallet paths when checking balance",
-          "timestamp": "2023-08-31T16:07:42Z",
-          "tree_id": "9bdfd4db955acd84d00bcddfcc5fa51a9da1b735",
-          "url": "https://github.com/maidsafe/safe_network/commit/63d4a0117c348b691a19a1649f85dc186ab1ac9d"
-        },
-        "date": 1693505256983,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11966013904334206,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6148305178007698,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 5.140448584166704,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.57539642388422,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "cf0c80d09a56f7860071edb0d69617dd6a7e6f25",
+          "message": "chore: add data path field to node info\n\nSince we provide the logs path, it's useful for the node manager to also have access here to the\ndata path, which it can provide to the user.\n\nI also wanted to provide the port the node is running on, but it's not easy to get access to that if\nthe port is assigned by libp2p.",
+          "timestamp": "2023-12-19T14:25:09Z",
+          "tree_id": "e3fb3bdbdbe0ce998cfaad234c8db575b2368ab0",
+          "url": "https://github.com/maidsafe/safe_network/commit/cf0c80d09a56f7860071edb0d69617dd6a7e6f25"
+        },
+        "date": 1702998149407,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3445420261864818,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 2.0080213238472697,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 40.563557845800936,
             "unit": "MiB/s"
           }
         ]
