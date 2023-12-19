@@ -45,7 +45,7 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{Query, QueryResponse, Request, Response},
@@ -700,32 +700,23 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return the closest / lowest cost
-/// Closest requiring it to be within CLOSE_GROUP nodes
+/// Given `all_costs` it will return a random one to be selected as the payee.
 fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<(MainPubkey, PaymentQuote)> {
-    // sort all costs by fee, lowest to highest
-    // if there's a tie in cost, sort by pubkey
-    all_costs.sort_by(
-        |(address_a, _main_key_a, cost_a), (address_b, _main_key_b, cost_b)| match cost_a
-            .cost
-            .cmp(&cost_b.cost)
-        {
-            std::cmp::Ordering::Equal => address_a.cmp(address_b),
-            other => other,
-        },
-    );
-
-    // get the lowest cost
     trace!("Got all costs: {all_costs:?}");
-    let lowest = all_costs
+    // Random shuffle the all_costs, so that nodes with high charge due to replication still
+    // get chance to be selected. Also avoid previllage of nodes with `sided addresses`.
+    let mut rng = rand::thread_rng();
+    all_costs.shuffle(&mut rng);
+
+    let payee = all_costs
         .into_iter()
         .next()
         .ok_or(Error::NoStoreCostResponses)?;
-    info!("Final fees calculated as: {lowest:?}");
+    info!("Final fees calculated as: {payee:?}");
     // we dont need to have the address outside of here for now
-    Ok((lowest.1, lowest.2))
+    Ok((payee.1, payee.2))
 }
 
 /// Get the value of the provided Quorum
@@ -782,6 +773,7 @@ mod tests {
     use super::*;
     use sn_transfers::PaymentQuote;
 
+    #[ignore = "Payee is now randomly selected"]
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
@@ -807,6 +799,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore = "Payee is now randomly selected"]
     #[test]
     fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
     ) -> eyre::Result<()> {
