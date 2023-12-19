@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.25](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.24...sn_client-v0.99.25) - 2023-12-19
+
+### Fixed
+- *(test)* tests should try to load just the faucet wallet
+
 ## [0.99.24](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.23...sn_client-v0.99.24) - 2023-12-19
 
 ### Other
