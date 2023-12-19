@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702980564181,
+  "lastUpdate": 1702990465015,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "98b24620115acf5479a649b5e114ee06ad171e59",
-          "message": "Revert \"fix(ci): disable `CARGO_TARGET_DIR` to speedup build time\"\n\nThis reverts commit caf42044554bc6ee082db9800443a089a77bbe31.",
-          "timestamp": "2023-08-31T17:58:36+02:00",
-          "tree_id": "b9d8244b8fe11923b62913a220e777b46f64636e",
-          "url": "https://github.com/maidsafe/safe_network/commit/98b24620115acf5479a649b5e114ee06ad171e59"
-        },
-        "date": 1693499296174,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.12743132668400373,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5393546065660334,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.263012182910301,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.9791616257716,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4936795c12c0e5b903c22fd4003fa8bcd036f735",
+          "message": "fix(test): tests should try to load just the faucet wallet\n- We start a faucet server before each test, so we should be not trying\n  to load the genesis wallet again, instead try to wait for the faucet\n  wallet to get filled in by the faucet_server",
+          "timestamp": "2023-12-19T12:17:13Z",
+          "tree_id": "f570bb2c76dd2f89056554e3ab5a4207406df75a",
+          "url": "https://github.com/maidsafe/safe_network/commit/4936795c12c0e5b903c22fd4003fa8bcd036f735"
+        },
+        "date": 1702990462641,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3173942056934853,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9844103568037985,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.65724158817464,
             "unit": "MiB/s"
           }
         ]
