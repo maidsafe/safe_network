@@ -77,7 +77,7 @@ pub enum FilesCmds {
         #[clap(long, name = "show_holders", default_value = "false")]
         show_holders: bool,
         /// The batch_size for parallel downloading
-        #[clap(long, default_value_t = BATCH_SIZE / 4, short='b')]
+        #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
     },
 }
