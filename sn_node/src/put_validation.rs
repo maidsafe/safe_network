@@ -499,6 +499,7 @@ impl Node {
 
         // load wallet
         let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)?;
+        let old_balance = wallet.balance().as_nano();
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
@@ -510,11 +511,17 @@ impl Node {
 
         // deposit the CashNotes in our wallet
         wallet.deposit_and_store_to_disk(&cash_notes)?;
+        let new_balance = wallet.balance().as_nano();
+        info!(
+            "The new wallet balance is {new_balance}, after earning {}",
+            new_balance - old_balance
+        );
+
         #[cfg(feature = "open-metrics")]
         let _ = self
             .node_metrics
             .reward_wallet_balance
-            .set(wallet.balance().as_nano() as i64);
+            .set(new_balance as i64);
 
         if royalties_cash_notes_r.is_empty() {
             warn!("No network royalties payment found for record {pretty_key}");
