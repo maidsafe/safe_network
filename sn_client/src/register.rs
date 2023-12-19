@@ -60,10 +60,10 @@ impl ClientRegister {
         meta: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-    ) -> Result<Self> {
+    ) -> Result<(Self, NanoTokens, NanoTokens)> {
         let mut reg = Self::create_register(client, meta, Permissions::new_anyone_can_write())?;
-        reg.sync(wallet_client, verify_store).await?;
-        Ok(reg)
+        let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
+        Ok((reg, storage_cost, royalties_fees))
     }
 
     /// Create a new Register and send it to the Network.
@@ -410,7 +410,7 @@ impl ClientRegister {
         client: &Client,
         address: RegisterAddress,
     ) -> Result<Register> {
-        debug!("Retrieving Register from: {address}");
+        debug!("Retrieving Register from: {address:?}");
         let reg = client
             .get_signed_register_from_network(address, false)
             .await?;

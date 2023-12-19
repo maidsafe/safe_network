@@ -89,7 +89,7 @@ async fn create_register(
 
     let meta = XorName::from_content(name.as_bytes());
     let (register, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(meta, &mut wallet_client, verify_store)
+        .create_and_pay_for_register(meta, &mut wallet_client, verify_store, false)
         .await?;
 
     if storage_cost.is_zero() {
