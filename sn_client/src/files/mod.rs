@@ -24,7 +24,7 @@ use tokio::{
 use xor_name::XorName;
 
 /// `BATCH_SIZE` determines the number of chunks that are processed in parallel during the payment and upload process.
-pub const BATCH_SIZE: usize = 64;
+pub const BATCH_SIZE: usize = 16;
 
 /// The maximum number of retries to perform on a failed chunk.
 pub const MAX_UPLOAD_RETRIES: usize = 3;
