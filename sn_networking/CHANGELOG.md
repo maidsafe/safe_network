@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.8...sn_networking-v0.12.9) - 2023-12-19
+
+### Added
+- random select payee
+
 ## [0.12.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.7...sn_networking-v0.12.8) - 2023-12-19
 
 ### Fixed
