@@ -55,11 +55,9 @@ impl SignedSpend {
     }
 
     /// Represent this SignedSpend as bytes.
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Default::default();
-        bytes.extend(self.spend.to_bytes());
-        bytes.extend(self.derived_key_sig.to_bytes());
-        bytes
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        rmp_serde::to_vec(&self)
+            .map_err(|err| Error::SignedSpendSerializationFailed(err.to_string()))
     }
 
     /// Verify this SignedSpend
@@ -106,7 +104,7 @@ impl SignedSpend {
         if self
             .spend
             .unique_pubkey
-            .verify(&self.derived_key_sig, self.spend.to_bytes())
+            .verify(&self.derived_key_sig, self.spend.to_bytes()?)
         {
             Ok(())
         } else {
@@ -123,13 +121,6 @@ impl PartialEq for SignedSpend {
 }
 
 impl Eq for SignedSpend {}
-
-impl std::hash::Hash for SignedSpend {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let bytes = self.to_bytes();
-        bytes.hash(state);
-    }
-}
 
 /// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
 #[derive(custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,19 +147,13 @@ pub struct Spend {
 impl Spend {
     /// Represent this Spend as bytes.
     /// There is no from_bytes, because this function is not symetric as it uses hashes
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Default::default();
-        bytes.extend(self.unique_pubkey.to_bytes());
-        bytes.extend(self.spent_tx.hash().as_ref());
-        bytes.extend(self.reason.as_ref());
-        bytes.extend(self.token.to_bytes());
-        bytes.extend(self.parent_tx.hash().as_ref());
-        bytes
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        rmp_serde::to_vec(&self).map_err(|err| Error::SpendSerializationFailed(err.to_string()))
     }
 
     /// represent this Spend as a Hash
-    pub fn hash(&self) -> Hash {
-        Hash::hash(&self.to_bytes())
+    pub fn hash(&self) -> Result<Hash> {
+        Ok(Hash::hash(&self.to_bytes()?))
     }
 }
 
@@ -181,5 +166,13 @@ impl PartialOrd for Spend {
 impl Ord for Spend {
     fn cmp(&self, other: &Self) -> Ordering {
         self.unique_pubkey.cmp(&other.unique_pubkey)
+    }
+}
+
+impl std::hash::Hash for SignedSpend {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // FIXME!!!!
+        let bytes = self.to_bytes().unwrap();
+        bytes.hash(state);
     }
 }

@@ -131,20 +131,14 @@ impl CashNote {
     }
 
     /// Generate the hash of this CashNote
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> Result<Hash> {
         let mut sha3 = Sha3::v256();
-        sha3.update(self.src_tx.hash().as_ref());
-        sha3.update(&self.main_pubkey.to_bytes());
-        sha3.update(&self.derivation_index.0);
-
-        for sp in self.signed_spends.iter() {
-            sha3.update(&sp.to_bytes());
-        }
-
-        sha3.update(self.reason().as_ref());
+        let serialised = rmp_serde::to_vec(&self)
+            .map_err(|err| Error::CashNoteSerializationFailed(err.to_string()))?;
+        sha3.update(&serialised);
         let mut hash = [0u8; 32];
         sha3.finalize(&mut hash);
-        Hash::from(hash)
+        Ok(Hash::from(hash))
     }
 
     /// Verifies that this CashNote is valid.
@@ -160,7 +154,7 @@ impl CashNote {
     ///
     /// see TransactionVerifier::verify() for a description of
     /// verifier requirements.
-    pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), Error> {
+    pub fn verify(&self, main_key: &MainSecretKey) -> Result<()> {
         self.src_tx
             .verify_against_inputs_spent(&self.signed_spends)?;
 
@@ -184,7 +178,7 @@ impl CashNote {
     }
 
     /// Deserializes a `CashNote` represented as a hex string to a `CashNote`.
-    pub fn from_hex(hex: &str) -> Result<Self, Error> {
+    pub fn from_hex(hex: &str) -> Result<Self> {
         let mut bytes =
             hex::decode(hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
         bytes.reverse();
@@ -194,7 +188,7 @@ impl CashNote {
     }
 
     /// Serialize this `CashNote` instance to a hex string.
-    pub fn to_hex(&self) -> Result<String, Error> {
+    pub fn to_hex(&self) -> Result<String> {
         let mut serialized =
             rmp_serde::to_vec(&self).map_err(|e| Error::HexSerializationFailed(e.to_string()))?;
         serialized.reverse();

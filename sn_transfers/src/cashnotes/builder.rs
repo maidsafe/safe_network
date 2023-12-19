@@ -104,7 +104,7 @@ impl TransactionBuilder {
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),
                 };
-                let derived_key_sig = derived_key.sign(&spend.to_bytes());
+                let derived_key_sig = derived_key.sign(&spend.to_bytes()?);
                 signed_spends.insert(SignedSpend {
                     spend,
                     derived_key_sig,

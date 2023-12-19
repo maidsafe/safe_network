@@ -27,6 +27,8 @@ pub enum Error {
     #[error("Failed to parse: {0}")]
     FailedToParseNanoToken(String),
 
+    #[error("Spend serialisation failed: {0}")]
+    SpendSerializationFailed(String),
     #[error("Invalid Spend: value was tampered with {0:?}")]
     InvalidSpendValue(UniquePubkey),
     #[error("Invalid Spend Signature for {0:?}")]
@@ -45,6 +47,8 @@ pub enum Error {
     SignedSpendInputIdMismatch,
     #[error("SignedSpends for {0:?} have mismatching reasons.")]
     SignedSpendReasonMismatch(UniquePubkey),
+    #[error("SignedSpend serialisation failed: {0}")]
+    SignedSpendSerializationFailed(String),
     #[error("Decryption failed.")]
     DecryptionBySecretKeyFailed,
     #[error("UniquePubkey not found.")]
@@ -79,6 +83,8 @@ pub enum Error {
     CashNoteRedemptionDecryptionFailed,
     #[error("CashNoteRedemption encryption failed")]
     CashNoteRedemptionEncryptionFailed,
+    #[error("Cashnote serialisation failed: {0}")]
+    CashNoteSerializationFailed(String),
     #[error("We are not a recipient of this Transfer")]
     NotRecipient,
     #[error("Transfer serialisation failed")]
