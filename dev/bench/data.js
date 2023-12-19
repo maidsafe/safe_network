@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702980436595,
+  "lastUpdate": 1702980560224,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "db8544616996b0330c17d99f6937affdbb502e7a",
-          "message": "feat: fetch from network during network",
-          "timestamp": "2023-08-31T10:41:58Z",
-          "tree_id": "22ae65e59780ecc7a65ebcc8dec96c2a558545ec",
-          "url": "https://github.com/maidsafe/safe_network/commit/db8544616996b0330c17d99f6937affdbb502e7a"
-        },
-        "date": 1693485500380,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 74.94861,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "c8983fadc3dfc98e073b93904ca8eed09b295be6",
           "message": "fix: correct bench download calculation",
           "timestamp": "2023-08-31T11:28:17Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 77,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "100985ca2309342b429c614c11e9bb0d1bfe44f8",
+          "message": "fix: no retry_after to avoid looping",
+          "timestamp": "2023-12-19T09:13:08Z",
+          "tree_id": "e5811d6ca082f051e398c583dc6a40914ac46a7e",
+          "url": "https://github.com/maidsafe/safe_network/commit/100985ca2309342b429c614c11e9bb0d1bfe44f8"
+        },
+        "date": 1702980559601,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 97,
             "unit": "MB"
           }
         ]
