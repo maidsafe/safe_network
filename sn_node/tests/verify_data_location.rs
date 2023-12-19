@@ -143,7 +143,12 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
             sort_peers_by_key(&all_peers, &key, CLOSE_GROUP_SIZE).expect("failed to sort peer");
         let closest_peers_idx = closest_peers
             .iter()
-            .map(|&&peer| all_peers.iter().position(|&p| p == peer).expect("peer to be in iterator"))
+            .map(|&&peer| {
+                all_peers
+                    .iter()
+                    .position(|&p| p == peer)
+                    .expect("peer to be in iterator")
+            })
             .collect::<Vec<_>>();
         println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
