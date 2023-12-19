@@ -243,6 +243,16 @@ You can check your reward balance by running:
     let node_events_rx = running_node.node_events_channel().subscribe();
     monitor_node_events(node_events_rx, ctrl_tx.clone());
 
+    // Monitor ctrl-c
+    let ctrl_tx_clone = ctrl_tx.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.unwrap();
+        ctrl_tx_clone.send(NodeCtrl::Stop {
+            delay: Duration::from_secs(1),
+            cause: eyre!("Ctrl-C received!"),
+        }).await.unwrap();
+    });
+
     // Start up gRPC interface if enabled by user
     if let Some(addr) = rpc {
         rpc_service::start_rpc_service(
