@@ -37,7 +37,7 @@ fn safe_files_upload(dir: &str) {
 
     if !output.status.success() {
         let err = output.stderr;
-        let err_string = String::from_utf8(err).unwrap();
+        let err_string = String::from_utf8(err).expect("Failed to parse error string");
         panic!("Upload command executed with failing error code: {err_string:?}");
     }
 }
@@ -51,7 +51,7 @@ fn safe_files_download() {
 
     if !output.status.success() {
         let err = output.stderr;
-        let err_string = String::from_utf8(err).unwrap();
+        let err_string = String::from_utf8(err).expect("Failed to parse error string");
         panic!("Download command executed with failing error code: {err_string:?}");
     }
 }
@@ -92,7 +92,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     for size in sizes.iter() {
         let temp_dir = tempdir().expect("Failed to create temp dir");
         let temp_dir_path = temp_dir.into_path();
-        let temp_dir_path_str = temp_dir_path.to_str().unwrap();
+        let temp_dir_path_str = temp_dir_path.to_str().expect("Invalid unicode encountered");
 
         // create 23 random files. This is to keep the benchmark results consistent with prior runs. The change to make
         // use of ChunkManager means that we don't upload the same file twice and the `uploaded_files` file is now read

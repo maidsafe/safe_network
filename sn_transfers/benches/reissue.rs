@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#![allow(clippy::from_iter_instead_of_collect)]
+#![allow(clippy::from_iter_instead_of_collect, clippy::unwrap_used)]
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{

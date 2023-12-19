@@ -55,18 +55,17 @@ pub(crate) fn encrypt_large(
         Some(Box::new(output_dir.to_path_buf())),
     )?;
 
-    let mut data_map = None;
+    let data_map;
     loop {
         match encryptor.next_encryption()? {
             (None, Some(m)) => {
                 // Returning a data_map means file encryption is completed.
-                data_map = Some(m);
+                data_map = m;
                 break;
             }
             _ => continue,
         }
     }
-    let data_map = data_map.unwrap();
     let mut encrypted_chunks: Vec<_> = data_map
         .infos()
         .iter()
