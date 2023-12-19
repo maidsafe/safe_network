@@ -6,22 +6,25 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use eyre::Result;
+use eyre::{bail, Result};
 use lazy_static::lazy_static;
-use sn_client::{load_faucet_wallet_from_genesis_wallet, send, Client};
+use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::test_utils::DeploymentInventory;
-use sn_transfers::{LocalWallet, NanoTokens, Transfer};
+use sn_transfers::{create_faucet_wallet, LocalWallet, NanoTokens, Transfer};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::Path,
+    time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
-use tracing::error;
+use tracing::{error, info, warn};
 
 pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
 /// The node count for a locally running network that the tests expect
 pub const LOCAL_NODE_COUNT: usize = 25;
+// The number of times to try to load the faucet wallet
+const LOAD_FAUCET_WALLET_RETRIES: usize = 6;
 
 lazy_static! {
     // mutex to restrict access to faucet wallet from concurrent tests
@@ -107,9 +110,10 @@ pub async fn get_gossip_client_and_wallet(
             let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
             let client = NonDroplet::get_gossip_client().await;
-            let faucet = load_faucet_wallet_from_genesis_wallet(&client).await?;
+
+            let faucet_wallet = NonDroplet::load_faucet_wallet().await?;
             let local_wallet =
-                NonDroplet::get_funded_wallet(&client, faucet, root_dir, amount).await?;
+                NonDroplet::get_funded_wallet(&client, faucet_wallet, root_dir, amount).await?;
 
             Ok((client, local_wallet))
         }
@@ -159,6 +163,23 @@ impl NonDroplet {
         println!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
         Ok(local_wallet)
+    }
+
+    async fn load_faucet_wallet() -> Result<LocalWallet> {
+        info!("Loading faucet...");
+        let now = Instant::now();
+        for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
+            let faucet_wallet = create_faucet_wallet();
+
+            let faucet_balance = faucet_wallet.balance();
+            if !faucet_balance.is_zero() {
+                info!("Loaded faucet wallet after {:?}", now.elapsed());
+                return Ok(faucet_wallet);
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            warn!("The faucet wallet is empty. Attempts: {attempt}/{LOAD_FAUCET_WALLET_RETRIES}")
+        }
+        bail!("The faucet wallet is empty even after {LOAD_FAUCET_WALLET_RETRIES} retries. Bailing after {:?}. Check the faucet_server logs.", now.elapsed());
     }
 }
 
