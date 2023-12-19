@@ -79,7 +79,7 @@ impl SafeNode for SafeNodeRpcService {
             request.get_ref()
         );
 
-        let state = self.running_node.get_swarm_local_state().await.unwrap();
+        let state = self.running_node.get_swarm_local_state().await.expect("failed to get local swarm state");
         let connected_peers = state.connected_peers.iter().map(|p| p.to_bytes()).collect();
         let listeners = state.listeners.iter().map(|m| m.to_string()).collect();
 
@@ -176,7 +176,7 @@ impl SafeNode for SafeNodeRpcService {
             .running_node
             .get_all_record_addresses()
             .await
-            .unwrap()
+            .expect("failed to get record addresses")
             .into_iter()
             .map(|addr| addr.as_bytes())
             .collect();
@@ -198,7 +198,7 @@ impl SafeNode for SafeNodeRpcService {
             .running_node
             .get_kbuckets()
             .await
-            .unwrap()
+            .expect("failed to get k-buckets")
             .into_iter()
             .map(|(ilog2_distance, peers)| {
                 let peers = peers.into_iter().map(|peer| peer.to_bytes()).collect();

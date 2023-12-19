@@ -87,7 +87,7 @@ impl PaymentQuote {
         bytes.extend_from_slice(
             &timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
+                .expect("Unix epoch to be in the past")
                 .as_secs()
                 .to_le_bytes(),
         );

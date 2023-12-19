@@ -306,7 +306,7 @@ impl FilesApi {
                     let serialized_chunk = self
                         .read_all(data_map, None, false, batch_size)
                         .await?
-                        .unwrap();
+                        .expect("error encountered on reading additional datamap");
                     chunk = rmp_serde::from_slice(&serialized_chunk)
                         .map_err(ChunksError::Deserialisation)?;
                 }
