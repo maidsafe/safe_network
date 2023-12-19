@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.22...sn_client-v0.99.23) - 2023-12-19
+
+### Fixed
+- *(cli)* mark chunk completion as soon as we upload each chunk
+
 ## [0.99.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.21...sn_client-v0.99.22) - 2023-12-18
 
 ### Added
