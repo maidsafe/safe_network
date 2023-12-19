@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702998151665,
+  "lastUpdate": 1702998264758,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2156f1f9ce37f0ba8ef7092825380856a763c226",
-          "message": "chore: some logging updates",
-          "timestamp": "2023-08-31T14:48:26Z",
-          "tree_id": "dd012609cb2b6cd4b9d16a421227f9741bdc9af8",
-          "url": "https://github.com/maidsafe/safe_network/commit/2156f1f9ce37f0ba8ef7092825380856a763c226"
-        },
-        "date": 1693501897994,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 73.73209,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 89,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "cf0c80d09a56f7860071edb0d69617dd6a7e6f25",
+          "message": "chore: add data path field to node info\n\nSince we provide the logs path, it's useful for the node manager to also have access here to the\ndata path, which it can provide to the user.\n\nI also wanted to provide the port the node is running on, but it's not easy to get access to that if\nthe port is assigned by libp2p.",
+          "timestamp": "2023-12-19T14:25:09Z",
+          "tree_id": "e3fb3bdbdbe0ce998cfaad234c8db575b2368ab0",
+          "url": "https://github.com/maidsafe/safe_network/commit/cf0c80d09a56f7860071edb0d69617dd6a7e6f25"
+        },
+        "date": 1702998264175,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 76,
             "unit": "MB"
           }
         ]
