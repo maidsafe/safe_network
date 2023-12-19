@@ -246,7 +246,10 @@ You can check your reward balance by running:
     // Monitor ctrl-c
     let ctrl_tx_clone = ctrl_tx.clone();
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.unwrap();
+        if let Err(err) = tokio::signal::ctrl_c().await {
+            // I/O error, ignore/print the error, but continue to handle as if ctrl-c was received
+            warn!("Listening to ctrl-c error: {err}");
+        }
         ctrl_tx_clone.send(NodeCtrl::Stop {
             delay: Duration::from_secs(1),
             cause: eyre!("Ctrl-C received!"),
