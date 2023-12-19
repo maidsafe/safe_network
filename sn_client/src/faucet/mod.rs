@@ -1,9 +1,15 @@
-use super::{wallet::send, Result};
-use crate::Client;
+// Copyright 2023 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_transfers::LocalWallet;
-use sn_transfers::{create_faucet_wallet, load_genesis_wallet};
-use sn_transfers::{CashNote, MainPubkey, NanoTokens};
+use crate::{wallet::send, Client, Result};
+use sn_transfers::{
+    create_faucet_wallet, load_genesis_wallet, CashNote, LocalWallet, MainPubkey, NanoTokens,
+};
 
 /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
 /// Note this will create a faucet having a Genesis balance
