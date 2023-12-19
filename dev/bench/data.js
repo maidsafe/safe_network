@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702978505966,
+  "lastUpdate": 1702978627628,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b1c88b7746efabd86d7c3b09b3244a533b733abd",
-          "message": "feat(cli): expose 'concurrency' flag",
-          "timestamp": "2023-08-31T08:49:53Z",
-          "tree_id": "e32c3a11ea51effa94a974584e26e34d2dd5686e",
-          "url": "https://github.com/maidsafe/safe_network/commit/b1c88b7746efabd86d7c3b09b3244a533b733abd"
-        },
-        "date": 1693479197030,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 69.95968,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "af40983e24315b001f10610600093054b05450ee",
+          "message": "fix(cli): mark chunk completion as soon as we upload each chunk",
+          "timestamp": "2023-12-19T08:46:47Z",
+          "tree_id": "7293749b21b06611c0907a924f2b07972a257113",
+          "url": "https://github.com/maidsafe/safe_network/commit/af40983e24315b001f10610600093054b05450ee"
+        },
+        "date": 1702978627255,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 77,
             "unit": "MB"
           }
         ]
