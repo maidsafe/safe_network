@@ -436,7 +436,7 @@ impl Network {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
                 if cfg.re_attempt {
-                    BackoffError::Transient { err, retry_after: Some(Duration::from_millis(rand::thread_rng().gen_range(1500..5000))) }
+                    BackoffError::Transient { err, retry_after: None }
                 } else {
                     BackoffError::Permanent(err)
                 }
