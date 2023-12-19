@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702990465015,
+  "lastUpdate": 1702990585583,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "c8983fadc3dfc98e073b93904ca8eed09b295be6",
-          "message": "fix: correct bench download calculation",
-          "timestamp": "2023-08-31T11:28:17Z",
-          "tree_id": "9f214c04fd4f60123aef0b7ae65a742d3ca93cb0",
-          "url": "https://github.com/maidsafe/safe_network/commit/c8983fadc3dfc98e073b93904ca8eed09b295be6"
-        },
-        "date": 1693488354377,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 69.91872,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 97,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4936795c12c0e5b903c22fd4003fa8bcd036f735",
+          "message": "fix(test): tests should try to load just the faucet wallet\n- We start a faucet server before each test, so we should be not trying\n  to load the genesis wallet again, instead try to wait for the faucet\n  wallet to get filled in by the faucet_server",
+          "timestamp": "2023-12-19T12:17:13Z",
+          "tree_id": "f570bb2c76dd2f89056554e3ab5a4207406df75a",
+          "url": "https://github.com/maidsafe/safe_network/commit/4936795c12c0e5b903c22fd4003fa8bcd036f735"
+        },
+        "date": 1702990585019,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 96,
             "unit": "MB"
           }
         ]
