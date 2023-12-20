@@ -7,13 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::config::create_owned_dir;
-use crate::helpers::download_and_extract_safenode;
+use crate::helpers::download_and_extract_release;
 use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::{ServiceConfig, ServiceControl};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::Multiaddr;
-use sn_releases::SafeReleaseRepositoryInterface;
+use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 
 pub struct AddServiceOptions {
@@ -67,9 +67,13 @@ pub async fn add(
         }
     }
 
-    let (safenode_download_path, version) =
-        download_and_extract_safenode(install_options.url, install_options.version, release_repo)
-            .await?;
+    let (safenode_download_path, version) = download_and_extract_release(
+        ReleaseType::Safenode,
+        install_options.url,
+        install_options.version,
+        &*release_repo,
+    )
+    .await?;
     let safenode_file_name = safenode_download_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
@@ -226,6 +230,7 @@ mod tests {
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -357,6 +362,7 @@ mod tests {
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -578,6 +584,7 @@ mod tests {
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -701,6 +708,7 @@ mod tests {
 
         let latest_version = "0.96.4";
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![Node {
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
@@ -844,6 +852,7 @@ mod tests {
         let url = "https://sn-node.s3.eu-west-2.amazonaws.com/jacderida/file-upload-address/safenode-charlie-x86_64-unknown-linux-musl.tar.gz";
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -964,6 +973,7 @@ mod tests {
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1099,6 +1109,7 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1154,6 +1165,7 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
 
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1216,6 +1228,7 @@ mod tests {
     async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_service_is_used(
     ) -> Result<()> {
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };

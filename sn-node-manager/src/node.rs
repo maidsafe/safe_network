@@ -72,14 +72,15 @@ pub struct Node {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
+    pub save_path: PathBuf,
     pub nodes: Vec<Node>,
     pub faucet_pid: Option<u32>,
 }
 
 impl NodeRegistry {
-    pub fn save(&self, path: &Path) -> Result<()> {
+    pub fn save(&self) -> Result<()> {
         let json = serde_json::to_string(self)?;
-        let mut file = std::fs::File::create(path)?;
+        let mut file = std::fs::File::create(self.save_path.clone())?;
         file.write_all(json.as_bytes())?;
         Ok(())
     }
@@ -87,6 +88,7 @@ impl NodeRegistry {
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
             return Ok(NodeRegistry {
+                save_path: path.to_path_buf(),
                 nodes: vec![],
                 faucet_pid: None,
             });
