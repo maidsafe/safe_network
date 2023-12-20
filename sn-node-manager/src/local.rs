@@ -8,6 +8,7 @@
 
 use crate::node::{Node, NodeRegistry, NodeStatus};
 use color_eyre::{eyre::eyre, Result};
+use colored::Colorize;
 use libp2p::{Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
@@ -118,14 +119,19 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
     let mut system = System::new_all();
     system.refresh_all();
 
-    // The faucet PID must be set in this context, so an unwrap seems reasonable. If it's not set,
-    // that's a bug. If the process with that PID has not been found, it's already dead and we
-    // don't need to do anything.
-    if let Some(process) = system.process(Pid::from(node_registry.faucet_pid.unwrap() as usize)) {
-        process.kill();
+    // It's possible that the faucet was not spun up because the network failed the validation
+    // process. If it wasn't running, we obviously don't need to do anything.
+    if let Some(pid) = node_registry.faucet_pid {
+        // If we're here, the faucet was spun up. However, it's possible for the process to have
+        // died since then. In that case, we don't need to do anything.
+        if let Some(process) = system.process(Pid::from(pid as usize)) {
+            process.kill();
+            println!("{} Killed faucet", "✓".green());
+        }
     }
 
     for node in node_registry.nodes.iter() {
+        println!("{}:", node.service_name);
         // If the PID is not set it means the `status` command ran and determined the node was
         // already dead anyway, so we don't need to do anything.
         if let Some(pid) = node.pid {
@@ -133,8 +139,8 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
             // died, but the `status` command had not ran. In that case, we don't need to do
             // anything anyway.
             if let Some(process) = system.process(Pid::from(pid as usize)) {
-                println!("Killing {} process", node.service_name);
                 process.kill();
+                println!("  {} Killed process", "✓".green());
             }
         }
 
@@ -144,6 +150,11 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
             // the log directory also.
             let data_dir_path = node.data_dir_path.as_ref().unwrap();
             std::fs::remove_dir_all(data_dir_path)?;
+            println!(
+                "  {} Removed {}",
+                "✓".green(),
+                data_dir_path.to_string_lossy()
+            );
         }
     }
 
@@ -155,6 +166,7 @@ pub async fn run_network(
     safenode_bin_path: &Path,
     faucet_bin_path: &Path,
     node_count: Option<u16>,
+    skip_validate: bool,
 ) -> Result<()> {
     let launcher = LocalSafeLauncher {
         safenode_bin_path: safenode_bin_path.to_path_buf(),
@@ -180,11 +192,19 @@ pub async fn run_network(
             &rpc_client,
         )
         .await?;
+
+        // We save the node registry for each launch because it's possible any node can fail to
+        // launch, or maybe the validation will fail. In the error case, we will want to use the
+        // `kill` command for the nodes that we did spin up. The `kill` command works on the basis
+        // of what's in the node registry.
+        node_registry.save()?;
     }
 
-    println!("Waiting for 10 seconds before validating the network...");
-    std::thread::sleep(std::time::Duration::from_secs(10));
-    validate_network(node_registry).await?;
+    if !skip_validate {
+        println!("Waiting for 10 seconds before validating the network...");
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        validate_network(node_registry).await?;
+    }
 
     println!("Launching the faucet server...");
     let faucet_pid = launcher.launch_faucet(&genesis_multiaddr)?;
@@ -254,21 +274,21 @@ async fn validate_network(node_registry: &mut NodeRegistry) -> Result<()> {
     for node in node_registry.nodes.iter() {
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
         let net_info = rpc_client.network_info().await?;
-        println!(
-            "Node {} has {} peers",
-            node.peer_id.unwrap(),
-            net_info.connected_peers.len()
-        );
-        if !net_info
-            .connected_peers
+        let peers = net_info.connected_peers;
+        println!("Node {} has {} peers", node.peer_id.unwrap(), peers.len());
+
+        // Look for peers that are not supposed to be present in the network. This can happen if
+        // the node has connected to peers on other networks.
+        let invalid_peers: Vec<PeerId> = peers
             .iter()
-            .all(|peer| all_peers.contains(peer))
-        {
-            return Err(eyre!(
-                "Node {} is not aware of all the other nodes. Connected peers: {}.",
-                node.peer_id.unwrap(),
-                net_info.connected_peers.len()
-            ));
+            .filter(|peer| !all_peers.contains(peer))
+            .cloned()
+            .collect();
+        if !invalid_peers.is_empty() {
+            for invalid_peer in invalid_peers.iter() {
+                println!("Invalid peer found: {}", invalid_peer);
+            }
+            return Err(eyre!("Network validation failed",));
         }
     }
     Ok(())
@@ -306,6 +326,7 @@ mod tests {
     async fn run_node_should_launch_the_first_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -393,6 +414,7 @@ mod tests {
 
         let mut mock_launcher = MockLauncher::new();
         let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
             nodes: vec![Node {
                 service_name: "safenode-local1".to_string(),
                 user: get_username()?,
