@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703065328576,
+  "lastUpdate": 1703065330203,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33487,6 +33487,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 19,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "34c458e3e89d06cee3b2f5c2069436ea9b7cbc74",
+          "message": "chore: reduce default batch size",
+          "timestamp": "2023-12-20T09:04:58Z",
+          "tree_id": "b7c66be2755fa6c6b35c9f202d1c28bdaa368062",
+          "url": "https://github.com/maidsafe/safe_network/commit/34c458e3e89d06cee3b2f5c2069436ea9b7cbc74"
+        },
+        "date": 1703065329813,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3006,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 29030,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 9,
             "unit": "ms"
           }
         ]
