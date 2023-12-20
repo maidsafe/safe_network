@@ -545,9 +545,10 @@ fn calculate_cost_for_relevant_records(step: usize) -> u64 {
 #[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use super::*;
+
+    use crate::{close_group_majority, sort_peers_by_key, REPLICATE_RANGE};
+
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{
@@ -555,7 +556,8 @@ mod tests {
         kad::{KBucketKey, RecordKey},
     };
     use quickcheck::*;
-    use sn_protocol::storage::try_serialize_record;
+    use sn_protocol::storage::{try_serialize_record, ChunkAddress};
+    use std::{collections::BTreeMap, time::Duration};
     use tokio::runtime::Runtime;
 
     const MULITHASH_CODE: u64 = 0x12;
@@ -880,5 +882,210 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[ignore = "Too time consuming. Only to be used to simulate affects of different payee slection algorithm."]
+    #[test]
+    fn address_distribution_sim() {
+        // Map of peers and correspondent stats of `(num_of_records, Nano_earned, earned_times)`.
+        let mut peers: HashMap<PeerId, (usize, u64, usize)> = Default::default();
+        let mut peers_vec = vec![];
+
+        let num_of_peers = 2000;
+        let num_of_chunks_per_itr = 2000;
+
+        for _ in 0..num_of_peers {
+            let peer_id = PeerId::random();
+            let _ = peers.insert(peer_id, (0, 0, 0));
+            peers_vec.push(peer_id);
+        }
+
+        let mut iteration = 0;
+        let mut total_earned_times = 0;
+
+        loop {
+            for _ in 0..num_of_chunks_per_itr {
+                let name = xor_name::rand::random();
+                let address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
+                match sort_peers_by_key(&peers_vec, &address.as_kbucket_key(), REPLICATE_RANGE) {
+                    Ok(peers_in_replicate_range) => {
+                        let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range
+                            .iter()
+                            .map(|peer_id| **peer_id)
+                            .collect();
+                        let peers_in_close: Vec<PeerId> = match sort_peers_by_key(
+                            &peers_in_replicate_range,
+                            &address.as_kbucket_key(),
+                            close_group_majority(),
+                        ) {
+                            Ok(peers_in_close) => {
+                                peers_in_close.iter().map(|peer_id| **peer_id).collect()
+                            }
+                            Err(err) => {
+                                panic!("Cann't find close range of {name:?} with error {err:?}")
+                            }
+                        };
+
+                        let payee = pick_payee_randomly(peers_in_close);
+                        // let payee = pick_cheapest_payee(&peers_in_close, &peers);
+
+                        for peer in peers_in_replicate_range.iter() {
+                            let entry = peers.entry(*peer).or_insert((0, 0, 0));
+                            if *peer == payee {
+                                let cost = calculate_cost(entry.0, entry.2);
+                                entry.1 += cost;
+                                entry.2 += 1;
+                            }
+                            entry.0 += 1;
+                        }
+                    }
+                    Err(err) => {
+                        panic!("Cann't find replicate range of {name:?} with error {err:?}")
+                    }
+                }
+            }
+
+            let mut earned_times = 0;
+            let mut empty_earned_nodes = 0;
+
+            let mut min_earned = u64::MAX;
+            let mut min_store_cost = u64::MAX;
+            let mut max_earned = 0;
+            let mut max_store_cost = 0;
+
+            for (_peer_id, stats) in peers.iter() {
+                let cost = calculate_cost(stats.0, stats.2);
+                // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
+                earned_times += stats.2;
+                if stats.1 == 0 {
+                    empty_earned_nodes += 1;
+                }
+
+                if stats.1 < min_earned {
+                    min_earned = stats.1;
+                }
+                if stats.1 > max_earned {
+                    max_earned = stats.1;
+                }
+                if cost < min_store_cost {
+                    min_store_cost = cost;
+                }
+                if cost > max_store_cost {
+                    max_store_cost = cost;
+                }
+            }
+
+            total_earned_times += num_of_chunks_per_itr;
+            assert_eq!(total_earned_times, earned_times);
+
+            println!("After the completion of {iteration} with {num_of_chunks_per_itr} chunks, there is still {empty_earned_nodes} nodes earned nothing");
+            println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");
+
+            if empty_earned_nodes == 0 {
+                break;
+            }
+            iteration += 1;
+        }
+
+        // log_chunks_distribution(&peers);
+    }
+
+    fn calculate_cost(relevant_records: usize, earned_times: usize) -> u64 {
+        use std::cmp::max;
+
+        let ori_cost = calculate_cost_for_relevant_records(relevant_records);
+        let divident = max(1, relevant_records / max(1, earned_times)) as u64;
+        max(10, ori_cost / divident)
+    }
+
+    // Split nodes into groups based on its kBucketKey's leading byte of hashed_bytes.
+    // This will result in 256 groups, and collect number of nodes and chunks fell into.
+    #[allow(dead_code)]
+    fn log_chunks_distribution(peers: &HashMap<PeerId, (usize, u64, usize)>) {
+        // Using `times_of_earned` to reflect chunks hit the group.
+        // This can avoid `replication counts` causing mis-understanding.
+        // (number_of_nodes, times_of_earned)
+        let mut distribution_map: BTreeMap<u8, (usize, usize)> = Default::default();
+
+        for (peer_id, stats) in peers.iter() {
+            let leading_byte = NetworkAddress::from_peer(*peer_id)
+                .as_kbucket_key()
+                .hashed_bytes()[0];
+            let entry = distribution_map.entry(leading_byte).or_insert((0, 0));
+            entry.0 += 1;
+            entry.1 += stats.2;
+        }
+
+        for (leading_byte, stats) in distribution_map.iter() {
+            println!("{leading_byte:08b}\t{}\t{} ", stats.0, stats.1)
+        }
+    }
+
+    // num_of_peers = 2000
+    // After the completion of 0 with 2000 chunks, there is still 786 nodes earned nothing
+    // After the completion of 1 with 2000 chunks, there is still 356 nodes earned nothing
+    // After the completion of 2 with 2000 chunks, there is still 162 nodes earned nothing
+    // After the completion of 3 with 2000 chunks, there is still 73 nodes earned nothing
+    // After the completion of 4 with 2000 chunks, there is still 36 nodes earned nothing
+    // After the completion of 5 with 2000 chunks, there is still 23 nodes earned nothing
+    // After the completion of 6 with 2000 chunks, there is still 15 nodes earned nothing
+    // After the completion of 7 with 2000 chunks, there is still 9 nodes earned nothing
+    // After the completion of 8 with 2000 chunks, there is still 7 nodes earned nothing
+    // After the completion of 9 with 2000 chunks, there is still 3 nodes earned nothing
+    // After the completion of 10 with 2000 chunks, there is still 3 nodes earned nothing
+    // After the completion of 11 with 2000 chunks, there is still 2 nodes earned nothing
+    // After the completion of 12 with 2000 chunks, there is still 2 nodes earned nothing
+    // After the completion of 13 with 2000 chunks, there is still 2 nodes earned nothing
+    // After the completion of 14 with 2000 chunks, there is still 1 nodes earned nothing
+    // After the completion of 15 with 2000 chunks, there is still 0 nodes earned nothing
+    fn pick_payee_randomly(mut peers_in_close: Vec<PeerId>) -> PeerId {
+        use rand::{prelude::SliceRandom, thread_rng};
+
+        let mut rng = thread_rng();
+        peers_in_close.shuffle(&mut rng);
+        if let Some(payee) = peers_in_close.first() {
+            *payee
+        } else {
+            panic!("Cann't find payee among {peers_in_close:?}");
+        }
+    }
+
+    // After the completion of 0 with 2000 chunks, there is still 875 nodes earned nothing
+    // After the completion of 1 with 2000 chunks, there is still 475 nodes earned nothing
+    // After the completion of 2 with 2000 chunks, there is still 314 nodes earned nothing
+    // After the completion of 3 with 2000 chunks, there is still 218 nodes earned nothing
+    // ... ...
+    // After the completion of 115 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 116 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 117 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 118 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 119 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 120 with 2000 chunks, there is still 56 nodes earned nothing
+    // After the completion of 121 with 2000 chunks, there is still 56 nodes earned nothing
+    #[allow(dead_code)]
+    fn pick_cheapest_payee(
+        peers_in_close: &Vec<PeerId>,
+        peers: &HashMap<PeerId, (usize, u64, usize)>,
+    ) -> PeerId {
+        let mut payee = None;
+        let mut cheapest_cost = u64::MAX;
+
+        for peer in peers_in_close {
+            if let Some(stats) = peers.get(peer) {
+                let store_cost = calculate_cost(stats.0, stats.2);
+                if store_cost < cheapest_cost {
+                    cheapest_cost = store_cost;
+                    payee = Some(*peer);
+                }
+            } else {
+                panic!("Cannot find stats of {peer:?}");
+            }
+        }
+
+        if let Some(peer_id) = payee {
+            peer_id
+        } else {
+            panic!("Cannot find cheapest payee among {peers_in_close:?}");
+        }
     }
 }
