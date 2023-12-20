@@ -35,6 +35,7 @@ use std::{
     io::ErrorKind,
     path::PathBuf,
     process::{Command, Stdio},
+    time::Duration,
 };
 use tracing::{debug, info};
 
@@ -211,8 +212,9 @@ async fn main() -> Result<()> {
         faucet_bin_path.push(FAUCET_BIN_NAME);
     }
 
-    info!("Launching CashNote faucet server");
+    info!("Launching CashNote faucet server and sleeping for 5 seconds");
     run_faucet(gen_multi_addr, faucet_bin_path)?;
+    tokio::time::sleep(Duration::from_secs(5)).await;
 
     println!("Testnet and faucet launched successfully");
     Ok(())

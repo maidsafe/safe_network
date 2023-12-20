@@ -31,7 +31,6 @@ use tracing::{debug, error, trace};
 ///
 /// # balance should be updated
 /// ```
-
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
