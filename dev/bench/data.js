@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702998268596,
+  "lastUpdate": 1703065198337,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "08d4484e8d386627d62109a29f2a37d02a008480",
-          "message": "feat(ci): merge queue should fail on DoNotMerge lable",
-          "timestamp": "2023-08-31T18:02:59Z",
-          "tree_id": "58249be983cfc8c76471ead036ada1cdb051b9c1",
-          "url": "https://github.com/maidsafe/safe_network/commit/08d4484e8d386627d62109a29f2a37d02a008480"
-        },
-        "date": 1693509439238,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.13333314079316694,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5292038282513934,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.112943974284759,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.563557845800936,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "34c458e3e89d06cee3b2f5c2069436ea9b7cbc74",
+          "message": "chore: reduce default batch size",
+          "timestamp": "2023-12-20T09:04:58Z",
+          "tree_id": "b7c66be2755fa6c6b35c9f202d1c28bdaa368062",
+          "url": "https://github.com/maidsafe/safe_network/commit/34c458e3e89d06cee3b2f5c2069436ea9b7cbc74"
+        },
+        "date": 1703065196329,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1373272026516459,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9093184027374495,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.133272624146436,
             "unit": "MiB/s"
           }
         ]
