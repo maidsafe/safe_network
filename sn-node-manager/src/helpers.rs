@@ -12,10 +12,12 @@ use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRep
 use std::path::PathBuf;
 use std::sync::Arc;
 
-pub async fn download_and_extract_safenode(
+/// Downloads and extracts a release binary to a temporary location.
+pub async fn download_and_extract_release(
+    release_type: ReleaseType,
     url: Option<String>,
-    safenode_version: Option<String>,
-    release_repo: Box<dyn SafeReleaseRepositoryInterface>,
+    version: Option<String>,
+    release_repo: &dyn SafeReleaseRepositoryInterface,
 ) -> Result<(PathBuf, String)> {
     let pb = Arc::new(ProgressBar::new(0));
     pb.set_style(ProgressStyle::default_bar()
@@ -30,26 +32,24 @@ pub async fn download_and_extract_safenode(
     let temp_dir_path = create_temp_dir()?;
 
     let (archive_path, version) = if let Some(url) = url {
-        println!("Retrieving safenode from {url}");
+        println!("Retrieving {release_type} from {url}");
         let archive_path = release_repo
             .download_release(&url, &temp_dir_path, &callback)
             .await?;
         pb.finish_with_message("Download complete");
         (archive_path, "custom".to_string())
     } else {
-        let version = if let Some(version) = safenode_version {
+        let version = if let Some(version) = version {
             version
         } else {
-            println!("Retrieving latest version for safenode...");
-            release_repo
-                .get_latest_version(&ReleaseType::Safenode)
-                .await?
+            println!("Retrieving latest version for {release_type}...");
+            release_repo.get_latest_version(&release_type).await?
         };
 
-        println!("Downloading safenode version {version}...");
+        println!("Downloading {release_type} version {version}...");
         let archive_path = release_repo
             .download_release_from_s3(
-                &ReleaseType::Safenode,
+                &release_type,
                 &version,
                 &get_running_platform()?,
                 &ArchiveType::TarGz,

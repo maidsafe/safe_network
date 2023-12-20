@@ -17,7 +17,7 @@ mod service;
 use crate::add_service::{add, AddServiceOptions};
 use crate::config::*;
 use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
-use crate::helpers::download_and_extract_safenode;
+use crate::helpers::download_and_extract_release;
 use crate::local::{kill_network, run_network};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
@@ -142,12 +142,29 @@ pub enum SubCmd {
         /// The number of nodes to run.
         #[clap(long)]
         count: Option<u16>,
-        /// A path to a faucet binary
+        /// Path to a faucet binary
+        ///
+        /// The path and version arguments are mutually exclusive.
         #[clap(long)]
-        faucet_path: PathBuf,
-        /// A path to a safenode binary
+        faucet_path: Option<PathBuf>,
+        /// The version of the faucet to use.
+        ///
+        /// The version and path arguments are mutually exclusive.
         #[clap(long)]
-        node_path: PathBuf,
+        faucet_version: Option<String>,
+        /// Path to a safenode binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long)]
+        node_path: Option<PathBuf>,
+        /// The version of safenode to use.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long)]
+        node_version: Option<String>,
+        /// Set to skip the network validation process
+        #[clap(long)]
+        skip_validation: bool,
     },
     /// Start a safenode service.
     ///
@@ -262,7 +279,7 @@ async fn main() -> Result<()> {
             )
             .await?;
 
-            node_registry.save(&get_node_registry_path()?)?;
+            node_registry.save()?;
 
             Ok(())
         }
@@ -272,6 +289,9 @@ async fn main() -> Result<()> {
             if local_node_registry.nodes.is_empty() {
                 println!("No local network is currently running");
             } else {
+                println!("=================================================");
+                println!("             Killing Local Network               ");
+                println!("=================================================");
                 kill_network(&local_node_registry, keep_directories)?;
                 std::fs::remove_file(local_reg_path)?;
             }
@@ -317,23 +337,79 @@ async fn main() -> Result<()> {
                 remove(node, &NodeServiceManager {}, keep_directories).await?;
             }
 
-            node_registry.save(&get_node_registry_path()?)?;
+            node_registry.save()?;
 
             Ok(())
         }
         SubCmd::Run {
             count,
             faucet_path,
+            faucet_version,
             node_path,
+            node_version,
+            skip_validation,
         } => {
-            let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
+            if faucet_path.is_some() && faucet_version.is_some() {
+                return Err(eyre!(
+                    "The --faucet-path and --faucet-version arguments are mutually exclusive"
+                )
+                .suggestion("Please try again using one or the other, but not both."));
+            }
+            if node_path.is_some() && node_version.is_some() {
+                return Err(eyre!(
+                    "The --node-path and --node-version arguments are mutually exclusive"
+                )
+                .suggestion("Please try again using one or the other, but not both."));
+            }
+
+            let local_node_reg_path = &get_local_node_registry_path()?;
+            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
             if !local_node_registry.nodes.is_empty() {
                 return Err(eyre!("A local network is already running")
                     .suggestion("Use the kill command to destroy the network then try again"));
             }
 
-            run_network(&mut local_node_registry, &node_path, &faucet_path, count).await?;
-            local_node_registry.save(&get_local_node_registry_path()?)?;
+            println!("=================================================");
+            println!("             Launching Local Network             ");
+            println!("=================================================");
+
+            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+            let faucet_path = if let Some(path) = faucet_path {
+                path
+            } else {
+                let (faucet_download_path, _) = download_and_extract_release(
+                    ReleaseType::Faucet,
+                    None,
+                    faucet_version,
+                    &*release_repo,
+                )
+                .await?;
+                faucet_download_path
+            };
+
+            let node_path = if let Some(path) = node_path {
+                path
+            } else {
+                let (safenode_download_path, _) = download_and_extract_release(
+                    ReleaseType::Safenode,
+                    None,
+                    node_version,
+                    &*release_repo,
+                )
+                .await?;
+                safenode_download_path
+            };
+
+            run_network(
+                &mut local_node_registry,
+                &node_path,
+                &faucet_path,
+                count,
+                skip_validation,
+            )
+            .await?;
+
+            local_node_registry.save()?;
 
             Ok(())
         }
@@ -384,7 +460,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            node_registry.save(&get_node_registry_path()?)?;
+            node_registry.save()?;
 
             Ok(())
         }
@@ -395,7 +471,7 @@ async fn main() -> Result<()> {
                 println!("                Safenode Services                ");
                 println!("=================================================");
                 status(&mut node_registry, &NodeServiceManager {}, details).await?;
-                node_registry.save(&get_node_registry_path()?)?;
+                node_registry.save()?;
             }
 
             let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
@@ -404,7 +480,7 @@ async fn main() -> Result<()> {
                 println!("                Local Network                    ");
                 println!("=================================================");
                 status(&mut local_node_registry, &NodeServiceManager {}, details).await?;
-                local_node_registry.save(&get_local_node_registry_path()?)?;
+                local_node_registry.save()?;
             }
 
             Ok(())
@@ -450,7 +526,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            node_registry.save(&get_node_registry_path()?)?;
+            node_registry.save()?;
 
             Ok(())
         }
@@ -487,9 +563,13 @@ async fn main() -> Result<()> {
                 return Ok(());
             }
 
-            let (safenode_download_path, _) =
-                download_and_extract_safenode(None, Some(latest_version.to_string()), release_repo)
-                    .await?;
+            let (safenode_download_path, _) = download_and_extract_release(
+                ReleaseType::Safenode,
+                None,
+                Some(latest_version.to_string()),
+                &*release_repo,
+            )
+            .await?;
 
             let mut upgrade_summary = Vec::new();
 
@@ -582,7 +662,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            node_registry.save(&get_node_registry_path()?)?;
+            node_registry.save()?;
 
             println!("Upgrade summary:");
             for (service_name, upgrade_result) in upgrade_summary {
