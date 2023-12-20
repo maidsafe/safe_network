@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703065198337,
+  "lastUpdate": 1703065327076,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "98b24620115acf5479a649b5e114ee06ad171e59",
-          "message": "Revert \"fix(ci): disable `CARGO_TARGET_DIR` to speedup build time\"\n\nThis reverts commit caf42044554bc6ee082db9800443a089a77bbe31.",
-          "timestamp": "2023-08-31T17:58:36+02:00",
-          "tree_id": "b9d8244b8fe11923b62913a220e777b46f64636e",
-          "url": "https://github.com/maidsafe/safe_network/commit/98b24620115acf5479a649b5e114ee06ad171e59"
-        },
-        "date": 1693502440390,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 70.78707,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 76,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "34c458e3e89d06cee3b2f5c2069436ea9b7cbc74",
+          "message": "chore: reduce default batch size",
+          "timestamp": "2023-12-20T09:04:58Z",
+          "tree_id": "b7c66be2755fa6c6b35c9f202d1c28bdaa368062",
+          "url": "https://github.com/maidsafe/safe_network/commit/34c458e3e89d06cee3b2f5c2069436ea9b7cbc74"
+        },
+        "date": 1703065326645,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
