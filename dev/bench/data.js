@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703065327076,
+  "lastUpdate": 1703065328576,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3a87d9791e56425a01ea2653ac99d10e3c01ec4b",
-          "message": "add llvm path",
-          "timestamp": "2023-08-31T12:29:08Z",
-          "tree_id": "937bd12622b0a3642b5294156c615868ab5d36e4",
-          "url": "https://github.com/maidsafe/safe_network/commit/3a87d9791e56425a01ea2653ac99d10e3c01ec4b"
-        },
-        "date": 1693492267227,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1377.1244,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1316,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 117,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "34c458e3e89d06cee3b2f5c2069436ea9b7cbc74",
+          "message": "chore: reduce default batch size",
+          "timestamp": "2023-12-20T09:04:58Z",
+          "tree_id": "b7c66be2755fa6c6b35c9f202d1c28bdaa368062",
+          "url": "https://github.com/maidsafe/safe_network/commit/34c458e3e89d06cee3b2f5c2069436ea9b7cbc74"
+        },
+        "date": 1703065328178,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 271,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 62,
             "unit": "MB"
           }
         ]
