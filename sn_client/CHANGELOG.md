@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.28](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.27...sn_client-v0.99.28) - 2023-12-20
+
+### Other
+- reduce default batch size
+
 ## [0.99.27](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.26...sn_client-v0.99.27) - 2023-12-19
 
 ### Added
