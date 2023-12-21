@@ -159,10 +159,10 @@ impl SpendLedger {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Default::default();
         bytes.extend(self.unique_pubkey);
-        bytes.extend(self.spent_tx.hash().as_ref());
+        bytes.extend(self.spent_tx.to_bytes());
         bytes.extend(self.reason.as_ref());
         bytes.extend(self.token.to_bytes());
-        bytes.extend(self.parent_tx.hash().as_ref());
+        bytes.extend(self.parent_tx.to_bytes());
         bytes
     }
 }

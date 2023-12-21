@@ -108,24 +108,13 @@ pub struct TransactionLedger {
 impl TransactionLedger {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut v: Vec<u8> = Default::default();
-        v.extend("inputs".as_bytes());
         for m in self.inputs.iter() {
             v.extend(&m.to_bytes());
         }
-        v.extend("outputs".as_bytes());
         for o in self.outputs.iter() {
             v.extend(&o.to_bytes());
         }
-        v.extend("end".as_bytes());
         v
-    }
-
-    pub fn hash(&self) -> crate::Hash {
-        let mut sha3 = Sha3::v256();
-        sha3.update(&self.to_bytes());
-        let mut hash = [0; 32];
-        sha3.finalize(&mut hash);
-        crate::Hash::from(hash)
     }
 }
 
