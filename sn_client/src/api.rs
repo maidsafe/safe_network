@@ -34,7 +34,7 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_registers::SignedRegister;
+use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
 use std::{
     collections::{HashMap, HashSet},
@@ -340,18 +340,18 @@ impl Client {
         address: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-        public: bool,
+        perms: Permissions,
     ) -> Result<(ClientRegister, NanoTokens, NanoTokens)> {
         info!("Instantiating a new Register replica with address {address:?}");
-        let (reg, mut total_cost, mut total_royalties) = match public {
-            false => {
-                ClientRegister::create_online(self.clone(), address, wallet_client, false).await?
-            }
-            true => {
-                ClientRegister::create_public_online(self.clone(), address, wallet_client, false)
-                    .await?
-            }
-        };
+
+        let (reg, mut total_cost, mut total_royalties) = ClientRegister::create_online(
+            self.clone(),
+            address,
+            wallet_client,
+            false,
+            perms.clone(),
+        )
+        .await?;
 
         debug!("{address:?} Created in theorryyyyy");
         let reg_address = reg.address();
@@ -362,9 +362,14 @@ impl Client {
             while !stored {
                 info!("Register not completely stored on the network yet. Retrying...");
                 // this verify store call here ensures we get the record from Quorum::all
-                let (reg, top_up_cost, royalties_top_up) =
-                    ClientRegister::create_online(self.clone(), address, wallet_client, true)
-                        .await?;
+                let (reg, top_up_cost, royalties_top_up) = ClientRegister::create_online(
+                    self.clone(),
+                    address,
+                    wallet_client,
+                    true,
+                    perms.clone(),
+                )
+                .await?;
                 let reg_address = reg.address();
 
                 total_cost = total_cost

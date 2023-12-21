@@ -55,16 +55,6 @@ impl ClientRegister {
 
     /// Create a new public Register (Anybody can write to it) and send it so the Network.
     /// This will optionally verify the Register was stored on the network.
-    pub async fn create_public_online(
-        client: Client,
-        meta: XorName,
-        wallet_client: &mut WalletClient,
-        verify_store: bool,
-    ) -> Result<(Self, NanoTokens, NanoTokens)> {
-        let mut reg = Self::create_register(client, meta, Permissions::new_anyone_can_write())?;
-        let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
-        Ok((reg, storage_cost, royalties_fees))
-    }
 
     /// Create a new Register and send it to the Network.
     pub async fn create_online(
@@ -72,8 +62,9 @@ impl ClientRegister {
         meta: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
+        perms: Permissions,
     ) -> Result<(Self, NanoTokens, NanoTokens)> {
-        let mut reg = Self::create_register(client, meta, Permissions::new_owner_only())?;
+        let mut reg = Self::create_register(client, meta, perms)?;
         let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
         Ok((reg, storage_cost, royalties_fees))
     }

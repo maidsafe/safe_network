@@ -22,6 +22,7 @@ use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
     TransferNotifsFilterRequest,
 };
+use sn_registers::Permissions;
 use sn_transfers::{
     CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
 };
@@ -84,7 +85,12 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
 
     let (_register, storage_cost, _royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false, false)
+        .create_and_pay_for_register(
+            register_addr,
+            &mut wallet_client,
+            false,
+            Permissions::new_owner_only(),
+        )
         .await?;
     println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
@@ -155,7 +161,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false, false)
+        .create_and_pay_for_register(register_addr, &mut wallet_client, false, Permissions::new_owner_only())
         .await?;
     println!("Random Register created, paid {storage_cost}/{royalties_fees}");
 

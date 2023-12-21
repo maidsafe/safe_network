@@ -179,20 +179,38 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Start a client to create a register
+      - name: Start a client to create a register writable only by the owner
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Start a client to get a register
+      - name: Start a client to get a register writable only by the owner (client is the owner)
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Start a client to edit a register
+      - name: Start a client to edit a register writable only by the owner (client is the owner)
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Start a client to create a register writable by anyone
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Start a client to get a register writable by anyone (client is the owner)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n trycatch
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register writable by anyone (client is the owner)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n trycatch water
         env:
           SN_LOG: "all"
         timeout-minutes: 10

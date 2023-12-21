@@ -12,6 +12,7 @@ use color_eyre::{eyre::WrapErr, Result, Section};
 use sn_client::{Client, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
 use sn_transfers::LocalWallet;
+use sn_registers::Permissions;
 use std::path::Path;
 use xor_name::XorName;
 
@@ -94,8 +95,12 @@ async fn create_register(
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     let meta = XorName::from_content(name.as_bytes());
+    let perms = match public {
+        true => Permissions::new_anyone_can_write(),
+        false => Permissions::new_owner_only(),
+    };
     let (register, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(meta, &mut wallet_client, verify_store, public)
+        .create_and_pay_for_register(meta, &mut wallet_client, verify_store, perms)
         .await?;
 
     if storage_cost.is_zero() {
