@@ -340,10 +340,18 @@ impl Client {
         address: XorName,
         wallet_client: &mut WalletClient,
         verify_store: bool,
+        public: bool,
     ) -> Result<(ClientRegister, NanoTokens, NanoTokens)> {
         info!("Instantiating a new Register replica with address {address:?}");
-        let (reg, mut total_cost, mut total_royalties) =
-            ClientRegister::create_online(self.clone(), address, wallet_client, false).await?;
+        let (reg, mut total_cost, mut total_royalties) = match public {
+            false => {
+                ClientRegister::create_online(self.clone(), address, wallet_client, false).await?
+            }
+            true => {
+                ClientRegister::create_public_online(self.clone(), address, wallet_client, false)
+                    .await?
+            }
+        };
 
         debug!("{address:?} Created in theorryyyyy");
         let reg_address = reg.address();

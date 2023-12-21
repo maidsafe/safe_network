@@ -23,6 +23,11 @@ pub enum RegisterCmds {
         /// This is used along with your public key to derive the address of the register
         #[clap(name = "name", short = 'n')]
         name: String,
+
+        /// Create the register with public write access.
+        /// By default only the owner can write to the register.
+        #[clap(name = "public", short = 'p')]
+        public: bool,
     },
     Edit {
         /// The address of the register to edit.
@@ -56,8 +61,8 @@ pub(crate) async fn register_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        RegisterCmds::Create { name } => {
-            create_register(name, client, root_dir, verify_store).await?
+        RegisterCmds::Create { name, public } => {
+            create_register(name, public, client, root_dir, verify_store).await?
         }
         RegisterCmds::Edit {
             address,
@@ -74,6 +79,7 @@ pub(crate) async fn register_cmds(
 
 async fn create_register(
     name: String,
+    public: bool,
     client: &Client,
     root_dir: &Path,
     verify_store: bool,
@@ -89,7 +95,7 @@ async fn create_register(
 
     let meta = XorName::from_content(name.as_bytes());
     let (register, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(meta, &mut wallet_client, verify_store)
+        .create_and_pay_for_register(meta, &mut wallet_client, verify_store, public)
         .await?;
 
     if storage_cost.is_zero() {
@@ -103,6 +109,7 @@ async fn create_register(
             register.address()
         );
     }
+    println!("Register permissions: {:?}", register.permissions());
     Ok(())
 }
 
