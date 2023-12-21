@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703168207701,
+  "lastUpdate": 1703168329545,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef",
-          "message": "feat(store): implement `UnifiedRecordStore`\n- an enum containing either the client or the node record store",
-          "timestamp": "2023-08-31T16:03:04Z",
-          "tree_id": "85f5608ff38b4eb43752bb036f4fcbf3a6750421",
-          "url": "https://github.com/maidsafe/safe_network/commit/bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef"
-        },
-        "date": 1693504945504,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 73.36755,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4",
+          "message": "chore: log full Register address when created in cli and example app",
+          "timestamp": "2023-12-21T13:39:08Z",
+          "tree_id": "8133219fbb95d3533523121a251ecaab4ed96c97",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4"
+        },
+        "date": 1703168329244,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60,
             "unit": "MB"
           }
         ]
