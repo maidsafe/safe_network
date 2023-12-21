@@ -30,10 +30,10 @@ pub(crate) enum DataMapLevel {
 }
 
 #[allow(unused)]
-pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(XorName, Vec<XorName>)> {
+pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<XorName>)> {
     let (data_map, mut encrypted_chunks) = encrypt_file(path, output_dir)?;
 
-    let (address, additional_chunks) = pack_data_map(data_map)?;
+    let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
 
     for chunk in additional_chunks.iter() {
         encrypted_chunks.push(*chunk.name());
@@ -42,14 +42,14 @@ pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(XorNa
         output_file.write_all(&chunk.value)?;
     }
 
-    Ok((address, encrypted_chunks))
+    Ok((data_map_chunk, encrypted_chunks))
 }
 
 #[allow(unused_assignments)]
 pub(crate) fn encrypt_large(
     file_path: &Path,
     output_dir: &Path,
-) -> Result<(XorName, Vec<(XorName, PathBuf)>)> {
+) -> Result<(Chunk, Vec<(XorName, PathBuf)>)> {
     let mut encryptor = StreamSelfEncryptor::encrypt_from_file(
         Box::new(file_path.to_path_buf()),
         Some(Box::new(output_dir.to_path_buf())),
@@ -77,7 +77,7 @@ pub(crate) fn encrypt_large(
         .collect();
 
     // Pack the datamap into chunks that under the same output folder as well.
-    let (address, additional_chunks) = pack_data_map(data_map)?;
+    let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
     for chunk in additional_chunks.iter() {
         let file_path = output_dir.join(&hex::encode(chunk.name()));
         encrypted_chunks.push((*chunk.name(), file_path.to_path_buf()));
@@ -85,7 +85,7 @@ pub(crate) fn encrypt_large(
         output_file.write_all(&chunk.value)?;
     }
 
-    Ok((address, encrypted_chunks))
+    Ok((data_map_chunk, encrypted_chunks))
 }
 
 pub(crate) fn to_chunk(chunk_content: Bytes) -> Chunk {
@@ -98,25 +98,17 @@ pub(crate) fn to_chunk(chunk_content: Bytes) -> Chunk {
 // In other words: If the chunk content is too big, it will be
 // self encrypted into additional chunks, and now we have a new `DataMap`
 // which points to all of those additional chunks.. and so on.
-fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
-    // Produces a chunk out of the first `DataMap`, which is validated for its size.
-    // If the chunk is too big, it is self-encrypted and the resulting (additional level) `DataMap` is put into a chunk.
-    // The above step is repeated as many times as required until the chunk size is valid.
-    // In other words: If the chunk content is too big, it will be
-    // self encrypted into additional chunks, and now we have a new `DataMap`
-    // which points to all of those additional chunks.. and so on.
+fn pack_data_map(data_map: DataMap) -> Result<(Chunk, Vec<Chunk>)> {
     let mut chunks = vec![];
     let mut chunk_content = wrap_data_map(&DataMapLevel::First(data_map))?;
 
-    let (address, additional_chunks) = loop {
+    let (data_map_chunk, additional_chunks) = loop {
         let chunk = to_chunk(chunk_content);
         // If datamap chunk is less than `MAX_CHUNK_SIZE` return it so it can be directly sent to the network.
         if MAX_CHUNK_SIZE >= chunk.serialised_size() {
-            let name = *chunk.name();
             chunks.reverse();
-            chunks.push(chunk);
-            // Returns the address of the last datamap, and all the chunks produced.
-            break (name, chunks);
+            // Returns the address of the last datamap, the datamap chunk, and all the chunks produced.
+            break (chunk, chunks);
         } else {
             let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE).writer();
             let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
@@ -133,7 +125,7 @@ fn pack_data_map(data_map: DataMap) -> Result<(XorName, Vec<Chunk>)> {
         }
     };
 
-    Ok((address, additional_chunks))
+    Ok((data_map_chunk, additional_chunks))
 }
 
 fn wrap_data_map(data_map: &DataMapLevel) -> Result<Bytes> {
