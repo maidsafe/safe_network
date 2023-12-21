@@ -37,7 +37,7 @@ encdec = { version = "0.9.0", default_features = false }
 futures = "~0.3.13"
 hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
-ledger-lib = "0.1.0"
+ledger-lib = { version = "0.1.0", default-features = false, features = ["transport_usb", "transport_tcp", "transport_ble", "transport_usb_hidraw"] }
 ledger-proto = "0.1.0"
 libp2p = { version="0.53", features = ["identify", "kad"] }
 rand = "0.8.5"

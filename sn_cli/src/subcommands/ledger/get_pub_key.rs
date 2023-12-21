@@ -22,7 +22,7 @@ pub struct GetPubKeyReq {
 }
 
 impl GetPubKeyReq {
-    pub fn new(path: &[u8]) -> Self {
+    pub fn new(path: &[u32]) -> Self {
         Self {
             dpath: derivation_path(path),
         }

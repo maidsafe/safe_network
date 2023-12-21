@@ -12,7 +12,7 @@ use sn_transfers::SpendLedger;
 
 use color_eyre::Result;
 use encdec::{self, Decode, Encode};
-use ledger_lib::{Device, Error as LedgerLibError};
+use ledger_lib::{transport::GenericDevice, Device, Error as LedgerLibError};
 use ledger_proto::{ApduError, ApduStatic, GenericApdu};
 use std::time::Duration;
 
@@ -26,9 +26,10 @@ pub struct SignTxReq {
 }
 
 impl SignTxReq {
-    pub fn new(path: &[u8], spend: &SpendLedger) -> Self {
+    pub fn new(path: &[u32], spend: &SpendLedger) -> Self {
         let remaining_bytes = spend.to_bytes();
         println!("LENGTH: {}", remaining_bytes.len());
+
         Self {
             remaining_bytes,
             next_chunk_bytes: derivation_path(path),
@@ -37,10 +38,10 @@ impl SignTxReq {
         }
     }
 
-    pub async fn send<T>(&mut self, device: &mut T) -> Result<GenericApdu, LedgerLibError>
-    where
-        T: Device,
-    {
+    pub async fn send(
+        &mut self,
+        device: &mut GenericDevice,
+    ) -> Result<GenericApdu, LedgerLibError> {
         let mut buff = [0u8; MAX_REQ_SIZE];
         loop {
             match device
