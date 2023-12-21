@@ -36,7 +36,7 @@ impl Debug for RegisterAddress {
         write!(
             f,
             "RegisterAddress({}) {{ meta: {:?}, owner: {:?} }}",
-            &self.to_hex(),
+            &self.to_hex()[0..6],
             self.meta,
             self.owner
         )

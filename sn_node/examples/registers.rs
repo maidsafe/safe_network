@@ -67,17 +67,17 @@ async fn main() -> Result<()> {
 
     let meta = XorName::from_content(reg_nickname.as_bytes());
     let address = RegisterAddress::new(meta, client.signer_pk());
-    println!("Retrieving Register '{reg_nickname}':'{address:?}' from SAFE, as user '{user}'");
+    println!("Retrieving Register '{reg_nickname}':'{:?}' from SAFE, as user '{user}'", address.to_hex());
     let mut reg_replica = match client.get_register(address).await {
         Ok(register) => {
             println!(
                 "Register '{reg_nickname}' found at {:?}!",
-                register.address(),
+                register.address().to_hex(),
             );
             register
         }
         Err(_) => {
-            println!("Register '{reg_nickname}' not found, creating it at {address:?}");
+            println!("Register '{reg_nickname}' not found, creating it at {:?}", address.to_hex());
             let (register, _cost, _royalties_fees) = client
                 .create_and_pay_for_register(meta, &mut wallet_client, true, true)
                 .await?;
@@ -85,7 +85,7 @@ async fn main() -> Result<()> {
             register
         }
     };
-    println!("Register address: {:?}", reg_replica.address());
+    println!("Register address: {:?}", reg_replica.address().to_hex());
     println!("Register owned by: {:?}", reg_replica.owner());
     println!("Register permissions: {:?}", reg_replica.permissions());
 
