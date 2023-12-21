@@ -22,8 +22,8 @@ pub use address::SpendAddress;
 pub use cashnote::CashNote;
 pub use nano::NanoTokens;
 pub use reason_hash::Hash;
-pub use signed_spend::{SignedSpend, Spend};
-pub use transaction::Transaction;
+pub use signed_spend::{SignedSpend, Spend, SpendLedger};
+pub use transaction::{InputLedger, OutputLedger, Transaction, TransactionLedger};
 pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey};
 
 #[cfg(test)]

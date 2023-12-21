@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 pub(crate) mod files;
 pub(crate) mod gossipsub;
+mod ledger;
 pub(crate) mod register;
 pub(crate) mod wallet;
 

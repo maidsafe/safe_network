@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::ledger::ledger_get_addr;
+
 use bls::{PublicKey, SecretKey, PK_SIZE};
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
@@ -29,7 +31,11 @@ const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the wallet address.
-    Address,
+    Address {
+        /// Use Ledger hardware wallet device instead of locally stored wallet
+        #[clap(long, default_value = "false")]
+        ledger: bool,
+    },
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
@@ -136,7 +142,8 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address => address(root_dir),
+        WalletCmds::Address { ledger } if *ledger => ledger_get_addr().await,
+        WalletCmds::Address { .. } => address(root_dir),
         WalletCmds::Balance { peer_id } => {
             if peer_id.is_empty() {
                 let balance = balance(root_dir)?;

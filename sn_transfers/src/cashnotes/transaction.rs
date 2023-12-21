@@ -5,13 +5,30 @@
 // Please see the LICENSE file for more details.
 
 use super::{NanoTokens, SignedSpend, UniquePubkey};
+use crate::Error;
 use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 use std::{cmp::Ordering, collections::BTreeSet};
 use tiny_keccak::{Hasher, Sha3};
 
-use crate::Error;
-
 type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize, Hash)]
+pub struct InputLedger {
+    // TODO: we cannot use UniquePubKey since blsttc doesn't support no-std builds required for Ledger integration
+    #[serde(with = "BigArray")]
+    pub unique_pubkey: [u8; 48],
+    pub amount: NanoTokens,
+}
+
+impl InputLedger {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut v: Vec<u8> = Default::default();
+        v.extend(&self.unique_pubkey);
+        v.extend(self.amount.to_bytes());
+        v
+    }
+}
 
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize, Hash)]
 pub struct Input {
@@ -39,6 +56,23 @@ impl Input {
     }
 }
 
+#[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize, Hash)]
+pub struct OutputLedger {
+    // TODO: we cannot use UniquePubKey since blsttc doesn't support no-std builds required for Ledger integration
+    #[serde(with = "BigArray")]
+    pub unique_pubkey: [u8; 48],
+    pub amount: NanoTokens,
+}
+
+impl OutputLedger {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut v: Vec<u8> = Default::default();
+        v.extend(&self.unique_pubkey);
+        v.extend(self.amount.to_bytes());
+        v
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Output {
     pub unique_pubkey: UniquePubkey,
@@ -62,6 +96,36 @@ impl Output {
 
     pub fn unique_pubkey(&self) -> &UniquePubkey {
         &self.unique_pubkey
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct TransactionLedger {
+    pub inputs: [InputLedger; 1],
+    pub outputs: [OutputLedger; 1],
+}
+
+impl TransactionLedger {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut v: Vec<u8> = Default::default();
+        v.extend("inputs".as_bytes());
+        for m in self.inputs.iter() {
+            v.extend(&m.to_bytes());
+        }
+        v.extend("outputs".as_bytes());
+        for o in self.outputs.iter() {
+            v.extend(&o.to_bytes());
+        }
+        v.extend("end".as_bytes());
+        v
+    }
+
+    pub fn hash(&self) -> crate::Hash {
+        let mut sha3 = Sha3::v256();
+        sha3.update(&self.to_bytes());
+        let mut hash = [0; 32];
+        sha3.finalize(&mut hash);
+        crate::Hash::from(hash)
     }
 }
 

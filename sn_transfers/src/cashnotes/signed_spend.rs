@@ -6,11 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Hash, NanoTokens, Transaction, UniquePubkey};
+use super::{Hash, NanoTokens, Transaction, TransactionLedger, UniquePubkey};
 use crate::{DerivationIndex, Error, Result, Signature};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 use std::cmp::Ordering;
 
 /// SignedSpend's are constructed when a CashNote is logged to the spentbook.
@@ -128,6 +129,41 @@ impl std::hash::Hash for SignedSpend {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let bytes = self.to_bytes();
         bytes.hash(state);
+    }
+}
+
+/// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
+#[derive(custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpendLedger {
+    /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
+    // TODO: we cannot use UniquePubKey since blsttc doesn't support no-std builds required for Ledger integration
+    #[serde(with = "BigArray")]
+    pub unique_pubkey: [u8; 48],
+    /// The transaction that the input CashNote is being spent in (where it is an input)
+    #[debug(skip)]
+    pub spent_tx: TransactionLedger,
+    /// Reason why this CashNote was spent.
+    #[debug(skip)]
+    pub reason: Hash,
+    /// The amount of the input CashNote.
+    #[debug(skip)]
+    pub token: NanoTokens,
+    /// The transaction that the input CashNote was created in (where it is an output)
+    #[debug(skip)]
+    pub parent_tx: TransactionLedger,
+}
+
+impl SpendLedger {
+    /// Represent this Spend as bytes.
+    /// There is no from_bytes, because this function is not symetric as it uses hashes
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = Default::default();
+        bytes.extend(self.unique_pubkey);
+        bytes.extend(self.spent_tx.hash().as_ref());
+        bytes.extend(self.reason.as_ref());
+        bytes.extend(self.token.to_bytes());
+        bytes.extend(self.parent_tx.hash().as_ref());
+        bytes
     }
 }
 

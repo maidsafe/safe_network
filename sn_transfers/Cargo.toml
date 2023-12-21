@@ -21,6 +21,9 @@ lazy_static = "~1.4.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+serde_json = { version = "1.0.108" }
+serde-big-array = "0.5.1"
+#serde-json-core = { git = "https://github.com/rust-embedded-community/serde-json-core"}
 tokio = { version = "1.32.0", features = ["macros", "rt"] }
 thiserror = "1.0.24"
 tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }

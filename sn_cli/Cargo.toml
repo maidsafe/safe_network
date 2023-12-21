@@ -33,9 +33,12 @@ chrono = "~0.4.19"
 clap = { version = "4.2.1", features = ["derive"]}
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"
+encdec = { version = "0.9.0", default_features = false }
 futures = "~0.3.13"
 hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
+ledger-lib = "0.1.0"
+ledger-proto = "0.1.0"
 libp2p = { version="0.53", features = ["identify", "kad"] }
 rand = "0.8.5"
 rayon = "1.8.0"

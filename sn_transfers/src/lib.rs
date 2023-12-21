@@ -19,8 +19,9 @@ pub(crate) use cashnotes::{Input, TransactionBuilder};
 
 /// Types used in the public API
 pub use cashnotes::{
-    CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
-    SignedSpend, Spend, SpendAddress, Transaction, UniquePubkey,
+    CashNote, DerivationIndex, DerivedSecretKey, Hash, InputLedger, MainPubkey, MainSecretKey,
+    NanoTokens, OutputLedger, SignedSpend, Spend, SpendAddress, SpendLedger, Transaction,
+    TransactionLedger, UniquePubkey,
 };
 pub use error::{Error, Result};
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
