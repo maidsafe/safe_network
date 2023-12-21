@@ -161,7 +161,12 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false, Permissions::new_owner_only())
+        .create_and_pay_for_register(
+            register_addr,
+            &mut wallet_client,
+            false,
+            Permissions::new_owner_only(),
+        )
         .await?;
     println!("Random Register created, paid {storage_cost}/{royalties_fees}");
 
