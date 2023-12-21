@@ -198,6 +198,9 @@ async fn upload_files(
             println!("**************************************");
             println!("*          Uploaded Files            *");
             println!("**************************************");
+            if chunk_manager.verified_files().is_empty() {
+                println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+            }
             for (file_name, addr) in chunk_manager.verified_files() {
                 if let Some(file_name) = file_name.to_str() {
                     println!("\"{file_name}\" {addr:x}");
@@ -263,6 +266,16 @@ async fn upload_files(
         // terminates with an error. This race condition can happen as we bail on `upload_result` before we await the
         // handler.
         if !upload_terminated_with_error {
+            for file_name in chunk_manager.unverified_files() {
+                if let Some(file_name) = file_name.to_str() {
+                    println!("Unverified file \"{file_name}\", suggest to re-upload again.");
+                    info!("Unverified {file_name}");
+                } else {
+                    println!("Unverified file \"{file_name:?}\", suggest to re-upload again.");
+                    info!("Unverified file {file_name:?}");
+                }
+            }
+
             // log uploaded file information
             println!("**************************************");
             println!("*          Uploaded Files            *");

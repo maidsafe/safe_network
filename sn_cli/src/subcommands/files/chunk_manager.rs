@@ -344,6 +344,14 @@ impl ChunkManager {
         &self.verified_files
     }
 
+    /// Return the filename of unverified_files.
+    pub(crate) fn unverified_files(&self) -> Vec<&OsString> {
+        self.chunks
+            .values()
+            .map(|chunked_file| &chunked_file.file_name)
+            .collect()
+    }
+
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// verified
     pub(crate) fn already_put_chunks(
