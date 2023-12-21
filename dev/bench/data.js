@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703168330927,
+  "lastUpdate": 1703168332412,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33521,6 +33521,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29030,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 9,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4",
+          "message": "chore: log full Register address when created in cli and example app",
+          "timestamp": "2023-12-21T13:39:08Z",
+          "tree_id": "8133219fbb95d3533523121a251ecaab4ed96c97",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4"
+        },
+        "date": 1703168332104,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 2964,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 28888,
             "unit": "ms"
           },
           {
