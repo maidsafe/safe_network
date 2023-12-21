@@ -39,7 +39,7 @@ pub enum FileUploadEvent {
     /// The Chunk already exists in the network, skipping upload.
     AlreadyExistsInNetwork(ChunkAddress),
     /// Failed to upload a chunk to the network. This event can be emitted multiple times for a single ChunkAddress
-    ///  if retries are enabled.
+    /// if retries are enabled.
     FailedToUpload(ChunkAddress),
     /// Payment for a batch of chunk has been made.
     PayedForChunks {
@@ -216,7 +216,7 @@ impl Files {
                 return Err(ClientError::SequentialUploadPaymentError);
             }
             // if the payment fails, we can continue to the next batch
-            let res = self.handle_chunk_batch(chunks_batch).await;
+            let res = self.handle_chunk_batch(chunks_batch, false).await;
             batch += 1;
             match res {
                 Ok(()) => {
@@ -258,7 +258,7 @@ impl Files {
             retry_count += 1;
             let batches = failed_chunks_to_upload.chunks(self.batch_size);
             for chunks_batch in batches {
-                self.handle_chunk_batch(chunks_batch).await?;
+                self.handle_chunk_batch(chunks_batch, true).await?;
             }
             // ensure we wait on any remaining uploading_chunks w/ drain_all
             self.progress_uploading_chunks(true).await?;
@@ -272,7 +272,14 @@ impl Files {
 
     /// Handles a batch of chunks for upload. This includes paying for the chunks, uploading them,
     /// and handling any errors that occur during the process.
-    async fn handle_chunk_batch(&mut self, chunks_batch: &[ChunkInfo]) -> Result<()> {
+    ///
+    /// If `failed_batch` is true, we emit FilesUploadEvent::Uploaded for the skipped_chunks. This is because,
+    /// the failed_batch was already paid for, but could not be verified on the first try.
+    async fn handle_chunk_batch(
+        &mut self,
+        chunks_batch: &[ChunkInfo],
+        failed_batch: bool,
+    ) -> Result<()> {
         // while we don't have a full batch_size of ongoing uploading_chunks
         // we can pay for the next batch and carry on
         self.progress_uploading_chunks(false).await?;
@@ -311,10 +318,17 @@ impl Files {
 
         // send update about the existing chunks
         for chunk in skipped_chunks {
-            self.send_event(FileUploadEvent::AlreadyExistsInNetwork(ChunkAddress::new(
-                chunk,
-            )))
-            .await?;
+            if failed_batch {
+                // the chunk was already paid for but might have not been verified on the first try.
+                self.send_event(FileUploadEvent::Uploaded(ChunkAddress::new(chunk)))
+                    .await?;
+            } else {
+                // if during the first try we skip the chunk, then it was already uploaded.
+                self.send_event(FileUploadEvent::AlreadyExistsInNetwork(ChunkAddress::new(
+                    chunk,
+                )))
+                .await?;
+            }
         }
 
         // upload paid chunks
@@ -341,22 +355,13 @@ impl Files {
     /// Progresses the uploading of chunks. If the number of ongoing uploading chunks is less than the batch size,
     /// it pays for the next batch and continues. If an error occurs during the upload, it will be returned.
     ///
-    /// # Arguments
-    ///
-    /// * `params` - The parameters for the upload, including the chunk manager and the batch size.
-    /// * `drain_all` - If true, will wait for all ongoing uploads to complete before returning.
-    ///
-    /// # Returns
-    ///
-    /// * `Result<()>` - The result of the upload. If successful, it will return `Ok(())`. If an error occurs, it will return `Err(report)`.
+    /// If `drain_all` is true, will wait for all ongoing uploads to complete before returning.
     async fn progress_uploading_chunks(&mut self, drain_all: bool) -> Result<()> {
         while drain_all || self.uploading_chunks.len() >= self.batch_size {
             if let Some(result) = self.uploading_chunks.next().await {
                 // bail if we've had any errors so far
                 match result? {
-                    // or cleanup via chunk_manager
                     (chunk_info, Ok(())) => {
-                        // mark the chunk as completed
                         self.send_event(FileUploadEvent::Uploaded(ChunkAddress::new(
                             chunk_info.name,
                         )))
