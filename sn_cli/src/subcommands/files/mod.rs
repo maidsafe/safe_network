@@ -286,6 +286,8 @@ async fn upload_files(
             }
 
             file.flush()?;
+        } else {
+            error!("Got FileUploadEvent::Error inside upload event loop");
         }
 
         Ok::<_, ClientError>(())
