@@ -215,6 +215,23 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
+      - name: Delete client subdir to generate new client
+        shell: bash
+        run: rm -rf "${{ matrix.safe_path }}"/client
+
+      - name: Start a client to get a register writable by anyone (new client, the owner of Register)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n trycatch
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register writable by anyone (new client, not the owner of Register)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n trycatch water
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
