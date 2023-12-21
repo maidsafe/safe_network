@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703168329545,
+  "lastUpdate": 1703168330927,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2156f1f9ce37f0ba8ef7092825380856a763c226",
-          "message": "chore: some logging updates",
-          "timestamp": "2023-08-31T14:48:26Z",
-          "tree_id": "dd012609cb2b6cd4b9d16a421227f9741bdc9af8",
-          "url": "https://github.com/maidsafe/safe_network/commit/2156f1f9ce37f0ba8ef7092825380856a763c226"
-        },
-        "date": 1693501900725,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1387.2251,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1312,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 62,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4",
+          "message": "chore: log full Register address when created in cli and example app",
+          "timestamp": "2023-12-21T13:39:08Z",
+          "tree_id": "8133219fbb95d3533523121a251ecaab4ed96c97",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4"
+        },
+        "date": 1703168330560,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 260,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 60,
             "unit": "MB"
           }
         ]
