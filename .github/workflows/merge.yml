@@ -382,6 +382,15 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 30
 
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_churn
+          platform: ${{ matrix.os }}
+          build: true
+
       - name: Verify restart of nodes using rg
         shell: bash
         timeout-minutes: 1
@@ -424,15 +433,6 @@ jobs:
             exit 1
           fi
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_churn
-          platform: ${{ matrix.os }}
-          build: true
-      
       # Only error out after uploading the logs
       - name: Don't log raw data
         if: matrix.os != 'windows-latest' # causes error
@@ -511,6 +511,15 @@ jobs:
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
           timeout-minutes: 5
 
+        - name: Stop the local network and upload logs
+          if: always()
+          uses: maidsafe/sn-local-testnet-action@main
+          with:
+            action: stop
+            log_file_prefix: safe_test_logs_data_location
+            platform: ${{ matrix.os }}
+            build: true
+
         - name: Verify restart of nodes using rg
           shell: bash
           timeout-minutes: 1
@@ -530,15 +539,6 @@ jobs:
             fi
             node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
             echo "Node dir count is $node_count"
-
-        - name: Stop the local network and upload logs
-          if: always()
-          uses: maidsafe/sn-local-testnet-action@main
-          with:
-            action: stop
-            log_file_prefix: safe_test_logs_data_location
-            platform: ${{ matrix.os }}
-            build: true
 
         # Only error out after uploading the logs
         - name: Don't log raw data
