@@ -51,7 +51,7 @@ pub fn random_content(
     output_file.write_all(&random_length_content)?;
 
     let files_api = FilesApi::new(client.clone(), wallet_dir);
-    let (file_addr, _file_size, chunks) = FilesApi::chunk_file(&file_path, chunk_dir)?;
+    let (file_addr, _file_size, chunks) = FilesApi::chunk_file(&file_path, chunk_dir, true)?;
 
     Ok((
         files_api,

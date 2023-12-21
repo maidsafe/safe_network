@@ -48,6 +48,9 @@ pub enum FilesCmds {
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
+        /// Should the file be made accessible to all. (This is irreversible)
+        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
+        make_public: bool,
         /// The retry_count for retrying failed chunks
         /// during payment and upload processing.
         #[clap(long, default_value_t = MAX_UPLOAD_RETRIES, short = 'r')]
@@ -89,9 +92,11 @@ pub(crate) async fn files_cmds(
             path,
             batch_size,
             max_retries,
+            make_public,
         } => {
             upload_files(
                 path,
+                make_public,
                 client,
                 root_dir.to_path_buf(),
                 verify_store,
@@ -152,6 +157,7 @@ pub(crate) async fn files_cmds(
 /// verify if the data was stored successfully.
 async fn upload_files(
     files_path: PathBuf,
+    make_data_public: bool,
     client: &Client,
     root_dir: PathBuf,
     verify_store: bool,
@@ -159,18 +165,22 @@ async fn upload_files(
     max_retries: usize,
 ) -> Result<()> {
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
+    if make_data_public {
+        info!("{files_path:?} will be made public and linkable");
+        println!("{files_path:?} will be made public and linkable");
+    }
 
     let files_api: FilesApi = FilesApi::new(client.clone(), root_dir.to_path_buf());
     if files_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
     let mut chunk_manager = ChunkManager::new(&root_dir);
-    chunk_manager.chunk_path(&files_path, true)?;
+    chunk_manager.chunk_path(&files_path, true, make_data_public)?;
 
     // Return early if we already uploaded them
     let mut chunks_to_upload = if chunk_manager.is_chunks_empty() {
         // make sure we don't have any failed chunks in those
-        let chunks = chunk_manager.already_put_chunks(&files_path)?;
+        let chunks = chunk_manager.already_put_chunks(&files_path, make_data_public)?;
         println!(
             "Files upload attempted previously, verifying {} chunks",
             chunks.len()
@@ -217,7 +227,6 @@ async fn upload_files(
     chunks_to_upload.shuffle(&mut rng);
 
     let chunks_to_upload_len = chunks_to_upload.len();
-
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
     let total_existing_chunks = Arc::new(AtomicU64::new(0));
     let mut files = Files::new(files_api)
