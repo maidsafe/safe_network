@@ -398,7 +398,7 @@ fn store_chunks_task(
                 .expect("failed to write to temp chunk file");
 
             let (addr, _file_size, chunks) =
-                FilesApi::chunk_file(&file_path, &output_dir).expect("Failed to chunk bytes");
+                FilesApi::chunk_file(&file_path, &output_dir, true).expect("Failed to chunk bytes");
 
             println!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
