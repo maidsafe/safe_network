@@ -11,8 +11,8 @@ use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
 use sn_client::{Client, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
-use sn_transfers::LocalWallet;
 use sn_registers::Permissions;
+use sn_transfers::LocalWallet;
 use std::path::Path;
 use xor_name::XorName;
 
