@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.79](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.78...sn_cli-v0.86.79) - 2023-12-21
+
+### Other
+- log full Register address when created in cli and example app
+
+## [0.86.78](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.77...sn_cli-v0.86.78) - 2023-12-21
+
+### Other
+- *(client)* emit chunk Uploaded event if a chunk was verified during repayment
+
 ## [0.86.77](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.76...sn_cli-v0.86.77) - 2023-12-20
 
 ### Other
