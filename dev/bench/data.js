@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703065330203,
+  "lastUpdate": 1703168207701,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
-          "message": "feat(cli): perform wallet actions without connecting to the network",
-          "timestamp": "2023-08-31T18:52:26Z",
-          "tree_id": "61a8d0efee3c211b76c760bf2109710aed311111",
-          "url": "https://github.com/maidsafe/safe_network/commit/85e5cb436d9118dadc39ba8e6bea26ea2b6b6270"
-        },
-        "date": 1693512453252,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.13775348231031564,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.49954783110355244,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.115416100414475,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.133272624146436,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4",
+          "message": "chore: log full Register address when created in cli and example app",
+          "timestamp": "2023-12-21T13:39:08Z",
+          "tree_id": "8133219fbb95d3533523121a251ecaab4ed96c97",
+          "url": "https://github.com/maidsafe/safe_network/commit/9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4"
+        },
+        "date": 1703168205811,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1468207956383776,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9008189173619026,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.7564427716693,
             "unit": "MiB/s"
           }
         ]
