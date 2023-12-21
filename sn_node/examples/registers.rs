@@ -83,6 +83,7 @@ async fn main() -> Result<()> {
             register
         }
     };
+    println!("Register address: {:?}", reg_replica.address().to_hex());
     println!("Register owned by: {:?}", reg_replica.owner());
     println!("Register permissions: {:?}", reg_replica.permissions());
 
