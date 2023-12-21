@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.29](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.28...sn_client-v0.99.29) - 2023-12-21
+
+### Other
+- *(client)* emit chunk Uploaded event if a chunk was verified during repayment
+
 ## [0.99.28](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.27...sn_client-v0.99.28) - 2023-12-20
 
 ### Other
