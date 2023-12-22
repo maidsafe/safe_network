@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.10...sn_networking-v0.12.11) - 2023-12-22
+
+### Other
+- address distribution sim
+
 ## [0.12.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.9...sn_networking-v0.12.10) - 2023-12-19
 
 ### Added
