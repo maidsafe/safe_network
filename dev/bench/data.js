@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703231276703,
+  "lastUpdate": 1703231278113,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "98b24620115acf5479a649b5e114ee06ad171e59",
-          "message": "Revert \"fix(ci): disable `CARGO_TARGET_DIR` to speedup build time\"\n\nThis reverts commit caf42044554bc6ee082db9800443a089a77bbe31.",
-          "timestamp": "2023-08-31T17:58:36+02:00",
-          "tree_id": "b9d8244b8fe11923b62913a220e777b46f64636e",
-          "url": "https://github.com/maidsafe/safe_network/commit/98b24620115acf5479a649b5e114ee06ad171e59"
-        },
-        "date": 1693502442100,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1374.212,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1297,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 60,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ed9294b38086bb1e2423a1af3e6a762402907e2b",
+          "message": "test: address distribution sim",
+          "timestamp": "2023-12-22T07:08:35Z",
+          "tree_id": "a4674efdc33886841f0a615bb5884a39305e2d3a",
+          "url": "https://github.com/maidsafe/safe_network/commit/ed9294b38086bb1e2423a1af3e6a762402907e2b"
+        },
+        "date": 1703231277737,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 283,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 64,
             "unit": "MB"
           }
         ]
