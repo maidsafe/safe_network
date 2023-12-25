@@ -69,7 +69,7 @@ impl Node {
             }
         }
 
-        info!(
+        trace!(
             "Try trigger interval started@{start:?}, took {:?}",
             start.elapsed()
         );
