@@ -458,7 +458,7 @@ impl SwarmDriver {
                 send_back_addr,
             } => {
                 event_string = "incoming";
-                info!("{:?}", self.swarm.network_info());
+                // info!("{:?}", self.swarm.network_info());
                 trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -470,7 +470,7 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
-                info!(%peer_id, ?connection_id, "ConnectionEstablished {:?}", self.swarm.network_info());
+                // info!(%peer_id, ?connection_id, "ConnectionEstablished {:?}", self.swarm.network_info());
 
                 let _ = self.live_connected_peers.insert(
                     connection_id,
@@ -491,7 +491,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
+                // info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
             }
@@ -502,7 +502,7 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
-                info!("{:?}", self.swarm.network_info());
+                // info!("{:?}", self.swarm.network_info());
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
@@ -582,7 +582,7 @@ impl SwarmDriver {
                 send_back_addr,
                 error,
             } => {
-                info!("{:?}", self.swarm.network_info());
+                // info!("{:?}", self.swarm.network_info());
                 event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
             }
@@ -1056,6 +1056,18 @@ impl SwarmDriver {
                 shall_retained
             });
 
+        if !shall_removed.is_empty() {
+            info!(
+                "Current libp2p peers pool stats is {:?}",
+                self.swarm.network_info()
+            );
+            info!(
+                "Removing {} outdated live connections, still have {} left.",
+                shall_removed.len(),
+                self.live_connected_peers.len()
+            );
+        }
+
         // Only remove outdated peer not in the RT
         for (connection_id, peer_id) in shall_removed {
             if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
@@ -1068,7 +1080,7 @@ impl SwarmDriver {
                 }
             }
 
-            info!("Removing outdated connection {connection_id:?} to {peer_id:?}");
+            trace!("Removing outdated connection {connection_id:?} to {peer_id:?}");
             let _result = self.swarm.close_connection(connection_id);
         }
     }

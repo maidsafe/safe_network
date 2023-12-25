@@ -223,7 +223,7 @@ impl Node {
                                 let event_string = format!("{event:?}");
 
                                 self.handle_network_event(event, peers_connected);
-                                info!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
+                                trace!("Handled non-blocking network event in {:?}: {:?}", start.elapsed(), event_string);
 
                             }
                             None => {
@@ -236,20 +236,18 @@ impl Node {
                     // runs every replication_interval time
                     _ = replication_interval.tick() => {
                         let start = std::time::Instant::now();
-                        info!("Periodic replication triggered");
+                        trace!("Periodic replication triggered");
                         let network = self.network.clone();
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
                         let _handle = spawn(async move {
-                            Marker::ForcedReplication.log();
-
                             if let Err(err) = Self::try_interval_replication(network)
                                 .await
                             {
                                 error!("Error while triggering replication {err:?}");
                             }
 
-                            info!("Periodic replication took {:?}", start.elapsed());
+                            trace!("Periodic replication took {:?}", start.elapsed());
                         });
                     }
                     node_cmd = cmds_receiver.recv() => {
