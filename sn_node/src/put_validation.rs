@@ -569,6 +569,7 @@ impl Node {
                 expected: expected_fee,
             });
         }
+        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
 
         Ok(())

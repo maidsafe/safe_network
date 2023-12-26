@@ -117,7 +117,8 @@ impl NodeRecordStore {
         // we should only be reading if we know the record is written to disk properly
         match fs::read(file_path) {
             Ok(value) => {
-                debug!(
+                // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+                info!(
                     "Retrieved record from disk! filename: {filename} after {:?}",
                     start.elapsed()
                 );
@@ -247,7 +248,8 @@ impl NodeRecordStore {
         tokio::spawn(async move {
             let event = match fs::write(&file_path, r.value) {
                 Ok(_) => {
-                    trace!("Wrote record {record_key:?} to disk! filename: {filename}");
+                    // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+                    info!("Wrote record {record_key:?} to disk! filename: {filename}");
                     NetworkEvent::CompletedWrite((r.key, record_type))
                 }
                 Err(err) => {
@@ -284,7 +286,8 @@ impl NodeRecordStore {
 
         let cost = calculate_cost_for_relevant_records(relevant_records_len);
 
-        debug!("Cost is now {cost:?} for {relevant_records_len:?} records stored of {MAX_RECORDS_COUNT:?} max");
+        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+        info!("Cost is now {cost:?} for {relevant_records_len:?} records stored of {MAX_RECORDS_COUNT:?} max");
         NanoTokens::from(cost)
     }
 
