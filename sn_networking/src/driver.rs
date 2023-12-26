@@ -357,6 +357,7 @@ impl NetworkBuilder {
         identify_version: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
+        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
         info!(
             "Self PeerID {peer_id} is represented as kbucket_key {:?}",
