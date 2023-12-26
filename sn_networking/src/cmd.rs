@@ -119,6 +119,13 @@ pub enum SwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
+    /// Put record to specific node
+    PutRecordTo {
+        payee: PeerId,
+        record: Record,
+        sender: oneshot::Sender<Result<()>>,
+        quorum: Quorum,
+    },
     /// Put record to the local RecordStore
     PutLocalRecord {
         record: Record,
@@ -175,6 +182,13 @@ impl Debug for SwarmCmd {
                 write!(
                     f,
                     "SwarmCmd::PutRecord {{ key: {:?} }}",
+                    PrettyPrintRecordKey::from(&record.key)
+                )
+            }
+            SwarmCmd::PutRecordTo { payee, record, .. } => {
+                write!(
+                    f,
+                    "SwarmCmd::PutRecordTo {{ payee: {payee:?}, key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
@@ -422,6 +436,28 @@ impl SwarmDriver {
 
                 if let Err(err) = sender.send(res) {
                     error!("Could not send response to PutRecord cmd: {:?}", err);
+                }
+            }
+            SwarmCmd::PutRecordTo {
+                payee,
+                record,
+                sender,
+                quorum,
+            } => {
+                let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
+                trace!(
+                    "Putting record {record_key:?} sized: {:?} to {payee:?}",
+                    record.value.len(),
+                );
+                let request_id = self.swarm.behaviour_mut().kademlia.put_record_to(
+                    record,
+                    vec![payee].into_iter(),
+                    quorum,
+                );
+                trace!("Sent record {record_key:?} to {payee:?}. Request id: {request_id:?}");
+
+                if let Err(err) = sender.send(Ok(())) {
+                    error!("Could not send response to PutRecordTo cmd: {:?}", err);
                 }
             }
             SwarmCmd::PutLocalRecord { record } => {

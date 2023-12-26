@@ -14,6 +14,7 @@ use crate::{
 use bytes::Bytes;
 use futures::{future::join_all, stream::FuturesOrdered, StreamExt};
 use itertools::Itertools;
+use libp2p::PeerId;
 use self_encryption::{self, ChunkInfo, DataMap, EncryptedChunk, MIN_ENCRYPTABLE_BYTES};
 use self_encryption::{decrypt_full_set, StreamSelfDecryptor};
 use sn_protocol::{
@@ -157,10 +158,11 @@ impl FilesApi {
     pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,
+        payee: PeerId,
         verify_store: bool,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
-        trace!("Client upload started for chunk: {chunk_addr:?}");
+        trace!("Client upload started for chunk: {chunk_addr:?} to {payee:?}");
 
         let wallet_client = self.wallet()?;
         let payment = wallet_client.get_payment_for_addr(&chunk_addr)?;
@@ -171,7 +173,7 @@ impl FilesApi {
         );
 
         self.client
-            .store_chunk(chunk, payment, verify_store)
+            .store_chunk(chunk, payee, payment, verify_store)
             .await?;
 
         trace!("Client upload completed for chunk: {chunk_addr:?}");
@@ -184,11 +186,14 @@ impl FilesApi {
     pub async fn pay_for_chunks(
         &self,
         chunks: Vec<XorName>,
-    ) -> Result<((NanoTokens, NanoTokens, NanoTokens), Vec<XorName>)> {
+    ) -> Result<(
+        (NanoTokens, NanoTokens, NanoTokens),
+        (Vec<(XorName, PeerId)>, Vec<XorName>),
+    )> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let ((storage_cost, royalties_fees), skipped_chunks) =
+        let ((storage_cost, royalties_fees), (payee_map, skipped_chunks)) =
             wallet_client
                 .pay_for_storage(chunks.iter().map(|name| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
@@ -197,7 +202,10 @@ impl FilesApi {
 
         wallet_client.store_local_wallet()?;
         let new_balance = wallet_client.balance();
-        Ok(((storage_cost, royalties_fees, new_balance), skipped_chunks))
+        Ok((
+            (storage_cost, royalties_fees, new_balance),
+            (payee_map, skipped_chunks),
+        ))
     }
 
     // --------------------------------------------
@@ -218,7 +226,7 @@ impl FilesApi {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, verify)
+            self.get_local_payment_and_upload_chunk(chunk, PeerId::random(), verify)
                 .await?;
         }
 

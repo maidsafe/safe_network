@@ -11,6 +11,7 @@ use crate::Error;
 use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
+use libp2p::PeerId;
 use sn_networking::GetRecordError;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
@@ -123,7 +124,7 @@ impl WalletClient {
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
-    ) -> WalletResult<(MainPubkey, PaymentQuote)> {
+    ) -> WalletResult<(PeerId, MainPubkey, PaymentQuote)> {
         self.client
             .network
             .get_store_costs_from_network(address)
@@ -133,13 +134,22 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// Returns storage cost, storage cost is _per record_, and it's zero if not required for this operation.
+    /// The returned result is: ((storage_cost, royalties_fees), (payee_map, skipped_chunks))
+    /// Where:
+    ///   `storage_cost` is the total cost for the all contents
+    ///   `royalties_fees` is the total royalty fess for the all contents
+    ///   `payee_map` is the payees selected for each content
+    ///   `skipped_chunks` is the list of content already exists in network and no need to upload
     ///
+    /// Note storage cost is _per record_, and it's zero if not required for this operation.
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-    ) -> WalletResult<((NanoTokens, NanoTokens), Vec<XorName>)> {
+    ) -> WalletResult<(
+        (NanoTokens, NanoTokens),
+        (Vec<(XorName, PeerId)>, Vec<XorName>),
+    )> {
         let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
         let mut backoff = ExponentialBackoff::default();
@@ -170,7 +180,10 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> WalletResult<((NanoTokens, NanoTokens), Vec<XorName>)> {
+    ) -> WalletResult<(
+        (NanoTokens, NanoTokens),
+        (Vec<(XorName, PeerId)>, Vec<XorName>),
+    )> {
         // get store cost from network in parrallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
@@ -191,15 +204,17 @@ impl WalletClient {
         // collect store costs
         let mut cost_map = BTreeMap::default();
         let mut skipped_chunks = vec![];
+        let mut payee_map = vec![];
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        if cost.1.cost == NanoTokens::zero() {
+                        if cost.2.cost == NanoTokens::zero() {
                             skipped_chunks.push(xorname);
                             debug!("Skipped existing chunk {content_addr:?}");
                         } else {
-                            let _ = cost_map.insert(xorname, cost);
+                            let _ = cost_map.insert(xorname, (cost.1, cost.2));
+                            payee_map.push((xorname, cost.0));
                             debug!("Storecost inserted into payment map for {content_addr:?}");
                         }
                     } else {
@@ -222,7 +237,7 @@ impl WalletClient {
         // pay for records
         Ok((
             self.pay_for_records(&cost_map, verify_store).await?,
-            skipped_chunks,
+            (payee_map, skipped_chunks),
         ))
     }
 
