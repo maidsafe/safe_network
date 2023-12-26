@@ -330,7 +330,7 @@ impl Network {
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<(MainPubkey, PaymentQuote)> {
+    ) -> Result<(PeerId, MainPubkey, PaymentQuote)> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let close_nodes = self.get_closest_peers(&record_address, true).await?;
@@ -490,7 +490,7 @@ impl Network {
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
-    /// If verify is on, retry PUT_RETRY_ATTEMPTS times with a random wait between 1.5s and 5s
+    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
@@ -514,8 +514,39 @@ impl Network {
 
             })
         }).await
+    }
 
-        // Err(last_err)
+    /// Put `Record` to the specific node (only used for upload chunk to the choosen payee)
+    /// Optionally verify the record is stored after putting it to network
+    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
+    pub async fn put_record_to(
+        &self,
+        payee: PeerId,
+        record: Record,
+        cfg: &PutRecordCfg,
+    ) -> Result<()> {
+        let pretty_key = PrettyPrintRecordKey::from(&record.key);
+
+        backoff::future::retry(ExponentialBackoff{
+            max_elapsed_time: Some(MAX_PUT_RETRY_DURATION),
+            ..Default::default()
+        }, || async {
+
+            info!(
+                "Attempting to PUT record with key: {pretty_key:?} to {payee:?}, with cfg {cfg:?}, retrying via backoff..."
+            );
+            self.put_record_to_once(payee, record.clone(), cfg).await.map_err(|err|
+            {
+                warn!("Failed to PUT record with key: {pretty_key:?} to {payee:?} (retry via backoff) with error: {err:?}");
+
+                if cfg.re_attempt {
+                    BackoffError::Transient { err, retry_after: None }
+                } else {
+                    BackoffError::Permanent(err)
+                }
+
+            })
+        }).await
     }
 
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
@@ -563,6 +594,49 @@ impl Network {
                 self.get_record_from_network(record.key.clone(), get_cfg)
                     .await?;
             }
+        }
+
+        response
+    }
+
+    // Put record to the specific node directly.
+    // The caller shall be responsible for re-attempts in case of error.
+    async fn put_record_to_once(
+        &self,
+        payee: PeerId,
+        record: Record,
+        cfg: &PutRecordCfg,
+    ) -> Result<()> {
+        let record_key = record.key.clone();
+        let pretty_key = PrettyPrintRecordKey::from(&record_key);
+        info!(
+            "Putting record of {} - length {:?} to {payee:?}",
+            pretty_key,
+            record.value.len()
+        );
+
+        // Waiting for a response to avoid flushing to network too quick that causing choke
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::PutRecordTo {
+            payee,
+            record: record.clone(),
+            sender,
+            quorum: cfg.put_quorum,
+        })?;
+        let response = receiver.await?;
+
+        if let Some((_record_kind, get_cfg)) = &cfg.verification {
+            // Generate a random duration between MIN_WAIT_BEFORE_READING_A_PUT and MAX_WAIT_BEFORE_READING_A_PUT
+            let wait_duration = rand::thread_rng()
+                .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
+            // Small wait before we attempt to verify.
+            // There will be `re-attempts` to be carried out within the later step anyway.
+            tokio::time::sleep(wait_duration).await;
+            debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
+
+            // Verify the record is stored, requiring re-attempts
+            self.get_record_from_network(record.key.clone(), get_cfg)
+                .await?;
         }
 
         response
@@ -789,7 +863,7 @@ impl Network {
 /// Given `all_costs` it will return a random one to be selected as the payee.
 fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
-) -> Result<(MainPubkey, PaymentQuote)> {
+) -> Result<(PeerId, MainPubkey, PaymentQuote)> {
     trace!("Got all costs: {all_costs:?}");
     // Random shuffle the all_costs, so that nodes with high charge due to replication still
     // get chance to be selected. Also avoid previllage of nodes with `sided addresses`.
@@ -802,7 +876,13 @@ fn get_fees_from_store_cost_responses(
         .ok_or(Error::NoStoreCostResponses)?;
     info!("Final fees calculated as: {payee:?}");
     // we dont need to have the address outside of here for now
-    Ok((payee.1, payee.2))
+    let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
+        peer_id
+    } else {
+        error!("Can't get PeerId from payee {:?}", payee.0);
+        return Err(Error::NoStoreCostResponses);
+    };
+    Ok((payee_id, payee.1, payee.2))
 }
 
 /// Get the value of the provided Quorum
@@ -874,7 +954,7 @@ mod tests {
             ));
         }
         let expected_price = costs[0].2.cost.as_nano();
-        let (_key, price) = get_fees_from_store_cost_responses(costs)?;
+        let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
             price.cost.as_nano(),
@@ -906,7 +986,7 @@ mod tests {
         // this should be the lowest price
         let expected_price = costs[0].2.cost.as_nano();
 
-        let (_key, price) = match get_fees_from_store_cost_responses(costs) {
+        let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
