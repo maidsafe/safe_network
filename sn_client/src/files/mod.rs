@@ -14,6 +14,7 @@ use crate::{
 };
 use bytes::Bytes;
 use futures::{stream::FuturesUnordered, StreamExt};
+use libp2p::PeerId;
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::NanoTokens;
 use std::{collections::HashSet, path::PathBuf};
@@ -285,12 +286,12 @@ impl Files {
         self.progress_uploading_chunks(false).await?;
 
         // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-        let skipped_chunks = match self
+        let (payee_map, skipped_chunks) = match self
             .api
             .pay_for_chunks(chunks_batch.iter().map(|info| info.name).collect())
             .await
         {
-            Ok(((storage_cost, royalty_fees, new_balance), skipped_chunks)) => {
+            Ok(((storage_cost, royalty_fees, new_balance), (payee_map, skipped_chunks))) => {
                 // store the stats and emit event too
                 self.upload_storage_cost = self
                     .upload_storage_cost
@@ -307,7 +308,7 @@ impl Files {
                     new_balance,
                 })
                 .await?;
-                skipped_chunks
+                (payee_map, skipped_chunks)
             }
             Err(err) => return Err(err),
         };
@@ -336,8 +337,28 @@ impl Files {
             let files_api = self.api.clone();
             let verify_store = self.verify_store;
 
+            let payee = if let Some(payee) = payee_map
+                .iter()
+                .find(|itr| itr.0 == chunk_info.name)
+                .map(|result| result.1)
+            {
+                payee
+            } else {
+                error!(
+                    "Cannot find payee of {:?} among the payee_map",
+                    chunk_info.name
+                );
+                continue;
+            };
+
             // Spawn a task for each chunk to be uploaded
-            let handle = tokio::spawn(Self::upload_chunk(files_api, chunk_info, verify_store));
+            let handle = tokio::spawn(Self::upload_chunk(
+                files_api,
+                chunk_info,
+                payee,
+                verify_store,
+            ));
+
             self.progress_uploading_chunks(false).await?;
 
             self.uploading_chunks.push(handle);
@@ -384,6 +405,7 @@ impl Files {
     async fn upload_chunk(
         files_api: FilesApi,
         chunk_info: ChunkInfo,
+        payee: PeerId,
         verify_store: bool,
     ) -> (ChunkInfo, Result<()>) {
         let chunk_address = ChunkAddress::new(chunk_info.name);
@@ -398,7 +420,7 @@ impl Files {
         };
         let chunk = Chunk::new(bytes);
         match files_api
-            .get_local_payment_and_upload_chunk(chunk, verify_store)
+            .get_local_payment_and_upload_chunk(chunk, payee, verify_store)
             .await
         {
             Ok(()) => (chunk_info, Ok(())),

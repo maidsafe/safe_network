@@ -381,6 +381,7 @@ impl Client {
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
+        payee: PeerId,
         payment: Payment,
         verify_store: bool,
     ) -> Result<()> {
@@ -427,9 +428,7 @@ impl Client {
             re_attempt: true,
             verification,
         };
-        self.network.put_record(record, &put_cfg).await?;
-
-        Ok(())
+        Ok(self.network.put_record_to(payee, record, &put_cfg).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
