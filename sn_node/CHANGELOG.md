@@ -2650,6 +2650,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.28](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.27...sn_node-v0.100.28) - 2023-12-26
+
+### Other
+- *(logs)* annotate selected messages and log at info level for vdash
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
