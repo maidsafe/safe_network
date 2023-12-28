@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -6,23 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod conn;
 mod get_app_info;
 mod get_pub_key;
 mod sign_tx;
 
+use conn::connect_to_device;
 use get_app_info::GetAppInfoReq;
 use get_pub_key::GetPubKeyReq;
 use sign_tx::SignTxReq;
 
-use sn_transfers::{Hash, InputLedger, NanoTokens, OutputLedger, SpendLedger, TransactionLedger};
+use sn_transfers::SpendLedger;
 
-use bls::SecretKey;
+use bls::{PublicKey, Signature, PK_SIZE, SIG_SIZE};
 use color_eyre::{eyre::bail, Result};
-use ledger_lib::{
-    info::ConnInfo,
-    transport::{BleTransport, GenericDevice, TcpInfo, TcpTransport, UsbTransport},
-    Filters, LedgerProvider, Transport,
-};
+use ledger_lib::transport::GenericDevice;
 
 const MAX_REQ_SIZE: usize = 256;
 
@@ -47,145 +45,91 @@ impl ApduP2 {
     const P2_MORE: u8 = 0x80;
 }
 
-// Encode public key derivation path
-fn derivation_path(pk_path: &[u32]) -> Vec<u8> {
-    let mut dpath = vec![pk_path.len() as u8];
-    for item in pk_path {
-        dpath.extend(item.to_be_bytes());
+// We use purpose 12381 as defined in EIP2334, and coin type == 1 as defined in SLIP-0044 for all testnets.
+const PURPOSE: u32 = 12381;
+const COIN_TYPE: u32 = 1;
+
+// Encode key derivation path from a given use type.
+// Currently we only derive to the 3rd level of EIP2334 ('account' component in the path), but we
+// shall eventually allow the user to choose the 4th level ('use' component in the path) to differentiate
+// addresses used for files/storage payments from those used by the user for regular SNT transfers, etc.
+fn serialised_derivation_path(account: Option<u32>) -> Vec<u8> {
+    let account_index = account.unwrap_or(0u32);
+    let use_index = 0u32;
+    let dpath = &[PURPOSE, COIN_TYPE, account_index, use_index];
+
+    let mut serialised = vec![dpath.len() as u8];
+    for item in dpath {
+        serialised.extend(item.to_be_bytes());
     }
-    dpath
+
+    println!("Using key derivation path: {dpath:?}");
+
+    serialised
 }
 
-pub(super) async fn ledger_get_addr() -> Result<()> {
-    println!("** Using Ledger hardware wallet **");
+pub struct LedgerSntWallet {
+    device: GenericDevice,
+}
 
-    let mut ledger_provider = LedgerProvider::init().await;
-    let mut device = match ledger_provider.list(Filters::Any).await {
-        Ok(devices) if devices.is_empty() => {
-            println!("No USB devices detected automatically, triying with TCP on localhost...");
-            let tcp_device = TcpTransport::new()?
-                .connect(TcpInfo::default()) // default socket is localhost::1237
-                .await?;
-            GenericDevice::from(tcp_device)
-        }
-        Err(err) => {
-            println!("Error when trying to detect devices through USB: {err:?}");
-            println!("No devices detected through USB, triying with TCP on localhost...");
-            let tcp_device = TcpTransport::new()?
-                .connect(TcpInfo::default()) // default socket is localhost::1237
-                .await?;
-            GenericDevice::from(tcp_device)
-        }
-        Ok(devices) => {
-            println!("Devices detected: {devices:?}");
-            // let's just choose the first one to connect to
-            match &devices[0].conn {
-                ConnInfo::Usb(usb_info) => {
-                    println!("Connecting to Ledger through USB: {usb_info:?}");
-                    let mut usb_transport = UsbTransport::new()?;
-                    let usb_device = usb_transport.connect(usb_info.clone()).await?;
-                    GenericDevice::from(usb_device)
-                }
-                ConnInfo::Tcp(tcp_info) => {
-                    println!("Connecting to Ledger through TCP: {tcp_info:?}");
-                    let tcp_device = TcpTransport::new()?.connect(tcp_info.clone()).await?;
-                    GenericDevice::from(tcp_device)
-                }
-                ConnInfo::Ble(ble_info) => {
-                    println!("Connecting to Ledger through BLE: {ble_info:?}");
-                    let ble_device = BleTransport::new().await?.connect(ble_info.clone()).await?;
-                    GenericDevice::from(ble_device)
-                }
-            }
-        }
-    };
-
-    println!("Connected to device: {}", device.info());
-
-    // Key derivation path: m/12381/3600/0/0/0
-    // Derived pk: ae7c293650c598098d67058e68752da5e534b8a0dcef2836976f033fdc4492c702e8afed2679ea4d3d5172617f95b0ee
-    // Derived sk: 4404d69c70700aa3b37ca1529369f933687bffaf55795245672cc5e2b18d5357
-    let key_path_0 = &[12381, 3600, 0, 0, 0];
-
-    // Key derivation path: m/12381/3600/1/0/0
-    // Derived pk: 9450d9c25fa466ed4334bc39103b7cd521d36562aefc5f475dcb602f15890565461f2d215f7cf552f3b213d02a84f375
-    // Derived sk: 0eaf02a1872d1aec0d7bfc239c6b1cc38c4f4cbf8be8a3c64145a36073ce9889
-    let key_path_1 = &[12381, 3600, 1, 0, 0];
-
-    /*
-    let apdu_get_public_key = GetPubKeyReq::new(key_path_0);
-    let apdu_response = apdu_get_public_key.send(&mut device).await?;
-    println!("APDU get pub key response: {apdu_response:?}");
-
-    let length = apdu_response.data[0];
-    println!("Public Key length: {length}");
-
-    if length as usize != bls::PK_SIZE || apdu_response.data.len() < bls::PK_SIZE + 1 {
-        bail!(
-            "The response data/pk length ({}) doesn't match expected BLS pk length ({})",
-            length,
-            bls::PK_SIZE
-        );
+impl LedgerSntWallet {
+    pub async fn new() -> Result<Self> {
+        println!("** Using Ledger hardware wallet **");
+        let device = connect_to_device().await?;
+        Ok(Self { device })
     }
 
-    let mut pk_bytes = [0u8; bls::PK_SIZE];
-    pk_bytes.copy_from_slice(&apdu_response.data[1..bls::PK_SIZE + 1]);
-    let pk = bls::PublicKey::from_bytes(pk_bytes)?;
-    println!("Public Key: {}", pk.to_hex());
-    */
+    pub async fn get_addr(&mut self, account: Option<u32>) -> Result<PublicKey> {
+        let apdu_get_public_key = GetPubKeyReq::new(account);
+        let apdu_response = apdu_get_public_key.send(&mut self.device).await?;
+        println!("APDU get pub key response: {apdu_response:?}");
 
-    /*
+        let len = apdu_response.data.len();
+        if len < PK_SIZE {
+            bail!(
+                "The response data length ({len}) doesn't match expected BLS pk length ({PK_SIZE})"
+            );
+        }
+
+        let mut pk_bytes = [0u8; PK_SIZE];
+        pk_bytes.copy_from_slice(&apdu_response.data[0..PK_SIZE]);
+        let pk = PublicKey::from_bytes(pk_bytes)?;
+        Ok(pk)
+    }
+
+    pub async fn app_info(&mut self) -> Result<()> {
         let apdu_get_app_info = GetAppInfoReq::default();
-        let resp = apdu_get_app_info.send(&mut device).await?;
+        let resp = apdu_get_app_info.send(&mut self.device).await?;
         println!("APDU get app info response: {resp:?}");
-    */
 
-    let input = InputLedger {
-        unique_pubkey: [0; 48],
-        amount: NanoTokens::from(200),
-    };
-
-    let unique_pubkey = SecretKey::random().public_key();
-    println!("Destination pk: {}", unique_pubkey.to_hex());
-    let output = OutputLedger {
-        unique_pubkey: unique_pubkey.to_bytes(),
-        amount: NanoTokens::from(100),
-    };
-    let tx = TransactionLedger {
-        inputs: [input.clone()],
-        outputs: [output.clone()],
-    };
-
-    let spend = SpendLedger {
-        unique_pubkey: SecretKey::random().public_key().to_bytes(),
-        spent_tx: tx.clone(),
-        reason: Hash::default(),
-        token: NanoTokens::from(15),
-        parent_tx: tx,
-    };
-
-    let mut apdu_sign_tx = SignTxReq::new(key_path_0, &spend);
-    let resp = apdu_sign_tx.send(&mut device).await;
-    println!("APDU sign spend response: {resp:?}");
-
-    let apdu_response = resp?;
-    println!("Response data: {:?}", apdu_response.data);
-
-    let length = apdu_response.data[0];
-    println!("Signature length: {length}");
-
-    if length as usize != bls::SIG_SIZE || apdu_response.data.len() < bls::SIG_SIZE + 1 {
-        bail!(
-            "The response data/signature length ({}) doesn't match expected BLS signature length ({})",
-            length,
-            bls::SIG_SIZE
-        );
+        Ok(())
     }
 
-    let mut sig_bytes = [0u8; bls::SIG_SIZE];
-    sig_bytes.copy_from_slice(&apdu_response.data[1..bls::SIG_SIZE + 1]);
-    let signature = bls::Signature::from_bytes(sig_bytes);
-    println!("Signature: {signature:?}");
+    pub async fn sign_spend(
+        &mut self,
+        account: Option<u32>,
+        spend: &SpendLedger,
+    ) -> Result<(Signature, PublicKey)> {
+        let mut apdu_sign_tx = SignTxReq::new(account, spend);
+        let resp = apdu_sign_tx.send(&mut self.device).await;
+        //println!("APDU sign spend response: {resp:?}");
 
-    Ok(())
+        let apdu_response = resp?;
+        //println!("Response data: {:?}", apdu_response.data);
+
+        let len = apdu_response.data.len();
+        if len < SIG_SIZE + PK_SIZE {
+            bail!("The response data length ({len}) doesn't match expected BLS signature + PK length ({})", SIG_SIZE + PK_SIZE);
+        }
+
+        let mut sig_bytes = [0u8; SIG_SIZE];
+        sig_bytes.copy_from_slice(&apdu_response.data[0..SIG_SIZE]);
+        let ledger_signature = Signature::from_bytes(sig_bytes)?;
+
+        let mut pk_bytes = [0u8; PK_SIZE];
+        pk_bytes.copy_from_slice(&apdu_response.data[SIG_SIZE..SIG_SIZE + PK_SIZE]);
+        let pk = PublicKey::from_bytes(pk_bytes)?;
+
+        Ok((ledger_signature, pk))
+    }
 }

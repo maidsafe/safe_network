@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -17,6 +17,7 @@ use crate::{
     subcommands::{
         files::files_cmds,
         gossipsub::gossipsub_cmds,
+        ledger_wallet::ledger_cmds_without_client,
         register::register_cmds,
         wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
         SubCmd,
@@ -71,15 +72,19 @@ async fn main() -> Result<()> {
 
     let client_data_dir_path = get_client_data_dir_path()?;
     // Perform actions that do not require us connecting to the network and return early
-    if let SubCmd::Wallet(cmds) = &opt.cmd {
-        if let WalletCmds::Address { .. }
-        | WalletCmds::Balance { .. }
-        | WalletCmds::Deposit { .. }
-        | WalletCmds::Create { .. } = cmds
-        {
-            wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
-            return Ok(());
+    match &opt.cmd {
+        SubCmd::Wallet(cmds) => {
+            if let WalletCmds::Address { .. }
+            | WalletCmds::Balance { .. }
+            | WalletCmds::Deposit { .. }
+            | WalletCmds::Create { .. } = cmds
+            {
+                wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
+                return Ok(());
+            }
         }
+        SubCmd::Ledger(cmds) => return ledger_cmds_without_client(cmds).await,
+        _ => {}
     }
 
     println!("Instantiating a SAFE client...");
@@ -116,6 +121,9 @@ async fn main() -> Result<()> {
     match opt.cmd {
         SubCmd::Wallet(cmds) => {
             wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+        }
+        SubCmd::Ledger(_cmds) => {
+            //ledger_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Files(cmds) => {
             files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?

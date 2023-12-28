@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -8,6 +8,7 @@
 pub(crate) mod files;
 pub(crate) mod gossipsub;
 mod ledger;
+pub(crate) mod ledger_wallet;
 pub(crate) mod register;
 pub(crate) mod wallet;
 
@@ -18,6 +19,9 @@ pub(super) enum SubCmd {
     #[clap(name = "wallet", subcommand)]
     /// Commands for wallet management
     Wallet(wallet::WalletCmds),
+    #[clap(name = "ledger", subcommand)]
+    /// Commands for Ledger wallet management
+    Ledger(ledger_wallet::LedgerCmds),
     #[clap(name = "files", subcommand)]
     /// Commands for file management
     Files(files::FilesCmds),

@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{derivation_path, ApduINS, ApduP1, ApduP2, APDU_CLA, MAX_REQ_SIZE};
+use super::{serialised_derivation_path, ApduINS, ApduP1, ApduP2, APDU_CLA, MAX_REQ_SIZE};
 
 use color_eyre::Result;
 use encdec::{self, Decode, Encode};
@@ -22,9 +22,9 @@ pub struct GetPubKeyReq {
 }
 
 impl GetPubKeyReq {
-    pub fn new(path: &[u32]) -> Self {
+    pub fn new(account: Option<u32>) -> Self {
         Self {
-            dpath: derivation_path(path),
+            dpath: serialised_derivation_path(account),
         }
     }
 

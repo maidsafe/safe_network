@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{derivation_path, ApduINS, ApduP1, ApduP2, APDU_CLA, MAX_REQ_SIZE};
+use super::{serialised_derivation_path, ApduINS, ApduP1, ApduP2, APDU_CLA, MAX_REQ_SIZE};
 
 use sn_transfers::SpendLedger;
 
@@ -26,13 +26,13 @@ pub struct SignTxReq {
 }
 
 impl SignTxReq {
-    pub fn new(path: &[u32], spend: &SpendLedger) -> Self {
+    pub fn new(account: Option<u32>, spend: &SpendLedger) -> Self {
         let remaining_bytes = spend.to_bytes();
-        println!("LENGTH: {}", remaining_bytes.len());
+        println!("Serialised Spend length: {}", remaining_bytes.len());
 
         Self {
             remaining_bytes,
-            next_chunk_bytes: derivation_path(path),
+            next_chunk_bytes: serialised_derivation_path(account),
             next_p1: ApduP1::P1_START,
             next_p2: ApduP2::P2_MORE,
         }
