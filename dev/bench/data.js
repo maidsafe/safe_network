@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703231279717,
+  "lastUpdate": 1703756069682,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "3733701c280d7d3b36abc58b33c92bb149a0bf76",
-          "message": "refactor: optimise getting furthest record\n\nInstead of cloning and sorting an entire vec of record keys, compare\nwith an iterator and clone only the resulting key.",
-          "timestamp": "2023-09-01T06:14:23Z",
-          "tree_id": "9f6b57d07a67b378a59e049b9905df5e908554ba",
-          "url": "https://github.com/maidsafe/safe_network/commit/3733701c280d7d3b36abc58b33c92bb149a0bf76"
-        },
-        "date": 1693555842591,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.13982160256052956,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5590631234998272,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 4.10226292054388,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 36.5627822135314,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
+          "message": "fix(testnet): sleep after launching faucet",
+          "timestamp": "2023-12-28T08:50:26Z",
+          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
+        },
+        "date": 1703756067611,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5703067197114908,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0031976902047732,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.94743909615306,
             "unit": "MiB/s"
           }
         ]
