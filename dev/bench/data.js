@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703756069682,
+  "lastUpdate": 1703756215094,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": true,
-          "id": "08d4484e8d386627d62109a29f2a37d02a008480",
-          "message": "feat(ci): merge queue should fail on DoNotMerge lable",
-          "timestamp": "2023-08-31T18:02:59Z",
-          "tree_id": "58249be983cfc8c76471ead036ada1cdb051b9c1",
-          "url": "https://github.com/maidsafe/safe_network/commit/08d4484e8d386627d62109a29f2a37d02a008480"
-        },
-        "date": 1693512592657,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 75.58349,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": false,
           "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
           "message": "feat(cli): perform wallet actions without connecting to the network",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
+          "message": "fix(testnet): sleep after launching faucet",
+          "timestamp": "2023-12-28T08:50:26Z",
+          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
+        },
+        "date": 1703756214734,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
