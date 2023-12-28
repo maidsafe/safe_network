@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.9.4"
+version = "0.10.0"
 
 [features]
 test-utils=["dirs-next", "serde_json"]
