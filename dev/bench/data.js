@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703756215094,
+  "lastUpdate": 1703756216563,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef",
-          "message": "feat(store): implement `UnifiedRecordStore`\n- an enum containing either the client or the node record store",
-          "timestamp": "2023-08-31T16:03:04Z",
-          "tree_id": "85f5608ff38b4eb43752bb036f4fcbf3a6750421",
-          "url": "https://github.com/maidsafe/safe_network/commit/bccd3e81d8ade296ae7de69b9e98a34ed3ec30ef"
-        },
-        "date": 1693504947655,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1365.7703,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1291,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 64,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
+          "message": "fix(testnet): sleep after launching faucet",
+          "timestamp": "2023-12-28T08:50:26Z",
+          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
+        },
+        "date": 1703756216188,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 261,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 66,
             "unit": "MB"
           }
         ]
