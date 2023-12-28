@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703756216563,
+  "lastUpdate": 1703756218334,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33604,6 +33604,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 10,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
+          "message": "fix(testnet): sleep after launching faucet",
+          "timestamp": "2023-12-28T08:50:26Z",
+          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
+        },
+        "date": 1703756217960,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5528,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 46444,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 8,
             "unit": "ms"
           }
         ]
