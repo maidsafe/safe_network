@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.9.4...sn_protocol-v0.10.0) - 2023-12-28
+
+### Added
+- *(protocol)* [**breaking**] new request response for ChunkExistenceProof
+
 ## [0.9.4](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.9.3...sn_protocol-v0.9.4) - 2023-12-19
 
 ### Other
