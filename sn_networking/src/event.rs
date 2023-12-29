@@ -502,24 +502,42 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
-                // info!("{:?}", self.swarm.network_info());
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
                     DialError::Transport(errors) => {
                         // as it's an outgoing error, if it's transport based we can assume it is _our_ fault
+                        //
                         // (eg, could not get a port for a tcp connection)
                         // so we default to it not being a real issue
-                        let mut there_is_a_real_issue = false;
+                        // unless there are _specific_ errors (connection refused eg)
+                        error!("Dial errors len : {:?}", errors.len());
+                        let mut there_is_a_serious_issue = false;
                         for (_addr, err) in errors {
                             error!("OutgoingTransport error : {err:?}");
-                            if let TransportError::MultiaddrNotSupported(addr) = err {
-                                warn!("Multiaddr not supported : {addr:?}");
-                                // if we can't dial a peer on a given address, we should remove it from the routing table
-                                there_is_a_real_issue = true
+
+                            match err {
+                                TransportError::MultiaddrNotSupported(addr) => {
+                                    warn!("Multiaddr not supported : {addr:?}");
+                                    // if we can't dial a peer on a given address, we should remove it from the routing table
+                                    there_is_a_serious_issue = true
+                                }
+                                TransportError::Other(err) => {
+                                    let problematic_errors =
+                                        ["ConnectionRefused", "HostUnreachable"];
+                                    // It is really difficult to match this error, due to being eg:
+                                    // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
+                                    // if we can match that, let's. But meanwhile we'll check the message
+                                    let error_msg = format!("{err:?}");
+                                    if problematic_errors.iter().any(|err| error_msg.contains(err))
+                                    {
+                                        warn!("Problematic error encountered: {error_msg}");
+                                        there_is_a_serious_issue = true;
+                                    }
+                                }
                             }
                         }
-                        there_is_a_real_issue
+                        there_is_a_serious_issue
                     }
                     DialError::NoAddresses => {
                         // We provided no address, and while we can't really blame the peer
@@ -560,6 +578,7 @@ impl SwarmDriver {
                 };
 
                 if should_clean_peer {
+                    warn!("Cleaning out peer {failed_peer_id:?}");
                     if let Some(dead_peer) = self
                         .swarm
                         .behaviour_mut()
