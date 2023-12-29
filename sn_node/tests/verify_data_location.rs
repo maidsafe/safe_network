@@ -10,7 +10,10 @@
 mod common;
 
 use crate::common::{
-    client::{get_all_rpc_addresses, get_gossip_client_and_wallet, PAYING_WALLET_INITIAL_BALANCE},
+    client::{
+        get_all_rpc_addresses, get_gossip_client, get_gossip_client_and_wallet,
+        PAYING_WALLET_INITIAL_BALANCE,
+    },
     get_all_peer_ids, node_restart,
 };
 use assert_fs::TempDir;
@@ -23,8 +26,9 @@ use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Files, FilesApi};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
-use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest,
+use sn_protocol::{
+    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
+    storage::ChunkAddress,
 };
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
@@ -37,6 +41,7 @@ use std::{
 };
 use tonic::Request;
 use tracing::error;
+use xor_name::XorName;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -45,7 +50,7 @@ const CHUNK_SIZE: usize = 1024;
 // for the old peer to be removed from the routing table.
 // Replication is then kicked off to distribute the data to the new closest
 // nodes, hence verification has to be performed after this.
-const VERIFICATION_DELAY: Duration = Duration::from_secs(120);
+const VERIFICATION_DELAY: Duration = Duration::from_secs(20);
 
 /// Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 5;
@@ -57,11 +62,11 @@ const REVERIFICATION_DELAY: Duration =
 // Default number of churns that should be performed. After each churn, we
 // wait for VERIFICATION_DELAY time before verifying the data location.
 // It can be overridden by setting the 'CHURN_COUNT' env var.
-const CHURN_COUNT: u8 = 4;
+const CHURN_COUNT: u8 = 20;
 
 /// Default number of chunks that should be PUT to the network.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
-const CHUNK_COUNT: usize = 5;
+const CHUNK_COUNT: usize = 50;
 
 type NodeIndex = usize;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
@@ -69,6 +74,8 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_data_location");
+
+    query_content_task();
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
@@ -133,6 +140,29 @@ async fn verify_data_location() -> Result<()> {
     }
 }
 
+// Spawns a task which periodically queries random content
+fn query_content_task() {
+    let _handle = tokio::spawn(async move {
+        let delay = Duration::from_millis(1);
+        loop {
+            // thread random rng
+            let mut rng = OsRng;
+            let client = get_gossip_client().await;
+            // let's choose a random content to query
+            let rando_addr = ChunkAddress::new(XorName::random(&mut rng));
+            tracing::trace!("Querying content {rando_addr:?}");
+
+            if let Err(error) = client.get_chunk(rando_addr, false).await {
+                tracing::error!(
+                    "Error querying content rando content (as expected) {rando_addr:?} : {error}"
+                );
+            }
+
+            tokio::time::sleep(delay).await;
+        }
+    });
+}
+
 fn print_node_close_groups(all_peers: &[PeerId]) {
     let all_peers = all_peers.to_vec();
     println!("\nNode close groups:");
@@ -174,6 +204,11 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
 // It has a retry loop built in.
 async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAddr]) -> Result<()> {
     let mut failed = HashMap::new();
+
+    println!("*********************************************");
+    println!("Verifying data across all peers {all_peers:?}");
+    tracing::info!("*********************************************");
+    tracing::info!("Verifying data across all peers {all_peers:?}");
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {

@@ -433,10 +433,9 @@ jobs:
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
           timeout-minutes: 5
 
-        - name: Verify the location of the data on the network (approx 12 * 5 mins)
+        - name: Verify the location of the data on the network
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
           env:
-            CHURN_COUNT: 12
             SN_LOG: "all"
           timeout-minutes: 90
 
