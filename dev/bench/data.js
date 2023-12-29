@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703864221730,
+  "lastUpdate": 1703864223193,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
-          "message": "feat(cli): perform wallet actions without connecting to the network",
-          "timestamp": "2023-08-31T18:52:26Z",
-          "tree_id": "61a8d0efee3c211b76c760bf2109710aed311111",
-          "url": "https://github.com/maidsafe/safe_network/commit/85e5cb436d9118dadc39ba8e6bea26ea2b6b6270"
-        },
-        "date": 1693515650714,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1384.1818,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1300,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "25e33a0b7fd029fd4323e62f59a61111ecb2799f",
+          "message": "feat: restart faucet_server from breaking point",
+          "timestamp": "2023-12-29T14:50:41Z",
+          "tree_id": "b2c5531dabb7daf65a7b20c6b5e48f3f22326ac5",
+          "url": "https://github.com/maidsafe/safe_network/commit/25e33a0b7fd029fd4323e62f59a61111ecb2799f"
+        },
+        "date": 1703864222811,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 217,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 66,
             "unit": "MB"
           }
         ]
