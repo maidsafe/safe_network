@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703864223193,
+  "lastUpdate": 1703864224841,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33716,6 +33716,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 14059,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "25e33a0b7fd029fd4323e62f59a61111ecb2799f",
+          "message": "feat: restart faucet_server from breaking point",
+          "timestamp": "2023-12-29T14:50:41Z",
+          "tree_id": "b2c5531dabb7daf65a7b20c6b5e48f3f22326ac5",
+          "url": "https://github.com/maidsafe/safe_network/commit/25e33a0b7fd029fd4323e62f59a61111ecb2799f"
+        },
+        "date": 1703864224476,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3276,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14573,
             "unit": "ms"
           },
           {
