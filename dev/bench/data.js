@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703851059928,
+  "lastUpdate": 1703851062106,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20417,40 +20417,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": true,
-          "id": "08d4484e8d386627d62109a29f2a37d02a008480",
-          "message": "feat(ci): merge queue should fail on DoNotMerge lable",
-          "timestamp": "2023-08-31T18:02:59Z",
-          "tree_id": "58249be983cfc8c76471ead036ada1cdb051b9c1",
-          "url": "https://github.com/maidsafe/safe_network/commit/08d4484e8d386627d62109a29f2a37d02a008480"
-        },
-        "date": 1693512594233,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1366.7041,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1230,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": false,
           "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
           "message": "feat(cli): perform wallet actions without connecting to the network",
@@ -30590,6 +30556,40 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/7d55a30c2338fbff17e9371950d11714c1d03536"
         },
         "date": 1703836214787,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 209,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "c4f485d1c6384f27aa4b9eb6e7c233cea2b47020",
+          "message": "test: update churn tests to be harsher\n\nNow we more swiftly detect churn, these tests can be more strenuous",
+          "timestamp": "2023-12-29T11:12:56Z",
+          "tree_id": "6ac0ffe5dac7222e629eaf747c1976ab115dcf08",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4f485d1c6384f27aa4b9eb6e7c233cea2b47020"
+        },
+        "date": 1703851061256,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
