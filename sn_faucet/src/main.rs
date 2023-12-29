@@ -10,7 +10,7 @@ mod faucet_server;
 
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{bail, eyre, Result};
-use faucet_server::run_faucet_server;
+use faucet_server::{restart_faucet_server, run_faucet_server};
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{parse_peers_args, PeersArgs};
@@ -109,6 +109,15 @@ enum SubCmd {
     /// Starts an http server that will send tokens to anyone who requests them.
     /// curl http://localhost:8000/your-hex-encoded-wallet-public-address
     Server,
+    /// Restart the faucet_server from the last breaking point.
+    ///
+    /// Before firing this cmd, ensure:
+    ///   1, The previous faucet_server has been stopped.
+    ///   2, Invalid cash_notes have been removed from the cash_notes folder.
+    ///   3, The old `wallet` and `wallet.lock` files shall also be removed.
+    /// The command will create a new wallet with the same key,
+    /// then deposit all valid cash_notes into wallet and startup the faucet_server.
+    RestartServer,
 }
 
 async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
@@ -122,6 +131,10 @@ async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
         SubCmd::Server => {
             // shouldn't return except on error
             run_faucet_server(client).await?;
+        }
+        SubCmd::RestartServer => {
+            // shouldn't return except on error
+            restart_faucet_server(client).await?;
         }
     }
     Ok(())
