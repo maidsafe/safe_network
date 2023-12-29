@@ -41,14 +41,14 @@ use tracing::{debug, trace};
 use xor_name::XorName;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
-const CHURN_CYCLES: u32 = 1;
+const CHURN_CYCLES: u32 = 2;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 15;
-const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 5;
-const CASHNOTE_CREATION_RATIO_TO_CHURN: u32 = 1;
+const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 15;
+const CASHNOTE_CREATION_RATIO_TO_CHURN: u32 = 15;
 
 const CHUNKS_SIZE: usize = 1024 * 1024;
 
-const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 12;
+const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 40;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 
 // Default total amount of time we run the checks for before reporting the outcome.
