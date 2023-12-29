@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.105"
+version = "0.1.106"
 
 [features]
 # required to pass on flag to node builds
@@ -23,7 +23,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
-sn_client = { path = "../sn_client", version = "0.99.32" }
+sn_client = { path = "../sn_client", version = "0.99.33" }
 sn_logging = { path = "../sn_logging", version = "0.2.16" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.1.13" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.31" }

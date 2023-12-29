@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_testnet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.2.363"
+version = "0.2.364"
 
 [features]
 # required to pass on flag to node builds
