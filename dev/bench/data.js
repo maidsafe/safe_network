@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703836069387,
+  "lastUpdate": 1703836213651,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "85e5cb436d9118dadc39ba8e6bea26ea2b6b6270",
-          "message": "feat(cli): perform wallet actions without connecting to the network",
-          "timestamp": "2023-08-31T18:52:26Z",
-          "tree_id": "61a8d0efee3c211b76c760bf2109710aed311111",
-          "url": "https://github.com/maidsafe/safe_network/commit/85e5cb436d9118dadc39ba8e6bea26ea2b6b6270"
-        },
-        "date": 1693515648220,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 78.38925,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7d55a30c2338fbff17e9371950d11714c1d03536",
+          "message": "feat: use put_record_to during upload chunk",
+          "timestamp": "2023-12-29T07:00:36Z",
+          "tree_id": "831e0dc52e1891d913f384cc2c04295fac0b7de3",
+          "url": "https://github.com/maidsafe/safe_network/commit/7d55a30c2338fbff17e9371950d11714c1d03536"
+        },
+        "date": 1703836213005,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 44,
             "unit": "MB"
           }
         ]
