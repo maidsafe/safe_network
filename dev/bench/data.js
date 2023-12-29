@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703850911621,
+  "lastUpdate": 1703851059928,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "aa760bdf0c17f8c04a361696bcf34473267e5a09",
-          "message": "test(ci): adding test to verify total rewards balances after chunks upload",
-          "timestamp": "2023-09-01T06:02:39Z",
-          "tree_id": "e229672c877ec74f1f9b30a62d09fc677d8398fe",
-          "url": "https://github.com/maidsafe/safe_network/commit/aa760bdf0c17f8c04a361696bcf34473267e5a09"
-        },
-        "date": 1693556418347,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 72.51968,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 44,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "c4f485d1c6384f27aa4b9eb6e7c233cea2b47020",
+          "message": "test: update churn tests to be harsher\n\nNow we more swiftly detect churn, these tests can be more strenuous",
+          "timestamp": "2023-12-29T11:12:56Z",
+          "tree_id": "6ac0ffe5dac7222e629eaf747c1976ab115dcf08",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4f485d1c6384f27aa4b9eb6e7c233cea2b47020"
+        },
+        "date": 1703851059110,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
             "unit": "MB"
           }
         ]
