@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.12...sn_networking-v0.12.13) - 2023-12-29
+
+### Added
+- use put_record_to during upload chunk
+
 ## [0.12.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.11...sn_networking-v0.12.12) - 2023-12-26
 
 ### Other
