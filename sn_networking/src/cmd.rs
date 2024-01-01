@@ -108,6 +108,8 @@ pub enum SwarmCmd {
     GetLocalStoreCost {
         sender: oneshot::Sender<NanoTokens>,
     },
+    /// Notify the node received a payment.
+    PaymentReceived,
     /// Get data from the local RecordStore
     GetLocalRecord {
         key: RecordKey,
@@ -248,6 +250,9 @@ impl Debug for SwarmCmd {
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
             }
+            SwarmCmd::PaymentReceived => {
+                write!(f, "SwarmCmd::PaymentReceived")
+            }
             SwarmCmd::GetLocalRecord { key, .. } => {
                 write!(
                     f,
@@ -333,7 +338,12 @@ impl SwarmDriver {
                 if self.is_in_close_range(key, &closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
-                    warn!("not in close range for key {key:?}");
+                    // Reduce the log level as there will always be around 40% records being
+                    // out of the close range, as the sender side is using `CLOSE_GROUP_SIZE + 2`
+                    // to send our replication list to provide addressing margin.
+                    // Given there will normally be 6 nodes sending such list with interval of 5-10s,
+                    // this will accumulate to a lot of logs with the increasing records uploaded.
+                    trace!("not in close range for key {key:?}");
                     None
                 }
             })
@@ -396,6 +406,13 @@ impl SwarmDriver {
                 let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
 
                 let _res = sender.send(cost);
+            }
+            SwarmCmd::PaymentReceived => {
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .payment_received();
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 let record = self
