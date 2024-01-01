@@ -45,7 +45,7 @@ use libp2p::{
     multiaddr::Protocol,
     Multiaddr, PeerId,
 };
-use rand::{seq::SliceRandom, Rng};
+use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
@@ -475,6 +475,12 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Notify the node receicced a payment.
+    pub fn notify_payment_received(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::PaymentReceived)?;
+        Ok(())
+    }
+
     /// Get `Record` from the local RecordStore
     pub async fn get_local_record(&self, key: &RecordKey) -> Result<Option<Record>> {
         let (sender, receiver) = oneshot::channel();
@@ -860,16 +866,25 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return a random one to be selected as the payee.
+/// Given `all_costs` it will return the closest / lowest cost
+/// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<(PeerId, MainPubkey, PaymentQuote)> {
-    trace!("Got all costs: {all_costs:?}");
-    // Random shuffle the all_costs, so that nodes with high charge due to replication still
-    // get chance to be selected. Also avoid previllage of nodes with `sided addresses`.
-    let mut rng = rand::thread_rng();
-    all_costs.shuffle(&mut rng);
+    // sort all costs by fee, lowest to highest
+    // if there's a tie in cost, sort by pubkey
+    all_costs.sort_by(
+        |(address_a, _main_key_a, cost_a), (address_b, _main_key_b, cost_b)| match cost_a
+            .cost
+            .cmp(&cost_b.cost)
+        {
+            std::cmp::Ordering::Equal => address_a.cmp(address_b),
+            other => other,
+        },
+    );
 
+    // get the lowest cost
+    trace!("Got all costs: {all_costs:?}");
     let payee = all_costs
         .into_iter()
         .next()
@@ -939,7 +954,6 @@ mod tests {
     use super::*;
     use sn_transfers::PaymentQuote;
 
-    #[ignore = "Payee is now randomly selected"]
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
         // for a vec of different costs of CLOSE_GROUP size
@@ -965,7 +979,6 @@ mod tests {
         Ok(())
     }
 
-    #[ignore = "Payee is now randomly selected"]
     #[test]
     fn test_get_some_fee_from_store_cost_responses_even_if_one_errs_and_sufficient(
     ) -> eyre::Result<()> {

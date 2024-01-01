@@ -122,6 +122,15 @@ impl UnifiedRecordStore {
         }
     }
 
+    pub(crate) fn payment_received(&mut self) {
+        match self {
+            Self::Client(_) => {
+                warn!("Calling payment_received at Client. This should not happen");
+            }
+            Self::Node(store) => store.payment_received(),
+        }
+    }
+
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         match self {
             Self::Client(store) => store.set_distance_range(distance_range),
