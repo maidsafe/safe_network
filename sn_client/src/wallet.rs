@@ -251,6 +251,18 @@ impl WalletClient {
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
+        // Before wallet progress, there shall be no `unconfirmed_spend_requests`
+        // Here, just re-upload again. The caller shall carry out a re-try later on.
+        if self.wallet.unconfirmed_spend_requests_exist() {
+            info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+            sleep(Duration::from_secs(1)).await;
+            self.resend_pending_txs(verify_store).await;
+
+            return Err(WalletError::CouldNotSendMoney(
+                "Wallet has pre-unconfirmed tx, resent them and try later.".to_string(),
+            ));
+        }
+
         let total_cost = self.wallet.local_send_storage_payment(cost_map)?;
 
         // send to network
@@ -273,6 +285,8 @@ impl WalletClient {
                     self.wallet.clear_specific_spend_request(*cash_note_key);
                 }
             }
+
+            self.wallet.store_unconfirmed_spend_requests()?;
 
             return Err(WalletError::CouldNotSendMoney(format!(
                 "The storage payment transfer was not successfully registered in the network: {error:?}"
@@ -429,6 +443,30 @@ pub async fn send(
     }
 
     let mut wallet_client = WalletClient::new(client.clone(), from);
+
+    let mut did_error = false;
+    // Wallet shall be all clear to progress forward.
+    let mut attempts = 0;
+    while wallet_client.unconfirmed_spend_requests_exist() {
+        info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+        sleep(Duration::from_secs(1)).await;
+        wallet_client.resend_pending_txs(verify_store).await;
+
+        if attempts > 10 {
+            // save the error state, but break out of the loop so we can save
+            did_error = true;
+            break;
+        }
+
+        attempts += 1;
+    }
+
+    if did_error {
+        error!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        println!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        return Err(WalletError::UnconfirmedTxAfterRetries.into());
+    }
+
     let new_cash_note = wallet_client
         .send_cash_note(amount, to, verify_store)
         .await
@@ -437,9 +475,8 @@ pub async fn send(
             err
         })?;
 
-    let mut did_error = false;
     if verify_store {
-        let mut attempts = 0;
+        attempts = 0;
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
@@ -455,13 +492,16 @@ pub async fn send(
         }
     }
 
+    if did_error {
+        wallet_client
+            .into_wallet()
+            .store_unconfirmed_spend_requests()?;
+        return Err(WalletError::UnconfirmedTxAfterRetries.into());
+    }
+
     wallet_client
         .into_wallet()
         .deposit_and_store_to_disk(&vec![new_cash_note.clone()])?;
-
-    if did_error {
-        return Err(WalletError::UnconfirmedTxAfterRetries.into());
-    }
 
     Ok(new_cash_note)
 }
