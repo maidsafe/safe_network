@@ -527,11 +527,6 @@ impl RecordStore for ClientRecordStore {
 fn calculate_cost_for_relevant_records(step: usize, received_payment_count: usize) -> u64 {
     use std::cmp::max;
 
-    assert!(
-        step <= MAX_RECORDS_COUNT,
-        "step must be <= MAX_RECORDS_COUNT"
-    );
-
     let ori_cost = (10 * step) as u64;
     let divider = max(1, step / max(1, received_payment_count)) as u64;
     max(10, ori_cost / divider)
