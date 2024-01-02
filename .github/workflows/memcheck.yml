@@ -190,8 +190,8 @@ jobs:
       - name: Start a client to download files
         run: |
           cargo run --bin safe --release -- --log-output-dest=data-dir files download
-          ls -l $CLIENT_DATA_PATH/downloaded_files
-          downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
+          ls -l $CLIENT_DATA_PATH/safe_files
+          downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
           if [ $downloaded_files -lt 1 ]; then
             echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
             exit 1
@@ -204,14 +204,14 @@ jobs:
       - name: Start a client to download the same files again
         run: |
           cargo run --bin safe --release -- --log-output-dest=data-dir files download --show-holders
-          ls -l $CLIENT_DATA_PATH/downloaded_files
-          downloaded_files=$(ls $CLIENT_DATA_PATH/downloaded_files | wc -l)
+          ls -l $CLIENT_DATA_PATH/safe_files
+          downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
           if [ $downloaded_files -lt 1 ]; then
             echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
             exit 1
           fi
           file_size1=$(stat -c "%s" ./the-test-data_1.zip)
-          file_size2=$(stat -c "%s" $CLIENT_DATA_PATH/downloaded_files/the-test-data_1.zip)
+          file_size2=$(stat -c "%s" $CLIENT_DATA_PATH/safe_files/the-test-data_1.zip)
           if [ $file_size1 != $file_size2 ]; then
             echo "The downloaded file has a different size $file_size2 to the original $file_size1."
             exit 1
