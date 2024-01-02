@@ -397,7 +397,7 @@ fn store_chunks_task(
                 .write_all(&random_bytes)
                 .expect("failed to write to temp chunk file");
 
-            let (addr, _file_size, chunks) =
+            let (addr, _data_map, _file_size, chunks) =
                 FilesApi::chunk_file(&file_path, &output_dir, true).expect("Failed to chunk bytes");
 
             println!(
@@ -625,7 +625,9 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = files_api.read_bytes(*addr, None, false, BATCH_SIZE).await?;
+            let _ = files_api
+                .read_bytes(*addr, None, None, false, BATCH_SIZE)
+                .await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

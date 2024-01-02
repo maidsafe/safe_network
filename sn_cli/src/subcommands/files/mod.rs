@@ -8,7 +8,7 @@
 
 mod chunk_manager;
 
-pub(crate) use chunk_manager::ChunkManager;
+pub(crate) use chunk_manager::{ChunkManager, UPLOADED_FILES};
 
 use clap::Parser;
 use color_eyre::{
@@ -21,12 +21,10 @@ use rand::{seq::SliceRandom, thread_rng};
 use sn_client::{
     Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
-    io::prelude::*,
-    io::{BufRead, BufReader},
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -34,6 +32,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -136,7 +135,7 @@ pub(crate) async fn files_cmds(
                     download_file(
                         &files_api,
                         &xor_name,
-                        &name,
+                        &(name, None),
                         &download_dir,
                         show_holders,
                         batch_size,
@@ -281,25 +280,15 @@ async fn upload_files(
             println!("**************************************");
             println!("*          Uploaded Files            *");
             println!("**************************************");
-            let file_names_path = root_dir.join("uploaded_files");
-            let mut file = std::fs::OpenOptions::new()
-                .create(true)
-                .write(true)
-                .append(true)
-                .open(file_names_path)?;
             for (file_name, addr) in chunk_manager.verified_files() {
                 if let Some(file_name) = file_name.to_str() {
                     println!("\"{file_name}\" {addr:x}");
                     info!("Uploaded {file_name} to {addr:x}");
-                    writeln!(file, "{addr:x}: {file_name}")?;
                 } else {
                     println!("\"{file_name:?}\" {addr:x}");
                     info!("Uploaded {file_name:?} to {addr:x}");
-                    writeln!(file, "{addr:x}: {file_name:?}")?;
                 }
             }
-
-            file.flush()?;
         } else {
             error!("Got FileUploadEvent::Error inside upload event loop");
         }
@@ -358,40 +347,60 @@ async fn download_files(
     batch_size: usize,
 ) -> Result<()> {
     info!("Downloading with batch size of {}", batch_size);
-    let uploaded_files_path = root_dir.join("uploaded_files");
+    let uploaded_files_path = root_dir.join(UPLOADED_FILES);
     let download_path = dirs_next::download_dir()
         .unwrap_or(root_dir.to_path_buf())
         .join("safe_files");
     std::fs::create_dir_all(download_path.as_path())?;
 
-    let file = std::fs::File::open(&uploaded_files_path)?;
-    let reader = BufReader::new(file);
+    #[allow(clippy::mutable_key_type)]
     let mut uploaded_files = BTreeSet::new();
-    for line in reader.lines() {
-        let line = line?;
-        let parts: Vec<&str> = line.split(": ").collect();
 
-        if parts.len() == 2 {
-            let xor_name_hex = parts[0];
-            let file_name = parts[1];
+    for entry in WalkDir::new(uploaded_files_path.clone()) {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() {
+            // filenames are constructed via format!("{}::{}", chunked_file.file_name , filename_hex);
+            let filename = path
+                .file_name()
+                .expect("Uploaded file to have name")
+                .to_str()
+                .expect("Failed to convert path to string");
 
-            let bytes = hex::decode(xor_name_hex)?;
+            let parts = filename.split("::").collect::<Vec<&str>>();
+            let file_name = parts.first().expect("Failed to get filename");
+            let hex_xorname = parts.get(1).expect("Failed to get hex xorname");
+
+            let bytes = hex::decode(hex_xorname)?;
             let xor_name_bytes: [u8; 32] = bytes
                 .try_into()
                 .expect("Failed to parse XorName from hex string");
             let xor_name = XorName(xor_name_bytes);
 
-            uploaded_files.insert((xor_name, file_name.to_string()));
-        } else {
-            println!("Skipping malformed line: {line}");
+            let address = ChunkAddress::new(xor_name);
+
+            let bytes = bytes::Bytes::from(tokio::fs::read(&path).await?);
+            let data_map_chunk = if !bytes.is_empty() {
+                debug!("Locally existing datamap chunk found");
+                // we can use this as the first chunk to unpack
+                Some(Chunk {
+                    address,
+                    value: bytes,
+                })
+            } else {
+                debug!("No locally existing datamap chunk found");
+                None
+            };
+
+            uploaded_files.insert((xor_name, (file_name.to_string(), data_map_chunk)));
         }
     }
 
-    for (xorname, file_name) in uploaded_files.iter() {
+    for (xorname, file_data) in uploaded_files.iter() {
         download_file(
             files_api,
             xorname,
-            file_name,
+            file_data,
             &download_path,
             show_holders,
             batch_size,
@@ -416,18 +425,22 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
 async fn download_file(
     files_api: &FilesApi,
     xorname: &XorName,
-    file_name: &String,
+    // file name and optional datamap chunk
+    file_data: &(String, Option<Chunk>),
     download_path: &Path,
     show_holders: bool,
     batch_size: usize,
 ) {
+    let (file_name, datamap) = file_data;
     println!("Downloading {file_name} from {xorname:64x} with batch-size {batch_size}");
     debug!("Downloading {file_name} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
+
     match files_api
         .read_bytes(
             ChunkAddress::new(*xorname),
             Some(downloaded_file_path.clone()),
+            datamap.clone(),
             show_holders,
             batch_size,
         )
