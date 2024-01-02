@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704219131284,
+  "lastUpdate": 1704219283232,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "163348e10ccbe4fd89bc43d5e896a3a9364d2414",
-          "message": "chore(node): add valid put log markers",
-          "timestamp": "2023-09-01T17:02:55Z",
-          "tree_id": "34a0540cc5f261be788b5054ce068dcec593260b",
-          "url": "https://github.com/maidsafe/safe_network/commit/163348e10ccbe4fd89bc43d5e896a3a9364d2414"
-        },
-        "date": 1693595974006,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 73.99014,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 44,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
+          "message": "fix(client): wallet not progress with unconfirmed tx",
+          "timestamp": "2024-01-02T17:26:40Z",
+          "tree_id": "4c17ea58bae4ea00905c32b3026b4f3c42fae5b8",
+          "url": "https://github.com/maidsafe/safe_network/commit/6368b3b1cf7327af4005b6f7f1c6acc27730950d"
+        },
+        "date": 1704219282898,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
