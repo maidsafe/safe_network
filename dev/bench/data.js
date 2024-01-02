@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704205620360,
+  "lastUpdate": 1704205750033,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "47dc91881c81cd9784d0292e48915743c82c60ae",
-          "message": "chore(cli): better formatting for elapsed time statements",
-          "timestamp": "2023-09-01T09:59:04Z",
-          "tree_id": "23ac5a4c7a20985a03c8ed3ec2e09f622a99f36e",
-          "url": "https://github.com/maidsafe/safe_network/commit/47dc91881c81cd9784d0292e48915743c82c60ae"
-        },
-        "date": 1693569240361,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 70.52083,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 43,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "e815224222e3d83590c926b88998dcda8a0f72ad",
+          "message": "feat: pick cheapest payee using linear pricing curve",
+          "timestamp": "2024-01-02T13:46:17Z",
+          "tree_id": "c771f4bb26215d691fb8afd853b29a90ba52ec7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/e815224222e3d83590c926b88998dcda8a0f72ad"
+        },
+        "date": 1704205749650,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 44,
             "unit": "MB"
           }
         ]
