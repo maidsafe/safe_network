@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704205750033,
+  "lastUpdate": 1704205751557,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "aa760bdf0c17f8c04a361696bcf34473267e5a09",
-          "message": "test(ci): adding test to verify total rewards balances after chunks upload",
-          "timestamp": "2023-09-01T06:02:39Z",
-          "tree_id": "e229672c877ec74f1f9b30a62d09fc677d8398fe",
-          "url": "https://github.com/maidsafe/safe_network/commit/aa760bdf0c17f8c04a361696bcf34473267e5a09"
-        },
-        "date": 1693556422857,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1362.5918,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 1262,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 66,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "e815224222e3d83590c926b88998dcda8a0f72ad",
+          "message": "feat: pick cheapest payee using linear pricing curve",
+          "timestamp": "2024-01-02T13:46:17Z",
+          "tree_id": "c771f4bb26215d691fb8afd853b29a90ba52ec7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/e815224222e3d83590c926b88998dcda8a0f72ad"
+        },
+        "date": 1704205751126,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 217,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 60,
             "unit": "MB"
           }
         ]
