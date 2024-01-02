@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::subcommands::files::get_progress_bar;
+use bytes::Bytes;
 use color_eyre::{eyre::bail, Result};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::FilesApi;
@@ -23,6 +24,9 @@ use xor_name::XorName;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
+
+/// Subdir for storing uploaded file indo
+pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
 
 // The unique hex encoded hash(path)
 // This allows us to uniquely identify if a file has been chunked or not.
@@ -46,12 +50,16 @@ pub(crate) struct ChunkedFile {
     pub file_name: OsString,
     pub file_xor_addr: XorName,
     pub chunks: BTreeSet<(XorName, PathBuf)>,
+    pub data_map: Option<Bytes>,
 }
 
 /// Manages the chunking process by resuming pre-chunked files and chunking any
 /// file that has not been chunked yet.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct ChunkManager {
+    /// Whole client root dir
+    root_dir: PathBuf,
+    /// Dir for chunk artefacts
     artifacts_dir: PathBuf,
     files_to_chunk: Vec<(OsString, PathXorName, PathBuf)>,
     chunks: BTreeMap<PathXorName, ChunkedFile>,
@@ -65,6 +73,7 @@ impl ChunkManager {
     pub(crate) fn new(root_dir: &Path) -> Self {
         let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
         Self {
+            root_dir: root_dir.to_path_buf(),
             artifacts_dir,
             files_to_chunk: Default::default(),
             chunks: Default::default(),
@@ -178,15 +187,17 @@ impl ChunkManager {
                     }
                 };
 
+                debug!("ARE WE PUICBLISHING? {include_data_maps:?}");
                 match FilesApi::chunk_file(path, &file_chunks_dir, include_data_maps) {
-                    Ok((file_xor_addr, size, chunks)) => {
+                    Ok((file_xor_addr, data_map, size, chunks)) => {
                         progress_bar.clone().inc(1);
                         debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {file_xor_addr:?} of size {size}, and chunks len: {}", chunks.len());
 
                         let chunked_file = ChunkedFile {
                             file_xor_addr,
                             file_name: original_file_name.clone(),
-                            chunks: chunks.into_iter().collect()
+                            chunks: chunks.into_iter().collect(),
+                            data_map
                         };
                         Some((path_xor.clone(), chunked_file))
                     }
@@ -344,9 +355,81 @@ impl ChunkManager {
             if let Some(chunked_file) = self.chunks.remove(path_xor) {
                 trace!("removed {path_xor:?} from chunks list");
                 self.verified_files
-                    .push((chunked_file.file_name, chunked_file.file_xor_addr));
+                    .push((chunked_file.file_name.clone(), chunked_file.file_xor_addr));
+
+                // write the data_map addr and or data_map to the UPLOADED_FILES dir
+                let filename_hex = hex::encode(chunked_file.file_xor_addr);
+
+                // safely create the filename
+                let safe_filename = match chunked_file.file_name.to_str() {
+                    Some(name) => format!("{name}::{filename_hex}"),
+                    None => format!("::{filename_hex}"),
+                };
+
+                // ensure self.root_dir.join(UPLOADED_FILES) exists
+                let uploaded_files = self.root_dir.join(UPLOADED_FILES);
+                if !uploaded_files.exists() {
+                    if let Err(error) = fs::create_dir_all(&uploaded_files) {
+                        error!("Failed to create {uploaded_files:?} because {error:?}");
+                    }
+                }
+
+                let uploaded_file = uploaded_files.join(&safe_filename);
+
+                warn!(
+                    "Marking {uploaded_file:?} as completed for chunked_file {:?}",
+                    chunked_file
+                );
+
+                if let Some(data_map) = &chunked_file.data_map {
+                    info!(
+                        "Datamap to write for {:?} is {:?} bytes",
+                        chunked_file.file_name,
+                        data_map.len()
+                    );
+
+                    if let Err(error) = fs::write(uploaded_file, data_map) {
+                        error!(
+                            "Could not write datamap for {:?}, {error:?}",
+                            chunked_file.file_xor_addr
+                        );
+                    }
+                } else {
+                    warn!(
+                        "No datamap being written for {:?} as it is empty",
+                        chunked_file.file_name
+                    );
+
+                    if let Err(error) = fs::write(uploaded_file, []) {
+                        error!(
+                            "Could not write datamap for {:?}, {error:?}",
+                            chunked_file.file_xor_addr
+                        );
+                    }
+                }
             }
         }
+
+        // let mut entire_file_is_done = BTreeSet::new();
+        // // remove the entries from the struct
+        // self.chunks.iter_mut().for_each(|(path_xor, chunked_file)| {
+        //     chunked_file
+        //         .chunks
+        //         // if chunk is part of completed_chunks, return false to remove it
+        //         .retain(|(chunk_xor, _)| !set_of_completed_chunks.contains(chunk_xor));
+        //     if chunked_file.chunks.is_empty() {
+        //         entire_file_is_done.insert(path_xor.clone());
+        //     }
+        // });
+
+        // for path_xor in &entire_file_is_done {
+        //     // todo: should we remove the entry? ig so
+        //     if let Some(chunked_file) = self.chunks.remove(path_xor) {
+        //         trace!("removed {path_xor:?} from chunks list");
+        //         self.verified_files
+        //             .push((chunked_file.file_name, chunked_file.file_xor_addr));
+        //     }
+        // }
     }
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
@@ -387,7 +470,7 @@ impl ChunkManager {
         let mut file_xor_addr: Option<XorName> = None;
         debug!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
 
-        let chunks = WalkDir::new(file_chunks_dir)
+        let chunks = WalkDir::new(file_chunks_dir.clone())
             .into_iter()
             .flatten()
             .filter_map(|entry| {
@@ -422,13 +505,20 @@ impl ChunkManager {
         match file_xor_addr {
             Some(file_xor_addr) => {
                 debug!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {file_xor_addr:?}/{path_xor:?}", chunks.len());
+                let mut data_map = None;
 
+                let data_map_file = file_chunks_dir.join(hex::encode(file_xor_addr));
+                if data_map_file.exists() {
+                    info!("Datamap exists for {file_xor_addr:?}");
+                    data_map = fs::read(data_map_file).ok();
+                }
                 Some((
                     path_xor.clone(),
                     ChunkedFile {
                         file_name: original_file_name,
                         file_xor_addr,
                         chunks,
+                        data_map: data_map.map(Bytes::from),
                     },
                 ))
             }
@@ -495,6 +585,79 @@ mod tests {
         assert_eq!(n_folders, 1);
 
         // 3. make sure we have the 1 files per chunk, + 1 datamap + 1 metadata file
+        let n_files = WalkDir::new(&artifacts_dir)
+            .into_iter()
+            .flatten()
+            .filter(|entry| {
+                info!("direntry {entry:?}");
+                entry.file_type().is_file()
+            })
+            .count();
+        assert_eq!(n_files, chunks.len() + 1);
+
+        // 4. make sure metadata file holds the correct file_xor_addr
+        let mut file_xor_addr_from_metadata = None;
+        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+            if entry.file_type().is_file() && entry.file_name() == METADATA_FILE {
+                file_xor_addr_from_metadata = ChunkManager::try_read_metadata(entry.path());
+            }
+        }
+        let file_xor_addr_from_metadata =
+            file_xor_addr_from_metadata.expect("The metadata file should be present");
+        let file_xor_addr = manager
+            .chunks
+            .values()
+            .next()
+            .expect("1 file should be present")
+            .file_xor_addr;
+        assert_eq!(file_xor_addr_from_metadata, file_xor_addr);
+
+        // 5. make sure the chunked file's name is the XorName of that chunk
+        let chunk_xornames = manager
+            .chunks
+            .values()
+            .next()
+            .expect("We must have 1 file here")
+            .chunks
+            .iter()
+            .map(|(xor_name, _)| *xor_name)
+            .collect::<BTreeSet<_>>();
+        for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
+            let file_name = entry.file_name();
+            if entry.file_type().is_file() && file_name != METADATA_FILE {
+                let chunk_xorname_from_filename =
+                    ChunkManager::hex_decode_xorname(file_name.to_str().unwrap())
+                        .expect("Failed to get xorname from hex encoded file_name");
+                assert!(chunk_xornames.contains(&chunk_xorname_from_filename));
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn no_datamap_chunked_files_should_be_written_to_artifacts_dir_when_not_public() -> Result<()> {
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
+        let artifacts_dir = manager.artifacts_dir.clone();
+        let _ = create_random_files(&random_files_dir, 1, 1)?;
+
+        // we do NOT want to include or write the data_map chunk here
+        manager.chunk_path(&random_files_dir, true, false)?;
+
+        let chunks = manager.get_chunks();
+        // 1. 1mb file produces 3 chunks without the datamap
+        assert_eq!(chunks.len(), 3);
+
+        // 2. make sure we have 1 folder == 1 file
+        let n_folders = WalkDir::new(&artifacts_dir)
+            .into_iter()
+            .flatten()
+            .filter(|entry| entry.file_type().is_dir() && entry.path() != artifacts_dir)
+            .count();
+        assert_eq!(n_folders, 1);
+
+        // 3. make sure we have the 1 files per chunk, + 1 metadata file
         let n_files = WalkDir::new(&artifacts_dir)
             .into_iter()
             .flatten()
