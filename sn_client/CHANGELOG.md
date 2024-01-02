@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.35](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.34...sn_client-v0.99.35) - 2024-01-02
+
+### Fixed
+- *(client)* wallet not progress with unconfirmed tx
+
 ## [0.99.34](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.33...sn_client-v0.99.34) - 2024-01-02
 
 ### Other
