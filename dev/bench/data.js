@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704205753331,
+  "lastUpdate": 1704219131284,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "54ddc7079dfae8c09f6eb76a51109af277450f95",
-          "message": "chore(node): refactor and extract out spend validation.\n\nWe also avoid exiting early if spends exist as we may have a double spend on our hands",
-          "timestamp": "2023-09-04T09:36:11Z",
-          "tree_id": "0a92966cfe2e6c5fe7fe3a87597967ee5ce6d369",
-          "url": "https://github.com/maidsafe/safe_network/commit/54ddc7079dfae8c09f6eb76a51109af277450f95"
-        },
-        "date": 1693824943103,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.12625761688566456,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5876232940973233,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.97073809273419,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.530991739509346,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
+          "message": "fix(client): wallet not progress with unconfirmed tx",
+          "timestamp": "2024-01-02T17:26:40Z",
+          "tree_id": "4c17ea58bae4ea00905c32b3026b4f3c42fae5b8",
+          "url": "https://github.com/maidsafe/safe_network/commit/6368b3b1cf7327af4005b6f7f1c6acc27730950d"
+        },
+        "date": 1704219129377,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5735357266452432,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0125729112539144,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 37.60303403452571,
             "unit": "MiB/s"
           }
         ]
