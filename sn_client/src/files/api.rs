@@ -43,7 +43,9 @@ pub struct FilesApi {
 
 /// Result of the resulting data address, the DataMap Chunk, filesize and the paths of the chunks to be stored.
 /// If the DataMapChunk exists and is not stored on the network, then it will not be accessible at this address.
-type ChunkFileResult = Result<(XorName, u64, Vec<(XorName, PathBuf)>)>;
+///
+/// This is the (file xorname, datamap_data, filesize, and chunks)
+type ChunkFileResult = Result<(XorName, Option<Bytes>, u64, Vec<(XorName, PathBuf)>)>;
 
 impl FilesApi {
     /// Create file apis instance.
@@ -65,18 +67,25 @@ impl FilesApi {
     }
 
     /// Reads a file from the network, whose contents are contained within one or more chunks.
+    /// Optionally we can pass a first_chunk if the data_map is local to this machine
     pub async fn read_bytes(
         &self,
         address: ChunkAddress,
         downloaded_file_path: Option<PathBuf>,
+        first_chunk: Option<Chunk>,
         show_holders: bool,
         batch_size: usize,
     ) -> Result<Option<Bytes>> {
-        let chunk = match self.client.get_chunk(address, show_holders).await {
-            Ok(chunk) => chunk,
-            Err(err) => {
-                error!("Failed to fetch head chunk {address:?}");
-                return Err(err);
+        let chunk = if let Some(chunk) = first_chunk {
+            info!("Downloading via supplied local datamap");
+            chunk
+        } else {
+            match self.client.get_chunk(address, show_holders).await {
+                Ok(chunk) => chunk,
+                Err(err) => {
+                    error!("Failed to fetch head chunk {address:?}");
+                    return Err(err);
+                }
             }
         };
 
@@ -163,9 +172,14 @@ impl FilesApi {
                 (*data_map_chunk.name(), Some(data_map_chunk), chunks)
             };
 
+        debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
+
+        debug!(
+            "Is there a datamap for chuink?? {:?}",
+            data_map_chunk.is_some()
+        );
         // only write out the data_map if one exists for this file
         if let Some(data_map_chunk) = &data_map_chunk {
-            debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
             if include_data_map_in_chunks {
                 info!("Data_map_chunk to be written!");
                 let data_map_path = chunk_dir.join(hex::encode(*data_map_chunk.name()));
@@ -178,7 +192,12 @@ impl FilesApi {
             }
         }
 
-        Ok((head_address, file_size, chunks_paths))
+        Ok((
+            head_address,
+            data_map_chunk.map(|c| c.value),
+            file_size,
+            chunks_paths,
+        ))
     }
 
     /// Directly writes Chunks to the network in the
@@ -251,7 +270,7 @@ impl FilesApi {
         let chunk_path = temp_dir.path().join("chunk_path");
         create_dir_all(chunk_path.clone())?;
 
-        let (head_address, _file_size, chunks_paths) =
+        let (head_address, _data_map, _file_size, chunks_paths) =
             Self::chunk_file(&file_path, &chunk_path, true)?;
 
         for (_chunk_name, chunk_path) in chunks_paths {
@@ -333,7 +352,7 @@ impl FilesApi {
     /// Extracts a file DataMapLevel from a chunk.
     /// If the DataMapLevel is not the first level mapping directly to the user's contents,
     /// the process repeats itself until it obtains the first level DataMapLevel.
-    async fn unpack_chunk(&self, mut chunk: Chunk, batch_size: usize) -> Result<DataMap> {
+    pub async fn unpack_chunk(&self, mut chunk: Chunk, batch_size: usize) -> Result<DataMap> {
         loop {
             match rmp_serde::from_slice(chunk.value()).map_err(ChunksError::Deserialisation)? {
                 DataMapLevel::First(data_map) => {

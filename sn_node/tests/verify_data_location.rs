@@ -324,7 +324,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut output_file = File::create(file_path.clone())?;
         output_file.write_all(&random_bytes)?;
 
-        let (file_addr, _file_size, chunks) =
+        let (file_addr, _data_map, _file_size, chunks) =
             FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
 
         println!(

@@ -203,7 +203,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     files.upload_chunks(chunks).await?;
 
     files_api
-        .read_bytes(file_addr, None, false, BATCH_SIZE)
+        .read_bytes(file_addr, None, None, false, BATCH_SIZE)
         .await?;
 
     Ok(())
@@ -249,7 +249,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     assert!(
         matches!(
             files_api
-                .read_bytes(content_addr, None, false, BATCH_SIZE)
+                .read_bytes(content_addr, None, None, false, BATCH_SIZE)
                 .await,
             Err(ClientError::Network(NetworkError::GetRecordError(
                 GetRecordError::RecordNotFound
