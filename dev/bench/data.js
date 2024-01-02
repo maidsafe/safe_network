@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704219284642,
+  "lastUpdate": 1704219286259,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -33794,6 +33794,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 16039,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
+          "message": "fix(client): wallet not progress with unconfirmed tx",
+          "timestamp": "2024-01-02T17:26:40Z",
+          "tree_id": "4c17ea58bae4ea00905c32b3026b4f3c42fae5b8",
+          "url": "https://github.com/maidsafe/safe_network/commit/6368b3b1cf7327af4005b6f7f1c6acc27730950d"
+        },
+        "date": 1704219285909,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3433,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14822,
             "unit": "ms"
           },
           {
