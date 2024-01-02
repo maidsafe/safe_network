@@ -359,7 +359,9 @@ async fn download_files(
 ) -> Result<()> {
     info!("Downloading with batch size of {}", batch_size);
     let uploaded_files_path = root_dir.join("uploaded_files");
-    let download_path = dirs_next::download_dir().unwrap_or(root_dir.join("downloaded_files"));
+    let download_path = dirs_next::download_dir()
+        .unwrap_or(root_dir.to_path_buf())
+        .join("safe_files");
     std::fs::create_dir_all(download_path.as_path())?;
 
     let file = std::fs::File::open(&uploaded_files_path)?;
