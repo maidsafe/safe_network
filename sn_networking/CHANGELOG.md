@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.15](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.14...sn_networking-v0.12.15) - 2024-01-02
+
+### Added
+- pick cheapest payee using linear pricing curve
+
 ## [0.12.14](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.13...sn_networking-v0.12.14) - 2023-12-29
 
 ### Added
