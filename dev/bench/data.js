@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1703864224841,
+  "lastUpdate": 1704205620360,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "david.irvine@maidsafe.net",
-            "name": "David Irvine",
-            "username": "dirvine"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "919303859b4c5fce20893507d0ddcc42ed852b4f",
-          "message": "docs: Add client and protocol detail",
-          "timestamp": "2023-09-04T05:23:03Z",
-          "tree_id": "236155cc3479df22a6cbfadc55068cfcefaa97bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/919303859b4c5fce20893507d0ddcc42ed852b4f"
-        },
-        "date": 1693809950489,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.12662228950805948,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.4846202626082426,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 3.966056423013121,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.54109293388233,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "e815224222e3d83590c926b88998dcda8a0f72ad",
+          "message": "feat: pick cheapest payee using linear pricing curve",
+          "timestamp": "2024-01-02T13:46:17Z",
+          "tree_id": "c771f4bb26215d691fb8afd853b29a90ba52ec7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/e815224222e3d83590c926b88998dcda8a0f72ad"
+        },
+        "date": 1704205618278,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5883660428443592,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0345475206569172,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.530991739509346,
             "unit": "MiB/s"
           }
         ]
