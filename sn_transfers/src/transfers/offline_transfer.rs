@@ -39,10 +39,10 @@ pub struct OfflineTransfer {
 /// The input details necessary to
 /// carry out a transfer of tokens.
 #[derive(Debug)]
-struct TranferInputs {
+struct TransferInputs {
     /// The selected cash_notes to spend, with the necessary amounts contained
     /// to transfer the below specified amount of tokens to each recipients.
-    pub cash_notes_to_spend: Vec<(CashNote, Option<DerivedSecretKey>)>,
+    pub cash_notes_to_spend: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
     /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
     pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input cash_notes.
@@ -60,7 +60,7 @@ struct TranferInputs {
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
 pub fn create_offline_transfer(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>)>,
+    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
     recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
@@ -80,7 +80,7 @@ pub fn create_offline_transfer(
     let (cash_notes_to_spend, change_amount) =
         select_inputs(available_cash_notes, total_output_amount)?;
 
-    let selected_inputs = TranferInputs {
+    let selected_inputs = TransferInputs {
         cash_notes_to_spend,
         recipients,
         change: (change_amount, change_to),
@@ -91,11 +91,11 @@ pub fn create_offline_transfer(
 
 /// A function for creating an unsigned transfer of tokens.
 pub fn create_unsigned_transaction(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>)>,
+    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
     recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
-) -> Result<BTreeSet<Spend>> {
+) -> Result<BTreeSet<(Spend, DerivationIndex)>> {
     let total_output_amount = recipients
         .iter()
         .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
@@ -111,7 +111,7 @@ pub fn create_unsigned_transaction(
     let (cash_notes_to_spend, change_amount) =
         select_inputs(available_cash_notes, total_output_amount)?;
 
-    let selected_inputs = TranferInputs {
+    let selected_inputs = TransferInputs {
         cash_notes_to_spend,
         recipients,
         change: (change_amount, change_to),
@@ -135,14 +135,17 @@ pub fn create_unsigned_transaction(
 
 /// Select the necessary number of cash_notes from those that we were passed.
 fn select_inputs(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>)>,
+    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
     total_output_amount: NanoTokens,
-) -> Result<(Vec<(CashNote, Option<DerivedSecretKey>)>, NanoTokens)> {
+) -> Result<(
+    Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
+    NanoTokens,
+)> {
     let mut cash_notes_to_spend = Vec::new();
     let mut total_input_amount = NanoTokens::zero();
     let mut change_amount = total_output_amount;
 
-    for (cash_note, derived_key) in available_cash_notes {
+    for (cash_note, derived_key, derivation_index) in available_cash_notes {
         let input_key = cash_note.unique_pubkey();
 
         let cash_note_balance = match cash_note.value() {
@@ -156,7 +159,7 @@ fn select_inputs(
         };
 
         // Add this CashNote as input to be spent.
-        cash_notes_to_spend.push((cash_note, derived_key));
+        cash_notes_to_spend.push((cash_note, derived_key, derivation_index));
 
         // Input amount increases with the amount of the cash_note.
         total_input_amount = total_input_amount.checked_add(cash_note_balance)
@@ -195,20 +198,20 @@ fn select_inputs(
 }
 
 fn create_transaction_builder_with(
-    selected_inputs: TranferInputs,
+    selected_inputs: TransferInputs,
 ) -> Result<(
     TransactionBuilder,
     BTreeMap<crate::UniquePubkey, Transaction>,
     crate::UniquePubkey,
 )> {
-    let TranferInputs {
+    let TransferInputs {
         change: (change, change_to),
         ..
     } = selected_inputs;
 
     let mut inputs = vec![];
     let mut src_txs = BTreeMap::new();
-    for (cash_note, derived_key) in selected_inputs.cash_notes_to_spend {
+    for (cash_note, derived_key, derivation_index) in selected_inputs.cash_notes_to_spend {
         let token = match cash_note.value() {
             Ok(token) => token,
             Err(err) => {
@@ -220,7 +223,12 @@ fn create_transaction_builder_with(
             unique_pubkey: cash_note.unique_pubkey(),
             amount: token,
         };
-        inputs.push((input, derived_key, cash_note.src_tx.clone()));
+        inputs.push((
+            input,
+            derived_key,
+            cash_note.src_tx.clone(),
+            derivation_index,
+        ));
         let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.src_tx);
     }
 
@@ -245,7 +253,7 @@ fn create_transaction_builder_with(
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
 fn create_offline_transfer_with(
-    selected_inputs: TranferInputs,
+    selected_inputs: TransferInputs,
     reason_hash: Hash,
 ) -> Result<OfflineTransfer> {
     // gather the network_royalties derivation indexes

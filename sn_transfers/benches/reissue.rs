@@ -35,7 +35,11 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     // transfer to N_OUTPUTS recipients
     let zero = DerivationIndex([0u8; 32]);
     let offline_transfer = create_offline_transfer(
-        vec![(starting_cashnote, Some(starting_main_key.derive_key(&zero)))],
+        vec![(
+            starting_cashnote,
+            Some(starting_main_key.derive_key(&zero)),
+            zero,
+        )],
         recipients,
         starting_main_key.main_pubkey(),
         Hash::default(),
@@ -93,6 +97,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         vec![(
             starting_cashnote,
             Some(starting_main_key.derive_key(&derive)),
+            derive,
         )],
         recipients,
         starting_main_key.main_pubkey(),
@@ -125,7 +130,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .map(|cn| {
             let derivation_index = cn.derivation_index();
             let sk = recipient_of_100_mainkey.derive_key(&derivation_index);
-            (cn, Some(sk))
+            (cn, Some(sk), derivation_index)
         })
         .collect();
     let one_single_recipient = vec![(

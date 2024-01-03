@@ -140,7 +140,12 @@ pub fn create_first_cash_note_from_key(
     let reason = Hash::hash(b"GENESIS");
 
     let cash_note_builder = TransactionBuilder::default()
-        .add_input(genesis_input, Some(derived_key), Transaction::empty())
+        .add_input(
+            genesis_input,
+            Some(derived_key),
+            Transaction::empty(),
+            derivation_index,
+        )
         .add_output(
             NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
             main_pubkey,
