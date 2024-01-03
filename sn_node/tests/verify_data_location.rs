@@ -324,23 +324,24 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut output_file = File::create(file_path.clone())?;
         output_file.write_all(&random_bytes)?;
 
-        let (file_addr, _data_map, _file_size, chunks) =
+        let (head_chunk_addr, _data_map, _file_size, chunks) =
             FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
 
         println!(
-            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {file_addr:?}",
+            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_chunk_addr:?}",
             chunks.len(),
             random_bytes.len()
         );
 
-        let key = PrettyPrintRecordKey::from(&RecordKey::new(&file_addr)).into_owned();
+        let key =
+            PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
         let mut files = Files::new(files_api.clone())
             .set_show_holders(true)
             .set_verify_store(false);
         files.upload_chunks(chunks).await?;
         uploaded_chunks_count += 1;
 
-        println!("Stored Chunk with {file_addr:?} / {key:?}");
+        println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
     }
 
     println!(
