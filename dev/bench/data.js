@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704289392002,
+  "lastUpdate": 1704289394227,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "163348e10ccbe4fd89bc43d5e896a3a9364d2414",
-          "message": "chore(node): add valid put log markers",
-          "timestamp": "2023-09-01T17:02:55Z",
-          "tree_id": "34a0540cc5f261be788b5054ce068dcec593260b",
-          "url": "https://github.com/maidsafe/safe_network/commit/163348e10ccbe4fd89bc43d5e896a3a9364d2414"
-        },
-        "date": 1693595978838,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 854.55255,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 801,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 60,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdd3c054785d43c47b70521352ccebbc544c8491",
+          "message": "fix(cli): write datamap to metadata\n\nThis should allow datamaps to be written to disk even if we restart uploads",
+          "timestamp": "2024-01-03T13:04:53Z",
+          "tree_id": "d6d2d57a80ba53a3c2f7889eccc57f2135e916cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdd3c054785d43c47b70521352ccebbc544c8491"
+        },
+        "date": 1704289393419,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 207,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 56,
             "unit": "MB"
           }
         ]
