@@ -9,13 +9,18 @@
 use crate::get_stdin_response;
 use bls::{PublicKey, SecretKey, PK_SIZE};
 use clap::Parser;
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
-    CashNoteRedemption, Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens,
-    SpendAddress, Transfer, UniquePubkey, WalletError, WatchOnlyWallet, GENESIS_CASHNOTE,
+    CashNoteRedemption, DerivationIndex, Error as TransferError, LocalWallet, MainPubkey,
+    MainSecretKey, NanoTokens, Spend, SpendAddress, Transfer, UniquePubkey, WalletError,
+    WatchOnlyWallet, GENESIS_CASHNOTE,
 };
 use std::{
+    collections::BTreeSet,
     io::Read,
     path::{Path, PathBuf},
     str::FromStr,
@@ -96,6 +101,12 @@ pub enum WalletCmds {
         /// Hex-encoded public address of the recipient.
         #[clap(name = "to")]
         to: String,
+    },
+    /// Signs a transaction to be then broadcasted to the network.
+    Sign {
+        /// Hex-encoded unsigned transaction. It requires a hot-wallet was created for CLI.
+        #[clap(name = "tx")]
+        tx: String,
     },
     /// Receive a transfer created by the 'send' command.
     Receive {
@@ -216,9 +227,8 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             };
             Ok(())
         }
-        WalletCmds::Transaction { amount, to } => {
-            build_unsigned_transaction(amount, to, root_dir).await
-        }
+        WalletCmds::Transaction { amount, to } => build_unsigned_transaction(amount, to, root_dir),
+        WalletCmds::Sign { tx } => sign_transaction(tx, root_dir),
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
 }
@@ -432,7 +442,7 @@ async fn send(
     Ok(())
 }
 
-async fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> Result<()> {
+fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> Result<()> {
     let mut wallet = LocalWallet::load_from(root_dir)?;
     let amount = match NanoTokens::from_str(amount) {
         Ok(amount) => amount,
@@ -456,6 +466,62 @@ async fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> 
         hex::encode(rmp_serde::to_vec(&unsigned_spends)?)
     );
     println!("Please copy the above text, sign it offline with 'wallet sign' cmd, and then use the signed transaction to broadcast it with 'wallet broadcast' cmd.");
+
+    Ok(())
+}
+
+fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
+    let wallet = LocalWallet::load_from(root_dir)?;
+    let unsigned_spends: BTreeSet<(Spend, DerivationIndex)> =
+        rmp_serde::from_slice(&hex::decode(tx)?)?;
+
+    println!("The unsigned transaction has been successfully decoded:");
+    let mut spent_tx = None;
+    for (i, (spend, _)) in unsigned_spends.iter().enumerate() {
+        println!("\nSpending input #{i}:");
+        println!("\tKey: {}", spend.unique_pubkey.to_hex());
+        println!("\tAmount: {}", spend.token);
+        if let Some(ref tx) = spent_tx {
+            if tx != &spend.spent_tx {
+                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
+            }
+        } else {
+            spent_tx = Some(spend.spent_tx.clone());
+        }
+    }
+
+    if let Some(ref tx) = spent_tx {
+        for (i, output) in tx.outputs.iter().enumerate() {
+            println!("\nOutput #{i}:");
+            println!("\tKey: {}", output.unique_pubkey.to_hex());
+            println!("\tAmount: {}", output.amount);
+        }
+    } else {
+        bail!("Transaction is corrupted, no transaction information found.");
+    }
+
+    use dialoguer::Confirm;
+
+    println!("\n** Please make sure the above information is correct before signing it. **\n");
+    let confirmation = Confirm::new()
+        .with_prompt("Do you want to sign the above transaction?")
+        .interact()?;
+
+    if !confirmation {
+        println!("Transaction not signed.");
+        return Ok(());
+    }
+
+    println!("Signing the transaction with local hot-wallet...");
+    let signed_spends = wallet.sign(unsigned_spends);
+
+    println!(
+        "The transaction has been successfully signed:\n\n{}\n",
+        hex::encode(rmp_serde::to_vec(&signed_spends)?)
+    );
+    println!(
+        "Please copy the above text, and broadcast it to the network with 'wallet broadcast' cmd."
+    );
 
     Ok(())
 }
