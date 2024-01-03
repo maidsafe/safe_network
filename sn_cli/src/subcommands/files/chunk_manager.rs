@@ -234,9 +234,12 @@ impl ChunkManager {
                 let metadata_path = artifacts_dir.join(&path_xor.0).join(METADATA_FILE);
 
                 info!("Metadata path is: {metadata_path:?}");
-                let metadata = rmp_serde::to_vec(&chunked_file.head_chunk_address)
-                    .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
-                    .ok()?;
+                let metadata = rmp_serde::to_vec(&(
+                    chunked_file.head_chunk_address,
+                    chunked_file.data_map.clone(),
+                ))
+                .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
+                .ok()?;
 
                 let mut metadata_file = File::create(&metadata_path)
                     .map_err(|_| {
@@ -473,6 +476,7 @@ impl ChunkManager {
         original_file_name: OsString,
     ) -> Option<(PathXorName, ChunkedFile)> {
         let mut file_chunk_address: Option<ChunkAddress> = None;
+        let mut data_map: Option<Bytes> = None;
         debug!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
 
         let chunks = WalkDir::new(file_chunks_dir.clone())
@@ -483,8 +487,11 @@ impl ChunkManager {
                     return None;
                 }
                 if entry.file_name() == METADATA_FILE {
-                    if let Some(address) = Self::try_read_metadata(entry.path()) {
+                    if let Some((address, optional_data_map)) =
+                        Self::try_read_metadata(entry.path())
+                    {
                         file_chunk_address = Some(address);
+                        data_map = optional_data_map;
                         debug!("Obtained metadata for {path_xor:?}");
                     } else {
                         error!("Could not read metadata for {path_xor:?}");
@@ -510,20 +517,14 @@ impl ChunkManager {
         match file_chunk_address {
             Some(head_chunk_address) => {
                 debug!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {head_chunk_address:?}/{path_xor:?}", chunks.len());
-                let mut data_map = None;
 
-                let data_map_file = file_chunks_dir.join(head_chunk_address.to_hex());
-                if data_map_file.exists() {
-                    info!("Datamap exists for {head_chunk_address:?}");
-                    data_map = fs::read(data_map_file).ok();
-                }
                 Some((
                     path_xor.clone(),
                     ChunkedFile {
                         file_name: original_file_name,
                         head_chunk_address,
                         chunks,
-                        data_map: data_map.map(Bytes::from),
+                        data_map,
                     },
                 ))
             }
@@ -535,12 +536,14 @@ impl ChunkManager {
         }
     }
 
-    // Try to read the metadata file
-    fn try_read_metadata(path: &Path) -> Option<ChunkAddress> {
+    /// Try to read the metadata file
+    /// Returning (head_chunk_address, Option<datamap_bytes>)
+    fn try_read_metadata(path: &Path) -> Option<(ChunkAddress, Option<Bytes>)> {
         let metadata = fs::read(path)
             .map_err(|err| error!("Failed to read metadata with err {err:?}"))
             .ok()?;
-        let metadata: ChunkAddress = rmp_serde::from_slice(&metadata)
+        // head chunk address and the final datamap contents if a datamap exists for this file
+        let metadata: (ChunkAddress, Option<Bytes>) = rmp_serde::from_slice(&metadata)
             .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
         Some(metadata)
@@ -604,7 +607,11 @@ mod tests {
         let mut file_xor_addr_from_metadata = None;
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             if entry.file_type().is_file() && entry.file_name() == METADATA_FILE {
-                file_xor_addr_from_metadata = ChunkManager::try_read_metadata(entry.path());
+                let metadata = ChunkManager::try_read_metadata(entry.path());
+
+                if let Some((head_chunk_addr, _datamap)) = metadata {
+                    file_xor_addr_from_metadata = Some(head_chunk_addr);
+                }
             }
         }
         let file_xor_addr_from_metadata =
@@ -677,7 +684,11 @@ mod tests {
         let mut file_xor_addr_from_metadata = None;
         for entry in WalkDir::new(&artifacts_dir).into_iter().flatten() {
             if entry.file_type().is_file() && entry.file_name() == METADATA_FILE {
-                file_xor_addr_from_metadata = ChunkManager::try_read_metadata(entry.path());
+                let metadata = ChunkManager::try_read_metadata(entry.path());
+
+                if let Some((head_chunk_addr, _datamap)) = metadata {
+                    file_xor_addr_from_metadata = Some(head_chunk_addr);
+                }
             }
         }
         let file_xor_addr_from_metadata =
