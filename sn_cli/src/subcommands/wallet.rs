@@ -61,11 +61,13 @@ pub enum WalletCmds {
         #[clap(long)]
         cash_note: Option<String>,
     },
-    /// Create a local wallet from the given (hex-encoded) Secret Key.
+    /// Create a hot or watch-only wallet from the given (hex-encoded) key.
     Create {
-        /// Hex-encoded main secret key
-        #[clap(name = "sk")]
-        sk: String,
+        /// Hex-encoded main secret or public key. If the key is a secret key a hot-wallet will be created
+        /// which can be used to sign and broadcast transfers. Otherwise, if the passed key is a public key,
+        /// then a watch-only wallet is created.
+        #[clap(name = "key")]
+        key: String,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -80,6 +82,15 @@ pub enum WalletCmds {
     /// use the 'receive' command to claim the funds.
     Send {
         /// The number of SafeNetworkTokens to send.
+        #[clap(name = "amount")]
+        amount: String,
+        /// Hex-encoded public address of the recipient.
+        #[clap(name = "to")]
+        to: String,
+    },
+    /// Builds an unsigned transaction to be signed offline.
+    Transaction {
+        /// The number of SafeNetworkTokens to transfer.
         #[clap(name = "amount")]
         amount: String,
         /// Hex-encoded public address of the recipient.
@@ -157,36 +168,56 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             Ok(())
         }
         WalletCmds::Deposit { stdin, cash_note } => deposit(root_dir, *stdin, cash_note.as_deref()),
-        WalletCmds::Create { sk } => {
-            let main_sk = match SecretKey::from_hex(sk) {
-                Ok(sk) => MainSecretKey::new(sk),
-                Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
-            };
-            // check for existing wallet with balance
-            let existing_balance = match LocalWallet::load_from(root_dir) {
-                Ok(wallet) => wallet.balance(),
-                Err(_) => NanoTokens::zero(),
-            };
-            // if about to overwrite an existing balance, confirm operation
-            if existing_balance > NanoTokens::zero() {
-                let prompt = format!("Existing wallet has balance of {existing_balance}. Replace with new wallet? [y/N]");
-                let response = get_stdin_response(&prompt);
-                if response.trim() != "y" {
-                    // Do nothing, return ok and prevent any further operations
-                    println!("Exiting without creating new wallet");
-                    return Ok(());
+        WalletCmds::Create { key } => {
+            match SecretKey::from_hex(key) {
+                Ok(sk) => {
+                    let main_sk = MainSecretKey::new(sk);
+                    // TODO: encrypt wallet file
+                    // check for existing wallet with balance
+                    let existing_balance = match LocalWallet::load_from(root_dir) {
+                        Ok(wallet) => wallet.balance(),
+                        Err(_) => NanoTokens::zero(),
+                    };
+                    // if about to overwrite an existing balance, confirm operation
+                    if existing_balance > NanoTokens::zero() {
+                        let prompt = format!("Existing wallet has balance of {existing_balance}. Replace with new wallet? [y/N]");
+                        let response = get_stdin_response(&prompt);
+                        if response.trim() != "y" {
+                            // Do nothing, return ok and prevent any further operations
+                            println!("Exiting without creating new wallet");
+                            return Ok(());
+                        }
+                        // remove existing wallet
+                        let new_location = LocalWallet::clear(root_dir)?;
+                        println!("Old wallet stored at {}", new_location.display());
+                    }
+                    // Create the new wallet with the new key
+                    let main_pubkey = main_sk.main_pubkey();
+                    let local_wallet = LocalWallet::create_from_key(root_dir, main_sk)?;
+                    let balance = local_wallet.balance();
+                    println!(
+                        "Wallet created (balance {balance}) for main public key: {main_pubkey:?}."
+                    );
                 }
-                // remove existing wallet
-                let new_location = LocalWallet::clear(root_dir)?;
-                println!("Old wallet stored at {}", new_location.display());
-            }
-            // Create the new wallet with the new key
-            let main_pubkey = main_sk.main_pubkey();
-            let local_wallet = LocalWallet::create_from_key(root_dir, main_sk)?;
-            let balance = local_wallet.balance();
-            println!("Wallet created (balance {balance}) for main public key: {main_pubkey:?}.");
-
+                Err(_err) => {
+                    let main_pk = match PublicKey::from_hex(key) {
+                        Ok(pk) => MainPubkey::new(pk),
+                        Err(err) => return Err(eyre!("Failed to parse hex-encoded PK: {err:?}")),
+                    };
+                    let pk_hex = main_pk.to_hex();
+                    let folder_name =
+                        format!("pk_{}_{}", &pk_hex[..6], &pk_hex[pk_hex.len() - 6..]);
+                    let wallet_dir = root_dir.join(folder_name);
+                    let main_pubkey = main_pk.public_key();
+                    let watch_only_wallet = WatchOnlyWallet::load_from(&wallet_dir, main_pk)?;
+                    let balance = watch_only_wallet.balance();
+                    println!("Watch-only wallet created (balance {balance}) for main public key: {main_pubkey:?}.");
+                }
+            };
             Ok(())
+        }
+        WalletCmds::Transaction { amount, to } => {
+            build_unsigned_transaction(amount, to, root_dir).await
         }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
@@ -397,6 +428,34 @@ async fn send(
     println!("The encrypted transfer has been successfully created.");
     println!("Please share this to the recipient:\n\n{transfer}\n");
     println!("The recipient can then use the 'receive' command to claim the funds.");
+
+    Ok(())
+}
+
+async fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> Result<()> {
+    let mut wallet = LocalWallet::load_from(root_dir)?;
+    let amount = match NanoTokens::from_str(amount) {
+        Ok(amount) => amount,
+        Err(err) => {
+            println!("The amount cannot be parsed. Nothing sent.");
+            return Err(err.into());
+        }
+    };
+    let to = match MainPubkey::from_hex(to) {
+        Ok(to) => to,
+        Err(err) => {
+            println!("Error while parsing the recipient's 'to' key: {err:?}");
+            return Err(err.into());
+        }
+    };
+
+    let unsigned_spends = wallet.build_unsigned_transaction(vec![(amount, to)], None)?;
+
+    println!(
+        "The unsigned transaction has been successfully created:\n\n{}\n",
+        hex::encode(rmp_serde::to_vec(&unsigned_spends)?)
+    );
+    println!("Please copy the above text, sign it offline with 'wallet sign' cmd, and then use the signed transaction to broadcast it with 'wallet broadcast' cmd.");
 
     Ok(())
 }
