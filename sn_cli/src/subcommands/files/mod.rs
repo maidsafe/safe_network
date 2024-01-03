@@ -202,7 +202,15 @@ async fn upload_files(
             println!("All files were already uploaded and verified");
             println!("**************************************");
             println!("*          Uploaded Files            *");
+
+            if !make_data_public {
+                println!("*                                    *");
+                println!("*  These are not public by default.  *");
+                println!("*     Reupload with `-p` option      *");
+                println!("*      to publish the datamaps.      *");
+            }
             println!("**************************************");
+
             if chunk_manager.verified_files().is_empty() {
                 println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
             }
