@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704289259391,
+  "lastUpdate": 1704289392002,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "david.irvine@maidsafe.net",
-            "name": "David Irvine",
-            "username": "dirvine"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "919303859b4c5fce20893507d0ddcc42ed852b4f",
-          "message": "docs: Add client and protocol detail",
-          "timestamp": "2023-09-04T05:23:03Z",
-          "tree_id": "236155cc3479df22a6cbfadc55068cfcefaa97bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/919303859b4c5fce20893507d0ddcc42ed852b4f"
-        },
-        "date": 1693813244217,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 74.91584,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 43,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdd3c054785d43c47b70521352ccebbc544c8491",
+          "message": "fix(cli): write datamap to metadata\n\nThis should allow datamaps to be written to disk even if we restart uploads",
+          "timestamp": "2024-01-03T13:04:53Z",
+          "tree_id": "d6d2d57a80ba53a3c2f7889eccc57f2135e916cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdd3c054785d43c47b70521352ccebbc544c8491"
+        },
+        "date": 1704289391187,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
