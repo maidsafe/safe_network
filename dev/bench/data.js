@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704219286259,
+  "lastUpdate": 1704269421331,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "28f896403f465272dd34073c99b27fb64c30c799",
-          "message": "fix permissions for public register creation",
-          "timestamp": "2023-09-04T11:00:26Z",
-          "tree_id": "1f8907a0591944f3db5e61122411a2996d0b39e0",
-          "url": "https://github.com/maidsafe/safe_network/commit/28f896403f465272dd34073c99b27fb64c30c799"
-        },
-        "date": 1693829967169,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.12354222825199065,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5491087702914491,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.5069829807349615,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.60303403452571,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "adc48868750014c0a6fac91311a7b202439587d0",
+          "message": "chore: no more max_records cap",
+          "timestamp": "2024-01-03T07:24:12Z",
+          "tree_id": "f2d3f52ede0bf0d8f3477c261e2bfce5be63fce6",
+          "url": "https://github.com/maidsafe/safe_network/commit/adc48868750014c0a6fac91311a7b202439587d0"
+        },
+        "date": 1704269419053,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.5919325173650681,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.032050038720191,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 38.49071465509669,
             "unit": "MiB/s"
           }
         ]
