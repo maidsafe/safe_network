@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.89](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.88...sn_cli-v0.86.89) - 2024-01-03
+
+### Added
+- *(cli)* keep downloaded files in a safe subdir
+- *(client)* clients no longer upload data_map by default
+
+### Fixed
+- *(cli)* write datamap to metadata
+
+### Other
+- clippy test fixes and updates
+- *(cli)* add not to non-public uploaded files
+- refactor for clarity around head_chunk_address
+- *(cli)* do not write datamap chunk if non-public
+
 ## [0.86.88](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.87...sn_cli-v0.86.88) - 2024-01-03
 
 ### Other

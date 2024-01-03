@@ -2685,6 +2685,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.34...sn_node-v0.100.35) - 2024-01-03
+
+### Added
+- *(client)* clients no longer upload data_map by default
+
+### Other
+- clippy test fixes and updates
+- *(cli)* do not write datamap chunk if non-public
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

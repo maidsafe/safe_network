@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.37](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.36...sn_client-v0.99.37) - 2024-01-03
+
+### Added
+- *(client)* clients no longer upload data_map by default
+
+### Other
+- refactor for clarity around head_chunk_address
+- *(cli)* do not write datamap chunk if non-public
+
 ## [0.99.36](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.35...sn_client-v0.99.36) - 2024-01-03
 
 ### Other
