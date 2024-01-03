@@ -25,7 +25,7 @@ pub type InputSrcTx = Transaction;
 pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    input_details: BTreeMap<UniquePubkey, (DerivedSecretKey, InputSrcTx)>,
+    input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx)>,
     output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
 }
 
@@ -34,7 +34,7 @@ impl TransactionBuilder {
     pub fn add_input(
         mut self,
         input: Input,
-        derived_key: DerivedSecretKey,
+        derived_key: Option<DerivedSecretKey>,
         input_src_tx: InputSrcTx,
     ) -> Self {
         self.input_details
@@ -46,7 +46,7 @@ impl TransactionBuilder {
     /// Add an input given an iterator over the Input, the input's derived_key and the input's src transaction
     pub fn add_inputs(
         mut self,
-        inputs: impl IntoIterator<Item = (Input, DerivedSecretKey, InputSrcTx)>,
+        inputs: impl IntoIterator<Item = (Input, Option<DerivedSecretKey>, InputSrcTx)>,
     ) -> Self {
         for (input, derived_key, input_src_tx) in inputs.into_iter() {
             self = self.add_input(input, derived_key, input_src_tx);
@@ -94,7 +94,8 @@ impl TransactionBuilder {
         };
         let mut signed_spends = BTreeSet::new();
         for input in &spent_tx.inputs {
-            if let Some((derived_key, input_src_tx)) = self.input_details.get(&input.unique_pubkey)
+            if let Some((Some(derived_key), input_src_tx)) =
+                self.input_details.get(&input.unique_pubkey)
             {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
@@ -117,6 +118,34 @@ impl TransactionBuilder {
             self.output_details,
             signed_spends,
         ))
+    }
+
+    /// Build the unsigned Transaction returning the generated (unsigned) Spends.
+    pub fn build_unsigned_spends(
+        self,
+        reason: Hash,
+        network_royalties: Vec<DerivationIndex>,
+    ) -> Result<BTreeSet<Spend>> {
+        let spent_tx = Transaction {
+            inputs: self.inputs,
+            outputs: self.outputs,
+        };
+        let mut spends = BTreeSet::new();
+        for input in &spent_tx.inputs {
+            if let Some((_, input_src_tx)) = self.input_details.get(&input.unique_pubkey) {
+                let spend = Spend {
+                    unique_pubkey: *input.unique_pubkey(),
+                    spent_tx: spent_tx.clone(),
+                    reason,
+                    token: input.amount,
+                    parent_tx: input_src_tx.clone(),
+                    network_royalties: network_royalties.clone(),
+                };
+                spends.insert(spend);
+            }
+        }
+
+        Ok(spends)
     }
 }
 

@@ -18,9 +18,9 @@ use super::{
 
 use crate::{
     calculate_royalties_fee,
-    transfers::{create_offline_transfer, OfflineTransfer},
+    transfers::{create_offline_transfer, create_unsigned_transaction, OfflineTransfer},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, SignedSpend, Transfer, UniquePubkey, WalletError,
+    MainSecretKey, NanoTokens, SignedSpend, Spend, Transfer, UniquePubkey, WalletError,
     NETWORK_ROYALTIES_PK,
 };
 use xor_name::XorName;
@@ -217,7 +217,10 @@ impl LocalWallet {
     /// once the updated wallet is stored to disk it is safe to drop the WalletExclusiveAccess
     pub fn available_cash_notes(
         &mut self,
-    ) -> Result<(Vec<(CashNote, DerivedSecretKey)>, WalletExclusiveAccess)> {
+    ) -> Result<(
+        Vec<(CashNote, Option<DerivedSecretKey>)>,
+        WalletExclusiveAccess,
+    )> {
         trace!("Trying to lock wallet to get available cash_notes...");
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
         let exclusive_access = self.lock()?;
@@ -231,7 +234,7 @@ impl LocalWallet {
             let held_cash_note = load_created_cash_note(id, &wallet_dir);
             if let Some(cash_note) = held_cash_note {
                 if let Ok(derived_key) = cash_note.derived_key(&self.key) {
-                    available_cash_notes.push((cash_note.clone(), derived_key));
+                    available_cash_notes.push((cash_note.clone(), Some(derived_key)));
                 } else {
                     warn!(
                         "Skipping CashNote {:?} because we don't have the key to spend it",
@@ -249,6 +252,54 @@ impl LocalWallet {
     /// Return the payment cash_note ids for the given content address name if cached.
     pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<&PaymentDetails> {
         self.watchonly_wallet.get_payment_transaction(name)
+    }
+
+    pub fn build_unsigned_transaction(
+        &mut self,
+        to: Vec<(NanoTokens, MainPubkey)>,
+        reason_hash: Option<Hash>,
+    ) -> Result<BTreeSet<Spend>> {
+        let mut rng = &mut rand::rngs::OsRng;
+        // create a unique key for each output
+        let to_unique_keys: Vec<_> = to
+            .into_iter()
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .collect();
+
+        trace!("Trying to lock wallet to get available cash_notes...");
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
+
+        // get the available cash_notes
+        let mut available_cash_notes = vec![];
+        let wallet_dir = self.watchonly_wallet.wallet_dir().to_path_buf();
+        for (id, _token) in self.watchonly_wallet.available_cash_notes().iter() {
+            if let Some(cash_note) = load_created_cash_note(id, &wallet_dir) {
+                available_cash_notes.push((cash_note.clone(), None));
+            } else {
+                warn!("Skipping CashNote {:?} because we don't have it", id);
+            }
+        }
+        debug!(
+            "Available CashNotes for local send: {:#?}",
+            available_cash_notes
+        );
+
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let unsigned_spends = create_unsigned_transaction(
+            available_cash_notes,
+            to_unique_keys,
+            self.address(),
+            reason_hash,
+        )?;
+
+        trace!("Releasing wallet lock"); // by dropping exclusive_access
+        std::mem::drop(exclusive_access);
+
+        Ok(unsigned_spends)
     }
 
     /// Make a transfer and return all created cash_notes
