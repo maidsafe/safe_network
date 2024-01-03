@@ -432,7 +432,7 @@ impl ChunkManager {
         //     if let Some(chunked_file) = self.chunks.remove(path_xor) {
         //         trace!("removed {path_xor:?} from chunks list");
         //         self.verified_files
-        //             .push((chunked_file.file_name, chunked_file.file_xor_addr));
+        //             .push((chunked_file.file_name, chunked_file.head_chunk_address));
         //     }
         // }
     }
@@ -614,7 +614,7 @@ mod tests {
             .values()
             .next()
             .expect("1 file should be present")
-            .file_xor_addr;
+            .head_chunk_address;
         assert_eq!(file_xor_addr_from_metadata, file_xor_addr);
 
         // 5. make sure the chunked file's name is the XorName of that chunk
@@ -687,7 +687,7 @@ mod tests {
             .values()
             .next()
             .expect("1 file should be present")
-            .file_xor_addr;
+            .head_chunk_address;
         assert_eq!(file_xor_addr_from_metadata, file_xor_addr);
 
         // 5. make sure the chunked file's name is the XorName of that chunk
@@ -723,7 +723,7 @@ mod tests {
 
         let path_xor = manager.chunks.keys().next().unwrap().clone();
         let chunked_file = manager.chunks.values().next().unwrap().clone();
-        let file_xor_addr = chunked_file.file_xor_addr;
+        let file_xor_addr = chunked_file.head_chunk_address;
         let (chunk, _) = chunked_file
             .chunks
             .first()
@@ -750,7 +750,7 @@ mod tests {
             ChunkManager::read_file_chunks_dir(file_chunks_dir, &path_xor, chunked_file.file_name)
                 .expect("Folder and metadata should be present");
         assert_eq!(chunked_file_from_dir.chunks.len(), total_chunks - 1);
-        assert_eq!(chunked_file_from_dir.file_xor_addr, file_xor_addr);
+        assert_eq!(chunked_file_from_dir.head_chunk_address, file_xor_addr);
         assert_eq!(path_xor_from_dir, path_xor);
 
         // 2. file should not be marked as verified
@@ -792,8 +792,8 @@ mod tests {
             .expect("Folder and metadata should be present");
             assert_eq!(chunked_file_from_dir.chunks.len(), 0);
             assert_eq!(
-                chunked_file_from_dir.file_xor_addr,
-                chunked_file.file_xor_addr
+                chunked_file_from_dir.head_chunk_address,
+                chunked_file.head_chunk_address
             );
             assert_eq!(&path_xor_from_dir, path_xor);
         }
