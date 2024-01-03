@@ -35,6 +35,9 @@ use std::{
 use walkdir::WalkDir;
 use xor_name::XorName;
 
+/// The default folder to download files to.
+const DOWNLOAD_FOLDER: &str = "safe_files";
+
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
     Upload {
@@ -205,11 +208,11 @@ async fn upload_files(
             }
             for (file_name, addr) in chunk_manager.verified_files() {
                 if let Some(file_name) = file_name.to_str() {
-                    println!("\"{file_name}\" {addr:x}");
-                    info!("Uploaded {file_name} to {addr:x}");
+                    println!("\"{file_name}\" {addr:?}");
+                    info!("Uploaded {file_name} to {addr:?}");
                 } else {
-                    println!("\"{file_name:?}\" {addr:x}");
-                    info!("Uploaded {file_name:?} to {addr:x}");
+                    println!("\"{file_name:?}\" {addr:?}");
+                    info!("Uploaded {file_name:?} to {addr:?}");
                 }
             }
             return Ok(());
@@ -282,11 +285,11 @@ async fn upload_files(
             println!("**************************************");
             for (file_name, addr) in chunk_manager.verified_files() {
                 if let Some(file_name) = file_name.to_str() {
-                    println!("\"{file_name}\" {addr:x}");
-                    info!("Uploaded {file_name} to {addr:x}");
+                    println!("\"{file_name}\" {addr:?}");
+                    info!("Uploaded {file_name} to {addr:?}");
                 } else {
-                    println!("\"{file_name:?}\" {addr:x}");
-                    info!("Uploaded {file_name:?} to {addr:x}");
+                    println!("\"{file_name:?}\" {addr:?}");
+                    info!("Uploaded {file_name:?} to {addr:?}");
                 }
             }
         } else {
@@ -350,7 +353,7 @@ async fn download_files(
     let uploaded_files_path = root_dir.join(UPLOADED_FILES);
     let download_path = dirs_next::download_dir()
         .unwrap_or(root_dir.to_path_buf())
-        .join("safe_files");
+        .join(DOWNLOAD_FOLDER);
     std::fs::create_dir_all(download_path.as_path())?;
 
     #[allow(clippy::mutable_key_type)]
@@ -425,7 +428,7 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
 async fn download_file(
     files_api: &FilesApi,
     xorname: &XorName,
-    // file name and optional datamap chunk
+    // original file name and optional datamap chunk
     file_data: &(String, Option<Chunk>),
     download_path: &Path,
     show_holders: bool,

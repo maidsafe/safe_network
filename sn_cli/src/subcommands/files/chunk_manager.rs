@@ -11,6 +11,7 @@ use bytes::Bytes;
 use color_eyre::{eyre::bail, Result};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::FilesApi;
+use sn_protocol::storage::ChunkAddress;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -48,7 +49,7 @@ impl PathXorName {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct ChunkedFile {
     pub file_name: OsString,
-    pub file_xor_addr: XorName,
+    pub head_chunk_address: ChunkAddress,
     pub chunks: BTreeSet<(XorName, PathBuf)>,
     pub data_map: Option<Bytes>,
 }
@@ -63,7 +64,7 @@ pub(crate) struct ChunkManager {
     artifacts_dir: PathBuf,
     files_to_chunk: Vec<(OsString, PathXorName, PathBuf)>,
     chunks: BTreeMap<PathXorName, ChunkedFile>,
-    verified_files: Vec<(OsString, XorName)>,
+    verified_files: Vec<(OsString, ChunkAddress)>,
     resumed_chunk_count: usize,
     resumed_files_count: usize,
 }
@@ -146,7 +147,10 @@ impl ChunkManager {
         {
             let verified_files = self.chunks.iter().filter_map(|(_, chunked_file)| {
                 if chunked_file.chunks.is_empty() {
-                    Some((chunked_file.file_name.clone(), chunked_file.file_xor_addr))
+                    Some((
+                        chunked_file.file_name.clone(),
+                        chunked_file.head_chunk_address,
+                    ))
                 } else {
                     None
                 }
@@ -187,14 +191,13 @@ impl ChunkManager {
                     }
                 };
 
-                debug!("ARE WE PUICBLISHING? {include_data_maps:?}");
                 match FilesApi::chunk_file(path, &file_chunks_dir, include_data_maps) {
-                    Ok((file_xor_addr, data_map, size, chunks)) => {
+                    Ok((head_chunk_address, data_map, size, chunks)) => {
                         progress_bar.clone().inc(1);
-                        debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {file_xor_addr:?} of size {size}, and chunks len: {}", chunks.len());
+                        debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {head_chunk_address:?} of size {size}, and chunks len: {}", chunks.len());
 
                         let chunked_file = ChunkedFile {
-                            file_xor_addr,
+                            head_chunk_address,
                             file_name: original_file_name.clone(),
                             chunks: chunks.into_iter().collect(),
                             data_map
@@ -231,7 +234,7 @@ impl ChunkManager {
                 let metadata_path = artifacts_dir.join(&path_xor.0).join(METADATA_FILE);
 
                 info!("Metadata path is: {metadata_path:?}");
-                let metadata = rmp_serde::to_vec(&chunked_file.file_xor_addr)
+                let metadata = rmp_serde::to_vec(&chunked_file.head_chunk_address)
                     .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
                     .ok()?;
 
@@ -354,11 +357,13 @@ impl ChunkManager {
             // todo: should we remove the entry? ig so
             if let Some(chunked_file) = self.chunks.remove(path_xor) {
                 trace!("removed {path_xor:?} from chunks list");
-                self.verified_files
-                    .push((chunked_file.file_name.clone(), chunked_file.file_xor_addr));
+                self.verified_files.push((
+                    chunked_file.file_name.clone(),
+                    chunked_file.head_chunk_address,
+                ));
 
                 // write the data_map addr and or data_map to the UPLOADED_FILES dir
-                let filename_hex = hex::encode(chunked_file.file_xor_addr);
+                let filename_hex = chunked_file.head_chunk_address.to_hex();
 
                 // safely create the filename
                 let safe_filename = match chunked_file.file_name.to_str() {
@@ -391,7 +396,7 @@ impl ChunkManager {
                     if let Err(error) = fs::write(uploaded_file, data_map) {
                         error!(
                             "Could not write datamap for {:?}, {error:?}",
-                            chunked_file.file_xor_addr
+                            chunked_file.head_chunk_address
                         );
                     }
                 } else {
@@ -403,7 +408,7 @@ impl ChunkManager {
                     if let Err(error) = fs::write(uploaded_file, []) {
                         error!(
                             "Could not write datamap for {:?}, {error:?}",
-                            chunked_file.file_xor_addr
+                            chunked_file.head_chunk_address
                         );
                     }
                 }
@@ -434,7 +439,7 @@ impl ChunkManager {
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// verified
-    pub(crate) fn verified_files(&self) -> &Vec<(OsString, XorName)> {
+    pub(crate) fn verified_files(&self) -> &Vec<(OsString, ChunkAddress)> {
         &self.verified_files
     }
 
@@ -467,7 +472,7 @@ impl ChunkManager {
         path_xor: &PathXorName,
         original_file_name: OsString,
     ) -> Option<(PathXorName, ChunkedFile)> {
-        let mut file_xor_addr: Option<XorName> = None;
+        let mut file_chunk_address: Option<ChunkAddress> = None;
         debug!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
 
         let chunks = WalkDir::new(file_chunks_dir.clone())
@@ -478,8 +483,8 @@ impl ChunkManager {
                     return None;
                 }
                 if entry.file_name() == METADATA_FILE {
-                    if let Some(metadata) = Self::try_read_metadata(entry.path()) {
-                        file_xor_addr = Some(metadata);
+                    if let Some(address) = Self::try_read_metadata(entry.path()) {
+                        file_chunk_address = Some(address);
                         debug!("Obtained metadata for {path_xor:?}");
                     } else {
                         error!("Could not read metadata for {path_xor:?}");
@@ -502,21 +507,21 @@ impl ChunkManager {
             })
             .collect::<BTreeSet<_>>();
 
-        match file_xor_addr {
-            Some(file_xor_addr) => {
-                debug!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {file_xor_addr:?}/{path_xor:?}", chunks.len());
+        match file_chunk_address {
+            Some(head_chunk_address) => {
+                debug!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {head_chunk_address:?}/{path_xor:?}", chunks.len());
                 let mut data_map = None;
 
-                let data_map_file = file_chunks_dir.join(hex::encode(file_xor_addr));
+                let data_map_file = file_chunks_dir.join(head_chunk_address.to_hex());
                 if data_map_file.exists() {
-                    info!("Datamap exists for {file_xor_addr:?}");
+                    info!("Datamap exists for {head_chunk_address:?}");
                     data_map = fs::read(data_map_file).ok();
                 }
                 Some((
                     path_xor.clone(),
                     ChunkedFile {
                         file_name: original_file_name,
-                        file_xor_addr,
+                        head_chunk_address,
                         chunks,
                         data_map: data_map.map(Bytes::from),
                     },
@@ -531,11 +536,11 @@ impl ChunkManager {
     }
 
     // Try to read the metadata file
-    fn try_read_metadata(path: &Path) -> Option<XorName> {
+    fn try_read_metadata(path: &Path) -> Option<ChunkAddress> {
         let metadata = fs::read(path)
             .map_err(|err| error!("Failed to read metadata with err {err:?}"))
             .ok()?;
-        let metadata: XorName = rmp_serde::from_slice(&metadata)
+        let metadata: ChunkAddress = rmp_serde::from_slice(&metadata)
             .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
         Some(metadata)
