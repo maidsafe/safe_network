@@ -2694,6 +2694,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - clippy test fixes and updates
 - *(cli)* do not write datamap chunk if non-public
 
+## [0.100.36](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.35...sn_node-v0.100.36) - 2024-01-03
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
