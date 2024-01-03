@@ -107,7 +107,7 @@ fn pack_data_map(data_map: DataMap) -> Result<(Chunk, Vec<Chunk>)> {
         // If datamap chunk is less than `MAX_CHUNK_SIZE` return it so it can be directly sent to the network.
         if MAX_CHUNK_SIZE >= chunk.serialised_size() {
             chunks.reverse();
-            // Returns the address of the last datamap, the datamap chunk, and all the chunks produced.
+            // Returns the last datamap, and all the chunks produced.
             break (chunk, chunks);
         } else {
             let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE).writer();
