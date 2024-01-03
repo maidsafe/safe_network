@@ -41,11 +41,9 @@ pub struct FilesApi {
     wallet_dir: PathBuf,
 }
 
-/// Result of the resulting data address, the DataMap Chunk, filesize and the paths of the chunks to be stored.
-/// If the DataMapChunk exists and is not stored on the network, then it will not be accessible at this address.
-///
 /// This is the (file xorname, datamap_data, filesize, and chunks)
-type ChunkFileResult = Result<(XorName, Option<Bytes>, u64, Vec<(XorName, PathBuf)>)>;
+/// If the DataMapChunk exists and is not stored on the network, then it will not be accessible at this address of ChunkAddress(XorName) .
+type ChunkFileResult = Result<(ChunkAddress, Option<Bytes>, u64, Vec<(XorName, PathBuf)>)>;
 
 impl FilesApi {
     /// Create file apis instance.
@@ -67,16 +65,16 @@ impl FilesApi {
     }
 
     /// Reads a file from the network, whose contents are contained within one or more chunks.
-    /// Optionally we can pass a first_chunk if the data_map is local to this machine
+    /// Optionally we can pass a data_map_chunk if the data_map is local to this machine
     pub async fn read_bytes(
         &self,
         address: ChunkAddress,
         downloaded_file_path: Option<PathBuf>,
-        first_chunk: Option<Chunk>,
+        data_map_chunk: Option<Chunk>,
         show_holders: bool,
         batch_size: usize,
     ) -> Result<Option<Bytes>> {
-        let chunk = if let Some(chunk) = first_chunk {
+        let chunk = if let Some(chunk) = data_map_chunk {
             info!("Downloading via supplied local datamap");
             chunk
         } else {
@@ -193,7 +191,7 @@ impl FilesApi {
         }
 
         Ok((
-            head_address,
+            ChunkAddress::new(head_address),
             data_map_chunk.map(|c| c.value),
             file_size,
             chunks_paths,
@@ -279,9 +277,7 @@ impl FilesApi {
                 .await?;
         }
 
-        Ok(NetworkAddress::ChunkAddress(ChunkAddress::new(
-            head_address,
-        )))
+        Ok(NetworkAddress::ChunkAddress(head_address))
     }
 
     // Gets and decrypts chunks from the network using nothing else but the data map.
