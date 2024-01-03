@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704269421331,
+  "lastUpdate": 1704269561902,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fcfd254ba4c123d1a694c54d543a031c7045c270",
-          "message": "fix(ci): disable `CARGO_TARGET_DIR` to speedup build time",
-          "timestamp": "2023-09-02T06:16:57Z",
-          "tree_id": "0ea67ad5b4b3d8425cebd376d905cb29ed8252ff",
-          "url": "https://github.com/maidsafe/safe_network/commit/fcfd254ba4c123d1a694c54d543a031c7045c270"
-        },
-        "date": 1693642478824,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 74.24,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "david.irvine@maidsafe.net",
             "name": "David Irvine",
             "username": "dirvine"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "adc48868750014c0a6fac91311a7b202439587d0",
+          "message": "chore: no more max_records cap",
+          "timestamp": "2024-01-03T07:24:12Z",
+          "tree_id": "f2d3f52ede0bf0d8f3477c261e2bfce5be63fce6",
+          "url": "https://github.com/maidsafe/safe_network/commit/adc48868750014c0a6fac91311a7b202439587d0"
+        },
+        "date": 1704269561341,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 43,
             "unit": "MB"
           }
         ]
