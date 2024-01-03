@@ -208,8 +208,21 @@ impl LocalWallet {
         self.watchonly_wallet.balance()
     }
 
-    pub fn sign(&self, msg: &[u8]) -> bls::Signature {
-        self.key.sign(msg)
+    pub fn sign(
+        &self,
+        spends: impl IntoIterator<Item = (Spend, DerivationIndex)>,
+    ) -> BTreeSet<SignedSpend> {
+        spends
+            .into_iter()
+            .map(|(spend, dindex)| {
+                let derived_sk = self.key.derive_key(&dindex);
+                let derived_key_sig = derived_sk.sign(&spend.to_bytes());
+                SignedSpend {
+                    spend,
+                    derived_key_sig,
+                }
+            })
+            .collect()
     }
 
     /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
@@ -218,7 +231,7 @@ impl LocalWallet {
     pub fn available_cash_notes(
         &mut self,
     ) -> Result<(
-        Vec<(CashNote, Option<DerivedSecretKey>)>,
+        Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
         WalletExclusiveAccess,
     )> {
         trace!("Trying to lock wallet to get available cash_notes...");
@@ -234,7 +247,11 @@ impl LocalWallet {
             let held_cash_note = load_created_cash_note(id, &wallet_dir);
             if let Some(cash_note) = held_cash_note {
                 if let Ok(derived_key) = cash_note.derived_key(&self.key) {
-                    available_cash_notes.push((cash_note.clone(), Some(derived_key)));
+                    available_cash_notes.push((
+                        cash_note.clone(),
+                        Some(derived_key),
+                        cash_note.derivation_index,
+                    ));
                 } else {
                     warn!(
                         "Skipping CashNote {:?} because we don't have the key to spend it",
@@ -258,7 +275,7 @@ impl LocalWallet {
         &mut self,
         to: Vec<(NanoTokens, MainPubkey)>,
         reason_hash: Option<Hash>,
-    ) -> Result<BTreeSet<Spend>> {
+    ) -> Result<BTreeSet<(Spend, DerivationIndex)>> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
@@ -277,7 +294,7 @@ impl LocalWallet {
         let wallet_dir = self.watchonly_wallet.wallet_dir().to_path_buf();
         for (id, _token) in self.watchonly_wallet.available_cash_notes().iter() {
             if let Some(cash_note) = load_created_cash_note(id, &wallet_dir) {
-                available_cash_notes.push((cash_note.clone(), None));
+                available_cash_notes.push((cash_note.clone(), None, cash_note.derivation_index));
             } else {
                 warn!("Skipping CashNote {:?} because we don't have it", id);
             }

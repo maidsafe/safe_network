@@ -25,7 +25,7 @@ pub type InputSrcTx = Transaction;
 pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx)>,
+    input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
     output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
 }
 
@@ -36,9 +36,12 @@ impl TransactionBuilder {
         input: Input,
         derived_key: Option<DerivedSecretKey>,
         input_src_tx: InputSrcTx,
+        derivation_index: DerivationIndex,
     ) -> Self {
-        self.input_details
-            .insert(*input.unique_pubkey(), (derived_key, input_src_tx));
+        self.input_details.insert(
+            *input.unique_pubkey(),
+            (derived_key, input_src_tx, derivation_index),
+        );
         self.inputs.push(input);
         self
     }
@@ -46,10 +49,10 @@ impl TransactionBuilder {
     /// Add an input given an iterator over the Input, the input's derived_key and the input's src transaction
     pub fn add_inputs(
         mut self,
-        inputs: impl IntoIterator<Item = (Input, Option<DerivedSecretKey>, InputSrcTx)>,
+        inputs: impl IntoIterator<Item = (Input, Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
     ) -> Self {
-        for (input, derived_key, input_src_tx) in inputs.into_iter() {
-            self = self.add_input(input, derived_key, input_src_tx);
+        for (input, derived_key, input_src_tx, derivation_index) in inputs.into_iter() {
+            self = self.add_input(input, derived_key, input_src_tx, derivation_index);
         }
         self
     }
@@ -94,7 +97,7 @@ impl TransactionBuilder {
         };
         let mut signed_spends = BTreeSet::new();
         for input in &spent_tx.inputs {
-            if let Some((Some(derived_key), input_src_tx)) =
+            if let Some((Some(derived_key), input_src_tx, _)) =
                 self.input_details.get(&input.unique_pubkey)
             {
                 let spend = Spend {
@@ -125,14 +128,16 @@ impl TransactionBuilder {
         self,
         reason: Hash,
         network_royalties: Vec<DerivationIndex>,
-    ) -> Result<BTreeSet<Spend>> {
+    ) -> Result<BTreeSet<(Spend, DerivationIndex)>> {
         let spent_tx = Transaction {
             inputs: self.inputs,
             outputs: self.outputs,
         };
         let mut spends = BTreeSet::new();
         for input in &spent_tx.inputs {
-            if let Some((_, input_src_tx)) = self.input_details.get(&input.unique_pubkey) {
+            if let Some((_, input_src_tx, derivation_index)) =
+                self.input_details.get(&input.unique_pubkey)
+            {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
                     spent_tx: spent_tx.clone(),
@@ -141,7 +146,7 @@ impl TransactionBuilder {
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),
                 };
-                spends.insert(spend);
+                spends.insert((spend, *derivation_index));
             }
         }
 
