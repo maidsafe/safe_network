@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704269565676,
+  "lastUpdate": 1704289259391,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5dbc914b07a359570b0def3173398a9f243ea0ec",
-          "message": "chore(node): validate payment amount is enough before trying to validate dbc spend",
-          "timestamp": "2023-09-04T11:38:19Z",
-          "tree_id": "d38a1818217afebad7419d19d12680ad0cfa63f1",
-          "url": "https://github.com/maidsafe/safe_network/commit/5dbc914b07a359570b0def3173398a9f243ea0ec"
-        },
-        "date": 1693832009254,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1118714192892164,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.46914575511264217,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.983197679869744,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 38.49071465509669,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdd3c054785d43c47b70521352ccebbc544c8491",
+          "message": "fix(cli): write datamap to metadata\n\nThis should allow datamaps to be written to disk even if we restart uploads",
+          "timestamp": "2024-01-03T13:04:53Z",
+          "tree_id": "d6d2d57a80ba53a3c2f7889eccc57f2135e916cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdd3c054785d43c47b70521352ccebbc544c8491"
+        },
+        "date": 1704289256641,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6407856510877374,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0795376479520657,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.455987514494616,
             "unit": "MiB/s"
           }
         ]
