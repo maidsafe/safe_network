@@ -215,12 +215,13 @@ async fn upload_files(
                 println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
             }
             for (file_name, addr) in chunk_manager.verified_files() {
+                let hex_addr = addr.to_hex();
                 if let Some(file_name) = file_name.to_str() {
-                    println!("\"{file_name}\" {addr:?}");
-                    info!("Uploaded {file_name} to {addr:?}");
+                    println!("\"{file_name}\" {hex_addr}");
+                    info!("Uploaded {file_name} to {hex_addr}");
                 } else {
-                    println!("\"{file_name:?}\" {addr:?}");
-                    info!("Uploaded {file_name:?} to {addr:?}");
+                    println!("\"{file_name:?}\" {hex_addr}");
+                    info!("Uploaded {file_name:?} to {hex_addr}");
                 }
             }
             return Ok(());
