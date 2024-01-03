@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.90](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.89...sn_cli-v0.86.90) - 2024-01-03
+
+### Other
+- *(cli)* print the datamap's entire hex addr
+
 ## [0.86.89](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.88...sn_cli-v0.86.89) - 2024-01-03
 
 ### Added
