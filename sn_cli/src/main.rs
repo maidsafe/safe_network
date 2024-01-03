@@ -76,7 +76,8 @@ async fn main() -> Result<()> {
         | WalletCmds::Balance { .. }
         | WalletCmds::Deposit { .. }
         | WalletCmds::Create { .. }
-        | WalletCmds::Transaction { .. } = cmds
+        | WalletCmds::Transaction { .. }
+        | WalletCmds::Sign { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
