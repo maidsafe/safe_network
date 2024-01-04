@@ -128,7 +128,11 @@ impl TransactionBuilder {
         self,
         reason: Hash,
         network_royalties: Vec<DerivationIndex>,
-    ) -> Result<BTreeSet<(Spend, DerivationIndex)>> {
+    ) -> Result<(
+        BTreeSet<(Spend, DerivationIndex)>,
+        Transaction,
+        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    )> {
         let spent_tx = Transaction {
             inputs: self.inputs,
             outputs: self.outputs,
@@ -150,7 +154,7 @@ impl TransactionBuilder {
             }
         }
 
-        Ok(spends)
+        Ok((spends, spent_tx, self.output_details))
     }
 }
 
