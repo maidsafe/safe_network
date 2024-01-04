@@ -291,6 +291,12 @@ async fn upload_files(
             // log uploaded file information
             println!("**************************************");
             println!("*          Uploaded Files            *");
+            if !make_data_public {
+                println!("*                                    *");
+                println!("*  These are not public by default.  *");
+                println!("*     Reupload with `-p` option      *");
+                println!("*      to publish the datamaps.      *");
+            }
             println!("**************************************");
             for (file_name, addr) in chunk_manager.verified_files() {
                 let hex_addr = addr.to_hex();
