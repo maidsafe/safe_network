@@ -31,7 +31,7 @@ pub use self::{
         FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
     },
     register::ClientRegister,
-    wallet::{send, WalletClient},
+    wallet::{broadcast_signed_spends, send, WalletClient},
 };
 
 use self::event::ClientEventsChannel;
