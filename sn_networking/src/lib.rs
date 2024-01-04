@@ -522,39 +522,6 @@ impl Network {
         }).await
     }
 
-    /// Put `Record` to the specific node (only used for upload chunk to the choosen payee)
-    /// Optionally verify the record is stored after putting it to network
-    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
-    pub async fn put_record_to(
-        &self,
-        payee: PeerId,
-        record: Record,
-        cfg: &PutRecordCfg,
-    ) -> Result<()> {
-        let pretty_key = PrettyPrintRecordKey::from(&record.key);
-
-        backoff::future::retry(ExponentialBackoff{
-            max_elapsed_time: Some(MAX_PUT_RETRY_DURATION),
-            ..Default::default()
-        }, || async {
-
-            info!(
-                "Attempting to PUT record with key: {pretty_key:?} to {payee:?}, with cfg {cfg:?}, retrying via backoff..."
-            );
-            self.put_record_to_once(payee, record.clone(), cfg).await.map_err(|err|
-            {
-                warn!("Failed to PUT record with key: {pretty_key:?} to {payee:?} (retry via backoff) with error: {err:?}");
-
-                if cfg.re_attempt {
-                    BackoffError::Transient { err, retry_after: None }
-                } else {
-                    BackoffError::Permanent(err)
-                }
-
-            })
-        }).await
-    }
-
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(&record_key);
@@ -566,11 +533,21 @@ impl Network {
 
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::PutRecord {
-            record: record.clone(),
-            sender,
-            quorum: cfg.put_quorum,
-        })?;
+        if let Some(put_record_to_peers) = &cfg.use_put_record_to {
+            self.send_swarm_cmd(SwarmCmd::PutRecordTo {
+                peers: put_record_to_peers.clone(),
+                record: record.clone(),
+                sender,
+                quorum: cfg.put_quorum,
+            })?;
+        } else {
+            self.send_swarm_cmd(SwarmCmd::PutRecord {
+                record: record.clone(),
+                sender,
+                quorum: cfg.put_quorum,
+            })?;
+        }
+
         let response = receiver.await?;
 
         if let Some((verification_kind, get_cfg)) = &cfg.verification {
@@ -601,50 +578,6 @@ impl Network {
                     .await?;
             }
         }
-
-        response
-    }
-
-    // Put record to the specific node directly.
-    // The caller shall be responsible for re-attempts in case of error.
-    async fn put_record_to_once(
-        &self,
-        payee: PeerId,
-        record: Record,
-        cfg: &PutRecordCfg,
-    ) -> Result<()> {
-        let record_key = record.key.clone();
-        let pretty_key = PrettyPrintRecordKey::from(&record_key);
-        info!(
-            "Putting record of {} - length {:?} to {payee:?}",
-            pretty_key,
-            record.value.len()
-        );
-
-        // Waiting for a response to avoid flushing to network too quick that causing choke
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::PutRecordTo {
-            payee,
-            record: record.clone(),
-            sender,
-            quorum: cfg.put_quorum,
-        })?;
-        let response = receiver.await?;
-
-        if let Some((_record_kind, get_cfg)) = &cfg.verification {
-            // Generate a random duration between MIN_WAIT_BEFORE_READING_A_PUT and MAX_WAIT_BEFORE_READING_A_PUT
-            let wait_duration = rand::thread_rng()
-                .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
-            // Small wait before we attempt to verify.
-            // There will be `re-attempts` to be carried out within the later step anyway.
-            tokio::time::sleep(wait_duration).await;
-            debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
-
-            // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record.key.clone(), get_cfg)
-                .await?;
-        }
-
         response
     }
 

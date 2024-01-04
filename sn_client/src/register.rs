@@ -398,6 +398,7 @@ impl ClientRegister {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
+            use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
 
