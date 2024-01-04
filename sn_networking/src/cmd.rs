@@ -123,7 +123,7 @@ pub enum SwarmCmd {
     },
     /// Put record to specific node
     PutRecordTo {
-        payee: PeerId,
+        peers: Vec<PeerId>,
         record: Record,
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
@@ -187,10 +187,10 @@ impl Debug for SwarmCmd {
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
-            SwarmCmd::PutRecordTo { payee, record, .. } => {
+            SwarmCmd::PutRecordTo { peers, record, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::PutRecordTo {{ payee: {payee:?}, key: {:?} }}",
+                    "SwarmCmd::PutRecordTo {{ peers: {peers:?}, key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
@@ -456,22 +456,23 @@ impl SwarmDriver {
                 }
             }
             SwarmCmd::PutRecordTo {
-                payee,
+                peers,
                 record,
                 sender,
                 quorum,
             } => {
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
-                    "Putting record {record_key:?} sized: {:?} to {payee:?}",
+                    "Putting record {record_key:?} sized: {:?} to {peers:?}",
                     record.value.len(),
                 );
+                let peers_count = peers.len();
                 let request_id = self.swarm.behaviour_mut().kademlia.put_record_to(
                     record,
-                    vec![payee].into_iter(),
+                    peers.into_iter(),
                     quorum,
                 );
-                trace!("Sent record {record_key:?} to {payee:?}. Request id: {request_id:?}");
+                trace!("Sent record {record_key:?} to {peers_count:?} peers. Request id: {request_id:?}");
 
                 if let Err(err) = sender.send(Ok(())) {
                     error!("Could not send response to PutRecordTo cmd: {:?}", err);

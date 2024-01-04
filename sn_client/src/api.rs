@@ -426,9 +426,10 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
             re_attempt: true,
+            use_put_record_to: Some(vec![payee]),
             verification,
         };
-        Ok(self.network.put_record_to(payee, record, &put_cfg).await?)
+        Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
     /// Retrieve a `Chunk` from the kad network.
@@ -538,6 +539,7 @@ impl Client {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
+            use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
