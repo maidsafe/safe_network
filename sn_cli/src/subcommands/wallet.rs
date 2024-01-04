@@ -16,11 +16,11 @@ use color_eyre::{
 use sn_client::{Client, ClientEvent, Error as ClientError};
 use sn_transfers::{
     CashNoteRedemption, DerivationIndex, Error as TransferError, LocalWallet, MainPubkey,
-    MainSecretKey, NanoTokens, Spend, SpendAddress, Transfer, UniquePubkey, WalletError,
-    WatchOnlyWallet, GENESIS_CASHNOTE,
+    MainSecretKey, NanoTokens, SignedSpend, SpendAddress, Transfer, UniquePubkey, UnsignedTransfer,
+    WalletError, WatchOnlyWallet, GENESIS_CASHNOTE,
 };
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     io::Read,
     path::{Path, PathBuf},
     str::FromStr,
@@ -108,7 +108,17 @@ pub enum WalletCmds {
         #[clap(name = "tx")]
         tx: String,
     },
-    /// Receive a transfer created by the 'send' command.
+    /// Broadcast a transaction that was signed offline.
+    ///
+    /// This command will create and encrypt the transfer for the recipient.
+    /// This encrypted transfer can then be shared with the recipient, who can then
+    /// use the 'receive' command to claim the funds.
+    Broadcast {
+        /// Hex-encoded signed transaction.
+        #[clap(name = "signed_tx")]
+        signed_tx: String,
+    },
+    /// Receive a transfer created by the 'send' or 'broadcast' command.
     Receive {
         /// Read the encrypted transfer from a file.
         #[clap(long, default_value = "false")]
@@ -241,6 +251,9 @@ pub(crate) async fn wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await,
+        WalletCmds::Broadcast { signed_tx } => {
+            broadcast_signed_spends(signed_tx, client, root_dir, verify_store).await
+        }
         WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await,
         WalletCmds::ReceiveOnline { pk, path } => {
@@ -459,11 +472,11 @@ fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> Result
         }
     };
 
-    let unsigned_spends = wallet.build_unsigned_transaction(vec![(amount, to)], None)?;
+    let unsigned_transfer = wallet.build_unsigned_transaction(vec![(amount, to)], None)?;
 
     println!(
         "The unsigned transaction has been successfully created:\n\n{}\n",
-        hex::encode(rmp_serde::to_vec(&unsigned_spends)?)
+        hex::encode(rmp_serde::to_vec(&unsigned_transfer)?)
     );
     println!("Please copy the above text, sign it offline with 'wallet sign' cmd, and then use the signed transaction to broadcast it with 'wallet broadcast' cmd.");
 
@@ -472,12 +485,11 @@ fn build_unsigned_transaction(amount: &str, to: &str, root_dir: &Path) -> Result
 
 fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
-    let unsigned_spends: BTreeSet<(Spend, DerivationIndex)> =
-        rmp_serde::from_slice(&hex::decode(tx)?)?;
+    let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
     println!("The unsigned transaction has been successfully decoded:");
     let mut spent_tx = None;
-    for (i, (spend, _)) in unsigned_spends.iter().enumerate() {
+    for (i, (spend, _)) in unsigned_transfer.spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", spend.unique_pubkey.to_hex());
         println!("\tAmount: {}", spend.token);
@@ -513,15 +525,105 @@ fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
     }
 
     println!("Signing the transaction with local hot-wallet...");
-    let signed_spends = wallet.sign(unsigned_spends);
+    let signed_spends = wallet.sign(unsigned_transfer.spends);
+
+    for signed_spend in signed_spends.iter() {
+        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
+            bail!("Signature or transaction generated is invalid: {err:?}");
+        }
+    }
 
     println!(
         "The transaction has been successfully signed:\n\n{}\n",
-        hex::encode(rmp_serde::to_vec(&signed_spends)?)
+        hex::encode(rmp_serde::to_vec(&(
+            &signed_spends,
+            unsigned_transfer.output_details,
+            unsigned_transfer.change_id
+        ))?)
     );
     println!(
         "Please copy the above text, and broadcast it to the network with 'wallet broadcast' cmd."
     );
+
+    Ok(())
+}
+
+async fn broadcast_signed_spends(
+    signed_tx: String,
+    client: &Client,
+    root_dir: &Path,
+    verify_store: bool,
+) -> Result<()> {
+    let wallet = LocalWallet::load_from(root_dir)?;
+    let (signed_spends, output_details, change_id): (
+        BTreeSet<SignedSpend>,
+        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        UniquePubkey,
+    ) = rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
+
+    println!("The signed transaction has been successfully decoded:");
+    let mut spent_tx = None;
+    for (i, signed_spend) in signed_spends.iter().enumerate() {
+        println!("\nSpending input #{i}:");
+        println!("\tKey: {}", signed_spend.unique_pubkey().to_hex());
+        println!("\tAmount: {}", signed_spend.token());
+        let linked_spent_tx = signed_spend.spent_tx();
+        if let Some(ref tx) = spent_tx {
+            if tx != &linked_spent_tx {
+                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
+            }
+        } else {
+            spent_tx = Some(linked_spent_tx);
+        }
+
+        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
+            bail!("Transaction is invalid: {err:?}");
+        }
+    }
+
+    let spent_tx = if let Some(tx) = spent_tx {
+        for (i, output) in tx.outputs.iter().enumerate() {
+            println!("\nOutput #{i}:");
+            println!("\tKey: {}", output.unique_pubkey.to_hex());
+            println!("\tAmount: {}", output.amount);
+        }
+        tx
+    } else {
+        bail!("Transaction is corrupted, no transaction information found.");
+    };
+
+    use dialoguer::Confirm;
+
+    println!("\n** Please make sure the above information is correct before broadcasting it. **\n");
+    let confirmation = Confirm::new()
+        .with_prompt("Do you want to broadcast the above transaction?")
+        .interact()?;
+
+    if !confirmation {
+        println!("Transaction was not broadcasted.");
+        return Ok(());
+    }
+
+    println!("Broadcasting the transaction to the network...");
+    let cash_note = sn_client::broadcast_signed_spends(
+        wallet,
+        client,
+        signed_spends,
+        spent_tx,
+        change_id,
+        output_details,
+        verify_store,
+    )
+    .await?;
+
+    println!("Transaction broadcasted!.");
+    let wallet = LocalWallet::load_from(root_dir)?;
+    println!("New wallet balance is {}.", wallet.balance());
+
+    let transfer = Transfer::transfer_from_cash_note(&cash_note)?.to_hex()?;
+    println!("The encrypted transfer has been successfully created.");
+    println!("Please share this to the recipient:\n\n{transfer}\n");
+    println!("The recipient can then use the 'receive' command to claim the funds.");
 
     Ok(())
 }
@@ -558,7 +660,10 @@ async fn receive(transfer: String, is_file: bool, client: &Client, root_dir: &Pa
     wallet.deposit_and_store_to_disk(&cashnotes)?;
     let new_balance = wallet.balance();
 
-    println!("Successfully stored cash_note to wallet dir. \nOld balance: {old_balance}\nNew balance: {new_balance}");
+    println!("Successfully stored cash_note to wallet dir.");
+    println!("Old balance: {old_balance}");
+    println!("New balance: {new_balance}");
+
     Ok(())
 }
 
