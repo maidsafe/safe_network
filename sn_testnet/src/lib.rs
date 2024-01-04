@@ -233,6 +233,7 @@ impl Testnet {
 
         let rpc_address = "127.0.0.1:12001".parse()?;
         let mut launch_args = self.get_launch_args("safenode-1", Some(rpc_address), node_args)?;
+        launch_args.push("--first".to_string());
 
         let genesis_port: u16 = 11101;
         launch_args.push("--port".to_string());
@@ -443,6 +444,7 @@ mod test {
                     rpc_address.to_string(),
                     "--log-format".to_string(),
                     "json".to_string(),
+                    "--first".to_string(),
                     "--port".to_string(),
                     "11101".to_string(),
                 ]),
@@ -516,6 +518,7 @@ mod test {
                     rpc_address.to_string(),
                     "--log-format".to_string(),
                     "json".to_string(),
+                    "--first".to_string(),
                     "--port".to_string(),
                     "11101".to_string(),
                 ]),
