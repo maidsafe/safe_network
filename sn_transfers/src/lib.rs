@@ -23,7 +23,7 @@ pub use cashnotes::{
     SignedSpend, Spend, SpendAddress, Transaction, UniquePubkey,
 };
 pub use error::{Error, Result};
-pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
+pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer, UnsignedTransfer};
 
 /// Utilities exposed
 pub use genesis::{

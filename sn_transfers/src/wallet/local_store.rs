@@ -18,10 +18,13 @@ use super::{
 
 use crate::{
     calculate_royalties_fee,
-    transfers::{create_offline_transfer, create_unsigned_transaction, OfflineTransfer},
+    transfers::{
+        create_offline_transfer, create_unsigned_transaction, offline_transfer_from_transaction,
+        OfflineTransfer, UnsignedTransfer,
+    },
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, SignedSpend, Spend, Transfer, UniquePubkey, WalletError,
-    NETWORK_ROYALTIES_PK,
+    MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
+    WalletError, NETWORK_ROYALTIES_PK,
 };
 use xor_name::XorName;
 
@@ -275,7 +278,7 @@ impl LocalWallet {
         &mut self,
         to: Vec<(NanoTokens, MainPubkey)>,
         reason_hash: Option<Hash>,
-    ) -> Result<BTreeSet<(Spend, DerivationIndex)>> {
+    ) -> Result<UnsignedTransfer> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
@@ -306,7 +309,7 @@ impl LocalWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let unsigned_spends = create_unsigned_transaction(
+        let unsigned_transfer = create_unsigned_transaction(
             available_cash_notes,
             to_unique_keys,
             self.address(),
@@ -316,7 +319,7 @@ impl LocalWallet {
         trace!("Releasing wallet lock"); // by dropping exclusive_access
         std::mem::drop(exclusive_access);
 
-        Ok(unsigned_spends)
+        Ok(unsigned_transfer)
     }
 
     /// Make a transfer and return all created cash_notes
@@ -348,6 +351,31 @@ impl LocalWallet {
         )?;
 
         let created_cash_notes = transfer.created_cash_notes.clone();
+
+        self.update_local_wallet(transfer, exclusive_access)?;
+
+        trace!("Releasing wallet lock"); // by dropping _exclusive_access
+        Ok(created_cash_notes)
+    }
+
+    /// Prepare a signed transaction in local wallet and return all created cash_notes
+    pub fn prepare_signed_transfer(
+        &mut self,
+        signed_spends: BTreeSet<SignedSpend>,
+        tx: Transaction,
+        change_id: UniquePubkey,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    ) -> Result<Vec<CashNote>> {
+        let transfer =
+            offline_transfer_from_transaction(signed_spends, tx, change_id, output_details)?;
+
+        let created_cash_notes = transfer.created_cash_notes.clone();
+
+        trace!("Trying to lock wallet to get available cash_notes...");
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
 
         self.update_local_wallet(transfer, exclusive_access)?;
 
