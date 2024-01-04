@@ -1,4 +1,4 @@
-// Copyright (C) 2023 MaidSafe.net limited.
+// Copyright (C) 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -91,6 +91,8 @@ impl Launcher for LocalSafeLauncher {
         if let Some(multiaddr) = genesis_multiaddr {
             args.push("--peer".to_string());
             args.push(multiaddr.to_string());
+        } else {
+            args.push("--first".to_string())
         }
         args.push("--local".to_string());
         args.push("--port".to_string());
