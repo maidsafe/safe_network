@@ -631,7 +631,7 @@ impl Network {
         })?;
         let response = receiver.await?;
 
-        if let Some((_record_kind, get_cfg)) = &cfg.verification {
+        if let Some((verification_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MIN_WAIT_BEFORE_READING_A_PUT and MAX_WAIT_BEFORE_READING_A_PUT
             let wait_duration = rand::thread_rng()
                 .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
@@ -641,8 +641,23 @@ impl Network {
             debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
 
             // Verify the record is stored, requiring re-attempts
-            self.get_record_from_network(record.key.clone(), get_cfg)
+            if let VerificationKind::ChunkProof {
+                expected_proof,
+                nonce,
+            } = verification_kind
+            {
+                self.verify_chunk_existence(
+                    NetworkAddress::from_record_key(&record_key),
+                    *nonce,
+                    expected_proof.clone(),
+                    get_cfg.get_quorum,
+                    get_cfg.re_attempt,
+                )
                 .await?;
+            } else {
+                self.get_record_from_network(record.key.clone(), get_cfg)
+                    .await?;
+            }
         }
 
         response
