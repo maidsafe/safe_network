@@ -17,7 +17,7 @@ use libp2p::Multiaddr;
 use sn_client::Client;
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
-use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
     TransferNotifsFilterRequest,
@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
             log_cash_notes,
             peers,
         } => {
-            let bootstrap_peers = parse_peers_args(peers).await?;
+            let bootstrap_peers = get_peers_from_args(peers).await?;
             let bootstrap_peers = if bootstrap_peers.is_empty() {
                 // empty vec is returned if `local-discovery` flag is provided
                 None

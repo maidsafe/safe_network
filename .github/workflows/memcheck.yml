@@ -43,7 +43,7 @@ jobs:
       - name: Start a node instance that does not undergo churn
         run: |
           mkdir -p $BOOTSTRAP_NODE_DATA_PATH
-          ./target/release/safenode \
+          ./target/release/safenode --first \
             --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local &
           sleep 10
         env:
@@ -54,6 +54,10 @@ jobs:
           safe_peers=$(rg "listening on \".+\"" $BOOTSTRAP_NODE_DATA_PATH -u | \
             rg '/ip4.*$' -m1 -o | rg '"' -r '')
           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
+
+      - name: Set CHURN_TEST_START_PORT
+        run: |
+          echo "CHURN_TEST_START_PORT=12001" >> $GITHUB_ENV
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -71,6 +75,7 @@ jobs:
           platform: ubuntu-latest
           set-safe-peers: false
           build: true
+          join: true
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
@@ -79,7 +84,13 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet.txt
+          echo "Obtaining address for use with the faucet..."
+          address=$(cargo run \
+            --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1)
+          echo "Sending tokens to the faucet at $address"
+          cargo run \
+            --bin faucet --release -- \
+            --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt | tail -n 1 > transfer_hex
           cat transfer_hex
