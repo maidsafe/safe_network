@@ -158,6 +158,9 @@ pub struct PutRecordCfg {
     pub put_quorum: Quorum,
     /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
     pub re_attempt: bool,
+    /// Use the `kad::put_record_to` to PUT the record only to the specified peers. If this option is set to None, we
+    /// will be using `kad::put_record` which would PUT the record to all the closest members of the record.
+    pub use_put_record_to: Option<Vec<PeerId>>,
     /// Enables verification after writing. The VerificationKind is used to determine the method to use.
     pub verification: Option<(VerificationKind, GetRecordCfg)>,
 }
