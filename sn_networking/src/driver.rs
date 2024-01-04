@@ -565,6 +565,7 @@ impl NetworkBuilder {
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
             live_connected_peers: Default::default(),
+            replicated_in_range_peers: Default::default(),
         };
 
         Ok((
@@ -614,6 +615,9 @@ pub struct SwarmDriver {
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
     pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
+    // Peers within the range that we have repliated to,
+    // records the first time inserted into the map.
+    pub(crate) replicated_in_range_peers: HashMap<PeerId, Option<Instant>>,
 }
 
 impl SwarmDriver {

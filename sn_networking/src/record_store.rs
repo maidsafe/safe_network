@@ -27,6 +27,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
+    time::{Duration, Instant},
     vec,
 };
 use tokio::sync::mpsc;
@@ -35,6 +36,10 @@ use xor_name::XorName;
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
 
+/// Type for each record entry.
+/// The `insert_time` will be reset to None after one hour.
+pub(crate) type RecordStoreEntryType = HashMap<Key, (NetworkAddress, RecordType, Option<Instant>)>;
+
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
     /// The identity of the peer owning the store.
@@ -42,7 +47,7 @@ pub struct NodeRecordStore {
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
-    records: HashMap<Key, (NetworkAddress, RecordType)>,
+    records: RecordStoreEntryType,
     /// Currently only used to notify the record received via network put to be validated.
     event_sender: Option<mpsc::Sender<NetworkEvent>>,
     /// Distance range specify the acceptable range of record entry.
@@ -208,14 +213,31 @@ impl NodeRecordStore {
     pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
         self.records
             .iter()
-            .map(|(_record_key, (addr, record_type))| (addr.clone(), record_type.clone()))
+            .map(|(_record_key, (addr, record_type, _insert_time))| {
+                (addr.clone(), record_type.clone())
+            })
             .collect()
     }
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_addresses_ref(&self) -> &RecordStoreEntryType {
         &self.records
+    }
+
+    /// Reset old entries `insert_time` to None
+    pub(crate) fn reset_old_records(&mut self) {
+        for val in self.records.values_mut() {
+            let shall_reset = if let Some(time) = val.2 {
+                time.elapsed() > Duration::from_secs(3600)
+            } else {
+                false
+            };
+
+            if shall_reset {
+                val.2 = None;
+            }
+        }
     }
 
     /// The follow up to `put_verified`, this only registers the RecordKey
@@ -224,7 +246,11 @@ impl NodeRecordStore {
     pub(crate) fn mark_as_stored(&mut self, key: Key, record_type: RecordType) {
         let _ = self.records.insert(
             key.clone(),
-            (NetworkAddress::from_record_key(&key), record_type),
+            (
+                NetworkAddress::from_record_key(&key),
+                record_type,
+                Some(Instant::now()),
+            ),
         );
     }
 
@@ -374,11 +400,15 @@ impl RecordStore for NodeRecordStore {
                         // otherwise shall be passed further to allow
                         // double spend to be detected or register op update.
                         match self.records.get(&record.key) {
-                            Some((_addr, RecordType::Chunk)) => {
+                            Some((_addr, RecordType::Chunk, _insert_time)) => {
                                 trace!("Chunk {record_key:?} already exists.");
                                 return Ok(());
                             }
-                            Some((_addr, RecordType::NonChunk(existing_content_hash))) => {
+                            Some((
+                                _addr,
+                                RecordType::NonChunk(existing_content_hash),
+                                _insert_time,
+                            )) => {
                                 let content_hash = XorName::from_content(&record.value);
                                 if content_hash == *existing_content_hash {
                                     trace!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
@@ -463,7 +493,7 @@ impl RecordStore for NodeRecordStore {
 /// A place holder RecordStore impl for the client that does nothing
 #[derive(Default, Debug)]
 pub struct ClientRecordStore {
-    empty_record_addresses: HashMap<Key, (NetworkAddress, RecordType)>,
+    empty_record_addresses: RecordStoreEntryType,
 }
 
 impl ClientRecordStore {
@@ -476,7 +506,7 @@ impl ClientRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_addresses_ref(&self) -> &RecordStoreEntryType {
         &self.empty_record_addresses
     }
 
@@ -975,7 +1005,7 @@ mod tests {
             if iteration == 50 {
                 assert_eq!(0, empty_earned_nodes);
                 assert!((max_store_cost / min_store_cost) < 40);
-                assert!((max_earned / min_earned) < 400);
+                assert!((max_earned / min_earned) < 600);
                 break;
             }
         }

@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
-use crate::record_store::{ClientRecordStore, NodeRecordStore};
+use crate::record_store::{ClientRecordStore, NodeRecordStore, RecordStoreEntryType};
 use libp2p::kad::{
     store::{RecordStore, Result},
     KBucketDistance as Distance, ProviderRecord, Record, RecordKey,
@@ -98,10 +98,17 @@ impl UnifiedRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_addresses_ref(&self) -> &RecordStoreEntryType {
         match self {
             Self::Client(store) => store.record_addresses_ref(),
             Self::Node(store) => store.record_addresses_ref(),
+        }
+    }
+
+    pub(crate) fn reset_old_records(&mut self) {
+        match self {
+            Self::Client(_) => warn!("Calling reset_old_records at Client. This should not happen"),
+            Self::Node(store) => store.reset_old_records(),
         }
     }
 

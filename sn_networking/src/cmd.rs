@@ -19,7 +19,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{Request, Response},
+    messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -27,6 +27,7 @@ use sn_transfers::NanoTokens;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
+    time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
 use xor_name::XorName;
@@ -143,6 +144,8 @@ pub enum SwarmCmd {
         key: RecordKey,
         record_type: RecordType,
     },
+    /// Triggers interval repliation
+    TriggerIntervalReplication,
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -214,6 +217,9 @@ impl Debug for SwarmCmd {
                     "SwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
+            }
+            SwarmCmd::TriggerIntervalReplication => {
+                write!(f, "SwarmCmd::TriggerIntervalReplication")
             }
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 write!(
@@ -322,7 +328,7 @@ impl SwarmDriver {
                 let local = locally_stored_keys.get(&key);
 
                 // if we have a local value of matching record_type, we don't need to fetch it
-                if let Some((_, local_record_type)) = local {
+                if let Some((_, local_record_type, _insert_time)) = local {
                     &local_record_type != record_type
                 } else {
                     true
@@ -352,6 +358,9 @@ impl SwarmDriver {
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
+            SwarmCmd::TriggerIntervalReplication => {
+                self.try_interval_replication()?;
+            }
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only handle those non-exist and in close range keys
                 let keys_to_store = self.select_non_existent_records_for_replications(&keys);
@@ -749,5 +758,111 @@ impl SwarmDriver {
                 true
             }
         }
+    }
+
+    fn try_interval_replication(&mut self) -> Result<()> {
+        // Already contains self_peer_id
+        let mut closest_k_peers = self.get_closest_k_value_local_peers();
+
+        // remove our peer id from the calculations here:
+        let our_peer_id = *self.swarm.local_peer_id();
+        closest_k_peers.retain(|peer_id| peer_id != &our_peer_id);
+
+        // Only grab the closest nodes within the REPLICATE_RANGE
+        let replicate_targets = closest_k_peers
+            .into_iter()
+            // add some leeway to allow for divergent knowledge
+            .take(REPLICATE_RANGE)
+            .collect::<Vec<_>>();
+
+        // Remove replicated_peers that no longer within the REPLICATE_RANGE
+        self.replicated_in_range_peers
+            .retain(|peer_id, _first_time| replicate_targets.contains(peer_id));
+
+        // Reset first_time to None for old peers
+        for first_time in self.replicated_in_range_peers.values_mut() {
+            let shall_reset = if let Some(time) = first_time {
+                time.elapsed() > Duration::from_secs(3600)
+            } else {
+                false
+            };
+
+            if shall_reset {
+                *first_time = None;
+            }
+        }
+
+        // Insert new replicate target into the history record.
+        for peer_id in replicate_targets {
+            if let std::collections::hash_map::Entry::Vacant(e) =
+                self.replicated_in_range_peers.entry(peer_id)
+            {
+                e.insert(Some(Instant::now()));
+            }
+        }
+
+        self.swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .reset_old_records();
+
+        let all_records: Vec<_> = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref()
+            .values()
+            .map(|(addr, record_type, insert_time)| {
+                (addr.clone(), record_type.clone(), *insert_time)
+            })
+            .collect();
+
+        if !all_records.is_empty() {
+            debug!(
+                "Informing {} peers of our records.",
+                self.replicated_in_range_peers.len()
+            );
+            let our_address = NetworkAddress::from_peer(our_peer_id);
+            for (peer_id, first_time) in self.replicated_in_range_peers.iter() {
+                // Only replicate the records that:
+                //   1, For the first hour that a peer first became a replicate target:
+                //      replicate all records to that target
+                //   2, For the first hour that a record got inserted:
+                //      replicate that record to all targets
+                #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
+                let keys: HashMap<_, _> = all_records
+                    .iter()
+                    .filter_map(|(addr, record_type, insert_time)| {
+                        if insert_time.is_some() || first_time.is_some() {
+                            Some((addr.clone(), record_type.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                trace!(
+                    "Sending a replication list of {} keys to {peer_id:?} ",
+                    keys.len()
+                );
+                let request = Request::Cmd(Cmd::Replicate {
+                    holder: our_address.clone(),
+                    keys,
+                });
+
+                let request_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .request_response
+                    .send_request(peer_id, request);
+                trace!("Sending request {request_id:?} to peer {peer_id:?}");
+                let _ = self.pending_requests.insert(request_id, None);
+
+                trace!("Pending Requests now: {:?}", self.pending_requests.len());
+            }
+        }
+
+        Ok(())
     }
 }

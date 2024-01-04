@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
+use crate::record_store::RecordStoreEntryType;
+
 use libp2p::{
     kad::{RecordKey, K_VALUE},
     PeerId,
@@ -53,7 +55,7 @@ impl ReplicationFetcher {
         &mut self,
         holder: PeerId,
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
-        locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
+        locally_stored_keys: &RecordStoreEntryType,
     ) -> Vec<(PeerId, RecordKey)> {
         self.remove_stored_keys(locally_stored_keys);
 
@@ -176,12 +178,9 @@ impl ReplicationFetcher {
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
-    fn remove_stored_keys(
-        &mut self,
-        existing_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
-    ) {
+    fn remove_stored_keys(&mut self, existing_keys: &RecordStoreEntryType) {
         self.to_be_fetched.retain(|(key, t, _), _| {
-            if let Some((_addr, record_type)) = existing_keys.get(key) {
+            if let Some((_addr, record_type, _insert_time)) = existing_keys.get(key) {
                 // check the address only against similar record types
                 t != record_type
             } else {
