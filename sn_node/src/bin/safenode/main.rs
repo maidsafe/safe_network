@@ -333,17 +333,16 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 
 fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuard>)> {
     let logging_targets = vec![
-        // TODO: Reset to nice and clean defaults once we have a better idea of what we want
-        ("sn_networking".to_string(), Level::DEBUG),
-        ("safenode".to_string(), Level::TRACE),
-        ("sn_build_info".to_string(), Level::TRACE),
-        ("sn_logging".to_string(), Level::TRACE),
-        ("sn_node".to_string(), Level::TRACE),
-        ("sn_peers_acquisition".to_string(), Level::TRACE),
-        ("sn_protocol".to_string(), Level::TRACE),
-        ("sn_registers".to_string(), Level::TRACE),
-        ("sn_testnet".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::TRACE),
+        ("sn_networking".to_string(), Level::INFO),
+        ("safenode".to_string(), Level::DEBUG),
+        ("sn_build_info".to_string(), Level::DEBUG),
+        ("sn_logging".to_string(), Level::DEBUG),
+        ("sn_node".to_string(), Level::DEBUG),
+        ("sn_peers_acquisition".to_string(), Level::DEBUG),
+        ("sn_protocol".to_string(), Level::DEBUG),
+        ("sn_registers".to_string(), Level::DEBUG),
+        ("sn_testnet".to_string(), Level::DEBUG),
+        ("sn_transfers".to_string(), Level::DEBUG),
     ];
 
     let output_dest = match &opt.log_output_dest {
