@@ -15,7 +15,7 @@ mod signed_spend;
 mod transaction;
 mod unique_keys;
 
-pub(crate) use builder::TransactionBuilder;
+pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
 pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
