@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704383399664,
+  "lastUpdate": 1704383402223,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "54ddc7079dfae8c09f6eb76a51109af277450f95",
-          "message": "chore(node): refactor and extract out spend validation.\n\nWe also avoid exiting early if spends exist as we may have a double spend on our hands",
-          "timestamp": "2023-09-04T09:36:11Z",
-          "tree_id": "0a92966cfe2e6c5fe7fe3a87597967ee5ce6d369",
-          "url": "https://github.com/maidsafe/safe_network/commit/54ddc7079dfae8c09f6eb76a51109af277450f95"
-        },
-        "date": 1693828832543,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 925.1881,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 819,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 64,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "a84df6f763aa91704a4138019be1ba7e69a6df6b",
+          "message": "chore(node): reduce node default logging level",
+          "timestamp": "2024-01-04T15:07:46Z",
+          "tree_id": "d3c5d80230575459435f2565c5c9d9f5b4794996",
+          "url": "https://github.com/maidsafe/safe_network/commit/a84df6f763aa91704a4138019be1ba7e69a6df6b"
+        },
+        "date": 1704383401107,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 224,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 57,
             "unit": "MB"
           }
         ]
