@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+pub mod error;
+
+use crate::error::{Error, Result};
 use clap::Args;
-#[cfg(feature = "network-contacts")]
-use color_eyre::eyre::Context;
-use color_eyre::{eyre::eyre, Result};
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
 use tracing::*;
@@ -29,47 +29,65 @@ pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
 
 #[derive(Args, Debug)]
 pub struct PeersArgs {
+    /// Set to indicate this is the first node in a new network
+    ///
+    /// If this argument is used, any others will be ignored because they do not apply to the first
+    /// node.
+    #[clap(long)]
+    first: bool,
     /// Peer(s) to use for bootstrap, in a 'multiaddr' format containing the peer ID.
     ///
-    /// A multiaddr looks like '/ip4/1.2.3.4/tcp/1200/tcp/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx'
-    /// where `1.2.3.4` is the IP, `1200` is the port and the (optional) last part is the peer ID.
+    /// A multiaddr looks like
+    /// '/ip4/1.2.3.4/tcp/1200/tcp/p2p/12D3KooWRi6wF7yxWLuPSNskXc6kQ5cJ6eaymeMbCRdTnMesPgFx' where
+    /// `1.2.3.4` is the IP, `1200` is the port and the (optional) last part is the peer ID.
     ///
     /// This argument can be provided multiple times to connect to multiple peers.
     ///
-    /// Peers can also be provided by an environment variable (see below), but the
-    /// command-line argument (`--peer`) takes precedence. To pass multiple peers with the
-    /// environment variable, separate them with commas.
-    #[clap(long = "peer", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr)]
+    /// Alternatively, the `SAFE_PEERS` environment variable can provide a comma-separated peer
+    /// list.
+    ///
+    /// If both the `--peer` argument and `SAFE_PEERS` environment variables are used, the
+    /// specified peers will be combined.
+    #[clap(long = "peer", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr, conflicts_with = "first")]
     pub peers: Vec<Multiaddr>,
 
     /// Specify the URL to fetch the network contacts from.
     ///
-    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery` feature flag is
-    /// enabled.
+    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery`
+    /// feature flag is enabled.
     #[cfg(feature = "network-contacts")]
-    #[clap(long)]
+    #[clap(long, conflicts_with = "first")]
     pub network_contacts_url: Option<Url>,
 }
 
-/// Parses PeersArgs
+/// Gets the peers based on the arguments provided.
 ///
-/// The order of precedence for the bootstrap peers are `--peer` arg, `SAFE_PEERS` env variable, `local-discovery` flag
-/// and `network-contacts` flag respectively. The later ones are ignored if one of the prior option is used.
-pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
+/// If the `--first` flag is used, no peers will be provided.
+///
+/// Otherwise, peers are obtained in the following order of precedence:
+/// * The `--peer` argument.
+/// * The `SAFE_PEERS` environment variable.
+/// * Using the `local-discovery` feature, which will return an empty peer list.
+/// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
+///
+/// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
+/// currently rely on this. We will change it soon.
+pub async fn get_peers_from_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
+    if args.first {
+        return Ok(vec![]);
+    }
+
     let mut peers = if !args.peers.is_empty() {
-        info!("Using passed peers or SAFE_PEERS env variable");
+        info!("Using peers supplied with the --peer argument(s)");
         args.peers
     } else if cfg!(feature = "local-discovery") {
-        info!("No peers given. As `local-discovery` feature is enabled, we will be attempt to connect to the network using mDNS.");
+        info!("No peers given");
+        info!(
+            "The `local-discovery` feature is enabled, so peers will be discovered through mDNS."
+        );
         return Ok(vec![]);
     } else if cfg!(feature = "network-contacts") {
-        match get_network_contacts(&args).await {
-            Ok(peers) => peers,
-            Err(err) => {
-                println!("Error {err:?} while fetching bootstrap peers from Network contacts URL");
-                vec![]
-            }
-        }
+        get_network_contacts(&args).await?
     } else {
         vec![]
     };
@@ -85,9 +103,8 @@ pub async fn parse_peers_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     }
 
     if peers.is_empty() {
-        let err_str = "No peers given, 'local-discovery' and 'network-contacts' feature flags are disabled. We cannot connect to the network.";
-        error!("{err_str}");
-        return Err(color_eyre::eyre::eyre!("{err_str}"));
+        error!("Peers not obtained through any available options");
+        return Err(Error::PeersNotObtained);
     };
 
     // Randomly sort peers before we return them to avoid overly hitting any one peer
@@ -113,9 +130,7 @@ async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
         .network_contacts_url
         .clone()
         .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
-    get_bootstrap_peers_from_url(url)
-        .await
-        .wrap_err("Error while fetching bootstrap peers from Network contacts URL")
+    get_bootstrap_peers_from_url(url).await
 }
 
 /// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a (TCP) multiaddr.
@@ -138,7 +153,7 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
         return Ok(addr);
     }
 
-    Err(eyre!("invalid multiaddr or socket address"))
+    Err(Error::InvalidPeerAddr)
 }
 
 #[cfg(feature = "network-contacts")]
@@ -171,24 +186,26 @@ async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                         trace!("Successfully got bootstrap peers from URL {multi_addresses:?}");
                         return Ok(multi_addresses);
                     } else {
-                        return Err(color_eyre::eyre::eyre!(
-                            "Could not obtain a single valid multi-addr from URL {NETWORK_CONTACTS_URL}"
+                        return Err(Error::NoMultiAddrObtainedFromNetworkContacts(
+                            NETWORK_CONTACTS_URL.to_string(),
                         ));
                     }
                 } else {
                     retries += 1;
                     if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
-                        return Err(color_eyre::eyre::eyre!(
-                            "Could not GET network contacts from {NETWORK_CONTACTS_URL} after {MAX_NETWORK_CONTACTS_GET_RETRIES} retries",
+                        return Err(Error::NetworkContactsUnretrievable(
+                            NETWORK_CONTACTS_URL.to_string(),
+                            MAX_NETWORK_CONTACTS_GET_RETRIES,
                         ));
                     }
                 }
             }
-            Err(err) => {
+            Err(_) => {
                 retries += 1;
                 if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
-                    return Err(color_eyre::eyre::eyre!(
-                        "Failed to perform request to {NETWORK_CONTACTS_URL} after {MAX_NETWORK_CONTACTS_GET_RETRIES} retries due to: {err:?}"
+                    return Err(Error::NetworkContactsUnretrievable(
+                        NETWORK_CONTACTS_URL.to_string(),
+                        MAX_NETWORK_CONTACTS_GET_RETRIES,
                     ));
                 }
             }

@@ -28,7 +28,7 @@ use color_eyre::Result;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
-use sn_peers_acquisition::parse_peers_args;
+use sn_peers_acquisition::get_peers_from_args;
 use sn_transfers::bls_secret_from_hex;
 use std::path::PathBuf;
 use tracing::Level;
@@ -85,11 +85,11 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
-    let bootstrap_peers = parse_peers_args(opt.peers).await?;
+    let bootstrap_peers = get_peers_from_args(opt.peers).await?;
 
     println!(
-        "Connecting to the network with {} peers:",
-        bootstrap_peers.len()
+        "Connecting to the network with {} peers",
+        bootstrap_peers.len(),
     );
 
     let bootstrap_peers = if bootstrap_peers.is_empty() {
