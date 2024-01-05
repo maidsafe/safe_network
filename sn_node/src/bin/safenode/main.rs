@@ -250,10 +250,15 @@ You can check your reward balance by running:
             // I/O error, ignore/print the error, but continue to handle as if ctrl-c was received
             warn!("Listening to ctrl-c error: {err}");
         }
-        ctrl_tx_clone.send(NodeCtrl::Stop {
-            delay: Duration::from_secs(1),
-            cause: eyre!("Ctrl-C received!"),
-        }).await.unwrap();
+        if let Err(err) = ctrl_tx_clone
+            .send(NodeCtrl::Stop {
+                delay: Duration::from_secs(1),
+                cause: eyre!("Ctrl-C received!"),
+            })
+            .await
+        {
+            error!("Failed to send node control msg to safenode bin main thread: {err}");
+        }
     });
 
     // Start up gRPC interface if enabled by user
