@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704462850599,
+  "lastUpdate": 1704462999698,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157",
-          "message": "fix(ci): CI should fail on DoNotMerge label",
-          "timestamp": "2023-09-04T14:59:47Z",
-          "tree_id": "8b1735ba921fcf2b2da2f055b94219eb1020445a",
-          "url": "https://github.com/maidsafe/safe_network/commit/6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157"
-        },
-        "date": 1693847327260,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 79.413246,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 46,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "0d66585f1d7610a9715c8d01f162748df00c4a2d",
+          "message": "feat(safenode): print out error instead of unwrap",
+          "timestamp": "2024-01-05T13:05:42Z",
+          "tree_id": "46a0994f7d88305d902427d296f0b3b48c1640dd",
+          "url": "https://github.com/maidsafe/safe_network/commit/0d66585f1d7610a9715c8d01f162748df00c4a2d"
+        },
+        "date": 1704462998620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
