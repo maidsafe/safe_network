@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.38](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.37...sn_client-v0.99.38) - 2024-01-05
+
+### Added
+- *(network)* move the kad::put_record_to inside PutRecordCfg
+
 ## [0.99.37](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.36...sn_client-v0.99.37) - 2024-01-03
 
 ### Added
