@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.32](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.31...sn_transfers-v0.14.32) - 2024-01-05
+
+### Other
+- add clippy unwrap lint to workspace
+
 ## [0.14.31](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.30...sn_transfers-v0.14.31) - 2023-12-19
 
 ### Added
