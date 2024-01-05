@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704383405209,
+  "lastUpdate": 1704451115798,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157",
-          "message": "fix(ci): CI should fail on DoNotMerge label",
-          "timestamp": "2023-09-04T14:59:47Z",
-          "tree_id": "8b1735ba921fcf2b2da2f055b94219eb1020445a",
-          "url": "https://github.com/maidsafe/safe_network/commit/6c9e9a0c0d2c9c7e34d8b9d8142081d1901e1157"
-        },
-        "date": 1693843607545,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10543074560276107,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7411688094242022,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.498087573740515,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 41.75797396520042,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
+          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
+          "timestamp": "2024-01-05T09:58:06Z",
+          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
+        },
+        "date": 1704451113889,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6487376528245986,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0897939366313847,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 42.902854475137595,
             "unit": "MiB/s"
           }
         ]
