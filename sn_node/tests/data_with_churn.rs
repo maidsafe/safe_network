@@ -24,6 +24,7 @@ use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
+use sn_registers::Permissions;
 use sn_transfers::LocalWallet;
 use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
@@ -349,7 +350,12 @@ fn create_registers_task(
             sleep(delay).await;
 
             match client
-                .create_and_pay_for_register(meta, &mut wallet_client, true)
+                .create_and_pay_for_register(
+                    meta,
+                    &mut wallet_client,
+                    true,
+                    Permissions::new_owner_only(),
+                )
                 .await
             {
                 Ok(_) => content

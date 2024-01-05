@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use sn_client::{Client, Error, WalletClient};
-use sn_registers::RegisterAddress;
+use sn_registers::{Permissions, RegisterAddress};
 use sn_transfers::LocalWallet;
 use xor_name::XorName;
 
@@ -77,7 +77,12 @@ async fn main() -> Result<()> {
         Err(_) => {
             println!("Register '{reg_nickname}' not found, creating it at {address}");
             let (register, _cost, _royalties_fees) = client
-                .create_and_pay_for_register(meta, &mut wallet_client, true)
+                .create_and_pay_for_register(
+                    meta,
+                    &mut wallet_client,
+                    true,
+                    Permissions::new_anyone_can_write(),
+                )
                 .await?;
 
             register
