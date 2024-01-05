@@ -11,7 +11,7 @@ use safenode_proto::{NetworkInfoRequest, NodeInfoRequest};
 use tonic::Request;
 
 // this includes code generated from .proto files
-#[allow(unused_qualifications)]
+#[allow(unused_qualifications, clippy::unwrap_used)]
 mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
