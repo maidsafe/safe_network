@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704451115798,
+  "lastUpdate": 1704451271007,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0fc7af8c4a3bf0a5e158d0cc58e0e4fc42b9c7ea",
-          "message": "feat(node): print wallet usage hint",
-          "timestamp": "2023-09-04T11:54:56Z",
-          "tree_id": "35a35c3efbbb49727edfb1ced6a2d31f04fcd4c1",
-          "url": "https://github.com/maidsafe/safe_network/commit/0fc7af8c4a3bf0a5e158d0cc58e0e4fc42b9c7ea"
-        },
-        "date": 1693839173526,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 86.839294,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20394,6 +20365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/a84df6f763aa91704a4138019be1ba7e69a6df6b"
         },
         "date": 1704383398600,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
+          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
+          "timestamp": "2024-01-05T09:58:06Z",
+          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
+        },
+        "date": 1704451270630,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
