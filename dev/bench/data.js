@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704451272424,
+  "lastUpdate": 1704451274034,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34033,6 +34033,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
+          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
+          "timestamp": "2024-01-05T09:58:06Z",
+          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
+        },
+        "date": 1704451273708,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4022,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 19006,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
