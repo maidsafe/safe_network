@@ -11,11 +11,17 @@ use super::{
     error::{Error, Result},
     keys::{get_main_pubkey, store_new_pubkey},
     local_store::WalletExclusiveAccess,
-    wallet_file::{get_wallet, store_created_cash_notes, store_wallet, wallet_lockfile_name},
+    wallet_file::{
+        get_wallet, load_created_cash_note, store_created_cash_notes, store_wallet,
+        wallet_lockfile_name,
+    },
     KeyLessWallet,
 };
 
-use crate::{CashNote, MainPubkey, NanoTokens, UniquePubkey};
+use crate::{
+    transfers::create_unsigned_transfer, CashNote, DerivationIndex, Hash, MainPubkey, NanoTokens,
+    UniquePubkey, UnsignedTransfer,
+};
 use fs2::FileExt;
 use std::{
     collections::BTreeMap,
@@ -190,6 +196,54 @@ impl WatchOnlyWallet {
         self.keyless_wallet
             .payment_transactions
             .insert(name, payment);
+    }
+
+    pub fn build_unsigned_transaction(
+        &mut self,
+        to: Vec<(NanoTokens, MainPubkey)>,
+        reason_hash: Option<Hash>,
+    ) -> Result<UnsignedTransfer> {
+        let mut rng = &mut rand::rngs::OsRng;
+        // create a unique key for each output
+        let to_unique_keys: Vec<_> = to
+            .into_iter()
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .collect();
+
+        trace!("Trying to lock wallet to get available cash_notes...");
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
+
+        // get the available cash_notes
+        let mut available_cash_notes = vec![];
+        let wallet_dir = self.wallet_dir().to_path_buf();
+        for (id, _token) in self.available_cash_notes().iter() {
+            if let Some(cash_note) = load_created_cash_note(id, &wallet_dir) {
+                available_cash_notes.push((cash_note.clone(), None));
+            } else {
+                warn!("Skipping CashNote {:?} because we don't have it", id);
+            }
+        }
+        debug!(
+            "Available CashNotes for local send: {:#?}",
+            available_cash_notes
+        );
+
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let unsigned_transfer = create_unsigned_transfer(
+            available_cash_notes,
+            to_unique_keys,
+            self.address(),
+            reason_hash,
+        )?;
+
+        trace!("Releasing wallet lock"); // by dropping exclusive_access
+        std::mem::drop(exclusive_access);
+
+        Ok(unsigned_transfer)
     }
 
     // Helpers

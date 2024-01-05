@@ -7,13 +7,16 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cashnotes::CashNoteBuilder, rng, CashNote, DerivationIndex, DerivedSecretKey, Error, Hash,
-    Input, MainPubkey, NanoTokens, Result, SignedSpend, Spend, Transaction, TransactionBuilder,
-    UniquePubkey, NETWORK_ROYALTIES_PK,
+    cashnotes::{CashNoteBuilder, UnsignedTransfer},
+    rng, CashNote, DerivationIndex, DerivedSecretKey, Error, Hash, Input, MainPubkey, NanoTokens,
+    Result, SignedSpend, Transaction, TransactionBuilder, UniquePubkey, NETWORK_ROYALTIES_PK,
 };
 
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+
+/// List of CashNotes, with (optionally when needed) their corresponding derived owning secret key.
+pub type CashNotesAndSecretKey = Vec<(CashNote, Option<DerivedSecretKey>)>;
 
 /// Offline Transfer
 /// This struct contains all the necessary information to carry out the transfer.
@@ -36,28 +39,13 @@ pub struct OfflineTransfer {
     pub all_spend_requests: Vec<SignedSpend>,
 }
 
-/// Unsigned Transfer
-#[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct UnsignedTransfer {
-    /// This is the transaction where all the below
-    /// spends were made and cash_notes created.
-    pub tx: Transaction,
-    /// The unsigned spends with their corresponding owner's key derivation index.
-    pub spends: BTreeSet<(Spend, DerivationIndex)>,
-    /// The cash_note holding surplus tokens after
-    /// spending the necessary input cash_notes.
-    pub change_id: UniquePubkey,
-    /// Information for aggregating signed spends and generating the final CashNote outputs.
-    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
-}
-
 /// The input details necessary to
 /// carry out a transfer of tokens.
 #[derive(Debug)]
 struct TransferInputs {
     /// The selected cash_notes to spend, with the necessary amounts contained
     /// to transfer the below specified amount of tokens to each recipients.
-    pub cash_notes_to_spend: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
+    pub cash_notes_to_spend: CashNotesAndSecretKey,
     /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
     pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input cash_notes.
@@ -75,7 +63,7 @@ struct TransferInputs {
 /// Once enough peers have accepted all the spends of the transaction, and serve
 /// them upon request, the transaction will be completed.
 pub fn create_offline_transfer(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
+    available_cash_notes: CashNotesAndSecretKey,
     recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
@@ -105,8 +93,8 @@ pub fn create_offline_transfer(
 }
 
 /// A function for creating an unsigned transfer of tokens.
-pub fn create_unsigned_transaction(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
+pub fn create_unsigned_transfer(
+    available_cash_notes: CashNotesAndSecretKey,
     recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
@@ -143,15 +131,7 @@ pub fn create_unsigned_transaction(
     let (tx_builder, _src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Get the unsigned Spends.
-    let (spends, tx, output_details) =
-        tx_builder.build_unsigned_spends(reason_hash, network_royalties)?;
-
-    Ok(UnsignedTransfer {
-        tx,
-        spends,
-        change_id,
-        output_details,
-    })
+    tx_builder.build_unsigned_transfer(reason_hash, network_royalties, change_id)
 }
 
 pub fn offline_transfer_from_transaction(
@@ -190,17 +170,14 @@ pub fn offline_transfer_from_transaction(
 
 /// Select the necessary number of cash_notes from those that we were passed.
 fn select_inputs(
-    available_cash_notes: Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
+    available_cash_notes: CashNotesAndSecretKey,
     total_output_amount: NanoTokens,
-) -> Result<(
-    Vec<(CashNote, Option<DerivedSecretKey>, DerivationIndex)>,
-    NanoTokens,
-)> {
+) -> Result<(CashNotesAndSecretKey, NanoTokens)> {
     let mut cash_notes_to_spend = Vec::new();
     let mut total_input_amount = NanoTokens::zero();
     let mut change_amount = total_output_amount;
 
-    for (cash_note, derived_key, derivation_index) in available_cash_notes {
+    for (cash_note, derived_key) in available_cash_notes {
         let input_key = cash_note.unique_pubkey();
 
         let cash_note_balance = match cash_note.value() {
@@ -214,7 +191,7 @@ fn select_inputs(
         };
 
         // Add this CashNote as input to be spent.
-        cash_notes_to_spend.push((cash_note, derived_key, derivation_index));
+        cash_notes_to_spend.push((cash_note, derived_key));
 
         // Input amount increases with the amount of the cash_note.
         total_input_amount = total_input_amount.checked_add(cash_note_balance)
@@ -266,7 +243,7 @@ fn create_transaction_builder_with(
 
     let mut inputs = vec![];
     let mut src_txs = BTreeMap::new();
-    for (cash_note, derived_key, derivation_index) in selected_inputs.cash_notes_to_spend {
+    for (cash_note, derived_key) in selected_inputs.cash_notes_to_spend {
         let token = match cash_note.value() {
             Ok(token) => token,
             Err(err) => {
@@ -282,7 +259,7 @@ fn create_transaction_builder_with(
             input,
             derived_key,
             cash_note.src_tx.clone(),
-            derivation_index,
+            cash_note.derivation_index,
         ));
         let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.src_tx);
     }
