@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704464921108,
+  "lastUpdate": 1704465055434,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bfecd5dd22c7346a79d3f3533e088503e139f446",
-          "message": "test(ci): isolate nodes rewards test run to prevent from unrelated rewards",
-          "timestamp": "2023-09-04T18:11:58Z",
-          "tree_id": "97de7216d0911b21eb66ab969f51a0bd56ea16c3",
-          "url": "https://github.com/maidsafe/safe_network/commit/bfecd5dd22c7346a79d3f3533e088503e139f446"
-        },
-        "date": 1693859306033,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 79.98259,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "be18bc442cb4e9d388ade93a8683403945e101ab",
+          "message": "fix: ignore unwraps in protogen files",
+          "timestamp": "2024-01-05T13:48:11Z",
+          "tree_id": "f7f35e90e73ac3dda5675377fe28c196c54dfdde",
+          "url": "https://github.com/maidsafe/safe_network/commit/be18bc442cb4e9d388ade93a8683403945e101ab"
+        },
+        "date": 1704465054806,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 46,
             "unit": "MB"
           }
         ]
