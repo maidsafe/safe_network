@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704451271007,
+  "lastUpdate": 1704451272424,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "28f896403f465272dd34073c99b27fb64c30c799",
-          "message": "fix permissions for public register creation",
-          "timestamp": "2023-09-04T11:00:26Z",
-          "tree_id": "1f8907a0591944f3db5e61122411a2996d0b39e0",
-          "url": "https://github.com/maidsafe/safe_network/commit/28f896403f465272dd34073c99b27fb64c30c799"
-        },
-        "date": 1693832982940,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 899.59216,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 807,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
+          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
+          "timestamp": "2024-01-05T09:58:06Z",
+          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
+        },
+        "date": 1704451272068,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 222,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 62,
             "unit": "MB"
           }
         ]
