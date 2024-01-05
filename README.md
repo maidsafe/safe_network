@@ -1,6 +1,51 @@
 # The Safe Network
 
-This is the Safe Network as it was supposed to be, on a kademlia network, enabled by libp2p.
+Own your data, share your spare space, get paid for doing so.
+
+The Safe Network is a decentralised and autonomous data network, built atop kademlia and libp2p.
+
+## Table of Contents
+
+- [Project Structure](#project-structure)
+  - [For Users](#for-users)
+  - [For Developers](#for-developers)
+  - [For the Technical](#for-the-technical)
+- [Running the network](#running-the-network)
+- [Client network access](#client-network-access)
+- [Local Faucet](#local-faucet)
+- [Token transfers](#token-transfers)
+- [Auditing](#auditing)
+- [Using example app which exercises the Register APIs](#using-example-app-which-exercises-the-register-apis)
+- [Using the example RPC client app to query info and send cmds to a running safenode](#using-the-example-rpc-client-app-to-query-info-and-send-cmds-to-a-running-safenode)
+- [Metrics Dashboard](#metrics-dashboard)
+
+
+
+## Project Structure
+
+### For Users
+
+- [CLI](https://github.com/maidsafe/sn_cli/blob/master/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
+- [Node](https://github.com/maidsafe/sn_node/blob/master/README.md) The backbone of the safe network. Nodes can be run on comoodity hardware and provide storage space and validation of transactions to the network.
+
+### For Developers
+
+- [Client](https://github.com/maidsafe/sn_client/blob/master/README.md) The client APIs allowing use of the SafeNetwork to users and developers.
+- [Registers](https://github.com/maidsafe/sn_registers/blob/master/README.md) The CRDT registers structures available on the network.
+- [Testnet](https://github.com/maidsafe/sn_testnet/blob/master/README.md) The testnet crate, used to set up a local network for development and testing.
+- [Faucet](https://github.com/maidsafe/sn_faucet/blob/master/README.md) The local faucet server, used to claim genesis and request tokens from the network.
+- [Node RPC](https://github.com/maidsafe/sn_node_rpc_client/blob/master/README.md) The RPC server used by the nodes to expose API calls to the outside world.
+
+### For the Technical
+
+- [Logging](https://github.com/maidsafe/sn_logging/blob/master/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
+- [Metrics](https://github.com/maidsafe/sn_metrics/blob/master/README.md) The metrics crate used by the safe network.
+- [Networking](https://github.com/maidsafe/sn_networking/blob/master/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
+- [Protocol](https://github.com/maidsafe/sn_protocol/blob/master/README.md) The protocol used by the safe network.
+- [Transfers](https://github.com/maidsafe/sn_transfers/blob/master/README.md) The transfers crate, used to send and receive tokens on the network.
+- [Peers Acquisition](https://github.com/maidsafe/sn_peers_acqisition/blob/master/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
+- [Build Info](https://github.com/maidsafe/sn_build_info/blob/master/README.md) Small helper used to get the build/commit versioning info for debug purposes.
+
 
 ## Running the network
 
@@ -15,7 +60,7 @@ This will set the env var for you and so you can run the client without needing 
 Or alternatively run with local discovery enabled (mDNS)
 `killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 100`
 
-## Actions undertaken by a client accessing the network
+## Client network access
 
 Assuming you have `SAFE_PEERS` set as above:
 
@@ -174,7 +219,3 @@ Each CashNote is written to a separate file in respective recipient public addre
 Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
 
 The metrics can then be collected using a collector (for e.g. Prometheus) and the data can then be imported into any visualization tool (for e.g., Grafana) to be further analyzed. Refer to this [Guide](./metrics/README.md) to easily setup a dockerized Grafana dashboard to visualize the metrics.
-
-### Archive
-
-The elder-membership agreed, section tree backed implementation of the safe network can be found [here](https://github.com/maidsafe/safe_network_archive)
