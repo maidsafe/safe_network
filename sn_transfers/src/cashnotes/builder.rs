@@ -19,6 +19,21 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub type InputSrcTx = Transaction;
 
+/// Unsigned Transfer
+#[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UnsignedTransfer {
+    /// This is the transaction where all the below
+    /// spends were made and cash_notes created.
+    pub tx: Transaction,
+    /// The unsigned spends with their corresponding owner's key derivation index.
+    pub spends: BTreeSet<(Spend, DerivationIndex)>,
+    /// The cash_note holding surplus tokens after
+    /// spending the necessary input cash_notes.
+    pub change_id: UniquePubkey,
+    /// Information for aggregating signed spends and generating the final CashNote outputs.
+    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+}
+
 /// A builder to create a Transaction from
 /// inputs and outputs.
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -123,28 +138,25 @@ impl TransactionBuilder {
         ))
     }
 
-    /// Build the unsigned Transaction returning the generated (unsigned) Spends.
-    pub fn build_unsigned_spends(
+    /// Build the UnsignedTransfer which contains the generated (unsigned) Spends.
+    pub fn build_unsigned_transfer(
         self,
         reason: Hash,
         network_royalties: Vec<DerivationIndex>,
-    ) -> Result<(
-        BTreeSet<(Spend, DerivationIndex)>,
-        Transaction,
-        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
-    )> {
-        let spent_tx = Transaction {
+        change_id: UniquePubkey,
+    ) -> Result<UnsignedTransfer> {
+        let tx = Transaction {
             inputs: self.inputs,
             outputs: self.outputs,
         };
         let mut spends = BTreeSet::new();
-        for input in &spent_tx.inputs {
+        for input in &tx.inputs {
             if let Some((_, input_src_tx, derivation_index)) =
                 self.input_details.get(&input.unique_pubkey)
             {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
-                    spent_tx: spent_tx.clone(),
+                    spent_tx: tx.clone(),
                     reason,
                     token: input.amount,
                     parent_tx: input_src_tx.clone(),
@@ -154,7 +166,12 @@ impl TransactionBuilder {
             }
         }
 
-        Ok((spends, spent_tx, self.output_details))
+        Ok(UnsignedTransfer {
+            tx,
+            spends,
+            change_id,
+            output_details: self.output_details,
+        })
     }
 }
 

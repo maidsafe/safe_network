@@ -562,18 +562,18 @@ async fn broadcast_signed_spends(
     ) = rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
 
     println!("The signed transaction has been successfully decoded:");
-    let mut spent_tx = None;
+    let mut transaction = None;
     for (i, signed_spend) in signed_spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", signed_spend.unique_pubkey().to_hex());
         println!("\tAmount: {}", signed_spend.token());
-        let linked_spent_tx = signed_spend.spent_tx();
-        if let Some(ref tx) = spent_tx {
-            if tx != &linked_spent_tx {
+        let linked_tx = signed_spend.spent_tx();
+        if let Some(ref tx) = transaction {
+            if tx != &linked_tx {
                 bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
             }
         } else {
-            spent_tx = Some(linked_spent_tx);
+            transaction = Some(linked_tx);
         }
 
         if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
@@ -581,7 +581,7 @@ async fn broadcast_signed_spends(
         }
     }
 
-    let spent_tx = if let Some(tx) = spent_tx {
+    let tx = if let Some(tx) = transaction {
         for (i, output) in tx.outputs.iter().enumerate() {
             println!("\nOutput #{i}:");
             println!("\tKey: {}", output.unique_pubkey.to_hex());
@@ -609,7 +609,7 @@ async fn broadcast_signed_spends(
         wallet,
         client,
         signed_spends,
-        spent_tx,
+        tx,
         change_id,
         output_details,
         verify_store,
