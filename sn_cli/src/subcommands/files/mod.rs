@@ -10,6 +10,7 @@ mod chunk_manager;
 
 pub(crate) use chunk_manager::{ChunkManager, UPLOADED_FILES};
 
+use bytes::Bytes;
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -17,7 +18,7 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use rand::{seq::SliceRandom, thread_rng};
-
+use serde::Deserialize;
 use sn_client::{
     Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
@@ -25,6 +26,7 @@ use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
+    ffi::OsString,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -65,7 +67,7 @@ pub enum FilesCmds {
         ///
         /// If neither are, all the files uploaded by the current user will be downloaded again.
         #[clap(name = "name")]
-        file_name: Option<String>,
+        file_name: Option<OsString>,
         /// The hex address of a file.
         ///
         /// If the address argument is used, the name argument must also be supplied.
@@ -81,6 +83,51 @@ pub enum FilesCmds {
         #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
     },
+}
+
+/// The metadata related to file that has been uploaded.
+/// This is written during upload and read during downloads.
+#[derive(Clone, Debug, Deserialize)]
+pub struct UploadedFile {
+    pub filename: OsString,
+    pub data_map: Option<Bytes>,
+}
+
+impl UploadedFile {
+    pub fn write(&self, path: &Path) -> Result<()> {
+        if self.data_map.is_none() {
+            warn!(
+                "No datamap being written for {:?} as it is empty",
+                self.filename
+            );
+        }
+        let serialized = rmp_serde::to_vec(&(&self.filename, &self.data_map)).map_err(|err| {
+            error!("Failed to serialize UploadedFile");
+            err
+        })?;
+
+        std::fs::write(path, serialized).map_err(|err| {
+            error!(
+                "Could not write UploadedFile of {:?} to {path:?}",
+                self.filename
+            );
+            err
+        })?;
+
+        Ok(())
+    }
+
+    pub fn read(path: &Path) -> Result<Self> {
+        let bytes = std::fs::read(path).map_err(|err| {
+            error!("Error while reading the UploadedFile from {path:?}");
+            err
+        })?;
+        let metadata = rmp_serde::from_slice(&bytes).map_err(|err| {
+            error!("Error while deserializing UploadedFile for {path:?}");
+            err
+        })?;
+        Ok(metadata)
+    }
 }
 
 pub(crate) async fn files_cmds(
@@ -379,39 +426,24 @@ async fn download_files(
         let entry = entry?;
         let path = entry.path();
         if path.is_file() {
-            // filenames are constructed via format!("{}::{}", chunked_file.file_name , filename_hex);
-            let filename = path
+            let hex_xorname = path
                 .file_name()
                 .expect("Uploaded file to have name")
                 .to_str()
                 .expect("Failed to convert path to string");
-
-            let parts = filename.split("::").collect::<Vec<&str>>();
-            let file_name = parts.first().expect("Failed to get filename");
-            let hex_xorname = parts.get(1).expect("Failed to get hex xorname");
-
             let bytes = hex::decode(hex_xorname)?;
             let xor_name_bytes: [u8; 32] = bytes
                 .try_into()
                 .expect("Failed to parse XorName from hex string");
             let xor_name = XorName(xor_name_bytes);
-
             let address = ChunkAddress::new(xor_name);
 
-            let bytes = bytes::Bytes::from(tokio::fs::read(&path).await?);
-            let data_map_chunk = if !bytes.is_empty() {
-                debug!("Locally existing datamap chunk found");
-                // we can use this as the first chunk to unpack
-                Some(Chunk {
-                    address,
-                    value: bytes,
-                })
-            } else {
-                debug!("No locally existing datamap chunk found");
-                None
-            };
-
-            uploaded_files.insert((xor_name, (file_name.to_string(), data_map_chunk)));
+            let uploaded_file_metadata = UploadedFile::read(path)?;
+            let datamap_chunk = uploaded_file_metadata.data_map.map(|bytes| Chunk {
+                address,
+                value: bytes,
+            });
+            uploaded_files.insert((xor_name, (uploaded_file_metadata.filename, datamap_chunk)));
         }
     }
 
@@ -445,14 +477,14 @@ async fn download_file(
     files_api: &FilesApi,
     xorname: &XorName,
     // original file name and optional datamap chunk
-    file_data: &(String, Option<Chunk>),
+    file_data: &(OsString, Option<Chunk>),
     download_path: &Path,
     show_holders: bool,
     batch_size: usize,
 ) {
     let (file_name, datamap) = file_data;
-    println!("Downloading {file_name} from {xorname:64x} with batch-size {batch_size}");
-    debug!("Downloading {file_name} from {:64x}", xorname);
+    println!("Downloading {file_name:?} from {xorname:64x} with batch-size {batch_size}");
+    debug!("Downloading {file_name:?} from {:64x}", xorname);
     let downloaded_file_path = download_path.join(file_name);
 
     match files_api
@@ -467,11 +499,11 @@ async fn download_file(
     {
         Ok(_) => {
             debug!(
-                "Saved {file_name} at {}",
+                "Saved {file_name:?} at {}",
                 downloaded_file_path.to_string_lossy()
             );
             println!(
-                "Saved {file_name} at {}",
+                "Saved {file_name:?} at {}",
                 downloaded_file_path.to_string_lossy()
             );
         }
