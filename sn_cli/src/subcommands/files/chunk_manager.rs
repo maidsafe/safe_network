@@ -121,6 +121,15 @@ impl ChunkManager {
                 }
             });
         let total_files = self.files_to_chunk.len();
+        if total_files == 0 {
+            if files_path.is_dir() {
+                bail!(
+                    "The directory specified for upload is empty. Please verify the provided path."
+                );
+            } else {
+                bail!("The provided file path is invalid. Please verify the path.");
+            }
+        }
 
         // resume the chunks from the artifacts dir
         if read_cache {
