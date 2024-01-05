@@ -551,3 +551,99 @@ jobs:
               echo "We are logging an extremely large data"
               exit 1
             fi
+
+  replication_bench_with_heavy_upload:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Replication bench with heaby upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
+
+      - name: Download materials to create two 300MB test_files to be uploaded by client
+        shell: bash
+        run: |
+          mkdir test_data_1
+          cd test_data_1
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safe-qiWithListeners-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode-qiWithListeners-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode_rpc_client-qiWithListeners-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/faucet-qilesssubs-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safe-qilesssubs-x86_64.tar.gz
+          ls -l
+          cd ..
+          tar -cvzf test_data_1.tar.gz test_data_1
+          mkdir test_data_2
+          cd test_data_2
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode-qilesssubs-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode_rpc_client-qilesssubs-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/faucet-DebugMem-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safe-DebugMem-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode-DebugMem-x86_64.tar.gz
+          ls -l
+          cd ..
+          tar -cvzf test_data_2.tar.gz test_data_2
+          ls -l
+
+      - name: Build binaries
+        run: cargo build --release --bin safenode --bin safe --bin faucet
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ubuntu-latest
+          build: true
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
+
+      - name: Create and fund a wallet to pay for files storage
+        run: |
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Start a client to upload first file
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" -r 0
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 60
+
+      - name: Wait for certain period
+        run: sleep 300
+
+      - name: Start a client to upload second file
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" -r 0
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 60
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_heavy_replicate_bench
+          platform: ubuntu-latest
+          build: true

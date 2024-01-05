@@ -782,12 +782,13 @@ impl SwarmDriver {
         // Reset first_time to None for old peers
         for first_time in self.replicated_in_range_peers.values_mut() {
             let shall_reset = if let Some(time) = first_time {
-                time.elapsed() > Duration::from_secs(3600)
+                time.elapsed() > Duration::from_secs(60)
             } else {
                 false
             };
 
             if shall_reset {
+                trace!("Reset first_time to None");
                 *first_time = None;
             }
         }
@@ -842,24 +843,27 @@ impl SwarmDriver {
                         }
                     })
                     .collect();
-                trace!(
-                    "Sending a replication list of {} keys to {peer_id:?} ",
-                    keys.len()
-                );
-                let request = Request::Cmd(Cmd::Replicate {
-                    holder: our_address.clone(),
-                    keys,
-                });
 
-                let request_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .request_response
-                    .send_request(peer_id, request);
-                trace!("Sending request {request_id:?} to peer {peer_id:?}");
-                let _ = self.pending_requests.insert(request_id, None);
+                if !keys.is_empty() {
+                    trace!(
+                        "Sending a replication list of {} keys to {peer_id:?} ",
+                        keys.len()
+                    );
+                    let request = Request::Cmd(Cmd::Replicate {
+                        holder: our_address.clone(),
+                        keys,
+                    });
 
-                trace!("Pending Requests now: {:?}", self.pending_requests.len());
+                    let request_id = self
+                        .swarm
+                        .behaviour_mut()
+                        .request_response
+                        .send_request(peer_id, request);
+                    trace!("Sending request {request_id:?} to peer {peer_id:?}");
+                    let _ = self.pending_requests.insert(request_id, None);
+
+                    trace!("Pending Requests now: {:?}", self.pending_requests.len());
+                }
             }
         }
 

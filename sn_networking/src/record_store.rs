@@ -228,13 +228,15 @@ impl NodeRecordStore {
     /// Reset old entries `insert_time` to None
     pub(crate) fn reset_old_records(&mut self) {
         for val in self.records.values_mut() {
+            trace!("checking record {:?}", val.2);
             let shall_reset = if let Some(time) = val.2 {
-                time.elapsed() > Duration::from_secs(3600)
+                time.elapsed() > Duration::from_secs(60)
             } else {
                 false
             };
 
             if shall_reset {
+                trace!("Reset insert_time to None");
                 val.2 = None;
             }
         }
