@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704455392344,
+  "lastUpdate": 1704455393820,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5dbc914b07a359570b0def3173398a9f243ea0ec",
-          "message": "chore(node): validate payment amount is enough before trying to validate dbc spend",
-          "timestamp": "2023-09-04T11:38:19Z",
-          "tree_id": "d38a1818217afebad7419d19d12680ad0cfa63f1",
-          "url": "https://github.com/maidsafe/safe_network/commit/5dbc914b07a359570b0def3173398a9f243ea0ec"
-        },
-        "date": 1693835715340,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 924.672,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 848,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 62,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a035b68a0f7508348f76e5abf193976397dd63bf",
+          "message": "chore(cli): error if there is no file to upload",
+          "timestamp": "2024-01-05T11:06:04Z",
+          "tree_id": "fb6ed7560e9795913d7d97d2c4c7df22089f41c5",
+          "url": "https://github.com/maidsafe/safe_network/commit/a035b68a0f7508348f76e5abf193976397dd63bf"
+        },
+        "date": 1704455393442,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 59,
             "unit": "MB"
           }
         ]
