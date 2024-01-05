@@ -19,6 +19,7 @@ pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
 pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
+pub use builder::UnsignedTransfer;
 pub use cashnote::CashNote;
 pub use nano::NanoTokens;
 pub use reason_hash::Hash;
