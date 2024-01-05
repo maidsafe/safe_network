@@ -198,7 +198,7 @@ jobs:
 
       - name: Start a client to create a register writable by anyone
         id: register-address
-        run: echo "REGISTER_ADDRESS=$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | grep "Address" | sed 's/.*Address=\(.*\)/\1/')" >> $GITHUB_OUTPUT
+        run: echo "REGISTER_ADDRESS=$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | grep Address | sed 's/.*Address=\(.*\)/\1/')" >> $GITHUB_OUTPUT
         env:
           SN_LOG: "all"
         timeout-minutes: 10
