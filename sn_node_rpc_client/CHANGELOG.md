@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.112](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.111...sn_node_rpc_client-v0.1.112) - 2024-01-05
+
+### Other
+- update dependencies
+
 ## [0.1.111](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.1.110...sn_node_rpc_client-v0.1.111) - 2024-01-05
 
 ### Other
