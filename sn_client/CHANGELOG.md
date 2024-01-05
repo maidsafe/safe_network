@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.39](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.38...sn_client-v0.99.39) - 2024-01-05
+
+### Other
+- add clippy unwrap lint to workspace
+
 ## [0.99.38](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.37...sn_client-v0.99.38) - 2024-01-05
 
 ### Added

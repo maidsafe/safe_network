@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.0...sn_protocol-v0.10.1) - 2024-01-05
+
+### Fixed
+- ignore unwraps in protogen files
+
 ## [0.10.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.9.4...sn_protocol-v0.10.0) - 2023-12-28
 
 ### Added
