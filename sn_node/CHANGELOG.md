@@ -2724,6 +2724,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.100.42](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.41...sn_node-v0.100.42) - 2024-01-05
+
+### Added
+- *(safenode)* print out error instead of unwrap
+- *(node)* stop node on ctrl-c
+
+### Other
+- *(node)* ctrl-c warn on I/O error
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
