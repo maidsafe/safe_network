@@ -219,3 +219,17 @@ Each CashNote is written to a separate file in respective recipient public addre
 Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
 
 The metrics can then be collected using a collector (for e.g. Prometheus) and the data can then be imported into any visualization tool (for e.g., Grafana) to be further analyzed. Refer to this [Guide](./metrics/README.md) to easily setup a dockerized Grafana dashboard to visualize the metrics.
+
+
+
+## Contributing
+
+Please feel free to clone and modify this project. Pull requests are welcome.
+
+## Conventional Commits
+
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Make sure your commit messages adhere to this standard.
+
+## License
+
+This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](LICENSE) http://www.gnu.org/licenses/gpl-3.0.en.html).
