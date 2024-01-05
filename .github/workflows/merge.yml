@@ -122,12 +122,18 @@ jobs:
           PROPTEST_CASES: 50 
 
   e2e:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            safe_path: /home/runner/.local/share/safe
+          - os: windows-latest
+            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+          - os: macos-latest
+            safe_path: /Users/runner/Library/Application Support/safe
     steps:
       - uses: actions/checkout@v4
 
@@ -179,20 +185,89 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Start a client to create a register
+      - name: Start a client to create a register writable by the owner only
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: Start a client to get a register
+      - name: Start a client to get a register writable by the owner only
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
-      - name: Start a client to edit a register
+      - name: Start a client to edit a register writable by the owner only
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      ## Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
+
+      # runs on linux/mac
+      - name: Start a client to create a register writable by anyone
+        id: register-address
+        if: matrix.os != 'windows-latest' 
+        run: echo "$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $GITHUB_OUTPUT
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      # runs on windows
+      - name: Start a client to create a register writable by anyone
+        id: register-address-windows
+        if: matrix.os == 'windows-latest' 
+        run: echo "$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $ENV:GITHUB_OUTPUT
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Start a client to get a register writable by anyone (current client is the owner)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n trycatch
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register writable by anyone (current client is the owner)
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n trycatch wood
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Delete client subdir to generate new client
+        shell: bash
+        run: rm -rf ${{ matrix.safe_path }}/client
+
+
+      ## Next four steps are same with a slight difference in the which output step they read from
+
+      # runs on linux/mac
+      - name: Start a client to get a register writable by anyone (new client is not the owner)
+        if: matrix.os != 'windows-latest' 
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register writable by anyone (new client is not the owner)
+        if: matrix.os != 'windows-latest'
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit ${{ steps.register-address.outputs.REGISTER_ADDRESS }} water
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      # runs on Windows
+      - name: Start a client to get a register writable by anyone (new client is not the owner)
+        if: matrix.os == 'windows-latest' 
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
+      - name: Start a client to edit a register writable by anyone (new client is not the owner)
+        if: matrix.os == 'windows-latest'
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }} water
         env:
           SN_LOG: "all"
         timeout-minutes: 10
