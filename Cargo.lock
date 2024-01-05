@@ -4522,6 +4522,7 @@ dependencies = [
  "rayon",
  "reqwest",
  "rmp-serde",
+ "serde",
  "sn_build_info",
  "sn_client",
  "sn_logging",

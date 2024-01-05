@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::subcommands::files::get_progress_bar;
+use crate::subcommands::files::{get_progress_bar, UploadedFile};
 use bytes::Bytes;
 use color_eyre::{eyre::bail, Result};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
@@ -368,12 +368,6 @@ impl ChunkManager {
                 // write the data_map addr and or data_map to the UPLOADED_FILES dir
                 let filename_hex = chunked_file.head_chunk_address.to_hex();
 
-                // safely create the filename
-                let safe_filename = match chunked_file.file_name.to_str() {
-                    Some(name) => format!("{name}::{filename_hex}"),
-                    None => format!("::{filename_hex}"),
-                };
-
                 // ensure self.root_dir.join(UPLOADED_FILES) exists
                 let uploaded_files = self.root_dir.join(UPLOADED_FILES);
                 if !uploaded_files.exists() {
@@ -382,39 +376,19 @@ impl ChunkManager {
                     }
                 }
 
-                let uploaded_file = uploaded_files.join(&safe_filename);
+                let uploaded_file_path = uploaded_files.join(&filename_hex);
 
                 warn!(
-                    "Marking {uploaded_file:?} as completed for chunked_file {:?}",
+                    "Marking {uploaded_file_path:?} as completed for chunked_file {:?}",
                     chunked_file
                 );
 
-                if let Some(data_map) = &chunked_file.data_map {
-                    info!(
-                        "Datamap to write for {:?} is {:?} bytes",
-                        chunked_file.file_name,
-                        data_map.len()
-                    );
-
-                    if let Err(error) = fs::write(uploaded_file, data_map) {
-                        error!(
-                            "Could not write datamap for {:?}, {error:?}",
-                            chunked_file.head_chunk_address
-                        );
-                    }
-                } else {
-                    warn!(
-                        "No datamap being written for {:?} as it is empty",
-                        chunked_file.file_name
-                    );
-
-                    if let Err(error) = fs::write(uploaded_file, []) {
-                        error!(
-                            "Could not write datamap for {:?}, {error:?}",
-                            chunked_file.head_chunk_address
-                        );
-                    }
-                }
+                let uploaded_file_metadata = UploadedFile {
+                    filename: chunked_file.file_name,
+                    data_map: chunked_file.data_map,
+                };
+                // errors are logged by write()
+                let _result = uploaded_file_metadata.write(&uploaded_file_path);
             }
         }
 
