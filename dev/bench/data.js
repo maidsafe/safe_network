@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704463005197,
+  "lastUpdate": 1704464921108,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b0fc3772509a0a3f302e01e4b5645a2a1fb67814",
-          "message": "ci: move to use VERSION_BUMP_COMMIT_PAT instead of RELEASE_PAT\n\nThey are effectively both the same, BUMP_COMMIT is org wide so\nRELEASE_PAT can be deprecated.",
-          "timestamp": "2023-09-05T12:15:01Z",
-          "tree_id": "6db1c137dd8e3e1ebd4798a81f9d86bb0510ccf5",
-          "url": "https://github.com/maidsafe/safe_network/commit/b0fc3772509a0a3f302e01e4b5645a2a1fb67814"
-        },
-        "date": 1693921334938,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.13364921305325686,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.706207173206329,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.42734091530283,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 40.94241539295847,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "be18bc442cb4e9d388ade93a8683403945e101ab",
+          "message": "fix: ignore unwraps in protogen files",
+          "timestamp": "2024-01-05T13:48:11Z",
+          "tree_id": "f7f35e90e73ac3dda5675377fe28c196c54dfdde",
+          "url": "https://github.com/maidsafe/safe_network/commit/be18bc442cb4e9d388ade93a8683403945e101ab"
+        },
+        "date": 1704464919054,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.644216417873892,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0846397738839106,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 41.84945556074348,
             "unit": "MiB/s"
           }
         ]
