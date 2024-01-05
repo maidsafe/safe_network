@@ -20,6 +20,7 @@ use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress},
     NetworkAddress,
 };
+use sn_registers::Permissions;
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
@@ -283,7 +284,12 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
         .await?;
 
     let (mut register, _cost, _royalties_fees) = client
-        .create_and_pay_for_register(xor_name, &mut wallet_client, true)
+        .create_and_pay_for_register(
+            xor_name,
+            &mut wallet_client,
+            true,
+            Permissions::new_owner_only(),
+        )
         .await?;
 
     let retrieved_reg = client.get_register(address).await?;
@@ -337,7 +343,12 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
 
     // this should fail to store as the amount paid is not enough
     let (mut register, _cost, _royalties_fees) = client
-        .create_and_pay_for_register(xor_name, &mut wallet_client, false)
+        .create_and_pay_for_register(
+            xor_name,
+            &mut wallet_client,
+            false,
+            Permissions::new_owner_only(),
+        )
         .await?;
 
     sleep(Duration::from_secs(5)).await;

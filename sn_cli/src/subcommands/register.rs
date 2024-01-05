@@ -11,6 +11,7 @@ use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
 use sn_client::{Client, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
+use sn_registers::Permissions;
 use sn_transfers::LocalWallet;
 use std::path::Path;
 use xor_name::XorName;
@@ -23,6 +24,11 @@ pub enum RegisterCmds {
         /// This is used along with your public key to derive the address of the register
         #[clap(name = "name", short = 'n')]
         name: String,
+
+        /// Create the register with public write access.
+        /// By default only the owner can write to the register.
+        #[clap(name = "public", short = 'p')]
+        public: bool,
     },
     Edit {
         /// The address of the register to edit.
@@ -56,8 +62,8 @@ pub(crate) async fn register_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        RegisterCmds::Create { name } => {
-            create_register(name, client, root_dir, verify_store).await?
+        RegisterCmds::Create { name, public } => {
+            create_register(name, public, client, root_dir, verify_store).await?
         }
         RegisterCmds::Edit {
             address,
@@ -74,6 +80,7 @@ pub(crate) async fn register_cmds(
 
 async fn create_register(
     name: String,
+    public: bool,
     client: &Client,
     root_dir: &Path,
     verify_store: bool,
@@ -88,21 +95,24 @@ async fn create_register(
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
     let meta = XorName::from_content(name.as_bytes());
+    let perms = match public {
+        true => Permissions::new_anyone_can_write(),
+        false => Permissions::new_owner_only(),
+    };
     let (register, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(meta, &mut wallet_client, verify_store)
+        .create_and_pay_for_register(meta, &mut wallet_client, verify_store, perms)
         .await?;
 
     if storage_cost.is_zero() {
-        println!(
-            "Register '{name}' already exists at {}!",
-            register.address().to_hex()
-        );
+        println!("Register '{name}' already exists!",);
     } else {
         println!(
-            "Successfully created register '{name}' at {} for {storage_cost:?} (royalties fees: {royalties_fees:?})!",
-            register.address().to_hex()
+            "Successfully created register '{name}' for {storage_cost:?} (royalties fees: {royalties_fees:?})!",
         );
     }
+
+    println!("Address={}", register.address().to_hex());
+
     Ok(())
 }
 
