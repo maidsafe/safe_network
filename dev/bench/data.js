@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704455243819,
+  "lastUpdate": 1704455392344,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6dab35c72a9d3ef3f9810865e536dc9d021d71d0",
-          "message": "chore: arbitrary change to retrigger release",
-          "timestamp": "2023-09-04T16:29:06+02:00",
-          "tree_id": "d09be1780c93603b0c3345943ffa28b75faf4aaf",
-          "url": "https://github.com/maidsafe/safe_network/commit/6dab35c72a9d3ef3f9810865e536dc9d021d71d0"
-        },
-        "date": 1693842224660,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 85.68013,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20394,6 +20365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
         },
         "date": 1704451270630,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a035b68a0f7508348f76e5abf193976397dd63bf",
+          "message": "chore(cli): error if there is no file to upload",
+          "timestamp": "2024-01-05T11:06:04Z",
+          "tree_id": "fb6ed7560e9795913d7d97d2c4c7df22089f41c5",
+          "url": "https://github.com/maidsafe/safe_network/commit/a035b68a0f7508348f76e5abf193976397dd63bf"
+        },
+        "date": 1704455391971,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
