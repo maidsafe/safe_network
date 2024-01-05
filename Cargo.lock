@@ -4505,14 +4505,14 @@ checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "vergen",
 ]
 
 [[package]]
 name = "sn_cli"
-version = "0.86.97"
+version = "0.86.98"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.1.119"
+version = "0.1.120"
 dependencies = [
  "blsttc",
  "clap 4.4.10",
@@ -4656,7 +4656,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.100.43"
+version = "0.100.44"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4708,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.1.115"
+version = "0.1.116"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4793,7 +4793,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.2.377"
+version = "0.2.378"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",

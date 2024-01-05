@@ -2417,6 +2417,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - ignore unwraps in protogen files
 
+## [0.2.378](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.2.377...sn_testnet-v0.2.378) - 2024-01-05
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>
