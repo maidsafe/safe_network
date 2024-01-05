@@ -22,6 +22,7 @@ pub mod storage;
 pub mod test_utils;
 
 // this includes code generated from .proto files
+#[allow(clippy::unwrap_used)]
 pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
