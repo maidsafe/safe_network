@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub(crate) mod api;
+pub(crate) mod download;
 
 use crate::{
     error::{Error as ClientError, Result},
