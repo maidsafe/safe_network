@@ -20,7 +20,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::Deserialize;
 use sn_client::{
-    Client, Error as ClientError, FileUploadEvent, Files, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    Client, Error as ClientError, FileUploadEvent, Files, FilesApi, FilesDownload,
+    FilesDownloadEvent, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, WalletError};
@@ -175,7 +176,7 @@ pub(crate) async fn files_cmds(
             let files_api: FilesApi = FilesApi::new(client.clone(), download_dir.clone());
 
             match (file_name, file_addr) {
-                (Some(name), Some(address_provided)) => {
+                (Some(file_name), Some(address_provided)) => {
                     let bytes =
                         hex::decode(&address_provided).expect("Input address is not a hex string");
                     let xor_name_provided = XorName(
@@ -201,9 +202,9 @@ pub(crate) async fn files_cmds(
                     };
 
                     download_file(
-                        &files_api,
-                        &xor_name_provided,
-                        &(name, local_data_map),
+                        files_api,
+                        xor_name_provided,
+                        (file_name, local_data_map),
                         &download_dir,
                         show_holders,
                         batch_size,
@@ -465,9 +466,9 @@ async fn download_files(
         }
     }
 
-    for (xorname, file_data) in uploaded_files.iter() {
+    for (xorname, file_data) in uploaded_files.into_iter() {
         download_file(
-            files_api,
+            files_api.clone(),
             xorname,
             file_data,
             &download_path,
@@ -492,29 +493,77 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
 }
 
 async fn download_file(
-    files_api: &FilesApi,
-    xorname: &XorName,
+    files_api: FilesApi,
+    xor_name: XorName,
     // original file name and optional datamap chunk
-    file_data: &(OsString, Option<Chunk>),
+    (file_name, datamap): (OsString, Option<Chunk>),
     download_path: &Path,
     show_holders: bool,
     batch_size: usize,
 ) {
-    let (file_name, datamap) = file_data;
-    println!("Downloading {file_name:?} from {xorname:64x} with batch-size {batch_size}");
-    debug!("Downloading {file_name:?} from {:64x}", xorname);
-    let downloaded_file_path = download_path.join(file_name);
+    let mut files_download = FilesDownload::new(files_api.clone())
+        .set_batch_size(batch_size)
+        .set_show_holders(show_holders);
 
-    match files_api
-        .read_bytes(
-            ChunkAddress::new(*xorname),
-            Some(downloaded_file_path.clone()),
-            datamap.clone(),
-            show_holders,
-            batch_size,
+    println!("Downloading {file_name:?} from {xor_name:64x} with batch-size {batch_size}");
+    debug!("Downloading {file_name:?} from {:64x}", xor_name);
+    let downloaded_file_path = download_path.join(&file_name);
+
+    let mut download_events_rx = files_download.get_events();
+
+    let progress_handler = tokio::spawn(async move {
+        let mut progress_bar: Option<ProgressBar> = None;
+        // The loop is guaranteed to end, as the channel will be closed when the download completes or errors out.
+        while let Some(event) = download_events_rx.recv().await {
+            match event {
+                FilesDownloadEvent::Downloaded(_) => {
+                    if let Some(progress_bar) = &progress_bar {
+                        progress_bar.inc(1);
+                    }
+                }
+                FilesDownloadEvent::ChunksCount(count) => {
+                    // terminate the progress bar from datamap download.
+                    if let Some(progress_bar) = progress_bar {
+                        progress_bar.finish_and_clear();
+                    }
+                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
+                        println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
+                        error!("Failed to obtain progress bar with err: {err:?}");
+                        err
+                    }).ok();
+                }
+                FilesDownloadEvent::DatamapCount(count) => {
+                    // terminate the progress bar if it was loaded here. This should not happen.
+                    if let Some(progress_bar) = progress_bar {
+                        progress_bar.finish_and_clear();
+                    }
+                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
+                        println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
+                        error!("Failed to obtain progress bar with err: {err:?}");
+                        err
+                    }).ok();
+                }
+                FilesDownloadEvent::Error => {
+                    error!("Got FilesDownloadEvent::Error");
+                }
+            }
+        }
+        if let Some(progress_bar) = progress_bar {
+            progress_bar.finish_and_clear();
+        }
+    });
+
+    let download_result = files_download
+        .download_file_to_path(
+            ChunkAddress::new(xor_name),
+            datamap,
+            downloaded_file_path.clone(),
         )
-        .await
-    {
+        .await;
+
+    // await on the progress handler first as we want to clear the progress bar before printing things.
+    let _ = progress_handler.await;
+    match download_result {
         Ok(_) => {
             debug!(
                 "Saved {file_name:?} at {}",
