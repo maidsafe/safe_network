@@ -23,14 +23,14 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Files, FilesApi};
+use sn_client::{Client, FilesApi, FilesUpload};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
     storage::ChunkAddress,
+    NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fs::File,
@@ -340,10 +340,10 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
 
         let key =
             PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
-        let mut files = Files::new(files_api.clone())
+        let mut file_upload = FilesUpload::new(files_api.clone())
             .set_show_holders(true)
             .set_verify_store(false);
-        files.upload_chunks(chunks).await?;
+        file_upload.upload_chunks(chunks).await?;
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
