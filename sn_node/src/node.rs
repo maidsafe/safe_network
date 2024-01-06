@@ -22,7 +22,7 @@ use sn_protocol::{
     messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey};
+use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey, NanoTokens};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -451,39 +451,34 @@ impl Node {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
+                let record_key = address.to_record_key();
+                let self_id = network.peer_id;
 
-                let record_exists = match network
-                    .is_record_key_present_locally(&address.to_record_key())
-                    .await
-                {
-                    Ok(res) => res,
-                    Err(error) => {
-                        error!("Problem getting record key's existence: {error:?}");
-                        false
+                let store_cost = network.get_local_storecost(record_key.clone()).await;
+
+                match store_cost {
+                    Ok(cost) => {
+                        if cost == NanoTokens::zero() {
+                            QueryResponse::GetStoreCost {
+                                quote: Err(ProtocolError::RecordExists(
+                                    PrettyPrintRecordKey::from(&record_key).into_owned(),
+                                )),
+                                payment_address,
+                                peer_address: NetworkAddress::from_peer(self_id),
+                            }
+                        } else {
+                            QueryResponse::GetStoreCost {
+                                quote: Self::create_quote_for_storecost(network, cost, &address),
+                                payment_address,
+                                peer_address: NetworkAddress::from_peer(self_id),
+                            }
+                        }
                     }
-                };
-
-                if record_exists {
-                    QueryResponse::GetStoreCost {
-                        quote: Err(ProtocolError::RecordExists(
-                            PrettyPrintRecordKey::from(&address.to_record_key()).into_owned(),
-                        )),
+                    Err(_) => QueryResponse::GetStoreCost {
+                        quote: Err(ProtocolError::GetStoreCostFailed),
                         payment_address,
-                        peer_address: NetworkAddress::from_peer(network.peer_id),
-                    }
-                } else {
-                    let store_cost = network
-                        .get_local_storecost()
-                        .await
-                        .map_err(|_| ProtocolError::GetStoreCostFailed);
-
-                    QueryResponse::GetStoreCost {
-                        quote: store_cost.and_then(|cost| {
-                            Self::create_quote_for_storecost(network, cost, &address)
-                        }),
-                        payment_address,
-                        peer_address: NetworkAddress::from_peer(network.peer_id),
-                    }
+                        peer_address: NetworkAddress::from_peer(self_id),
+                    },
                 }
             }
             Query::GetReplicatedRecord { requester, key } => {

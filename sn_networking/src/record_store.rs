@@ -279,19 +279,12 @@ impl NodeRecordStore {
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self) -> NanoTokens {
-        let relevant_records_len = if let Some(distance_range) = self.distance_range {
-            let record_keys: HashSet<_> = self.records.keys().cloned().collect();
-            self.get_records_within_distance_range(&record_keys, distance_range)
-        } else {
-            warn!("No distance range set on record store. Returning MAX_RECORDS_COUNT for relevant records in store cost calculation.");
-            MAX_RECORDS_COUNT
-        };
-
-        let cost =
-            calculate_cost_for_relevant_records(relevant_records_len, self.received_payment_count);
+        let stored_records = self.records.len();
+        let cost = calculate_cost_for_records(stored_records, self.received_payment_count);
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Cost is now {cost:?} for {relevant_records_len:?} records stored of {MAX_RECORDS_COUNT:?} max");
+        info!("Cost is now {cost:?} for {stored_records:?} stored of {MAX_RECORDS_COUNT:?} max, {:?} times got paid.",
+            self.received_payment_count);
         NanoTokens::from(cost)
     }
 
@@ -524,7 +517,7 @@ impl RecordStore for ClientRecordStore {
 
 // Using a linear growth function, and be tweaked by `received_payment_count`
 // to allow nodes receiving too many replication copies can still got paid.
-fn calculate_cost_for_relevant_records(step: usize, received_payment_count: usize) -> u64 {
+fn calculate_cost_for_records(step: usize, received_payment_count: usize) -> u64 {
     use std::cmp::max;
 
     let ori_cost = (10 * step) as u64;
@@ -920,7 +913,7 @@ mod tests {
                         for peer in peers_in_replicate_range.iter() {
                             let entry = peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
-                                let cost = calculate_cost_for_relevant_records(entry.0, entry.2);
+                                let cost = calculate_cost_for_records(entry.0, entry.2);
                                 entry.1 += cost;
                                 entry.2 += 1;
                             }
@@ -942,7 +935,7 @@ mod tests {
             let mut max_store_cost = 0;
 
             for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_relevant_records(stats.0, stats.2);
+                let cost = calculate_cost_for_records(stats.0, stats.2);
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
                 received_payment_count += stats.2;
                 if stats.1 == 0 {
@@ -1027,7 +1020,7 @@ mod tests {
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_relevant_records(stats.0, stats.2);
+                let store_cost = calculate_cost_for_records(stats.0, stats.2);
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);
