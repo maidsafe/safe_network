@@ -20,8 +20,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::Deserialize;
 use sn_client::{
-    Client, Error as ClientError, FileUploadEvent, Files, FilesApi, FilesDownload,
-    FilesDownloadEvent, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
+    FilesUpload, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use sn_transfers::{Error as TransfersError, WalletError};
@@ -306,11 +306,11 @@ async fn upload_files(
     let chunks_to_upload_len = chunks_to_upload.len();
     let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
     let total_existing_chunks = Arc::new(AtomicU64::new(0));
-    let mut files = Files::new(files_api)
+    let mut files_upload = FilesUpload::new(files_api)
         .set_batch_size(batch_size)
         .set_verify_store(verify_store)
         .set_max_retries(max_retries);
-    let mut upload_event_rx = files.get_upload_events();
+    let mut upload_event_rx = files_upload.get_upload_events();
     // keep track of the progress in a separate task
     let progress_bar_clone = progress_bar.clone();
     let total_existing_chunks_clone = total_existing_chunks.clone();
@@ -384,7 +384,7 @@ async fn upload_files(
     // upload the files
     println!("Uploading {chunks_to_upload_len} chunks",);
     let now = Instant::now();
-    let upload_result = match files.upload_chunks(chunks_to_upload).await {
+    let upload_result = match files_upload.upload_chunks(chunks_to_upload).await {
         Ok(()) => {Ok(())}
         Err(ClientError::Transfers(WalletError::Transfer(TransfersError::NotEnoughBalance(
             available,
@@ -405,9 +405,9 @@ async fn upload_files(
 
     let elapsed = format_elapsed_time(now.elapsed());
     let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
-    let total_storage_cost = files.get_upload_storage_cost();
-    let total_royalty_fees = files.get_upload_royalty_fees();
-    let final_balance = files.get_upload_final_balance();
+    let total_storage_cost = files_upload.get_upload_storage_cost();
+    let total_royalty_fees = files_upload.get_upload_royalty_fees();
+    let final_balance = files_upload.get_upload_final_balance();
 
     let uploaded_chunks = chunks_to_upload_len - total_existing_chunks as usize;
     println!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
