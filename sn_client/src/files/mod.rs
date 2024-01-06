@@ -6,23 +6,36 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub(crate) mod api;
 pub(crate) mod download;
+pub(crate) mod upload;
 
 use crate::{
-    error::{Error as ClientError, Result},
-    FilesApi,
+    chunks::{to_chunk, DataMapLevel, Error as ChunksError, SmallFile},
+    error::Result,
+    Client, WalletClient,
 };
 use bytes::Bytes;
-use futures::{stream::FuturesUnordered, StreamExt};
+use futures::{future::join_all, stream::FuturesOrdered, StreamExt};
+use itertools::Itertools;
 use libp2p::PeerId;
-use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_transfers::NanoTokens;
-use std::{collections::HashSet, path::PathBuf};
-use tokio::{
-    sync::mpsc::{self},
-    task::JoinHandle,
+use self_encryption::{
+    self, decrypt_full_set, ChunkInfo, DataMap, EncryptedChunk, StreamSelfDecryptor,
+    MIN_ENCRYPTABLE_BYTES,
 };
+use sn_protocol::{
+    storage::{Chunk, ChunkAddress},
+    NetworkAddress,
+};
+use sn_transfers::{LocalWallet, NanoTokens};
+use std::{
+    fs::{self, create_dir_all, File},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    time::Instant,
+};
+use tempfile::tempdir;
+use tokio::task;
+use tracing::trace;
 use xor_name::XorName;
 
 /// `BATCH_SIZE` determines the number of chunks that are processed in parallel during the payment and upload process.
@@ -31,421 +44,397 @@ pub const BATCH_SIZE: usize = 16;
 /// The maximum number of retries to perform on a failed chunk.
 pub const MAX_UPLOAD_RETRIES: usize = 3;
 
-/// The maximum number of sequential payment failures before aborting the upload process.
-const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
-
-/// The events emitted from the upload process.
-pub enum FileUploadEvent {
-    /// Uploaded a Chunk to the network
-    Uploaded(ChunkAddress),
-    /// The Chunk already exists in the network, skipping upload.
-    AlreadyExistsInNetwork(ChunkAddress),
-    /// Failed to upload a chunk to the network. This event can be emitted multiple times for a single ChunkAddress
-    /// if retries are enabled.
-    FailedToUpload(ChunkAddress),
-    /// Payment for a batch of chunk has been made.
-    PayedForChunks {
-        storage_cost: NanoTokens,
-        royalty_fees: NanoTokens,
-        new_balance: NanoTokens,
-    },
-    /// The upload process has terminated with an error.
-    Error,
+/// File APIs.
+#[derive(Clone)]
+pub struct FilesApi {
+    pub(crate) client: Client,
+    pub(crate) wallet_dir: PathBuf,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-struct ChunkInfo {
-    name: XorName,
-    path: PathBuf,
-}
+/// This is the (file xorname, datamap_data, filesize, and chunks)
+/// If the DataMapChunk exists and is not stored on the network, then it will not be accessible at this address of ChunkAddress(XorName) .
+type ChunkFileResult = Result<(ChunkAddress, Option<Bytes>, u64, Vec<(XorName, PathBuf)>)>;
 
-/// `Files` provides functionality for uploading and downloading chunks with support for retries and queuing.
-/// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.
-/// To modify the configuration, use the provided setter methods (`set_...` functions).
-pub struct Files {
-    // Configurations
-    batch_size: usize,
-    verify_store: bool,
-    show_holders: bool,
-    max_retries: usize,
-    // API
-    api: FilesApi,
-    // Uploads
-    failed_chunks: HashSet<ChunkInfo>,
-    uploading_chunks: FuturesUnordered<JoinHandle<(ChunkInfo, Result<()>)>>,
-    // Upload stats
-    upload_storage_cost: NanoTokens,
-    upload_royalty_fees: NanoTokens,
-    upload_final_balance: NanoTokens,
-    // Events
-    event_sender: Option<mpsc::Sender<FileUploadEvent>>,
-    logged_event_sender_absence: bool,
-}
-
-impl Files {
-    /// Creates a new instance of `Files` with the default configuration.
-    /// To modify the configuration, use the provided setter methods (`set_...` functions).
-    pub fn new(files_api: FilesApi) -> Self {
-        Self {
-            batch_size: BATCH_SIZE,
-            verify_store: true,
-            show_holders: false,
-            max_retries: MAX_UPLOAD_RETRIES,
-            api: files_api,
-            failed_chunks: Default::default(),
-            uploading_chunks: Default::default(),
-            upload_storage_cost: NanoTokens::zero(),
-            upload_royalty_fees: NanoTokens::zero(),
-            upload_final_balance: NanoTokens::zero(),
-            event_sender: None,
-            logged_event_sender_absence: false,
-        }
+impl FilesApi {
+    /// Create file apis instance.
+    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
+        Self { client, wallet_dir }
     }
 
-    /// Sets the default batch size that determines the number of chunks that are processed in parallel during the
-    /// payment and upload process.
+    /// Return the client instance
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
+    /// Create a new WalletClient for a given root directory.
+    pub fn wallet(&self) -> Result<WalletClient> {
+        let path = self.wallet_dir.as_path();
+        let wallet = LocalWallet::load_from(path)?;
+
+        Ok(WalletClient::new(self.client.clone(), wallet))
+    }
+
+    /// Read bytes from the network. The contents are spread across
+    /// multiple chunks in the network. This function invokes the self-encryptor and returns
+    /// the data that was initially stored.
     ///
-    /// By default, this option is set to the constant `BATCH_SIZE: usize = 64`.
-    pub fn set_batch_size(mut self, batch_size: usize) -> Self {
-        self.batch_size = batch_size;
-        self
-    }
+    /// Takes `position` and `length` arguments which specify the start position
+    /// and the length of bytes to be read.
+    /// Passing `0` to position reads the data from the beginning,
+    /// and the `length` is just an upper limit.
+    pub async fn read_from(
+        &self,
+        address: ChunkAddress,
+        position: usize,
+        length: usize,
+        batch_size: usize,
+    ) -> Result<Bytes> {
+        trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
+        let chunk = self.client.get_chunk(address, false).await?;
 
-    /// Sets the option to verify the chunks after they have been uploaded.
-    ///
-    /// By default, this option is set to true.
-    pub fn set_verify_store(mut self, verify_store: bool) -> Self {
-        self.verify_store = verify_store;
-        self
-    }
-
-    /// Sets the option to display the holders that are expected to be holding a chunk during verification.
-    ///
-    /// By default, this option is set to false.
-    pub fn set_show_holders(mut self, show_holders: bool) -> Self {
-        self.show_holders = show_holders;
-        self
-    }
-
-    /// Sets the maximum number of retries to perform if a chunk fails to upload.
-    ///
-    /// By default, this option is set to the constant `MAX_UPLOAD_RETRIES: usize = 3`.
-    pub fn set_max_retries(mut self, max_retries: usize) -> Self {
-        self.max_retries = max_retries;
-        self
-    }
-
-    /// Returns a receiver for file upload events.
-    /// This method is optional and the upload process can be performed without it.
-    pub fn get_upload_events(&mut self) -> mpsc::Receiver<FileUploadEvent> {
-        let (event_sender, event_receiver) = mpsc::channel(10);
-        // should we return error if an sender is already set?
-        self.event_sender = Some(event_sender);
-
-        event_receiver
-    }
-
-    /// Returns the total amount of fees paid for storage after the upload completes.
-    pub fn get_upload_storage_cost(&self) -> NanoTokens {
-        self.upload_storage_cost
-    }
-    /// Returns the total amount of royalties paid after the upload completes.
-    pub fn get_upload_royalty_fees(&self) -> NanoTokens {
-        self.upload_royalty_fees
-    }
-
-    /// Returns the final wallet balance after the upload completes.
-    pub fn get_upload_final_balance(&self) -> NanoTokens {
-        self.upload_final_balance
-    }
-
-    /// get the set of failed chunks that could not be uploaded
-    pub fn get_failed_chunks(&self) -> HashSet<XorName> {
-        self.failed_chunks
-            .clone()
-            .into_iter()
-            .map(|chunk_info| chunk_info.name)
-            .collect()
-    }
-
-    /// Uploads the provided chunks to the network.
-    /// If you want to track the upload progress, use the `get_upload_events` method.
-    pub async fn upload_chunks(&mut self, chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
-        // make sure we log that the event sender is absent atleast once
-        self.logged_event_sender_absence = false;
-
-        // clean up the trackers/stats
-        self.failed_chunks = Default::default();
-        self.uploading_chunks = Default::default();
-        self.upload_storage_cost = NanoTokens::zero();
-        self.upload_royalty_fees = NanoTokens::zero();
-        self.upload_final_balance = NanoTokens::zero();
-
-        let result = self.upload(chunks).await;
-
-        // send an event indicating that the upload process completed with an error
-        if result.is_err() {
-            self.send_event(FileUploadEvent::Error).await?;
+        // First try to deserialize a LargeFile, if it works, we go and seek it.
+        // If an error occurs, we consider it to be a SmallFile.
+        if let Ok(data_map) = self.unpack_chunk(chunk.clone(), batch_size).await {
+            return self.seek(data_map, position, length).await;
         }
 
-        // drop the sender to close the channel.
-        let sender = self.event_sender.take();
-        drop(sender);
+        // The error above is ignored to avoid leaking the storage format detail of SmallFiles and LargeFiles.
+        // The basic idea is that we're trying to deserialize as one, and then the other.
+        // The cost of it is that some errors will not be seen without a refactor.
+        let mut bytes = chunk.value().clone();
 
-        result
+        let _ = bytes.split_to(position);
+        bytes.truncate(length);
+
+        Ok(bytes)
     }
 
-    async fn upload(&mut self, chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
-        let mut sequential_payment_fails = 0;
+    /// Tries to chunk the file, returning `(head_address, data_map_chunk, file_size, chunk_names)`
+    /// and writes encrypted chunks to disk.
+    pub fn chunk_file(
+        file_path: &Path,
+        chunk_dir: &Path,
+        include_data_map_in_chunks: bool,
+    ) -> ChunkFileResult {
+        let mut file = File::open(file_path)?;
+        let metadata = file.metadata()?;
+        let file_size = metadata.len();
 
-        let mut chunk_batches = Vec::with_capacity(chunks.len());
-        chunk_batches.extend(
-            chunks
-                .into_iter()
-                .map(|(name, path)| ChunkInfo { name, path }),
-        );
-        let n_batches = {
-            let total_elements = chunk_batches.len();
-            // to get +1 if there is a remainder
-            (total_elements + self.batch_size - 1) / self.batch_size
-        };
-        let mut batch = 1;
-        let chunk_batches = chunk_batches.chunks(self.batch_size);
+        let (head_address, data_map_chunk, mut chunks_paths) =
+            if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
+                let mut bytes = Vec::new();
+                let _ = file.read_to_end(&mut bytes)?;
+                let chunk = package_small(SmallFile::new(bytes.into())?)?;
 
-        for chunks_batch in chunk_batches {
-            trace!("Uploading batch {batch}/{n_batches}");
-            if sequential_payment_fails >= MAX_SEQUENTIAL_PAYMENT_FAILS {
-                return Err(ClientError::SequentialUploadPaymentError);
-            }
-            // if the payment fails, we can continue to the next batch
-            let res = self.handle_chunk_batch(chunks_batch, false).await;
-            batch += 1;
-            match res {
-                Ok(()) => {
-                    trace!("Uploaded batch {batch}/{n_batches}");
-                    sequential_payment_fails = 0;
-                }
-                Err(err) => match err {
-                    ClientError::CouldNotVerifyTransfer(err) => {
-                        warn!(
-                            "Failed to verify transfer validity in the network. Chunk batch will be retried... {err:?}"
-                        );
-                        println!(
-                            "Failed to verify transfer validity in the network. Chunk batch will be retried..."
-                        );
-                        sequential_payment_fails += 1;
-                        continue;
-                    }
-                    error => {
-                        return Err(error);
-                    }
-                },
-            }
-        }
+                // Write the result to disk
+                let small_chunk_file_path = chunk_dir.join(hex::encode(*chunk.name()));
+                info!("Creating normal small chunk in {small_chunk_file_path:?}");
+                let mut output_file = File::create(small_chunk_file_path.clone())?;
+                output_file.write_all(&chunk.value)?;
 
-        // ensure we wait on any remaining uploading_chunks
-        self.progress_uploading_chunks(true).await?;
-
-        let mut retry_count = 0;
-        let max_retries = self.max_retries;
-        let mut failed_chunks_to_upload = self.take_failed_chunks();
-        while !failed_chunks_to_upload.is_empty() && retry_count < max_retries {
-            warn!(
-                "Retrying failed chunks {:?}, attempt {retry_count}/{max_retries}...",
-                failed_chunks_to_upload.len()
-            );
-            println!(
-                "Retrying failed chunks {:?}, attempt {retry_count}/{max_retries}...",
-                failed_chunks_to_upload.len()
-            );
-            retry_count += 1;
-            let batches = failed_chunks_to_upload.chunks(self.batch_size);
-            for chunks_batch in batches {
-                self.handle_chunk_batch(chunks_batch, true).await?;
-            }
-            // ensure we wait on any remaining uploading_chunks w/ drain_all
-            self.progress_uploading_chunks(true).await?;
-
-            // take the new failed chunks
-            failed_chunks_to_upload = self.take_failed_chunks();
-        }
-
-        Ok(())
-    }
-
-    /// Handles a batch of chunks for upload. This includes paying for the chunks, uploading them,
-    /// and handling any errors that occur during the process.
-    ///
-    /// If `failed_batch` is true, we emit FilesUploadEvent::Uploaded for the skipped_chunks. This is because,
-    /// the failed_batch was already paid for, but could not be verified on the first try.
-    async fn handle_chunk_batch(
-        &mut self,
-        chunks_batch: &[ChunkInfo],
-        failed_batch: bool,
-    ) -> Result<()> {
-        // while we don't have a full batch_size of ongoing uploading_chunks
-        // we can pay for the next batch and carry on
-        self.progress_uploading_chunks(false).await?;
-
-        // pay for and verify payment... if we don't verify here, chunks uploads will surely fail
-        let (payee_map, skipped_chunks) = match self
-            .api
-            .pay_for_chunks(chunks_batch.iter().map(|info| info.name).collect())
-            .await
-        {
-            Ok(((storage_cost, royalty_fees, new_balance), (payee_map, skipped_chunks))) => {
-                // store the stats and emit event too
-                self.upload_storage_cost = self
-                    .upload_storage_cost
-                    .checked_add(storage_cost)
-                    .ok_or(ClientError::TotalPriceTooHigh)?;
-                self.upload_royalty_fees = self
-                    .upload_royalty_fees
-                    .checked_add(royalty_fees)
-                    .ok_or(ClientError::TotalPriceTooHigh)?;
-                self.upload_final_balance = new_balance;
-                self.send_event(FileUploadEvent::PayedForChunks {
-                    storage_cost,
-                    royalty_fees,
-                    new_balance,
-                })
-                .await?;
-                (payee_map, skipped_chunks)
-            }
-            Err(err) => return Err(err),
-        };
-
-        let mut chunks_to_upload = chunks_batch.to_vec();
-        // don't reupload skipped chunks
-        chunks_to_upload.retain(|info| !skipped_chunks.contains(&info.name));
-
-        // send update about the existing chunks
-        for chunk in skipped_chunks {
-            if failed_batch {
-                // the chunk was already paid for but might have not been verified on the first try.
-                self.send_event(FileUploadEvent::Uploaded(ChunkAddress::new(chunk)))
-                    .await?;
+                (
+                    *chunk.name(),
+                    None,
+                    vec![(*chunk.name(), small_chunk_file_path)],
+                )
             } else {
-                // if during the first try we skip the chunk, then it was already uploaded.
-                self.send_event(FileUploadEvent::AlreadyExistsInNetwork(ChunkAddress::new(
-                    chunk,
-                )))
-                .await?;
-            }
-        }
-
-        // upload paid chunks
-        for chunk_info in chunks_to_upload.into_iter() {
-            let files_api = self.api.clone();
-            let verify_store = self.verify_store;
-
-            let payee = if let Some(payee) = payee_map
-                .iter()
-                .find(|itr| itr.0 == chunk_info.name)
-                .map(|result| result.1)
-            {
-                payee
-            } else {
-                error!(
-                    "Cannot find payee of {:?} among the payee_map",
-                    chunk_info.name
-                );
-                continue;
+                let (data_map_chunk, chunks) = encrypt_large(file_path, chunk_dir)?;
+                (*data_map_chunk.name(), Some(data_map_chunk), chunks)
             };
 
-            // Spawn a task for each chunk to be uploaded
-            let handle = tokio::spawn(Self::upload_chunk(
-                files_api,
-                chunk_info,
-                payee,
-                verify_store,
-            ));
+        debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
 
-            self.progress_uploading_chunks(false).await?;
+        debug!(
+            "Is there a datamap for chuink?? {:?}",
+            data_map_chunk.is_some()
+        );
+        // only write out the data_map if one exists for this file
+        if let Some(data_map_chunk) = &data_map_chunk {
+            if include_data_map_in_chunks {
+                info!("Data_map_chunk to be written!");
+                let data_map_path = chunk_dir.join(hex::encode(*data_map_chunk.name()));
 
-            self.uploading_chunks.push(handle);
-        }
+                trace!("Data_map_chunk being written to {data_map_path:?}");
+                let mut output_file = File::create(data_map_path.clone())?;
+                output_file.write_all(&data_map_chunk.value)?;
 
-        Ok(())
-    }
-
-    /// Progresses the uploading of chunks. If the number of ongoing uploading chunks is less than the batch size,
-    /// it pays for the next batch and continues. If an error occurs during the upload, it will be returned.
-    ///
-    /// If `drain_all` is true, will wait for all ongoing uploads to complete before returning.
-    async fn progress_uploading_chunks(&mut self, drain_all: bool) -> Result<()> {
-        while drain_all || self.uploading_chunks.len() >= self.batch_size {
-            if let Some(result) = self.uploading_chunks.next().await {
-                // bail if we've had any errors so far
-                match result? {
-                    (chunk_info, Ok(())) => {
-                        self.send_event(FileUploadEvent::Uploaded(ChunkAddress::new(
-                            chunk_info.name,
-                        )))
-                        .await?;
-                    }
-                    (chunk_info, Err(err)) => {
-                        warn!("Failed to upload a chunk: {err}");
-                        self.send_event(FileUploadEvent::FailedToUpload(ChunkAddress::new(
-                            chunk_info.name,
-                        )))
-                        .await?;
-                        // store the failed chunk to be retried later
-                        self.failed_chunks.insert(chunk_info);
-                    }
-                }
-            } else {
-                // we're finished
-                break;
+                chunks_paths.push((*data_map_chunk.name(), data_map_path))
             }
         }
-        Ok(())
+
+        Ok((
+            ChunkAddress::new(head_address),
+            data_map_chunk.map(|c| c.value),
+            file_size,
+            chunks_paths,
+        ))
     }
 
-    /// Store chunks from chunk_paths (assuming payments have already been made and are in our local wallet).
-    /// If verify_store is true, we will attempt to fetch the chunks from the network to verify it is stored.
-    async fn upload_chunk(
-        files_api: FilesApi,
-        chunk_info: ChunkInfo,
+    /// Directly writes Chunks to the network in the
+    /// form of immutable self encrypted chunks.
+    ///
+    pub async fn get_local_payment_and_upload_chunk(
+        &self,
+        chunk: Chunk,
         payee: PeerId,
         verify_store: bool,
-    ) -> (ChunkInfo, Result<()>) {
-        let chunk_address = ChunkAddress::new(chunk_info.name);
-        let bytes = match tokio::fs::read(chunk_info.path.clone()).await {
-            Ok(bytes) => Bytes::from(bytes),
-            Err(error) => {
-                warn!("Chunk {chunk_address:?} could not be read from the system from {:?}. 
-            Normally this happens if it has been uploaded, but the cleanup process was interrupted. Ignoring error: {error}", chunk_info.path);
+    ) -> Result<()> {
+        let chunk_addr = chunk.network_address();
+        trace!("Client upload started for chunk: {chunk_addr:?} to {payee:?}");
 
-                return (chunk_info, Ok(()));
-            }
-        };
-        let chunk = Chunk::new(bytes);
-        match files_api
-            .get_local_payment_and_upload_chunk(chunk, payee, verify_store)
-            .await
-        {
-            Ok(()) => (chunk_info, Ok(())),
-            Err(err) => (chunk_info, Err(err)),
-        }
-    }
+        let wallet_client = self.wallet()?;
+        let payment = wallet_client.get_payment_for_addr(&chunk_addr)?;
 
-    fn take_failed_chunks(&mut self) -> Vec<ChunkInfo> {
-        std::mem::take(&mut self.failed_chunks)
-            .into_iter()
-            .collect()
-    }
+        debug!(
+            "{:?} payments for chunk: {chunk_addr:?}:  {payment:?}",
+            payment
+        );
 
-    async fn send_event(&mut self, event: FileUploadEvent) -> Result<()> {
-        if let Some(sender) = self.event_sender.as_ref() {
-            sender.send(event).await.map_err(|err| {
-                error!("Could not send files event due to {err:?}");
-                ClientError::CouldNotSendFilesEvent
-            })?;
-        } else if !self.logged_event_sender_absence {
-            info!("Files upload event sender is not set. Use get_upload_events() if you need to keep track of the progress");
-            self.logged_event_sender_absence = true;
-        }
+        self.client
+            .store_chunk(chunk, payee, payment, verify_store)
+            .await?;
+
+        trace!("Client upload completed for chunk: {chunk_addr:?}");
         Ok(())
     }
+
+    /// Pay for a given set of chunks.
+    ///
+    /// Returns the cost and the resulting new balance of the local wallet.
+    pub async fn pay_for_chunks(
+        &self,
+        chunks: Vec<XorName>,
+    ) -> Result<(
+        (NanoTokens, NanoTokens, NanoTokens),
+        (Vec<(XorName, PeerId)>, Vec<XorName>),
+    )> {
+        let mut wallet_client = self.wallet()?;
+        info!("Paying for and uploading {:?} chunks", chunks.len());
+
+        let ((storage_cost, royalties_fees), (payee_map, skipped_chunks)) =
+            wallet_client
+                .pay_for_storage(chunks.iter().map(|name| {
+                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
+                }))
+                .await?;
+
+        wallet_client.store_local_wallet()?;
+        let new_balance = wallet_client.balance();
+        Ok((
+            (storage_cost, royalties_fees, new_balance),
+            (payee_map, skipped_chunks),
+        ))
+    }
+
+    // --------------------------------------------
+    // ---------- Private helpers -----------------
+    // --------------------------------------------
+
+    /// Used for testing
+    pub async fn upload_test_bytes(&self, bytes: Bytes, verify: bool) -> Result<NetworkAddress> {
+        let temp_dir = tempdir()?;
+        let file_path = temp_dir.path().join("tempfile");
+        let mut file = File::create(&file_path)?;
+        file.write_all(&bytes)?;
+
+        let chunk_path = temp_dir.path().join("chunk_path");
+        create_dir_all(chunk_path.clone())?;
+
+        let (head_address, _data_map, _file_size, chunks_paths) =
+            Self::chunk_file(&file_path, &chunk_path, true)?;
+
+        for (_chunk_name, chunk_path) in chunks_paths {
+            let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
+            self.get_local_payment_and_upload_chunk(chunk, PeerId::random(), verify)
+                .await?;
+        }
+
+        Ok(NetworkAddress::ChunkAddress(head_address))
+    }
+
+    // Gets and decrypts chunks from the network using nothing else but the data map.
+    // If a downloaded path is given, the decrypted file will be written to the given path,
+    // by the decryptor directly.
+    // Otherwise, will assume the fetched content is a small one and return as bytes.
+    async fn read_all(
+        &self,
+        data_map: DataMap,
+        decrypted_file_path: Option<PathBuf>,
+        show_holders: bool,
+        batch_size: usize,
+    ) -> Result<Option<Bytes>> {
+        let mut decryptor = if let Some(path) = decrypted_file_path {
+            StreamSelfDecryptor::decrypt_to_file(Box::new(path), &data_map)?
+        } else {
+            let encrypted_chunks = self.try_get_chunks(data_map.infos()).await?;
+            let bytes = decrypt_full_set(&data_map, &encrypted_chunks)
+                .map_err(ChunksError::SelfEncryption)?;
+            return Ok(Some(bytes));
+        };
+
+        let expected_count = data_map.infos().len();
+        // let mut missing_chunks = Vec::new();
+        let mut ordered_read_futures = FuturesOrdered::new();
+        let now = Instant::now();
+
+        let mut index = 0;
+
+        for chunk_info in data_map.infos().iter() {
+            let dst_hash = chunk_info.dst_hash;
+            // The futures are executed concurrently,
+            // but the result is returned in the order in which they were inserted.
+            ordered_read_futures.push_back(async move {
+                (
+                    dst_hash,
+                    self.client
+                        .get_chunk(ChunkAddress::new(dst_hash), show_holders)
+                        .await,
+                )
+            });
+
+            if ordered_read_futures.len() >= batch_size || index + batch_size > expected_count {
+                while let Some((dst_hash, result)) = ordered_read_futures.next().await {
+                    let chunk = result.map_err(|error| {
+                        error!("Chunk missing {dst_hash:?} with {error:?}");
+                        ChunksError::ChunkMissing(dst_hash)
+                    })?;
+                    let encrypted_chunk = EncryptedChunk {
+                        index,
+                        content: chunk.value().clone(),
+                    };
+                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
+
+                    index += 1;
+                    info!("Client (read all) download progress {index:?}/{expected_count:?}");
+                    println!("Client (read all) download progress {index:?}/{expected_count:?}");
+                }
+            }
+        }
+
+        let elapsed = now.elapsed();
+        println!("Client downloaded file in {elapsed:?}");
+
+        Ok(None)
+    }
+
+    /// Extracts a file DataMapLevel from a chunk.
+    /// If the DataMapLevel is not the first level mapping directly to the user's contents,
+    /// the process repeats itself until it obtains the first level DataMapLevel.
+    pub async fn unpack_chunk(&self, mut chunk: Chunk, batch_size: usize) -> Result<DataMap> {
+        loop {
+            match rmp_serde::from_slice(chunk.value()).map_err(ChunksError::Deserialisation)? {
+                DataMapLevel::First(data_map) => {
+                    return Ok(data_map);
+                }
+                DataMapLevel::Additional(data_map) => {
+                    let serialized_chunk = self
+                        .read_all(data_map, None, false, batch_size)
+                        .await?
+                        .expect("error encountered on reading additional datamap");
+                    chunk = rmp_serde::from_slice(&serialized_chunk)
+                        .map_err(ChunksError::Deserialisation)?;
+                }
+            }
+        }
+    }
+    // Gets a subset of chunks from the network, decrypts and
+    // reads `len` bytes of the data starting at given `pos` of original file.
+    async fn seek(&self, data_map: DataMap, pos: usize, len: usize) -> Result<Bytes> {
+        let info = self_encryption::seek_info(data_map.file_size(), pos, len);
+        let range = &info.index_range;
+        let all_infos = data_map.infos();
+
+        let encrypted_chunks = self
+            .try_get_chunks(
+                (range.start..range.end + 1)
+                    .clone()
+                    .map(|i| all_infos[i].clone())
+                    .collect_vec(),
+            )
+            .await?;
+
+        let bytes =
+            self_encryption::decrypt_range(&data_map, &encrypted_chunks, info.relative_pos, len)
+                .map_err(ChunksError::SelfEncryption)?;
+
+        Ok(bytes)
+    }
+
+    async fn try_get_chunks(&self, chunks_info: Vec<ChunkInfo>) -> Result<Vec<EncryptedChunk>> {
+        let expected_count = chunks_info.len();
+        let mut retrieved_chunks = vec![];
+
+        let mut tasks = Vec::new();
+        for chunk_info in chunks_info.clone().into_iter() {
+            let client = self.client.clone();
+            let task = task::spawn(async move {
+                let chunk = client
+                    .get_chunk(ChunkAddress::new(chunk_info.dst_hash), false)
+                    .await
+                    .map_err(|error| {
+                        error!("Chunk missing {:?} with {error:?}", chunk_info.dst_hash);
+                        ChunksError::ChunkMissing(chunk_info.dst_hash)
+                    })?;
+                Ok::<EncryptedChunk, ChunksError>(EncryptedChunk {
+                    index: chunk_info.index,
+                    content: chunk.value().clone(),
+                })
+            });
+            tasks.push(task);
+        }
+
+        // This swallowing of errors is basically a compaction into a single
+        // error saying "didn't get all chunks".
+        retrieved_chunks.extend(join_all(tasks).await.into_iter().flatten().flatten());
+
+        info!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
+        println!(
+            "Client download progress {:?}/{expected_count:?}",
+            retrieved_chunks.len()
+        );
+
+        if expected_count > retrieved_chunks.len() {
+            let missing_chunks: Vec<XorName> = chunks_info
+                .iter()
+                .filter_map(|expected_info| {
+                    if retrieved_chunks.iter().any(|retrieved_chunk| {
+                        XorName::from_content(&retrieved_chunk.content) == expected_info.dst_hash
+                    }) {
+                        None
+                    } else {
+                        Some(expected_info.dst_hash)
+                    }
+                })
+                .collect();
+            Err(ChunksError::NotEnoughChunksRetrieved {
+                expected: expected_count,
+                retrieved: retrieved_chunks.len(),
+                missing_chunks,
+            })?
+        } else {
+            Ok(retrieved_chunks)
+        }
+    }
+}
+
+/// Encrypts a [`LargeFile`] and returns the resulting address and all chunk names.
+/// Correspondent encrypted chunks are written in the specified output folder.
+/// Does not store anything to the network.
+///
+/// Returns data map as a chunk, and the resulting chunks
+fn encrypt_large(file_path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<(XorName, PathBuf)>)> {
+    Ok(crate::chunks::encrypt_large(file_path, output_dir)?)
+}
+
+/// Packages a [`SmallFile`] and returns the resulting address and the chunk.
+/// Does not store anything to the network.
+fn package_small(file: SmallFile) -> Result<Chunk> {
+    let chunk = to_chunk(file.bytes());
+    if chunk.value().len() >= self_encryption::MIN_ENCRYPTABLE_BYTES {
+        return Err(ChunksError::SmallFilePaddingNeeded(chunk.value().len()).into());
+    }
+    Ok(chunk)
 }

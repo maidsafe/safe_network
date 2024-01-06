@@ -12,7 +12,7 @@ use crate::common::{client::get_gossip_client_and_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
-use sn_client::{Error as ClientError, Files, WalletClient, BATCH_SIZE};
+use sn_client::{Error as ClientError, FilesDownload, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_networking::{Error as NetworkError, GetRecordError};
 use sn_protocol::{
@@ -199,12 +199,11 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    let mut files = Files::new(files_api.clone()).set_show_holders(true);
-    files.upload_chunks(chunks).await?;
+    let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+    files_upload.upload_chunks(chunks).await?;
 
-    files_api
-        .read_bytes(file_addr, None, None, false, BATCH_SIZE)
-        .await?;
+    let mut files_download = FilesDownload::new(files_api);
+    let _ = files_download.download_file(file_addr, None).await?;
 
     Ok(())
 }
@@ -246,11 +245,10 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         .await?;
 
     println!("Reading {content_addr:?} expected to fail");
+    let mut files_download = FilesDownload::new(files_api);
     assert!(
         matches!(
-            files_api
-                .read_bytes(content_addr, None, None, false, BATCH_SIZE)
-                .await,
+            files_download.download_file(content_addr, None).await,
             Err(ClientError::Network(NetworkError::GetRecordError(
                 GetRecordError::RecordNotFound
             )))

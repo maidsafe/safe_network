@@ -18,7 +18,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, FilesApi, WalletClient, BATCH_SIZE};
+use sn_client::{Client, Error, FilesApi, FilesDownload, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -410,12 +410,12 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let mut files = Files::new(files_api.clone()).set_show_holders(true);
-            if let Err(err) = files.upload_chunks(chunks).await {
+            let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+            if let Err(err) = files_upload.upload_chunks(chunks).await {
                 bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
             }
-            let royalties = files.get_upload_royalty_fees();
-            let storage_cost = files.get_upload_storage_cost();
+            let royalties = files_upload.get_upload_royalty_fees();
+            let storage_cost = files_upload.get_upload_storage_cost();
             let cost = royalties
                 .checked_add(storage_cost)
                 .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
@@ -625,9 +625,9 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = files_api
-                .read_bytes(*addr, None, None, false, BATCH_SIZE)
-                .await?;
+            let mut file_download = FilesDownload::new(files_api);
+            let _ = file_download.download_file(*addr, None).await?;
+
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
