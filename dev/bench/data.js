@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704551135652,
+  "lastUpdate": 1704551278110,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "distinct": false,
-          "id": "de78a7cf6dd7e95cab84619078551ae3ae9279dd",
-          "message": "feat(cli): properly init color_eyre, advise on hex parse fail",
-          "timestamp": "2023-09-05T11:36:04Z",
-          "tree_id": "602bdb1784777f6e39d2c0468d691edf5db147ea",
-          "url": "https://github.com/maidsafe/safe_network/commit/de78a7cf6dd7e95cab84619078551ae3ae9279dd"
-        },
-        "date": 1693921904225,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 81.22368,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
           "id": "b0fc3772509a0a3f302e01e4b5645a2a1fb67814",
           "message": "ci: move to use VERSION_BUMP_COMMIT_PAT instead of RELEASE_PAT\n\nThey are effectively both the same, BUMP_COMMIT is org wide so\nRELEASE_PAT can be deprecated.",
           "timestamp": "2023-09-05T12:15:01Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "26118ec56bb56764dade1d3ecf864908118b58dd",
+          "message": "fix(cli): read datamap when the xor addr of the file is provided",
+          "timestamp": "2024-01-06T13:35:17Z",
+          "tree_id": "da01517da3e1ef2a1439ff4818577e49c8c888d0",
+          "url": "https://github.com/maidsafe/safe_network/commit/26118ec56bb56764dade1d3ecf864908118b58dd"
+        },
+        "date": 1704551277238,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 44,
             "unit": "MB"
           }
         ]
