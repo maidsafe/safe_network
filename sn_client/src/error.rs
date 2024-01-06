@@ -82,4 +82,7 @@ pub enum Error {
 
     #[error("Could not send files event")]
     CouldNotSendFilesEvent,
+
+    #[error("Incorrect Download Option")]
+    IncorrectDownloadOption,
 }

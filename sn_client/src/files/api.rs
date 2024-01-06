@@ -37,8 +37,8 @@ use xor_name::XorName;
 /// File APIs.
 #[derive(Clone)]
 pub struct FilesApi {
-    client: Client,
-    wallet_dir: PathBuf,
+    pub(crate) client: Client,
+    pub(crate) wallet_dir: PathBuf,
 }
 
 /// This is the (file xorname, datamap_data, filesize, and chunks)
