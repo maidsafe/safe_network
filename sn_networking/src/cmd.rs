@@ -106,6 +106,7 @@ pub enum SwarmCmd {
     },
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
+        key: RecordKey,
         sender: oneshot::Sender<NanoTokens>,
     },
     /// Notify the node received a payment.
@@ -402,8 +403,18 @@ impl SwarmDriver {
                 trace!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());
             }
-            SwarmCmd::GetLocalStoreCost { sender } => {
-                let cost = self.swarm.behaviour_mut().kademlia.store_mut().store_cost();
+            SwarmCmd::GetLocalStoreCost { key, sender } => {
+                let record_exists = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .contains(&key);
+                let cost = if record_exists {
+                    NanoTokens::zero()
+                } else {
+                    self.swarm.behaviour_mut().kademlia.store_mut().store_cost()
+                };
 
                 let _res = sender.send(cost);
             }
