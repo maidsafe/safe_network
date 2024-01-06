@@ -175,17 +175,35 @@ pub(crate) async fn files_cmds(
             let files_api: FilesApi = FilesApi::new(client.clone(), download_dir.clone());
 
             match (file_name, file_addr) {
-                (Some(name), Some(address)) => {
-                    let bytes = hex::decode(address).expect("Input address is not a hex string");
-                    let xor_name = XorName(
+                (Some(name), Some(address_provided)) => {
+                    let bytes =
+                        hex::decode(&address_provided).expect("Input address is not a hex string");
+                    let xor_name_provided = XorName(
                         bytes
                             .try_into()
                             .expect("Failed to parse XorName from hex string"),
                     );
+                    // try to read the data_map if it exists locally.
+                    let uploaded_files_path = root_dir.join(UPLOADED_FILES);
+                    let expected_data_map_location = uploaded_files_path.join(address_provided);
+                    let local_data_map = {
+                        if expected_data_map_location.exists() {
+                            let uploaded_file_metadata =
+                                UploadedFile::read(&expected_data_map_location)?;
+
+                            uploaded_file_metadata.data_map.map(|bytes| Chunk {
+                                address: ChunkAddress::new(xor_name_provided),
+                                value: bytes,
+                            })
+                        } else {
+                            None
+                        }
+                    };
+
                     download_file(
                         &files_api,
-                        &xor_name,
-                        &(name, None),
+                        &xor_name_provided,
+                        &(name, local_data_map),
                         &download_dir,
                         show_holders,
                         batch_size,
