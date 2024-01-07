@@ -11,7 +11,6 @@ use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::Hash;
-use std::collections::HashMap;
 
 /// Data and CashNote cmds - recording spends or creating, updating, and removing data.
 ///
@@ -29,7 +28,7 @@ pub enum Cmd {
         /// Holder of the replication keys.
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
-        keys: HashMap<NetworkAddress, RecordType>,
+        keys: Vec<(NetworkAddress, RecordType)>,
     },
 }
 
@@ -37,7 +36,7 @@ impl std::fmt::Debug for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Cmd::Replicate { holder, keys } => {
-                let first_ten_keys: Vec<_> = keys.keys().take(10).collect();
+                let first_ten_keys: Vec<_> = keys.iter().take(10).collect();
                 f.debug_struct("Cmd::Replicate")
                     .field("holder", holder)
                     .field("keys_len", &keys.len())
