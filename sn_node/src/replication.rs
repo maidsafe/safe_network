@@ -17,7 +17,6 @@ use sn_protocol::{
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::HashMap;
 use tokio::task::{spawn, JoinHandle};
 
 impl Node {
@@ -165,7 +164,7 @@ impl Node {
             let our_peer_id = network.peer_id;
             let our_address = NetworkAddress::from_peer(our_peer_id);
             #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-            let keys = HashMap::from([(data_addr.clone(), record_type.clone())]);
+            let keys = vec![(data_addr.clone(), record_type.clone())];
 
             for peer_id in sorted_based_on_addr {
                 trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");

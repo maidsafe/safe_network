@@ -646,16 +646,6 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
-    // Add a list of keys of a holder to Replication Fetcher.
-    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    pub fn add_keys_to_replication_fetcher(
-        &self,
-        holder: PeerId,
-        keys: HashMap<NetworkAddress, RecordType>,
-    ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
-    }
-
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
@@ -709,20 +699,10 @@ impl Network {
         let cmd_sender = self.swarm_cmd_sender.clone();
 
         if capacity == 0 {
-            if matches!(cmd, SwarmCmd::AddKeysToReplicationFetcher { .. }) {
-                // we can safely drop AddKeysToReplicationFetcher
-                // it should be reattempted in a few seconds and if we can cope we'll do it.
-                warn!(
-                    "SwarmCmd channel is full. Dropping AddKeysToReplicationFetcher: {:?}",
-                    cmd
-                );
-                return Ok(());
-            } else {
-                error!(
-                    "SwarmCmd channel is full. Await capacity to send: {:?}",
-                    cmd
-                );
-            }
+            error!(
+                "SwarmCmd channel is full. Await capacity to send: {:?}",
+                cmd
+            );
         }
 
         // Spawn a task to send the SwarmCmd and keep this fn sync
