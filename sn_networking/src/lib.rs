@@ -698,6 +698,10 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GossipHandler)
     }
 
+    pub fn trigger_interval_replication(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
+    }
+
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
         let capacity = self.swarm_cmd_sender.capacity();

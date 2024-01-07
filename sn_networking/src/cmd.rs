@@ -19,7 +19,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use sn_protocol::{
-    messages::{Request, Response},
+    messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -144,6 +144,8 @@ pub enum SwarmCmd {
         key: RecordKey,
         record_type: RecordType,
     },
+    /// Triggers interval repliation
+    TriggerIntervalReplication,
     /// The keys added to the replication fetcher are later used to fetch the Record from network
     AddKeysToReplicationFetcher {
         holder: PeerId,
@@ -215,6 +217,9 @@ impl Debug for SwarmCmd {
                     "SwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
+            }
+            SwarmCmd::TriggerIntervalReplication => {
+                write!(f, "SwarmCmd::TriggerIntervalReplication")
             }
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 write!(
@@ -353,6 +358,9 @@ impl SwarmDriver {
 
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
         match cmd {
+            SwarmCmd::TriggerIntervalReplication => {
+                self.try_interval_replication()?;
+            }
             SwarmCmd::AddKeysToReplicationFetcher { holder, keys } => {
                 // Only handle those non-exist and in close range keys
                 let keys_to_store = self.select_non_existent_records_for_replications(&keys);
@@ -760,5 +768,55 @@ impl SwarmDriver {
                 true
             }
         }
+    }
+
+    fn try_interval_replication(&mut self) -> Result<()> {
+        // Already contains self_peer_id
+        let mut closest_k_peers = self.get_closest_k_value_local_peers();
+
+        // remove our peer id from the calculations here:
+        let our_peer_id = *self.swarm.local_peer_id();
+        closest_k_peers.retain(|peer_id| peer_id != &our_peer_id);
+
+        // Only grab the closest nodes within the REPLICATE_RANGE
+        let replicate_targets = closest_k_peers
+            .into_iter()
+            // add some leeway to allow for divergent knowledge
+            .take(REPLICATE_RANGE)
+            .collect::<Vec<_>>();
+
+        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
+        let all_records: HashMap<_, _> = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref()
+            .values()
+            .cloned()
+            .collect();
+
+        if !all_records.is_empty() {
+            trace!(
+                "Sending a replication list of {} keys to {replicate_targets:?} ",
+                all_records.len()
+            );
+            let request = Request::Cmd(Cmd::Replicate {
+                holder: NetworkAddress::from_peer(our_peer_id),
+                keys: all_records,
+            });
+            for peer_id in replicate_targets {
+                let request_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .request_response
+                    .send_request(&peer_id, request.clone());
+                trace!("Sending request {request_id:?} to peer {peer_id:?}");
+                let _ = self.pending_requests.insert(request_id, None);
+            }
+            trace!("Pending Requests now: {:?}", self.pending_requests.len());
+        }
+
+        Ok(())
     }
 }
