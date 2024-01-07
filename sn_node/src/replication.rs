@@ -21,55 +21,9 @@ use std::collections::HashMap;
 use tokio::task::{spawn, JoinHandle};
 
 impl Node {
-    /// Sends _all_ record keys every interval to all peers.
-    pub(crate) async fn try_interval_replication(network: Network) -> Result<()> {
-        let start = std::time::Instant::now();
-        trace!("Try trigger interval replication started@{start:?}");
-        // Already contains self_peer_id
-        let mut closest_k_peers = network.get_closest_k_value_local_peers().await?;
-
-        // remove our peer id from the calculations here:
-        closest_k_peers.retain(|peer_id| peer_id != &network.peer_id);
-
-        // Only grab the closest nodes
-        let closest_k_peers = closest_k_peers
-            .into_iter()
-            // add some leeway to allow for divergent knowledge
-            .take(REPLICATE_RANGE)
-            .collect::<Vec<_>>();
-
-        trace!("Try trigger interval replication started@{start:?}, peers found_and_sorted, took: {:?}", start.elapsed());
-
-        let our_peer_id = network.peer_id;
-        let our_address = NetworkAddress::from_peer(our_peer_id);
-
-        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-        let all_records = network.get_all_local_record_addresses().await?;
-
-        if !all_records.is_empty() {
-            debug!(
-                "Informing all peers of our records. {:?} peers will be informed",
-                closest_k_peers.len()
-            );
-            for peer_id in closest_k_peers {
-                trace!(
-                    "Sending a replication list of {} keys to {peer_id:?} ",
-                    all_records.len()
-                );
-                let request = Request::Cmd(Cmd::Replicate {
-                    holder: our_address.clone(),
-                    keys: all_records.clone(),
-                });
-
-                network.send_req_ignore_reply(request, peer_id)?;
-            }
-        }
-
-        trace!(
-            "Try trigger interval started@{start:?}, took {:?}",
-            start.elapsed()
-        );
-        Ok(())
+    /// Sends _all_ record keys every interval to all peers within the REPLICATE_RANGE.
+    pub(crate) fn try_interval_replication(network: Network) -> Result<()> {
+        Ok(network.trigger_interval_replication()?)
     }
 
     /// Get the Record from a peer or from the network without waiting.

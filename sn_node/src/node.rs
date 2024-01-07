@@ -242,7 +242,6 @@ impl Node {
 
                         let _handle = spawn(async move {
                             if let Err(err) = Self::try_interval_replication(network)
-                                .await
                             {
                                 error!("Error while triggering replication {err:?}");
                             }
@@ -296,7 +295,7 @@ impl Node {
                 let net_clone = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(err) = Self::try_interval_replication(net_clone).await {
+                    if let Err(err) = Self::try_interval_replication(net_clone) {
                         error!("Error while triggering replication {err:?}");
                     }
                 });
@@ -308,7 +307,7 @@ impl Node {
                 let net = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(e) = Self::try_interval_replication(net).await {
+                    if let Err(e) = Self::try_interval_replication(net) {
                         error!("Error while triggering replication {e:?}");
                     }
                 });
