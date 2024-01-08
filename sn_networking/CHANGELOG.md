@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.20...sn_networking-v0.12.21) - 2024-01-08
+
+### Other
+- *(node)* simplify GetStoreCost flow
+
 ## [0.12.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.19...sn_networking-v0.12.20) - 2024-01-08
 
 ### Other
