@@ -222,6 +222,7 @@ impl Files {
             match res {
                 Ok(()) => {
                     trace!("Uploaded batch {batch}/{n_batches}");
+                    sequential_payment_fails = 0;
                 }
                 Err(err) => match err {
                     ClientError::CouldNotVerifyTransfer(err) => {
