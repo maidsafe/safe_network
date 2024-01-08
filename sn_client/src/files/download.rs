@@ -13,6 +13,7 @@ use crate::{
 };
 use bytes::Bytes;
 use futures::{stream::FuturesOrdered, StreamExt};
+use itertools::Itertools;
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk, StreamSelfDecryptor};
 use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{fs, path::PathBuf, time::Instant};
@@ -33,11 +34,11 @@ pub enum FilesDownloadEvent {
     Error,
 }
 
-// Internally used to differentiate between downloading to a path/returning the bytes directly.
-// This allows us to have a single function for both the download kinds.
-enum DownloadKind {
-    FileSystem(StreamSelfDecryptor),
-    Bytes(Vec<EncryptedChunk>),
+// Internally used to differentiate between the various ways that the downloaded chunks are returned.
+enum DownloadReturnType {
+    EncryptedChunks(Vec<EncryptedChunk>),
+    DecryptedBytes(Bytes),
+    WrittenToFileSystem,
 }
 
 /// `FilesDownload` provides functionality for downloading chunks with support for retries and queuing.
@@ -109,9 +110,13 @@ impl FilesDownload {
         address: ChunkAddress,
         data_map_chunk: Option<Chunk>,
     ) -> Result<Bytes> {
-        if let Some(bytes) = self.download(address, data_map_chunk, None).await? {
+        if let Some(bytes) = self
+            .download_entire_file(address, data_map_chunk, None)
+            .await?
+        {
             Ok(bytes)
         } else {
+            error!("IncorrectDownloadOption: expected to get decrypted bytes, but we got None");
             Err(ClientError::IncorrectDownloadOption)
         }
     }
@@ -123,19 +128,87 @@ impl FilesDownload {
         path: PathBuf,
     ) -> Result<()> {
         if self
-            .download(address, data_map_chunk, Some(path))
+            .download_entire_file(address, data_map_chunk, Some(path))
             .await?
-            .is_some()
+            .is_none()
         {
+            error!(
+                "IncorrectDownloadOption: expected to not get any decrypted bytes, but got Some"
+            );
             Err(ClientError::IncorrectDownloadOption)
         } else {
             Ok(())
         }
     }
 
+    /// Read bytes from the network. The contents are spread across
+    /// multiple chunks in the network. This function invokes the self-encryptor and returns
+    /// the data that was initially stored.
+    ///
+    /// Takes `position` and `length` arguments which specify the start position
+    /// and the length of bytes to be read.
+    /// Passing `0` to position reads the data from the beginning,
+    /// and the `length` is just an upper limit.
+    pub async fn download_from(
+        &mut self,
+        address: ChunkAddress,
+        position: usize,
+        length: usize,
+    ) -> Result<Bytes> {
+        trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
+        let chunk = self.api.client.get_chunk(address, false).await?;
+
+        // First try to deserialize a LargeFile, if it works, we go and seek it.
+        // If an error occurs, we consider it to be a SmallFile.
+        if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
+            return self.seek(data_map, position, length).await;
+        }
+
+        // The error above is ignored to avoid leaking the storage format detail of SmallFiles and LargeFiles.
+        // The basic idea is that we're trying to deserialize as one, and then the other.
+        // The cost of it is that some errors will not be seen without a refactor.
+        let mut bytes = chunk.value().clone();
+
+        let _ = bytes.split_to(position);
+        bytes.truncate(length);
+
+        Ok(bytes)
+    }
+
+    // Gets a subset of chunks from the network, decrypts and
+    // reads `len` bytes of the data starting at given `pos` of original file.
+    async fn seek(&mut self, data_map: DataMap, pos: usize, len: usize) -> Result<Bytes> {
+        let info = self_encryption::seek_info(data_map.file_size(), pos, len);
+        let range = &info.index_range;
+        let all_infos = data_map.infos();
+
+        let to_download = (range.start..range.end + 1)
+            .clone()
+            .map(|i| all_infos[i].clone())
+            .collect_vec();
+        let to_download = DataMap::new(to_download);
+
+        // not written to file and return the encrypted chunks
+        if let DownloadReturnType::EncryptedChunks(encrypted_chunks) =
+            self.read(to_download, None, true, false).await?
+        {
+            let bytes = self_encryption::decrypt_range(
+                &data_map,
+                &encrypted_chunks,
+                info.relative_pos,
+                len,
+            )
+            .map_err(ChunksError::SelfEncryption)?;
+            Ok(bytes)
+        } else {
+            error!("IncorrectDownloadOption: expected to get the encrypted chunks back");
+            Err(ClientError::IncorrectDownloadOption)
+        }
+    }
+
     /// Download a file from the network.
     /// If you want to track the download progress, use the `get_events` method.
-    async fn download(
+    async fn download_entire_file(
         &mut self,
         address: ChunkAddress,
         data_map_chunk: Option<Chunk>,
@@ -145,7 +218,7 @@ impl FilesDownload {
         self.logged_event_sender_absence = false;
 
         let result = self
-            .read_bytes(address, data_map_chunk, downloaded_file_path)
+            .read_entire_file(address, data_map_chunk, downloaded_file_path)
             .await;
 
         // send an event indicating that the download process completed with an error
@@ -160,7 +233,7 @@ impl FilesDownload {
         result
     }
 
-    async fn read_bytes(
+    async fn read_entire_file(
         &mut self,
         address: ChunkAddress,
         data_map_chunk: Option<Chunk>,
@@ -182,7 +255,17 @@ impl FilesDownload {
         // first try to deserialize a LargeFile, if it works, we go and seek it
         if let Ok(data_map) = self.unpack_chunk(head_chunk.clone()).await {
             // read_all emits
-            self.read_all(data_map, downloaded_file_path, false).await
+            match self
+                .read(data_map, downloaded_file_path, false, false)
+                .await?
+            {
+                DownloadReturnType::EncryptedChunks(_) => {
+                    error!("IncorrectDownloadOption: we should not be getting the encrypted chunks back as it is set to false.");
+                    Err(ClientError::IncorrectDownloadOption)
+                }
+                DownloadReturnType::DecryptedBytes(bytes) => Ok(Some(bytes)),
+                DownloadReturnType::WrittenToFileSystem => Ok(None),
+            }
         } else {
             self.send_event(FilesDownloadEvent::ChunksCount(1)).await?;
             self.send_event(FilesDownloadEvent::Downloaded(address))
@@ -214,12 +297,19 @@ impl FilesDownload {
     // If a downloaded path is given, the decrypted file will be written to the given path,
     // by the decryptor directly.
     // Otherwise, will assume the fetched content is a small one and return as bytes.
-    async fn read_all(
+    async fn read(
         &mut self,
         data_map: DataMap,
         decrypted_file_path: Option<PathBuf>,
+        return_encrypted_chunks: bool,
         we_are_downloading_a_datamap: bool,
-    ) -> Result<Option<Bytes>> {
+    ) -> Result<DownloadReturnType> {
+        // used internally
+        enum DownloadKind {
+            FileSystem(StreamSelfDecryptor),
+            Memory(Vec<EncryptedChunk>),
+        }
+
         let mut download_kind = {
             if let Some(path) = decrypted_file_path {
                 DownloadKind::FileSystem(StreamSelfDecryptor::decrypt_to_file(
@@ -227,7 +317,7 @@ impl FilesDownload {
                     &data_map,
                 )?)
             } else {
-                DownloadKind::Bytes(Vec::new())
+                DownloadKind::Memory(Vec::new())
             }
         };
 
@@ -280,7 +370,7 @@ impl FilesDownload {
                         DownloadKind::FileSystem(decryptor) => {
                             let _ = decryptor.next_encrypted(encrypted_chunk)?;
                         }
-                        DownloadKind::Bytes(collector) => collector.push(encrypted_chunk),
+                        DownloadKind::Memory(collector) => collector.push(encrypted_chunk),
                     }
 
                     index += 1;
@@ -293,11 +383,17 @@ impl FilesDownload {
         info!("Client downloaded file in {elapsed:?}");
 
         match download_kind {
-            DownloadKind::FileSystem(_) => Ok(None),
-            DownloadKind::Bytes(collector) => {
-                let bytes =
-                    decrypt_full_set(&data_map, &collector).map_err(ChunksError::SelfEncryption)?;
-                Ok(Some(bytes))
+            DownloadKind::FileSystem(_) => Ok(DownloadReturnType::WrittenToFileSystem),
+            DownloadKind::Memory(collector) => {
+                let result = if return_encrypted_chunks {
+                    DownloadReturnType::EncryptedChunks(collector)
+                } else {
+                    let bytes = decrypt_full_set(&data_map, &collector)
+                        .map_err(ChunksError::SelfEncryption)?;
+                    DownloadReturnType::DecryptedBytes(bytes)
+                };
+
+                Ok(result)
             }
         }
     }
@@ -312,12 +408,15 @@ impl FilesDownload {
                     return Ok(data_map);
                 }
                 DataMapLevel::Additional(data_map) => {
-                    let serialized_chunk = self
-                        .read_all(data_map, None, true)
-                        .await?
-                        .expect("error encountered on reading additional datamap");
-                    chunk = rmp_serde::from_slice(&serialized_chunk)
-                        .map_err(ChunksError::Deserialisation)?;
+                    if let DownloadReturnType::DecryptedBytes(serialized_chunk) =
+                        self.read(data_map, None, false, true).await?
+                    {
+                        chunk = rmp_serde::from_slice(&serialized_chunk)
+                            .map_err(ChunksError::Deserialisation)?;
+                    } else {
+                        error!("IncorrectDownloadOption: we should be getting the decrypted bytes back.");
+                        return Err(ClientError::IncorrectDownloadOption);
+                    }
                 }
             }
         }
