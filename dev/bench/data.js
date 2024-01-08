@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704715567887,
+  "lastUpdate": 1704715720540,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "07a1cca1e15233f19123400d05a32a7371694647",
-          "message": "feat: encryptioni output to disk",
-          "timestamp": "2023-09-05T14:37:04Z",
-          "tree_id": "31a0cfa8b524d2790d8774336bb5c4e08eeada26",
-          "url": "https://github.com/maidsafe/safe_network/commit/07a1cca1e15233f19123400d05a32a7371694647"
-        },
-        "date": 1693931672355,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 76.23066,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "46e2bebae9f052cb9c0f96963ad91b4ab4f5994f",
+          "message": "test(CI): replicate bench with heavy uploads",
+          "timestamp": "2024-01-08T11:28:47Z",
+          "tree_id": "77bcf0d352c1c922e3b57101f87f7abfa86f5d52",
+          "url": "https://github.com/maidsafe/safe_network/commit/46e2bebae9f052cb9c0f96963ad91b4ab4f5994f"
+        },
+        "date": 1704715719983,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 46,
             "unit": "MB"
           }
         ]
