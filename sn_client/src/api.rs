@@ -531,7 +531,7 @@ impl Client {
         };
 
         let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::All,
+            get_quorum: Quorum::Majority,
             re_attempt: true,
             target_record: record_to_verify,
             expected_holders,
@@ -554,7 +554,7 @@ impl Client {
             PrettyPrintRecordKey::from(&key)
         );
         let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::All,
+            get_quorum: Quorum::Majority,
             re_attempt: true,
             target_record: None,
             expected_holders: Default::default(),

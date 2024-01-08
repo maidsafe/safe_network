@@ -19,15 +19,60 @@ use sn_transfers::{
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
+fn parse_signed_spends(address: &SpendAddress, record: &Record) -> Result<SignedSpend> {
+    match get_singed_spends_from_record(record)?.as_slice() {
+        [one, two, ..] => {
+            error!("Found double spend for {address:?}");
+            Err(Error::DoubleSpendAttempt(
+                Box::new(one.to_owned()),
+                Box::new(two.to_owned()),
+            ))
+        }
+        [one] => {
+            trace!("Spend get for address: {address:?} successful");
+            Ok(one.clone())
+        }
+        _ => {
+            trace!("Found no spend for {address:?}");
+            Err(Error::NoSpendFoundInsideRecord(*address))
+        }
+    }
+}
+
 impl Network {
     /// Gets a spend from the Network.
+    /// The target may have high chance not present in the network yet.
+    ///
+    /// If we get a quorum error, we enable re-try
+    pub async fn try_get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
+        let key = NetworkAddress::from_spend_address(address).to_record_key();
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::Majority,
+            re_attempt: false,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
+        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
+            Ok(record) => record,
+            Err(err) => return Err(err),
+        };
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(&record.key)
+        );
+
+        parse_signed_spends(&address, &record)
+    }
+
+    /// Gets a spend from the Network.
+    /// We know it must be there, and has to be fetched from Quorum::All
     ///
     /// If we get a quorum error, we enable re-try
     pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
-            re_attempt: false,
+            re_attempt: true,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -58,23 +103,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        match get_singed_spends_from_record(&record)?.as_slice() {
-            [one, two, ..] => {
-                error!("Found double spend for {address:?}");
-                Err(Error::DoubleSpendAttempt(
-                    Box::new(one.to_owned()),
-                    Box::new(two.to_owned()),
-                ))
-            }
-            [one] => {
-                trace!("Spend get for address: {address:?} successful");
-                Ok(one.clone())
-            }
-            _ => {
-                trace!("Found no spend for {address:?}");
-                Err(Error::NoSpendFoundInsideRecord(address))
-            }
-        }
+        parse_signed_spends(&address, &record)
     }
 
     /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
