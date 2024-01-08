@@ -106,6 +106,90 @@ impl FilesDownload {
         event_receiver
     }
 
+    /// Download bytes from the network. The contents are spread across
+    /// multiple chunks in the network. This function invokes the self-encryptor and returns
+    /// the data that was initially stored.
+    ///
+    /// Takes `position` and `length` arguments which specify the start position
+    /// and the length of bytes to be read.
+    /// Passing `0` to position reads the data from the beginning,
+    /// and the `length` is just an upper limit.
+    pub async fn download_from(
+        &mut self,
+        address: ChunkAddress,
+        position: usize,
+        length: usize,
+    ) -> Result<Bytes> {
+        // clean up the trackers/stats
+        self.logged_event_sender_absence = false;
+
+        let result = self.download_from_inner(address, position, length).await;
+
+        // send an event indicating that the download process completed with an error
+        if result.is_err() {
+            self.send_event(FilesDownloadEvent::Error).await?;
+        }
+
+        // drop the sender to close the channel.
+        let sender = self.event_sender.take();
+        drop(sender);
+
+        result
+    }
+
+    pub async fn download_from_inner(
+        &mut self,
+        address: ChunkAddress,
+        position: usize,
+        length: usize,
+    ) -> Result<Bytes> {
+        debug!("Reading {length} bytes at: {address:?}, starting from position: {position}");
+        let chunk = self.api.client.get_chunk(address, false).await?;
+
+        // First try to deserialize a LargeFile, if it works, we go and seek it.
+        // If an error occurs, we consider it to be a SmallFile.
+        if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
+            let info = self_encryption::seek_info(data_map.file_size(), position, length);
+            let range = &info.index_range;
+            let all_infos = data_map.infos();
+
+            let to_download = (range.start..range.end + 1)
+                .clone()
+                .map(|i| all_infos[i].clone())
+                .collect_vec();
+            let to_download = DataMap::new(to_download);
+
+            // not written to file and return the encrypted chunks
+            if let DownloadReturnType::EncryptedChunks(encrypted_chunks) =
+                self.read(to_download, None, true, false).await?
+            {
+                let bytes = self_encryption::decrypt_range(
+                    &data_map,
+                    &encrypted_chunks,
+                    info.relative_pos,
+                    length,
+                )
+                .map_err(ChunksError::SelfEncryption)?;
+                return Ok(bytes);
+            } else {
+                error!("IncorrectDownloadOption: expected to get the encrypted chunks back");
+                return Err(ClientError::IncorrectDownloadOption);
+            }
+        }
+
+        // The error above is ignored to avoid leaking the storage format detail of SmallFiles and LargeFiles.
+        // The basic idea is that we're trying to deserialize as one, and then the other.
+        // The cost of it is that some errors will not be seen without a refactor.
+        let mut bytes = chunk.value().clone();
+
+        let _ = bytes.split_to(position);
+        bytes.truncate(length);
+
+        Ok(bytes)
+    }
+
+    /// Download a file from the network and get the decrypted bytes.
+    /// If the data_map_chunk is not provided, the DataMap is fetched from the network using the provided address.
     pub async fn download_file(
         &mut self,
         address: ChunkAddress,
@@ -122,6 +206,8 @@ impl FilesDownload {
         }
     }
 
+    /// Download a file from the network and write it to the provided path.
+    /// If the data_map_chunk is not provided, the DataMap is fetched from the network using the provided address.
     pub async fn download_file_to_path(
         &mut self,
         address: ChunkAddress,
@@ -142,71 +228,6 @@ impl FilesDownload {
         }
     }
 
-    /// Read bytes from the network. The contents are spread across
-    /// multiple chunks in the network. This function invokes the self-encryptor and returns
-    /// the data that was initially stored.
-    ///
-    /// Takes `position` and `length` arguments which specify the start position
-    /// and the length of bytes to be read.
-    /// Passing `0` to position reads the data from the beginning,
-    /// and the `length` is just an upper limit.
-    pub async fn download_from(
-        &mut self,
-        address: ChunkAddress,
-        position: usize,
-        length: usize,
-    ) -> Result<Bytes> {
-        trace!("Reading {length} bytes at: {address:?}, starting from position: {position}");
-        let chunk = self.api.client.get_chunk(address, false).await?;
-
-        // First try to deserialize a LargeFile, if it works, we go and seek it.
-        // If an error occurs, we consider it to be a SmallFile.
-        if let Ok(data_map) = self.unpack_chunk(chunk.clone()).await {
-            return self.seek(data_map, position, length).await;
-        }
-
-        // The error above is ignored to avoid leaking the storage format detail of SmallFiles and LargeFiles.
-        // The basic idea is that we're trying to deserialize as one, and then the other.
-        // The cost of it is that some errors will not be seen without a refactor.
-        let mut bytes = chunk.value().clone();
-
-        let _ = bytes.split_to(position);
-        bytes.truncate(length);
-
-        Ok(bytes)
-    }
-
-    // Gets a subset of chunks from the network, decrypts and
-    // reads `len` bytes of the data starting at given `pos` of original file.
-    async fn seek(&mut self, data_map: DataMap, pos: usize, len: usize) -> Result<Bytes> {
-        let info = self_encryption::seek_info(data_map.file_size(), pos, len);
-        let range = &info.index_range;
-        let all_infos = data_map.infos();
-
-        let to_download = (range.start..range.end + 1)
-            .clone()
-            .map(|i| all_infos[i].clone())
-            .collect_vec();
-        let to_download = DataMap::new(to_download);
-
-        // not written to file and return the encrypted chunks
-        if let DownloadReturnType::EncryptedChunks(encrypted_chunks) =
-            self.read(to_download, None, true, false).await?
-        {
-            let bytes = self_encryption::decrypt_range(
-                &data_map,
-                &encrypted_chunks,
-                info.relative_pos,
-                len,
-            )
-            .map_err(ChunksError::SelfEncryption)?;
-            Ok(bytes)
-        } else {
-            error!("IncorrectDownloadOption: expected to get the encrypted chunks back");
-            Err(ClientError::IncorrectDownloadOption)
-        }
-    }
-
     /// Download a file from the network.
     /// If you want to track the download progress, use the `get_events` method.
     async fn download_entire_file(
@@ -219,7 +240,7 @@ impl FilesDownload {
         self.logged_event_sender_absence = false;
 
         let result = self
-            .read_entire_file(address, data_map_chunk, downloaded_file_path)
+            .download_entire_file_inner(address, data_map_chunk, downloaded_file_path)
             .await;
 
         // send an event indicating that the download process completed with an error
@@ -234,7 +255,7 @@ impl FilesDownload {
         result
     }
 
-    async fn read_entire_file(
+    async fn download_entire_file_inner(
         &mut self,
         address: ChunkAddress,
         data_map_chunk: Option<Chunk>,
@@ -281,23 +302,12 @@ impl FilesDownload {
         }
     }
 
-    async fn send_event(&mut self, event: FilesDownloadEvent) -> Result<()> {
-        if let Some(sender) = self.event_sender.as_ref() {
-            sender.send(event).await.map_err(|err| {
-                error!("Could not send files download event due to {err:?}");
-                ClientError::CouldNotSendFilesEvent
-            })?;
-        } else if !self.logged_event_sender_absence {
-            info!("Files download event sender is not set. Use get_events() if you need to keep track of the progress");
-            self.logged_event_sender_absence = true;
-        }
-        Ok(())
-    }
-
-    // Gets and decrypts chunks from the network using nothing else but the data map.
-    // If a downloaded path is given, the decrypted file will be written to the given path,
-    // by the decryptor directly.
-    // Otherwise, will assume the fetched content is a small one and return as bytes.
+    /// The internal logic to download the provided chunks inside the datamap.
+    /// If the decrypted_file_path is provided, we return DownloadReturnType::WrittenToFileSystem
+    /// If return_encrypted_chunks is true, we return DownloadReturnType::EncryptedChunks
+    /// Else we return DownloadReturnType::DecryptedBytes
+    ///
+    /// Set we_are_downloading_a_datamap if we want to emit the DatamapCount else we emit ChunksCount
     async fn read(
         &mut self,
         data_map: DataMap,
@@ -432,6 +442,19 @@ impl FilesDownload {
                 }
             }
         }
+    }
+
+    async fn send_event(&mut self, event: FilesDownloadEvent) -> Result<()> {
+        if let Some(sender) = self.event_sender.as_ref() {
+            sender.send(event).await.map_err(|err| {
+                error!("Could not send files download event due to {err:?}");
+                ClientError::CouldNotSendFilesEvent
+            })?;
+        } else if !self.logged_event_sender_absence {
+            info!("Files download event sender is not set. Use get_events() if you need to keep track of the progress");
+            self.logged_event_sender_absence = true;
+        }
+        Ok(())
     }
 
     async fn get_chunk(
