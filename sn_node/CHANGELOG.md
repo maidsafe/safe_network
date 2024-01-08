@@ -2771,6 +2771,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(release)* sn_cli-v0.86.103/sn_networking-v0.12.21/sn_faucet-v0.1.125/sn_client-v0.99.42
 - *(node)* simplify GetStoreCost flow
 
+## [0.102.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.101.0...sn_node-v0.102.0) - 2024-01-08
+
+### Added
+- provide `--first` argument for `safenode`
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
