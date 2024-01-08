@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704734511082,
+  "lastUpdate": 1704734645881,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "e0816753a278174c0371ad70eb24fd258d601241",
-          "message": "chore: remove unused transfer dep in networking",
-          "timestamp": "2023-09-07T08:19:12Z",
-          "tree_id": "a1b7a7e0345f1c4d6dd441473d3dbac3967556f5",
-          "url": "https://github.com/maidsafe/safe_network/commit/e0816753a278174c0371ad70eb24fd258d601241"
-        },
-        "date": 1694089332495,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 85.11897,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 43,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "fad0b936a9ff8baf0e5bbd231dc0becde0882622",
+          "message": "feat: provide `--first` argument for `safenode`\n\nIn the previous setup, if the `network-contacts` feature was enabled, running `safenode` with no\n`--peer` args caused the peers to be retrieved from the default network contacts file. In the\nsituation where we're launching a genesis node, we don't want this behaviour, and hence we introduce\na `--first` flag to make a distinction.\n\nThe `safenode` binary was changed to remove the use of `unwrap_or` when calling\n`get_peers_from_args` so that an error will actually occur when peers are not obtainable, rather\nthan swallowing it by returning an empty peer list.\n\nThe `testnet` binary was also updated to use the `--first` argument when a new network was being\ncreated. This necessitated a change to the memcheck workflow, which starts a testnet in a slightly\nunusual fashion. The `--first` argument had to be applied to the initial node that is launched, and\nthen the subsequent local testnet launch had to be changed to use a join rather than starting a new\nnetwork. This is because the first peer launched by `testnet`, using `--first`, did not have the\ninitial node launched outside of `testnet` in its peer list. For the test to work correctly, an\nenvironment variable was introduced to control the starting port deployment inventory, because using\na join network means the port range starts one digit higher. We will be able to remove this when we\nswitch over to using the node manager.\n\nBREAKING CHANGE: the `parse_peer_args` function was renamed `get_peers_from_args` and the error\nhandling was changed. The new function name is semantically more accurate, and because\n`sn_peers_acquisition` is a library crate, we should prefer an `Error` type rather than using\n`eyre`.\n\nTried to add some unit tests for the `get_peers_from_args` function, but Tokio being an optional\ndependency proved to be problematic.",
+          "timestamp": "2024-01-08T16:46:36Z",
+          "tree_id": "9ad1c400a409314a5664da467007ef7f44363d0e",
+          "url": "https://github.com/maidsafe/safe_network/commit/fad0b936a9ff8baf0e5bbd231dc0becde0882622"
+        },
+        "date": 1704734645530,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 72,
             "unit": "MB"
           }
         ]
