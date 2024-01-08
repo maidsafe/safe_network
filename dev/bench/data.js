@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704714455201,
+  "lastUpdate": 1704714457451,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f73428c8b784a831d1a6e649e60cb06598c1df4a",
-          "message": "chore(network): add logs on incoming connection",
-          "timestamp": "2023-09-05T09:50:05Z",
-          "tree_id": "6632f89c51c4d35053331c3fa417fd7ba405372b",
-          "url": "https://github.com/maidsafe/safe_network/commit/f73428c8b784a831d1a6e649e60cb06598c1df4a"
-        },
-        "date": 1693916401529,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 911.63855,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 814,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 63,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256",
+          "message": "fix(client): reset sequential_payment_fails on batch upload success",
+          "timestamp": "2024-01-08T10:53:03Z",
+          "tree_id": "7c7ac0f13a6ed0b58fcebe4580decd1e8c86595f",
+          "url": "https://github.com/maidsafe/safe_network/commit/ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256"
+        },
+        "date": 1704714456627,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 227,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 70,
             "unit": "MB"
           }
         ]
