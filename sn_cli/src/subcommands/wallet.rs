@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::get_stdin_response;
 use bls::{PublicKey, SecretKey, PK_SIZE};
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
@@ -161,8 +162,27 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 Ok(sk) => MainSecretKey::new(sk),
                 Err(err) => return Err(eyre!("Failed to parse hex-encoded SK: {err:?}")),
             };
+            // check for existing wallet with balance
+            let existing_balance = match LocalWallet::load_from(root_dir) {
+                Ok(wallet) => wallet.balance(),
+                Err(_) => NanoTokens::zero(),
+            };
+            // if about to overwrite an existing balance, confirm operation
+            if existing_balance > NanoTokens::zero() {
+                let prompt = format!("Existing wallet has balance of {existing_balance}. Replace with new wallet? [y/N]");
+                let response = get_stdin_response(&prompt);
+                if response.trim() != "y" {
+                    // Do nothing, return ok and prevent any further operations
+                    println!("Exiting without creating new wallet");
+                    return Ok(());
+                }
+                // remove existing wallet
+                let new_location = LocalWallet::clear(root_dir)?;
+                println!("Old wallet stored at {}", new_location.display());
+            }
+            // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
-            let local_wallet = LocalWallet::load_from_main_key(root_dir, main_sk)?;
+            let local_wallet = LocalWallet::create_from_key(root_dir, main_sk)?;
             let balance = local_wallet.balance();
             println!("Wallet created (balance {balance}) for main public key: {main_pubkey:?}.");
 
