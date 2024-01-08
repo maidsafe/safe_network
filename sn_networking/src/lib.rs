@@ -321,6 +321,13 @@ impl Network {
                 return Ok(());
             }
             warn!("The obtained {n_verified} verified proofs did not match the expected {expected_n_verified} verified proofs");
+            // Sleep to avoid firing queries too close to even choke the nodes further.
+            let waiting_time = if retry_attempts == 1 {
+                MIN_WAIT_BEFORE_READING_A_PUT
+            } else {
+                MIN_WAIT_BEFORE_READING_A_PUT + MIN_WAIT_BEFORE_READING_A_PUT
+            };
+            tokio::time::sleep(waiting_time).await;
         }
 
         Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
