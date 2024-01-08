@@ -410,58 +410,69 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        backoff::future::retry(ExponentialBackoff{
-            max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
-            ..Default::default()
-        }, || async {
-            let pretty_key = PrettyPrintRecordKey::from(&key);
-            info!(
-                "Getting record of {pretty_key:?}. with cfg {cfg:?}",
-            );
-            let (sender, receiver) = oneshot::channel();
-            self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
-                key: key.clone(),
-                sender,
-                cfg: cfg.clone(),
-            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
-            let result = receiver.await.map_err(|e| {
+        backoff::future::retry(
+            ExponentialBackoff {
+                max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
+                ..Default::default()
+            },
+            || async {
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
+                let (sender, receiver) = oneshot::channel();
+                self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+                    key: key.clone(),
+                    sender,
+                    cfg: cfg.clone(),
+                })
+                .map_err(|err| BackoffError::Transient {
+                    err,
+                    retry_after: None,
+                })?;
+                let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
             }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
 
-            // log the results
-            match &result {
-                Ok(_) => {
-                    info!("Record returned: {pretty_key:?}. Retrying via backoff...");
-                }
-                Err(GetRecordError::RecordDoesNotMatch(_)) => {
-                    warn!("The returned record does not match target {pretty_key:?}. Retrying via backoff...");
-                }
-                Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
-                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Retying via backoff...");
-                }
-                // libp2p RecordNotFound does mean no holders answered.
-                // it does not actually mean the record does not exist.
-                // just that those asked did not have it
-                Err(GetRecordError::RecordNotFound) => {
-                    warn!("No holder of record '{pretty_key:?}' found. Retrying via backoff...");
-                }
-                Err(GetRecordError::SplitRecord { .. }) => {
-                    error!("Encountered a split record for {pretty_key:?} Retrying via backoff...");
-                }
-                Err(GetRecordError::QueryTimeout) => {
-                    error!("Encountered query timeout for {pretty_key:?} Retrying via backoff...");
-                }
-            };
+                // log the results
+                match &result {
+                    Ok(_) => {
+                        info!("Record returned: {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::RecordDoesNotMatch(_)) => {
+                        warn!("The returned record does not match target {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                        warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
+                    }
+                    // libp2p RecordNotFound does mean no holders answered.
+                    // it does not actually mean the record does not exist.
+                    // just that those asked did not have it
+                    Err(GetRecordError::RecordNotFound) => {
+                        warn!("No holder of record '{pretty_key:?}' found.");
+                    }
+                    Err(GetRecordError::SplitRecord { .. }) => {
+                        error!("Encountered a split record for {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::QueryTimeout) => {
+                        error!("Encountered query timeout for {pretty_key:?}.");
+                    }
+                };
 
-            // if we dont want to retry, throw permanent error
-            if !cfg.re_attempt {
-                if let Err(e) = result {
-                    return Err(BackoffError::Permanent(Error::from(e)))
+                // if we dont want to retry, throw permanent error
+                if !cfg.re_attempt {
+                    if let Err(e) = result {
+                        return Err(BackoffError::Permanent(Error::from(e)));
+                    }
                 }
-            }
-            result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})
-        })
+                if result.is_err() {
+                    trace!("Getting record from network of {pretty_key:?} via backoff...");
+                }
+                result.map_err(|err| BackoffError::Transient {
+                    err: Error::from(err),
+                    retry_after: None,
+                })
+            },
+        )
         .await
     }
 
@@ -574,6 +585,8 @@ impl Network {
                 )
                 .await?;
             } else {
+                // The `verify_chunk_existence` will carry out three times of re-attempts
+                // However, `get_record_from_network` will only carry out once.
                 self.get_record_from_network(record.key.clone(), get_cfg)
                     .await?;
             }
