@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_cli"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.86.103"
+version = "0.87.0"
 
 [[bin]]
 path="src/main.rs"
@@ -43,7 +43,7 @@ reqwest = { version="0.11.18", default-features=false, features = ["rustls"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive"]}
 sn_build_info = { path="../sn_build_info", version = "0.1.4" }
-sn_client = { path = "../sn_client", version = "0.99.42" }
+sn_client = { path = "../sn_client", version = "0.100.0" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.33" }
 sn_logging = { path = "../sn_logging", version = "0.2.16" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.1.14" }
