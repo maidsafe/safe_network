@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.103...sn_cli-v0.87.0) - 2024-01-08
+
+### Added
+- *(cli)* intergrate FilesDownload with cli
+
+### Other
+- *(client)* [**breaking**] refactor `Files` into `FilesUpload`
+
 ## [0.86.103](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.102...sn_cli-v0.86.103) - 2024-01-08
 
 ### Other
