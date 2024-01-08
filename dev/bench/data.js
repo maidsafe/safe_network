@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704718571126,
+  "lastUpdate": 1704718724244,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc",
-          "message": "fix(node): accept fees _near_ our current store cost.\n\nIncreases tolerance to reduce fee rejection",
-          "timestamp": "2023-09-05T15:04:02Z",
-          "tree_id": "4bfccccc91507d3697f8c6347e050e23d223e141",
-          "url": "https://github.com/maidsafe/safe_network/commit/f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc"
-        },
-        "date": 1693934588762,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 77.98784,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 46,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f02a1cf49c2e91e7bf331d341c0dd80b812324da",
+          "message": "docs: more doc updates to readme files",
+          "timestamp": "2024-01-08T12:16:21Z",
+          "tree_id": "070a72574e79f4e9b13299dee5503f6d12044346",
+          "url": "https://github.com/maidsafe/safe_network/commit/f02a1cf49c2e91e7bf331d341c0dd80b812324da"
+        },
+        "date": 1704718723922,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
