@@ -85,4 +85,7 @@ pub enum Error {
 
     #[error("Incorrect Download Option")]
     IncorrectDownloadOption,
+
+    #[error("The provided data map is empty")]
+    EmptyDataMap,
 }
