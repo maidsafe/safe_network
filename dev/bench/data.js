@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704720568640,
+  "lastUpdate": 1704720716842,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "4c9d9fd6df094258e4dfe758bd39263632f6c880",
-          "message": "chore: rotate logs after exceeding 20mb\n\nThe previous rotation strategy was using the number of lines, which was set to 5000.\n\nUsers recently noticed this limitation was producing lots of logs, so we've changed the strategy to\nbe based on the size of the log in bytes.",
-          "timestamp": "2023-09-06T20:11:59Z",
-          "tree_id": "6e9d9597422480e5cd0f4cdc8b9c1ad77db0d561",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c9d9fd6df094258e4dfe758bd39263632f6c880"
-        },
-        "date": 1694038936097,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 75.06329,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "05da1300aa51f05dba2c57e529a8e4514125fba6",
+          "message": "chore(node): simplify GetStoreCost flow",
+          "timestamp": "2024-01-08T12:49:59Z",
+          "tree_id": "93e7265d9221c579e0ac16e9837bfcbf98cc2e7e",
+          "url": "https://github.com/maidsafe/safe_network/commit/05da1300aa51f05dba2c57e529a8e4514125fba6"
+        },
+        "date": 1704720716406,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
