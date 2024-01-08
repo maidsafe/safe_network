@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704714234096,
+  "lastUpdate": 1704714455201,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b0fc3772509a0a3f302e01e4b5645a2a1fb67814",
-          "message": "ci: move to use VERSION_BUMP_COMMIT_PAT instead of RELEASE_PAT\n\nThey are effectively both the same, BUMP_COMMIT is org wide so\nRELEASE_PAT can be deprecated.",
-          "timestamp": "2023-09-05T12:15:01Z",
-          "tree_id": "6db1c137dd8e3e1ebd4798a81f9d86bb0510ccf5",
-          "url": "https://github.com/maidsafe/safe_network/commit/b0fc3772509a0a3f302e01e4b5645a2a1fb67814"
-        },
-        "date": 1693924955710,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 80.11776,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 44,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256",
+          "message": "fix(client): reset sequential_payment_fails on batch upload success",
+          "timestamp": "2024-01-08T10:53:03Z",
+          "tree_id": "7c7ac0f13a6ed0b58fcebe4580decd1e8c86595f",
+          "url": "https://github.com/maidsafe/safe_network/commit/ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256"
+        },
+        "date": 1704714453591,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
