@@ -9,15 +9,16 @@
 use crate::{
     chunks::{DataMapLevel, Error as ChunksError},
     error::{Error as ClientError, Result},
-    FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    Client, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
 };
 use bytes::Bytes;
-use futures::{stream::FuturesOrdered, StreamExt};
+use futures::StreamExt;
 use itertools::Itertools;
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk, StreamSelfDecryptor};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use std::{fs, path::PathBuf, time::Instant};
+use std::{collections::HashMap, fs, path::PathBuf, time::Instant};
 use tokio::sync::mpsc::{self};
+use xor_name::XorName;
 
 /// The events emitted from the download process.
 pub enum FilesDownloadEvent {
@@ -132,12 +133,12 @@ impl FilesDownload {
             .await?
             .is_none()
         {
+            Ok(())
+        } else {
             error!(
                 "IncorrectDownloadOption: expected to not get any decrypted bytes, but got Some"
             );
             Err(ClientError::IncorrectDownloadOption)
-        } else {
-            Ok(())
         }
     }
 
@@ -320,62 +321,73 @@ impl FilesDownload {
                 DownloadKind::Memory(Vec::new())
             }
         };
+        let chunk_infos = data_map.infos();
+        let expected_count = chunk_infos.len();
 
         if we_are_downloading_a_datamap {
-            self.send_event(FilesDownloadEvent::ChunksCount(data_map.infos().len()))
+            self.send_event(FilesDownloadEvent::ChunksCount(expected_count))
                 .await?;
         } else {
             // we're downloading the chunks related to a huge datamap
-            self.send_event(FilesDownloadEvent::DatamapCount(data_map.infos().len()))
+            self.send_event(FilesDownloadEvent::DatamapCount(expected_count))
                 .await?;
         }
 
-        let expected_count = data_map.infos().len();
-        let mut ordered_read_futures = FuturesOrdered::new();
         let now = Instant::now();
-        let mut index = 0;
-        let batch_size = self.batch_size;
+
         let client_clone = self.api.client.clone();
         let show_holders = self.show_holders;
-
-        for chunk_info in data_map.infos().iter() {
-            let dst_hash = chunk_info.dst_hash;
-            let client_clone = client_clone.clone();
-
-            // The futures are executed concurrently,
-            // but the result is returned in the order in which they were inserted.
-            ordered_read_futures.push_back(async move {
-                (
-                    dst_hash,
-                    client_clone
-                        .get_chunk(ChunkAddress::new(dst_hash), show_holders)
-                        .await,
+        let mut stream = futures::stream::iter(chunk_infos.iter())
+            .map(|chunk_info| {
+                Self::get_chunk(
+                    client_clone.clone(),
+                    chunk_info.dst_hash,
+                    chunk_info.index,
+                    show_holders,
                 )
-            });
+            })
+            .buffer_unordered(self.batch_size);
 
-            if ordered_read_futures.len() >= batch_size || index + batch_size > expected_count {
-                while let Some((dst_hash, result)) = ordered_read_futures.next().await {
-                    let chunk = result.map_err(|error| {
-                        error!("Chunk missing {dst_hash:?} with {error:?}");
-                        ChunksError::ChunkMissing(dst_hash)
-                    })?;
-                    // notify about the download
-                    self.send_event(FilesDownloadEvent::Downloaded(chunk.address))
-                        .await?;
-                    let encrypted_chunk = EncryptedChunk {
-                        index,
-                        content: chunk.value().clone(),
-                    };
-                    match &mut download_kind {
-                        DownloadKind::FileSystem(decryptor) => {
-                            let _ = decryptor.next_encrypted(encrypted_chunk)?;
-                        }
-                        DownloadKind::Memory(collector) => collector.push(encrypted_chunk),
+        let mut chunk_download_cache = HashMap::new();
+        // the initial index is not always 0 as we might seek a range of bytes. So fetch the first index
+        let mut current_index = chunk_infos
+            .first()
+            .ok_or_else(|| ClientError::EmptyDataMap)?
+            .index;
+        while let Some(result) = stream.next().await {
+            let (chunk_address, index, encrypted_chunk) = result?;
+            // notify about the download
+            self.send_event(FilesDownloadEvent::Downloaded(chunk_address))
+                .await?;
+            info!("Downloaded chunk of index {index:?}. We are at current_index {current_index:?}");
+
+            // check if current_index is present in the cache before comparing the fetched index.
+            // try to keep removing from the cache until we run out of sequential chunks to insert.
+            while let Some(encrypted_chunk) = chunk_download_cache.remove(&current_index) {
+                debug!("Got current_index {current_index:?} from the download cache. Incrementing current index");
+                match &mut download_kind {
+                    DownloadKind::FileSystem(decryptor) => {
+                        let _ = decryptor.next_encrypted(encrypted_chunk)?;
                     }
-
-                    index += 1;
-                    info!("Client (read all) download progress {index:?}/{expected_count:?}");
+                    DownloadKind::Memory(collector) => collector.push(encrypted_chunk),
                 }
+                current_index += 1;
+            }
+            // now check if we can process the fetched index, else cache it.
+            if index == current_index {
+                debug!("The downloaded chunk's index matches the current index {current_index}. Processing it");
+                match &mut download_kind {
+                    DownloadKind::FileSystem(decryptor) => {
+                        let _ = decryptor.next_encrypted(encrypted_chunk)?;
+                    }
+                    DownloadKind::Memory(collector) => collector.push(encrypted_chunk),
+                }
+                current_index += 1;
+            } else {
+                // since we download the chunks concurrently without order, we cache the results for an index that
+                // finished earlier
+                debug!("The downloaded chunk's index does not match with the current_index {current_index}. Inserting into cache");
+                let _ = chunk_download_cache.insert(index, encrypted_chunk);
             }
         }
 
@@ -420,5 +432,25 @@ impl FilesDownload {
                 }
             }
         }
+    }
+
+    async fn get_chunk(
+        client: Client,
+        address: XorName,
+        index: usize,
+        show_holders: bool,
+    ) -> std::result::Result<(ChunkAddress, usize, EncryptedChunk), ChunksError> {
+        let chunk = client
+            .get_chunk(ChunkAddress::new(address), show_holders)
+            .await
+            .map_err(|err| {
+                error!("Chunk missing {address:?} with {err:?}",);
+                ChunksError::ChunkMissing(address)
+            })?;
+        let encrypted_chunk = EncryptedChunk {
+            index,
+            content: chunk.value,
+        };
+        Ok((chunk.address, index, encrypted_chunk))
     }
 }
