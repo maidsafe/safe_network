@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704726388516,
+  "lastUpdate": 1704726390397,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "4c9d9fd6df094258e4dfe758bd39263632f6c880",
-          "message": "chore: rotate logs after exceeding 20mb\n\nThe previous rotation strategy was using the number of lines, which was set to 5000.\n\nUsers recently noticed this limitation was producing lots of logs, so we've changed the strategy to\nbe based on the size of the log in bytes.",
-          "timestamp": "2023-09-06T20:11:59Z",
-          "tree_id": "6e9d9597422480e5cd0f4cdc8b9c1ad77db0d561",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c9d9fd6df094258e4dfe758bd39263632f6c880"
-        },
-        "date": 1694038937928,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 879.7389,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 783,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 61,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "94c9dc98ba4914c54c23393921a145426c6c208a",
+          "message": "refactor(client)!: refactor `Files` into `FilesUpload`",
+          "timestamp": "2024-01-08T14:27:54Z",
+          "tree_id": "cf90ed557d450e8b8575a9248d6d8b8588ac17da",
+          "url": "https://github.com/maidsafe/safe_network/commit/94c9dc98ba4914c54c23393921a145426c6c208a"
+        },
+        "date": 1704726389740,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 213,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 54,
             "unit": "MB"
           }
         ]
