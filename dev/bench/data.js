@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704720716842,
+  "lastUpdate": 1704720718454,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc",
-          "message": "fix(node): accept fees _near_ our current store cost.\n\nIncreases tolerance to reduce fee rejection",
-          "timestamp": "2023-09-05T15:04:02Z",
-          "tree_id": "4bfccccc91507d3697f8c6347e050e23d223e141",
-          "url": "https://github.com/maidsafe/safe_network/commit/f243dfd53dc74da1ca4c4b06c6f8738f7d221cdc"
-        },
-        "date": 1693934591365,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 840.92926,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 774,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 62,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "05da1300aa51f05dba2c57e529a8e4514125fba6",
+          "message": "chore(node): simplify GetStoreCost flow",
+          "timestamp": "2024-01-08T12:49:59Z",
+          "tree_id": "93e7265d9221c579e0ac16e9837bfcbf98cc2e7e",
+          "url": "https://github.com/maidsafe/safe_network/commit/05da1300aa51f05dba2c57e529a8e4514125fba6"
+        },
+        "date": 1704720718039,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 61,
             "unit": "MB"
           }
         ]
