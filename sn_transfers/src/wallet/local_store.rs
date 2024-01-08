@@ -28,7 +28,7 @@ use xor_name::XorName;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 const WALLET_DIR_NAME: &str = "wallet";
@@ -122,6 +122,27 @@ impl LocalWallet {
         Self::load_from_path_and_key(&wallet_dir, Some(main_key))
     }
 
+    /// Creates a serialized wallet for a path and main key.
+    /// This will overwrite any existing wallet, unlike load_from_main_key
+    pub fn create_from_key(root_dir: &Path, key: MainSecretKey) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        // This creates the received_cash_notes dir if it doesn't exist.
+        std::fs::create_dir_all(&wallet_dir)?;
+        // Create the new wallet for this key
+        store_new_keypair(&wallet_dir, &key)?;
+        let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(&wallet_dir)? {
+            Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
+            None => Default::default(),
+        };
+        let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
+
+        Ok(Self {
+            key,
+            watchonly_wallet,
+            unconfirmed_spend_requests,
+        })
+    }
+
     /// Loads a serialized wallet from a path.
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
@@ -147,6 +168,18 @@ impl LocalWallet {
 
     pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
         &self.unconfirmed_spend_requests
+    }
+
+    /// Moves all files for the current wallet, including keys and cashnotes
+    /// to directory root_dir/wallet_<short_address>
+    pub fn clear(root_dir: &Path) -> Result<PathBuf> {
+        let wallet = LocalWallet::load_from(root_dir)?;
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        let addr_short = &format!("{:?}", wallet.address())[0..10];
+        let new_name = format!("{WALLET_DIR_NAME}_{addr_short}");
+        let moved_dir = root_dir.join(new_name);
+        let _ = std::fs::rename(wallet_dir, moved_dir.clone());
+        Ok(moved_dir)
     }
 
     /// To remove a specific spend from the requests, if eg, we see one spend is _bad_

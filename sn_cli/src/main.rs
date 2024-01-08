@@ -30,7 +30,7 @@ use sn_client::Client;
 use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_transfers::bls_secret_from_hex;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 use tracing::Level;
 
 const CLIENT_KEY: &str = "clientkey";
@@ -152,4 +152,15 @@ fn get_client_data_dir_path() -> Result<PathBuf> {
     home_dirs.push("client");
     std::fs::create_dir_all(home_dirs.as_path())?;
     Ok(home_dirs)
+}
+
+fn get_stdin_response(prompt: &str) -> String {
+    println!("{prompt}");
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    if stdin.read_line(&mut buffer).is_err() {
+        // consider if error should process::exit(1) here
+        return "".to_string();
+    };
+    buffer
 }
