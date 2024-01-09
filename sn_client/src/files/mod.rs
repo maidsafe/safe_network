@@ -9,11 +9,7 @@
 pub(crate) mod download;
 pub(crate) mod upload;
 
-use crate::{
-    chunks::{to_chunk, Error as ChunksError, SmallFile},
-    error::Result,
-    Client, WalletClient,
-};
+use crate::{chunks::Error as ChunksError, error::Result, Client, WalletClient};
 use bytes::Bytes;
 use libp2p::PeerId;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
@@ -24,7 +20,7 @@ use sn_protocol::{
 use sn_transfers::{LocalWallet, NanoTokens};
 use std::{
     fs::{self, create_dir_all, File},
-    io::{Read, Write},
+    io::Write,
     path::{Path, PathBuf},
 };
 use tempfile::tempdir;
@@ -74,27 +70,13 @@ impl FilesApi {
         chunk_dir: &Path,
         include_data_map_in_chunks: bool,
     ) -> ChunkFileResult {
-        let mut file = File::open(file_path)?;
+        let file = File::open(file_path)?;
         let metadata = file.metadata()?;
         let file_size = metadata.len();
 
         let (head_address, data_map_chunk, mut chunks_paths) =
             if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
-                let mut bytes = Vec::new();
-                let _ = file.read_to_end(&mut bytes)?;
-                let chunk = package_small(SmallFile::new(bytes.into())?)?;
-
-                // Write the result to disk
-                let small_chunk_file_path = chunk_dir.join(hex::encode(*chunk.name()));
-                info!("Creating normal small chunk in {small_chunk_file_path:?}");
-                let mut output_file = File::create(small_chunk_file_path.clone())?;
-                output_file.write_all(&chunk.value)?;
-
-                (
-                    *chunk.name(),
-                    None,
-                    vec![(*chunk.name(), small_chunk_file_path)],
-                )
+                Err(ChunksError::FileTooSmall)?
             } else {
                 let (data_map_chunk, chunks) = encrypt_large(file_path, chunk_dir)?;
                 (*data_map_chunk.name(), Some(data_map_chunk), chunks)
@@ -218,14 +200,4 @@ impl FilesApi {
 /// Returns data map as a chunk, and the resulting chunks
 fn encrypt_large(file_path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<(XorName, PathBuf)>)> {
     Ok(crate::chunks::encrypt_large(file_path, output_dir)?)
-}
-
-/// Packages a [`SmallFile`] and returns the resulting address and the chunk.
-/// Does not store anything to the network.
-fn package_small(file: SmallFile) -> Result<Chunk> {
-    let chunk = to_chunk(file.bytes());
-    if chunk.value().len() >= self_encryption::MIN_ENCRYPTABLE_BYTES {
-        return Err(ChunksError::SmallFilePaddingNeeded(chunk.value().len()).into());
-    }
-    Ok(chunk)
 }
