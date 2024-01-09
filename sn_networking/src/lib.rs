@@ -60,6 +60,9 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot};
 
+/// The type of quote for a selected payee.
+pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
+
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
 /// an item in the network.
@@ -334,10 +337,11 @@ impl Network {
     }
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
+    /// Record already exists will have a cost of zero to be returned.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
-    ) -> Result<(PeerId, MainPubkey, PaymentQuote)> {
+    ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let close_nodes = self.get_closest_peers(&record_address, true).await?;
@@ -383,8 +387,8 @@ impl Network {
         });
 
         // Ensure we dont have any further out nodes than `close_group_majority()`
-        // This should ensure that if we didnt get all responses from close nodes, we're less likely to be
-        // paying a node that is not in the CLOSE_GROUP
+        // This should ensure that if we didnt get all responses from close nodes,
+        // we're less likely to be paying a node that is not in the CLOSE_GROUP
         let all_costs = all_costs.into_iter().take(close_group_majority()).collect();
 
         get_fees_from_store_cost_responses(all_costs)
@@ -807,7 +811,7 @@ impl Network {
 /// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
     mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
-) -> Result<(PeerId, MainPubkey, PaymentQuote)> {
+) -> Result<PayeeQuote> {
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
     all_costs.sort_by(

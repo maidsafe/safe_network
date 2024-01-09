@@ -12,7 +12,7 @@ use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
-use sn_networking::GetRecordError;
+use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend,
@@ -124,7 +124,7 @@ impl WalletClient {
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
-    ) -> WalletResult<(PeerId, MainPubkey, PaymentQuote)> {
+    ) -> WalletResult<PayeeQuote> {
         self.client
             .network
             .get_store_costs_from_network(address)

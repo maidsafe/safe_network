@@ -500,12 +500,12 @@ jobs:
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
           timeout-minutes: 5
       
-        - name: Verify the location of the data on the network (4 * 5 mins)
+        - name: Verify the location of the data on the network
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture 
           env:
             CHURN_COUNT: 3
             SN_LOG: "all"
-          timeout-minutes: 30
+          timeout-minutes: 5
 
         - name: Verify the routing tables of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
@@ -628,16 +628,17 @@ jobs:
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" -r 0
         env:
           SN_LOG: "all"
-        timeout-minutes: 60
+        timeout-minutes: 5
 
       - name: Wait for certain period
         run: sleep 300
+        timeout-minutes: 6
 
       - name: Start a client to upload second file
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" -r 0
         env:
           SN_LOG: "all"
-        timeout-minutes: 60
+        timeout-minutes: 10
 
       - name: Stop the local network and upload logs
         if: always()
