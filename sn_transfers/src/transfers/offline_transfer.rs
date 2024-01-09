@@ -104,11 +104,7 @@ pub fn create_unsigned_transfer(
         .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
             total.checked_add(*amount)
         })
-        .ok_or_else(|| {
-            Error::CashNoteReissueFailed(
-                "Overflow occurred while summing the amounts for the recipients.".to_string(),
-            )
-        })?;
+        .ok_or(Error::ExcessiveNanoValue)?;
 
     // We need to select the necessary number of cash_notes from those that we were passed.
     let (cash_notes_to_spend, change_amount) =
