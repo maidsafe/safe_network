@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704796148601,
+  "lastUpdate": 1704796262190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "60cb0b3b4aeeead346ace5881d81d9dea8a4ec74",
-          "message": "fix(client): dont bail on failed upload before verify/repay",
-          "timestamp": "2023-09-08T08:42:39Z",
-          "tree_id": "e72084e0ee485ae1a228ec1715658dc0475fc534",
-          "url": "https://github.com/maidsafe/safe_network/commit/60cb0b3b4aeeead346ace5881d81d9dea8a4ec74"
-        },
-        "date": 1694170971010,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 195.11705,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "ddc3e451e00ba1dcb663228909a32e7a1ca12da0",
           "message": "ci: do not bail on benchmark generation if exceeding thresholds",
           "timestamp": "2023-09-11T14:38:34+02:00",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e0a03e8a681493fdd764270e1d61869f5b52ba26",
+          "message": "feat(cli): safe wallet create saves new key",
+          "timestamp": "2024-01-09T09:37:45Z",
+          "tree_id": "ef8cced1c0d892029f09d625536d4a03d15c6468",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0a03e8a681493fdd764270e1d61869f5b52ba26"
+        },
+        "date": 1704796261778,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
