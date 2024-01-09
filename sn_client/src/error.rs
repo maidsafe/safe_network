@@ -91,4 +91,10 @@ pub enum Error {
 
     #[error("Error occurred while assembling the downloaded chunks")]
     FailedToAssembleDownloadedChunks,
+
+    #[error("Error occurred when access wallet file")]
+    FailedToAccessWallet,
+
+    #[error("Task completion notification channel is done")]
+    FailedToReadFromNotificationChannel,
 }
