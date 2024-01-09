@@ -27,7 +27,7 @@ use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_rpc_client::RpcClient;
-use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -263,7 +263,7 @@ async fn main() -> Result<()> {
             add(
                 AddServiceOptions {
                     count,
-                    peers: parse_peers_args(peers).await.unwrap_or(vec![]),
+                    peers: get_peers_from_args(peers).await?,
                     port,
                     rpc_port,
                     safenode_dir_path: service_data_dir_path.clone(),
