@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704795817560,
+  "lastUpdate": 1704795819467,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "e0816753a278174c0371ad70eb24fd258d601241",
-          "message": "chore: remove unused transfer dep in networking",
-          "timestamp": "2023-09-07T08:19:12Z",
-          "tree_id": "a1b7a7e0345f1c4d6dd441473d3dbac3967556f5",
-          "url": "https://github.com/maidsafe/safe_network/commit/e0816753a278174c0371ad70eb24fd258d601241"
-        },
-        "date": 1694089335814,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 878.1824,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 791,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "650e12d60e3647674c7ff5a5a8a94bc3316c7102",
+          "message": "chore(node): move add_to_replicate_fetcher to driver",
+          "timestamp": "2024-01-09T09:24:57Z",
+          "tree_id": "fc2ccf2dbe9ab31b67f9668360ec4ab52538bed0",
+          "url": "https://github.com/maidsafe/safe_network/commit/650e12d60e3647674c7ff5a5a8a94bc3316c7102"
+        },
+        "date": 1704795818898,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 49,
             "unit": "MB"
           }
         ]
