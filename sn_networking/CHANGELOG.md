@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.22...sn_networking-v0.12.23) - 2024-01-09
+
+### Added
+- *(client)* extra sleep between chunk verification
+
 ## [0.12.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.21...sn_networking-v0.12.22) - 2024-01-09
 
 ### Other
