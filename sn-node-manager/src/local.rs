@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::node::{Node, NodeRegistry, NodeStatus};
+use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use libp2p::{Multiaddr, PeerId};
@@ -14,7 +15,7 @@ use libp2p::{Multiaddr, PeerId};
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 use sysinfo::{Pid, ProcessExt, System, SystemExt};
@@ -26,12 +27,7 @@ pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
     fn get_safenode_version(&self) -> Result<String>;
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
-    fn launch_node(
-        &self,
-        port: u16,
-        rpc_port: u16,
-        genesis_multiaddr: Option<Multiaddr>,
-    ) -> Result<()>;
+    fn launch_node(&self, port: u16, rpc_port: u16, peers: Vec<Multiaddr>) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
@@ -81,18 +77,15 @@ impl Launcher for LocalSafeLauncher {
         Ok(child.id())
     }
 
-    fn launch_node(
-        &self,
-        port: u16,
-        rpc_port: u16,
-        genesis_multiaddr: Option<Multiaddr>,
-    ) -> Result<()> {
+    fn launch_node(&self, port: u16, rpc_port: u16, peers: Vec<Multiaddr>) -> Result<()> {
         let mut args = Vec::new();
-        if let Some(multiaddr) = genesis_multiaddr {
-            args.push("--peer".to_string());
-            args.push(multiaddr.to_string());
-        } else {
+        if peers.is_empty() {
             args.push("--first".to_string())
+        } else {
+            for peer in peers {
+                args.push("--peer".to_string());
+                args.push(peer.to_string());
+            }
         }
         args.push("--local".to_string());
         args.push("--port".to_string());
@@ -163,32 +156,60 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
     Ok(())
 }
 
+pub struct LocalNetworkOptions {
+    pub faucet_bin_path: PathBuf,
+    pub join: bool,
+    pub node_count: Option<u16>,
+    pub peers: Option<Vec<Multiaddr>>,
+    pub safenode_bin_path: PathBuf,
+    pub skip_validation: bool,
+}
+
 pub async fn run_network(
     node_registry: &mut NodeRegistry,
-    safenode_bin_path: &Path,
-    faucet_bin_path: &Path,
-    node_count: Option<u16>,
-    skip_validate: bool,
+    service_control: &dyn ServiceControl,
+    network_options: LocalNetworkOptions,
 ) -> Result<()> {
     let launcher = LocalSafeLauncher {
-        safenode_bin_path: safenode_bin_path.to_path_buf(),
-        faucet_bin_path: faucet_bin_path.to_path_buf(),
+        safenode_bin_path: network_options.safenode_bin_path.to_path_buf(),
+        faucet_bin_path: network_options.faucet_bin_path.to_path_buf(),
     };
 
-    let mut port = 12000;
-    let mut rpc_port = 13000;
-    let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
-    let genesis_multiaddr =
-        run_node(port, rpc_port, None, &launcher, node_registry, &rpc_client).await?;
+    let peers = if network_options.join {
+        if let Some(peers) = network_options.peers {
+            peers
+        } else {
+            let peer = node_registry
+                .nodes
+                .iter()
+                .find(|n| n.get_multiaddr().is_some())
+                .ok_or_else(|| eyre!("Unable to obtain a peer to connect to"))?;
+            vec![peer.get_multiaddr().unwrap()]
+        }
+    } else {
+        let port = service_control.get_available_port()?;
+        let rpc_port = service_control.get_available_port()?;
+        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
+        let genesis_multiaddr = run_node(
+            port,
+            rpc_port,
+            vec![],
+            &launcher,
+            node_registry,
+            &rpc_client,
+        )
+        .await?;
+        vec![genesis_multiaddr]
+    };
 
-    for _ in 2..=node_count.unwrap_or(DEFAULT_NODE_COUNT) {
-        port += 1;
-        rpc_port += 1;
+    for _ in 2..=network_options.node_count.unwrap_or(DEFAULT_NODE_COUNT) {
+        let port = service_control.get_available_port()?;
+        let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
         run_node(
             port,
             rpc_port,
-            Some(genesis_multiaddr.clone()),
+            peers.clone(),
             &launcher,
             node_registry,
             &rpc_client,
@@ -202,15 +223,17 @@ pub async fn run_network(
         node_registry.save()?;
     }
 
-    if !skip_validate {
+    if !network_options.skip_validation {
         println!("Waiting for 10 seconds before validating the network...");
         std::thread::sleep(std::time::Duration::from_secs(10));
-        validate_network(node_registry).await?;
+        validate_network(node_registry, peers.clone()).await?;
     }
 
-    println!("Launching the faucet server...");
-    let faucet_pid = launcher.launch_faucet(&genesis_multiaddr)?;
-    node_registry.faucet_pid = Some(faucet_pid);
+    if !network_options.join {
+        println!("Launching the faucet server...");
+        let faucet_pid = launcher.launch_faucet(&peers[0])?;
+        node_registry.faucet_pid = Some(faucet_pid);
+    }
 
     Ok(())
 }
@@ -218,7 +241,7 @@ pub async fn run_network(
 pub async fn run_node(
     port: u16,
     rpc_port: u16,
-    peer: Option<Multiaddr>,
+    peer: Vec<Multiaddr>,
     launcher: &dyn Launcher,
     node_registry: &mut NodeRegistry,
     rpc_client: &dyn RpcActions,
@@ -267,12 +290,26 @@ fn get_username() -> Result<String> {
     Ok(std::env::var("USER")?)
 }
 
-async fn validate_network(node_registry: &mut NodeRegistry) -> Result<()> {
-    let all_peers = node_registry
+async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr>) -> Result<()> {
+    let mut all_peers = node_registry
         .nodes
         .iter()
         .map(|n| n.peer_id.unwrap())
         .collect::<Vec<PeerId>>();
+    // The additional peers are peers being managed outwith the node manager. This only applies
+    // when we've joined a network not being managed by the node manager. Otherwise, this list will
+    // be empty.
+    let additional_peers = peers
+        .into_iter()
+        .filter_map(|addr| {
+            addr.to_string()
+                .rsplit('/')
+                .next()
+                .and_then(|id_str| PeerId::from_str(id_str).ok())
+        })
+        .collect::<Vec<PeerId>>();
+    all_peers.extend(additional_peers);
+
     for node in node_registry.nodes.iter() {
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
         let net_info = rpc_client.network_info().await?;
@@ -346,7 +383,7 @@ mod tests {
             .returning(|| Ok("0.100.12".to_string()));
         mock_launcher
             .expect_launch_node()
-            .with(eq(port), eq(rpc_port), eq(None))
+            .with(eq(port), eq(rpc_port), eq(vec![]))
             .times(1)
             .returning(|_, _, _| Ok(()));
         mock_launcher
@@ -376,7 +413,7 @@ mod tests {
         let multiaddr = run_node(
             port,
             rpc_port,
-            None,
+            vec![],
             &mock_launcher,
             &mut node_registry,
             &mock_rpc_client,
@@ -447,7 +484,7 @@ mod tests {
             .returning(|| Ok("0.100.12".to_string()));
         mock_launcher
             .expect_launch_node()
-            .with(eq(port), eq(rpc_port), eq(Some(genesis_peer_addr.clone())))
+            .with(eq(port), eq(rpc_port), eq(vec![genesis_peer_addr.clone()]))
             .times(1)
             .returning(|_, _, _| Ok(()));
         mock_launcher
@@ -477,7 +514,7 @@ mod tests {
         let multiaddr = run_node(
             port,
             rpc_port,
-            Some(genesis_peer_addr.clone()),
+            vec![genesis_peer_addr.clone()],
             &mock_launcher,
             &mut node_registry,
             &mock_rpc_client,

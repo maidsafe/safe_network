@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use color_eyre::Result;
-use libp2p_identity::PeerId;
+use libp2p::{Multiaddr, PeerId};
 use serde::de::Error as DeError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::io::{Read, Write};
@@ -68,6 +68,16 @@ pub struct Node {
     pub data_dir_path: Option<PathBuf>,
     pub log_dir_path: Option<PathBuf>,
     pub safenode_path: Option<PathBuf>,
+}
+
+impl Node {
+    pub fn get_multiaddr(&self) -> Option<Multiaddr> {
+        if let Some(peer_id) = self.peer_id {
+            let peer = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", self.port, peer_id);
+            return Some(peer.parse().unwrap());
+        }
+        None
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
