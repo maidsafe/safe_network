@@ -136,7 +136,7 @@ impl WalletClient {
         // send to network
         if let Err(error) = self
             .client
-            .send(
+            .send_spends(
                 self.wallet.unconfirmed_spend_requests().iter(),
                 verify_store,
             )
