@@ -124,7 +124,7 @@ pub enum SubCmd {
         #[clap(long)]
         peer_id: Option<String>,
         /// The name of the service to remove.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
         /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
@@ -145,7 +145,7 @@ pub enum SubCmd {
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "faucet_version")]
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
@@ -155,7 +155,7 @@ pub enum SubCmd {
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "node_version")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
@@ -177,7 +177,7 @@ pub enum SubCmd {
         #[clap(long)]
         peer_id: Option<String>,
         /// The name of the service to start
-        #[clap(long)]
+        #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
     },
     /// Get the status of services.
@@ -198,7 +198,7 @@ pub enum SubCmd {
         #[clap(long)]
         peer_id: Option<String>,
         /// The name of the service to stop
-        #[clap(long)]
+        #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
     },
     /// Upgrade a safenode service.
@@ -212,7 +212,7 @@ pub enum SubCmd {
         #[clap(long)]
         peer_id: Option<String>,
         /// The name of the service to upgrade
-        #[clap(long)]
+        #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
     },
 }
@@ -308,7 +308,6 @@ async fn main() -> Result<()> {
             if peer_id.is_none() && service_name.is_none() {
                 return Err(eyre!("Either a peer ID or a service name must be supplied"));
             }
-            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
 
             println!("=================================================");
             println!("           Remove Safenode Services              ");
@@ -349,19 +348,6 @@ async fn main() -> Result<()> {
             node_version,
             skip_validation,
         } => {
-            if faucet_path.is_some() && faucet_version.is_some() {
-                return Err(eyre!(
-                    "The --faucet-path and --faucet-version arguments are mutually exclusive"
-                )
-                .suggestion("Please try again using one or the other, but not both."));
-            }
-            if node_path.is_some() && node_version.is_some() {
-                return Err(eyre!(
-                    "The --node-path and --node-version arguments are mutually exclusive"
-                )
-                .suggestion("Please try again using one or the other, but not both."));
-            }
-
             let local_node_reg_path = &get_local_node_registry_path()?;
             let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
             if !local_node_registry.nodes.is_empty() {
@@ -420,8 +406,6 @@ async fn main() -> Result<()> {
             if !is_running_as_root() {
                 return Err(eyre!("The start command must run as the root user"));
             }
-
-            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
 
             println!("=================================================");
             println!("             Start Safenode Services             ");
@@ -493,8 +477,6 @@ async fn main() -> Result<()> {
                 return Err(eyre!("The stop command must run as the root user"));
             }
 
-            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
-
             println!("=================================================");
             println!("              Stop Safenode Services             ");
             println!("=================================================");
@@ -537,8 +519,6 @@ async fn main() -> Result<()> {
             if !is_running_as_root() {
                 return Err(eyre!("The upgrade command must run as the root user"));
             }
-
-            validate_peer_id_and_service_name_args(service_name.clone(), peer_id.clone())?;
 
             println!("=================================================");
             println!("           Upgrade Safenode Services             ");
@@ -696,18 +676,4 @@ fn is_running_as_root() -> bool {
 fn is_running_as_root() -> bool {
     // The Windows implementation for this will be much more complex.
     true
-}
-
-fn validate_peer_id_and_service_name_args(
-    service_name: Option<String>,
-    peer_id: Option<String>,
-) -> Result<()> {
-    if service_name.is_some() && peer_id.is_some() {
-        return Err(
-            eyre!("The service name and peer ID are mutually exclusive").suggestion(
-                "Please try again using either the peer ID or the service name, but not both.",
-            ),
-        );
-    }
-    Ok(())
 }
