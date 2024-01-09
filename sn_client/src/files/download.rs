@@ -347,7 +347,12 @@ impl FilesDownload {
 
         let client_clone = self.api.client.clone();
         let show_holders = self.show_holders;
-        let mut stream = futures::stream::iter(chunk_infos.iter())
+        // the initial index is not always 0 as we might seek a range of bytes. So fetch the first index
+        let mut current_index = chunk_infos
+            .first()
+            .ok_or_else(|| ClientError::EmptyDataMap)?
+            .index;
+        let mut stream = futures::stream::iter(chunk_infos.into_iter())
             .map(|chunk_info| {
                 Self::get_chunk(
                     client_clone.clone(),
@@ -359,11 +364,7 @@ impl FilesDownload {
             .buffer_unordered(self.batch_size);
 
         let mut chunk_download_cache = HashMap::new();
-        // the initial index is not always 0 as we might seek a range of bytes. So fetch the first index
-        let mut current_index = chunk_infos
-            .first()
-            .ok_or_else(|| ClientError::EmptyDataMap)?
-            .index;
+
         while let Some(result) = stream.next().await {
             let (chunk_address, index, encrypted_chunk) = result?;
             // notify about the download
