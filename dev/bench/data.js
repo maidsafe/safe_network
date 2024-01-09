@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704795821585,
+  "lastUpdate": 1704796148601,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d1a34655641e486e8dd05ab904cdeb217f92d61e",
-          "message": "feat!: Clients add a tolerance to store cost",
-          "timestamp": "2023-09-11T18:41:24Z",
-          "tree_id": "e2772267a4be1eddde33a43865ae53105c85ddc5",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1a34655641e486e8dd05ab904cdeb217f92d61e"
-        },
-        "date": 1694461871067,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10660602165023389,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6604739076371621,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.3712208182528824,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 41.19434478750306,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e0a03e8a681493fdd764270e1d61869f5b52ba26",
+          "message": "feat(cli): safe wallet create saves new key",
+          "timestamp": "2024-01-09T09:37:45Z",
+          "tree_id": "ef8cced1c0d892029f09d625536d4a03d15c6468",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0a03e8a681493fdd764270e1d61869f5b52ba26"
+        },
+        "date": 1704796145653,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6445685736312119,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0899299321254665,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 41.9624489192761,
             "unit": "MiB/s"
           }
         ]
