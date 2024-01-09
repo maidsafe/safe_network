@@ -386,7 +386,7 @@ impl FilesDownload {
             }
             // now check if we can process the fetched index, else cache it.
             if index == current_index {
-                debug!("The downloaded chunk's index matches the current index {current_index}. Processing it");
+                debug!("The downloaded chunk's index {index:?} matches the current index {current_index}. Processing it");
                 match &mut download_kind {
                     DownloadKind::FileSystem(decryptor) => {
                         let _ = decryptor.next_encrypted(encrypted_chunk)?;
@@ -397,9 +397,29 @@ impl FilesDownload {
             } else {
                 // since we download the chunks concurrently without order, we cache the results for an index that
                 // finished earlier
-                debug!("The downloaded chunk's index does not match with the current_index {current_index}. Inserting into cache");
+                debug!("The downloaded chunk's index {index:?} does not match with the current_index {current_index}. Inserting into cache");
                 let _ = chunk_download_cache.insert(index, encrypted_chunk);
             }
+        }
+
+        // finally empty out the cache.
+        debug!("Finally emptying out the download cache");
+        while let Some(encrypted_chunk) = chunk_download_cache.remove(&current_index) {
+            debug!("Got current_index {current_index:?} from the download cache. Incrementing current index");
+            match &mut download_kind {
+                DownloadKind::FileSystem(decryptor) => {
+                    let _ = decryptor.next_encrypted(encrypted_chunk)?;
+                }
+                DownloadKind::Memory(collector) => collector.push(encrypted_chunk),
+            }
+            current_index += 1;
+        }
+        if !chunk_download_cache.is_empty() {
+            error!(
+                "The chunk download cache is not empty. Current index {current_index:?}. The indices inside the cache: {:?}",
+                chunk_download_cache.keys()
+            );
+            return Err(ClientError::FailedToAssembleDownloadedChunks);
         }
 
         let elapsed = now.elapsed();
