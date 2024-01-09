@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704796263728,
+  "lastUpdate": 1704796265464,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34574,6 +34574,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 16637,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e0a03e8a681493fdd764270e1d61869f5b52ba26",
+          "message": "feat(cli): safe wallet create saves new key",
+          "timestamp": "2024-01-09T09:37:45Z",
+          "tree_id": "ef8cced1c0d892029f09d625536d4a03d15c6468",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0a03e8a681493fdd764270e1d61869f5b52ba26"
+        },
+        "date": 1704796265111,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3931,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 17394,
             "unit": "ms"
           },
           {
