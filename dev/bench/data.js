@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704795704778,
+  "lastUpdate": 1704795817560,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "d92c7612014073571a0515db4b94bec3f6548788",
-          "message": "ci: increase mem threasholds for memcheck",
-          "timestamp": "2023-09-07T16:18:44Z",
-          "tree_id": "babbeb176d828912e2f0aa7028723231caece2d8",
-          "url": "https://github.com/maidsafe/safe_network/commit/d92c7612014073571a0515db4b94bec3f6548788"
-        },
-        "date": 1694116373717,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 82.66957,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 72,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "650e12d60e3647674c7ff5a5a8a94bc3316c7102",
+          "message": "chore(node): move add_to_replicate_fetcher to driver",
+          "timestamp": "2024-01-09T09:24:57Z",
+          "tree_id": "fc2ccf2dbe9ab31b67f9668360ec4ab52538bed0",
+          "url": "https://github.com/maidsafe/safe_network/commit/650e12d60e3647674c7ff5a5a8a94bc3316c7102"
+        },
+        "date": 1704795816989,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
