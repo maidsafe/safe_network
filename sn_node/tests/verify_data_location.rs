@@ -149,12 +149,12 @@ fn query_content_task() {
             let mut rng = OsRng;
             let client = get_gossip_client().await;
             // let's choose a random content to query
-            let rando_addr = ChunkAddress::new(XorName::random(&mut rng));
-            tracing::trace!("Querying content {rando_addr:?}");
+            let random_addr = ChunkAddress::new(XorName::random(&mut rng));
+            tracing::trace!("Querying content {random_addr:?}");
 
-            if let Err(error) = client.get_chunk(rando_addr, false).await {
+            if let Err(error) = client.get_chunk(random_addr, false).await {
                 tracing::error!(
-                    "Error querying content rando content (as expected) {rando_addr:?} : {error}"
+                    "Error querying content random content (as expected) {random_addr:?} : {error}"
                 );
             }
 
@@ -311,6 +311,9 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
     let start = Instant::now();
     let mut rng = OsRng;
     let files_api = FilesApi::new(client, wallet_dir);
+    let mut file_upload = FilesUpload::new(files_api)
+        .set_show_holders(true)
+        .set_verify_store(false);
 
     let mut uploaded_chunks_count = 0;
     loop {
@@ -340,9 +343,6 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
 
         let key =
             PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
-        let mut file_upload = FilesUpload::new(files_api.clone())
-            .set_show_holders(true)
-            .set_verify_store(false);
         file_upload.upload_chunks(chunks).await?;
         uploaded_chunks_count += 1;
 
