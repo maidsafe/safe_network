@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.21...sn_networking-v0.12.22) - 2024-01-09
+
+### Other
+- *(node)* move add_to_replicate_fetcher to driver
+- *(node)* move replication cmd flow to swarm_driver
+- get spend from network only require Majority
+
 ## [0.12.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.20...sn_networking-v0.12.21) - 2024-01-08
 
 ### Other

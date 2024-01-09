@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.100.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.100.0...sn_client-v0.100.1) - 2024-01-09
+
+### Other
+- get spend from network only require Majority
+
 ## [0.100.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.42...sn_client-v0.100.0) - 2024-01-08
 
 ### Added

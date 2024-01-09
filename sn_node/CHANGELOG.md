@@ -2776,6 +2776,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - provide `--first` argument for `safenode`
 
+## [0.102.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.0...sn_node-v0.102.1) - 2024-01-09
+
+### Other
+- *(node)* move add_to_replicate_fetcher to driver
+- *(node)* move replication cmd flow to swarm_driver
+- get spend from network only require Majority
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

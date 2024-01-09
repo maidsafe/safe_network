@@ -2452,6 +2452,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - provide `--first` argument for `safenode`
 
+## [0.3.1](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.0...sn_testnet-v0.3.1) - 2024-01-09
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>
