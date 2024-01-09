@@ -88,4 +88,7 @@ pub enum Error {
 
     #[error("The provided data map is empty")]
     EmptyDataMap,
+
+    #[error("Error occurred while assembling the downloaded chunks")]
+    FailedToAssembleDownloadedChunks,
 }
