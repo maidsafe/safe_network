@@ -18,7 +18,7 @@ use crate::add_service::{add, AddServiceOptions};
 use crate::config::*;
 use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
 use crate::helpers::download_and_extract_release;
-use crate::local::{kill_network, run_network};
+use crate::local::{kill_network, run_network, LocalNetworkOptions};
 use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
@@ -112,6 +112,44 @@ pub enum SubCmd {
         /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
         keep_directories: bool,
+    },
+    /// Join an existing local network.
+    ///
+    /// The existing network can be managed outwith the node manager. If this is the case, use the
+    /// `--peer` argument to specify an initial peer to connect to.
+    ///
+    /// If no `--peer` argument is supplied, the nodes will be added to the existing local network
+    /// being managed by the node manager.
+    #[clap(name = "join")]
+    Join {
+        /// The number of nodes to run.
+        #[clap(long)]
+        count: Option<u16>,
+        /// Path to a faucet binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long)]
+        faucet_path: Option<PathBuf>,
+        /// The version of the faucet to use.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long)]
+        faucet_version: Option<String>,
+        /// Path to a safenode binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long)]
+        node_path: Option<PathBuf>,
+        /// The version of safenode to use.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long)]
+        node_version: Option<String>,
+        #[command(flatten)]
+        peers: Option<PeersArgs>,
+        /// Set to skip the network validation process
+        #[clap(long)]
+        skip_validation: bool,
     },
     /// Remove a safenode service.
     ///
@@ -283,6 +321,55 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
+        SubCmd::Join {
+            count,
+            faucet_path,
+            faucet_version,
+            node_path,
+            node_version,
+            peers,
+            skip_validation,
+        } => {
+            println!("=================================================");
+            println!("             Joining Local Network               ");
+            println!("=================================================");
+
+            let local_node_reg_path = &get_local_node_registry_path()?;
+            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
+
+            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+            let faucet_path = get_bin_path(
+                faucet_path,
+                ReleaseType::Faucet,
+                faucet_version,
+                &*release_repo,
+            )
+            .await?;
+            let node_path = get_bin_path(
+                node_path,
+                ReleaseType::Safenode,
+                node_version,
+                &*release_repo,
+            )
+            .await?;
+
+            let peers = if let Some(peers) = peers {
+                Some(get_peers_from_args(peers).await?)
+            } else {
+                None
+            };
+
+            let options = LocalNetworkOptions {
+                faucet_bin_path: faucet_path,
+                join: true,
+                node_count: count,
+                peers,
+                safenode_bin_path: node_path,
+                skip_validation,
+            };
+            run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
+            Ok(())
+        }
         SubCmd::Kill { keep_directories } => {
             let local_reg_path = &get_local_node_registry_path()?;
             let local_node_registry = NodeRegistry::load(local_reg_path)?;
@@ -360,40 +447,30 @@ async fn main() -> Result<()> {
             println!("=================================================");
 
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let faucet_path = if let Some(path) = faucet_path {
-                path
-            } else {
-                let (faucet_download_path, _) = download_and_extract_release(
-                    ReleaseType::Faucet,
-                    None,
-                    faucet_version,
-                    &*release_repo,
-                )
-                .await?;
-                faucet_download_path
-            };
-
-            let node_path = if let Some(path) = node_path {
-                path
-            } else {
-                let (safenode_download_path, _) = download_and_extract_release(
-                    ReleaseType::Safenode,
-                    None,
-                    node_version,
-                    &*release_repo,
-                )
-                .await?;
-                safenode_download_path
-            };
-
-            run_network(
-                &mut local_node_registry,
-                &node_path,
-                &faucet_path,
-                count,
-                skip_validation,
+            let faucet_path = get_bin_path(
+                faucet_path,
+                ReleaseType::Faucet,
+                faucet_version,
+                &*release_repo,
             )
             .await?;
+            let node_path = get_bin_path(
+                node_path,
+                ReleaseType::Safenode,
+                node_version,
+                &*release_repo,
+            )
+            .await?;
+
+            let options = LocalNetworkOptions {
+                faucet_bin_path: faucet_path,
+                join: false,
+                node_count: count,
+                peers: None,
+                safenode_bin_path: node_path,
+                skip_validation,
+            };
+            run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
 
             local_node_registry.save()?;
 
@@ -676,4 +753,19 @@ fn is_running_as_root() -> bool {
 fn is_running_as_root() -> bool {
     // The Windows implementation for this will be much more complex.
     true
+}
+
+async fn get_bin_path(
+    path_option: Option<PathBuf>,
+    release_type: ReleaseType,
+    version: Option<String>,
+    release_repo: &dyn SafeReleaseRepositoryInterface,
+) -> Result<PathBuf> {
+    if let Some(path) = path_option {
+        Ok(path)
+    } else {
+        let (download_path, _) =
+            download_and_extract_release(release_type, None, version, release_repo).await?;
+        Ok(download_path)
+    }
 }
