@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.100.1...sn_client-v0.101.0) - 2024-01-09
+
+### Added
+- *(client)* use buffered future stream to download chunks
+
+### Fixed
+- *(client)* empty out the download cache once the stream exits
+- *(ci)* fix clippy error due to Send not being general
+
+### Other
+- *(client)* add docs to FilesDownload
+- *(client)* [**breaking**] move read_from range into `DownloadFiles`
+
 ## [0.100.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.100.0...sn_client-v0.100.1) - 2024-01-09
 
 ### Other
