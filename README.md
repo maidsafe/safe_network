@@ -1,27 +1,21 @@
 # The Safe Network
 
-Own your data, share your spare space, get paid for doing so.
+[SafenetForum.org](https://safenetforum.org/)
 
-The Safe Network is a decentralised and autonomous data network, built atop kademlia and libp2p.
+Own your data. Share your disk space. Get paid for doing so.<br>
+The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Kademlia and Libp2p.<br>
 
 ## Table of Contents
 
-- [Project Structure](#project-structure)
-  - [For Users](#for-users)
-  - [For Developers](#for-developers)
-  - [For the Technical](#for-the-technical)
-- [Running the network](#running-the-network)
-- [Client network access](#client-network-access)
-- [Local Faucet](#local-faucet)
+- [For Users](#for-Users)
+- [For Developers](#for-developers)
+- [For the Technical](#for-the-technical)
+- [Run your MaidSafe Local Test Network in 4 easy Steps](#Run-your-MaidSafe-Local-Test-Network-in-4-easy-Steps)
 - [Token transfers](#token-transfers)
 - [Auditing](#auditing)
 - [Using example app which exercises the Register APIs](#using-example-app-which-exercises-the-register-apis)
 - [Using the example RPC client app to query info and send cmds to a running safenode](#using-the-example-rpc-client-app-to-query-info-and-send-cmds-to-a-running-safenode)
 - [Metrics Dashboard](#metrics-dashboard)
-
-
-
-## Project Structure
 
 ### For Users
 
@@ -47,64 +41,34 @@ The Safe Network is a decentralised and autonomous data network, built atop kade
 - [Build Info](https://github.com/maidsafe/sn_build_info/blob/master/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
 
-## Running the network
-
-You'll need to set the `SAFE_PEERS` env variable to the multiaddress of a node when you set up a testnet.
-You can do this automatically at network startup using the following command (if you have ripgrep installed)
+## Run your MaidSafe Local Test Network in 4 easy Steps
+Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
+<br>
+1. Create your Local Test Network : <br>
+```bash
+Cargo run --bin testnet --features="local-discovery" -- --build-node --build-faucet --interval 100 --clean
+```
+2. Build a Tokenized Wallet : <br>
+```bash
+Cargo run --release --bin safe --features=local-discovery -- wallet get-faucet 127.0.0.1:8000
+```
+3. Upload your chosen Directory to the Local Test Network : <br>
+```bash
+Cargo run --release --bin safe --features=local-discovery -- files upload <directory-path-goes-here>
+```
+4. Download the Directory Contents from the Local Test Network : <br>
+```bash
+cargo run --release --bin safe --features=local-discovery -- files download
+```
+## Shut down Your Test Network
+On Windows (PowerShell)
+```bash
+Get-Process safenode | Stop-Process; Get-Process faucet | Stop-Process
+```
+For MacOS<br>
 ```bash
 killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --build-node --build-faucet --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.local/share/safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
 ```
-
-This will set the env var for you and so you can run the client without needing to manually pass in `--peer` args.
-
-Or alternatively run with local discovery enabled (mDNS)
-`killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 100`
-
-## Client network access
-
-Assuming you have `SAFE_PEERS` set as above:
-
-- Create Register with name 'myregister':
-`cargo run --release --bin safe -- register create myregister`
-
-- Get Register using its name from the previous cmd:
-`cargo run --release --bin safe -- register get -n myregister`
-
-- Edit Register using its name from the previous cmd:
-`cargo run --release --bin safe -- register edit -n myregister somename`
-
-- Upload files
-`cargo run --release --bin safe -- files upload ~/dir/with/files`
-
-- Download files
-`cargo run --release --bin safe -- files download`
-
-Note that the names of the uploaded files will be inserted into a new text document with a file
-name of `file_names_%Y-%m-%d_%H-%M-%S.txt` (i.e. unique by date and time of upload) which is placed in `$HOME/.safe/client/uploaded_files`.
-When calling `files download`, the `uploaded_files` dir will be searched for documents containing the names of uploaded files.
-If you don't wish to download the same files multiple times, remove the text documents after the first download.
-
-If you don't have `SAFE_PEERS` set, you can pass in a `--peer` argument to commands like this:
-`cargo run --release --bin safe -- --peer <multiaddress> files upload ~/dir/with/files`
-
-## Local Faucet
-
-Start a local network as described above.
-
-First we need to claim the genesis, which means all available supply is sent to a faucet wallet located in the `$HOME/.safe/test_faucet` path.
-Thereafter we can ask the faucet to send tokens to any address we specify.
-To get the address of your wallet, just call the address cmd. It will create the wallet if it doesn't exist.
-
-- Claim genesis
-`cargo run --release --bin faucet -- claim-genesis`
-
-- Start a local faucet server
-`cargo run --release --bin faucet -- server`
-
-- Request tokens from the local faucet server (requires a running faucet server)
-`cargo run --release --bin safe wallet get-faucet http://localhost:8000`
-
-Please note that this feature is still unstable and most likely won't work yet.
 
 ## Token transfers
 
@@ -131,7 +95,7 @@ Start a local network and a faucet as described above.
 
 You can run the `registers` example client app from multiple consoles simultaneously,
 to write to the same Register on the network, identified by its nickname and
-using different user names from each instance launched, e.g.:
+using different usernames from each instance launched, e.g.:
 
 From first console:
 ```
@@ -224,12 +188,13 @@ The metrics can then be collected using a collector (for e.g. Prometheus) and th
 
 ## Contributing
 
-Please feel free to clone and modify this project. Pull requests are welcome.
+Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit **[The MaidSafe Forum](https://safenetforum.org/)** for discussion or if you would like to join our online community.
+
 
 ## Conventional Commits
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Make sure your commit messages adhere to this standard.
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
 
 ## License
 
-This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](LICENSE) http://www.gnu.org/licenses/gpl-3.0.en.html).
+This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](http://www.gnu.org/licenses/gpl-3.0.en.html)).
