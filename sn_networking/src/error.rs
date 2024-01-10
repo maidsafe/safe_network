@@ -101,7 +101,7 @@ pub enum Error {
     #[error("Transport Error")]
     TransportError(#[from] TransportError<std::io::Error>),
 
-    #[error("SnProtocol Error")]
+    #[error("SnProtocol Error: {0}")]
     ProtocolError(#[from] sn_protocol::error::Error),
 
     #[error("Transfer Error {0}.")]

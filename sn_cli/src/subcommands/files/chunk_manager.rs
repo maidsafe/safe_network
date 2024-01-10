@@ -8,7 +8,10 @@
 
 use crate::subcommands::files::{get_progress_bar, UploadedFile};
 use bytes::Bytes;
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::FilesApi;
 use sn_protocol::storage::ChunkAddress;
@@ -26,7 +29,7 @@ use xor_name::XorName;
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
 
-/// Subdir for storing uploaded file indo
+/// Subdir for storing uploaded file into
 pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
 
 // The unique hex encoded hash(path)
@@ -60,7 +63,7 @@ pub(crate) struct ChunkedFile {
 pub(crate) struct ChunkManager {
     /// Whole client root dir
     root_dir: PathBuf,
-    /// Dir for chunk artefacts
+    /// Dir for chunk artifacts
     artifacts_dir: PathBuf,
     files_to_chunk: Vec<(OsString, PathXorName, PathBuf)>,
     chunks: BTreeMap<PathXorName, ChunkedFile>,
@@ -183,21 +186,14 @@ impl ChunkManager {
         let artifacts_dir = &self.artifacts_dir.clone();
         let chunked_files = self.files_to_chunk
             .par_iter()
-            .filter_map(|(original_file_name, path_xor, path)| {
+            .map(|(original_file_name, path_xor, path)| {
                 let file_chunks_dir = {
                     let file_chunks_dir = artifacts_dir.join(&path_xor.0);
-                    match fs::create_dir_all(&file_chunks_dir) {
-                        Ok(_) => file_chunks_dir,
-                        Err(err) => {
-                            println!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                            error!("Failed to create temp folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
-                            // use the chunk_artifacts_dir directly; This should not result in any
-                            // undefined behaviour. The resume operation will be disabled if we don't
-                            // use the `path_xor` dir.
-                            // TODO: maybe error out if we get any fs errors.
-                            artifacts_dir.clone()
-                        }
-                    }
+                    fs::create_dir_all(&file_chunks_dir).map_err(|err| {
+                        error!("Failed to create folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
+                        eyre!("Failed to create dir {file_chunks_dir:?} for SE chunks with error {err:?}")
+                    })?;
+                    file_chunks_dir
                 };
 
                 match FilesApi::chunk_file(path, &file_chunks_dir, include_data_maps) {
@@ -211,16 +207,16 @@ impl ChunkManager {
                             chunks: chunks.into_iter().collect(),
                             data_map
                         };
-                        Some((path_xor.clone(), chunked_file))
+                        Ok((path_xor.clone(), chunked_file))
                     }
                     Err(err) => {
-                        println!("Skipping file {path:?}/{path_xor:?} as it could not be chunked: {err:?}");
-                        error!("Skipping file {path:?}/{path_xor:?} as it could not be chunked: {err:?}");
-                        None
+                        println!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
+                        error!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
+                        Err(eyre!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}"))
                     }
                 }
             })
-            .collect::<BTreeMap<_, _>>();
+            .collect::<Result<BTreeMap<_, _>>>()?;
         debug!(
             "Out of total files_to_chunk {total_files}, we have resumed {} files and chunked {} files",
             self.resumed_files_count,
@@ -237,9 +233,9 @@ impl ChunkManager {
         }
 
         // write metadata and data_map
-        let _ = chunked_files
+        chunked_files
             .par_iter()
-            .filter_map(|(path_xor, chunked_file)| {
+            .map(|(path_xor, chunked_file)| {
                 let metadata_path = artifacts_dir.join(&path_xor.0).join(METADATA_FILE);
 
                 info!("Metadata path is: {metadata_path:?}");
@@ -247,26 +243,25 @@ impl ChunkManager {
                     chunked_file.head_chunk_address,
                     chunked_file.data_map.clone(),
                 ))
-                .map_err(|_| error!("Failed to serialize file_xor_addr for writing metadata"))
-                .ok()?;
+                .map_err(|_| {
+                    error!("Failed to serialize file_xor_addr for writing metadata");
+                    eyre!("Failed to serialize file_xor_addr for writing metadata")
+                })?;
 
-                let mut metadata_file = File::create(&metadata_path)
-                    .map_err(|_| {
-                        error!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}")
-                    })
-                    .ok()?;
+                let mut metadata_file = File::create(&metadata_path).map_err(|_| {
+                    error!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}");
+                    eyre!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}")
+                })?;
 
-                metadata_file
-                    .write_all(&metadata)
-                    .map_err(|_| {
-                        error!("Failed to write metadata to {metadata_path:?} for {path_xor:?}")
-                    })
-                    .ok()?;
+                metadata_file.write_all(&metadata).map_err(|_| {
+                    error!("Failed to write metadata to {metadata_path:?} for {path_xor:?}");
+                    eyre!("Failed to write metadata to {metadata_path:?} for {path_xor:?}")
+                })?;
 
                 debug!("Wrote metadata for {path_xor:?}");
-                Some(())
+                Ok(())
             })
-            .count();
+            .collect::<Result<()>>()?;
 
         progress_bar.finish_and_clear();
         debug!(
@@ -319,39 +314,37 @@ impl ChunkManager {
     /// Mark all the chunks as completed. This removes the chunks from the CHUNK_ARTIFACTS_DIR.
     /// But keeps the folder and metadata file that denotes that the file has been already completed.
     #[allow(dead_code)]
-    pub(crate) fn mark_completed_all(&mut self) {
+    pub(crate) fn mark_completed_all(&mut self) -> Result<()> {
         let all_chunks = self
             .chunks
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .map(|(chunk, _)| *chunk)
             .collect::<Vec<_>>();
-        self.mark_completed(all_chunks.into_iter());
+        self.mark_completed(all_chunks.into_iter())
     }
 
     /// Mark a set of chunks as completed and remove them from CHUNK_ARTIFACTS_DIR
     /// If the entire file is completed, keep the folder and metadata file
-    pub(crate) fn mark_completed(&mut self, chunks: impl Iterator<Item = XorName>) {
+    pub(crate) fn mark_completed(&mut self, chunks: impl Iterator<Item = XorName>) -> Result<()> {
         let set_of_completed_chunks = chunks.collect::<BTreeSet<_>>();
         trace!("marking as completed: {set_of_completed_chunks:?}");
 
         // remove those files
-        let _ = self
-            .chunks
+        self.chunks
             .par_iter()
             .flat_map(|(_, chunked_file)| &chunked_file.chunks)
-            .filter_map(|(chunk_xor, chunk_path)| {
+            .map(|(chunk_xor, chunk_path)| {
                 if set_of_completed_chunks.contains(chunk_xor) {
                     debug!("removing {chunk_xor:?} at {chunk_path:?} as it is marked as completed");
-                    fs::remove_file(chunk_path)
-                        .map_err(|_err| {
-                            error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
-                        })
-                        .ok()?;
+                    fs::remove_file(chunk_path).map_err(|_err| {
+                        error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
+                        eyre!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}")
+                    })?;
                 }
-                Some(())
+                Ok(())
             })
-            .count();
+            .collect::<Result<()>>()?;
 
         let mut entire_file_is_done = BTreeSet::new();
         // remove the entries from the struct
@@ -400,6 +393,7 @@ impl ChunkManager {
                 let _result = uploaded_file_metadata.write(&uploaded_file_path);
             }
         }
+        Ok(())
 
         // let mut entire_file_is_done = BTreeSet::new();
         // // remove the entries from the struct
@@ -724,7 +718,7 @@ mod tests {
             .expect("Must contain 1 chunk")
             .clone();
         let total_chunks = manager.chunks.values().next().unwrap().chunks.len();
-        manager.mark_completed(vec![chunk].into_iter());
+        manager.mark_completed(vec![chunk].into_iter())?;
 
         // 1. chunk should be removed from the struct
         assert_eq!(
@@ -770,7 +764,7 @@ mod tests {
             .count();
         assert_eq!(n_folders, 5);
 
-        manager.mark_completed_all();
+        manager.mark_completed_all()?;
 
         // all 5 files should be marked as verified
         assert_eq!(manager.verified_files.len(), 5);
@@ -847,7 +841,7 @@ mod tests {
             .next()
             .expect("Chunk should be present")
             .0;
-        manager.mark_completed([removed_chunk].into_iter());
+        manager.mark_completed([removed_chunk].into_iter())?;
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir, true, true)?;
 
@@ -877,7 +871,7 @@ mod tests {
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
         manager.chunk_path(&random_files_dir, true, true)?;
-        manager.mark_completed_all();
+        manager.mark_completed_all()?;
 
         let mut new_manager = ChunkManager::new(&root_dir);
         new_manager.chunk_path(&random_files_dir, true, true)?;
