@@ -401,6 +401,7 @@ impl NetworkBuilder {
         };
 
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
         let kademlia = {
@@ -409,7 +410,8 @@ impl NetworkBuilder {
                     let node_record_store = NodeRecordStore::with_config(
                         peer_id,
                         store_cfg,
-                        Some(network_event_sender.clone()),
+                        network_event_sender.clone(),
+                        swarm_cmd_sender.clone(),
                     );
                     #[cfg(feature = "open-metrics")]
                     let node_record_store = node_record_store
@@ -541,7 +543,6 @@ impl NetworkBuilder {
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
         let swarm_driver = SwarmDriver {
             swarm,
             self_peer_id: peer_id,
