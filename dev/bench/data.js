@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704901259764,
+  "lastUpdate": 1704901262357,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34765,6 +34765,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 13981,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "559fb83a086af02632621666da009fb58e4bfb72",
+          "message": "chore: fixup send_spends and use ExcessiveNanoValue error",
+          "timestamp": "2024-01-10T14:56:11Z",
+          "tree_id": "b3bbb37c79454b06c37f62e59e504e463746ba4d",
+          "url": "https://github.com/maidsafe/safe_network/commit/559fb83a086af02632621666da009fb58e4bfb72"
+        },
+        "date": 1704901261440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3500,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 15643,
             "unit": "ms"
           },
           {
