@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704890718072,
+  "lastUpdate": 1704890830954,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d1a34655641e486e8dd05ab904cdeb217f92d61e",
-          "message": "feat!: Clients add a tolerance to store cost",
-          "timestamp": "2023-09-11T18:41:24Z",
-          "tree_id": "e2772267a4be1eddde33a43865ae53105c85ddc5",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1a34655641e486e8dd05ab904cdeb217f92d61e"
-        },
-        "date": 1694465313448,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 212.08269,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "bf60339b6000f4a525a46359ae55037574f4211f",
           "message": "chore(node): remove unused proptest dep",
           "timestamp": "2023-09-12T09:29:23Z",
@@ -20394,6 +20365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/813e6ad768084c58481b711d458f466494867061"
         },
         "date": 1704801734739,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 44,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
+          "message": "feat: allow register CLI to create a public register writable to anyone",
+          "timestamp": "2024-01-10T11:59:53Z",
+          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
+          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
+        },
+        "date": 1704890830375,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
