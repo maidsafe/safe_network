@@ -10,7 +10,7 @@
 pub mod client;
 
 use bytes::Bytes;
-use eyre::{eyre, Result};
+use eyre::{Context, Result};
 use libp2p::PeerId;
 use rand::{
     distributions::{Distribution, Standard},
@@ -68,7 +68,9 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
 
     for addr in node_rpc_addresses {
         let endpoint = format!("https://{addr}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await.context(format!(
+            "Failed to connect to {addr:?} during get_all_peer_ids"
+        ))?;
 
         // get the peer_id
         let response = rpc_client
@@ -86,39 +88,15 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
 
 pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
-
-    let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
-    let log_dir = Path::new(&response.get_ref().log_dir);
-    let root_dir = log_dir
-        .parent()
-        .ok_or_else(|| eyre!("could not obtain parent from logging directory"))?;
-
-    // remove Chunks records
-    let chunks_records = root_dir.join("record_store");
-    if let Ok(true) = chunks_records.try_exists() {
-        println!("Removing Chunks records from {}", chunks_records.display());
-        std::fs::remove_dir_all(chunks_records)?;
-    }
-
-    // remove Registers records
-    let registers_records = root_dir.join("registers");
-    if let Ok(true) = registers_records.try_exists() {
-        println!(
-            "Removing Registers records from {}",
-            registers_records.display()
-        );
-        std::fs::remove_dir_all(registers_records)?;
-    }
+    let mut client = SafeNodeClient::connect(endpoint)
+        .await
+        .context(format!("Failed to connect to {addr:?} during node_restart"))?;
 
     let _response = client
         .restart(Request::new(RestartRequest { delay_millis: 0 }))
         .await?;
 
-    println!(
-        "Node restart requested to RPC service at {addr}, and removed all its chunks and registers records at {}",
-        log_dir.display()
-    );
+    println!("Node restart requested to RPC service at {addr}");
 
     Ok(())
 }

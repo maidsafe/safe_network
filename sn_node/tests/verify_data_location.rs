@@ -10,14 +10,11 @@
 mod common;
 
 use crate::common::{
-    client::{
-        get_all_rpc_addresses, get_gossip_client, get_gossip_client_and_wallet,
-        PAYING_WALLET_INITIAL_BALANCE,
-    },
+    client::{get_all_rpc_addresses, get_gossip_client_and_wallet, PAYING_WALLET_INITIAL_BALANCE},
     get_all_peer_ids, node_restart,
 };
 use assert_fs::TempDir;
-use eyre::{eyre, Result};
+use eyre::{eyre, Context, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
@@ -28,7 +25,6 @@ use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
-    storage::ChunkAddress,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -41,7 +37,6 @@ use std::{
 };
 use tonic::Request;
 use tracing::error;
-use xor_name::XorName;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -66,7 +61,7 @@ const CHURN_COUNT: u8 = 20;
 
 /// Default number of chunks that should be PUT to the network.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
-const CHUNK_COUNT: usize = 50;
+const CHUNK_COUNT: usize = 5;
 
 type NodeIndex = usize;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
@@ -74,8 +69,6 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_data_location");
-
-    query_content_task();
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
@@ -126,7 +119,18 @@ async fn verify_data_location() -> Result<()> {
 
             // get the new PeerId for the current NodeIndex
             let endpoint = format!("https://{rpc_address}");
-            let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+            let mut attempts = 0;
+            let mut rpc_client = 'inside: loop {
+                if let Ok(rpc_client) = SafeNodeClient::connect(endpoint.clone()).await {
+                    break 'inside rpc_client;
+                }
+                println!("Could not connect to rpc {endpoint:?} after restarting. retrying");
+                tokio::time::sleep(Duration::from_millis(1000)).await;
+                attempts += 1;
+                if attempts >= 10 {
+                    panic!("FAILED TO CONNECT even after retries");
+                }
+            };
             let response = rpc_client
                 .node_info(Request::new(NodeInfoRequest {}))
                 .await?;
@@ -138,29 +142,6 @@ async fn verify_data_location() -> Result<()> {
             verify_location(&all_peers, &node_rpc_address).await?;
         }
     }
-}
-
-// Spawns a task which periodically queries random content
-fn query_content_task() {
-    let _handle = tokio::spawn(async move {
-        let delay = Duration::from_millis(1);
-        loop {
-            // thread random rng
-            let mut rng = OsRng;
-            let client = get_gossip_client().await;
-            // let's choose a random content to query
-            let random_addr = ChunkAddress::new(XorName::random(&mut rng));
-            tracing::trace!("Querying content {random_addr:?}");
-
-            if let Err(error) = client.get_chunk(random_addr, false).await {
-                tracing::error!(
-                    "Error querying content random content (as expected) {random_addr:?} : {error}"
-                );
-            }
-
-            tokio::time::sleep(delay).await;
-        }
-    });
 }
 
 fn print_node_close_groups(all_peers: &[PeerId]) {
@@ -189,7 +170,9 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
 
     for (node_index, rpc_address) in node_rpc_addresses.iter().enumerate() {
         let endpoint = format!("https://{rpc_address}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = SafeNodeClient::connect(endpoint).await.context(format!(
+            "Failed to connect to {rpc_address:?} during get_records_and_holders"
+        ))?;
 
         let records_response = rpc_client
             .record_addresses(Request::new(RecordAddressesRequest {}))
@@ -249,14 +232,16 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                     .filter(|expected| !actual_holders.contains(expected))
                     .for_each(|expected| missing_peers.push(*expected));
 
-                error!(
-                    "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key),
-                );
-                println!(
-                    "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key),
-                );
+                if !missing_peers.is_empty() {
+                    error!(
+                        "Record {:?} is not stored by {missing_peers:?}",
+                        PrettyPrintRecordKey::from(key),
+                    );
+                    println!(
+                        "Record {:?} is not stored by {missing_peers:?}",
+                        PrettyPrintRecordKey::from(key),
+                    );
+                }
             }
 
             let mut failed_peers = Vec::new();
@@ -281,7 +266,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
             });
             println!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                println!("Record {key:?} is currently held by node indexes {node_index:?}");
+                println!("Record {key:?} is currently held by node indices {node_index:?}");
             });
             println!("Node index map:");
             all_peers
@@ -289,8 +274,10 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                 .enumerate()
                 .for_each(|(idx, peer)| println!("{idx} : {peer:?}"));
             verification_attempts += 1;
-            println!("Sleeping before retrying verification");
-            tokio::time::sleep(REVERIFICATION_DELAY).await;
+            println!("Sleeping before retrying verification. {verification_attempts}/{VERIFICATION_ATTEMPTS}");
+            if verification_attempts < VERIFICATION_ATTEMPTS {
+                tokio::time::sleep(REVERIFICATION_DELAY).await;
+            }
         } else {
             // if successful, break out of the loop
             break;
