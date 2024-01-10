@@ -20,15 +20,10 @@ use std::process::{Command, Stdio};
 use tracing::{debug, info};
 
 pub const DEFAULT_NODE_LAUNCH_INTERVAL: u64 = 1000;
-#[cfg(not(target_os = "windows"))]
-pub const SAFENODE_BIN_NAME: &str = "safenode";
-#[cfg(target_os = "windows")]
-pub const SAFENODE_BIN_NAME: &str = "safenode.exe";
 
-#[cfg(not(target_os = "windows"))]
+pub const SAFENODE_BIN_NAME: &str = "safenode";
+
 pub const FAUCET_BIN_NAME: &str = "faucet";
-#[cfg(target_os = "windows")]
-pub const FAUCET_BIN_NAME: &str = "faucet.exe";
 
 /// This trait exists for unit testing.
 ///
