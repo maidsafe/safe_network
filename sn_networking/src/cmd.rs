@@ -296,11 +296,15 @@ pub struct SwarmLocalState {
 
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+        let start = std::time::Instant::now();
+        let mut cmd_string = "";
         match cmd {
             SwarmCmd::TriggerIntervalReplication => {
+                cmd_string = "TriggerIntervalReplication";
                 self.try_interval_replication()?;
             }
             SwarmCmd::GetNetworkRecord { key, sender, cfg } => {
+                cmd_string = "GetNetworkRecord";
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 debug!(
@@ -327,6 +331,7 @@ impl SwarmDriver {
                       self.pending_get_record.len());
             }
             SwarmCmd::GetLocalStoreCost { key, sender } => {
+                cmd_string = "GetLocalStoreCost";
                 let record_exists = self
                     .swarm
                     .behaviour_mut()
@@ -342,6 +347,7 @@ impl SwarmDriver {
                 let _res = sender.send(cost);
             }
             SwarmCmd::PaymentReceived => {
+                cmd_string = "PaymentReceived";
                 self.swarm
                     .behaviour_mut()
                     .kademlia
@@ -349,6 +355,7 @@ impl SwarmDriver {
                     .payment_received();
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
+                cmd_string = "GetLocalRecord";
                 let record = self
                     .swarm
                     .behaviour_mut()
@@ -363,6 +370,7 @@ impl SwarmDriver {
                 sender,
                 quorum,
             } => {
+                cmd_string = "PutRecord";
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
                     "Putting record sized: {:?} to network {:?}",
@@ -395,6 +403,7 @@ impl SwarmDriver {
                 sender,
                 quorum,
             } => {
+                cmd_string = "PutRecordTo";
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
                     "Putting record {record_key:?} sized: {:?} to {peers:?}",
@@ -413,6 +422,7 @@ impl SwarmDriver {
                 }
             }
             SwarmCmd::PutLocalRecord { record } => {
+                cmd_string = "PutLocalRecord";
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);
 
@@ -458,6 +468,7 @@ impl SwarmDriver {
             }
             SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
                 trace!("Adding Record locally, for {key:?} and {record_type:?}");
+                cmd_string = "AddLocalRecordAsStored";
                 self.swarm
                     .behaviour_mut()
                     .kademlia
@@ -466,9 +477,11 @@ impl SwarmDriver {
             }
             SwarmCmd::RemoveFailedLocalRecord { key } => {
                 trace!("Removing Record locally, for {key:?}");
+                cmd_string = "RemoveFailedLocalRecord";
                 self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
+                cmd_string = "RecordStoreHasKey";
                 let has_key = self
                     .swarm
                     .behaviour_mut()
@@ -478,6 +491,7 @@ impl SwarmDriver {
                 let _ = sender.send(has_key);
             }
             SwarmCmd::GetAllLocalRecordAddresses { sender } => {
+                cmd_string = "GetAllLocalRecordAddresses";
                 #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
                 let addresses = self
                     .swarm
@@ -489,12 +503,14 @@ impl SwarmDriver {
             }
 
             SwarmCmd::StartListening { addr, sender } => {
+                cmd_string = "StartListening";
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
             }
             SwarmCmd::Dial { addr, sender } => {
+                cmd_string = "Dial";
                 let mut addr_copy = addr.clone();
                 if let Some(peer_id) = multiaddr_pop_p2p(&mut addr_copy) {
                     // Only consider the dial peer is bootstrap node when proper PeerId is provided.
@@ -510,12 +526,14 @@ impl SwarmDriver {
                 };
             }
             SwarmCmd::DialWithOpts { opts, sender } => {
+                cmd_string = "DialWithOpts";
                 let _ = match self.dial_with_opts(opts) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(e.into())),
                 };
             }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
+                cmd_string = "GetClosestPeersToAddressFromNetwork";
                 let query_id = self
                     .swarm
                     .behaviour_mut()
@@ -530,9 +548,11 @@ impl SwarmDriver {
                 );
             }
             SwarmCmd::GetAllLocalPeers { sender } => {
+                cmd_string = "GetAllLocalPeers";
                 let _ = sender.send(self.get_all_local_peers());
             }
             SwarmCmd::GetKBuckets { sender } => {
+                cmd_string = "GetKBuckets";
                 let mut ilog2_kbuckets = BTreeMap::new();
                 for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
                     let range = kbucket.range();
@@ -550,6 +570,7 @@ impl SwarmDriver {
                 let _ = sender.send(ilog2_kbuckets);
             }
             SwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
+                cmd_string = "GetCloseGroupLocalPeers";
                 let key = key.as_kbucket_key();
                 // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
                 // increasing distance
@@ -566,9 +587,11 @@ impl SwarmDriver {
                 let _ = sender.send(closest_peers);
             }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
+                cmd_string = "GetClosestKLocalPeers";
                 let _ = sender.send(self.get_closest_k_value_local_peers());
             }
             SwarmCmd::SendRequest { req, peer, sender } => {
+                cmd_string = "SendRequest";
                 // If `self` is the recipient, forward the request directly to our upper layer to
                 // be handled.
                 // `self` then handles the request and sends a response back again to itself.
@@ -596,32 +619,36 @@ impl SwarmDriver {
                     trace!("Pending Requests now: {:?}", self.pending_requests.len());
                 }
             }
-            SwarmCmd::SendResponse { resp, channel } => match channel {
-                // If the response is for `self`, send it directly through the oneshot channel.
-                MsgResponder::FromSelf(channel) => {
-                    trace!("Sending response to self");
-                    match channel {
-                        Some(channel) => {
-                            channel
-                                .send(Ok(resp))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
-                        }
-                        None => {
-                            // responses that are not awaited at the call site must be handled
-                            // separately
-                            self.send_event(NetworkEvent::ResponseReceived { res: resp });
+            SwarmCmd::SendResponse { resp, channel } => {
+                cmd_string = "SendResponse";
+                match channel {
+                    // If the response is for `self`, send it directly through the oneshot channel.
+                    MsgResponder::FromSelf(channel) => {
+                        trace!("Sending response to self");
+                        match channel {
+                            Some(channel) => {
+                                channel
+                                    .send(Ok(resp))
+                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            }
+                            None => {
+                                // responses that are not awaited at the call site must be handled
+                                // separately
+                                self.send_event(NetworkEvent::ResponseReceived { res: resp });
+                            }
                         }
                     }
+                    MsgResponder::FromPeer(channel) => {
+                        self.swarm
+                            .behaviour_mut()
+                            .request_response
+                            .send_response(channel, resp)
+                            .map_err(Error::OutgoingResponseDropped)?;
+                    }
                 }
-                MsgResponder::FromPeer(channel) => {
-                    self.swarm
-                        .behaviour_mut()
-                        .request_response
-                        .send_response(channel, resp)
-                        .map_err(Error::OutgoingResponseDropped)?;
-                }
-            },
+            }
             SwarmCmd::GetSwarmLocalState(sender) => {
+                cmd_string = "GetSwarmLocalState";
                 let current_state = SwarmLocalState {
                     connected_peers: self.swarm.connected_peers().cloned().collect(),
                     listeners: self.swarm.listeners().cloned().collect(),
@@ -645,6 +672,7 @@ impl SwarmDriver {
                 }
             }
             SwarmCmd::GossipsubPublish { topic_id, msg } => {
+                cmd_string = "GossipsubPublish";
                 // If we publish a Gossipsub message, we might not receive the same message on our side.
                 // Hence push an event to notify that we've published a message
                 if self.is_gossip_handler {
@@ -662,6 +690,8 @@ impl SwarmDriver {
                 self.is_gossip_handler = true;
             }
         }
+
+        self.log_handling(cmd_string.to_string(), start.elapsed());
 
         Ok(())
     }
