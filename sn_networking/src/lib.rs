@@ -58,7 +58,10 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{
+    mpsc::{self, Sender},
+    oneshot,
+};
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -612,22 +615,6 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
     }
 
-    /// Remove a local record from the RecordStore after a failed write
-    pub fn remove_failed_local_record(&self, key: RecordKey) -> Result<()> {
-        trace!("Removing Record locally, for {:?}", key);
-        self.send_swarm_cmd(SwarmCmd::RemoveFailedLocalRecord { key })
-    }
-
-    /// Add a local record to the RecordStore after a successful write
-    pub fn add_record_as_stored_locally(
-        &self,
-        key: RecordKey,
-        record_type: RecordType,
-    ) -> Result<()> {
-        trace!("Removing Record locally, for {:?}", key);
-        self.send_swarm_cmd(SwarmCmd::AddLocalRecordAsStored { key, record_type })
-    }
-
     /// Returns true if a RecordKey is present locally in the RecordStore
     pub async fn is_record_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
@@ -701,24 +688,7 @@ impl Network {
 
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
-        let capacity = self.swarm_cmd_sender.capacity();
-
-        let cmd_sender = self.swarm_cmd_sender.clone();
-
-        if capacity == 0 {
-            error!(
-                "SwarmCmd channel is full. Await capacity to send: {:?}",
-                cmd
-            );
-        }
-
-        // Spawn a task to send the SwarmCmd and keep this fn sync
-        let _handle = tokio::spawn(async move {
-            if let Err(error) = cmd_sender.send(cmd).await {
-                error!("Failed to send SwarmCmd: {}", error);
-            }
-        });
-
+        send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
         Ok(())
     }
 
@@ -882,6 +852,24 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
+}
+
+pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) {
+    let capacity = swarm_cmd_sender.capacity();
+
+    if capacity == 0 {
+        error!(
+            "SwarmCmd channel is full. Await capacity to send: {:?}",
+            cmd
+        );
+    }
+
+    // Spawn a task to send the SwarmCmd and keep this fn sync
+    let _handle = tokio::spawn(async move {
+        if let Err(error) = swarm_cmd_sender.send(cmd).await {
+            error!("Failed to send SwarmCmd: {}", error);
+        }
+    });
 }
 
 #[cfg(test)]
