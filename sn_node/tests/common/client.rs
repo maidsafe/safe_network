@@ -10,6 +10,7 @@ use eyre::{bail, Result};
 use lazy_static::lazy_static;
 use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
+use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_protocol::test_utils::DeploymentInventory;
 use sn_transfers::{create_faucet_wallet, LocalWallet, NanoTokens, Transfer};
 use std::{
@@ -53,18 +54,13 @@ pub fn get_all_rpc_addresses() -> Result<Vec<SocketAddr>> {
     match DeploymentInventory::load() {
         Ok(inventory) => Ok(inventory.rpc_endpoints),
         Err(_) => {
-            let starting_port = match std::env::var("CHURN_TEST_START_PORT") {
-                Ok(val) => val.parse()?,
-                Err(_) => 12000,
-            };
-            let mut addresses = Vec::new();
-            for i in 1..LOCAL_NODE_COUNT + 1 {
-                let addr = SocketAddr::new(
-                    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                    starting_port + i as u16,
-                );
-                addresses.push(addr);
-            }
+            let local_node_reg_path = &get_local_node_registry_path()?;
+            let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
+            let addresses = local_node_registry
+                .nodes
+                .iter()
+                .map(|n| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), n.rpc_port))
+                .collect::<Vec<SocketAddr>>();
             Ok(addresses)
         }
     }
