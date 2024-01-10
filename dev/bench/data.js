@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704899485230,
+  "lastUpdate": 1704901144127,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "10daa79e8db9f560fb2c5c4777af57b66ff32bef",
-          "message": "ci: slight increase to benchmark client avg usage",
-          "timestamp": "2023-09-13T14:10:58Z",
-          "tree_id": "1048ce0ba52f0d8e082cd78e3d7890fbc27319cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/10daa79e8db9f560fb2c5c4777af57b66ff32bef"
-        },
-        "date": 1694619296597,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0970620667643795,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8038084241767408,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.7011448407404708,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 64.55498584680325,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "559fb83a086af02632621666da009fb58e4bfb72",
+          "message": "chore: fixup send_spends and use ExcessiveNanoValue error",
+          "timestamp": "2024-01-10T14:56:11Z",
+          "tree_id": "b3bbb37c79454b06c37f62e59e504e463746ba4d",
+          "url": "https://github.com/maidsafe/safe_network/commit/559fb83a086af02632621666da009fb58e4bfb72"
+        },
+        "date": 1704901141216,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6255951837898152,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.078902538919086,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 63.6293005213138,
             "unit": "MiB/s"
           }
         ]
