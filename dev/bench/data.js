@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704890830954,
+  "lastUpdate": 1704890832735,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20418,40 +20418,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d1a34655641e486e8dd05ab904cdeb217f92d61e",
-          "message": "feat!: Clients add a tolerance to store cost",
-          "timestamp": "2023-09-11T18:41:24Z",
-          "tree_id": "e2772267a4be1eddde33a43865ae53105c85ddc5",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1a34655641e486e8dd05ab904cdeb217f92d61e"
-        },
-        "date": 1694465317440,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 2756.5383,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 2635,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "bf60339b6000f4a525a46359ae55037574f4211f",
           "message": "chore(node): remove unused proptest dep",
           "timestamp": "2023-09-12T09:29:23Z",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
+          "message": "feat: allow register CLI to create a public register writable to anyone",
+          "timestamp": "2024-01-10T11:59:53Z",
+          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
+          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
+        },
+        "date": 1704890832146,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 224,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 47,
             "unit": "MB"
           }
         ]
