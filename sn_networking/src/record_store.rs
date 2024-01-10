@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
-use crate::{cmd::SwarmCmd, event::NetworkEvent};
+use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -251,25 +251,27 @@ impl NodeRecordStore {
             let _ = metric.set(self.records.len() as i64);
         }
 
-        let cloned_event_sender = self.network_event_sender.clone();
+        let cloned_cmd_sender = self.swarm_cmd_sender.clone();
         tokio::spawn(async move {
-            let event = match fs::write(&file_path, r.value) {
+            let cmd = match fs::write(&file_path, r.value) {
                 Ok(_) => {
                     // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                     info!("Wrote record {record_key:?} to disk! filename: {filename}");
-                    NetworkEvent::CompletedWrite((r.key, record_type))
+
+                    SwarmCmd::AddLocalRecordAsStored {
+                        key: r.key,
+                        record_type,
+                    }
                 }
                 Err(err) => {
                     error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                    NetworkEvent::FailedToWrite(r.key)
+                    SwarmCmd::RemoveFailedLocalRecord { key: r.key }
                 }
             };
 
-            if let Err(error) = cloned_event_sender.send(event).await {
-                error!("SwarmDriver failed to send event w/  {error:?}");
-            }
+            send_swarm_cmd(cloned_cmd_sender, cmd);
         });
 
         Ok(())

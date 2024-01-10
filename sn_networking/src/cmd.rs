@@ -456,13 +456,16 @@ impl SwarmDriver {
                     Err(err) => return Err(err.into()),
                 };
             }
-            SwarmCmd::AddLocalRecordAsStored { key, record_type } => self
-                .swarm
-                .behaviour_mut()
-                .kademlia
-                .store_mut()
-                .mark_as_stored(key, record_type),
+            SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
+                trace!("Adding Record locally, for {key:?} and {record_type:?}");
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .mark_as_stored(key, record_type);
+            }
             SwarmCmd::RemoveFailedLocalRecord { key } => {
+                trace!("Removing Record locally, for {key:?}");
                 self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
