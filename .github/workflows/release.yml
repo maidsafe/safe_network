@@ -38,9 +38,6 @@ jobs:
             target: aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v4
-      
-
-
       - uses: dtolnay/rust-toolchain@stable
       # It's quite slow to install just by building it, but here we need a cross-platform solution.
       - shell: bash
@@ -75,8 +72,6 @@ jobs:
       GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
 
     steps:
-
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: "0"
