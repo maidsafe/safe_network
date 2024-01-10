@@ -17,6 +17,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Error, Clone, PartialEq, Eq, Serialize, Deserialize, custom_debug::Debug)]
 #[non_exhaustive]
 pub enum Error {
+    // ---------- Misc errors
+    #[error("Could not obtain user's data directory")]
+    UserDataDirectoryNotObtainable,
+
     // ---------- Chunk Proof errors
     #[error("Chunk does not exist {0:?}")]
     ChunkDoesNotExist(NetworkAddress),
