@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704801739441,
+  "lastUpdate": 1704890718072,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "481bd097ce674ad9697a146f407f205c50ab0160",
-          "message": "ci: reduce client mem limits",
-          "timestamp": "2023-09-12T12:54:10Z",
-          "tree_id": "da9b27e21415cd9fc19bd5f7d675c91c9f7daf1a",
-          "url": "https://github.com/maidsafe/safe_network/commit/481bd097ce674ad9697a146f407f205c50ab0160"
-        },
-        "date": 1694527050187,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.08853510983491499,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7982119367973397,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.621090435650744,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.0062696537343,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
+          "message": "feat: allow register CLI to create a public register writable to anyone",
+          "timestamp": "2024-01-10T11:59:53Z",
+          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
+          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
+        },
+        "date": 1704890715602,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6470448024263209,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0816853474045351,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 64.85557577791477,
             "unit": "MiB/s"
           }
         ]
