@@ -82,4 +82,13 @@ pub enum Error {
 
     #[error("Could not send files event")]
     CouldNotSendFilesEvent,
+
+    #[error("Incorrect Download Option")]
+    IncorrectDownloadOption,
+
+    #[error("The provided data map is empty")]
+    EmptyDataMap,
+
+    #[error("Error occurred while assembling the downloaded chunks")]
+    FailedToAssembleDownloadedChunks,
 }

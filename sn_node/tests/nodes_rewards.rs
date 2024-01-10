@@ -15,13 +15,14 @@ use crate::common::{
 use assert_fs::TempDir;
 use bls::{PublicKey, SecretKey, PK_SIZE};
 use eyre::{eyre, Result};
-use sn_client::{Client, ClientEvent, Files, WalletClient};
+use sn_client::{Client, ClientEvent, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
     TransferNotifsFilterRequest,
 };
+use sn_registers::Permissions;
 use sn_transfers::{
     CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
 };
@@ -52,9 +53,9 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
-    let mut files = Files::new(files_api.clone()).set_show_holders(true);
-    files.upload_chunks(chunks).await?;
-    let storage_cost = files.get_upload_storage_cost();
+    let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+    files_upload.upload_chunks(chunks).await?;
+    let storage_cost = files_upload.get_upload_storage_cost();
 
     println!("Paid {storage_cost:?} total rewards for the chunks");
 
@@ -84,7 +85,12 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let prev_rewards_balance = current_rewards_balance()?;
 
     let (_register, storage_cost, _royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(
+            register_addr,
+            &mut wallet_client,
+            false,
+            Permissions::new_owner_only(),
+        )
         .await?;
     println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
@@ -114,10 +120,10 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     tracing::info!("Paying for {num_of_chunks} random addresses...");
     println!("Paying for {num_of_chunks} random addresses...");
-    let mut files = Files::new(files_api.clone()).set_show_holders(true);
-    files.upload_chunks(chunks).await?;
-    let storage_cost = files.get_upload_storage_cost();
-    let royalties_fees = files.get_upload_royalty_fees();
+    let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+    files_upload.upload_chunks(chunks).await?;
+    let storage_cost = files_upload.get_upload_storage_cost();
+    let royalties_fees = files_upload.get_upload_royalty_fees();
 
     println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
@@ -155,7 +161,12 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     println!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
-        .create_and_pay_for_register(register_addr, &mut wallet_client, false)
+        .create_and_pay_for_register(
+            register_addr,
+            &mut wallet_client,
+            false,
+            Permissions::new_owner_only(),
+        )
         .await?;
     println!("Random Register created, paid {storage_cost}/{royalties_fees}");
 
@@ -187,7 +198,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
-    let node_rpc_addresses = get_all_rpc_addresses();
+    let node_rpc_addresses = get_all_rpc_addresses()?;
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
@@ -209,10 +220,10 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let num_of_chunks = chunks.len();
     println!("Paying for {num_of_chunks} chunks");
-    let mut files = Files::new(files_api.clone()).set_show_holders(true);
-    files.upload_chunks(chunks).await?;
-    let storage_cost = files.get_upload_storage_cost();
-    let royalties_fees = files.get_upload_royalty_fees();
+    let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+    files_upload.upload_chunks(chunks).await?;
+    let storage_cost = files_upload.get_upload_storage_cost();
+    let royalties_fees = files_upload.get_upload_royalty_fees();
 
     println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 

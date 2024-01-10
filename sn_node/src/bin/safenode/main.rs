@@ -18,7 +18,7 @@ use libp2p::{identity::Keypair, PeerId};
 use sn_logging::metrics::init_metrics;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_rpc::NodeCtrl;
 use std::{
     env,
@@ -162,8 +162,7 @@ fn main() -> Result<()> {
     let (log_output_dest, _log_appender_guard) = init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    // bootstrap peers can be empty for the genesis node.
-    let bootstrap_peers = rt.block_on(parse_peers_args(opt.peers)).unwrap_or(vec![]);
+    let bootstrap_peers = rt.block_on(get_peers_from_args(opt.peers))?;
     let msg = format!(
         "Running {} v{}",
         env!("CARGO_BIN_NAME"),

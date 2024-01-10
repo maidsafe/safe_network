@@ -2764,6 +2764,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - more doc updates to readme files
 
+## [0.101.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.100.48...sn_node-v0.101.0) - 2024-01-08
+
+### Other
+- *(client)* [**breaking**] refactor `Files` into `FilesUpload`
+- *(release)* sn_cli-v0.86.103/sn_networking-v0.12.21/sn_faucet-v0.1.125/sn_client-v0.99.42
+- *(node)* simplify GetStoreCost flow
+
+## [0.102.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.101.0...sn_node-v0.102.0) - 2024-01-08
+
+### Added
+- provide `--first` argument for `safenode`
+
+## [0.102.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.0...sn_node-v0.102.1) - 2024-01-09
+
+### Other
+- *(node)* move add_to_replicate_fetcher to driver
+- *(node)* move replication cmd flow to swarm_driver
+- get spend from network only require Majority
+
+## [0.102.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.1...sn_node-v0.102.2) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.102.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.2...sn_node-v0.102.3) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.102.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.3...sn_node-v0.102.4) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.102.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.4...sn_node-v0.102.5) - 2024-01-10
+
+### Added
+- allow register CLI to create a public register writable to anyone
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
