@@ -65,7 +65,7 @@ jobs:
 
       - name: Start a local network
         env:
-          SN_LOG: all
+          SN_LOG: "all"
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
@@ -74,7 +74,6 @@ jobs:
           faucet-path: target/release/faucet
           platform: ubuntu-latest
           set-safe-peers: false
-          build: true
           join: true
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet

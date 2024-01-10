@@ -54,7 +54,6 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
-          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
