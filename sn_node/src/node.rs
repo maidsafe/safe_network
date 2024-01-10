@@ -331,16 +331,6 @@ impl Node {
                     self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
-            NetworkEvent::FailedToWrite(key) => {
-                if let Err(e) = self.network.remove_failed_local_record(key) {
-                    error!("Failed to remove local record: {e:?}");
-                }
-            }
-            NetworkEvent::CompletedWrite((key, record_type)) => {
-                if let Err(e) = self.network.add_record_as_stored_locally(key, record_type) {
-                    error!("Failed to add local record as stored: {e:?}");
-                }
-            }
             NetworkEvent::ResponseReceived { res } => {
                 trace!("NetworkEvent::ResponseReceived {res:?}");
                 if let Err(err) = self.handle_response(res) {
