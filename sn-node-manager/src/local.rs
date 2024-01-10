@@ -20,8 +20,6 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
-const DEFAULT_NODE_COUNT: u16 = 25;
-
 #[cfg_attr(test, automock)]
 pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
@@ -159,7 +157,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 pub struct LocalNetworkOptions {
     pub faucet_bin_path: PathBuf,
     pub join: bool,
-    pub node_count: Option<u16>,
+    pub node_count: u16,
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
@@ -175,16 +173,16 @@ pub async fn run_network(
         faucet_bin_path: network_options.faucet_bin_path.to_path_buf(),
     };
 
-    let peers = if network_options.join {
+    let (peers, start) = if network_options.join {
         if let Some(peers) = network_options.peers {
-            peers
+            (peers, 1)
         } else {
             let peer = node_registry
                 .nodes
                 .iter()
-                .find(|n| n.get_multiaddr().is_some())
+                .find_map(|n| n.get_multiaddr())
                 .ok_or_else(|| eyre!("Unable to obtain a peer to connect to"))?;
-            vec![peer.get_multiaddr().unwrap()]
+            (vec![peer], 1)
         }
     } else {
         let port = service_control.get_available_port()?;
@@ -199,10 +197,10 @@ pub async fn run_network(
             &rpc_client,
         )
         .await?;
-        vec![genesis_multiaddr]
+        (vec![genesis_multiaddr], 2)
     };
 
-    for _ in 2..=network_options.node_count.unwrap_or(DEFAULT_NODE_COUNT) {
+    for _ in start..=network_options.node_count {
         let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));

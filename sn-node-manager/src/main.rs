@@ -32,6 +32,8 @@ use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+const DEFAULT_NODE_COUNT: u16 = 25;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Cmd {
@@ -123,12 +125,12 @@ pub enum SubCmd {
     #[clap(name = "join")]
     Join {
         /// The number of nodes to run.
-        #[clap(long)]
-        count: Option<u16>,
+        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
+        count: u16,
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "faucet_version")]
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
@@ -138,7 +140,7 @@ pub enum SubCmd {
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "faucet_version")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
@@ -178,8 +180,8 @@ pub enum SubCmd {
     #[clap(name = "run")]
     Run {
         /// The number of nodes to run.
-        #[clap(long)]
-        count: Option<u16>,
+        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
+        count: u16,
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
