@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.6...sn_cli-v0.88.7) - 2024-01-10
+
+### Added
+- *(client)* client APIs and CLI cmd to broadcast a transaction signed offline
+- *(cli)* new cmd to sign a transaction offline
+- *(cli)* new wallet cmd to create a unsigned transaction to be used for offline signing
+
+### Other
+- *(transfers)* solving clippy issues about complex fn args
+
 ## [0.88.6](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.5...sn_cli-v0.88.6) - 2024-01-10
 
 ### Other

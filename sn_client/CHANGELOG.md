@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.2...sn_client-v0.101.3) - 2024-01-10
+
+### Added
+- *(client)* client APIs and CLI cmd to broadcast a transaction signed offline
+
+### Other
+- fixup send_spends and use ExcessiveNanoValue error
+
 ## [0.101.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.1...sn_client-v0.101.2) - 2024-01-10
 
 ### Added
