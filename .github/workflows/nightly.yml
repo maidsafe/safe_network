@@ -1,9 +1,18 @@
 name: Nightly -- Full Network Tests
 
+# on:
+#   schedule:
+#     - cron:  '0 0 * * *'
+#   workflow_dispatch:
+
 on:
-  schedule:
-    - cron:  '0 0 * * *'
-  workflow_dispatch:
+  # tests must run for a PR to be valid and pass merge queue muster
+  # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
+  # the merge run checks should show on master and enable this clear test/passing history
+  merge_group:
+    branches: [main]
+  pull_request:
+    branches: ["*"]
     
 
 env:
@@ -11,6 +20,18 @@ env:
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
 
 jobs:
+  debug:
+    name: debug
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Get the branch name
+        run: echo "Branch name is ${{ github.event.pull_request.head.ref }}"
+      - name: Get the PR creator
+        run: echo "PR creator is ${{ github.actor }}"
+
   e2e:
     name: E2E tests
     runs-on: ${{ matrix.os }}
