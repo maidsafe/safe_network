@@ -52,7 +52,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -566,6 +566,8 @@ impl NetworkBuilder {
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
             live_connected_peers: Default::default(),
+            handling_statistics: Default::default(),
+            handled_times: 0,
         };
 
         Ok((
@@ -615,6 +617,9 @@ pub struct SwarmDriver {
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
     pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
+    // Record the handling time of the recent 10 for each handling kind.
+    handling_statistics: BTreeMap<String, Vec<Duration>>,
+    handled_times: usize,
 }
 
 impl SwarmDriver {
@@ -738,5 +743,45 @@ impl SwarmDriver {
         trace!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
+    }
+
+    /// Record one handling time.
+    /// Log for every 100 received.
+    pub(crate) fn log_handling(&mut self, handle_string: String, handle_time: Duration) {
+        if handle_string.is_empty() {
+            return;
+        }
+
+        match self.handling_statistics.entry(handle_string) {
+            Entry::Occupied(mut entry) => {
+                let records = entry.get_mut();
+                if records.len() == 10 {
+                    let _ = records.pop();
+                } else {
+                    records.push(handle_time);
+                }
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(vec![handle_time]);
+            }
+        }
+
+        self.handled_times += 1;
+
+        if self.handled_times >= 100 {
+            self.handled_times = 0;
+
+            let kinds: Vec<String> = self.handling_statistics.keys().cloned().collect();
+            let avg_times: Vec<Duration> = self
+                .handling_statistics
+                .values()
+                .map(|durations| {
+                    let sum: Duration = durations.iter().sum();
+                    sum / durations.len() as u32
+                })
+                .collect();
+            trace!("SwarmDriver Handling Statistics have kinds: {kinds:?}");
+            trace!("SwarmDriver Handling Statistics have ave_times: {avg_times:?}");
+        }
     }
 }
