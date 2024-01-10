@@ -261,7 +261,7 @@ async fn upload_files(
                 .into_iter()
                 .filter(|c| !failed_chunks.contains(c))
                 .map(|(xor, _)| xor),
-        );
+        )?;
 
         // if none are failed, we can return early
         if failed_chunks.is_empty() {
@@ -322,12 +322,18 @@ async fn upload_files(
             match event {
                 FileUploadEvent::Uploaded(addr) => {
                     progress_bar_clone.inc(1);
-                    chunk_manager.mark_completed(std::iter::once(*addr.xorname()));
+                    if let Err(err) = chunk_manager.mark_completed(std::iter::once(*addr.xorname()))
+                    {
+                        error!("Failed to mark chunk {addr:?} as completed: {err:?}");
+                    }
                 }
                 FileUploadEvent::AlreadyExistsInNetwork(addr) => {
                     let _ = total_existing_chunks_clone.fetch_add(1, Ordering::Relaxed);
                     progress_bar_clone.inc(1);
-                    chunk_manager.mark_completed(std::iter::once(*addr.xorname()));
+                    if let Err(err) = chunk_manager.mark_completed(std::iter::once(*addr.xorname()))
+                    {
+                        error!("Failed to mark chunk {addr:?} as completed: {err:?}");
+                    }
                 }
                 FileUploadEvent::PayedForChunks { .. } => {}
                 // Do not increment the progress bar of a chunk upload failure as the event can be emitted multiple
