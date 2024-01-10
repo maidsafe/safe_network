@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use eyre::{bail, Result};
+use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
 use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
@@ -42,7 +42,8 @@ pub fn get_wallet(root_dir: &Path) -> LocalWallet {
 /// else return the local node count
 pub fn get_node_count() -> usize {
     match DeploymentInventory::load() {
-        Ok(inventory) => inventory.rpc_endpoints.len(),
+        // -1 to exclude the genesis VM's node
+        Ok(inventory) => inventory.rpc_endpoints.len() - 1,
         Err(_) => LOCAL_NODE_COUNT,
     }
 }
@@ -52,7 +53,27 @@ pub fn get_node_count() -> usize {
 /// else generate local addresses for NODE_COUNT nodes
 pub fn get_all_rpc_addresses() -> Result<Vec<SocketAddr>> {
     match DeploymentInventory::load() {
-        Ok(inventory) => Ok(inventory.rpc_endpoints),
+        Ok(inventory) => {
+            // todo: don't filter out genesis here?
+            let genesis_ip = inventory
+                .vm_list
+                .iter()
+                .find_map(|(name, addr)| {
+                    if name.contains("genesis") {
+                        Some(*addr)
+                    } else {
+                        None
+                    }
+                })
+                .ok_or_eyre("Could not get the genesis VM's addr")?;
+
+            let addrs = inventory
+                .rpc_endpoints
+                .into_iter()
+                .filter(|addr| addr.ip() != genesis_ip)
+                .collect();
+            Ok(addrs)
+        }
         Err(_) => {
             let local_node_reg_path = &get_local_node_registry_path()?;
             let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -71,7 +92,7 @@ pub fn get_all_rpc_addresses() -> Result<Vec<SocketAddr>> {
 /// Else to the local network.
 pub async fn get_gossip_client() -> Client {
     match DeploymentInventory::load() {
-        Ok(inventory) => Droplet::get_gossip_client(inventory.peers).await,
+        Ok(inventory) => Droplet::get_gossip_client(&inventory).await,
         Err(_) => NonDroplet::get_gossip_client().await,
     }
 }
@@ -102,7 +123,7 @@ pub async fn get_gossip_client_and_wallet(
 ) -> Result<(Client, LocalWallet)> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
-            let client = Droplet::get_gossip_client(inventory.peers).await;
+            let client = Droplet::get_gossip_client(&inventory).await;
             let local_wallet =
                 Droplet::get_funded_wallet(&client, root_dir, amount, inventory.faucet_address)
                     .await?;
@@ -188,12 +209,16 @@ impl NonDroplet {
 struct Droplet;
 impl Droplet {
     /// Create a new client and bootstrap from the provided safe_peers
-    pub async fn get_gossip_client(safe_peers: Vec<String>) -> Client {
+    pub async fn get_gossip_client(inventory: &DeploymentInventory) -> Client {
         let secret_key = bls::SecretKey::random();
 
         let mut bootstrap_peers = Vec::new();
-        for peer in safe_peers {
-            match parse_peer_addr(&peer) {
+        for peer in inventory
+            .peers
+            .iter()
+            .chain(vec![&inventory.genesis_multiaddr])
+        {
+            match parse_peer_addr(peer) {
                 Ok(peer) => bootstrap_peers.push(peer),
                 Err(err) => error!("Can't parse SAFE_PEERS {peer:?} with error {err:?}"),
             }
