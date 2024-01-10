@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704890832735,
+  "lastUpdate": 1704890834790,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34691,6 +34691,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 16433,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tomek@librem.one",
+            "name": "trycatch",
+            "username": "thomasmarkiewicz"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
+          "message": "feat: allow register CLI to create a public register writable to anyone",
+          "timestamp": "2024-01-10T11:59:53Z",
+          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
+          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
+        },
+        "date": 1704890834189,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3434,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 15375,
             "unit": "ms"
           },
           {
