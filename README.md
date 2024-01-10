@@ -46,15 +46,15 @@ Before you start, make sure to have **[Rust installed](https://www.rust-lang.org
 <br>
 1. Create your Local Test Network : <br>
 ```bash
-Cargo run --bin testnet --features="local-discovery" -- --build-node --build-faucet --interval 100 --clean
+cargo run --bin testnet --features="local-discovery" -- --build-node --build-faucet --interval 100 --clean
 ```
 2. Build a Tokenized Wallet : <br>
 ```bash
-Cargo run --release --bin safe --features=local-discovery -- wallet get-faucet 127.0.0.1:8000
+cargo run --release --bin safe --features=local-discovery -- wallet get-faucet 127.0.0.1:8000
 ```
 3. Upload your chosen Directory to the Local Test Network : <br>
 ```bash
-Cargo run --release --bin safe --features=local-discovery -- files upload <directory-path-goes-here>
+cargo run --release --bin safe --features=local-discovery -- files upload <directory-path-goes-here>
 ```
 4. Download the Directory Contents from the Local Test Network : <br>
 ```bash
