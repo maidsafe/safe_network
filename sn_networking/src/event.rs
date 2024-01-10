@@ -599,6 +599,8 @@ impl SwarmDriver {
 
         self.remove_outdated_connections();
 
+        self.log_handling(event_string.to_string(), start.elapsed());
+
         trace!(
             "SwarmEvent handled in {:?}: {event_string:?}",
             start.elapsed()
@@ -937,6 +939,8 @@ impl SwarmDriver {
                 trace!("kad::Event ignored: {other:?}");
             }
         }
+
+        self.log_handling(event_string.to_string(), start.elapsed());
 
         trace!(
             "kad::Event handled in {:?}: {event_string:?}",
