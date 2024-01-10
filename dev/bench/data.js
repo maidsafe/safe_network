@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704901257443,
+  "lastUpdate": 1704901259764,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "dc589210ce1509b4d8244f3d042787a18fcaca37",
-          "message": "chore(docs): add docs about network metrics",
-          "timestamp": "2023-09-12T10:21:15Z",
-          "tree_id": "658981f34782339dad0a02f0cb61c89b1e22b10e",
-          "url": "https://github.com/maidsafe/safe_network/commit/dc589210ce1509b4d8244f3d042787a18fcaca37"
-        },
-        "date": 1694518390032,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1151.9304,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 964,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "559fb83a086af02632621666da009fb58e4bfb72",
+          "message": "chore: fixup send_spends and use ExcessiveNanoValue error",
+          "timestamp": "2024-01-10T14:56:11Z",
+          "tree_id": "b3bbb37c79454b06c37f62e59e504e463746ba4d",
+          "url": "https://github.com/maidsafe/safe_network/commit/559fb83a086af02632621666da009fb58e4bfb72"
+        },
+        "date": 1704901258880,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 207,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 48,
             "unit": "MB"
           }
         ]
