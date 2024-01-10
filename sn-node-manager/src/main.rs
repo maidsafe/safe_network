@@ -140,7 +140,7 @@ pub enum SubCmd {
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version")]
+        #[clap(long, conflicts_with = "node_version")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
