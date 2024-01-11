@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704980675730,
+  "lastUpdate": 1704980790745,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "10daa79e8db9f560fb2c5c4777af57b66ff32bef",
-          "message": "ci: slight increase to benchmark client avg usage",
-          "timestamp": "2023-09-13T14:10:58Z",
-          "tree_id": "1048ce0ba52f0d8e082cd78e3d7890fbc27319cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/10daa79e8db9f560fb2c5c4777af57b66ff32bef"
-        },
-        "date": 1694620224078,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 116.076546,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 43,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "8795eb1df98ad02ea4381deaafb3cb1bfdae96bb",
+          "message": "chore(client): refactor client upload flow",
+          "timestamp": "2024-01-11T12:58:40Z",
+          "tree_id": "1206d6c7a251bc66aff2c3412e24842c86304d0f",
+          "url": "https://github.com/maidsafe/safe_network/commit/8795eb1df98ad02ea4381deaafb3cb1bfdae96bb"
+        },
+        "date": 1704980790196,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 44,
             "unit": "MB"
           }
         ]
