@@ -8,11 +8,11 @@
 
 use crate::config::create_owned_dir;
 use crate::helpers::download_and_extract_release;
-use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::{ServiceConfig, ServiceControl};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::Multiaddr;
+use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 
