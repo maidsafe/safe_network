@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704901262357,
+  "lastUpdate": 1704961097707,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ff534fdf110f452d23a0bc8ea7efa460f34c46cf",
-          "message": "chore: remove unused error variants",
-          "timestamp": "2023-09-14T07:21:31Z",
-          "tree_id": "49b1f000c34e2222fe2dcd142ccbb57e92dcb309",
-          "url": "https://github.com/maidsafe/safe_network/commit/ff534fdf110f452d23a0bc8ea7efa460f34c46cf"
-        },
-        "date": 1694681118497,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10301263709499285,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7984534964794845,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.6735641373111152,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 63.6293005213138,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4d031a1ad0f5618d867e8afc5b22a6032a10252f",
+          "message": "refactor(record_store): emit swarm cmd directly after writing a record",
+          "timestamp": "2024-01-11T07:40:56Z",
+          "tree_id": "3b669d394a3a9b3a113b6fe3bc084f4fb55d65be",
+          "url": "https://github.com/maidsafe/safe_network/commit/4d031a1ad0f5618d867e8afc5b22a6032a10252f"
+        },
+        "date": 1704961095268,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6406901165605187,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0987182404136189,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 64.84535326799065,
             "unit": "MiB/s"
           }
         ]
