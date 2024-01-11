@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704984978119,
+  "lastUpdate": 1704984979883,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34921,6 +34921,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 15217,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
+          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
+          "timestamp": "2024-01-11T14:42:05Z",
+          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
+          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
+        },
+        "date": 1704984979439,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 2953,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14319,
             "unit": "ms"
           },
           {
