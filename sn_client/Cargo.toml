@@ -10,12 +10,17 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 version = "0.102.6"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
 [features]
 default=["quic"]
 local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 # required to pass on flag to node builds
 quic = ["sn_networking/quic"]
+webtransport-websys = ["sn_networking/webtransport-websys"]
 
 [dependencies]
 async-trait = "0.1"
@@ -52,3 +57,7 @@ libp2p-identity = { version="0.2.7", features = ["rand"] }
 
 [lints]
 workspace = true
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.12", features = ["js"] }
