@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 use std::path::{Path, PathBuf};
 
 #[cfg(unix)]
@@ -31,14 +31,6 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 pub fn get_node_registry_path() -> Result<PathBuf> {
     let path = get_node_manager_path()?;
     Ok(path.join("node_registry.json"))
-}
-
-pub fn get_local_node_registry_path() -> Result<PathBuf> {
-    let path = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Cannot obtain user's data directory"))?
-        .join("safe")
-        .join("local_node_registry.json");
-    Ok(path)
 }
 
 #[cfg(unix)]
@@ -83,6 +75,7 @@ pub fn get_service_log_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> R
 
 #[cfg(unix)]
 pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
+    use color_eyre::eyre::eyre;
     use nix::unistd::{chown, Gid, Uid};
     use std::os::unix::fs::PermissionsExt;
     use users::get_user_by_name;
