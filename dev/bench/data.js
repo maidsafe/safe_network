@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704961214714,
+  "lastUpdate": 1704971056934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "a952c36b61b58fed28c712439f88526d9c2cb901",
-          "message": "feat: expose batch_size to cli",
-          "timestamp": "2023-09-14T14:54:36Z",
-          "tree_id": "e075e896c5419e749f5dcd0b5ff956e726c25abc",
-          "url": "https://github.com/maidsafe/safe_network/commit/a952c36b61b58fed28c712439f88526d9c2cb901"
-        },
-        "date": 1694707836822,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09159530634423804,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.4904975018871954,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.6875121909186837,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 64.84535326799065,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "cf6634134b1e84e02f53129543fd84d1ae5ad512",
+          "message": "fix: update MAX_REG_ENTRY_SIZE",
+          "timestamp": "2024-01-11T10:21:47Z",
+          "tree_id": "f1250a1661b650150989332af23e4c2291b9d46b",
+          "url": "https://github.com/maidsafe/safe_network/commit/cf6634134b1e84e02f53129543fd84d1ae5ad512"
+        },
+        "date": 1704971053697,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6476514637788247,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0976551998480801,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 64.82982583405942,
             "unit": "MiB/s"
           }
         ]
