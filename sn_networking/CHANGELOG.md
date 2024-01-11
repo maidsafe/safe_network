@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.26](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.25...sn_networking-v0.12.26) - 2024-01-11
+
+### Other
+- *(client)* refactor client upload flow
+- *(release)* sn_cli-v0.88.9/sn_client-v0.101.5/sn_registers-v0.3.7/sn_faucet-v0.2.9/sn_node-v0.102.9/sn_node_rpc_client-v0.2.9/sn_testnet-v0.3.8/sn_protocol-v0.10.6
+
 ## [0.12.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.24...sn_networking-v0.12.25) - 2024-01-11
 
 ### Fixed
