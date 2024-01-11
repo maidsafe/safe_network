@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704980794555,
+  "lastUpdate": 1704984865847,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a1e9ecd31b52aeeb8800ae0123ad537d78da6f45",
-          "message": "chore(client): remove unused wallet_client",
-          "timestamp": "2023-09-15T03:58:29Z",
-          "tree_id": "8c2acf9b2fd63637b03e8bb1dda9656a12ef79a8",
-          "url": "https://github.com/maidsafe/safe_network/commit/a1e9ecd31b52aeeb8800ae0123ad537d78da6f45"
-        },
-        "date": 1694755427810,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10639730501922127,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5020700997872104,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.6704797097772963,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 64.33389488295337,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
+          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
+          "timestamp": "2024-01-11T14:42:05Z",
+          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
+          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
+        },
+        "date": 1704984863533,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.635326907942854,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.091050180892431,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 66.59752824824363,
             "unit": "MiB/s"
           }
         ]
