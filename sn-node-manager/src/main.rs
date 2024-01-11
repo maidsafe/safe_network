@@ -49,8 +49,11 @@ pub enum SubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "add")]
     Add {
-        /// The number of service instances
-        #[clap(long)]
+        /// The number of service instances.
+        ///
+        /// If the --first argument is used, the count has to be one, so --count and --first are
+        /// mutually exclusive.
+        #[clap(long, conflicts_with = "first")]
         count: Option<u16>,
         /// Provide the path for the data directory for the installed node.
         ///
@@ -302,6 +305,7 @@ async fn main() -> Result<()> {
 
             add(
                 AddServiceOptions {
+                    genesis: peers.first,
                     count,
                     peers: get_peers_from_args(peers).await?,
                     port,
