@@ -257,14 +257,6 @@ impl FilesUpload {
                 return Ok(());
             }
 
-            if chunks.is_empty() && !on_going_pay_for_chunk.is_empty() {
-                // Fire None to trigger a forced round of making leftover payments.
-                let paying_work_sender_clone = paying_work_sender.clone();
-                let _handle = tokio::spawn(async move {
-                    let _ = paying_work_sender_clone.send(None).await;
-                });
-            }
-
             while !chunks.is_empty()
                 && on_going_get_cost.len() < batch_size
                 && pending_to_pay.len() < batch_size
@@ -296,6 +288,14 @@ impl FilesUpload {
                     let _ = on_going_uploadings.insert(chunk_info.name);
                     self.spawn_upload_chunk_task(chunk_info, payee, upload_chunk_sender.clone());
                 }
+            }
+
+            if chunks.is_empty() && !on_going_pay_for_chunk.is_empty() {
+                // Fire None to trigger a forced round of making leftover payments.
+                let paying_work_sender_clone = paying_work_sender.clone();
+                let _handle = tokio::spawn(async move {
+                    let _ = paying_work_sender_clone.send(None).await;
+                });
             }
 
             let task_result = if let Some(result) = progress_tasks(
