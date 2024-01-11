@@ -189,6 +189,7 @@ pub async fn run_network(
         let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
         let genesis_multiaddr = run_node(
+            true,
             port,
             rpc_port,
             vec![],
@@ -205,6 +206,7 @@ pub async fn run_network(
         let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
         run_node(
+            false,
             port,
             rpc_port,
             peers.clone(),
@@ -237,6 +239,7 @@ pub async fn run_network(
 }
 
 pub async fn run_node(
+    genesis: bool,
     port: u16,
     rpc_port: u16,
     peer: Vec<Multiaddr>,
@@ -255,6 +258,7 @@ pub async fn run_node(
     let peer_id = node_info.peer_id;
 
     node_registry.nodes.push(Node {
+        genesis,
         service_name: format!("safenode-local{number}"),
         user: get_username()?,
         number,
@@ -360,7 +364,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_node_should_launch_the_first_node() -> Result<()> {
+    async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut node_registry = NodeRegistry {
             save_path: PathBuf::new(),
@@ -409,6 +413,7 @@ mod tests {
             });
 
         let multiaddr = run_node(
+            true,
             port,
             rpc_port,
             vec![],
@@ -420,6 +425,7 @@ mod tests {
 
         assert_eq!(multiaddr, node_multiaddr);
         assert_eq!(node_registry.nodes.len(), 1);
+        assert!(node_registry.nodes[0].genesis);
         assert_eq!(node_registry.nodes[0].version, "0.100.12");
         assert_eq!(node_registry.nodes[0].service_name, "safenode-local1");
         assert_eq!(
@@ -453,6 +459,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: PathBuf::new(),
             nodes: vec![Node {
+                genesis: true,
                 service_name: "safenode-local1".to_string(),
                 user: get_username()?,
                 number: 1,
@@ -510,6 +517,7 @@ mod tests {
             });
 
         let multiaddr = run_node(
+            false,
             port,
             rpc_port,
             vec![genesis_peer_addr.clone()],
@@ -521,6 +529,7 @@ mod tests {
 
         assert_eq!(multiaddr, node_peer_addr);
         assert_eq!(node_registry.nodes.len(), 2);
+        assert!(node_registry.nodes[0].genesis);
         assert_eq!(node_registry.nodes[1].version, "0.100.12");
         assert_eq!(node_registry.nodes[1].service_name, "safenode-local2");
         assert_eq!(

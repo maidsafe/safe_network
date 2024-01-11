@@ -18,12 +18,13 @@ use std::path::PathBuf;
 
 pub struct AddServiceOptions {
     pub count: Option<u16>,
-    pub safenode_dir_path: PathBuf,
-    pub service_data_dir_path: PathBuf,
-    pub service_log_dir_path: PathBuf,
+    pub genesis: bool,
     pub peers: Vec<Multiaddr>,
     pub port: Option<u16>,
     pub rpc_port: Option<u16>,
+    pub safenode_dir_path: PathBuf,
+    pub service_data_dir_path: PathBuf,
+    pub service_log_dir_path: PathBuf,
     pub url: Option<String>,
     pub user: String,
     pub version: Option<String>,
@@ -41,6 +42,19 @@ pub async fn add(
     service_control: &dyn ServiceControl,
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
 ) -> Result<()> {
+    if install_options.genesis {
+        if let Some(count) = install_options.count {
+            if count > 1 {
+                return Err(eyre!("A genesis node can only be added as a single node"));
+            }
+        }
+
+        let genesis_node = node_registry.nodes.iter().find(|n| n.genesis);
+        if genesis_node.is_some() {
+            return Err(eyre!("A genesis node already exists"));
+        }
+    }
+
     if install_options.count.is_some()
         && (install_options.port.is_some() || install_options.rpc_port.is_some())
     {
@@ -114,14 +128,15 @@ pub async fn add(
         )?;
 
         service_control.install(ServiceConfig {
+            data_dir_path: service_data_dir_path.clone(),
+            genesis: install_options.genesis,
+            log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
-            safenode_path: service_safenode_path.clone(),
+            peers: install_options.peers.clone(),
             node_port,
             rpc_port,
+            safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
-            log_dir_path: service_log_dir_path.clone(),
-            data_dir_path: service_data_dir_path.clone(),
-            peers: install_options.peers.clone(),
         })?;
 
         added_service_data.push((
@@ -134,6 +149,7 @@ pub async fn add(
         ));
 
         node_registry.nodes.push(Node {
+            genesis: install_options.genesis,
             service_name,
             user: install_options.user.clone(),
             number: node_number,
@@ -225,7 +241,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_first_node_should_use_latest_version_and_add_one_service() -> Result<()> {
+    async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
@@ -298,6 +314,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: true,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -315,6 +332,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: true,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -357,7 +375,123 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_first_node_should_use_latest_version_and_add_three_services() -> Result<()> {
+    async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_node(
+    ) -> Result<()> {
+        let mock_service_control = MockServiceControl::new();
+
+        let latest_version = "0.96.4";
+        let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
+            nodes: vec![Node {
+                genesis: true,
+                service_name: "safenode1".to_string(),
+                user: "safe".to_string(),
+                number: 1,
+                port: 8080,
+                rpc_port: 8081,
+                version: latest_version.to_string(),
+                status: NodeStatus::Added,
+                pid: None,
+                peer_id: None,
+                log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
+                data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
+                safenode_path: Some(PathBuf::from(
+                    "/var/safenode-manager/services/safenode1/safenode",
+                )),
+            }],
+            faucet_pid: None,
+        };
+
+        let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("safenode1");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+        safenode_download_path.write_binary(b"fake safenode bin")?;
+
+        let custom_port = 12000;
+        let custom_rpc_port = 12001;
+
+        let result = add(
+            AddServiceOptions {
+                genesis: true,
+                count: None,
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                peers: vec![],
+                port: Some(custom_port),
+                rpc_port: Some(custom_rpc_port),
+                url: None,
+                user: get_username(),
+                version: None,
+            },
+            &mut node_registry,
+            &mock_service_control,
+            Box::new(MockSafeReleaseRepository::new()),
+        )
+        .await;
+
+        assert_eq!(
+            Err("A genesis node already exists".to_string()),
+            result.map_err(|e| e.to_string())
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() -> Result<()> {
+        let mock_service_control = MockServiceControl::new();
+
+        let mut node_registry = NodeRegistry {
+            save_path: PathBuf::new(),
+            nodes: vec![],
+            faucet_pid: None,
+        };
+
+        let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("safenode1");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+        safenode_download_path.write_binary(b"fake safenode bin")?;
+
+        let custom_port = 12000;
+        let custom_rpc_port = 12001;
+
+        let result = add(
+            AddServiceOptions {
+                genesis: true,
+                count: Some(3),
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                peers: vec![],
+                port: Some(custom_port),
+                rpc_port: Some(custom_rpc_port),
+                url: None,
+                user: get_username(),
+                version: None,
+            },
+            &mut node_registry,
+            &mock_service_control,
+            Box::new(MockSafeReleaseRepository::new()),
+        )
+        .await;
+
+        assert_eq!(
+            Err("A genesis node can only be added as a single node".to_string()),
+            result.map_err(|e| e.to_string())
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_node_should_use_latest_version_and_add_three_services() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
@@ -432,6 +566,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -463,6 +598,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode2".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -494,6 +630,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode3".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -511,6 +648,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: false,
                 count: Some(3),
                 peers: vec![],
                 port: None,
@@ -579,7 +717,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_first_node_should_use_specific_version_and_add_one_service() -> Result<()> {
+    async fn add_node_should_use_specific_version_and_add_one_service() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
@@ -647,6 +785,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -664,6 +803,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 peers: vec![],
                 port: None,
@@ -710,6 +850,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: PathBuf::new(),
             nodes: vec![Node {
+                genesis: true,
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
                 number: 1,
@@ -790,6 +931,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode2".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -807,6 +949,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 peers: vec![],
                 port: None,
@@ -909,6 +1052,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -926,6 +1070,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1046,6 +1191,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
                     .to_path_buf()
@@ -1063,6 +1209,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1130,6 +1277,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1194,6 +1342,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1243,6 +1392,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                genesis: false,
                 count: Some(3),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),

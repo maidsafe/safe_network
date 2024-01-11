@@ -21,14 +21,15 @@ use sysinfo::{Pid, System, SystemExt};
 
 #[derive(Debug, PartialEq)]
 pub struct ServiceConfig {
-    pub name: String,
-    pub safenode_path: PathBuf,
-    pub node_port: u16,
-    pub rpc_port: u16,
-    pub service_user: String,
-    pub log_dir_path: PathBuf,
     pub data_dir_path: PathBuf,
+    pub genesis: bool,
+    pub log_dir_path: PathBuf,
+    pub name: String,
+    pub node_port: u16,
     pub peers: Vec<Multiaddr>,
+    pub rpc_port: u16,
+    pub safenode_path: PathBuf,
+    pub service_user: String,
 }
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
@@ -171,6 +172,10 @@ impl ServiceControl for NodeServiceManager {
             OsString::from("--log-output-dest"),
             OsString::from(config.log_dir_path.to_string_lossy().to_string()),
         ];
+
+        if config.genesis {
+            args.push(OsString::from("--first"));
+        }
 
         if !config.peers.is_empty() {
             let peers_str = config
