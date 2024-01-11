@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.4...sn_client-v0.101.5) - 2024-01-11
+
+### Added
+- error if file size smaller than MIN_ENCRYPTABLE_BYTES
+
+### Other
+- udpate self_encryption dep
+
 ## [0.101.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.3...sn_client-v0.101.4) - 2024-01-11
 
 ### Other
