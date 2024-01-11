@@ -14,6 +14,7 @@ version = "0.12.35"
 default=[]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p/quic"]
+webtransport-websys=["libp2p/webtransport-websys"]
 open-metrics=["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
 
 [dependencies]

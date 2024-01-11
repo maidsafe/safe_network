@@ -124,7 +124,7 @@ async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
 pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
     if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
-        #[cfg(not(feature = "quic"))]
+        #[cfg(not(feature = "quic, webtransport-websys"))]
         // Turn the address into a `/ip4/<ip>/tcp/<port>` multiaddr.
         let multiaddr = Multiaddr::from(*addr.ip()).with(Protocol::Tcp(addr.port()));
         #[cfg(feature = "quic")]
@@ -132,6 +132,11 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
         let multiaddr = Multiaddr::from(*addr.ip())
             .with(Protocol::Udp(addr.port()))
             .with(Protocol::QuicV1);
+        #[cfg(feature = "webtransport-websys")]
+        // Turn the address into a `/ip4/<ip>/udp/<port>/webtransport-websys-v1` multiaddr.
+        let multiaddr = Multiaddr::from(*addr.ip())
+            .with(Protocol::Udp(addr.port()))
+            .with(Protocol::WebTransport);
         return Ok(multiaddr);
     }
 
