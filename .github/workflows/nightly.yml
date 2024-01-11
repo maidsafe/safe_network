@@ -38,6 +38,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
+    env:
+      ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+      aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+      aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+      do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+      ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -55,12 +62,12 @@ jobs:
         uses: maidsafe/sn-testnet-action@main
         with:
           action: create
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+          ansible-vault-password: ${{ env.ansible-vault-password }}
+          aws-access-key-id: ${{ env.aws-access-key-id }}
+          aws-access-key-secret: ${{ env.aws-access-key-secret }}
           aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+          do-token: ${{ env.do-token }}
+          ssh-secret-key: ${{ env.ssh-secret-key }}
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
