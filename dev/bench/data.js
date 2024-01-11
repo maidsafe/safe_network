@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704984865847,
+  "lastUpdate": 1704984976618,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ff534fdf110f452d23a0bc8ea7efa460f34c46cf",
-          "message": "chore: remove unused error variants",
-          "timestamp": "2023-09-14T07:21:31Z",
-          "tree_id": "49b1f000c34e2222fe2dcd142ccbb57e92dcb309",
-          "url": "https://github.com/maidsafe/safe_network/commit/ff534fdf110f452d23a0bc8ea7efa460f34c46cf"
-        },
-        "date": 1694682086757,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 66.27328,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 44,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
+          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
+          "timestamp": "2024-01-11T14:42:05Z",
+          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
+          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
+        },
+        "date": 1704984976247,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 46,
             "unit": "MB"
           }
         ]
