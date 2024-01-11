@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704961097707,
+  "lastUpdate": 1704961210582,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "481bd097ce674ad9697a146f407f205c50ab0160",
-          "message": "ci: reduce client mem limits",
-          "timestamp": "2023-09-12T12:54:10Z",
-          "tree_id": "da9b27e21415cd9fc19bd5f7d675c91c9f7daf1a",
-          "url": "https://github.com/maidsafe/safe_network/commit/481bd097ce674ad9697a146f407f205c50ab0160"
-        },
-        "date": 1694527983785,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 81.12128,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4d031a1ad0f5618d867e8afc5b22a6032a10252f",
+          "message": "refactor(record_store): emit swarm cmd directly after writing a record",
+          "timestamp": "2024-01-11T07:40:56Z",
+          "tree_id": "3b669d394a3a9b3a113b6fe3bc084f4fb55d65be",
+          "url": "https://github.com/maidsafe/safe_network/commit/4d031a1ad0f5618d867e8afc5b22a6032a10252f"
+        },
+        "date": 1704961209975,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 43,
             "unit": "MB"
           }
         ]
