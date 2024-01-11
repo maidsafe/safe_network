@@ -31,6 +31,11 @@ use std::{
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
+
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
 pub enum SwarmCmd {
@@ -296,7 +301,7 @@ pub struct SwarmLocalState {
 
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let mut cmd_string = "";
         match cmd {
             SwarmCmd::TriggerIntervalReplication => {
@@ -511,6 +516,7 @@ impl SwarmDriver {
             }
             SwarmCmd::Dial { addr, sender } => {
                 cmd_string = "Dial";
+
                 let mut addr_copy = addr.clone();
                 if let Some(peer_id) = multiaddr_pop_p2p(&mut addr_copy) {
                     // Only consider the dial peer is bootstrap node when proper PeerId is provided.

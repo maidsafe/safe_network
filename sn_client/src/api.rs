@@ -38,23 +38,38 @@ use sn_protocol::{
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
     path::PathBuf,
-    time::Duration,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::task::spawn;
+use tokio::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::time::{interval, timeout};
 use tracing::trace;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local as spawn;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::tokio::{interval, timeout};
 use xor_name::XorName;
 
 /// The maximum duration the client will wait for a connection to the network before timing out.
-const CONNECTION_TIMEOUT: Duration = Duration::from_secs(180);
+const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl Client {
+    /// A quick client that only takes some peers to connect to
+    pub async fn quick_start(peers: Option<Vec<Multiaddr>>) -> Result<Self> {
+        Self::new(SecretKey::random(), peers, false, None, None).await
+    }
     /// Instantiate a new client.
     ///
     /// Optionally specify the maximum time the client will wait for a connection to the network before timing out.
@@ -74,9 +89,16 @@ impl Client {
 
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
+        debug!("Starting Kad swarm in client mode.1..");
+        trace!("Starting Kad swarm in client mode..2.");
 
-        let mut network_builder =
-            NetworkBuilder::new(Keypair::generate_ed25519(), local, std::env::temp_dir());
+        #[cfg(target_arch = "wasm32")]
+        let root_dir = PathBuf::from("dumb");
+        #[cfg(not(target_arch = "wasm32"))]
+        let root_dir = std::env::temp_dir();
+        trace!("Starting Kad swarm in client mode..{root_dir:?}.");
+
+        let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
 
         if enable_gossip {
             network_builder.enable_gossip();
@@ -127,8 +149,7 @@ impl Client {
         let _event_handler = spawn(async move {
             let mut peers_added: usize = 0;
             loop {
-                match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
-                {
+                match timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await {
                     Ok(event) => {
                         let the_event = match event {
                             Some(the_event) => the_event,
@@ -138,7 +159,7 @@ impl Client {
                             }
                         };
 
-                        let start = std::time::Instant::now();
+                        let start = Instant::now();
                         let event_string = format!("{the_event:?}");
                         if let Err(err) =
                             client_clone.handle_network_event(the_event, &mut peers_added)
@@ -164,7 +185,8 @@ impl Client {
         // loop to connect to the network
         let mut is_connected = false;
         let connection_timeout = connection_timeout.unwrap_or(CONNECTION_TIMEOUT);
-        let mut connection_timeout_interval = tokio::time::interval(connection_timeout);
+
+        let mut connection_timeout_interval = interval(connection_timeout);
         // first tick completes immediately
         connection_timeout_interval.tick().await;
 
@@ -411,7 +433,6 @@ impl Client {
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
-    /// Retrieve a `Chunk` from the kad network.
     pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
@@ -667,9 +688,11 @@ impl Client {
             // now we try and get batched chunks, keep track of any that fail
             // Iterate over each uploaded chunk
             let mut verify_handles = Vec::new();
+
             for (name, chunk_path) in chunks_batch.iter().cloned() {
                 let client = self.clone();
                 // Spawn a new task to fetch each chunk concurrently
+                // this is specifically tokio here, as wasm-bindgen-futures breaks this
                 let handle = tokio::spawn(async move {
                     // make sure the chunk is stored;
                     let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));

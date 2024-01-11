@@ -11,9 +11,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.3.15"
 
 [features]
-default = ["quic"]
-# required to pass on flag to node builds
-quic = ["sn_client/quic"]
+default = []
 
 [[bin]]
 path="src/main.rs"

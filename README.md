@@ -30,6 +30,27 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 - [Faucet](https://github.com/maidsafe/sn_faucet/blob/master/README.md) The local faucet server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/sn_node_rpc_client/blob/master/README.md) The RPC server used by the nodes to expose API calls to the outside world.
 
+#### Transport Protocols and Architectures
+
+The Safe Network uses `quic` as the default transport protocol.
+
+The `websockets` feature is available for the `sn_networking` crate, and above, and will allow for tcp over websockets.
+
+If building for `wasm32` then `websockets` are enabled by default as this is the only method avilable to communicate with a network as things stand. (And that network must have `websockets` enabled.)
+
+##### Building for wasm32
+
+- Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+- `cd sn_client && wasm-pack build`
+
+You can then pull this package into a web app eg, to use it.
+
+eg `await safe.get_data("/ip4/127.0.0.1/tcp/59324/ws/p2p/12D3KooWG6kyBwLVHj5hYK2SqGkP4GqrCz5gfwsvPBYic4c4TeUz","9d7e115061066126482a229822e6d68737bd67d826c269762c0f64ce87af6b4c")`
+
+#### Browser usage
+
+Browser usage is highly experimental, but the wasm32 target for `sn_client` _should_ work here. YMMV until stabilised.
+
 ### For the Technical
 
 - [Logging](https://github.com/maidsafe/sn_logging/blob/master/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).

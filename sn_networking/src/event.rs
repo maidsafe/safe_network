@@ -32,6 +32,11 @@ use libp2p::{
     Multiaddr, PeerId, TransportError,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
+
 use sn_protocol::{
     messages::{CmdResponse, Query, Request, Response},
     storage::RecordType,
@@ -40,9 +45,9 @@ use sn_protocol::{
 use std::{
     collections::{hash_map::Entry, HashSet},
     fmt::{Debug, Formatter},
-    time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
+use tokio::time::Duration;
 use tracing::{info, warn};
 
 /// Our agent string has as a prefix that we can match against.
@@ -199,7 +204,7 @@ impl SwarmDriver {
         // called individually on each behaviour.
         #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&event);
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let event_string;
         match event {
             SwarmEvent::Behaviour(NodeEvent::MsgReceived(event)) => {
@@ -718,7 +723,7 @@ impl SwarmDriver {
     fn handle_kad_event(&mut self, kad_event: kad::Event) -> Result<()> {
         #[cfg(feature = "open-metrics")]
         self.network_metrics.record(&kad_event);
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let event_string;
 
         match kad_event {

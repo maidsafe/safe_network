@@ -12,10 +12,14 @@ use libp2p::{
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
-use std::{
-    collections::HashMap,
-    time::{Duration, Instant},
-};
+use std::collections::HashMap;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
+
+use tokio::time::Duration;
 
 // Max parallel fetches that can be undertaken at the same time.
 const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
@@ -206,7 +210,7 @@ mod tests {
     use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::{storage::RecordType, NetworkAddress};
     use std::{collections::HashMap, time::Duration};
-
+    use tokio::time::sleep;
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {
         //random peer_id
@@ -235,7 +239,7 @@ mod tests {
         );
         assert!(keys_to_fetch.is_empty());
 
-        tokio::time::sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
+        sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
 
         // all the previous fetches should have failed and fetching next batch
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();

@@ -26,17 +26,21 @@ use crate::{
     Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
-#[cfg(not(feature = "tcp"))]
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
 use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 // default transports
-#[cfg(all(not(feature = "tcp"), not(target_arch = "wasm32")))]
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
 use libp2p::quic::{tokio::Transport as TokioTransport, Config as TransportConfig};
-#[cfg(feature = "tcp")]
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+use libp2p::websocket::WsConfig;
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
 use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig};
 #[cfg(target_arch = "wasm32")]
-use libp2p::webtransport_websys::{Config as TransportConfig, Transport as TokioTransport};
+use libp2p::websocket_websys::Transport as WebSocketTransport;
 use libp2p::{
     autonat,
     identity::Keypair,
@@ -62,11 +66,26 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    time::{Duration, Instant},
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::time::interval;
+use tokio::time::Duration;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::tokio::interval;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::task::spawn;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local as spawn;
+
 use tracing::warn;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -325,21 +344,19 @@ impl NetworkBuilder {
         let listen_socket_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
 
         // Flesh out the multiaddress
-        let listen_addr = Multiaddr::from(listen_socket_addr.ip());
+        let start_addr = Multiaddr::from(listen_socket_addr.ip());
 
-        #[cfg(feature = "quic")]
-        let listen_addr = listen_addr
-            .with(Protocol::Udp(listen_socket_addr.port()))
-            .with(Protocol::QuicV1);
+        let listen_addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
+            start_addr
+                .with(Protocol::Tcp(listen_socket_addr.port()))
+                .with(Protocol::Ws("/".into()))
+        } else {
+            start_addr
+                .with(Protocol::Udp(listen_socket_addr.port()))
+                .with(Protocol::QuicV1)
+        };
 
-        #[cfg(target_arch = "wasm32")]
-        let listen_addr = listen_addr
-            .with(Protocol::Udp(listen_socket_addr.port()))
-            .with(Protocol::WebTransport);
-
-        #[cfg(feature = "tcp")]
-        Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
-
+        debug!("Attempting to listen on: {listen_addr:?}");
         let _listener_id = swarm_driver
             .swarm
             .listen_on(listen_addr)
@@ -386,7 +403,11 @@ impl NetworkBuilder {
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        #[cfg(not(target_arch = "wasm32"))]
+        info!(
+            "Process (PID: {}) with PeerId: {peer_id}",
+            std::process::id()
+        );
         info!(
             "Self PeerID {peer_id} is represented as kbucket_key {:?}",
             PrettyPrintKBucketKey(NetworkAddress::from_peer(peer_id).as_kbucket_key())
@@ -465,13 +486,29 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        #[cfg(not(feature = "tcp"))]
+        // Default quic transport.
+        // cannot be built for wasm32
+        #[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
         let main_transport = TokioTransport::new(TransportConfig::new(&self.keypair))
             .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
             .boxed();
 
-        #[cfg(feature = "tcp")]
-        let main_transport = TokioTransport::new(TransportConfig::default())
+        #[cfg(target_arch = "wasm32")]
+        let main_transport = WebSocketTransport::default()
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .boxed();
+
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let tcp = TokioTransport::new(TransportConfig::default());
+
+        // tcp websocket transport for node builds
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let main_transport = WsConfig::new(tcp)
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&self.keypair)
@@ -553,10 +590,18 @@ impl NetworkBuilder {
             autonat,
             gossipsub,
         };
+
+        #[cfg(not(target_arch = "wasm32"))]
         let swarm_config = libp2p::swarm::Config::with_tokio_executor()
+            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        #[cfg(target_arch = "wasm32")]
+        let swarm_config = libp2p::swarm::Config::with_wasm_executor()
             .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
+
+        let bootstrap = ContinuousBootstrap::new();
+        let replication_fetcher = ReplicationFetcher::new(peer_id);
 
         let swarm_driver = SwarmDriver {
             swarm,
@@ -564,9 +609,9 @@ impl NetworkBuilder {
             local: self.local,
             is_client,
             connected_peers: 0,
-            bootstrap: ContinuousBootstrap::new(),
+            bootstrap,
             close_group: Default::default(),
-            replication_fetcher: ReplicationFetcher::new(peer_id),
+            replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
             cmd_receiver: swarm_cmd_receiver,
@@ -646,7 +691,7 @@ impl SwarmDriver {
     /// and command receiver messages, ensuring efficient handling of multiple
     /// asynchronous tasks.
     pub async fn run(mut self) {
-        let mut bootstrap_interval = tokio::time::interval(BOOTSTRAP_INTERVAL);
+        let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
@@ -658,7 +703,7 @@ impl SwarmDriver {
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        let start = std::time::Instant::now();
+                        let start = Instant::now();
                         let cmd_string = format!("{cmd:?}");
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
@@ -688,7 +733,7 @@ impl SwarmDriver {
         let capacity = event_sender.capacity();
 
         // push the event off thread so as to be non-blocking
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             if capacity == 0 {
                 warn!(
                     "NetworkEvent channel is full. Await capacity to send: {:?}",

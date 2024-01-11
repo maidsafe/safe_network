@@ -8,8 +8,12 @@
 
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
-use std::time::Duration;
 use sysinfo::{Pid, PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::time::sleep;
+use tokio::time::Duration;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::tokio::sleep;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 const TO_MB: u64 = 1_000_000;
@@ -89,7 +93,7 @@ impl NetworkMetrics {
                     let cpu_usage = process.cpu_usage() / core_count as f32;
                     let _ = process_cpu_usage_percentage.set(cpu_usage as i64);
                 }
-                tokio::time::sleep(UPDATE_INTERVAL).await;
+                sleep(UPDATE_INTERVAL).await;
             }
         });
     }

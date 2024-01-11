@@ -121,6 +121,43 @@ jobs:
           # we do many more runs on the nightly run
           PROPTEST_CASES: 50 
 
+  wasm:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Wasm builds
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build client for wasm
+        # wasm pack doesnt support workspaces
+        # --dev to avoid a loong optimisation step
+        run: cd sn_client && wasm-pack build --dev 
+        timeout-minutes: 30
+
+  websocket:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Standard Websocket builds
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build all for `websockets`
+        run: cargo build --features="websockets"
+        timeout-minutes: 30
+
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests

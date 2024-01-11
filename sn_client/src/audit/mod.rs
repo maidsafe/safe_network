@@ -21,7 +21,11 @@ use sn_transfers::{
     CashNoteRedemption, SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
     NETWORK_ROYALTIES_PK,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 use std::{collections::BTreeSet, iter::Iterator, path::Path};
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
 
 impl Client {
     /// Verify that a spend is valid on the network.
@@ -64,7 +68,7 @@ impl Client {
         let mut txs_to_verify = BTreeSet::from_iter([first_spend.spend.parent_tx]);
         let mut depth = 0;
         let mut verified_tx = BTreeSet::new();
-        let start = std::time::Instant::now();
+        let start = Instant::now();
 
         while !txs_to_verify.is_empty() {
             let mut next_gen_tx = BTreeSet::new();
@@ -172,7 +176,7 @@ impl Client {
         let mut all_utxos = BTreeSet::new();
         let mut verified_tx = BTreeSet::new();
         let mut gen = 0;
-        let start = std::time::Instant::now();
+        let start = Instant::now();
 
         while !txs_to_follow.is_empty() {
             let mut next_gen_tx = BTreeSet::new();

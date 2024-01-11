@@ -18,12 +18,16 @@ use sn_transfers::{
     CashNote, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
-    time::{Duration, Instant},
 };
+use tokio::time::Duration;
 use tokio::{task::JoinSet, time::sleep};
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
 use xor_name::XorName;
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.

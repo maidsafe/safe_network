@@ -16,8 +16,12 @@ use futures::StreamExt;
 use itertools::Itertools;
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk, StreamSelfDecryptor};
 use sn_protocol::storage::{Chunk, ChunkAddress};
-use std::{collections::HashMap, fs, path::PathBuf, time::Instant};
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+use std::{collections::HashMap, fs, path::PathBuf};
 use tokio::sync::mpsc::{self};
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
 use xor_name::XorName;
 
 /// The events emitted from the download process.

@@ -22,6 +22,8 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::NanoTokens;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -30,6 +32,13 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::task::spawn;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local as spawn;
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::std::Instant;
+
 use xor_name::XorName;
 
 /// Max number of records a node can store
@@ -117,7 +126,7 @@ impl NodeRecordStore {
     }
 
     fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
@@ -252,7 +261,7 @@ impl NodeRecordStore {
         }
 
         let cloned_cmd_sender = self.swarm_cmd_sender.clone();
-        tokio::spawn(async move {
+        spawn(async move {
             let cmd = match fs::write(&file_path, r.value) {
                 Ok(_) => {
                     // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -393,7 +402,7 @@ impl RecordStore for NodeRecordStore {
         trace!("Unverified Record {record_key:?} try to validate and store");
         let event_sender = self.network_event_sender.clone();
         // push the event off thread so as to be non-blocking
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             if let Err(error) = event_sender
                 .send(NetworkEvent::UnverifiedRecord(record))
                 .await
@@ -415,7 +424,7 @@ impl RecordStore for NodeRecordStore {
         let filename = Self::key_to_hex(k);
         let file_path = self.config.storage_dir.join(&filename);
 
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             match fs::remove_file(file_path) {
                 Ok(_) => {
                     info!("Removed record from disk! filename: {filename}");
@@ -539,8 +548,9 @@ mod tests {
     };
     use quickcheck::*;
     use sn_protocol::storage::{try_serialize_record, ChunkAddress};
-    use std::{collections::BTreeMap, time::Duration};
+    use std::collections::BTreeMap;
     use tokio::runtime::Runtime;
+    use tokio::time::{sleep, Duration};
 
     const MULITHASH_CODE: u64 = 0x12;
 
@@ -681,7 +691,7 @@ mod tests {
             {
                 break;
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
+            sleep(Duration::from_millis(100)).await;
             iteration += 1;
         }
         if iteration == max_iterations {
@@ -774,7 +784,7 @@ mod tests {
                     {
                         break;
                     }
-                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    sleep(Duration::from_millis(100)).await;
                     iteration += 1;
                 }
                 if iteration == max_iterations {
@@ -790,7 +800,7 @@ mod tests {
                 if store.get(&retained_key).is_some() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 iteration += 1;
             }
             if iteration == max_iterations {
