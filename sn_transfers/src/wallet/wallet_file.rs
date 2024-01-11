@@ -131,10 +131,10 @@ where
             *SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-        debug!("Writing cash note to: {:?}", created_cash_notes_path);
         fs::create_dir_all(&created_cash_notes_path)?;
 
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
+        debug!("Writing cash note to: {cash_note_file_path:?}");
 
         let hex = cash_note
             .to_hex()

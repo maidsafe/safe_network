@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.36](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.35...sn_transfers-v0.14.36) - 2024-01-10
+
+### Added
+- *(transfers)* exposing APIs to build and send cashnotes from transactions signed offline
+- *(transfers)* include the derivation index of inputs for generated unsigned transactions
+- *(transfers)* exposing an API to create unsigned transfers to be signed offline later on
+
+### Other
+- fixup send_spends and use ExcessiveNanoValue error
+- *(transfers)* solving clippy issues about complex fn args
+
+## [0.14.35](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.34...sn_transfers-v0.14.35) - 2024-01-09
+
+### Added
+- *(client)* extra sleep between chunk verification
+
+## [0.14.34](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.33...sn_transfers-v0.14.34) - 2024-01-09
+
+### Added
+- *(cli)* safe wallet create saves new key
+
 ## [0.14.33](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.32...sn_transfers-v0.14.33) - 2024-01-08
 
 ### Other

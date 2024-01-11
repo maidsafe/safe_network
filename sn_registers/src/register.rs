@@ -18,7 +18,7 @@ use std::collections::BTreeSet;
 use xor_name::XorName;
 
 /// Arbitrary maximum size of a register entry.
-const MAX_REG_ENTRY_SIZE: usize = MIN_ENCRYPTABLE_BYTES / 3; // 1024 bytes
+const MAX_REG_ENTRY_SIZE: usize = MIN_ENCRYPTABLE_BYTES / 3 * 1024; // 1024 bytes
 
 /// Maximum number of entries of a register.
 const MAX_REG_NUM_ENTRIES: u16 = 1024;

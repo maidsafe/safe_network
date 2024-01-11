@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
-use crate::event::NetworkEvent;
+use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -43,8 +43,10 @@ pub struct NodeRecordStore {
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashMap<Key, (NetworkAddress, RecordType)>,
-    /// Currently only used to notify the record received via network put to be validated.
-    event_sender: Option<mpsc::Sender<NetworkEvent>>,
+    /// Send network events to the node layer.
+    network_event_sender: mpsc::Sender<NetworkEvent>,
+    /// Send cmds to the network layer. Used to interact with self in an async fashion.
+    swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     /// Distance range specify the acceptable range of record entry.
     /// None means accept all records.
     distance_range: Option<Distance>,
@@ -81,13 +83,15 @@ impl NodeRecordStore {
     pub fn with_config(
         local_id: PeerId,
         config: NodeRecordStoreConfig,
-        event_sender: Option<mpsc::Sender<NetworkEvent>>,
+        network_event_sender: mpsc::Sender<NetworkEvent>,
+        swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     ) -> Self {
         NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
             records: Default::default(),
-            event_sender,
+            network_event_sender,
+            swarm_cmd_sender,
             distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
@@ -247,30 +251,27 @@ impl NodeRecordStore {
             let _ = metric.set(self.records.len() as i64);
         }
 
-        let cloned_event_sender = self.event_sender.clone();
+        let cloned_cmd_sender = self.swarm_cmd_sender.clone();
         tokio::spawn(async move {
-            let event = match fs::write(&file_path, r.value) {
+            let cmd = match fs::write(&file_path, r.value) {
                 Ok(_) => {
                     // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                     info!("Wrote record {record_key:?} to disk! filename: {filename}");
-                    NetworkEvent::CompletedWrite((r.key, record_type))
+
+                    SwarmCmd::AddLocalRecordAsStored {
+                        key: r.key,
+                        record_type,
+                    }
                 }
                 Err(err) => {
                     error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                    NetworkEvent::FailedToWrite(r.key)
+                    SwarmCmd::RemoveFailedLocalRecord { key: r.key }
                 }
             };
 
-            // This happens after the write to disk is complete
-            if let Some(event_sender) = cloned_event_sender {
-                if let Err(error) = event_sender.send(event).await {
-                    error!("SwarmDriver failed to send event w/  {error:?}");
-                }
-            } else {
-                error!("Record store doesn't have event_sender could not send write events for {record_key:?} {file_path:?}");
-            }
+            send_swarm_cmd(cloned_cmd_sender, cmd);
         });
 
         Ok(())
@@ -390,19 +391,17 @@ impl RecordStore for NodeRecordStore {
         }
 
         trace!("Unverified Record {record_key:?} try to validate and store");
-        if let Some(event_sender) = self.event_sender.clone() {
-            // push the event off thread so as to be non-blocking
-            let _handle = tokio::spawn(async move {
-                if let Err(error) = event_sender
-                    .send(NetworkEvent::UnverifiedRecord(record))
-                    .await
-                {
-                    error!("SwarmDriver failed to send event: {}", error);
-                }
-            });
-        } else {
-            error!("Record store doesn't have event_sender setup");
-        }
+        let event_sender = self.network_event_sender.clone();
+        // push the event off thread so as to be non-blocking
+        let _handle = tokio::spawn(async move {
+            if let Err(error) = event_sender
+                .send(NetworkEvent::UnverifiedRecord(record))
+                .await
+            {
+                error!("SwarmDriver failed to send event: {}", error);
+            }
+        });
+
         Ok(())
     }
 
@@ -629,10 +628,13 @@ mod tests {
     async fn testing_thread(r: ArbitraryRecord) {
         let r = r.0;
         let (network_event_sender, mut network_event_receiver) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
         let mut store = NodeRecordStore::with_config(
             PeerId::random(),
             Default::default(),
-            Some(network_event_sender),
+            network_event_sender,
+            swarm_cmd_sender,
         );
 
         let store_cost_before = store.store_cost();
@@ -709,7 +711,15 @@ mod tests {
             ..Default::default()
         };
         let self_id = PeerId::random();
-        let mut store = NodeRecordStore::with_config(self_id, store_config.clone(), None);
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config.clone(),
+            network_event_sender,
+            swarm_cmd_sender,
+        );
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
         for i in 0..100 {
@@ -809,7 +819,14 @@ mod tests {
             ..Default::default()
         };
         let self_id = PeerId::random();
-        let mut store = NodeRecordStore::with_config(self_id, store_config, None);
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
 
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);

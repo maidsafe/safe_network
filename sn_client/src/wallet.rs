@@ -15,8 +15,8 @@ use libp2p::PeerId;
 use sn_networking::GetRecordError;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend,
-    SpendAddress, Transfer, UniquePubkey, WalletError, WalletResult,
+    CashNote, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
+    SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -92,7 +92,51 @@ impl WalletClient {
         // send to network
         if let Err(error) = self
             .client
-            .send(
+            .send_spends(
+                self.wallet.unconfirmed_spend_requests().iter(),
+                verify_store,
+            )
+            .await
+        {
+            return Err(WalletError::CouldNotSendMoney(format!(
+                "The transfer was not successfully registered in the network: {error:?}"
+            )));
+        } else {
+            // clear unconfirmed txs
+            self.wallet.clear_confirmed_spend_requests();
+        }
+
+        // return the first CashNote (assuming there is only one because we only sent to one recipient)
+        match &created_cash_notes[..] {
+            [cashnote] => Ok(cashnote.clone()),
+            [_multiple, ..] => Err(WalletError::CouldNotSendMoney(
+                "Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."
+                    .into(),
+            )),
+            [] => Err(WalletError::CouldNotSendMoney(
+                "No CashNotes were returned from the wallet.".into(),
+            )),
+        }
+    }
+
+    /// Send signed spends to another wallet.
+    /// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
+    pub async fn send_signed_spends(
+        &mut self,
+        signed_spends: BTreeSet<SignedSpend>,
+        tx: Transaction,
+        change_id: UniquePubkey,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        verify_store: bool,
+    ) -> WalletResult<CashNote> {
+        let created_cash_notes =
+            self.wallet
+                .prepare_signed_transfer(signed_spends, tx, change_id, output_details)?;
+
+        // send to network
+        if let Err(error) = self
+            .client
+            .send_spends(
                 self.wallet.unconfirmed_spend_requests().iter(),
                 verify_store,
             )
@@ -152,6 +196,8 @@ impl WalletClient {
     )> {
         let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
+        // Using default ExponentialBackoff doesn't make sense,
+        // as it will just fail after the first payment failure.
         let mut backoff = ExponentialBackoff::default();
         let mut last_err = "No retries".to_string();
 
@@ -269,18 +315,20 @@ impl WalletClient {
         trace!("Sending storage payment transfer to the network");
         let spend_attempt_result = self
             .client
-            .send(
+            .send_spends(
                 self.wallet.unconfirmed_spend_requests().iter(),
                 verify_store,
             )
             .await;
+        // Here is bit risky that for the whole bunch of spends to the chunks' store_costs and royalty_fee
+        // they will get re-paid again for ALL, if any one of the payment failed to be put.
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
 
             // if we have a DoubleSpend error, lets remove the CashNote from the wallet
             if let WalletError::DoubleSpendAttemptedForCashNotes(spent_cash_notes) = &error {
                 for cash_note_key in spent_cash_notes {
-                    warn!("Removing CashNote from wallet: {cash_note_key:?}");
+                    warn!("Removing double spends CashNote from wallet: {cash_note_key:?}");
                     self.wallet.mark_note_as_spent(*cash_note_key);
                     self.wallet.clear_specific_spend_request(*cash_note_key);
                 }
@@ -304,7 +352,7 @@ impl WalletClient {
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
-            .send(
+            .send_spends(
                 self.wallet.unconfirmed_spend_requests().iter(),
                 verify_store,
             )
@@ -331,9 +379,9 @@ impl WalletClient {
 }
 
 impl Client {
-    /// Send a spend request to the network.
-    /// This can optionally verify the spend has been correctly stored before returning
-    pub async fn send(
+    /// Send spend requests to the network.
+    /// This can optionally verify the spends have been correctly stored before returning
+    pub async fn send_spends(
         &self,
         spend_requests: impl Iterator<Item = &SignedSpend>,
         verify_store: bool,
@@ -497,6 +545,81 @@ pub async fn send(
             .into_wallet()
             .store_unconfirmed_spend_requests()?;
         return Err(WalletError::UnconfirmedTxAfterRetries.into());
+    }
+
+    wallet_client
+        .into_wallet()
+        .deposit_and_store_to_disk(&vec![new_cash_note.clone()])?;
+
+    Ok(new_cash_note)
+}
+
+/// Send tokens to another wallet.
+/// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
+pub async fn broadcast_signed_spends(
+    from: LocalWallet,
+    client: &Client,
+    signed_spends: BTreeSet<SignedSpend>,
+    tx: Transaction,
+    change_id: UniquePubkey,
+    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    verify_store: bool,
+) -> WalletResult<CashNote> {
+    let mut wallet_client = WalletClient::new(client.clone(), from);
+
+    let mut did_error = false;
+    // Wallet shall be all clear to progress forward.
+    let mut attempts = 0;
+    while wallet_client.unconfirmed_spend_requests_exist() {
+        info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+        sleep(Duration::from_secs(1)).await;
+        wallet_client.resend_pending_txs(verify_store).await;
+
+        if attempts > 10 {
+            // save the error state, but break out of the loop so we can save
+            did_error = true;
+            break;
+        }
+
+        attempts += 1;
+    }
+
+    if did_error {
+        error!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        println!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        return Err(WalletError::UnconfirmedTxAfterRetries);
+    }
+
+    let new_cash_note = wallet_client
+        .send_signed_spends(signed_spends, tx, change_id, output_details, verify_store)
+        .await
+        .map_err(|err| {
+            error!("Could not send signed spends, err: {err:?}");
+            err
+        })?;
+
+    if verify_store {
+        attempts = 0;
+        while wallet_client.unconfirmed_spend_requests_exist() {
+            info!("Unconfirmed txs exist, sending again after 1 second...");
+            sleep(Duration::from_secs(1)).await;
+            wallet_client.resend_pending_txs(verify_store).await;
+
+            if attempts > 10 {
+                // save the error state, but break out of the loop so we can save
+                did_error = true;
+                break;
+            }
+
+            attempts += 1;
+        }
+    }
+
+    if did_error {
+        wallet_client
+            .into_wallet()
+            .store_unconfirmed_spend_requests()?;
+        return Err(WalletError::UnconfirmedTxAfterRetries);
     }
 
     wallet_client

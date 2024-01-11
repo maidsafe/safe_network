@@ -58,7 +58,10 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{
+    mpsc::{self, Sender},
+    oneshot,
+};
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -321,6 +324,13 @@ impl Network {
                 return Ok(());
             }
             warn!("The obtained {n_verified} verified proofs did not match the expected {expected_n_verified} verified proofs");
+            // Sleep to avoid firing queries too close to even choke the nodes further.
+            let waiting_time = if retry_attempts == 1 {
+                MIN_WAIT_BEFORE_READING_A_PUT
+            } else {
+                MIN_WAIT_BEFORE_READING_A_PUT + MIN_WAIT_BEFORE_READING_A_PUT
+            };
+            tokio::time::sleep(waiting_time).await;
         }
 
         Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
@@ -410,58 +420,69 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        backoff::future::retry(ExponentialBackoff{
-            max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
-            ..Default::default()
-        }, || async {
-            let pretty_key = PrettyPrintRecordKey::from(&key);
-            info!(
-                "Getting record of {pretty_key:?}. with cfg {cfg:?}",
-            );
-            let (sender, receiver) = oneshot::channel();
-            self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
-                key: key.clone(),
-                sender,
-                cfg: cfg.clone(),
-            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
-            let result = receiver.await.map_err(|e| {
+        backoff::future::retry(
+            ExponentialBackoff {
+                max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
+                ..Default::default()
+            },
+            || async {
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
+                let (sender, receiver) = oneshot::channel();
+                self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+                    key: key.clone(),
+                    sender,
+                    cfg: cfg.clone(),
+                })
+                .map_err(|err| BackoffError::Transient {
+                    err,
+                    retry_after: None,
+                })?;
+                let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
             }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
 
-            // log the results
-            match &result {
-                Ok(_) => {
-                    info!("Record returned: {pretty_key:?}. Retrying via backoff...");
-                }
-                Err(GetRecordError::RecordDoesNotMatch(_)) => {
-                    warn!("The returned record does not match target {pretty_key:?}. Retrying via backoff...");
-                }
-                Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
-                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}. Retying via backoff...");
-                }
-                // libp2p RecordNotFound does mean no holders answered.
-                // it does not actually mean the record does not exist.
-                // just that those asked did not have it
-                Err(GetRecordError::RecordNotFound) => {
-                    warn!("No holder of record '{pretty_key:?}' found. Retrying via backoff...");
-                }
-                Err(GetRecordError::SplitRecord { .. }) => {
-                    error!("Encountered a split record for {pretty_key:?} Retrying via backoff...");
-                }
-                Err(GetRecordError::QueryTimeout) => {
-                    error!("Encountered query timeout for {pretty_key:?} Retrying via backoff...");
-                }
-            };
+                // log the results
+                match &result {
+                    Ok(_) => {
+                        info!("Record returned: {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::RecordDoesNotMatch(_)) => {
+                        warn!("The returned record does not match target {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                        warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
+                    }
+                    // libp2p RecordNotFound does mean no holders answered.
+                    // it does not actually mean the record does not exist.
+                    // just that those asked did not have it
+                    Err(GetRecordError::RecordNotFound) => {
+                        warn!("No holder of record '{pretty_key:?}' found.");
+                    }
+                    Err(GetRecordError::SplitRecord { .. }) => {
+                        error!("Encountered a split record for {pretty_key:?}.");
+                    }
+                    Err(GetRecordError::QueryTimeout) => {
+                        error!("Encountered query timeout for {pretty_key:?}.");
+                    }
+                };
 
-            // if we dont want to retry, throw permanent error
-            if !cfg.re_attempt {
-                if let Err(e) = result {
-                    return Err(BackoffError::Permanent(Error::from(e)))
+                // if we dont want to retry, throw permanent error
+                if !cfg.re_attempt {
+                    if let Err(e) = result {
+                        return Err(BackoffError::Permanent(Error::from(e)));
+                    }
                 }
-            }
-            result.map_err(|err| BackoffError::Transient{err: Error::from(err), retry_after: None})
-        })
+                if result.is_err() {
+                    trace!("Getting record from network of {pretty_key:?} via backoff...");
+                }
+                result.map_err(|err| BackoffError::Transient {
+                    err: Error::from(err),
+                    retry_after: None,
+                })
+            },
+        )
         .await
     }
 
@@ -574,6 +595,8 @@ impl Network {
                 )
                 .await?;
             } else {
+                // The `verify_chunk_existence` will carry out three times of re-attempts
+                // However, `get_record_from_network` will only carry out once.
                 self.get_record_from_network(record.key.clone(), get_cfg)
                     .await?;
             }
@@ -590,22 +613,6 @@ impl Network {
             record.value.len()
         );
         self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
-    }
-
-    /// Remove a local record from the RecordStore after a failed write
-    pub fn remove_failed_local_record(&self, key: RecordKey) -> Result<()> {
-        trace!("Removing Record locally, for {:?}", key);
-        self.send_swarm_cmd(SwarmCmd::RemoveFailedLocalRecord { key })
-    }
-
-    /// Add a local record to the RecordStore after a successful write
-    pub fn add_record_as_stored_locally(
-        &self,
-        key: RecordKey,
-        record_type: RecordType,
-    ) -> Result<()> {
-        trace!("Removing Record locally, for {:?}", key);
-        self.send_swarm_cmd(SwarmCmd::AddLocalRecordAsStored { key, record_type })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
@@ -631,16 +638,6 @@ impl Network {
         receiver
             .await
             .map_err(|_e| Error::InternalMsgChannelDropped)
-    }
-
-    // Add a list of keys of a holder to Replication Fetcher.
-    #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-    pub fn add_keys_to_replication_fetcher(
-        &self,
-        holder: PeerId,
-        keys: HashMap<NetworkAddress, RecordType>,
-    ) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::AddKeysToReplicationFetcher { holder, keys })
     }
 
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
@@ -685,36 +682,13 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GossipHandler)
     }
 
+    pub fn trigger_interval_replication(&self) -> Result<()> {
+        self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
+    }
+
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
-        let capacity = self.swarm_cmd_sender.capacity();
-
-        let cmd_sender = self.swarm_cmd_sender.clone();
-
-        if capacity == 0 {
-            if matches!(cmd, SwarmCmd::AddKeysToReplicationFetcher { .. }) {
-                // we can safely drop AddKeysToReplicationFetcher
-                // it should be reattempted in a few seconds and if we can cope we'll do it.
-                warn!(
-                    "SwarmCmd channel is full. Dropping AddKeysToReplicationFetcher: {:?}",
-                    cmd
-                );
-                return Ok(());
-            } else {
-                error!(
-                    "SwarmCmd channel is full. Await capacity to send: {:?}",
-                    cmd
-                );
-            }
-        }
-
-        // Spawn a task to send the SwarmCmd and keep this fn sync
-        let _handle = tokio::spawn(async move {
-            if let Err(error) = cmd_sender.send(cmd).await {
-                error!("Failed to send SwarmCmd: {}", error);
-            }
-        });
-
+        send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
         Ok(())
     }
 
@@ -878,6 +852,24 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
         .iter()
         .filter(|p| !matches!(p, Protocol::P2p(_)))
         .collect()
+}
+
+pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) {
+    let capacity = swarm_cmd_sender.capacity();
+
+    if capacity == 0 {
+        error!(
+            "SwarmCmd channel is full. Await capacity to send: {:?}",
+            cmd
+        );
+    }
+
+    // Spawn a task to send the SwarmCmd and keep this fn sync
+    let _handle = tokio::spawn(async move {
+        if let Err(error) = swarm_cmd_sender.send(cmd).await {
+            error!("Failed to send SwarmCmd: {}", error);
+        }
+    });
 }
 
 #[cfg(test)]

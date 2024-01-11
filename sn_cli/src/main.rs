@@ -28,9 +28,9 @@ use color_eyre::Result;
 use sn_client::Client;
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
-use sn_peers_acquisition::parse_peers_args;
+use sn_peers_acquisition::get_peers_from_args;
 use sn_transfers::bls_secret_from_hex;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 use tracing::Level;
 
 const CLIENT_KEY: &str = "clientkey";
@@ -75,7 +75,9 @@ async fn main() -> Result<()> {
         if let WalletCmds::Address
         | WalletCmds::Balance { .. }
         | WalletCmds::Deposit { .. }
-        | WalletCmds::Create { .. } = cmds
+        | WalletCmds::Create { .. }
+        | WalletCmds::Transaction { .. }
+        | WalletCmds::Sign { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
@@ -85,11 +87,11 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
-    let bootstrap_peers = parse_peers_args(opt.peers).await?;
+    let bootstrap_peers = get_peers_from_args(opt.peers).await?;
 
     println!(
-        "Connecting to the network with {} peers:",
-        bootstrap_peers.len()
+        "Connecting to the network with {} peers",
+        bootstrap_peers.len(),
     );
 
     let bootstrap_peers = if bootstrap_peers.is_empty() {
@@ -152,4 +154,15 @@ fn get_client_data_dir_path() -> Result<PathBuf> {
     home_dirs.push("client");
     std::fs::create_dir_all(home_dirs.as_path())?;
     Ok(home_dirs)
+}
+
+fn get_stdin_response(prompt: &str) -> String {
+    println!("{prompt}");
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    if stdin.read_line(&mut buffer).is_err() {
+        // consider if error should process::exit(1) here
+        return "".to_string();
+    };
+    buffer
 }

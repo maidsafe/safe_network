@@ -6,6 +6,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.88.9](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.8...sn_cli-v0.88.9) - 2024-01-11
+
+### Other
+- update dependencies
+
+## [0.88.8](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.7...sn_cli-v0.88.8) - 2024-01-11
+
+### Other
+- update dependencies
+
+## [0.88.7](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.6...sn_cli-v0.88.7) - 2024-01-10
+
+### Added
+- *(client)* client APIs and CLI cmd to broadcast a transaction signed offline
+- *(cli)* new cmd to sign a transaction offline
+- *(cli)* new wallet cmd to create a unsigned transaction to be used for offline signing
+
+### Other
+- *(transfers)* solving clippy issues about complex fn args
+
+## [0.88.6](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.5...sn_cli-v0.88.6) - 2024-01-10
+
+### Other
+- update dependencies
+
+## [0.88.5](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.4...sn_cli-v0.88.5) - 2024-01-10
+
+### Added
+- allow register CLI to create a public register writable to anyone
+
+## [0.88.4](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.3...sn_cli-v0.88.4) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.88.3](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.2...sn_cli-v0.88.3) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.88.2](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.1...sn_cli-v0.88.2) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.88.1](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.0...sn_cli-v0.88.1) - 2024-01-09
+
+### Added
+- *(cli)* safe wallet create saves new key
+
+## [0.88.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.87.0...sn_cli-v0.88.0) - 2024-01-08
+
+### Added
+- provide `--first` argument for `safenode`
+
+## [0.87.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.103...sn_cli-v0.87.0) - 2024-01-08
+
+### Added
+- *(cli)* intergrate FilesDownload with cli
+
+### Other
+- *(client)* [**breaking**] refactor `Files` into `FilesUpload`
+
 ## [0.86.103](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.86.102...sn_cli-v0.86.103) - 2024-01-08
 
 ### Other

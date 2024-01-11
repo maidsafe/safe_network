@@ -18,12 +18,13 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, Files, FilesApi, WalletClient, BATCH_SIZE};
+use sn_client::{Client, Error, FilesApi, FilesDownload, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
+use sn_registers::Permissions;
 use sn_transfers::LocalWallet;
 use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
@@ -349,7 +350,12 @@ fn create_registers_task(
             sleep(delay).await;
 
             match client
-                .create_and_pay_for_register(meta, &mut wallet_client, true)
+                .create_and_pay_for_register(
+                    meta,
+                    &mut wallet_client,
+                    true,
+                    Permissions::new_owner_only(),
+                )
                 .await
             {
                 Ok(_) => content
@@ -410,12 +416,12 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let mut files = Files::new(files_api.clone()).set_show_holders(true);
-            if let Err(err) = files.upload_chunks(chunks).await {
+            let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
+            if let Err(err) = files_upload.upload_chunks(chunks).await {
                 bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
             }
-            let royalties = files.get_upload_royalty_fees();
-            let storage_cost = files.get_upload_storage_cost();
+            let royalties = files_upload.get_upload_royalty_fees();
+            let storage_cost = files_upload.get_upload_storage_cost();
             let cost = royalties
                 .checked_add(storage_cost)
                 .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
@@ -494,7 +500,7 @@ fn churn_nodes_task(
 ) {
     let start = Instant::now();
     let _handle = tokio::spawn(async move {
-        let node_rpc_addresses = get_all_rpc_addresses();
+        let node_rpc_addresses = get_all_rpc_addresses().expect("Failed to obtain rpc addresses");
         'main: loop {
             for rpc_address in node_rpc_addresses.iter() {
                 sleep(churn_period).await;
@@ -625,9 +631,9 @@ async fn query_content(
         }
         NetworkAddress::ChunkAddress(addr) => {
             let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
-            let _ = files_api
-                .read_bytes(*addr, None, None, false, BATCH_SIZE)
-                .await?;
+            let mut file_download = FilesDownload::new(files_api);
+            let _ = file_download.download_file(*addr, None).await?;
+
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

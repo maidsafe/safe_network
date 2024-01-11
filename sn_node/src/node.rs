@@ -19,7 +19,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Response},
+    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey, NanoTokens};
@@ -242,7 +242,6 @@ impl Node {
 
                         let _handle = spawn(async move {
                             if let Err(err) = Self::try_interval_replication(network)
-                                .await
                             {
                                 error!("Error while triggering replication {err:?}");
                             }
@@ -296,7 +295,7 @@ impl Node {
                 let net_clone = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(err) = Self::try_interval_replication(net_clone).await {
+                    if let Err(err) = Self::try_interval_replication(net_clone) {
                         error!("Error while triggering replication {err:?}");
                     }
                 });
@@ -308,7 +307,7 @@ impl Node {
                 let net = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(e) = Self::try_interval_replication(net).await {
+                    if let Err(e) = Self::try_interval_replication(net) {
                         error!("Error while triggering replication {e:?}");
                     }
                 });
@@ -330,16 +329,6 @@ impl Node {
                 if matches!(status, NatStatus::Private) {
                     tracing::warn!("NAT status is determined to be private!");
                     self.events_channel.broadcast(NodeEvent::BehindNat);
-                }
-            }
-            NetworkEvent::FailedToWrite(key) => {
-                if let Err(e) = self.network.remove_failed_local_record(key) {
-                    error!("Failed to remove local record: {e:?}");
-                }
-            }
-            NetworkEvent::CompletedWrite((key, record_type)) => {
-                if let Err(e) = self.network.add_record_as_stored_locally(key, record_type) {
-                    error!("Failed to add local record as stored: {e:?}");
                 }
             }
             NetworkEvent::ResponseReceived { res } => {
@@ -368,9 +357,6 @@ impl Node {
                         error!("Error while sending response form query req: {error:?}");
                     }
                 });
-            }
-            NetworkEvent::CmdRequestReceived { cmd } => {
-                self.handle_node_cmd(cmd);
             }
             NetworkEvent::UnverifiedRecord(record) => {
                 // queries can be long running and require validation, so we spawn a task to handle them
@@ -517,51 +503,6 @@ impl Node {
             }
         };
         Response::Query(resp)
-    }
-
-    fn handle_node_cmd(&self, cmd: Cmd) {
-        Marker::NodeCmdReceived(&cmd).log();
-        match cmd {
-            Cmd::Replicate { holder, keys } => {
-                let network = self.network.clone();
-
-                let _handle = spawn(async move {
-                    trace!(
-                        "Received replication list from {holder:?} of {} keys",
-                        keys.len()
-                    );
-
-                    if let Some(peer_id) = holder.as_peer_id() {
-                        // accept replication requests from the K_VALUE peers away, giving us some margin for replication
-                        let local_peers: Vec<_> =
-                            match network.get_closest_k_value_local_peers().await {
-                                // for replication on churn
-                                Ok(mut peers) => {
-                                    // remove our peer id from the calculations here.
-                                    peers.retain(|peer_id| peer_id != &network.peer_id);
-                                    peers
-                                }
-                                Err(err) => {
-                                    error!("Failed to get close group local peers: {err:?}");
-                                    return;
-                                }
-                            };
-
-                        // lets be sure we should handle this message
-                        if local_peers.contains(&peer_id) {
-                            // todo: error is not propagated to the caller here
-                            let _ = network.add_keys_to_replication_fetcher(peer_id, keys);
-                        } else {
-                            warn!("Received replication list from {peer_id:?} which is not in our close group. Ignored {:?}", keys.len());
-                        }
-                    } else {
-                        error!(
-                            "Within the replication list, Can not parse peer_id from {holder:?}"
-                        );
-                    }
-                });
-            }
-        };
     }
 }
 

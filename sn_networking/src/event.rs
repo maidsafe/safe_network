@@ -9,7 +9,8 @@
 use crate::{
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{Error, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, CLOSE_GROUP_SIZE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
+    REPLICATE_RANGE,
 };
 use bytes::Bytes;
 use core::fmt;
@@ -32,7 +33,7 @@ use libp2p::{
 };
 
 use sn_protocol::{
-    messages::{Cmd, CmdResponse, Query, Request, Response},
+    messages::{CmdResponse, Query, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -108,11 +109,6 @@ pub enum MsgResponder {
 #[allow(clippy::large_enum_variant)]
 /// Events forwarded by the underlying Network; to be used by the upper layers
 pub enum NetworkEvent {
-    /// Incoming `Cmd` from a peer
-    CmdRequestReceived {
-        /// Cmd
-        cmd: Cmd,
-    },
     /// Incoming `Query` from a peer
     QueryRequestReceived {
         /// Query
@@ -137,10 +133,6 @@ pub enum NetworkEvent {
     NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
-    /// Report failed write to cleanup record store
-    FailedToWrite(RecordKey),
-    /// Report a completed write so we can safely add this to the record store now
-    CompletedWrite((RecordKey, RecordType)),
     /// Gossipsub message received
     GossipsubMsgReceived {
         /// Topic the message was published on
@@ -161,9 +153,6 @@ pub enum NetworkEvent {
 impl Debug for NetworkEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            NetworkEvent::CmdRequestReceived { cmd, .. } => {
-                write!(f, "NetworkEvent::CmdRequestReceived({cmd:?})")
-            }
             NetworkEvent::QueryRequestReceived { query, .. } => {
                 write!(f, "NetworkEvent::QueryRequestReceived({query:?})")
             }
@@ -192,17 +181,6 @@ impl Debug for NetworkEvent {
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
-            }
-            NetworkEvent::FailedToWrite(record_key) => {
-                let pretty_key = PrettyPrintRecordKey::from(record_key);
-                write!(f, "NetworkEvent::FailedToWrite({pretty_key:?})")
-            }
-            NetworkEvent::CompletedWrite((record_key, record_type)) => {
-                let pretty_key = PrettyPrintRecordKey::from(record_key);
-                write!(
-                    f,
-                    "NetworkEvent::CompletedWrite({pretty_key:?}, {record_type:?})"
-                )
             }
             NetworkEvent::GossipsubMsgReceived { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
@@ -646,7 +624,8 @@ impl SwarmDriver {
                     // as we send that regardless of how we handle the request as its unimportant to the sender.
                     match request {
                         Request::Cmd(sn_protocol::messages::Cmd::Replicate { holder, keys }) => {
-                            trace!("Short circuit ReplicateOk response to peer {peer:?}");
+                            self.add_keys_to_replication_fetcher(holder, keys);
+
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
                             );
@@ -655,10 +634,6 @@ impl SwarmDriver {
                                 .request_response
                                 .send_response(channel, response)
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
-
-                            self.send_event(NetworkEvent::CmdRequestReceived {
-                                cmd: sn_protocol::messages::Cmd::Replicate { holder, keys },
-                            });
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {
@@ -1101,6 +1076,125 @@ impl SwarmDriver {
 
             trace!("Removing outdated connection {connection_id:?} to {peer_id:?}");
             let _result = self.swarm.close_connection(connection_id);
+        }
+    }
+
+    fn add_keys_to_replication_fetcher(
+        &mut self,
+        sender: NetworkAddress,
+        incoming_keys: Vec<(NetworkAddress, RecordType)>,
+    ) {
+        let holder = if let Some(peer_id) = sender.as_peer_id() {
+            peer_id
+        } else {
+            warn!("Replication list sender is not a peer_id {sender:?}");
+            return;
+        };
+
+        trace!(
+            "Received replication list from {holder:?} of {} keys",
+            incoming_keys.len()
+        );
+
+        // accept replication requests from the K_VALUE peers away,
+        // giving us some margin for replication
+        let closest_k_peers = self.get_closest_k_value_local_peers();
+        if !closest_k_peers.contains(&holder) || holder == self.self_peer_id {
+            trace!("Holder {holder:?} is self or not in replication range.");
+            return;
+        }
+
+        // Only handle those non-exist and in close range keys
+        let keys_to_store =
+            self.select_non_existent_records_for_replications(&incoming_keys, &closest_k_peers);
+        if keys_to_store.is_empty() {
+            debug!("Empty keys to store after adding to");
+            return;
+        }
+
+        #[allow(clippy::mutable_key_type)]
+        let all_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+        let keys_to_fetch = self
+            .replication_fetcher
+            .add_keys(holder, keys_to_store, all_keys);
+        if !keys_to_fetch.is_empty() {
+            self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
+        } else {
+            trace!("no waiting keys to fetch from the network");
+        }
+    }
+
+    /// Checks suggested records against what we hold, so we only
+    /// enqueue what we do not have
+    fn select_non_existent_records_for_replications(
+        &mut self,
+        incoming_keys: &[(NetworkAddress, RecordType)],
+        closest_k_peers: &Vec<PeerId>,
+    ) -> Vec<(NetworkAddress, RecordType)> {
+        #[allow(clippy::mutable_key_type)]
+        let locally_stored_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+        let non_existent_keys: Vec<_> = incoming_keys
+            .iter()
+            .filter(|(addr, record_type)| {
+                let key = addr.to_record_key();
+                let local = locally_stored_keys.get(&key);
+
+                // if we have a local value of matching record_type, we don't need to fetch it
+                if let Some((_, local_record_type)) = local {
+                    local_record_type != record_type
+                } else {
+                    true
+                }
+            })
+            .collect();
+
+        non_existent_keys
+            .into_iter()
+            .filter_map(|(key, record_type)| {
+                if self.is_in_close_range(key, closest_k_peers) {
+                    Some((key.clone(), record_type.clone()))
+                } else {
+                    // Reduce the log level as there will always be around 40% records being
+                    // out of the close range, as the sender side is using `CLOSE_GROUP_SIZE + 2`
+                    // to send our replication list to provide addressing margin.
+                    // Given there will normally be 6 nodes sending such list with interval of 5-10s,
+                    // this will accumulate to a lot of logs with the increasing records uploaded.
+                    trace!("not in close range for key {key:?}");
+                    None
+                }
+            })
+            .collect()
+    }
+
+    // A close target doesn't falls into the close peers range:
+    // For example, a node b11111X has an RT: [(1, b1111), (2, b111), (5, b11), (9, b1), (7, b0)]
+    // Then for a target bearing b011111 as prefix, all nodes in (7, b0) are its close_group peers.
+    // Then the node b11111X. But b11111X's close_group peers [(1, b1111), (2, b111), (5, b11)]
+    // are none among target b011111's close range.
+    // Hence, the ilog2 calculation based on close_range cannot cover such case.
+    // And have to sort all nodes to figure out whether self is among the close_group to the target.
+    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &Vec<PeerId>) -> bool {
+        if all_peers.len() <= REPLICATE_RANGE {
+            return true;
+        }
+
+        // Margin of 2 to allow our RT being bit lagging.
+        match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
+            Ok(close_group) => close_group.contains(&&self.self_peer_id),
+            Err(err) => {
+                warn!("Could not get sorted peers for {target:?} with error {err:?}");
+                true
+            }
         }
     }
 }

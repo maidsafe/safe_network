@@ -6,6 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.8...sn_faucet-v0.2.9) - 2024-01-11
+
+### Other
+- update dependencies
+
+## [0.2.8](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.7...sn_faucet-v0.2.8) - 2024-01-11
+
+### Other
+- update dependencies
+
+## [0.2.7](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.6...sn_faucet-v0.2.7) - 2024-01-10
+
+### Other
+- update dependencies
+
+## [0.2.6](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.5...sn_faucet-v0.2.6) - 2024-01-10
+
+### Other
+- update dependencies
+
+## [0.2.5](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.4...sn_faucet-v0.2.5) - 2024-01-10
+
+### Other
+- update dependencies
+
+## [0.2.4](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.3...sn_faucet-v0.2.4) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.2.3](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.2...sn_faucet-v0.2.3) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.2.2](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.1...sn_faucet-v0.2.2) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.2.1](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.2.0...sn_faucet-v0.2.1) - 2024-01-09
+
+### Other
+- update dependencies
+
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.126...sn_faucet-v0.2.0) - 2024-01-08
+
+### Added
+- provide `--first` argument for `safenode`
+
+## [0.1.126](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.125...sn_faucet-v0.1.126) - 2024-01-08
+
+### Other
+- update dependencies
+
 ## [0.1.125](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.1.124...sn_faucet-v0.1.125) - 2024-01-08
 
 ### Other

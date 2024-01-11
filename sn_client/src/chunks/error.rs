@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_protocol::PrettyPrintRecordKey;
 use std::io;
 use thiserror::Error;
@@ -38,11 +39,8 @@ pub enum Error {
     #[error("Cannot store empty file.")]
     EmptyFileProvided,
 
-    #[error(
-        "You might need to pad the `SmallFile` contents and then store it as a `LargeFile`, \
-        as the encryption has made it slightly too big ({0} bytes)"
-    )]
-    SmallFilePaddingNeeded(usize),
+    #[error("File is too small to be encrypted, it is less than {MIN_ENCRYPTABLE_BYTES} bytes")]
+    FileTooSmall,
 
     #[error(
         "The provided bytes ({size}) is too large to store as a `SmallFile` which maximum can be \

@@ -18,17 +18,21 @@ use super::{
 
 use crate::{
     calculate_royalties_fee,
-    transfers::{create_offline_transfer, OfflineTransfer},
+    cashnotes::UnsignedTransfer,
+    transfers::{
+        create_offline_transfer, offline_transfer_from_transaction, CashNotesAndSecretKey,
+        OfflineTransfer,
+    },
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, SignedSpend, Transfer, UniquePubkey, WalletError,
-    NETWORK_ROYALTIES_PK,
+    MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
+    WalletError, NETWORK_ROYALTIES_PK,
 };
 use xor_name::XorName;
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 const WALLET_DIR_NAME: &str = "wallet";
@@ -122,6 +126,27 @@ impl LocalWallet {
         Self::load_from_path_and_key(&wallet_dir, Some(main_key))
     }
 
+    /// Creates a serialized wallet for a path and main key.
+    /// This will overwrite any existing wallet, unlike load_from_main_key
+    pub fn create_from_key(root_dir: &Path, key: MainSecretKey) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        // This creates the received_cash_notes dir if it doesn't exist.
+        std::fs::create_dir_all(&wallet_dir)?;
+        // Create the new wallet for this key
+        store_new_keypair(&wallet_dir, &key)?;
+        let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(&wallet_dir)? {
+            Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
+            None => Default::default(),
+        };
+        let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
+
+        Ok(Self {
+            key,
+            watchonly_wallet,
+            unconfirmed_spend_requests,
+        })
+    }
+
     /// Loads a serialized wallet from a path.
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
@@ -147,6 +172,18 @@ impl LocalWallet {
 
     pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
         &self.unconfirmed_spend_requests
+    }
+
+    /// Moves all files for the current wallet, including keys and cashnotes
+    /// to directory root_dir/wallet_<short_address>
+    pub fn clear(root_dir: &Path) -> Result<PathBuf> {
+        let wallet = LocalWallet::load_from(root_dir)?;
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        let addr_short = &format!("{:?}", wallet.address())[0..10];
+        let new_name = format!("{WALLET_DIR_NAME}_{addr_short}");
+        let moved_dir = root_dir.join(new_name);
+        let _ = std::fs::rename(wallet_dir, moved_dir.clone());
+        Ok(moved_dir)
     }
 
     /// To remove a specific spend from the requests, if eg, we see one spend is _bad_
@@ -175,8 +212,21 @@ impl LocalWallet {
         self.watchonly_wallet.balance()
     }
 
-    pub fn sign(&self, msg: &[u8]) -> bls::Signature {
-        self.key.sign(msg)
+    pub fn sign(
+        &self,
+        spends: impl IntoIterator<Item = (Spend, DerivationIndex)>,
+    ) -> BTreeSet<SignedSpend> {
+        spends
+            .into_iter()
+            .map(|(spend, dindex)| {
+                let derived_sk = self.key.derive_key(&dindex);
+                let derived_key_sig = derived_sk.sign(&spend.to_bytes());
+                SignedSpend {
+                    spend,
+                    derived_key_sig,
+                }
+            })
+            .collect()
     }
 
     /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
@@ -184,7 +234,7 @@ impl LocalWallet {
     /// once the updated wallet is stored to disk it is safe to drop the WalletExclusiveAccess
     pub fn available_cash_notes(
         &mut self,
-    ) -> Result<(Vec<(CashNote, DerivedSecretKey)>, WalletExclusiveAccess)> {
+    ) -> Result<(CashNotesAndSecretKey, WalletExclusiveAccess)> {
         trace!("Trying to lock wallet to get available cash_notes...");
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
         let exclusive_access = self.lock()?;
@@ -198,7 +248,7 @@ impl LocalWallet {
             let held_cash_note = load_created_cash_note(id, &wallet_dir);
             if let Some(cash_note) = held_cash_note {
                 if let Ok(derived_key) = cash_note.derived_key(&self.key) {
-                    available_cash_notes.push((cash_note.clone(), derived_key));
+                    available_cash_notes.push((cash_note.clone(), Some(derived_key)));
                 } else {
                     warn!(
                         "Skipping CashNote {:?} because we don't have the key to spend it",
@@ -216,6 +266,15 @@ impl LocalWallet {
     /// Return the payment cash_note ids for the given content address name if cached.
     pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<&PaymentDetails> {
         self.watchonly_wallet.get_payment_transaction(name)
+    }
+
+    pub fn build_unsigned_transaction(
+        &mut self,
+        to: Vec<(NanoTokens, MainPubkey)>,
+        reason_hash: Option<Hash>,
+    ) -> Result<UnsignedTransfer> {
+        self.watchonly_wallet
+            .build_unsigned_transaction(to, reason_hash)
     }
 
     /// Make a transfer and return all created cash_notes
@@ -247,6 +306,31 @@ impl LocalWallet {
         )?;
 
         let created_cash_notes = transfer.created_cash_notes.clone();
+
+        self.update_local_wallet(transfer, exclusive_access)?;
+
+        trace!("Releasing wallet lock"); // by dropping _exclusive_access
+        Ok(created_cash_notes)
+    }
+
+    /// Prepare a signed transaction in local wallet and return all created cash_notes
+    pub fn prepare_signed_transfer(
+        &mut self,
+        signed_spends: BTreeSet<SignedSpend>,
+        tx: Transaction,
+        change_id: UniquePubkey,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    ) -> Result<Vec<CashNote>> {
+        let transfer =
+            offline_transfer_from_transaction(signed_spends, tx, change_id, output_details)?;
+
+        let created_cash_notes = transfer.created_cash_notes.clone();
+
+        trace!("Trying to lock wallet to get available cash_notes...");
+        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
+        let exclusive_access = self.lock()?;
+        self.reload()?;
+        trace!("Wallet locked and loaded!");
 
         self.update_local_wallet(transfer, exclusive_access)?;
 

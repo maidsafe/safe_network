@@ -13,7 +13,7 @@ use color_eyre::eyre::{bail, eyre, Result};
 use faucet_server::{restart_faucet_server, run_faucet_server};
 use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
 use sn_logging::{LogBuilder, LogOutputDest};
-use sn_peers_acquisition::{parse_peers_args, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_transfers::{MainPubkey, NanoTokens, Transfer};
 use std::path::PathBuf;
 use tracing::{error, info};
@@ -23,7 +23,7 @@ use tracing_core::Level;
 async fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    let bootstrap_peers = parse_peers_args(opt.peers).await?;
+    let bootstrap_peers = get_peers_from_args(opt.peers).await?;
     let bootstrap_peers = if bootstrap_peers.is_empty() {
         // empty vec is returned if `local-discovery` flag is provided
         None

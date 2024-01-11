@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.24...sn_networking-v0.12.25) - 2024-01-11
+
+### Fixed
+- *(record_store)* make event sender mandatory as they perform critical tasks
+
+### Other
+- *(record_store)* emit swarm cmd directly after writing a record
+
+## [0.12.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.23...sn_networking-v0.12.24) - 2024-01-10
+
+### Other
+- updated the following local packages: sn_transfers
+
+## [0.12.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.22...sn_networking-v0.12.23) - 2024-01-09
+
+### Added
+- *(client)* extra sleep between chunk verification
+
+## [0.12.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.21...sn_networking-v0.12.22) - 2024-01-09
+
+### Other
+- *(node)* move add_to_replicate_fetcher to driver
+- *(node)* move replication cmd flow to swarm_driver
+- get spend from network only require Majority
+
 ## [0.12.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.20...sn_networking-v0.12.21) - 2024-01-08
 
 ### Other

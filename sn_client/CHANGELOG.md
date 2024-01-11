@@ -6,6 +6,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.4...sn_client-v0.101.5) - 2024-01-11
+
+### Added
+- error if file size smaller than MIN_ENCRYPTABLE_BYTES
+
+### Other
+- udpate self_encryption dep
+
+## [0.101.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.3...sn_client-v0.101.4) - 2024-01-11
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.101.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.2...sn_client-v0.101.3) - 2024-01-10
+
+### Added
+- *(client)* client APIs and CLI cmd to broadcast a transaction signed offline
+
+### Other
+- fixup send_spends and use ExcessiveNanoValue error
+
+## [0.101.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.1...sn_client-v0.101.2) - 2024-01-10
+
+### Added
+- allow register CLI to create a public register writable to anyone
+
+## [0.101.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.0...sn_client-v0.101.1) - 2024-01-09
+
+### Other
+- updated the following local packages: sn_networking, sn_transfers
+
+## [0.101.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.100.1...sn_client-v0.101.0) - 2024-01-09
+
+### Added
+- *(client)* use buffered future stream to download chunks
+
+### Fixed
+- *(client)* empty out the download cache once the stream exits
+- *(ci)* fix clippy error due to Send not being general
+
+### Other
+- *(client)* add docs to FilesDownload
+- *(client)* [**breaking**] move read_from range into `DownloadFiles`
+
+## [0.100.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.100.0...sn_client-v0.100.1) - 2024-01-09
+
+### Other
+- get spend from network only require Majority
+
+## [0.100.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.42...sn_client-v0.100.0) - 2024-01-08
+
+### Added
+- *(cli)* intergrate FilesDownload with cli
+- *(client)* emit events from download process
+
+### Other
+- *(client)* [**breaking**] refactor `Files` into `FilesUpload`
+
 ## [0.99.42](https://github.com/maidsafe/safe_network/compare/sn_client-v0.99.41...sn_client-v0.99.42) - 2024-01-08
 
 ### Other

@@ -19,13 +19,28 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub type InputSrcTx = Transaction;
 
+/// Unsigned Transfer
+#[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UnsignedTransfer {
+    /// This is the transaction where all the below
+    /// spends were made and cash_notes created.
+    pub tx: Transaction,
+    /// The unsigned spends with their corresponding owner's key derivation index.
+    pub spends: BTreeSet<(Spend, DerivationIndex)>,
+    /// The cash_note holding surplus tokens after
+    /// spending the necessary input cash_notes.
+    pub change_id: UniquePubkey,
+    /// Information for aggregating signed spends and generating the final CashNote outputs.
+    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+}
+
 /// A builder to create a Transaction from
 /// inputs and outputs.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    input_details: BTreeMap<UniquePubkey, (DerivedSecretKey, InputSrcTx)>,
+    input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
     output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
 }
 
@@ -34,11 +49,14 @@ impl TransactionBuilder {
     pub fn add_input(
         mut self,
         input: Input,
-        derived_key: DerivedSecretKey,
+        derived_key: Option<DerivedSecretKey>,
         input_src_tx: InputSrcTx,
+        derivation_index: DerivationIndex,
     ) -> Self {
-        self.input_details
-            .insert(*input.unique_pubkey(), (derived_key, input_src_tx));
+        self.input_details.insert(
+            *input.unique_pubkey(),
+            (derived_key, input_src_tx, derivation_index),
+        );
         self.inputs.push(input);
         self
     }
@@ -46,10 +64,10 @@ impl TransactionBuilder {
     /// Add an input given an iterator over the Input, the input's derived_key and the input's src transaction
     pub fn add_inputs(
         mut self,
-        inputs: impl IntoIterator<Item = (Input, DerivedSecretKey, InputSrcTx)>,
+        inputs: impl IntoIterator<Item = (Input, Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
     ) -> Self {
-        for (input, derived_key, input_src_tx) in inputs.into_iter() {
-            self = self.add_input(input, derived_key, input_src_tx);
+        for (input, derived_key, input_src_tx, derivation_index) in inputs.into_iter() {
+            self = self.add_input(input, derived_key, input_src_tx, derivation_index);
         }
         self
     }
@@ -94,7 +112,8 @@ impl TransactionBuilder {
         };
         let mut signed_spends = BTreeSet::new();
         for input in &spent_tx.inputs {
-            if let Some((derived_key, input_src_tx)) = self.input_details.get(&input.unique_pubkey)
+            if let Some((Some(derived_key), input_src_tx, _)) =
+                self.input_details.get(&input.unique_pubkey)
             {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
@@ -117,6 +136,42 @@ impl TransactionBuilder {
             self.output_details,
             signed_spends,
         ))
+    }
+
+    /// Build the UnsignedTransfer which contains the generated (unsigned) Spends.
+    pub fn build_unsigned_transfer(
+        self,
+        reason: Hash,
+        network_royalties: Vec<DerivationIndex>,
+        change_id: UniquePubkey,
+    ) -> Result<UnsignedTransfer> {
+        let tx = Transaction {
+            inputs: self.inputs,
+            outputs: self.outputs,
+        };
+        let mut spends = BTreeSet::new();
+        for input in &tx.inputs {
+            if let Some((_, input_src_tx, derivation_index)) =
+                self.input_details.get(&input.unique_pubkey)
+            {
+                let spend = Spend {
+                    unique_pubkey: *input.unique_pubkey(),
+                    spent_tx: tx.clone(),
+                    reason,
+                    token: input.amount,
+                    parent_tx: input_src_tx.clone(),
+                    network_royalties: network_royalties.clone(),
+                };
+                spends.insert((spend, *derivation_index));
+            }
+        }
+
+        Ok(UnsignedTransfer {
+            tx,
+            spends,
+            change_id,
+            output_details: self.output_details,
+        })
     }
 }
 
