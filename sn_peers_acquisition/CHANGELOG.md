@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.2.0...sn_peers_acquisition-v0.2.1) - 2024-01-11
+
+### Other
+- make `first` argument public
+
 ## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.1.14...sn_peers_acquisition-v0.2.0) - 2024-01-08
 
 ### Added
