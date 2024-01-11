@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704971169138,
+  "lastUpdate": 1704971171573,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "84f42dbaf95503d5e1b0b4ace70b22c2a89351d7",
-          "message": "feat: utilize stream decryptor",
-          "timestamp": "2023-09-12T14:01:10Z",
-          "tree_id": "215ba2b7d0b60b54667074eaabdbd09b70d67ed2",
-          "url": "https://github.com/maidsafe/safe_network/commit/84f42dbaf95503d5e1b0b4ace70b22c2a89351d7"
-        },
-        "date": 1694533097247,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 1214.8203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 971,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 215,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "cf6634134b1e84e02f53129543fd84d1ae5ad512",
+          "message": "fix: update MAX_REG_ENTRY_SIZE",
+          "timestamp": "2024-01-11T10:21:47Z",
+          "tree_id": "f1250a1661b650150989332af23e4c2291b9d46b",
+          "url": "https://github.com/maidsafe/safe_network/commit/cf6634134b1e84e02f53129543fd84d1ae5ad512"
+        },
+        "date": 1704971170732,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 214,
             "unit": "MB"
           },
           {
