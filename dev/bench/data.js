@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1704971171573,
+  "lastUpdate": 1704971174022,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -34843,6 +34843,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 14599,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "cf6634134b1e84e02f53129543fd84d1ae5ad512",
+          "message": "fix: update MAX_REG_ENTRY_SIZE",
+          "timestamp": "2024-01-11T10:21:47Z",
+          "tree_id": "f1250a1661b650150989332af23e4c2291b9d46b",
+          "url": "https://github.com/maidsafe/safe_network/commit/cf6634134b1e84e02f53129543fd84d1ae5ad512"
+        },
+        "date": 1704971173206,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3186,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14856,
             "unit": "ms"
           },
           {
