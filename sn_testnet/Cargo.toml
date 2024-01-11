@@ -12,12 +12,12 @@ version = "0.3.33"
 
 [features]
 # required to pass on flag to node builds
-default = ["quic"]
+default = []
 chaos = []
 statemap = []
 otlp = []
 local-discovery = []
-quic = []
+websockets = []
 network-contacts = []
 open-metrics = []
 
@@ -42,10 +42,7 @@ tracing-subscriber = "~0.3.1"
 walkdir = "~2.4.0"
 # add rand to libp2p
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-
-[dependencies.tokio]
-version = "1.17.0"
-features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync"]
+tokio ={ version = "1.35.0", features = ["io-util", "macros", "rt-multi-thread", "sync"] }
 
 [build-dependencies]
 # watch out updating this, protoc compiler needs to be installed on all build systems

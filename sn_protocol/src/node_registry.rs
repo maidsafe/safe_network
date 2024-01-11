@@ -113,14 +113,17 @@ pub struct Node {
 impl Node {
     pub fn get_multiaddr(&self) -> Option<Multiaddr> {
         if let Some(peer_id) = self.peer_id {
-            let addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
-
-            #[cfg(feature = "tcp")]
-            let addr = addr.with(libp2p::multiaddr::Protocol::Tcp(self.port));
-            #[cfg(feature = "quic")]
-            let addr = addr
-                .with(libp2p::multiaddr::Protocol::Udp(self.port))
-                .with(libp2p::multiaddr::Protocol::QuicV1);
+            let start_addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
+            // default
+            let addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
+                start_addr
+                    .with(libp2p::multiaddr::Protocol::Tcp(self.port))
+                    .with(libp2p::multiaddr::Protocol::Ws("/".into()))
+            } else {
+                start_addr
+                    .with(libp2p::multiaddr::Protocol::Udp(self.port))
+                    .with(libp2p::multiaddr::Protocol::QuicV1)
+            };
 
             let peer = addr.with(libp2p::multiaddr::Protocol::P2p(peer_id));
 

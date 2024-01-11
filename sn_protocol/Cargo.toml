@@ -10,10 +10,9 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.11.0"
 
 [features]
-default = ["quic"]
+default = []
 test-utils=[]
-quic=[]
-tcp=[]
+websockets=[]
 rpc=["tonic", "prost"]
 
 [dependencies]
@@ -48,11 +47,3 @@ tonic-build = { version = "~0.6.2" }
 
 [lints]
 workspace = true
-
-
-
-# wasm compilation
-[lib]
-crate-type = ["cdylib", "rlib"]
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.2.12", features = ["js"] }

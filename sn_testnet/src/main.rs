@@ -275,8 +275,8 @@ fn build_binaries(binaries_to_build: &[String]) -> Result<()> {
     if cfg!(feature = "network-contacts") {
         args.extend(["--features", "network-contacts"]);
     }
-    if cfg!(feature = "quic") {
-        args.extend(["--features", "quic"]);
+    if cfg!(feature = "websockets") {
+        args.extend(["--features", "websockets"]);
     }
     if cfg!(feature = "open-metrics") {
         args.extend(["--features", "open-metrics"]);
