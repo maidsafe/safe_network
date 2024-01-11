@@ -324,6 +324,7 @@ mod tests {
         });
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -380,6 +381,7 @@ mod tests {
         });
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 2".to_string(),
             user: "safe".to_string(),
@@ -438,6 +440,7 @@ mod tests {
         });
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -487,6 +490,7 @@ mod tests {
         });
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -528,6 +532,7 @@ mod tests {
             .in_sequence(&mut seq);
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -565,6 +570,7 @@ mod tests {
         let mock_service_control = MockServiceControl::new();
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -602,6 +608,7 @@ mod tests {
         let mock_service_control = MockServiceControl::new();
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -644,6 +651,7 @@ mod tests {
             .returning(|_| Ok(()));
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -681,6 +689,7 @@ mod tests {
             .returning(|_| true);
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -727,6 +736,7 @@ mod tests {
             .returning(|_| false);
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -776,6 +786,7 @@ mod tests {
             .returning(|_| Ok(()));
 
         let mut node = Node {
+            genesis: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
