@@ -34,7 +34,7 @@ pub struct PeersArgs {
     /// If this argument is used, any others will be ignored because they do not apply to the first
     /// node.
     #[clap(long)]
-    first: bool,
+    pub first: bool,
     /// Peer(s) to use for bootstrap, in a 'multiaddr' format containing the peer ID.
     ///
     /// A multiaddr looks like
