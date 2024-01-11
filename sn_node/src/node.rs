@@ -278,10 +278,12 @@ impl Node {
     fn handle_network_event(&self, event: NetworkEvent, peers_connected: &Arc<AtomicUsize>) {
         let start = std::time::Instant::now();
         let event_string = format!("{event:?}");
+        let event_header;
         trace!("Handling NetworkEvent {event_string:?}");
 
         match event {
             NetworkEvent::PeerAdded(peer_id, connected_peers) => {
+                event_header = "PeerAdded";
                 // increment peers_connected and send ConnectedToNetwork event if have connected to K_VALUE peers
                 let _ = peers_connected.fetch_add(1, Ordering::SeqCst);
                 if peers_connected.load(Ordering::SeqCst) == CLOSE_GROUP_SIZE {
@@ -301,6 +303,7 @@ impl Node {
                 });
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
+                event_header = "PeerRemoved";
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
 
@@ -313,6 +316,7 @@ impl Node {
                 });
             }
             NetworkEvent::NewListenAddr(_) => {
+                event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {
                     let network = self.network.clone();
                     let peers = self.initial_peers.clone();
@@ -326,18 +330,21 @@ impl Node {
                 }
             }
             NetworkEvent::NatStatusChanged(status) => {
+                event_header = "NatStatusChanged";
                 if matches!(status, NatStatus::Private) {
                     tracing::warn!("NAT status is determined to be private!");
                     self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
             NetworkEvent::ResponseReceived { res } => {
+                event_header = "ResponseReceived";
                 trace!("NetworkEvent::ResponseReceived {res:?}");
                 if let Err(err) = self.handle_response(res) {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
             NetworkEvent::KeysToFetchForReplication(keys) => {
+                event_header = "KeysToFetchForReplication";
                 info!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
@@ -346,6 +353,7 @@ impl Node {
                 }
             }
             NetworkEvent::QueryRequestReceived { query, channel } => {
+                event_header = "QueryRequestReceived";
                 let network = self.network.clone();
                 let payment_address = *self.reward_address;
 
@@ -359,6 +367,7 @@ impl Node {
                 });
             }
             NetworkEvent::UnverifiedRecord(record) => {
+                event_header = "UnverifiedRecord";
                 // queries can be long running and require validation, so we spawn a task to handle them
                 let self_clone = self.clone();
                 let _handle = spawn(async move {
@@ -373,12 +382,13 @@ impl Node {
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
+                event_header = "GossipsubMsg";
                 trace!("Received a gossip msg for the topic of {topic}");
                 let events_channel = self.events_channel.clone();
 
                 if events_channel.receiver_count() == 0 {
                     trace!(
-                        "NetworkEvent handled in {:?} : {event_string:?}",
+                        "Network handling statistics, Event {event_header:?} handled in {:?} : {event_string:?}",
                         start.elapsed()
                     );
                     return;
@@ -406,7 +416,7 @@ impl Node {
         }
 
         trace!(
-            "NetworkEvent handled in {:?} : {event_string:?}",
+            "Network handling statistics, Event {event_header:?} handled in {:?} : {event_string:?}",
             start.elapsed()
         );
     }

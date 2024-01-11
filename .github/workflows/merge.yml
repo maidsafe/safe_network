@@ -666,6 +666,18 @@ jobs:
           cd ..
           tar -cvzf test_data_2.tar.gz test_data_2
           ls -l
+          mkdir test_data_3
+          cd test_data_3
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode_rpc_client-DebugMem-x86_64.tar.g
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/faucet-DebugMem-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safe-DebugMem-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode-DebugMem-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode_rpc_client-DebugMem-x86_64.tar.gz
+          ls -l
+          cd ..
+          tar -cvzf test_data_3.tar.gz test_data_3
+          ls -l
+          df
 
       - name: Build binaries
         run: cargo build --release --bin safenode --bin safe --bin faucet
@@ -709,8 +721,37 @@ jobs:
         run: sleep 300
         timeout-minutes: 6
 
-      - name: Start a client to upload second file
+      - name: Use same client to upload second file
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" -r 0
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Wait for certain period
+        run: sleep 300
+        timeout-minutes: 6
+
+      # Start a different client to avoid local wallet slow down with more payments handled.
+      - name: Start a different client
+        run: |
+          pwd
+          mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+          ls -l $SAFE_DATA_PATH
+          ls -l $SAFE_DATA_PATH/client_first
+          mkdir $SAFE_DATA_PATH/client
+          ls -l $SAFE_DATA_PATH
+          mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
+          ls -l $CLIENT_DATA_PATH
+          cargo run --bin faucet --release -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+        env:
+          SN_LOG: "all"
+          SAFE_DATA_PATH: /home/runner/.local/share/safe
+          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+        timeout-minutes: 25
+
+      - name: Use second client to upload third file
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_3.tar.gz" -r 0
         env:
           SN_LOG: "all"
         timeout-minutes: 10
