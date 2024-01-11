@@ -6,12 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use semver::Version;
 use sn_node_rpc_client::{RpcActions, RpcClient};
+use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use std::path::PathBuf;
 
 pub enum UpgradeResult {
@@ -265,7 +265,6 @@ fn format_status(status: &NodeStatus) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{Node, NodeStatus};
     use crate::service::MockServiceControl;
     use assert_fs::prelude::*;
     use assert_matches::assert_matches;
@@ -278,6 +277,7 @@ mod tests {
     use sn_node_rpc_client::{
         NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions,
     };
+    use sn_protocol::node_registry::{Node, NodeStatus};
     use std::path::PathBuf;
     use std::str::FromStr;
 

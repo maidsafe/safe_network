@@ -11,7 +11,6 @@ mod config;
 mod control;
 mod helpers;
 mod local;
-mod node;
 mod service;
 
 use crate::add_service::{add, AddServiceOptions};
@@ -19,15 +18,16 @@ use crate::config::*;
 use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
 use crate::helpers::download_and_extract_release;
 use crate::local::{kill_network, run_network, LocalNetworkOptions};
-use crate::node::NodeRegistry;
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
+use libp2p::Multiaddr;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_rpc_client::RpcClient;
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, parse_peer_addr, PeersArgs};
+use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -359,10 +359,26 @@ async fn main() -> Result<()> {
             )
             .await?;
 
-            let peers = if let Some(peers) = peers {
-                Some(get_peers_from_args(peers).await?)
-            } else {
-                None
+            // Unfortunately because the peers argument is an option, clap does not handle parsing
+            // `SAFE_PEERS`.
+            //
+            // It needs to be an option, otherwise we wouldn't be able to use the `join` command
+            // without peers to automatically add new nodes to an existing local network.
+            let peers = match std::env::var("SAFE_PEERS") {
+                Ok(var) => {
+                    let peers = var
+                        .split(',')
+                        .map(|addr| parse_peer_addr(addr.trim()).unwrap())
+                        .collect::<Vec<Multiaddr>>();
+                    Some(peers)
+                }
+                Err(_) => {
+                    if let Some(peers) = peers {
+                        Some(get_peers_from_args(peers).await?)
+                    } else {
+                        None
+                    }
+                }
             };
 
             let options = LocalNetworkOptions {

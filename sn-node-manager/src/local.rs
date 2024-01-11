@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::node::{Node, NodeRegistry, NodeStatus};
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -14,6 +13,7 @@ use libp2p::{Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
+use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
