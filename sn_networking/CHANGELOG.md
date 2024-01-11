@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.24...sn_networking-v0.12.25) - 2024-01-11
+
+### Fixed
+- *(record_store)* make event sender mandatory as they perform critical tasks
+
+### Other
+- *(record_store)* emit swarm cmd directly after writing a record
+
 ## [0.12.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.23...sn_networking-v0.12.24) - 2024-01-10
 
 ### Other
