@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.27](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.26...sn_networking-v0.12.27) - 2024-01-12
+
+### Other
+- *(network)* collect swarm_driver handling time statistics
+
 ## [0.12.26](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.25...sn_networking-v0.12.26) - 2024-01-11
 
 ### Other
