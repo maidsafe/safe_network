@@ -527,6 +527,10 @@ impl FilesUpload {
                     cost_map = BTreeMap::new();
                 }
             }
+
+            // Clean up the payments to prevent ever-growping copies slow down the performance
+            wallet_client.clear_payments_and_store();
+
             trace!("Paying thread terminated");
         });
     }

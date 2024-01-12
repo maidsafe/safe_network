@@ -668,7 +668,7 @@ jobs:
           ls -l
           mkdir test_data_3
           cd test_data_3
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode_rpc_client-DebugMem-x86_64.tar.g
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode_rpc_client-DebugMem-x86_64.tar.gz
           wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/faucet-DebugMem-x86_64.tar.gz
           wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safe-DebugMem-x86_64.tar.gz
           wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode-DebugMem-x86_64.tar.gz
@@ -717,6 +717,14 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 5
 
+      - name: Confirm the cash_notes files
+        run: |
+          pwd
+          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+        env:
+          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+        timeout-minutes: 10
+
       - name: Wait for certain period
         run: sleep 300
         timeout-minutes: 6
@@ -754,6 +762,14 @@ jobs:
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_3.tar.gz" -r 0
         env:
           SN_LOG: "all"
+        timeout-minutes: 10
+
+      - name: Confirm the cash_notes files
+        run: |
+          pwd
+          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+        env:
+          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
 
       - name: Stop the local network and upload logs

@@ -33,6 +33,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
     path::{Path, PathBuf},
+    time::Instant,
 };
 
 const WALLET_DIR_NAME: &str = "wallet";
@@ -55,7 +56,7 @@ pub struct LocalWallet {
 impl LocalWallet {
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
-    fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
+    pub fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
         self.watchonly_wallet.store(exclusive_access)
     }
 
@@ -349,6 +350,8 @@ impl LocalWallet {
         let mut storage_cost = NanoTokens::zero();
         let mut royalties_fees = NanoTokens::zero();
 
+        let start = Instant::now();
+
         // create random derivation indexes for recipients
         let mut recipients_by_xor = BTreeMap::new();
         for (xorname, (main_pubkey, quote)) in price_map.iter() {
@@ -376,16 +379,35 @@ impl LocalWallet {
             .flat_map(|(node, roy)| vec![node, roy])
             .cloned()
             .collect();
+
+        trace!(
+            "local_send_storage_payment prepared in {:?}",
+            start.elapsed()
+        );
+
+        let start = Instant::now();
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
+        trace!(
+            "local_send_storage_payment fetched {} cashnotes in {:?}",
+            available_cash_notes.len(),
+            start.elapsed()
+        );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
         let reason_hash = Default::default();
+        let start = Instant::now();
         let offline_transfer = create_offline_transfer(
             available_cash_notes,
             recipients,
             self.address(),
             reason_hash,
         )?;
+        trace!(
+            "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
+            offline_transfer.created_cash_notes.len(),
+            start.elapsed()
+        );
 
+        let start = Instant::now();
         // cache transfer payments in the wallet
         let mut cashnotes_to_use: HashSet<CashNote> = offline_transfer
             .created_cash_notes
@@ -444,10 +466,24 @@ impl LocalWallet {
             self.watchonly_wallet
                 .insert_payment_transaction(*xorname, payment);
         }
+        trace!(
+            "local_send_storage_payment completed payments insertion in {:?}",
+            start.elapsed()
+        );
 
         // write all changes to local wallet
+        let start = Instant::now();
         self.update_local_wallet(offline_transfer, exclusive_access)?;
+        trace!(
+            "local_send_storage_payment completed local wallet update in {:?}",
+            start.elapsed()
+        );
+
         Ok((storage_cost, royalties_fees))
+    }
+
+    pub fn clear_content_payment_map(&mut self) {
+        self.watchonly_wallet.clear_content_payment_map()
     }
 
     fn update_local_wallet(
@@ -467,19 +503,43 @@ impl LocalWallet {
             .mark_notes_as_spent(spent_unique_pubkeys.clone());
 
         if let Some(cash_note) = transfer.change_cash_note {
+            let start = Instant::now();
             self.watchonly_wallet.deposit(&[cash_note.clone()])?;
+            trace!(
+                "update_local_wallet completed deposit change cash_note in {:?}",
+                start.elapsed()
+            );
+            let start = Instant::now();
             self.store_cash_notes_to_disk(&[cash_note])?;
+            trace!(
+                "update_local_wallet completed store change cash_note to disk in {:?}",
+                start.elapsed()
+            );
         }
 
         // Store created CashNotes in a batch, improving IO performance
-        self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
+        // Paying out cash_notes shall be stored within the unconfirmed_spends
+        // let start = Instant::now();
+        // self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
+        // trace!(
+        //     "update_local_wallet completed store {} cash_notes to disk in {:?}",
+        //     transfer.created_cash_notes.len(),
+        //     start.elapsed()
+        // );
 
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
         }
 
         // store wallet to disk
+        // The entire ContentPaymentsMap will be flushed to disk during this store.
+        let start = Instant::now();
         self.store(exclusive_access)?;
+        trace!(
+            "update_local_wallet completed store self wallet with {} payments to disk in {:?}",
+            self.watchonly_wallet.get_num_of_payments(),
+            start.elapsed()
+        );
         Ok(())
     }
 

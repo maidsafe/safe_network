@@ -186,6 +186,11 @@ impl WatchOnlyWallet {
         }
     }
 
+    /// Get the number of payments
+    pub fn get_num_of_payments(&self) -> usize {
+        self.keyless_wallet.payment_transactions.len()
+    }
+
     /// Return a payment transaction detail
     pub fn get_payment_transaction(&self, name: &XorName) -> Option<&PaymentDetails> {
         self.keyless_wallet.payment_transactions.get(name)
@@ -196,6 +201,16 @@ impl WatchOnlyWallet {
         self.keyless_wallet
             .payment_transactions
             .insert(name, payment);
+    }
+
+    /// Remove a payment transaction
+    pub fn remove_payment_transaction(&mut self, name: &XorName) -> Option<PaymentDetails> {
+        self.keyless_wallet.payment_transactions.remove(name)
+    }
+
+    /// Clear the entire ContentPaymentsMap
+    pub fn clear_content_payment_map(&mut self) {
+        self.keyless_wallet.payment_transactions.clear()
     }
 
     pub fn build_unsigned_transaction(
