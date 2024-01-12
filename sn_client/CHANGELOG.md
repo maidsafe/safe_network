@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.6...sn_client-v0.101.7) - 2024-01-12
+
+### Fixed
+- *(client)* avoid dead lock with less chunks
+
 ## [0.101.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.5...sn_client-v0.101.6) - 2024-01-11
 
 ### Other
