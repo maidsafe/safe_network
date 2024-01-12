@@ -8,11 +8,23 @@
 
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::{eyre, Result};
+use serde::{Deserialize, Serialize};
 use sn_client::Client;
 use sn_transfers::{LocalWallet, NanoTokens};
 use std::path::{self, Path, PathBuf};
 use tiny_http::{Response, Server};
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
+
+const SNAPSHOT_FILENAME: &str = "snapshot.json";
+const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
+
+// Parsed from json in SNAPSHOT_URL
+#[derive(Serialize, Deserialize)]
+struct MaidBalance {
+    address: String,
+    balance: String,
+    reserved: String,
+}
 
 /// Run the faucet server.
 ///
@@ -56,6 +68,7 @@ pub async fn restart_faucet_server(client: &Client) -> Result<()> {
 }
 
 async fn startup_server(client: &Client) -> Result<()> {
+    load_maid_snapshot()?;
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
 
@@ -101,9 +114,22 @@ async fn startup_server(client: &Client) -> Result<()> {
 }
 
 fn get_test_faucet_data_dir_path() -> Result<PathBuf> {
-    let home_dirs = Path::new("/home/safe/.local/share/safe/test_faucet");
-    std::fs::create_dir_all(home_dirs)?;
+    let home_dirs = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .join("safe")
+        .join("test_faucet");
+    std::fs::create_dir_all(home_dirs.clone())?;
     Ok(home_dirs.to_path_buf())
+}
+
+// This is different to test_faucet_data_dir because it should *not* be
+// removed when --clean flag is specified.
+fn get_snapshot_data_dir_path() -> Result<PathBuf> {
+    let dir = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .join("safe_snapshot");
+    std::fs::create_dir_all(dir.clone())?;
+    Ok(dir.to_path_buf())
 }
 
 fn deposit(root_dir: &Path) -> Result<()> {
@@ -123,4 +149,66 @@ fn deposit(root_dir: &Path) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn load_maid_snapshot() -> Result<Vec<MaidBalance>> {
+    // If the faucet restarts there will be an existing snapshot which should
+    // be used to avoid conflicts in the balances between two different
+    // snapshots.
+    // Check if a previous snapshot already exists
+    let root_dir = get_snapshot_data_dir_path()?;
+    let filename = root_dir.join(SNAPSHOT_FILENAME);
+    if std::fs::metadata(filename.clone()).is_ok() {
+        info!("Using existing maid snapshot from {:?}", filename);
+        maid_snapshot_from_file(filename)
+    } else {
+        info!("Fetching snapshot from {}", SNAPSHOT_URL);
+        maid_snapshot_from_internet(filename)
+    }
+}
+
+fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<Vec<MaidBalance>> {
+    let content = std::fs::read_to_string(snapshot_path)?;
+    parse_snapshot(content)
+}
+
+fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<Vec<MaidBalance>> {
+    // make the request
+    let response = minreq::get(SNAPSHOT_URL).send()?;
+    // check the request is ok
+    if response.status_code != 200 {
+        let msg = format!("Snapshot failed with http status {}", response.status_code);
+        return Err(eyre!(msg));
+    }
+    // write the response to file
+    let body = response.as_str()?;
+    info!("Writing snapshot to {:?}", snapshot_path);
+    std::fs::write(snapshot_path.clone(), body)?;
+    info!("Saved snapshot to {:?}", snapshot_path);
+    // parse the json response
+    parse_snapshot(body.to_string())
+}
+
+fn parse_snapshot(json_str: String) -> Result<Vec<MaidBalance>> {
+    let balances: Vec<MaidBalance> = serde_json::from_str(&json_str)?;
+    // verify the snapshot is ok
+    // balances must match the ico amount, which is slightly higher than
+    // 2^32/10 because of the ico process.
+    // see https://omniexplorer.info/asset/3
+    let supply: u32 = 452_552_412;
+    let mut total: u32 = 0;
+    for b in &balances {
+        let b_int = b.balance.parse::<u32>()?;
+        // The reserved amount is the amount currently for sale on omni dex.
+        // If it's not included the total is lower than expected.
+        let r_int = b.reserved.parse::<u32>()?;
+        total += b_int + r_int;
+    }
+    if total != supply {
+        let msg = format!("Incorrect snapshot total, got {total} want {supply}");
+        return Err(eyre!(msg));
+    }
+    // log the total number of balances that were parsed
+    info!("Parsed {} maid balances from the snapshot", balances.len());
+    Ok(balances)
 }
