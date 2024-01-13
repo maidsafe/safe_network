@@ -134,6 +134,8 @@ impl FilesApi {
             .store_chunk(chunk, payee, payment, verify_store)
             .await?;
 
+        wallet_client.remove_payment_for_addr(&chunk_addr)?;
+
         trace!("Client upload completed for chunk: {chunk_addr:?}");
         Ok(())
     }

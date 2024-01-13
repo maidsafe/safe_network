@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    data_payments::PaymentDetails,
     error::{Error, Result},
     keys::{get_main_pubkey, store_new_pubkey},
     local_store::WalletExclusiveAccess,
@@ -19,16 +18,19 @@ use super::{
 };
 
 use crate::{
-    transfers::create_unsigned_transfer, CashNote, DerivationIndex, Hash, MainPubkey, NanoTokens,
-    UniquePubkey, UnsignedTransfer,
+    transfers::create_unsigned_transfer, wallet::data_payments::PaymentDetails, CashNote,
+    DerivationIndex, Hash, MainPubkey, NanoTokens, UniquePubkey, UnsignedTransfer,
 };
 use fs2::FileExt;
+use serde::Serialize;
 use std::{
     collections::BTreeMap,
-    fs::OpenOptions,
+    fs::{self, OpenOptions},
     path::{Path, PathBuf},
 };
 use xor_name::XorName;
+
+const PAYMENTS_DIR_NAME: &str = "payments";
 
 #[derive(serde::Serialize, serde::Deserialize)]
 /// This assumes the CashNotes are stored on disk
@@ -54,6 +56,46 @@ impl WatchOnlyWallet {
             wallet_dir: wallet_dir.to_path_buf(),
             keyless_wallet,
         }
+    }
+
+    pub fn get_payment_transaction(&self, chunk_name: &XorName) -> Result<PaymentDetails> {
+        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
+        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let payment_file_path = created_payments_dir.join(unique_file_name);
+
+        debug!("Getting payment from {payment_file_path:?}");
+        let file = fs::File::open(&payment_file_path)?;
+        let payment = rmp_serde::from_read(&file)?;
+
+        Ok(payment)
+    }
+
+    pub fn insert_payment_transaction(
+        &self,
+        chunk_name: XorName,
+        payment: PaymentDetails,
+    ) -> Result<()> {
+        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
+        let unique_file_name = format!("{}.payment", hex::encode(chunk_name));
+
+        fs::create_dir_all(&created_payments_dir)?;
+
+        let payment_file_path = created_payments_dir.join(unique_file_name);
+        debug!("Writing payment to {payment_file_path:?}");
+
+        let mut file = fs::File::create(payment_file_path)?;
+        let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
+        payment.serialize(&mut serialiser)?;
+        Ok(())
+    }
+
+    pub fn remove_payment_transaction(&self, chunk_name: &XorName) {
+        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
+        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let payment_file_path = created_payments_dir.join(unique_file_name);
+
+        debug!("Removing payment from {payment_file_path:?}");
+        let _ = fs::remove_file(payment_file_path);
     }
 
     /// Loads a serialized wallet from a given path and main pub key.
@@ -184,18 +226,6 @@ impl WatchOnlyWallet {
         for k in unique_pubkeys {
             self.keyless_wallet.available_cash_notes.remove(k);
         }
-    }
-
-    /// Return a payment transaction detail
-    pub fn get_payment_transaction(&self, name: &XorName) -> Option<&PaymentDetails> {
-        self.keyless_wallet.payment_transactions.get(name)
-    }
-
-    /// Insert a payment transaction
-    pub fn insert_payment_transaction(&mut self, name: XorName, payment: PaymentDetails) {
-        self.keyless_wallet
-            .payment_transactions
-            .insert(name, payment);
     }
 
     pub fn build_unsigned_transaction(

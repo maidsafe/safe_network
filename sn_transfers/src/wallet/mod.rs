@@ -59,7 +59,6 @@ mod local_store;
 mod wallet_file;
 mod watch_only;
 
-use data_payments::ContentPaymentsMap;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -77,7 +76,6 @@ use crate::{NanoTokens, UniquePubkey};
 #[derive(Default, Serialize, Deserialize)]
 pub(super) struct KeyLessWallet {
     available_cash_notes: BTreeMap<UniquePubkey, NanoTokens>,
-    payment_transactions: ContentPaymentsMap,
 }
 
 impl KeyLessWallet {

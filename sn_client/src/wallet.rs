@@ -25,6 +25,7 @@ use std::{
 };
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
+
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
 pub struct WalletClient {
@@ -69,6 +70,17 @@ impl WalletClient {
                 debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
                 info!("Payment retrieved for {xorname:?} from wallet");
                 Ok(payment)
+            }
+            None => Err(WalletError::InvalidAddressType),
+        }
+    }
+
+    /// Remove the payment for a given network address from disk
+    pub fn remove_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<()> {
+        match &address.as_xorname() {
+            Some(xorname) => {
+                self.wallet.remove_payment_for_xorname(xorname);
+                Ok(())
             }
             None => Err(WalletError::InvalidAddressType),
         }
