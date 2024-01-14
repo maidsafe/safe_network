@@ -100,6 +100,18 @@ pub(super) fn store_unconfirmed_spend_requests(
     Ok(())
 }
 
+/// Remove the `unconfirmed_spend_requests` from the specified path.
+pub(super) fn remove_unconfirmed_spend_requests(
+    wallet_dir: &Path,
+    _unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
+) -> Result<()> {
+    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
+
+    debug!("Removing unconfirmed_spend_requests from {unconfirmed_spend_requests_path:?}");
+    fs::remove_file(unconfirmed_spend_requests_path)?;
+    Ok(())
+}
+
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
 pub(super) fn get_unconfirmed_spend_requests(
     wallet_dir: &Path,
