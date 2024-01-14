@@ -10,7 +10,8 @@ use super::{
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, load_cash_notes_from_disk, load_created_cash_note,
-        remove_cash_notes, store_created_cash_notes, store_unconfirmed_spend_requests,
+        remove_cash_notes, remove_unconfirmed_spend_requests, store_created_cash_notes,
+        store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
     Error, Result,
@@ -97,6 +98,14 @@ impl LocalWallet {
     /// Store unconfirmed_spend_requests to disk.
     pub fn store_unconfirmed_spend_requests(&mut self) -> Result<()> {
         store_unconfirmed_spend_requests(
+            self.watchonly_wallet.wallet_dir(),
+            self.unconfirmed_spend_requests(),
+        )
+    }
+
+    /// Remove unconfirmed_spend_requests from disk.
+    fn remove_unconfirmed_spend_requests(&mut self) -> Result<()> {
+        remove_unconfirmed_spend_requests(
             self.watchonly_wallet.wallet_dir(),
             self.unconfirmed_spend_requests(),
         )
@@ -206,6 +215,10 @@ impl LocalWallet {
         ) {
             warn!("Could not clean confirmed spent cash_notes due to {error:?}");
         }
+
+        // Also need to remove unconfirmed_spend_requests from disk if was pre-loaded.
+        let _ = self.remove_unconfirmed_spend_requests();
+
         self.unconfirmed_spend_requests = Default::default();
     }
 
