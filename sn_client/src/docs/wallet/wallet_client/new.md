@@ -1,7 +1,7 @@
 # Arguments
 
-* `client.clone()` - A clone of the struct: `sn_client::Client`
-* `wallet` - The struct `sn_transfers::LocalWallet`
+* `client.clone()` - A cloned instance of the struct: `sn_client::Client`
+* `wallet` - An instance of the struct `sn_transfers::LocalWallet`
 
 # Example
 
