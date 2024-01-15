@@ -263,9 +263,20 @@ impl LocalWallet {
         Ok((available_cash_notes, exclusive_access))
     }
 
-    /// Return the payment cash_note ids for the given content address name if cached.
-    pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<&PaymentDetails> {
-        self.watchonly_wallet.get_payment_transaction(name)
+    /// Return the payment_details for the given chunk_name if cached.
+    pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<PaymentDetails> {
+        match self.watchonly_wallet.get_payment_transaction(name) {
+            Ok(payment_detail) => Some(payment_detail),
+            Err(err) => {
+                error!("Failed to fetch payment_detail of {name:?} with error {err:?}");
+                None
+            }
+        }
+    }
+
+    /// Remove the payment_details of the given chunk_name from disk.
+    pub fn remove_payment_for_xorname(&self, name: &XorName) {
+        self.watchonly_wallet.remove_payment_transaction(name)
     }
 
     pub fn build_unsigned_transaction(
@@ -441,7 +452,8 @@ impl LocalWallet {
                 quote,
             };
 
-            self.watchonly_wallet
+            let _ = self
+                .watchonly_wallet
                 .insert_payment_transaction(*xorname, payment);
         }
 
