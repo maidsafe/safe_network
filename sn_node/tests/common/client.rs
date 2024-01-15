@@ -42,8 +42,7 @@ pub fn get_wallet(root_dir: &Path) -> LocalWallet {
 /// else return the local node count
 pub fn get_node_count() -> usize {
     match DeploymentInventory::load() {
-        // -1 to exclude the genesis VM's node
-        Ok(inventory) => inventory.rpc_endpoints.len() - 1,
+        Ok(inventory) => inventory.rpc_endpoints.len(),
         Err(_) => LOCAL_NODE_COUNT,
     }
 }
@@ -51,10 +50,16 @@ pub fn get_node_count() -> usize {
 /// Get the list of all RPC addresses
 /// If SN_INVENTORY flag is passed, the RPC addresses of all the droplet nodes are returned
 /// else generate local addresses for NODE_COUNT nodes
-pub fn get_all_rpc_addresses() -> Result<Vec<SocketAddr>> {
+///
+/// The genesis address is skipped for droplets as we don't want to restart the Genesis node there.
+/// The restarted node relies on the genesis multiaddr to bootstrap after restart.
+pub fn get_all_rpc_addresses(skip_genesis_for_droplet: bool) -> Result<Vec<SocketAddr>> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
-            // todo: don't filter out genesis here?
+            if !skip_genesis_for_droplet {
+                return Ok(inventory.rpc_endpoints.clone());
+            }
+            // else filter out genesis
             let genesis_ip = inventory
                 .vm_list
                 .iter()

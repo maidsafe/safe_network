@@ -33,7 +33,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
     let node_count = get_node_count();
     let nodes_subscribed = node_count / 2; // 12 out of 25 nodes will be subscribers
 
-    let node_rpc_addresses = get_all_rpc_addresses()?
+    let node_rpc_addresses = get_all_rpc_addresses(false)?
         .into_iter()
         .enumerate()
         .collect::<Vec<_>>();
