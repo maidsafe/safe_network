@@ -519,6 +519,11 @@ impl LocalWallet {
             );
             let start = Instant::now();
 
+            // Only the change_cash_note, i.e. the pay-in one, needs to be stored to disk.
+            //
+            // Paying out cash_note doesn't need to be stored into disk.
+            // As it is the transfer, that generated from it, to be sent out to network,
+            // and be stored within the unconfirmed_spends, and to be re-sent in case of failure.
             self.store_cash_notes_to_disk(&[cash_note])?;
             trace!(
                 "update_local_wallet completed store change cash_note to disk in {:?}",
@@ -529,9 +534,6 @@ impl LocalWallet {
         for request in transfer.all_spend_requests {
             self.unconfirmed_spend_requests.insert(request);
         }
-
-        // Store created CashNotes in a batch, improving IO performance
-        self.store_cash_notes_to_disk(&transfer.created_cash_notes)?;
 
         // store wallet to disk
         let start = Instant::now();
