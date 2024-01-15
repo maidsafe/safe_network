@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::BTreeMap, time::SystemTime};
-
 use serde::{Deserialize, Serialize};
+use std::time::SystemTime;
 use xor_name::XorName;
 
 use crate::{MainPubkey, NanoTokens, Transfer};
@@ -44,9 +43,6 @@ impl PaymentDetails {
         }
     }
 }
-
-/// A map of content to their payments
-pub type ContentPaymentsMap = BTreeMap<XorName, PaymentDetails>;
 
 /// A generic type for signatures
 pub type QuoteSignature = Vec<u8>;
