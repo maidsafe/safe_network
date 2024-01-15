@@ -9,14 +9,14 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{client::get_all_rpc_addresses, get_all_peer_ids};
+use crate::common::{client::get_all_rpc_addresses, get_all_peer_ids, get_safenode_rpc_client};
 use color_eyre::Result;
 use libp2p::{
     kad::{KBucketKey, K_VALUE},
     PeerId,
 };
 use sn_logging::LogBuilder;
-use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, KBucketsRequest};
+use sn_protocol::safenode_proto::KBucketsRequest;
 use std::{
     collections::{BTreeMap, HashSet},
     time::Duration,
@@ -48,8 +48,7 @@ async fn verify_routing_table() -> Result<()> {
     let mut all_failed_list = BTreeMap::new();
 
     for (node_index, rpc_address) in node_rpc_address.iter().enumerate() {
-        let endpoint = format!("https://{rpc_address}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
 
         let response = rpc_client
             .k_buckets(Request::new(KBucketsRequest {}))

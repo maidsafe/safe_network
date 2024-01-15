@@ -10,7 +10,7 @@
 pub mod client;
 
 use bytes::Bytes;
-use eyre::{Context, Result};
+use eyre::{bail, Result};
 use libp2p::PeerId;
 use rand::{
     distributions::{Distribution, Standard},
@@ -27,8 +27,10 @@ use std::{
     io::Write,
     net::SocketAddr,
     path::{Path, PathBuf},
+    time::Duration,
 };
 use tonic::Request;
+use tracing::error;
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
@@ -62,15 +64,33 @@ pub fn random_content(
     ))
 }
 
+// Connect to a RPC socket addr with retry
+pub async fn get_safenode_rpc_client(
+    socket_addr: SocketAddr,
+) -> Result<SafeNodeClient<tonic::transport::Channel>> {
+    // get the new PeerId for the current NodeIndex
+    let endpoint = format!("https://{socket_addr}");
+    let mut attempts = 0;
+    loop {
+        if let Ok(rpc_client) = SafeNodeClient::connect(endpoint.clone()).await {
+            break Ok(rpc_client);
+        }
+        println!("Could not connect to rpc {endpoint:?} after restarting. retrying");
+        error!("Could not connect to rpc {endpoint:?} after restarting. retrying");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        attempts += 1;
+        if attempts >= 10 {
+            bail!("FAILED TO CONNECT even after 10 retries");
+        }
+    }
+}
+
 // Returns all the PeerId for all the running nodes
 pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Vec<PeerId>> {
     let mut all_peers = Vec::new();
 
     for addr in node_rpc_addresses {
-        let endpoint = format!("https://{addr}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await.context(format!(
-            "Failed to connect to {addr:?} during get_all_peer_ids"
-        ))?;
+        let mut rpc_client = get_safenode_rpc_client(*addr).await?;
 
         // get the peer_id
         let response = rpc_client
@@ -87,12 +107,9 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
 }
 
 pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint)
-        .await
-        .context(format!("Failed to connect to {addr:?} during node_restart"))?;
+    let mut rpc_client = get_safenode_rpc_client(*addr).await?;
 
-    let _response = client
+    let _response = rpc_client
         .restart(Request::new(RestartRequest { delay_millis: 0 }))
         .await?;
 

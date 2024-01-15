@@ -11,10 +11,10 @@ mod common;
 
 use crate::common::{
     client::{get_all_rpc_addresses, get_gossip_client_and_wallet, PAYING_WALLET_INITIAL_BALANCE},
-    get_all_peer_ids, node_restart,
+    get_all_peer_ids, get_safenode_rpc_client, node_restart,
 };
 use assert_fs::TempDir;
-use eyre::{eyre, Context, Result};
+use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
@@ -24,7 +24,7 @@ use sn_client::{Client, FilesApi, FilesUpload};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
+    safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -118,19 +118,8 @@ async fn verify_data_location() -> Result<()> {
             tokio::time::sleep(VERIFICATION_DELAY).await;
 
             // get the new PeerId for the current NodeIndex
-            let endpoint = format!("https://{rpc_address}");
-            let mut attempts = 0;
-            let mut rpc_client = 'inside: loop {
-                if let Ok(rpc_client) = SafeNodeClient::connect(endpoint.clone()).await {
-                    break 'inside rpc_client;
-                }
-                println!("Could not connect to rpc {endpoint:?} after restarting. retrying");
-                tokio::time::sleep(Duration::from_millis(1000)).await;
-                attempts += 1;
-                if attempts >= 10 {
-                    panic!("FAILED TO CONNECT even after retries");
-                }
-            };
+            let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
+
             let response = rpc_client
                 .node_info(Request::new(NodeInfoRequest {}))
                 .await?;
@@ -169,10 +158,7 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
     let mut record_holders = RecordHolders::default();
 
     for (node_index, rpc_address) in node_rpc_addresses.iter().enumerate() {
-        let endpoint = format!("https://{rpc_address}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await.context(format!(
-            "Failed to connect to {rpc_address:?} during get_records_and_holders"
-        ))?;
+        let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
 
         let records_response = rpc_client
             .record_addresses(Request::new(RecordAddressesRequest {}))

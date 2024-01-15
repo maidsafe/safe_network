@@ -14,15 +14,15 @@ use rand::seq::SliceRandom;
 use sn_logging::LogBuilder;
 use sn_node::NodeEvent;
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-    GossipsubUnsubscribeRequest, NodeEventsRequest,
+    GossipsubPublishRequest, GossipsubSubscribeRequest, GossipsubUnsubscribeRequest,
+    NodeEventsRequest,
 };
 use std::{net::SocketAddr, time::Duration};
 use tokio::time::timeout;
 use tokio_stream::StreamExt;
 use tonic::Request;
 
-use crate::common::client::get_all_rpc_addresses;
+use crate::common::{client::get_all_rpc_addresses, get_safenode_rpc_client};
 
 const TEST_CYCLES: u8 = 20;
 
@@ -57,8 +57,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
             node_subscribe_to_topic(rpc_addr, topic.clone()).await?;
 
             let handle = tokio::spawn(async move {
-                let endpoint = format!("https://{rpc_addr}");
-                let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+                let mut rpc_client = get_safenode_rpc_client(rpc_addr).await?;
                 let response = rpc_client
                     .node_events(Request::new(NodeEventsRequest {}))
                     .await?;
@@ -115,8 +114,7 @@ async fn msgs_over_gossipsub() -> Result<()> {
 }
 
 async fn node_subscribe_to_topic(addr: SocketAddr, topic: String) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+    let mut rpc_client = get_safenode_rpc_client(addr).await?;
 
     // subscribe to given topic
     let _response = rpc_client
@@ -127,8 +125,7 @@ async fn node_subscribe_to_topic(addr: SocketAddr, topic: String) -> Result<()> 
 }
 
 async fn node_unsubscribe_from_topic(addr: SocketAddr, topic: String) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+    let mut rpc_client = get_safenode_rpc_client(addr).await?;
 
     // unsubscribe from given topic
     let _response = rpc_client
@@ -145,8 +142,7 @@ async fn other_nodes_to_publish_on_topic(
     for (node_index, addr) in nodes {
         let msg = format!("TestMsgOnTopic-{topic}-from-{node_index}");
 
-        let endpoint = format!("https://{addr}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = get_safenode_rpc_client(addr).await?;
         println!("Node {node_index} to publish on {topic} message: {msg}");
 
         let _response = rpc_client
