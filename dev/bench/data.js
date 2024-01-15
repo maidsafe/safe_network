@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705330136654,
+  "lastUpdate": 1705330138265,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -35043,6 +35043,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "33768ed2f3a626ff6b38fc91bf83a9963254a9d2",
+          "message": "fix(client): do not store paying-out cash_notes into disk",
+          "timestamp": "2024-01-15T14:12:09Z",
+          "tree_id": "522ee3c642bc89749ba7df4777ed468e5eb5601f",
+          "url": "https://github.com/maidsafe/safe_network/commit/33768ed2f3a626ff6b38fc91bf83a9963254a9d2"
+        },
+        "date": 1705330137920,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3084,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14391,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
