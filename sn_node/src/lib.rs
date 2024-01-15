@@ -52,6 +52,7 @@ use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::NetworkAddress;
+use sn_transfers::{LocalWallet, NanoTokens};
 use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,
@@ -83,6 +84,12 @@ impl RunningNode {
     #[allow(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
         self.network.root_dir_path.clone()
+    }
+
+    /// Returns the wallet balance of the node
+    pub fn get_node_wallet_balance(&self) -> Result<NanoTokens> {
+        let wallet = LocalWallet::load_from(&self.network.root_dir_path)?;
+        Ok(wallet.balance())
     }
 
     /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.
