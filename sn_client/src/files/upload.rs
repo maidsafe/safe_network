@@ -382,6 +382,15 @@ impl FilesUpload {
                             return Err(ClientError::SequentialUploadPaymentError);
                         }
                     }
+
+                    // In case of error, remove the entries from correspondent on_going_tasks list.
+                    // So that the overall upload flow can progress on to other work.
+                    for chunk_info in error_list.iter() {
+                        let _ = on_going_get_cost.remove(&chunk_info.name);
+                        let _ = on_going_pay_for_chunk.remove(&chunk_info.name);
+                        let _ = on_going_uploadings.remove(&chunk_info.name);
+                    }
+
                     self.failed_chunks.extend(error_list);
                 }
             }
