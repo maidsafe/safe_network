@@ -21,7 +21,7 @@ use sn_transfers::{
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
@@ -309,10 +309,18 @@ impl WalletClient {
             ));
         }
 
+        let start = Instant::now();
         let total_cost = self.wallet.local_send_storage_payment(cost_map)?;
+
+        trace!(
+            "local_send_storage_payment of {} chunks completed in {:?}",
+            cost_map.len(),
+            start.elapsed()
+        );
 
         // send to network
         trace!("Sending storage payment transfer to the network");
+        let start = Instant::now();
         let spend_attempt_result = self
             .client
             .send_spends(
@@ -320,8 +328,16 @@ impl WalletClient {
                 verify_store,
             )
             .await;
+
+        trace!(
+            "send_spends of {} chunks completed in {:?}",
+            cost_map.len(),
+            start.elapsed()
+        );
+
         // Here is bit risky that for the whole bunch of spends to the chunks' store_costs and royalty_fee
         // they will get re-paid again for ALL, if any one of the payment failed to be put.
+        let start = Instant::now();
         if let Err(error) = spend_attempt_result {
             warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
 
@@ -343,6 +359,11 @@ impl WalletClient {
             info!("Spend has completed: {:?}", spend_attempt_result);
             self.wallet.clear_confirmed_spend_requests();
         }
+        trace!(
+            "clear up spends of {} chunks completed in {:?}",
+            cost_map.len(),
+            start.elapsed()
+        );
 
         Ok(total_cost)
     }
