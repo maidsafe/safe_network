@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705334783825,
+  "lastUpdate": 1705345498688,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "19559a4ece9c0edf33c9a22a9c774f6a7b11fee6",
-          "message": "feat(client): download file concurrently",
-          "timestamp": "2023-09-18T07:42:44Z",
-          "tree_id": "414a54fc3246e62ae2f52156c3fb2d79cec29fbd",
-          "url": "https://github.com/maidsafe/safe_network/commit/19559a4ece9c0edf33c9a22a9c774f6a7b11fee6"
-        },
-        "date": 1695027217869,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09280705064572164,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5058015031641102,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.701723187139414,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 66.7898005988022,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "f0f48bff0f7f392ac60a92f2dbac45463425b338",
+          "message": "fix(client): avoid deadlock during upload in case of error",
+          "timestamp": "2024-01-15T18:28:09Z",
+          "tree_id": "eecb97d46a6447a27612fabe9aa08162b2433e81",
+          "url": "https://github.com/maidsafe/safe_network/commit/f0f48bff0f7f392ac60a92f2dbac45463425b338"
+        },
+        "date": 1705345495860,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.668234274689626,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1312653110765563,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 65.38434834244597,
             "unit": "MiB/s"
           }
         ]
