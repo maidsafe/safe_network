@@ -22,11 +22,10 @@ use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
-use libp2p::Multiaddr;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_rpc_client::RpcClient;
-use sn_peers_acquisition::{get_peers_from_args, parse_peer_addr, PeersArgs};
+use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::path::PathBuf;
@@ -151,7 +150,7 @@ pub enum SubCmd {
         #[clap(long)]
         node_version: Option<String>,
         #[command(flatten)]
-        peers: Option<PeersArgs>,
+        peers: PeersArgs,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -359,28 +358,15 @@ async fn main() -> Result<()> {
             )
             .await?;
 
-            // Unfortunately because the peers argument is an option, clap does not handle parsing
-            // `SAFE_PEERS`.
-            //
-            // It needs to be an option, otherwise we wouldn't be able to use the `join` command
-            // without peers to automatically add new nodes to an existing local network.
-            let peers = match std::env::var("SAFE_PEERS") {
-                Ok(var) => {
-                    let peers = var
-                        .split(',')
-                        .map(|addr| parse_peer_addr(addr.trim()).unwrap())
-                        .collect::<Vec<Multiaddr>>();
-                    Some(peers)
-                }
-                Err(_) => {
-                    if let Some(peers) = peers {
-                        Some(get_peers_from_args(peers).await?)
-                    } else {
-                        None
-                    }
-                }
+            // If no peers are obtained we will attempt to join the existing local network, if one
+            // is running.
+            let peers = match get_peers_from_args(peers).await {
+                Ok(peers) => Some(peers),
+                Err(e) => match e {
+                    sn_peers_acquisition::error::Error::PeersNotObtained => None,
+                    _ => return Err(e.into()),
+                },
             };
-
             let options = LocalNetworkOptions {
                 faucet_bin_path: faucet_path,
                 join: true,
