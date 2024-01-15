@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705330138265,
+  "lastUpdate": 1705334698836,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "fb4ff0378587747165dab9a69f8fa1c961f786eb",
-          "message": "chore(client): simplify API",
-          "timestamp": "2023-09-18T07:08:06Z",
-          "tree_id": "4abc93b4f1de903ede5512f54b4f728c15363230",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb4ff0378587747165dab9a69f8fa1c961f786eb"
-        },
-        "date": 1695026356676,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10303233961233126,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5575089740219694,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 1.691304388153189,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 65.02099878452138,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0ff08d00c40358174495fa24f29a69b43b0c908f",
+          "message": "ci: use node manager for running local testnets\n\nThe local testnet action now uses the node manager to launch local networks. The churn tests were\nupdated to parse the node manager's inventory, which they use to restart nodes.\n\nThe node registry from the node manager has been transferred to the `sn_protocol` crate to reduce\nduplication between `safe_network` and `sn-node-manager`, because they both need access to these\ndata structures. The local network deployment inventory is represented using the node registry.",
+          "timestamp": "2024-01-15T15:53:23Z",
+          "tree_id": "5d366894693dd34867a60f47e3016d2bae2e0717",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ff08d00c40358174495fa24f29a69b43b0c908f"
+        },
+        "date": 1705334696585,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6547916620963846,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.119447165226574,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 66.7898005988022,
             "unit": "MiB/s"
           }
         ]
