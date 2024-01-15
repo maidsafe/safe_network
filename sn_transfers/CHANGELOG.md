@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.37](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.36...sn_transfers-v0.14.37) - 2024-01-15
+
+### Fixed
+- *(client)* do not store paying-out cash_notes into disk
+- *(client)* cache payments via disk instead of memory map
+
+### Other
+- *(client)* collect wallet handling time statistics
+
 ## [0.14.36](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.35...sn_transfers-v0.14.36) - 2024-01-10
 
 ### Added
