@@ -19,7 +19,7 @@ use sn_client::{Client, ClientEvent, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
-    GossipsubSubscribeRequest, NodeEventsRequest, TransferNotifsFilterRequest,
+    GossipsubSubscribeRequest, NodeEventsRequest, NodeInfoRequest, TransferNotifsFilterRequest,
 };
 use sn_registers::Permissions;
 use sn_transfers::{
@@ -49,7 +49,7 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
     let chunks_len = chunks.len();
-    let prev_rewards_balance = current_rewards_balance()?;
+    let prev_rewards_balance = current_rewards_balance().await?;
     println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
     let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
@@ -74,14 +74,14 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
         get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-    let rb = current_rewards_balance()?;
+    let rb = current_rewards_balance().await?;
 
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
     println!("Paying for random Register address {register_addr:?} with current balance {rb:?}");
 
-    let prev_rewards_balance = current_rewards_balance()?;
+    let prev_rewards_balance = current_rewards_balance().await?;
 
     let (_register, storage_cost, _royalties_fees) = client
         .create_and_pay_for_register(
@@ -261,7 +261,7 @@ async fn verify_rewards(
     while iteration < put_record_count {
         iteration += 1;
         println!("Current iteration {iteration}");
-        let new_rewards_balance = current_rewards_balance()?;
+        let new_rewards_balance = current_rewards_balance().await?;
         if expected_rewards_balance == new_rewards_balance {
             return Ok(());
         }
@@ -272,22 +272,19 @@ async fn verify_rewards(
     Err(eyre!("Network doesn't get expected reward {expected_rewards_balance:?} after {iteration} iterations, history is {cur_rewards_history:?}"))
 }
 
-// Helper which reads all nodes local wallets returning the total balance
-fn current_rewards_balance() -> Result<NanoTokens> {
+// Helper to collect all the node wallet's balance.
+async fn current_rewards_balance() -> Result<NanoTokens> {
     let mut total_rewards = NanoTokens::zero();
-    let node_dir_path = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
-        .join("safe")
-        .join("node");
 
-    for entry in std::fs::read_dir(node_dir_path)? {
-        let path = entry?.path();
-        let wallet = LocalWallet::try_load_from(&path)?;
-        let balance = wallet.balance();
-
+    for rpc_addr in get_all_rpc_addresses(false)? {
+        let mut rpc_client = get_safenode_rpc_client(rpc_addr).await?;
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let balance = NanoTokens::from(response.get_ref().wallet_balance);
         total_rewards = total_rewards
             .checked_add(balance)
-            .ok_or_else(|| eyre!("Faied to sum up rewards balance"))?;
+            .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
     }
 
     println!("Current total balance is {total_rewards:?}");
