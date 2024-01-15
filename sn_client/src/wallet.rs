@@ -25,6 +25,7 @@ use std::{
 };
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
+
 /// A wallet client can be used to send and
 /// receive tokens to/from other wallets.
 pub struct WalletClient {
@@ -33,12 +34,13 @@ pub struct WalletClient {
 }
 
 impl WalletClient {
-    /// Create a new wallet client.
+    /// Create a new wallet client
+    #[doc = include_str!("docs/wallet/wallet_client/new.md")]
     pub fn new(client: Client, wallet: LocalWallet) -> Self {
         Self { client, wallet }
     }
 
-    /// Stores the wallet to disk.
+    /// store local wallet
     pub fn store_local_wallet(&mut self) -> WalletResult<()> {
         self.wallet.deposit_and_store_to_disk(&vec![])
     }
@@ -145,7 +147,7 @@ impl WalletClient {
     /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
     pub async fn pay_for_storage(
         &mut self,
-        content_addrs: impl Iterator<Item = NetworkAddress>,
+        content_addrs: impl Iterator<Item=NetworkAddress>,
     ) -> WalletResult<(
         (NanoTokens, NanoTokens),
         (Vec<(XorName, PeerId)>, Vec<XorName>),
@@ -180,7 +182,7 @@ impl WalletClient {
     /// Hence the list of existing chunks will be returned.
     async fn pay_for_storage_once(
         &mut self,
-        content_addrs: impl Iterator<Item = NetworkAddress>,
+        content_addrs: impl Iterator<Item=NetworkAddress>,
         verify_store: bool,
     ) -> WalletResult<(
         (NanoTokens, NanoTokens),
@@ -339,7 +341,7 @@ impl Client {
     /// This can optionally verify the spends have been correctly stored before returning
     pub async fn send_spends(
         &self,
-        spend_requests: impl Iterator<Item = &SignedSpend>,
+        spend_requests: impl Iterator<Item=&SignedSpend>,
         verify_store: bool,
     ) -> WalletResult<()> {
         let mut tasks = Vec::new();
@@ -366,8 +368,8 @@ impl Client {
             // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
             // This only happens if we're verifying the store
             if let Err(Error::Network(sn_networking::Error::GetRecordError(
-                GetRecordError::RecordDoesNotMatch(record_key),
-            ))) = spend_attempt_result
+                                          GetRecordError::RecordDoesNotMatch(record_key),
+                                      ))) = spend_attempt_result
             {
                 warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");
                 spent_cash_notes.insert(*cash_note_key);
