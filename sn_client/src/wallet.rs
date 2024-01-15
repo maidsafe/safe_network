@@ -35,6 +35,7 @@ pub struct WalletClient {
 
 impl WalletClient {
     /// Create a new wallet client.
+    #[doc = include_str!("docs/wallet/new.md")]
     pub fn new(client: Client, wallet: LocalWallet) -> Self {
         Self { client, wallet }
     }
