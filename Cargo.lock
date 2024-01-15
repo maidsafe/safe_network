@@ -4877,7 +4877,6 @@ dependencies = [
  "proptest",
  "rand",
  "rmp-serde",
- "self_encryption",
  "serde",
  "thiserror",
  "tiny-keccak",

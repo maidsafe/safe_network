@@ -15,7 +15,6 @@ bls = { package = "blsttc", version = "8.0.1" }
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 hex = "~0.4.3"
 rmp-serde = "1.1.1"
-self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
