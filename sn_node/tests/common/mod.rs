@@ -80,7 +80,7 @@ pub async fn get_safenode_rpc_client(
         tokio::time::sleep(Duration::from_secs(1)).await;
         attempts += 1;
         if attempts >= 10 {
-            bail!("FAILED TO CONNECT even after 10 retries");
+            bail!("FAILED TO CONNECT to {endpoint:?} even after 10 retries");
         }
     }
 }
