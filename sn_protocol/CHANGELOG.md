@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.8](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.7...sn_protocol-v0.10.8) - 2024-01-15
+
+### Other
+- use node manager for running local testnets
+
 ## [0.10.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.6...sn_protocol-v0.10.7) - 2024-01-15
 
 ### Other
