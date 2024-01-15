@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705334782318,
+  "lastUpdate": 1705334783825,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "107746bbfc1a88359836f0e00161976ffea547ac",
-          "message": "feat(logging): Add in SN_LOG=v for reduced networking logging",
-          "timestamp": "2023-09-15T07:53:35Z",
-          "tree_id": "506c9820ae6ab4d05a5fd42351da4a52093dbaee",
-          "url": "https://github.com/maidsafe/safe_network/commit/107746bbfc1a88359836f0e00161976ffea547ac"
-        },
-        "date": 1694769663908,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 451.67822,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 261,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "ee869e0632d7b36c127f06ea8d0a21065006e2b1",
           "message": "ci: do reward tests _first_",
           "timestamp": "2023-09-15T11:26:30+02:00",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 38,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0ff08d00c40358174495fa24f29a69b43b0c908f",
+          "message": "ci: use node manager for running local testnets\n\nThe local testnet action now uses the node manager to launch local networks. The churn tests were\nupdated to parse the node manager's inventory, which they use to restart nodes.\n\nThe node registry from the node manager has been transferred to the `sn_protocol` crate to reduce\nduplication between `safe_network` and `sn-node-manager`, because they both need access to these\ndata structures. The local network deployment inventory is represented using the node registry.",
+          "timestamp": "2024-01-15T15:53:23Z",
+          "tree_id": "5d366894693dd34867a60f47e3016d2bae2e0717",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ff08d00c40358174495fa24f29a69b43b0c908f"
+        },
+        "date": 1705334783431,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 209,
             "unit": "MB"
           },
           {
