@@ -55,10 +55,6 @@ jobs:
             rg '/ip4.*$' -m1 -o | rg '"' -r '')
           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
-      - name: Set CHURN_TEST_START_PORT
-        run: |
-          echo "CHURN_TEST_START_PORT=12001" >> $GITHUB_ENV
-
       - name: Check SAFE_PEERS was set
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"

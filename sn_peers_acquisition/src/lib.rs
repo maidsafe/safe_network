@@ -45,10 +45,7 @@ pub struct PeersArgs {
     ///
     /// Alternatively, the `SAFE_PEERS` environment variable can provide a comma-separated peer
     /// list.
-    ///
-    /// If both the `--peer` argument and `SAFE_PEERS` environment variables are used, the
-    /// specified peers will be combined.
-    #[clap(long = "peer", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr, conflicts_with = "first")]
+    #[clap(long = "peer", env = "SAFE_PEERS", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr, conflicts_with = "first")]
     pub peers: Vec<Multiaddr>,
 
     /// Specify the URL to fetch the network contacts from.
@@ -78,7 +75,7 @@ pub async fn get_peers_from_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     }
 
     let mut peers = if !args.peers.is_empty() {
-        info!("Using peers supplied with the --peer argument(s)");
+        info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
         args.peers
     } else if cfg!(feature = "local-discovery") {
         info!("No peers given");
@@ -91,16 +88,6 @@ pub async fn get_peers_from_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
     } else {
         vec![]
     };
-
-    if let Ok(safe_peers_str) = std::env::var(SAFE_PEERS_ENV) {
-        let peers_str = safe_peers_str.split(',');
-        for peer_str in peers_str {
-            match parse_peer_addr(peer_str) {
-                Ok(safe_peer) => peers.push(safe_peer),
-                Err(_) => println!("Failed to parse safe_peer from {peer_str:?}"),
-            }
-        }
-    }
 
     if peers.is_empty() {
         error!("Peers not obtained through any available options");
