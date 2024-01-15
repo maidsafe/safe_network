@@ -198,7 +198,7 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
 
     let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
-    let node_rpc_addresses = get_all_rpc_addresses()?;
+    let node_rpc_addresses = get_all_rpc_addresses(false)?;
 
     // this node shall receive the notifications since we set the correct royalties pk as filter
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();

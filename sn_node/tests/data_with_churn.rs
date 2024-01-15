@@ -500,7 +500,8 @@ fn churn_nodes_task(
 ) {
     let start = Instant::now();
     let _handle = tokio::spawn(async move {
-        let node_rpc_addresses = get_all_rpc_addresses().expect("Failed to obtain rpc addresses");
+        let node_rpc_addresses =
+            get_all_rpc_addresses(true).expect("Failed to obtain rpc addresses");
         'main: loop {
             for rpc_address in node_rpc_addresses.iter() {
                 sleep(churn_period).await;

@@ -84,7 +84,7 @@ async fn verify_data_location() -> Result<()> {
         "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
-    let node_rpc_address = get_all_rpc_addresses()?;
+    let node_rpc_address = get_all_rpc_addresses(true)?;
     let mut all_peers = get_all_peer_ids(&node_rpc_address).await?;
 
     // Store chunks

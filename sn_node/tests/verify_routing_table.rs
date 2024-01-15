@@ -42,7 +42,7 @@ async fn verify_routing_table() -> Result<()> {
     println!("Sleeping for {sleep_duration:?} before verification");
     tokio::time::sleep(sleep_duration).await;
 
-    let node_rpc_address = get_all_rpc_addresses()?;
+    let node_rpc_address = get_all_rpc_addresses(false)?;
 
     let all_peers = get_all_peer_ids(&node_rpc_address).await?;
     let mut all_failed_list = BTreeMap::new();
