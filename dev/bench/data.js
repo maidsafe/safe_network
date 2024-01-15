@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705345585146,
+  "lastUpdate": 1705345587470,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "ee869e0632d7b36c127f06ea8d0a21065006e2b1",
-          "message": "ci: do reward tests _first_",
-          "timestamp": "2023-09-15T11:26:30+02:00",
-          "tree_id": "0ed15ee2cf1b3dcf19bacb0bdeb2d2e7ed0bb08c",
-          "url": "https://github.com/maidsafe/safe_network/commit/ee869e0632d7b36c127f06ea8d0a21065006e2b1"
-        },
-        "date": 1694773173683,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 496.11572,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 258,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "0784777dc191453b8920a53528736d4f9fdf8351",
           "message": "chore(cli): move 'chunk_path' to files.rs",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 38,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "f0f48bff0f7f392ac60a92f2dbac45463425b338",
+          "message": "fix(client): avoid deadlock during upload in case of error",
+          "timestamp": "2024-01-15T18:28:09Z",
+          "tree_id": "eecb97d46a6447a27612fabe9aa08162b2433e81",
+          "url": "https://github.com/maidsafe/safe_network/commit/f0f48bff0f7f392ac60a92f2dbac45463425b338"
+        },
+        "date": 1705345586592,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 208,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 40,
             "unit": "MB"
           }
         ]
