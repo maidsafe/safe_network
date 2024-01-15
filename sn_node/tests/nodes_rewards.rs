@@ -10,7 +10,7 @@ mod common;
 
 use crate::common::{
     client::{get_all_rpc_addresses, get_gossip_client_and_wallet},
-    random_content,
+    get_safenode_rpc_client, random_content,
 };
 use assert_fs::TempDir;
 use bls::{PublicKey, SecretKey, PK_SIZE};
@@ -19,8 +19,7 @@ use sn_client::{Client, ClientEvent, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
-    TransferNotifsFilterRequest,
+    GossipsubSubscribeRequest, NodeEventsRequest, TransferNotifsFilterRequest,
 };
 use sn_registers::Permissions;
 use sn_transfers::{
@@ -303,9 +302,8 @@ async fn spawn_royalties_payment_listener(
     expected_royalties: usize,
     need_extra_wait: bool,
 ) -> JoinHandle<Result<usize, eyre::Report>> {
-    let endpoint = format!("https://{rpc_addr}");
     let handle = tokio::spawn(async move {
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = get_safenode_rpc_client(rpc_addr).await?;
 
         if set_filter {
             let _ = rpc_client
