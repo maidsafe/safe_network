@@ -171,6 +171,7 @@ jobs:
           unit: "MiB/s",
           value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
           })' > files-benchmark.json
+        timeout-minutes: 15
 
       - name: Confirming the number of files uploaded and downloaded during the benchmark test
         shell: bash
