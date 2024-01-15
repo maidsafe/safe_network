@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705317630851,
+  "lastUpdate": 1705317746343,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "f65811c27599b60bc32afe27e8aff12508b0af48",
-          "message": "chore(ci): reduce the number of Registers to create in rewards test",
-          "timestamp": "2023-09-14T19:20:27Z",
-          "tree_id": "9b98fbfd5ec9285ccc14068d1d4caca27afb021d",
-          "url": "https://github.com/maidsafe/safe_network/commit/f65811c27599b60bc32afe27e8aff12508b0af48"
-        },
-        "date": 1694724059267,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 63.635456,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d1813553ed23939cc65a17c63b566e9a5d595d0d",
+          "message": "chore(node): collect node handling time statistics",
+          "timestamp": "2024-01-15T10:37:19Z",
+          "tree_id": "02466bac3b0ff6f0506f46df216afcbfdef66b93",
+          "url": "https://github.com/maidsafe/safe_network/commit/d1813553ed23939cc65a17c63b566e9a5d595d0d"
+        },
+        "date": 1705317745501,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
             "unit": "MB"
           }
         ]
