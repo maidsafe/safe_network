@@ -76,6 +76,17 @@ impl WalletClient {
         }
     }
 
+    /// Remove the payment for a given network address from disk
+    pub fn remove_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<()> {
+        match &address.as_xorname() {
+            Some(xorname) => {
+                self.wallet.remove_payment_for_xorname(xorname);
+                Ok(())
+            }
+            None => Err(WalletError::InvalidAddressType),
+        }
+    }
+
     /// Remove CashNote from available_cash_notes
     pub fn mark_note_as_spent(&mut self, cash_note_key: UniquePubkey) {
         self.wallet.mark_note_as_spent(cash_note_key);
