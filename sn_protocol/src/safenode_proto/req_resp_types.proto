@@ -22,6 +22,7 @@ message NodeInfoResponse {
   string bin_version = 4;
   uint64 uptime_secs = 5;
   string data_dir = 6;
+  uint64 wallet_balance = 7;
 }
 
 // Information about how this node's connections to the network and peers
