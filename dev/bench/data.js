@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705330135231,
+  "lastUpdate": 1705330136654,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a1e9ecd31b52aeeb8800ae0123ad537d78da6f45",
-          "message": "chore(client): remove unused wallet_client",
-          "timestamp": "2023-09-15T03:58:29Z",
-          "tree_id": "8c2acf9b2fd63637b03e8bb1dda9656a12ef79a8",
-          "url": "https://github.com/maidsafe/safe_network/commit/a1e9ecd31b52aeeb8800ae0123ad537d78da6f45"
-        },
-        "date": 1694755812623,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 497.0496,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 268,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "33768ed2f3a626ff6b38fc91bf83a9963254a9d2",
+          "message": "fix(client): do not store paying-out cash_notes into disk",
+          "timestamp": "2024-01-15T14:12:09Z",
+          "tree_id": "522ee3c642bc89749ba7df4777ed468e5eb5601f",
+          "url": "https://github.com/maidsafe/safe_network/commit/33768ed2f3a626ff6b38fc91bf83a9963254a9d2"
+        },
+        "date": 1705330136329,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 38,
             "unit": "MB"
           }
         ]
