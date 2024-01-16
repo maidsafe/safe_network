@@ -20,7 +20,6 @@ local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 # required to pass on flag to node builds
 quic = ["sn_networking/quic"]
-webtransport-websys = ["sn_networking/webtransport-websys"]
 
 [dependencies]
 async-trait = "0.1"
@@ -61,3 +60,4 @@ workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.12", features = ["js"] }
+sn_networking = { path = "../sn_networking", version = "0.12.32" }
