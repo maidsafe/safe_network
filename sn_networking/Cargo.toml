@@ -11,10 +11,10 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.12.35"
 
 [features]
-default=[]
+default=["quic"]
 local-discovery=["libp2p/mdns"]
 quic=["libp2p/quic"]
-webtransport-websys=["libp2p/webtransport-websys"]
+tcp=["libp2p/tcp"]
 open-metrics=["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
 
 [dependencies]
@@ -54,3 +54,5 @@ workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.12", features = ["js"] }
+libp2p = { version="0.53", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub", "webtransport-websys"] }
+

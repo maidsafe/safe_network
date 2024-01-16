@@ -26,14 +26,17 @@ use crate::{
     Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
-#[cfg(any(feature = "quic", feature = "webtransport-websys"))]
+#[cfg(not(feature = "tcp"))]
 use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-#[cfg(feature = "quic")]
-use libp2p::quic;
-#[cfg(feature = "webtransport-websys")]
-use libp2p::webtransport_websys;
+// default transports
+#[cfg(all(not(feature = "tcp"), not(target_arch = "wasm32")))]
+use libp2p::quic::{tokio::Transport as TokioTransport, Config as TransportConfig};
+#[cfg(feature = "tcp")]
+use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig};
+#[cfg(target_arch = "wasm32")]
+use libp2p::webtransport_websys::{Config as TransportConfig, Transport as TokioTransport};
 use libp2p::{
     autonat,
     identity::Keypair,
@@ -319,19 +322,23 @@ impl NetworkBuilder {
         )?;
 
         // Listen on the provided address
-        let listen_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
-        #[cfg(not(any(feature = "quic", feature = "webtransport-websys")))]
-        let listen_addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
+        let listen_socket_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
+
+        // Flesh out the multiaddress
+        let listen_addr = Multiaddr::from(listen_socket_addr.ip());
 
         #[cfg(feature = "quic")]
-        let listen_addr = Multiaddr::from(listen_addr.ip())
-            .with(Protocol::Udp(listen_addr.port()))
+        let listen_addr = listen_addr
+            .with(Protocol::Udp(listen_socket_addr.port()))
             .with(Protocol::QuicV1);
 
-        #[cfg(feature = "webtransport-websys")]
-        let listen_addr = Multiaddr::from(listen_addr.ip())
-            .with(Protocol::Udp(listen_addr.port()))
+        #[cfg(target_arch = "wasm32")]
+        let listen_addr = listen_addr
+            .with(Protocol::Udp(listen_socket_addr.port()))
             .with(Protocol::WebTransport);
+
+        #[cfg(feature = "tcp")]
+        Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
 
         let _listener_id = swarm_driver
             .swarm
@@ -458,9 +465,13 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        // Transport
-        #[cfg(not(any(feature = "quic", feature = "webtransport-websys")))]
-        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+        #[cfg(not(feature = "tcp"))]
+        let main_transport = TokioTransport::new(TransportConfig::new(&self.keypair))
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
+
+        #[cfg(feature = "tcp")]
+        let main_transport = TokioTransport::new(TransportConfig::default())
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&self.keypair)
@@ -468,17 +479,6 @@ impl NetworkBuilder {
             )
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
-
-        #[cfg(feature = "quic")]
-        let mut transport = libp2p::quic::tokio::Transport::new(quic::Config::new(&self.keypair))
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
-            .boxed();
-
-        #[cfg(feature = "webtransport-websys")]
-        let mut transport =
-            webtransport_websys::Transport::new(webtransport_websys::Config::new(&self.keypair))
-                .map(|(peer_id, conn), _| (peer_id, StreamMuxerBox::new(conn)))
-                .boxed();
 
         let gossipsub = if self.enable_gossip {
             // Gossipsub behaviour
@@ -516,11 +516,13 @@ impl NetworkBuilder {
 
         let gossipsub = Toggle::from(gossipsub);
 
-        if !self.local {
+        let transport = if !self.local {
             debug!("Preventing non-global dials");
-            // Wrap TCP or UDP in a transport that prevents dialing local addresses.
-            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
-        }
+            // Wrap upper in a transport that prevents dialing local addresses.
+            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
+        } else {
+            main_transport
+        };
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !self.local && !is_client {
