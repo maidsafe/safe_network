@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705416324497,
+  "lastUpdate": 1705417837750,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "319b7f9a4359b760f8aa69843b44d7e5a5ce64e3",
-          "message": "fix: shorter wait on verification put",
-          "timestamp": "2023-09-19T05:34:18Z",
-          "tree_id": "b35f73394f2ec673f3ba0afefaeecd5076925da3",
-          "url": "https://github.com/maidsafe/safe_network/commit/319b7f9a4359b760f8aa69843b44d7e5a5ce64e3"
-        },
-        "date": 1695105252143,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10575964779032695,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.53499388125774,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.766681812565146,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 64.8391718362741,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "60f424a9b31fc4dc1ba2f895d953328522af6e49",
+          "message": "fix(wallet): remove unconfirmed_spends file from disk when all confirmed",
+          "timestamp": "2024-01-16T14:19:07Z",
+          "tree_id": "e5422fae97ef3036b8b10f24efaffaa41508f8d6",
+          "url": "https://github.com/maidsafe/safe_network/commit/60f424a9b31fc4dc1ba2f895d953328522af6e49"
+        },
+        "date": 1705417835210,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6627107975352313,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1276372926591642,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 67.16987332547113,
             "unit": "MiB/s"
           }
         ]
