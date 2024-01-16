@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705421463016,
+  "lastUpdate": 1705421467068,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "88fa51a507d51880c20ec5b2b5aace930a842163",
-          "message": "chore: some cleanups within the upload procedure",
-          "timestamp": "2023-09-18T13:03:02Z",
-          "tree_id": "f23fed735720326fed646612b590949ded2a8f3b",
-          "url": "https://github.com/maidsafe/safe_network/commit/88fa51a507d51880c20ec5b2b5aace930a842163"
-        },
-        "date": 1695046144532,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 226.02957,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 185,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
           "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 38,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4367fb710be752b45534a02cea5d0cf98970915f",
+          "message": "chore(CI): upload logs manually within the large_file_upload test",
+          "timestamp": "2024-01-16T15:27:40Z",
+          "tree_id": "c6de35a7bbbe00661e0202776eb4f2025286cae1",
+          "url": "https://github.com/maidsafe/safe_network/commit/4367fb710be752b45534a02cea5d0cf98970915f"
+        },
+        "date": 1705421466152,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 224,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 41,
             "unit": "MB"
           }
         ]
