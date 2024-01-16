@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705416322942,
+  "lastUpdate": 1705416324497,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "fb4ff0378587747165dab9a69f8fa1c961f786eb",
-          "message": "chore(client): simplify API",
-          "timestamp": "2023-09-18T07:08:06Z",
-          "tree_id": "4abc93b4f1de903ede5512f54b4f728c15363230",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb4ff0378587747165dab9a69f8fa1c961f786eb"
-        },
-        "date": 1695026677593,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 229.87572,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 179,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 41,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "abf5cce8fa982b733d16a24fe4ce8354fe537b26",
+          "message": "chore: remove arg and env variable combination\n\nOur code was setup such that the `--peer` arguments and those defined using `SAFE_PEERS` were\ncombined together to form one list. Now we use `clap` to parse one or the other.",
+          "timestamp": "2024-01-16T14:27:54Z",
+          "tree_id": "c70520758397a37060cc967540d9134ab7761104",
+          "url": "https://github.com/maidsafe/safe_network/commit/abf5cce8fa982b733d16a24fe4ce8354fe537b26"
+        },
+        "date": 1705416324063,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210,
             "unit": "MB"
           },
           {
