@@ -188,33 +188,30 @@ pub async fn run_network(
         let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
-        let genesis_multiaddr = run_node(
-            true,
-            port,
-            rpc_port,
-            vec![],
-            &launcher,
-            node_registry,
-            &rpc_client,
-        )
-        .await?;
-        (vec![genesis_multiaddr], 2)
+
+        let number = (node_registry.nodes.len() as u16) + 1;
+        let node = run_node(number, true, port, rpc_port, vec![], &launcher, &rpc_client).await?;
+        node_registry.nodes.push(node.clone());
+        (vec![node.get_multiaddr().unwrap()], 2)
     };
 
     for _ in start..=network_options.node_count {
         let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
         let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
-        run_node(
+
+        let number = (node_registry.nodes.len() as u16) + 1;
+        let node = run_node(
+            number,
             false,
             port,
             rpc_port,
             peers.clone(),
             &launcher,
-            node_registry,
             &rpc_client,
         )
         .await?;
+        node_registry.nodes.push(node);
 
         // We save the node registry for each launch because it's possible any node can fail to
         // launch, or maybe the validation will fail. In the error case, we will want to use the
@@ -239,16 +236,15 @@ pub async fn run_network(
 }
 
 pub async fn run_node(
+    number: u16,
     genesis: bool,
     port: u16,
     rpc_port: u16,
     peer: Vec<Multiaddr>,
     launcher: &dyn Launcher,
-    node_registry: &mut NodeRegistry,
     rpc_client: &dyn RpcActions,
-) -> Result<Multiaddr> {
+) -> Result<Node> {
     let version = launcher.get_safenode_version()?;
-    let number = (node_registry.nodes.len() as u16) + 1;
 
     println!("Launching node {number}...");
     launcher.launch_node(port, rpc_port, peer.clone())?;
@@ -256,8 +252,11 @@ pub async fn run_node(
 
     let node_info = rpc_client.node_info().await?;
     let peer_id = node_info.peer_id;
+    let network_info = rpc_client.network_info().await?;
+    let connected_peers = Some(network_info.connected_peers);
 
-    node_registry.nodes.push(Node {
+    Ok(Node {
+        connected_peers,
         genesis,
         service_name: format!("safenode-local{number}"),
         user: get_username()?,
@@ -271,9 +270,7 @@ pub async fn run_node(
         log_dir_path: Some(node_info.log_path),
         data_dir_path: Some(node_info.data_path),
         safenode_path: Some(launcher.get_safenode_path()),
-    });
-
-    Ok(build_multiaddr(port, peer_id))
+    })
 }
 
 ///
@@ -379,19 +376,11 @@ mod tests {
     #[tokio::test]
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
-        let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
         let mut mock_rpc_client = MockRpcClient::new();
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let port = 12000;
         let rpc_port = 13000;
-
-        let node_multiaddr = build_multiaddr(port, peer_id);
-
         mock_launcher
             .expect_get_safenode_version()
             .times(1)
@@ -424,141 +413,45 @@ mod tests {
                     uptime: std::time::Duration::from_secs(1), // the service was just started
                 })
             });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(move || {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
 
-        let multiaddr = run_node(
+        let node = run_node(
+            1,
             true,
             port,
             rpc_port,
             vec![],
             &mock_launcher,
-            &mut node_registry,
             &mock_rpc_client,
         )
         .await?;
 
-        assert_eq!(multiaddr, node_multiaddr);
-        assert_eq!(node_registry.nodes.len(), 1);
-        assert!(node_registry.nodes[0].genesis);
-        assert_eq!(node_registry.nodes[0].version, "0.100.12");
-        assert_eq!(node_registry.nodes[0].service_name, "safenode-local1");
+        assert!(node.genesis);
+        assert_eq!(node.version, "0.100.12");
+        assert_eq!(node.service_name, "safenode-local1");
         assert_eq!(
-            node_registry.nodes[0].data_dir_path,
+            node.data_dir_path,
             Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}")))
         );
         assert_eq!(
-            node_registry.nodes[0].log_dir_path,
+            node.log_dir_path,
             Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs")))
         );
-        assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].pid, Some(1000));
-        assert_eq!(node_registry.nodes[0].port, port);
-        assert_eq!(node_registry.nodes[0].rpc_port, rpc_port);
-        assert_eq!(node_registry.nodes[0].status, NodeStatus::Running);
+        assert_eq!(node.number, 1);
+        assert_eq!(node.pid, Some(1000));
+        assert_eq!(node.port, port);
+        assert_eq!(node.rpc_port, rpc_port);
+        assert_eq!(node.status, NodeStatus::Running);
         assert_eq!(
-            node_registry.nodes[0].safenode_path,
-            Some(PathBuf::from("/usr/local/bin/safenode"))
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn run_node_should_launch_an_additional_node() -> Result<()> {
-        let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
-
-        let genesis_peer_addr = build_multiaddr(12000, peer_id);
-
-        let mut mock_launcher = MockLauncher::new();
-        let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
-            nodes: vec![Node {
-                genesis: true,
-                service_name: "safenode-local1".to_string(),
-                user: get_username()?,
-                number: 1,
-                port: 12000,
-                rpc_port: 13000,
-                version: "0.100.12".to_string(),
-                status: NodeStatus::Running,
-                pid: Some(1000),
-                peer_id: Some(peer_id),
-                log_dir_path: Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs"))),
-                data_dir_path: Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}"))),
-                safenode_path: Some(PathBuf::from("/usr/local/bin/safenode")),
-            }],
-            faucet_pid: None,
-        };
-        let mut mock_rpc_client = MockRpcClient::new();
-
-        let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
-        let port = 12001;
-        let rpc_port = 13001;
-        let node_peer_addr = build_multiaddr(port, peer_id);
-
-        mock_launcher
-            .expect_get_safenode_version()
-            .times(1)
-            .returning(|| Ok("0.100.12".to_string()));
-        mock_launcher
-            .expect_launch_node()
-            .with(eq(port), eq(rpc_port), eq(vec![genesis_peer_addr.clone()]))
-            .times(1)
-            .returning(|_, _, _| Ok(()));
-        mock_launcher
-            .expect_wait()
-            .with(eq(2))
-            .times(1)
-            .returning(|_| ());
-        mock_launcher
-            .expect_get_safenode_path()
-            .times(1)
-            .returning(|| PathBuf::from("/usr/local/bin/safenode"));
-
-        mock_rpc_client
-            .expect_node_info()
-            .times(1)
-            .returning(move || {
-                Ok(NodeInfo {
-                    pid: 1001,
-                    peer_id,
-                    data_path: PathBuf::from(format!("~/.local/share/safe/{peer_id}")),
-                    log_path: PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs")),
-                    version: "0.100.12".to_string(),
-                    uptime: std::time::Duration::from_secs(1), // the service was just started
-                })
-            });
-
-        let multiaddr = run_node(
-            false,
-            port,
-            rpc_port,
-            vec![genesis_peer_addr.clone()],
-            &mock_launcher,
-            &mut node_registry,
-            &mock_rpc_client,
-        )
-        .await?;
-
-        assert_eq!(multiaddr, node_peer_addr);
-        assert_eq!(node_registry.nodes.len(), 2);
-        assert!(node_registry.nodes[0].genesis);
-        assert_eq!(node_registry.nodes[1].version, "0.100.12");
-        assert_eq!(node_registry.nodes[1].service_name, "safenode-local2");
-        assert_eq!(
-            node_registry.nodes[0].data_dir_path,
-            Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}")))
-        );
-        assert_eq!(
-            node_registry.nodes[0].log_dir_path,
-            Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs")))
-        );
-        assert_eq!(node_registry.nodes[1].number, 2);
-        assert_eq!(node_registry.nodes[1].pid, Some(1001));
-        assert_eq!(node_registry.nodes[1].port, port);
-        assert_eq!(node_registry.nodes[1].rpc_port, rpc_port);
-        assert_eq!(node_registry.nodes[1].status, NodeStatus::Running);
-        assert_eq!(
-            node_registry.nodes[1].safenode_path,
+            node.safenode_path,
             Some(PathBuf::from("/usr/local/bin/safenode"))
         );
 
