@@ -8,12 +8,10 @@
 
 mod common;
 
+use crate::common::client::{add_funds_to_wallet, get_gossip_client_and_funded_wallet};
 use assert_fs::TempDir;
 use common::{
-    client::{
-        get_all_rpc_addresses, get_funded_wallet, get_gossip_client_and_wallet, get_node_count,
-        get_wallet, PAYING_WALLET_INITIAL_BALANCE,
-    },
+    client::{get_all_rpc_addresses, get_node_count, get_wallet},
     node_restart,
 };
 use eyre::{bail, eyre, Result};
@@ -55,8 +53,6 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 // Default total amount of time we run the checks for before reporting the outcome.
 // It can be overriden by setting the 'TEST_DURATION_MINS' env var.
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
-
-const TRANSFERS_WALLET_INITIAL_BALANCE: u64 = 200_000_000_000;
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
 type CashNoteMap = Arc<RwLock<BTreeMap<SpendAddress, CashNote>>>;
@@ -128,9 +124,8 @@ async fn data_availability_during_churn() -> Result<()> {
 
     info!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
-    let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE)
-            .await?;
+    let (client, _paying_wallet) =
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     // Waiting for the paying_wallet funded.
     sleep(std::time::Duration::from_secs(10)).await;
@@ -151,13 +146,7 @@ async fn data_availability_during_churn() -> Result<()> {
     if !chunks_only {
         info!("Creating transfer wallet taking balance from the payment wallet");
         let transfers_wallet_dir = TempDir::new()?;
-        let transfers_wallet = get_funded_wallet(
-            &client,
-            paying_wallet,
-            transfers_wallet_dir.path(),
-            TRANSFERS_WALLET_INITIAL_BALANCE,
-        )
-        .await?;
+        let transfers_wallet = add_funds_to_wallet(&client, transfers_wallet_dir.path()).await?;
         info!("Transfer wallet created");
 
         // Waiting for the transfers_wallet funded.

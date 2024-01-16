@@ -9,7 +9,7 @@
 mod common;
 
 use crate::common::{
-    client::{get_all_rpc_addresses, get_gossip_client_and_wallet},
+    client::{get_all_rpc_addresses, get_gossip_client_and_funded_wallet},
     get_safenode_rpc_client, random_content,
 };
 use assert_fs::TempDir;
@@ -39,12 +39,11 @@ use xor_name::XorName;
 async fn nodes_rewards_for_storing_chunks() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
-    let paying_wallet_balance = 10_000_000_000_333;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
@@ -68,11 +67,10 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
-    let paying_wallet_balance = 10_000_000_000_444;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let rb = current_rewards_balance().await?;
@@ -103,12 +101,11 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
 async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
-    let paying_wallet_balance = 10_000_000_111_000;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
@@ -146,11 +143,10 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
-    let paying_wallet_balance = 10_000_000_222_000;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
@@ -188,12 +184,11 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("nodes_rewards");
 
-    let paying_wallet_balance = 10_000_111_111_000;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     let (files_api, _content_bytes, _content_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;

@@ -21,7 +21,14 @@ use std::{
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-pub const PAYING_WALLET_INITIAL_BALANCE: u64 = 100_000_000_000_000;
+/// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.
+/// This is limited to 10 requests to the faucet, where each request yields 100 SNT
+pub const INITIAL_WALLET_BALANCE: u64 = 10 * 100 * 1_000_000_000;
+
+/// 100 SNT is added when `add_funds_to_wallet` is called.
+/// This is limited to 1 request to the faucet, where each request yields 100 SNT
+pub const ADD_FUNDS_TO_WALLET: u64 = 100 * 1_000_000_000;
+
 /// The node count for a locally running network that the tests expect
 pub const LOCAL_NODE_COUNT: usize = 25;
 // The number of times to try to load the faucet wallet
@@ -102,46 +109,39 @@ pub async fn get_gossip_client() -> Client {
     }
 }
 
-/// Get a funded wallet.
+/// Adds funds to the provided to_wallet_dir
 /// If SN_INVENTORY flag is passed, the amount is retrieved from the faucet url
-/// else obtain it from the provided `from` LocalWallet
-pub async fn get_funded_wallet(
-    client: &Client,
-    from: LocalWallet,
-    root_dir: &Path,
-    amount: u64,
-) -> Result<LocalWallet> {
+/// else obtain it from the provided faucet LocalWallet
+///
+/// We obtain 100 SNT from the network per call. Use `get_gossip_client_and_wallet` during the initial setup which would
+/// obtain 10*100 SNT
+pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Result<LocalWallet> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
-            Droplet::get_funded_wallet(client, root_dir, amount, inventory.faucet_address).await
+            Droplet::get_funded_wallet(client, to_wallet_dir, inventory.faucet_address, false).await
         }
-        Err(_) => NonDroplet::get_funded_wallet(client, from, root_dir, amount).await,
+        Err(_) => NonDroplet::get_funded_wallet(client, to_wallet_dir, false).await,
     }
 }
 
 /// Create a client and fund the wallet.
 /// If SN_INVENTORY flag is passed, the wallet is funded by fetching it from the faucet
 /// Else create a genesis wallet and transfer funds from there.
-pub async fn get_gossip_client_and_wallet(
-    root_dir: &Path,
-    amount: u64,
-) -> Result<(Client, LocalWallet)> {
+///
+/// We get a maximum of 10*100 SNT from the network. This is hardcoded as the Droplet tests have the fetch the
+/// coins from the faucet and each request is limited to 100 SNT.
+pub async fn get_gossip_client_and_funded_wallet(root_dir: &Path) -> Result<(Client, LocalWallet)> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
             let client = Droplet::get_gossip_client(&inventory).await;
             let local_wallet =
-                Droplet::get_funded_wallet(&client, root_dir, amount, inventory.faucet_address)
+                Droplet::get_funded_wallet(&client, root_dir, inventory.faucet_address, true)
                     .await?;
             Ok((client, local_wallet))
         }
         Err(_) => {
-            let _guard = FAUCET_WALLET_MUTEX.lock().await;
-
             let client = NonDroplet::get_gossip_client().await;
-
-            let faucet_wallet = NonDroplet::load_faucet_wallet().await?;
-            let local_wallet =
-                NonDroplet::get_funded_wallet(&client, faucet_wallet, root_dir, amount).await?;
+            let local_wallet = NonDroplet::get_funded_wallet(&client, root_dir, true).await?;
 
             Ok((client, local_wallet))
         }
@@ -175,16 +175,28 @@ impl NonDroplet {
 
     pub async fn get_funded_wallet(
         client: &Client,
-        from: LocalWallet,
         root_dir: &Path,
-        amount: u64,
+        initial_wallet: bool,
     ) -> Result<LocalWallet> {
-        let wallet_balance = NanoTokens::from(amount);
+        let wallet_balance = if initial_wallet {
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
+        } else {
+            NanoTokens::from(ADD_FUNDS_TO_WALLET)
+        };
+        let _guard = FAUCET_WALLET_MUTEX.lock().await;
+        let from_faucet_wallet = NonDroplet::load_faucet_wallet().await?;
         let mut local_wallet = get_wallet(root_dir);
 
         println!("Getting {wallet_balance} tokens from the faucet...");
         info!("Getting {wallet_balance} tokens from the faucet...");
-        let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
+        let tokens = send(
+            from_faucet_wallet,
+            wallet_balance,
+            local_wallet.address(),
+            client,
+            true,
+        )
+        .await?;
 
         println!("Verifying the transfer from faucet...");
         info!("Verifying the transfer from faucet...");
@@ -244,30 +256,42 @@ impl Droplet {
     }
 
     // Create a wallet at root_dir and fetch the amount from the faucet url
-    pub async fn get_funded_wallet(
+    async fn get_funded_wallet(
         client: &Client,
         root_dir: &Path,
-        amount: u64,
         faucet_socket: String,
+        initial_wallet: bool,
     ) -> Result<LocalWallet> {
         let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
-        let faucet_balance = 100 * 1_000_000_000; // Each request gives 100 SNT
-        let num_requests = std::cmp::max((amount + faucet_balance - 1) / faucet_balance, 1);
-        let num_requests = std::cmp::min(num_requests, 10); // max 10 req
+        let requests_to_faucet = if initial_wallet {
+            let requests_to_faucet = 10;
+            assert_eq!(
+                requests_to_faucet * 100 * 1_000_000_000,
+                INITIAL_WALLET_BALANCE
+            );
+            requests_to_faucet
+        } else {
+            let requests_to_faucet = 1;
+            assert_eq!(
+                requests_to_faucet * 100 * 1_000_000_000,
+                ADD_FUNDS_TO_WALLET
+            );
+            requests_to_faucet
+        };
 
         let mut local_wallet = get_wallet(root_dir);
         let address_hex = hex::encode(local_wallet.address().to_bytes());
 
         println!(
-            "Getting {} tokens from the faucet... num_requests:{num_requests}",
-            NanoTokens::from(num_requests * 100 * 1_000_000_000)
+            "Getting {} tokens from the faucet... num_requests:{requests_to_faucet}",
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
         info!(
-            "Getting {} tokens from the faucet... num_requests:{num_requests}",
-            NanoTokens::from(num_requests * 100 * 1_000_000_000)
+            "Getting {} tokens from the faucet... num_requests:{requests_to_faucet}",
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
-        for _ in 0..num_requests {
+        for _ in 0..requests_to_faucet {
             let faucet_url = format!("http://{faucet_socket}/{address_hex}");
 
             // Get transfer from faucet
@@ -290,10 +314,17 @@ impl Droplet {
                     return Err(err.into());
                 }
             };
-            println!("Successfully verified transfer.");
             info!("Successfully verified transfer.");
             local_wallet.deposit_and_store_to_disk(&cashnotes)?;
         }
+        println!(
+            "Successfully got {} after {requests_to_faucet} requests to the faucet",
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
+        );
+        info!(
+            "Successfully got {} after {requests_to_faucet} requests to the faucet",
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
+        );
 
         Ok(local_wallet)
     }

@@ -9,7 +9,7 @@
 mod common;
 
 use assert_fs::TempDir;
-use common::client::{get_gossip_client_and_wallet, get_wallet};
+use common::client::{get_gossip_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
 use sn_logging::LogBuilder;
@@ -20,11 +20,11 @@ use tracing::info;
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("sequential_transfer");
 
-    let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
 
     let (client, first_wallet) =
-        get_gossip_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(first_wallet_dir.path()).await?;
+    let first_wallet_balance = first_wallet.balance().as_nano();
 
     let second_wallet_balance = NanoTokens::from(first_wallet_balance / 2);
     info!("Transferring from first wallet to second wallet: {second_wallet_balance}.");
@@ -59,11 +59,11 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("sequential_transfer");
 
     // create 1 wallet add money from faucet
-    let first_wallet_balance = 1_000_000_000;
     let first_wallet_dir = TempDir::new()?;
 
     let (client, mut first_wallet) =
-        get_gossip_client_and_wallet(first_wallet_dir.path(), first_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(first_wallet_dir.path()).await?;
+    let first_wallet_balance = first_wallet.balance().as_nano();
 
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
