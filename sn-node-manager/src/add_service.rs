@@ -162,6 +162,7 @@ pub async fn add(
             log_dir_path: Some(service_log_dir_path.clone()),
             data_dir_path: Some(service_data_dir_path.clone()),
             safenode_path: Some(service_safenode_path),
+            connected_peers: None,
         });
 
         node_number += 1;
@@ -398,6 +399,7 @@ mod tests {
                 safenode_path: Some(PathBuf::from(
                     "/var/safenode-manager/services/safenode1/safenode",
                 )),
+                connected_peers: None,
             }],
             faucet_pid: None,
         };
@@ -865,6 +867,7 @@ mod tests {
                 safenode_path: Some(PathBuf::from(
                     "/var/safenode-manager/services/safenode1/safenode",
                 )),
+                connected_peers: None,
             }],
             faucet_pid: None,
         };
