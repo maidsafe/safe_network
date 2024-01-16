@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705406012923,
+  "lastUpdate": 1705416233439,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
-          "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
-          "timestamp": "2023-09-18T13:43:51Z",
-          "tree_id": "596f8096ef20f8f0f129a65e1948742636fbd0f1",
-          "url": "https://github.com/maidsafe/safe_network/commit/b84fe6b64c992a3f277df609af0c246bfa1a6069"
-        },
-        "date": 1695048563400,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0965454073033661,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5260290085994813,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 7.033872610943697,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 66.64866833515872,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "abf5cce8fa982b733d16a24fe4ce8354fe537b26",
+          "message": "chore: remove arg and env variable combination\n\nOur code was setup such that the `--peer` arguments and those defined using `SAFE_PEERS` were\ncombined together to form one list. Now we use `clap` to parse one or the other.",
+          "timestamp": "2024-01-16T14:27:54Z",
+          "tree_id": "c70520758397a37060cc967540d9134ab7761104",
+          "url": "https://github.com/maidsafe/safe_network/commit/abf5cce8fa982b733d16a24fe4ce8354fe537b26"
+        },
+        "date": 1705416231238,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6577002005027408,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1333258300457874,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 64.8391718362741,
             "unit": "MiB/s"
           }
         ]
