@@ -589,7 +589,7 @@ jobs:
             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==6' | grep -E "/12D3KooW" | wc -l)
+          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
           echo "Node dir count is $node_count"
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
 
@@ -605,10 +605,10 @@ jobs:
         # then check we have an expected level of replication
         # TODO: make this use an env var, or relate to testnet size
         run : |
-          fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.node_data_path }}" -c --stats | \
+          fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.wan_logs_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $fetching_attempt_count fetching attempts"
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==6' | grep -E "/12D3KooW" | wc -l)
+          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
           if [ $fetching_attempt_count -lt $node_count ]; then
             echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
             exit 1
@@ -616,7 +616,7 @@ jobs:
 
       # Only error out after uploading the logs
       - name: Don't log raw data
-        if: matrix.os != 'windows-latest' # causes error
+        if: always() && matrix.os != 'windows-latest' # causes error
         shell: bash
         timeout-minutes: 10
         run: |
@@ -783,7 +783,7 @@ jobs:
             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==6' | grep -E "/12D3KooW" | wc -l)
+          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
           echo "Node dir count is $node_count"
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
 
@@ -794,7 +794,7 @@ jobs:
 
       # Only error out after uploading the logs
       - name: Don't log raw data
-        if: matrix.os != 'windows-latest' # causes error
+        if: always() && matrix.os != 'windows-latest' # causes error
         shell: bash
         timeout-minutes: 10
         run: |
