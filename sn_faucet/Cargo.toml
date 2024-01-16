@@ -23,6 +23,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
+indicatif = { version = "0.17.5", features = ["tokio"] }
 sn_client = { path = "../sn_client", version = "0.101.13" }
 sn_logging = { path = "../sn_logging", version = "0.2.16" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.2" }

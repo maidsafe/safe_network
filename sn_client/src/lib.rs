@@ -19,11 +19,9 @@ mod files;
 mod register;
 mod wallet;
 
-pub(crate) use error::Result;
-
 pub use self::{
     error::Error,
-    event::{ClientEvent, ClientEventsReceiver},
+    event::{ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
     files::{
         download::{FilesDownload, FilesDownloadEvent},
@@ -33,17 +31,14 @@ pub use self::{
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, WalletClient},
 };
+pub(crate) use error::Result;
 
-use self::event::ClientEventsChannel;
-use indicatif::ProgressBar;
 use sn_networking::Network;
 
 /// Client API implementation to store and get data.
 #[derive(Clone)]
 pub struct Client {
     network: Network,
-    events_channel: ClientEventsChannel,
+    events_broadcaster: ClientEventsBroadcaster,
     signer: bls::SecretKey,
-    peers_added: usize,
-    progress: Option<ProgressBar>,
 }
