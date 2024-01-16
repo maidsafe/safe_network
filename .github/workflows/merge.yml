@@ -632,6 +632,11 @@ jobs:
         shell: bash
         run: sudo apt-get install -y ripgrep
 
+      - name: Check the home dir available space
+        run: |
+          df
+          du -sh /home/runner/
+
       - name: Download material, 2.34G
         shell: bash
         run: |
@@ -676,12 +681,18 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 30
 
+      - name: Check the home dir leftover space
+        run: |
+          df
+          du -sh /home/runner/
+
       - name: Confirm the cash_notes files
         run: |
           pwd
           ls $CLIENT_DATA_PATH/ -l
           ls $CLIENT_DATA_PATH/wallet -l
           ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+          ls $CLIENT_DATA_PATH/logs -l
         env:
           CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
@@ -691,7 +702,6 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_large_file_upload
           platform: ubuntu-latest
           build: true
 
