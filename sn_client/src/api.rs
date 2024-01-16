@@ -125,6 +125,7 @@ impl Client {
         // spawn task to wait for NetworkEvent and check for inactivity
         let mut client_clone = client.clone();
         let _event_handler = spawn(async move {
+            let mut peers_added: usize = 0;
             loop {
                 match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
                 {
@@ -139,7 +140,9 @@ impl Client {
 
                         let start = std::time::Instant::now();
                         let event_string = format!("{the_event:?}");
-                        if let Err(err) = client_clone.handle_network_event(the_event) {
+                        if let Err(err) =
+                            client_clone.handle_network_event(the_event, &mut peers_added)
+                        {
                             warn!("Error handling network event: {err}");
                         }
                         trace!(
@@ -200,12 +203,11 @@ impl Client {
         Ok(client)
     }
 
-    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
-        let mut peers_added: usize = 0;
+    fn handle_network_event(&mut self, event: NetworkEvent, peers_added: &mut usize) -> Result<()> {
         match event {
             NetworkEvent::PeerAdded(peer_id, _connected_peer) => {
                 debug!("PeerAdded: {peer_id}");
-                peers_added += 1;
+                *peers_added += 1;
 
                 // notify the listeners that we are waiting on CLOSE_GROUP_SIZE peers before emitting ConnectedToNetwork
                 self.events_broadcaster.broadcast(ClientEvent::PeerAdded {
@@ -215,7 +217,7 @@ impl Client {
                 // it may take some time to fill up the RT.
                 // To avoid such delay may fail the query with RecordNotFound,
                 // wait till certain amount of peers populated into RT
-                if peers_added >= CLOSE_GROUP_SIZE {
+                if *peers_added >= CLOSE_GROUP_SIZE {
                     self.events_broadcaster
                         .broadcast(ClientEvent::ConnectedToNetwork);
                 } else {
