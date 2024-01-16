@@ -32,6 +32,7 @@ use tokio::{
 };
 use tokio_stream::StreamExt;
 use tonic::Request;
+use tracing::{debug, error, info};
 use xor_name::XorName;
 
 #[tokio::test]
@@ -50,13 +51,13 @@ async fn nodes_rewards_for_storing_chunks() -> Result<()> {
 
     let chunks_len = chunks.len();
     let prev_rewards_balance = current_rewards_balance().await?;
-    println!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
+    info!("With {prev_rewards_balance:?} current balance, paying for {} random addresses... {chunks:?}", chunks.len());
 
     let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
     files_upload.upload_chunks(chunks).await?;
     let storage_cost = files_upload.get_upload_storage_cost();
 
-    println!("Paid {storage_cost:?} total rewards for the chunks");
+    info!("Paid {storage_cost:?} total rewards for the chunks");
 
     verify_rewards(prev_rewards_balance, storage_cost, chunks_len).await?;
 
@@ -79,7 +80,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
     let mut rng = rand::thread_rng();
     let register_addr = XorName::random(&mut rng);
 
-    println!("Paying for random Register address {register_addr:?} with current balance {rb:?}");
+    info!("Paying for random Register address {register_addr:?} with current balance {rb:?}");
 
     let prev_rewards_balance = current_rewards_balance().await?;
 
@@ -91,7 +92,7 @@ async fn nodes_rewards_for_storing_registers() -> Result<()> {
             Permissions::new_owner_only(),
         )
         .await?;
-    println!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
+    info!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
 
     verify_rewards(prev_rewards_balance, storage_cost, 1).await?;
 
@@ -117,19 +118,18 @@ async fn nodes_rewards_for_chunks_notifs_over_gossipsub() -> Result<()> {
 
     let num_of_chunks = chunks.len();
 
-    tracing::info!("Paying for {num_of_chunks} random addresses...");
-    println!("Paying for {num_of_chunks} random addresses...");
+    info!("Paying for {num_of_chunks} random addresses...");
     let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
     files_upload.upload_chunks(chunks).await?;
     let storage_cost = files_upload.get_upload_storage_cost();
     let royalties_fees = files_upload.get_upload_royalty_fees();
 
-    println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
+    info!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
     let (count, amount) = handle.await??;
 
-    println!("Number of notifications received: {count}");
-    println!("Amount notified for royalties fees: {amount}");
+    info!("Number of notifications received: {count}");
+    info!("Amount notified for royalties fees: {amount}");
     assert_eq!(
         amount, royalties_fees,
         "Unexpected amount of royalties fees received"
@@ -158,7 +158,7 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
 
     let handle = spawn_royalties_payment_client_listener(client.clone(), 1).await?;
 
-    println!("Paying for random Register address {register_addr:?} ...");
+    info!("Paying for random Register address {register_addr:?} ...");
     let (_, storage_cost, royalties_fees) = client
         .create_and_pay_for_register(
             register_addr,
@@ -167,11 +167,11 @@ async fn nodes_rewards_for_register_notifs_over_gossipsub() -> Result<()> {
             Permissions::new_owner_only(),
         )
         .await?;
-    println!("Random Register created, paid {storage_cost}/{royalties_fees}");
+    info!("Random Register created, paid {storage_cost}/{royalties_fees}");
 
     let (count, amount) = handle.await??;
-    println!("Number of notifications received: {count}");
-    println!("Amount notified for royalties fees: {amount}");
+    info!("Number of notifications received: {count}");
+    info!("Amount notified for royalties fees: {amount}");
     assert_eq!(
         amount, royalties_fees,
         "Unexpected amount of royalties fees received"
@@ -218,20 +218,20 @@ async fn nodes_rewards_transfer_notifs_filter() -> Result<()> {
         spawn_royalties_payment_listener(node_rpc_addresses[2], royalties_pk, false, 0, true).await;
 
     let num_of_chunks = chunks.len();
-    println!("Paying for {num_of_chunks} chunks");
+    info!("Paying for {num_of_chunks} chunks");
     let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
     files_upload.upload_chunks(chunks).await?;
     let storage_cost = files_upload.get_upload_storage_cost();
     let royalties_fees = files_upload.get_upload_royalty_fees();
 
-    println!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
+    info!("Random chunks stored, paid {storage_cost}/{royalties_fees}");
 
     let count_1 = handle_1.await??;
-    println!("Number of notifications received by node #1: {count_1}");
+    info!("Number of notifications received by node #1: {count_1}");
     let count_2 = handle_2.await??;
-    println!("Number of notifications received by node #2: {count_2}");
+    info!("Number of notifications received by node #2: {count_2}");
     let count_3 = handle_3.await??;
-    println!("Number of notifications received by node #3: {count_3}");
+    info!("Number of notifications received by node #3: {count_3}");
 
     assert!(
         count_1 >= num_of_chunks,
@@ -260,7 +260,7 @@ async fn verify_rewards(
 
     while iteration < put_record_count {
         iteration += 1;
-        println!("Current iteration {iteration}");
+        info!("Current iteration {iteration}");
         let new_rewards_balance = current_rewards_balance().await?;
         if expected_rewards_balance == new_rewards_balance {
             return Ok(());
@@ -287,7 +287,7 @@ async fn current_rewards_balance() -> Result<NanoTokens> {
             .ok_or_else(|| eyre!("Failed to sum up rewards balance"))?;
     }
 
-    println!("Current total balance is {total_rewards:?}");
+    info!("Current total balance is {total_rewards:?}");
 
     Ok(total_rewards)
 }
@@ -328,20 +328,20 @@ async fn spawn_royalties_payment_listener(
         let secs = std::cmp::max(40, expected_royalties as u64 * 15);
 
         let duration = Duration::from_secs(secs);
-        println!("Awaiting transfers notifs for {duration:?}...");
+        info!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Some(Ok(e)) = stream.next().await {
                 match NodeEvent::from_bytes(&e.event) {
                     Ok(NodeEvent::TransferNotif { key, .. }) => {
-                        println!("Transfer notif received for key {key:?}");
+                        info!("Transfer notif received for key {key:?}");
                         if key == royalties_pk {
                             count += 1;
-                            println!("Received {count} royalty notifs so far");
+                            info!("Received {count} royalty notifs so far");
                         }
                     }
                     Ok(_) => { /* ignored */ }
                     Err(_) => {
-                        println!("Error while parsing received NodeEvent");
+                        error!("Error while parsing received NodeEvent");
                     }
                 }
             }
@@ -349,7 +349,7 @@ async fn spawn_royalties_payment_listener(
         .await
         .is_err()
         {
-            println!("Timeout after {duration:?}.");
+            debug!("Timeout after {duration:?}.");
         }
 
         Ok(count)
@@ -382,8 +382,7 @@ async fn spawn_royalties_payment_client_listener(
         // otherwise we'll wait for 10s per expected royalty
         let secs = std::cmp::max(40, expected_royalties as u64 * 15);
         let duration = Duration::from_secs(secs);
-        tracing::info!("Awaiting transfers notifs for {duration:?}...");
-        println!("Awaiting transfers notifs for {duration:?}...");
+        info!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
             while let Ok(event) = events_receiver.recv().await {
                 let cashnote_redemptions = match event {
@@ -391,7 +390,7 @@ async fn spawn_royalties_payment_client_listener(
                         // we assume it's a notification of a transfer as that's the only topic we've subscribed to
                         match try_decode_transfer_notif(&msg) {
                             Ok((key, cashnote_redemptions)) => {
-                                println!("Transfer notif received for key {key:?}");
+                                info!("Transfer notif received for key {key:?}");
                                 if key != royalties_pk {
                                     continue;
                                 }
@@ -399,7 +398,7 @@ async fn spawn_royalties_payment_client_listener(
                                 cashnote_redemptions
                             }
                             Err(err) => {
-                                println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}");
+                                error!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}");
                                 continue;
                             },
                         }
@@ -412,16 +411,16 @@ async fn spawn_royalties_payment_client_listener(
                     .await
                 {
                     Ok(cash_notes) => if let Err(err) = wallet.deposit(&cash_notes) {
-                        println!("Failed to deposit cash notes: {err}");
+                        error!("Failed to deposit cash notes: {err}");
                     }
-                    Err(err) => println!("At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}")
+                    Err(err) => error!("At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}")
                 }
             }
         })
         .await
         .is_err()
         {
-            println!("Timeout after {duration:?}.");
+            debug!("Timeout after {duration:?}.");
         }
 
         Ok((count, wallet.balance()))

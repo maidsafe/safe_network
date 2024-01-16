@@ -30,7 +30,7 @@ use std::{
     time::Duration,
 };
 use tonic::Request;
-use tracing::error;
+use tracing::{debug, error, info};
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
@@ -99,7 +99,7 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
         let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
         all_peers.push(peer_id);
     }
-    println!(
+    debug!(
         "Obtained the PeerId list for the running network with a node count of {}",
         node_rpc_addresses.len()
     );
@@ -114,6 +114,7 @@ pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
         .await?;
 
     println!("Node restart requested to RPC service at {addr}");
+    info!("Node restart requested to RPC service at {addr}");
 
     Ok(())
 }

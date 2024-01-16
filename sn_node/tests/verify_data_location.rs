@@ -36,7 +36,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tonic::Request;
-use tracing::error;
+use tracing::{debug, error, info};
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -84,11 +84,17 @@ async fn verify_data_location() -> Result<()> {
         "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
+    info!(
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        VERIFICATION_DELAY*churn_count as u32
+    );
     let node_rpc_address = get_all_rpc_addresses(true)?;
     let mut all_peers = get_all_peer_ids(&node_rpc_address).await?;
 
     // Store chunks
     println!("Creating a client and paying wallet...");
+    debug!("Creating a client and paying wallet...");
+
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
@@ -115,6 +121,7 @@ async fn verify_data_location() -> Result<()> {
 
             // wait for the dead peer to be removed from the RT and the replication flow to finish
             println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
+            info!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
             tokio::time::sleep(VERIFICATION_DELAY).await;
 
             // get the new PeerId for the current NodeIndex
@@ -135,7 +142,7 @@ async fn verify_data_location() -> Result<()> {
 
 fn print_node_close_groups(all_peers: &[PeerId]) {
     let all_peers = all_peers.to_vec();
-    println!("\nNode close groups:");
+    info!("\nNode close groups:");
 
     for (node_index, peer) in all_peers.iter().enumerate() {
         let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
@@ -150,7 +157,7 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
                     .expect("peer to be in iterator")
             })
             .collect::<Vec<_>>();
-        println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
+        info!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
 }
 
@@ -170,7 +177,7 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
             holders.insert(node_index);
         }
     }
-    println!("Obtained the current set of Record Key holders");
+    debug!("Obtained the current set of Record Key holders");
     Ok(record_holders)
 }
 
@@ -181,8 +188,8 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 
     println!("*********************************************");
     println!("Verifying data across all peers {all_peers:?}");
-    tracing::info!("*********************************************");
-    tracing::info!("Verifying data across all peers {all_peers:?}");
+    info!("*********************************************");
+    info!("Verifying data across all peers {all_peers:?}");
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {
@@ -190,6 +197,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
         let record_holders = get_records_and_holders(node_rpc_addresses).await?;
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
+            info!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             let record_key = KBucketKey::from(key.to_vec());
             let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
                 .into_iter()
@@ -201,11 +209,11 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                 .map(|i| all_peers[*i])
                 .collect::<BTreeSet<_>>();
 
-            println!(
+            info!(
                 "Expected to be held by {:?} nodes: {expected_holders:?}",
                 expected_holders.len()
             );
-            println!(
+            info!(
                 "Actually held by {:?} nodes      : {actual_holders:?}",
                 actual_holders.len()
             );
@@ -246,21 +254,23 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
             println!("Verification failed for {:?} entries", failed.len());
 
             failed.iter().for_each(|(key, failed_peers)| {
-                failed_peers
-                    .iter()
-                    .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}",));
+                failed_peers.iter().for_each(|peer| {
+                    println!("Record {key:?} is not stored inside {peer:?}");
+                    error!("Record {key:?} is not stored inside {peer:?}");
+                });
             });
-            println!("State of each node:");
+            info!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                println!("Record {key:?} is currently held by node indices {node_index:?}");
+                info!("Record {key:?} is currently held by node indices {node_index:?}");
             });
-            println!("Node index map:");
+            info!("Node index map:");
             all_peers
                 .iter()
                 .enumerate()
-                .for_each(|(idx, peer)| println!("{idx} : {peer:?}"));
+                .for_each(|(idx, peer)| info!("{idx} : {peer:?}"));
             verification_attempts += 1;
             println!("Sleeping before retrying verification. {verification_attempts}/{VERIFICATION_ATTEMPTS}");
+            info!("Sleeping before retrying verification. {verification_attempts}/{VERIFICATION_ATTEMPTS}");
             if verification_attempts < VERIFICATION_ATTEMPTS {
                 tokio::time::sleep(REVERIFICATION_DELAY).await;
             }
@@ -272,9 +282,11 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 
     if !failed.is_empty() {
         println!("Verification failed after {VERIFICATION_ATTEMPTS} times");
+        error!("Verification failed after {VERIFICATION_ATTEMPTS} times");
         Err(eyre!("Verification failed for: {failed:?}"))
     } else {
         println!("All the Records have been verified!");
+        info!("All the Records have been verified!");
         Ok(())
     }
 }
@@ -308,7 +320,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let (head_chunk_addr, _data_map, _file_size, chunks) =
             FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
 
-        println!(
+        debug!(
             "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_chunk_addr:?}",
             chunks.len(),
             random_bytes.len()
@@ -320,9 +332,14 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
+        info!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
     }
 
     println!(
+        "{chunk_count:?} Chunks were stored in {:?}",
+        start.elapsed()
+    );
+    info!(
         "{chunk_count:?} Chunks were stored in {:?}",
         start.elapsed()
     );

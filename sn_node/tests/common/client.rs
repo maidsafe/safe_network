@@ -167,6 +167,7 @@ impl NonDroplet {
         };
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
+        info!("Client bootstrap with peer {bootstrap_peers:?}");
         Client::new(secret_key, bootstrap_peers, true, None, None)
             .await
             .expect("Client shall be successfully created.")
@@ -182,13 +183,16 @@ impl NonDroplet {
         let mut local_wallet = get_wallet(root_dir);
 
         println!("Getting {wallet_balance} tokens from the faucet...");
+        info!("Getting {wallet_balance} tokens from the faucet...");
         let tokens = send(from, wallet_balance, local_wallet.address(), client, true).await?;
 
         println!("Verifying the transfer from faucet...");
+        info!("Verifying the transfer from faucet...");
         client.verify_cashnote(&tokens).await?;
         local_wallet.deposit_and_store_to_disk(&vec![tokens])?;
         assert_eq!(local_wallet.balance(), wallet_balance);
         println!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");
+        info!("CashNotes deposited to the wallet that'll pay for storage: {wallet_balance}.");
 
         Ok(local_wallet)
     }
@@ -233,6 +237,7 @@ impl Droplet {
         }
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
+        info!("Client bootstrap with peer {bootstrap_peers:?}");
         Client::new(secret_key, Some(bootstrap_peers), true, None, None)
             .await
             .expect("Client shall be successfully created.")
@@ -258,6 +263,10 @@ impl Droplet {
             "Getting {} tokens from the faucet... num_requests:{num_requests}",
             NanoTokens::from(num_requests * 100 * 1_000_000_000)
         );
+        info!(
+            "Getting {} tokens from the faucet... num_requests:{num_requests}",
+            NanoTokens::from(num_requests * 100 * 1_000_000_000)
+        );
         for _ in 0..num_requests {
             let faucet_url = format!("http://{faucet_socket}/{address_hex}");
 
@@ -268,6 +277,8 @@ impl Droplet {
                 Err(err) => {
                     println!("Failed to parse transfer: {err:?}");
                     println!("Transfer: \"{transfer}\"");
+                    error!("Failed to parse transfer: {err:?}");
+                    error!("Transfer: \"{transfer}\"");
                     return Err(err.into());
                 }
             };
@@ -275,10 +286,12 @@ impl Droplet {
                 Ok(cashnotes) => cashnotes,
                 Err(err) => {
                     println!("Failed to verify and redeem transfer: {err:?}");
+                    error!("Failed to verify and redeem transfer: {err:?}");
                     return Err(err.into());
                 }
             };
             println!("Successfully verified transfer.");
+            info!("Successfully verified transfer.");
             local_wallet.deposit_and_store_to_disk(&cashnotes)?;
         }
 
