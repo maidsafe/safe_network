@@ -51,6 +51,39 @@ where
     }
 }
 
+fn serialize_connected_peers<S>(
+    connected_peers: &Option<Vec<PeerId>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match connected_peers {
+        Some(peers) => {
+            let peer_strs: Vec<String> = peers.iter().map(|p| p.to_string()).collect();
+            serializer.serialize_some(&peer_strs)
+        }
+        None => serializer.serialize_none(),
+    }
+}
+
+fn deserialize_connected_peers<'de, D>(deserializer: D) -> Result<Option<Vec<PeerId>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let vec: Option<Vec<String>> = Option::deserialize(deserializer)?;
+    match vec {
+        Some(peer_strs) => {
+            let peers: Result<Vec<PeerId>, _> = peer_strs
+                .into_iter()
+                .map(|s| PeerId::from_str(&s).map_err(DeError::custom))
+                .collect();
+            peers.map(Some)
+        }
+        None => Ok(None),
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
     pub genesis: bool,
@@ -70,6 +103,11 @@ pub struct Node {
     pub data_dir_path: Option<PathBuf>,
     pub log_dir_path: Option<PathBuf>,
     pub safenode_path: Option<PathBuf>,
+    #[serde(
+        serialize_with = "serialize_connected_peers",
+        deserialize_with = "deserialize_connected_peers"
+    )]
+    pub connected_peers: Option<Vec<PeerId>>,
 }
 
 impl Node {
