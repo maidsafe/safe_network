@@ -37,7 +37,7 @@ impl WalletClient {
     /// Create a new wallet client.
     ///
     /// # Arguments
-    /// * `client.clone()` - A instance of the struct [`sn_client::Client`](self::Client)
+    /// * `client` - A instance of the struct [`sn_client::Client`](self::Client)
     /// * `wallet` - An instance of the struct [`sn_transfers::LocalWallet`](self::LocalWallet)
     ///
     /// # Example
@@ -46,13 +46,14 @@ impl WalletClient {
     /// use tempfile::TempDir;
     /// use bls::SecretKey;
     /// use sn_transfers::{LocalWallet, MainSecretKey};
-    /// async fn main() -> Result<(),Error>{
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, false, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// Ok(())
-    /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn new(client: Client, wallet: LocalWallet) -> Self {
         Self { client, wallet }
