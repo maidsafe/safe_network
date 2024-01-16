@@ -82,6 +82,7 @@ pub async fn stop(node: &mut Node, service_control: &dyn ServiceControl) -> Resu
             }
             node.pid = None;
             node.status = NodeStatus::Stopped;
+            node.connected_peers = None;
             Ok(())
         }
         NodeStatus::Stopped => {
@@ -108,7 +109,16 @@ pub async fn status(
             if let Some(pid) = node.pid {
                 // First we can try the PID we have now. If there is still a process running with
                 // that PID, we know the node is still running.
-                if !service_control.is_service_process_running(pid) {
+                if service_control.is_service_process_running(pid) {
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
+                } else {
                     // The process with the PID we had has died at some point. However, if the
                     // service has been configured to restart on failures, it's possible that a new
                     // process has been launched and hence we would have a new PID. We can use the
@@ -124,6 +134,14 @@ pub async fn status(
                             node.pid = None;
                         }
                     }
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
                 }
             }
         }
@@ -131,33 +149,58 @@ pub async fn status(
 
     if detailed_view {
         for node in &node_registry.nodes {
-            println!("{} - {}", node.service_name, format_status(&node.status));
-            println!("\tVersion: {}", node.version);
+            let service_status = format!("{} - {}", node.service_name, format_status(&node.status));
+            let banner = "=".repeat(service_status.len());
+            println!("{}", banner);
+            println!("{service_status}");
+            println!("{}", banner);
+            println!("Version: {}", node.version);
             println!(
-                "\tPeer ID: {}",
+                "Peer ID: {}",
                 node.peer_id.map_or("-".to_string(), |p| p.to_string())
             );
-            println!("\tPort: {}", node.port);
-            println!("\tRPC Port: {}", node.rpc_port);
+            println!("Port: {}", node.port);
+            println!("RPC Port: {}", node.rpc_port);
             println!(
-                "\tPID: {}",
+                "Multiaddr: {}",
+                node.get_multiaddr()
+                    .map_or("-".to_string(), |m| m.to_string())
+            );
+            println!(
+                "PID: {}",
                 node.pid.map_or("-".to_string(), |p| p.to_string())
             );
             println!(
-                "\tData path: {}",
+                "Data path: {}",
                 node.data_dir_path
                     .as_ref()
                     .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
             );
             println!(
-                "\tLog path: {}",
+                "Log path: {}",
                 node.log_dir_path
                     .as_ref()
                     .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
             );
+            println!(
+                "Bin path: {}",
+                node.safenode_path
+                    .as_ref()
+                    .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
+            );
+            println!(
+                "Connected peers: {}",
+                node.connected_peers
+                    .as_ref()
+                    .map_or("-".to_string(), |p| p.len().to_string())
+            );
+            println!();
         }
     } else {
-        println!("{:<20} {:<52} Status", "Service Name", "Peer ID");
+        println!(
+            "{:<18} {:<52} {:<7} {:>15}",
+            "Service Name", "Peer ID", "Status", "Connected Peers"
+        );
         let nodes = node_registry
             .nodes
             .iter()
@@ -165,11 +208,16 @@ pub async fn status(
             .collect::<Vec<&Node>>();
         for node in nodes {
             let peer_id = node.peer_id.map_or("-".to_string(), |p| p.to_string());
+            let connected_peers = node
+                .connected_peers
+                .clone()
+                .map_or("-".to_string(), |p| p.len().to_string());
             println!(
-                "{:<20} {:<52} {}",
+                "{:<18} {:<52} {:<7} {:>15}",
                 node.service_name,
                 peer_id,
-                format_status(&node.status)
+                format_status(&node.status),
+                connected_peers
             );
         }
     }
@@ -339,6 +387,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -398,6 +447,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -457,6 +507,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -507,6 +558,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
         start(&mut node, &mock_service_control, &mock_rpc_client).await?;
 
@@ -549,6 +601,9 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: Some(vec![PeerId::from_str(
+                "12D3KooWKbV9vUmZQdHmTwrQqHrqAQpM7GUWHJXeK1xLeh2LVpuc",
+            )?]),
         };
         stop(&mut node, &mock_service_control).await?;
 
@@ -561,6 +616,7 @@ mod tests {
             )?)
         );
         assert_matches!(node.status, NodeStatus::Stopped);
+        assert_matches!(node.connected_peers, None);
 
         Ok(())
     }
@@ -585,6 +641,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
 
         let result = stop(&mut node, &mock_service_control).await;
@@ -623,6 +680,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
 
         stop(&mut node, &mock_service_control).await?;
@@ -664,6 +722,7 @@ mod tests {
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
             safenode_path: Some(safenode_bin.to_path_buf()),
+            connected_peers: None,
         };
 
         remove(&mut node, &mock_service_control, false).await?;
@@ -706,6 +765,7 @@ mod tests {
             safenode_path: Some(PathBuf::from(
                 "/var/safenode-manager/services/safenode1/safenode",
             )),
+            connected_peers: None,
         };
 
         let result = remove(&mut node, &mock_service_control, false).await;
@@ -751,6 +811,7 @@ mod tests {
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
             safenode_path: Some(safenode_bin.to_path_buf()),
+            connected_peers: None,
         };
 
         let result = remove(&mut node, &mock_service_control, false).await;
@@ -799,6 +860,7 @@ mod tests {
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
             safenode_path: Some(safenode_bin.to_path_buf()),
+            connected_peers: None,
         };
 
         remove(&mut node, &mock_service_control, true).await?;
