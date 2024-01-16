@@ -25,12 +25,14 @@ use crate::{
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::Result;
-use sn_client::Client;
+use indicatif::ProgressBar;
+use sn_client::{Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver};
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_transfers::bls_secret_from_hex;
-use std::{io, path::PathBuf};
+use std::{io, path::PathBuf, time::Duration};
+use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::Level;
 
 const CLIENT_KEY: &str = "clientkey";
@@ -104,13 +106,23 @@ async fn main() -> Result<()> {
     // use gossipsub only for the wallet cmd that requires it.
     let joins_gossipsub = matches!(opt.cmd, SubCmd::Wallet(WalletCmds::ReceiveOnline { .. }));
 
-    let client = Client::new(
+    // get the broadcaster as we want to have our own progress bar.
+    let broadcaster = ClientEventsBroadcaster::default();
+    let progress_bar_handler = spawn_connection_progress_bar(broadcaster.subscribe());
+
+    let result = Client::new(
         secret_key,
         bootstrap_peers,
         joins_gossipsub,
         opt.connection_timeout,
+        Some(broadcaster),
     )
-    .await?;
+    .await;
+
+    // await on the progress bar to complete before handling the client result. If client errors out, we would
+    // want to make the progress bar clean up gracefully.
+    progress_bar_handler.await?;
+    let client = result?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
@@ -129,6 +141,48 @@ async fn main() -> Result<()> {
     };
 
     Ok(())
+}
+
+/// Helper to subscribe to the client events broadcaster and spin up a progress bar that terminates when the
+/// client successfully connects to the network or if it errors out.
+fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> JoinHandle<()> {
+    // Network connection progress bar
+    let progress_bar = ProgressBar::new_spinner();
+    progress_bar.enable_steady_tick(Duration::from_millis(120));
+    progress_bar.set_message("Connecting to The SAFE Network...");
+    let new_style = progress_bar.style().tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈🔗");
+    progress_bar.set_style(new_style);
+
+    progress_bar.set_message("Connecting to The SAFE Network...");
+
+    tokio::spawn(async move {
+        let mut peers_connected = 0;
+        loop {
+            match rx.recv().await {
+                Ok(ClientEvent::ConnectedToNetwork) => {
+                    progress_bar.finish_with_message("Connected to the Network");
+                    break;
+                }
+                Ok(ClientEvent::PeerAdded {
+                    max_peers_to_connect,
+                }) => {
+                    peers_connected += 1;
+                    progress_bar.set_message(format!(
+                        "{peers_connected}/{max_peers_to_connect} initial peers found.",
+                    ));
+                }
+                Err(RecvError::Lagged(_)) => {
+                    // Even if the receiver is lagged, we would still get the ConnectedToNetwork during each new
+                    // connection. Thus it would be okay to skip this error.
+                }
+                Err(RecvError::Closed) => {
+                    progress_bar.finish_with_message("Could not connect to the network");
+                    break;
+                }
+                _ => {}
+            }
+        }
+    })
 }
 
 fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {

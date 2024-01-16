@@ -221,7 +221,8 @@ pub async fn transfers_events(
 ) -> Result<()> {
     let (client, mut wallet) = match MainPubkey::from_hex(&sk) {
         Ok(main_pubkey) => {
-            let client = Client::new(SecretKey::random(), bootstrap_peers, true, None).await?;
+            let client =
+                Client::new(SecretKey::random(), bootstrap_peers, true, None, None).await?;
             let wallet_dir = TempDir::new()?;
             let wallet = WatchOnlyWallet::load_from(&wallet_dir, main_pubkey)?;
             (client, wallet)

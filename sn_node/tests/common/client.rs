@@ -141,7 +141,7 @@ impl NonDroplet {
         };
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
-        Client::new(secret_key, bootstrap_peers, true, None)
+        Client::new(secret_key, bootstrap_peers, true, None, None)
             .await
             .expect("Client shall be successfully created.")
     }
@@ -203,7 +203,7 @@ impl Droplet {
         }
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
-        Client::new(secret_key, Some(bootstrap_peers), true, None)
+        Client::new(secret_key, Some(bootstrap_peers), true, None, None)
             .await
             .expect("Client shall be successfully created.")
     }
