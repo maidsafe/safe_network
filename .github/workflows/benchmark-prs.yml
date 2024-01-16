@@ -48,6 +48,8 @@ jobs:
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
+        env:
+          SN_LOG: "all"
         with:
           action: start
           interval: 2000
