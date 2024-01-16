@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705405926966,
+  "lastUpdate": 1705406011261,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0784777dc191453b8920a53528736d4f9fdf8351",
-          "message": "chore(cli): move 'chunk_path' to files.rs",
-          "timestamp": "2023-09-15T12:16:25Z",
-          "tree_id": "f3aac03664c48499521690dd99c9bdd8db3f9e34",
-          "url": "https://github.com/maidsafe/safe_network/commit/0784777dc191453b8920a53528736d4f9fdf8351"
-        },
-        "date": 1694785458278,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 61.100033,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 46,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f2c398169f997cc58c763fa8a07c5243600d38ac",
+          "message": "fix(CI): set correct log level for bench test",
+          "timestamp": "2024-01-16T10:59:37Z",
+          "tree_id": "4cc7bbfa0a1027fc45fe4c7ecc215f1b55dc5a26",
+          "url": "https://github.com/maidsafe/safe_network/commit/f2c398169f997cc58c763fa8a07c5243600d38ac"
+        },
+        "date": 1705406010680,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
             "unit": "MB"
           }
         ]
