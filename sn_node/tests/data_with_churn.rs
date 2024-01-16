@@ -38,7 +38,7 @@ use std::{
 };
 use tempfile::tempdir;
 use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
-use tracing::{debug, trace};
+use tracing::{debug, error, info, trace, warn};
 use xor_name::XorName;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
@@ -92,6 +92,7 @@ async fn data_availability_during_churn() -> Result<()> {
 
     let churn_period = if let Ok(str) = std::env::var("TEST_TOTAL_CHURN_CYCLES") {
         println!("Using value set in 'TEST_TOTAL_CHURN_CYCLES' env var: {str}");
+        info!("Using value set in 'TEST_TOTAL_CHURN_CYCLES' env var: {str}");
         let cycles = str.parse::<u32>()?;
         test_duration / cycles
     } else {
@@ -103,6 +104,7 @@ async fn data_availability_during_churn() -> Result<()> {
             )
     };
     println!("Nodes will churn every {churn_period:?}");
+    info!("Nodes will churn every {churn_period:?}");
 
     // Create a cross thread usize for tracking churned nodes
     let churn_count = Arc::new(RwLock::new(0_usize));
@@ -115,12 +117,16 @@ async fn data_availability_during_churn() -> Result<()> {
         "Running this test for {test_duration:?}{}...",
         if chunks_only { " (Chunks only)" } else { "" }
     );
+    info!(
+        "Running this test for {test_duration:?}{}...",
+        if chunks_only { " (Chunks only)" } else { "" }
+    );
 
     // The testnet will create a `faucet` at last. To avoid mess up with that,
     // wait for a while to ensure the spends of that got settled.
     sleep(std::time::Duration::from_secs(10)).await;
 
-    println!("Creating a client and paying wallet...");
+    info!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
     let (client, paying_wallet) =
         get_gossip_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE)
@@ -129,7 +135,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // Waiting for the paying_wallet funded.
     sleep(std::time::Duration::from_secs(10)).await;
 
-    println!(
+    info!(
         "Client and paying_wallet created with signing key: {:?}",
         client.signer_pk()
     );
@@ -143,7 +149,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // Spawn a task to create Registers and CashNotes at random locations,
     // at a higher frequency than the churning events
     if !chunks_only {
-        println!("Creating transfer wallet taking balance from the payment wallet");
+        info!("Creating transfer wallet taking balance from the payment wallet");
         let transfers_wallet_dir = TempDir::new()?;
         let transfers_wallet = get_funded_wallet(
             &client,
@@ -152,7 +158,7 @@ async fn data_availability_during_churn() -> Result<()> {
             TRANSFERS_WALLET_INITIAL_BALANCE,
         )
         .await?;
-        println!("Transfer wallet created");
+        info!("Transfer wallet created");
 
         // Waiting for the transfers_wallet funded.
         sleep(std::time::Duration::from_secs(10)).await;
@@ -174,6 +180,7 @@ async fn data_availability_during_churn() -> Result<()> {
     }
 
     println!("Uploading some chunks before carry out node churning");
+    info!("Uploading some chunks before carry out node churning");
 
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     store_chunks_task(
@@ -215,12 +222,13 @@ async fn data_availability_during_churn() -> Result<()> {
         paying_wallet_dir.path().to_path_buf(),
     );
 
+    info!("All tasks have been spawned. The test is now running...");
     println!("All tasks have been spawned. The test is now running...");
 
     let start_time = Instant::now();
     while start_time.elapsed() < test_duration {
         let failed = failures.read().await;
-        println!(
+        info!(
             "Current failures after {:?} ({}): {:?}",
             start_time.elapsed(),
             failed.len(),
@@ -243,7 +251,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // i.e. the test may pass even without any replication
     // Hence, we carry out a final round of query all data to confirm storage.
     println!("Final querying confirmation of content");
-    debug!("Final querying confirmation of content");
+    info!("Final querying confirmation of content");
 
     // take one read lock to avoid holding the lock for the whole loop
     // prevent any late content uploads being added to the list
@@ -320,6 +328,7 @@ fn create_cash_note_task(
             let cash_note_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
             let net_addr = NetworkAddress::SpendAddress(cash_note_addr);
             println!("Created CashNote at {cash_note_addr:?} after {delay:?}");
+            debug!("Created CashNote at {cash_note_addr:?} after {delay:?}");
             content.write().await.push_back(net_addr);
             let _ = cash_notes.write().await.insert(cash_note_addr, cash_note);
         }
@@ -347,6 +356,7 @@ fn create_registers_task(
 
             let addr = RegisterAddress::new(meta, owner);
             println!("Creating Register at {addr:?} in {delay:?}");
+            debug!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
             match client
@@ -406,7 +416,7 @@ fn store_chunks_task(
             let (addr, _data_map, _file_size, chunks) =
                 FilesApi::chunk_file(&file_path, &output_dir, true).expect("Failed to chunk bytes");
 
-            println!(
+            info!(
                 "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
                 chunks.len(),
                 chunk_size
@@ -427,6 +437,9 @@ fn store_chunks_task(
                 .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
             println!(
+                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
+            );
+            info!(
                 "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
             );
             sleep(delay).await;
@@ -457,6 +470,7 @@ fn query_content_task(
             let len = content.read().await.len();
             if len == 0 {
                 println!("No content created/stored just yet, let's try in {delay:?} ...");
+                info!("No content created/stored just yet, let's try in {delay:?} ...");
                 sleep(delay).await;
                 continue;
             }
@@ -475,6 +489,7 @@ fn query_content_task(
                     println!(
                         "Failed to query content (index: {index}) at {net_addr}: {last_err:?}"
                     );
+                    error!("Failed to query content (index: {index}) at {net_addr}: {last_err:?}");
                     // mark it to try 'MAX_NUM_OF_QUERY_ATTEMPTS' times.
                     let _ = content_erred
                         .write()
@@ -508,14 +523,16 @@ fn churn_nodes_task(
 
                 // break out if we've run the duration of churn
                 if start.elapsed() > test_duration {
-                    println!("Test duration reached, stopping churn nodes task");
+                    debug!("Test duration reached, stopping churn nodes task");
                     break 'main;
                 }
 
                 println!("Restarting node through its RPC service at {rpc_address}");
+                info!("Restarting node through its RPC service at {rpc_address}");
 
                 if let Err(err) = node_restart(rpc_address).await {
                     println!("Failed to restart node with RPC endpoint {rpc_address}: {err}");
+                    info!("Failed to restart node with RPC endpoint {rpc_address}: {err}");
                     continue;
                 }
 
@@ -547,10 +564,12 @@ fn retry_query_content_task(
                 let attempts = content_error.attempts + 1;
 
                 println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
+                info!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 if let Err(last_err) =
                     query_content(&client, &wallet_dir, &net_addr, cash_notes.clone()).await
                 {
                     println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
+                    warn!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
                     // otherwise report it effectivelly as failure.
                     content_error.attempts = attempts;
@@ -589,11 +608,12 @@ async fn final_retry_query_content(
         {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
+                error!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                 bail!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
             } else {
                 attempts += 1;
                 let delay = 2 * churn_period;
-                println!("Delaying last check for {delay:?} ...");
+                debug!("Delaying last check for {delay:?} ...");
                 sleep(delay).await;
                 continue;
             }

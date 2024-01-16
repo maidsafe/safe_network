@@ -24,6 +24,7 @@ use sn_registers::Permissions;
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
+use tracing::info;
 use xor_name::XorName;
 
 #[tokio::test]
@@ -46,7 +47,7 @@ async fn storage_payment_succeeds() -> Result<()> {
             sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(XorName::random(&mut rng)))
         })
         .collect::<Vec<_>>();
-    println!(
+    info!(
         "Paying for {} random addresses...",
         random_content_addrs.len()
     );
@@ -55,7 +56,7 @@ async fn storage_payment_succeeds() -> Result<()> {
         .pay_for_storage(random_content_addrs.clone().into_iter())
         .await?;
 
-    println!("Verifying balance has been paid from the wallet...");
+    info!("Verifying balance has been paid from the wallet...");
 
     let paying_wallet = wallet_client.into_wallet();
     assert!(
@@ -127,7 +128,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
     // let's first pay only for a subset of the addresses
     let subset_len = random_content_addrs.len() / 3;
-    println!("Paying for {subset_len} random addresses...",);
+    info!("Paying for {subset_len} random addresses...",);
     let ((storage_cost, royalties_fees), _) = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter().take(subset_len))
         .await?;
@@ -138,7 +139,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
     // check we've paid only for the subset of addresses, 1 nano per addr
     let new_balance = NanoTokens::from(wallet_original_balance - total_cost.as_nano());
-    println!("Verifying new balance on paying wallet is {new_balance} ...");
+    info!("Verifying new balance on paying wallet is {new_balance} ...");
     let paying_wallet = wallet_client.into_wallet();
     assert_eq!(paying_wallet.balance(), new_balance);
 
@@ -190,7 +191,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     let (files_api, _content_bytes, file_addr, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
 
-    println!("Paying for {} random addresses...", chunks.len());
+    info!("Paying for {} random addresses...", chunks.len());
 
     let _cost = wallet_client
         .pay_for_storage(
@@ -245,7 +246,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         .upload_test_bytes(content_bytes.clone(), false)
         .await?;
 
-    println!("Reading {content_addr:?} expected to fail");
+    info!("Reading {content_addr:?} expected to fail");
     let mut files_download = FilesDownload::new(files_api);
     assert!(
         matches!(
@@ -275,7 +276,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let xor_name = XorName::random(&mut rng);
     let address = RegisterAddress::new(xor_name, client.signer_pk());
     let net_addr = NetworkAddress::from_register_address(address);
-    println!("Paying for random Register address {net_addr:?} ...");
+    info!("Paying for random Register address {net_addr:?} ...");
 
     let _cost = wallet_client
         .pay_for_storage(std::iter::once(net_addr))
