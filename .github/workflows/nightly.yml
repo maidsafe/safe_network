@@ -374,7 +374,7 @@ jobs:
         timeout-minutes: 25
 
       - name: execute the spend test
-        run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture
+        run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 10
