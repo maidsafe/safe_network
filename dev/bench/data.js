@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705345587470,
+  "lastUpdate": 1705405926966,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "88fa51a507d51880c20ec5b2b5aace930a842163",
-          "message": "chore: some cleanups within the upload procedure",
-          "timestamp": "2023-09-18T13:03:02Z",
-          "tree_id": "f23fed735720326fed646612b590949ded2a8f3b",
-          "url": "https://github.com/maidsafe/safe_network/commit/88fa51a507d51880c20ec5b2b5aace930a842163"
-        },
-        "date": 1695045860891,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09025303401578075,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5583948657990775,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.770706586793096,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 65.38434834244597,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "f2c398169f997cc58c763fa8a07c5243600d38ac",
+          "message": "fix(CI): set correct log level for bench test",
+          "timestamp": "2024-01-16T10:59:37Z",
+          "tree_id": "4cc7bbfa0a1027fc45fe4c7ecc215f1b55dc5a26",
+          "url": "https://github.com/maidsafe/safe_network/commit/f2c398169f997cc58c763fa8a07c5243600d38ac"
+        },
+        "date": 1705405924473,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 0.6528843114525924,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1368505432244587,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 66.64866833515872,
             "unit": "MiB/s"
           }
         ]
