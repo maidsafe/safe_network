@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705421377225,
+  "lastUpdate": 1705421463016,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11715,35 +11715,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "88fa51a507d51880c20ec5b2b5aace930a842163",
-          "message": "chore: some cleanups within the upload procedure",
-          "timestamp": "2023-09-18T13:03:02Z",
-          "tree_id": "f23fed735720326fed646612b590949ded2a8f3b",
-          "url": "https://github.com/maidsafe/safe_network/commit/88fa51a507d51880c20ec5b2b5aace930a842163"
-        },
-        "date": 1695046142876,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58.33523,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
           "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/60f424a9b31fc4dc1ba2f895d953328522af6e49"
         },
         "date": 1705417925492,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4367fb710be752b45534a02cea5d0cf98970915f",
+          "message": "chore(CI): upload logs manually within the large_file_upload test",
+          "timestamp": "2024-01-16T15:27:40Z",
+          "tree_id": "c6de35a7bbbe00661e0202776eb4f2025286cae1",
+          "url": "https://github.com/maidsafe/safe_network/commit/4367fb710be752b45534a02cea5d0cf98970915f"
+        },
+        "date": 1705421462046,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
