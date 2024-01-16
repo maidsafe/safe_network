@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705417926148,
+  "lastUpdate": 1705417928028,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "19559a4ece9c0edf33c9a22a9c774f6a7b11fee6",
-          "message": "feat(client): download file concurrently",
-          "timestamp": "2023-09-18T07:42:44Z",
-          "tree_id": "414a54fc3246e62ae2f52156c3fb2d79cec29fbd",
-          "url": "https://github.com/maidsafe/safe_network/commit/19559a4ece9c0edf33c9a22a9c774f6a7b11fee6"
-        },
-        "date": 1695027512482,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 220.10675,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 178,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 41,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "60f424a9b31fc4dc1ba2f895d953328522af6e49",
+          "message": "fix(wallet): remove unconfirmed_spends file from disk when all confirmed",
+          "timestamp": "2024-01-16T14:19:07Z",
+          "tree_id": "e5422fae97ef3036b8b10f24efaffaa41508f8d6",
+          "url": "https://github.com/maidsafe/safe_network/commit/60f424a9b31fc4dc1ba2f895d953328522af6e49"
+        },
+        "date": 1705417927421,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 38,
             "unit": "MB"
           }
         ]
