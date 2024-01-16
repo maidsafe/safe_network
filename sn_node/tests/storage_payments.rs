@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::{client::get_gossip_client_and_wallet, random_content};
+use crate::common::{client::get_gossip_client_and_funded_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use rand::Rng;
@@ -31,11 +31,10 @@ use xor_name::XorName;
 async fn storage_payment_succeeds() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let paying_wallet_balance = 50_000_000_000_000_001;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     let balance_before = paying_wallet.balance();
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
@@ -71,12 +70,11 @@ async fn storage_payment_succeeds() -> Result<()> {
 async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let wallet_original_balance = 100_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     let (files_api, content_bytes, _random_content_addrs, chunks) =
         random_content(&client, paying_wallet_dir.to_path_buf(), chunks_dir.path())?;
@@ -111,11 +109,11 @@ async fn storage_payment_fails_with_insufficient_money() -> Result<()> {
 async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let wallet_original_balance = 100_000_000_000_000_000;
     let paying_wallet_dir: TempDir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), wallet_original_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+    let wallet_original_balance = paying_wallet.balance().as_nano();
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     // generate a random number (between 50 and 100) of random addresses
@@ -180,12 +178,11 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let paying_wallet_balance = 50_000_000_000_002;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let (files_api, _content_bytes, file_addr, chunks) =
@@ -214,12 +211,11 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
 async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let paying_wallet_balance = 50_000_000_000_003;
     let paying_wallet_dir = TempDir::new()?;
     let chunks_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let (files_api, content_bytes, content_addr, chunks) =
@@ -265,11 +261,10 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
 async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let paying_wallet_balance = 65_000_000_000;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
@@ -312,11 +307,10 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments");
 
-    let paying_wallet_balance = 55_000_000_005;
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), paying_wallet_balance).await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut rng = rand::thread_rng();
