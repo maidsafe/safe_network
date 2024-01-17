@@ -100,6 +100,8 @@ pub async fn status(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     detailed_view: bool,
+    output_json: bool,
+    fail: bool,
 ) -> Result<()> {
     // Again confirm that services which are marked running are still actually running.
     // If they aren't we'll mark them as stopped.
@@ -147,7 +149,10 @@ pub async fn status(
         }
     }
 
-    if detailed_view {
+    if output_json {
+        let json = serde_json::to_string(&node_registry.nodes)?;
+        println!("{json}");
+    } else if detailed_view {
         for node in &node_registry.nodes {
             let service_status = format!("{} - {}", node.service_name, format_status(&node.status));
             let banner = "=".repeat(service_status.len());
@@ -220,6 +225,15 @@ pub async fn status(
                 connected_peers
             );
         }
+    }
+
+    if fail
+        && node_registry
+            .nodes
+            .iter()
+            .any(|n| n.status != NodeStatus::Running)
+    {
+        return Err(eyre!("One or more nodes are not in a running state"));
     }
 
     Ok(())
