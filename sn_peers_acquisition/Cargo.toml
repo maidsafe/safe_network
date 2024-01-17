@@ -11,9 +11,11 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.2.2"
 
 [features]
-default = []
+default = ["quic"]
 local-discovery = []
 network-contacts = ["reqwest", "tokio", "url"]
+quic= []
+tcp = []
 
 [dependencies]
 clap = { version = "4.2.1", features = ["derive", "env"] }

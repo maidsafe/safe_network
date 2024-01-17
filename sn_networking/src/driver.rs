@@ -318,6 +318,7 @@ impl NetworkBuilder {
 
         // Listen on the provided address
         let listen_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
+
         #[cfg(not(feature = "quic"))]
         let listen_addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
 

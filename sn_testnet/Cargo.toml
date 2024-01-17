@@ -12,6 +12,7 @@ version = "0.3.22"
 
 [features]
 # required to pass on flag to node builds
+default = ["quic"]
 chaos = []
 statemap = []
 otlp = []

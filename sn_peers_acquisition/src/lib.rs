@@ -120,7 +120,7 @@ async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
     get_bootstrap_peers_from_url(url).await
 }
 
-/// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a (TCP) multiaddr.
+/// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a multiaddr.
 pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
     if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
@@ -135,7 +135,7 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
         return Ok(multiaddr);
     }
 
-    // Parse any valid multiaddr string, e.g. `/ip4/1.2.3.4/tcp/1234/p2p/<peer_id>`.
+    // Parse any valid multiaddr string
     if let Ok(addr) = addr.parse::<Multiaddr>() {
         return Ok(addr);
     }
