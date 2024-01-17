@@ -681,33 +681,15 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 30
 
-      - name: Zip the client and nodes logs
+      - name: Upload client and node logs
         if: always()
-        run: |
-          pwd
-          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
-          ls -l
-        env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 10
-
-      - name: Upload node logs
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4
         with:
           name: large_file_upload_node_logs
-          path: nodes_log_files.tar.gz
-        continue-on-error: true
-        if: always()
-
-      - name: Upload client logs
-        uses: actions/upload-artifact@main
-        with:
-          name: large_file_upload_client_logs
-          path: client_log_files.tar.gz
-        continue-on-error: true
-        if: always()
+          path: |
+            ~/.local/share/safe/node/*/logs/*.log*
+            ~/.local/share/safe/*/*/*.log*
+            ~/.local/share/safe/client/logs/*/*.log*
 
       - name: Check the home dir leftover space
         run: |
