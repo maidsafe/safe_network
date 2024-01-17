@@ -59,22 +59,70 @@ impl WalletClient {
         Self { client, wallet }
     }
 
-    /// Stores the wallet to disk.
+    /// Stores the wallet to the local wallet directory.
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// wallet_client.store_local_wallet()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn store_local_wallet(&mut self) -> WalletResult<()> {
         self.wallet.deposit_and_store_to_disk(&vec![])
     }
 
-    /// Get the wallet balance
+    /// Display the wallet balance
+    /// # Example
+    /// ```no_run
+    /// // yDispla the wallet balance in the terminal
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// println!("{}" ,wallet_client.balance());
+    /// # Ok(())
+    /// # }
     pub fn balance(&self) -> NanoTokens {
         self.wallet.balance()
     }
 
-    /// Do we have any unconfirmed transactions?
+    /// See if any unconfirmed transactions exist.
+    /// # Example
+    /// ```no_run
+    /// // Print unconfirmed spends to the terminal
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// if wallet_client.unconfirmed_spend_requests_exist() {println!("Unconfirmed spends exist!")};
+    /// # Ok(())
+    /// # }
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
         self.wallet.unconfirmed_spend_requests_exist()
     }
-    /// Get unconfirmed txs
-    pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
+    /// Get unconfirmed transactions
+    pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> { //TODO: Unused
         self.wallet.unconfirmed_spend_requests()
     }
 
@@ -251,8 +299,8 @@ impl WalletClient {
         Err(WalletError::CouldNotSendMoney(last_err))
     }
 
-    /// Existing chunks will have a store cost to be Zero.
-    /// The payement procedure shall be skipped, and the chunk upload as well.
+    /// Existing chunks will have the store cost set to Zero.
+    /// The payment procedure shall be skipped, and the chunk upload as well.
     /// Hence the list of existing chunks will be returned.
     async fn pay_for_storage_once(
         &mut self,
@@ -332,12 +380,12 @@ impl WalletClient {
         // Before wallet progress, there shall be no `unconfirmed_spend_requests`
         // Here, just re-upload again. The caller shall carry out a re-try later on.
         if self.wallet.unconfirmed_spend_requests_exist() {
-            info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+            info!("Pre-Unconfirmed transactions exist. Resending in 1 second...");
             sleep(Duration::from_secs(1)).await;
             self.resend_pending_txs(verify_store).await;
 
             return Err(WalletError::CouldNotSendMoney(
-                "Wallet has pre-unconfirmed tx, resent them and try later.".to_string(),
+                "Wallet has pre-unconfirmed transactions. Resend, and try again.".to_string(),
             ));
         }
 
@@ -463,8 +511,8 @@ impl Client {
             // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
             // This only happens if we're verifying the store
             if let Err(Error::Network(sn_networking::Error::GetRecordError(
-                GetRecordError::RecordDoesNotMatch(record_key),
-            ))) = spend_attempt_result
+                                          GetRecordError::RecordDoesNotMatch(record_key),
+                                      ))) = spend_attempt_result
             {
                 warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");
                 spent_cash_notes.insert(*cash_note_key);
