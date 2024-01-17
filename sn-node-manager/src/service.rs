@@ -28,6 +28,7 @@ use sysinfo::{Pid, System, SystemExt};
 pub struct ServiceConfig {
     pub data_dir_path: PathBuf,
     pub genesis: bool,
+    pub local: bool,
     pub log_dir_path: PathBuf,
     pub name: String,
     pub node_port: u16,
@@ -181,6 +182,9 @@ impl ServiceControl for NodeServiceManager {
 
         if config.genesis {
             args.push(OsString::from("--first"));
+        }
+        if config.local {
+            args.push(OsString::from("--local"));
         }
 
         if !config.peers.is_empty() {

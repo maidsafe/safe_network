@@ -64,6 +64,11 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\services
         #[clap(long, verbatim_doc_comment)]
         data_dir_path: Option<PathBuf>,
+        /// Set this flag to launch safenode with the --local flag.
+        ///
+        /// This is useful for building a service-based local network.
+        #[clap(long)]
+        local: bool,
         /// Provide the path for the log directory for the installed node.
         ///
         /// This path is a prefix. Each installed node will have its own directory underneath it.
@@ -267,6 +272,7 @@ async fn main() -> Result<()> {
         SubCmd::Add {
             count,
             data_dir_path,
+            local,
             log_dir_path,
             peers,
             port,
@@ -304,6 +310,7 @@ async fn main() -> Result<()> {
 
             add(
                 AddServiceOptions {
+                    local,
                     genesis: peers.first,
                     count,
                     peers: get_peers_from_args(peers).await?,
