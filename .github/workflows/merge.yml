@@ -681,33 +681,14 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 30
 
-      - name: Zip the client and nodes logs
+      - name: Stop the local network and upload logs
         if: always()
-        run: |
-          pwd
-          find $NODE_DATA_PATH -iname '*.log*' | tar -zcvf nodes_log_files.tar.gz --files-from -
-          find $CLIENT_DATA_PATH -iname '*.log*' | tar -zcvf client_log_files.tar.gz --files-from -
-          ls -l
-        env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 10
-
-      - name: Upload node logs
-        uses: actions/upload-artifact@main
+        uses: maidsafe/sn-local-testnet-action@main
         with:
-          name: large_file_upload_node_logs
-          path: nodes_log_files.tar.gz
-        continue-on-error: true
-        if: always()
-
-      - name: Upload client logs
-        uses: actions/upload-artifact@main
-        with:
-          name: large_file_upload_client_logs
-          path: client_log_files.tar.gz
-        continue-on-error: true
-        if: always()
+          action: stop
+          platform: ubuntu-latest
+          log_file_prefix: safe_test_logs_large_file_upload
+          build: true
 
       - name: Check the home dir leftover space
         run: |
@@ -724,14 +705,6 @@ jobs:
         env:
           CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          platform: ubuntu-latest
-          build: true
 
   replication_bench_with_heavy_upload:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
