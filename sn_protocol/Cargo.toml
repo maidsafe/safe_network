@@ -10,7 +10,10 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.10.10"
 
 [features]
+default = ["quic"]
 test-utils=[]
+quic=[]
+tcp=[]
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
