@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705494510603,
+  "lastUpdate": 1705494595017,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "319b7f9a4359b760f8aa69843b44d7e5a5ce64e3",
-          "message": "fix: shorter wait on verification put",
-          "timestamp": "2023-09-19T05:34:18Z",
-          "tree_id": "b35f73394f2ec673f3ba0afefaeecd5076925da3",
-          "url": "https://github.com/maidsafe/safe_network/commit/319b7f9a4359b760f8aa69843b44d7e5a5ce64e3"
-        },
-        "date": 1695105551189,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 63.80339,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5a30ae7f5c833191aadcf192bd90fd608ff1582e",
+          "message": "fix(docs): update Client signature for doc test",
+          "timestamp": "2024-01-17T11:40:09Z",
+          "tree_id": "1684baa570e89313b06591aea7cf2ad5a1ec60e0",
+          "url": "https://github.com/maidsafe/safe_network/commit/5a30ae7f5c833191aadcf192bd90fd608ff1582e"
+        },
+        "date": 1705494594417,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 76,
             "unit": "MB"
           }
         ]
