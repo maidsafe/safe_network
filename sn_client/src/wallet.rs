@@ -83,7 +83,7 @@ impl WalletClient {
     /// Display the wallet balance
     /// # Example
     /// ```no_run
-    /// // yDispla the wallet balance in the terminal
+    /// // Display the wallet balance in the terminal
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
