@@ -71,10 +71,13 @@ jobs:
           echo "Peer is $SAFE_PEERS"
           echo "Deployment inventory is $SN_INVENTORY"
 
-      - name: Create and fund a wallet to pay for files storage
+      - name: Obtain the funds from the faucet
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          # read the inventory file
+          inventory_path=/home/runner/.local/share/safe/testnet-deploy/NightlyE2E-inventory.json
+          echo "Inventory Path: $inventory_path"
+          faucet_address=$(jq -r '.faucet_address' $inventory_path)
+          cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
         env:
           SN_LOG: "all"
         timeout-minutes: 2
