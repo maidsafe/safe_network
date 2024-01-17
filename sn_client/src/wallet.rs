@@ -320,7 +320,8 @@ impl WalletClient {
     ///   `skipped_chunks` is the list of content already exists in network and no need to upload
     ///
     /// Note storage cost is _per record_, and it's zero if not required for this operation.
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// This can optionally verify the store has been successful.
+    /// Note: This will attempt to GET the cash_note from the network
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -422,10 +423,9 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
-    ///
     /// Returns the amount paid for storage, including the network royalties fee paid.
-    ///
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// This can optionally verify the store has been successful.
+    /// Note: This will attempt to GET the cash_note from the network.
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
@@ -502,8 +502,8 @@ impl WalletClient {
         Ok(total_cost)
     }
 
-    /// Resend failed txs
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// Resend failed transactions. This can optionally verify the store has been successful.
+    /// Note: This will attempt to GET the cash_note from the network.
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
@@ -599,7 +599,7 @@ impl Client {
         Ok(cashnotes)
     }
 
-    /// Verify that the spends refered to in the CashNote exist on the network.
+    /// Verify that the spends referred to (in the CashNote) exist on the network.
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
@@ -627,7 +627,8 @@ impl Client {
             return Ok(());
         }
         Err(WalletError::CouldNotVerifyTransfer(
-            "The spends in network were not the same as the ones in the CashNote. The parents of this CashNote are probably double spends.".into(),
+            "The spends in network were not the same as the ones in the CashNote. \
+            The parents of this CashNote are probably double spends.".into(),
         ))
     }
 }
@@ -651,7 +652,7 @@ pub async fn send(
     // Wallet shall be all clear to progress forward.
     let mut attempts = 0;
     while wallet_client.unconfirmed_spend_requests_exist() {
-        info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+        info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
         wallet_client.resend_pending_txs(verify_store).await;
 
@@ -665,8 +666,8 @@ pub async fn send(
     }
 
     if did_error {
-        error!("Wallet has pre-unconfirmed txs, cann't progress further.");
-        println!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        error!("Wallet has pre-unconfirmed transactions, can't progress further.");
+        println!("Wallet has pre-unconfirmed transactions, can't progress further.");
         return Err(WalletError::UnconfirmedTxAfterRetries.into());
     }
 
@@ -709,8 +710,8 @@ pub async fn send(
     Ok(new_cash_note)
 }
 
-/// Send tokens to another wallet.
-/// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
+/// Send tokens to another wallet. Can optionally verify the store has been successful.
+/// Note: This will attempt to GET the Spend from the network.
 pub async fn broadcast_signed_spends(
     from: LocalWallet,
     client: &Client,
