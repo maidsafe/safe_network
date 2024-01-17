@@ -11,6 +11,11 @@ repository = "https://github.com/maidsafe/safe_network"
 path="src/main.rs"
 name="safenode-manager"
 
+[features]
+default = ["quic"]
+quic = []
+tcp = []
+
 [dependencies]
 clap = { version = "4.4.6", features = ["derive", "env"]}
 colored = "2.0.4"

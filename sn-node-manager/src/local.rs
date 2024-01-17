@@ -273,14 +273,27 @@ pub async fn run_node(
         safenode_path: Some(launcher.get_safenode_path()),
     });
 
-    Ok(Multiaddr::from_str(&format!(
-        "/ip4/127.0.0.1/tcp/{port}/p2p/{peer_id}"
-    ))?)
+    Ok(build_multiaddr(port, peer_id))
 }
 
 ///
 /// Private Helpers
 ///
+
+/// Builds a MultiAddress taking into account any required ffeature set of the nodes.
+/// Default is a quic multiaddress
+fn build_multiaddr(port: u16, peer_id: PeerId) -> Multiaddr {
+    let addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
+
+    #[cfg(feature = "tcp")]
+    let addr = addr.with(libp2p::multiaddr::Protocol::Tcp(port));
+    #[cfg(feature = "quic")]
+    let addr = addr
+        .with(libp2p::multiaddr::Protocol::Udp(port))
+        .with(libp2p::multiaddr::Protocol::QuicV1);
+
+    addr.with(libp2p::multiaddr::Protocol::P2p(peer_id))
+}
 
 #[cfg(target_os = "windows")]
 fn get_username() -> Result<String> {
@@ -376,8 +389,8 @@ mod tests {
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let port = 12000;
         let rpc_port = 13000;
-        let node_multiaddr =
-            Multiaddr::from_str(&format!("/ip4/127.0.0.1/tcp/{port}/p2p/{peer_id}"))?;
+
+        let node_multiaddr = build_multiaddr(port, peer_id);
 
         mock_launcher
             .expect_get_safenode_version()
@@ -452,8 +465,8 @@ mod tests {
     #[tokio::test]
     async fn run_node_should_launch_an_additional_node() -> Result<()> {
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
-        let genesis_peer_addr =
-            Multiaddr::from_str(&format!("/ip4/127.0.0.1/tcp/12000/p2p/{peer_id}"))?;
+
+        let genesis_peer_addr = build_multiaddr(12000, peer_id);
 
         let mut mock_launcher = MockLauncher::new();
         let mut node_registry = NodeRegistry {
@@ -480,8 +493,7 @@ mod tests {
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let port = 12001;
         let rpc_port = 13001;
-        let node_peer_addr =
-            Multiaddr::from_str(&format!("/ip4/127.0.0.1/tcp/{port}/p2p/{peer_id}"))?;
+        let node_peer_addr = build_multiaddr(port, peer_id);
 
         mock_launcher
             .expect_get_safenode_version()
