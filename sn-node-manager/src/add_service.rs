@@ -19,6 +19,7 @@ use std::path::PathBuf;
 pub struct AddServiceOptions {
     pub count: Option<u16>,
     pub genesis: bool,
+    pub local: bool,
     pub peers: Vec<Multiaddr>,
     pub port: Option<u16>,
     pub rpc_port: Option<u16>,
@@ -128,6 +129,7 @@ pub async fn add(
         )?;
 
         service_control.install(ServiceConfig {
+            local: install_options.local,
             data_dir_path: service_data_dir_path.clone(),
             genesis: install_options.genesis,
             log_dir_path: service_log_dir_path.clone(),
@@ -315,6 +317,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: true,
                 genesis: true,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
@@ -333,6 +336,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: true,
                 genesis: true,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -356,6 +360,7 @@ mod tests {
         node_logs_dir.assert(predicate::path::is_dir());
 
         assert_eq!(node_registry.nodes.len(), 1);
+        assert!(node_registry.nodes[0].genesis);
         assert_eq!(node_registry.nodes[0].version, latest_version);
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.nodes[0].user, get_username());
@@ -417,6 +422,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                local: true,
                 genesis: true,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -466,6 +472,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                local: true,
                 genesis: true,
                 count: Some(3),
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -568,6 +575,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
@@ -600,6 +608,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode2".to_string(),
                 safenode_path: node_data_dir
@@ -632,6 +641,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode3".to_string(),
                 safenode_path: node_data_dir
@@ -650,6 +660,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: true,
                 genesis: false,
                 count: Some(3),
                 peers: vec![],
@@ -787,6 +798,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
@@ -805,6 +817,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: false,
                 genesis: false,
                 count: None,
                 peers: vec![],
@@ -934,6 +947,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode2".to_string(),
                 safenode_path: node_data_dir
@@ -952,6 +966,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: true,
                 genesis: false,
                 count: None,
                 peers: vec![],
@@ -1055,6 +1070,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
@@ -1073,6 +1089,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: false,
                 genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -1194,6 +1211,7 @@ mod tests {
             .expect_install()
             .times(1)
             .with(eq(ServiceConfig {
+                local: false,
                 genesis: false,
                 name: "safenode1".to_string(),
                 safenode_path: node_data_dir
@@ -1212,6 +1230,7 @@ mod tests {
 
         add(
             AddServiceOptions {
+                local: false,
                 genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -1280,6 +1299,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                local: true,
                 genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -1345,6 +1365,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                local: true,
                 genesis: false,
                 count: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
@@ -1395,6 +1416,7 @@ mod tests {
 
         let result = add(
             AddServiceOptions {
+                local: true,
                 genesis: false,
                 count: Some(3),
                 safenode_dir_path: temp_dir.to_path_buf(),
