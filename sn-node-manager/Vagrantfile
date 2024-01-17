@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
     mount_options: ['rw', 'trans=virtio', 'version=9p2000.L']
   config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "/home/vagrant/.ssh/id_rsa"
   config.vm.provision "shell", inline: "apt-get update -y"
-  config.vm.provision "shell", inline: "apt-get install -y build-essential"
+  config.vm.provision "shell", inline: "apt-get install -y build-essential jq"
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     curl -L -O https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
     chmod +x rustup-init
