@@ -623,7 +623,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.local_safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -633,6 +633,17 @@ jobs:
           then
             echo "We are logging an extremely large data"
             exit 1
+          fi
+
+          # sanity check
+          if ! rg '^' "${{ matrix.local_safe_path }}"/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          then
+            echo "Sanity check pass for local safe path"
+          fi
+          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          then
+            echo "Sanity check pass for wan logs"
           fi
 
       # - name: post notification to slack on failure
@@ -801,7 +812,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.local_safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -811,6 +822,17 @@ jobs:
           then
             echo "We are logging an extremely large data"
             exit 1
+          fi
+
+          # sanity check
+          if ! rg '^' "${{ matrix.local_safe_path }}"/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          then
+            echo "Sanity check pass for local safe path"
+          fi
+          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          then
+            echo "Sanity check pass for wan logs"
           fi
 
       # - name: post notification to slack on failure
