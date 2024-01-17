@@ -233,6 +233,12 @@ pub enum SubCmd {
         /// Set this flag to display more details
         #[clap(long)]
         details: bool,
+        /// Set this flag to return an error if any nodes are not running
+        #[clap(long)]
+        fail: bool,
+        /// Set this flag to output the status as a JSON document
+        #[clap(long, conflicts_with = "details")]
+        json: bool,
     },
     /// Stop a safenode service.
     ///
@@ -540,22 +546,44 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
-        SubCmd::Status { details } => {
+        SubCmd::Status {
+            details,
+            fail,
+            json,
+        } => {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if !node_registry.nodes.is_empty() {
-                println!("=================================================");
-                println!("                Safenode Services                ");
-                println!("=================================================");
-                status(&mut node_registry, &NodeServiceManager {}, details).await?;
+                if !json {
+                    println!("=================================================");
+                    println!("                Safenode Services                ");
+                    println!("=================================================");
+                }
+                status(
+                    &mut node_registry,
+                    &NodeServiceManager {},
+                    details,
+                    json,
+                    fail,
+                )
+                .await?;
                 node_registry.save()?;
             }
 
             let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
             if !local_node_registry.nodes.is_empty() {
-                println!("=================================================");
-                println!("                Local Network                    ");
-                println!("=================================================");
-                status(&mut local_node_registry, &NodeServiceManager {}, details).await?;
+                if !json {
+                    println!("=================================================");
+                    println!("                Local Network                    ");
+                    println!("=================================================");
+                }
+                status(
+                    &mut local_node_registry,
+                    &NodeServiceManager {},
+                    details,
+                    json,
+                    fail,
+                )
+                .await?;
                 local_node_registry.save()?;
             }
 
