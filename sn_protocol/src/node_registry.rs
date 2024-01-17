@@ -139,6 +139,11 @@ pub struct NodeRegistry {
 
 impl NodeRegistry {
     pub fn save(&self) -> Result<()> {
+        let path = Path::new(&self.save_path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
         let json = serde_json::to_string(self)?;
         let mut file = std::fs::File::create(self.save_path.clone())?;
         file.write_all(json.as_bytes())?;
