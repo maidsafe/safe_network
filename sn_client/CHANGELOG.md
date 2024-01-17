@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.13...sn_client-v0.102.0) - 2024-01-17
+
+### Fixed
+- *(docs)* update Client signature for doc test
+- *(client)* move out the peers added var to event handler loop
+
+### Other
+- *(client)* [**breaking**] move out client connection progress bar
+
 ## [0.101.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.12...sn_client-v0.101.13) - 2024-01-17
 
 ### Other

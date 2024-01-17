@@ -2888,6 +2888,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.103.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.102.22...sn_node-v0.103.0) - 2024-01-17
+
+### Other
+- *(client)* [**breaking**] move out client connection progress bar
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
