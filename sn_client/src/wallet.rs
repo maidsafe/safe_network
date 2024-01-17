@@ -26,8 +26,7 @@ use std::{
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
 
-/// A wallet client can be used to send and
-/// receive tokens to/from other wallets.
+/// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {
     client: Client,
     wallet: LocalWallet,
@@ -127,7 +126,34 @@ impl WalletClient {
         self.wallet.unconfirmed_spend_requests()
     }
 
-    /// Get the payment for a given network address
+    /// Get the payment detail from a given address within the network.
+    ///
+    /// # Arguments
+    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    ///
+    /// # Example
+    /// ```no_run
+    /// // Getting the payment for an address using a random PeerId
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::io::Bytes;
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// use libp2p_identity::PeerId;
+    /// use sn_protocol::NetworkAddress;
+    ///
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let network_address = NetworkAddress::from_peer(PeerId::random());
+    /// let payment = wallet_client.get_payment_for_addr(&network_address)?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<Payment> {
         match &address.as_xorname() {
             Some(xorname) => {
