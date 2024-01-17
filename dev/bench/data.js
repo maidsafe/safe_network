@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705504009835,
+  "lastUpdate": 1705504093915,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "1d2929760a6489253e187d6ac231c1a06db13ef3",
-          "message": "chore(networking): remove the quote from names as it's misleading",
-          "timestamp": "2023-09-19T05:37:56Z",
-          "tree_id": "515eb154253e9a6716269659d507099b8ef24c51",
-          "url": "https://github.com/maidsafe/safe_network/commit/1d2929760a6489253e187d6ac231c1a06db13ef3"
-        },
-        "date": 1695108255990,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 66.125824,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 76,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "digital@engineer.com",
+            "name": "Jason Paul",
+            "username": "mofobit"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ad5bef525b9c61ef45a0c4c12f5634a6ab2f436c",
+          "message": "docs: fixed typo",
+          "timestamp": "2024-01-17T14:27:02Z",
+          "tree_id": "df560e733651067dc31a4f7ddc28295c37010753",
+          "url": "https://github.com/maidsafe/safe_network/commit/ad5bef525b9c61ef45a0c4c12f5634a6ab2f436c"
+        },
+        "date": 1705504093519,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
             "unit": "MB"
           }
         ]
