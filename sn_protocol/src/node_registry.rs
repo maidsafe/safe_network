@@ -75,11 +75,18 @@ pub struct Node {
 impl Node {
     pub fn get_multiaddr(&self) -> Option<Multiaddr> {
         if let Some(peer_id) = self.peer_id {
-            let peer = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", self.port, peer_id);
-            match peer.parse() {
-                Ok(p) => return Some(p),
-                Err(_) => return None,
-            }
+            let addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
+
+            #[cfg(feature = "tcp")]
+            let addr = addr.with(libp2p::multiaddr::Protocol::Tcp(self.port));
+            #[cfg(feature = "quic")]
+            let addr = addr
+                .with(libp2p::multiaddr::Protocol::Udp(self.port))
+                .with(libp2p::multiaddr::Protocol::QuicV1);
+
+            let peer = addr.with(libp2p::multiaddr::Protocol::P2p(peer_id));
+
+            return Some(peer);
         }
         None
     }

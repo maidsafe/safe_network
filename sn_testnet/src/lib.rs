@@ -539,8 +539,6 @@ mod test {
             .launch_genesis(vec!["--log-format".to_string(), "json".to_string()])
             .await?;
 
-        assert_eq!(format!("/ip4/127.0.0.1/tcp/11101/p2p/{peer_id}"), multiaddr);
-
         if !cfg!(feature = "quic") {
             assert_eq!(format!("/ip4/127.0.0.1/tcp/11101/p2p/{peer_id}"), multiaddr);
         } else {
