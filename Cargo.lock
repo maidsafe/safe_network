@@ -4527,7 +4527,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.88.22"
+version = "0.89.0"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4566,7 +4566,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.101.13"
+version = "0.102.0"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4576,7 +4576,6 @@ dependencies = [
  "eyre",
  "futures",
  "hex",
- "indicatif",
  "itertools 0.11.0",
  "libp2p 0.53.2",
  "libp2p-identity",
@@ -4601,12 +4600,13 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.2.22"
+version = "0.3.0"
 dependencies = [
  "blsttc",
  "clap 4.4.14",
  "color-eyre",
  "dirs-next",
+ "indicatif",
  "sn_client",
  "sn_logging",
  "sn_peers_acquisition",
@@ -4673,7 +4673,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.102.22"
+version = "0.103.0"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4725,7 +4725,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.2.22"
+version = "0.3.0"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4810,7 +4810,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.3.20"
+version = "0.3.21"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",

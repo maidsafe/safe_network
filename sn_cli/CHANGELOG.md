@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.0](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.22...sn_cli-v0.89.0) - 2024-01-17
+
+### Other
+- *(client)* [**breaking**] move out client connection progress bar
+
 ## [0.88.22](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.88.21...sn_cli-v0.88.22) - 2024-01-17
 
 ### Other

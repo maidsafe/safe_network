@@ -9,12 +9,12 @@
 use super::{
     chunks::Error as ChunksError,
     error::{Error, Result},
-    Client, ClientEvent, ClientEventsChannel, ClientEventsReceiver, ClientRegister, WalletClient,
+    Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver, ClientRegister,
+    WalletClient,
 };
 use bls::{PublicKey, SecretKey, Signature};
 use bytes::Bytes;
 use futures::future::join_all;
-use indicatif::ProgressBar;
 use libp2p::{
     identity::Keypair,
     kad::{Quorum, Record},
@@ -64,6 +64,7 @@ impl Client {
         peers: Option<Vec<Multiaddr>>,
         enable_gossip: bool,
         connection_timeout: Option<Duration>,
+        client_event_broadcaster: Option<ClientEventsBroadcaster>,
     ) -> Result<Self> {
         // If any of our contact peers has a global address, we'll assume we're in a global network.
         let local = match peers {
@@ -86,14 +87,15 @@ impl Client {
 
         let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");
-        let events_channel = ClientEventsChannel::default();
+
+        // If the events broadcaster is not provided by the caller, then we create a new one.
+        // This is not optional as we wait on certain events to connect to the network and return from this function.
+        let events_broadcaster = client_event_broadcaster.unwrap_or_default();
 
         let client = Self {
             network: network.clone(),
-            events_channel,
+            events_broadcaster,
             signer,
-            peers_added: 0,
-            progress: Some(Self::setup_connection_progress()),
         };
 
         // subscribe to our events channel first, so we don't have intermittent
@@ -123,6 +125,7 @@ impl Client {
         // spawn task to wait for NetworkEvent and check for inactivity
         let mut client_clone = client.clone();
         let _event_handler = spawn(async move {
+            let mut peers_added: usize = 0;
             loop {
                 match tokio::time::timeout(INACTIVITY_TIMEOUT, network_event_receiver.recv()).await
                 {
@@ -137,7 +140,9 @@ impl Client {
 
                         let start = std::time::Instant::now();
                         let event_string = format!("{the_event:?}");
-                        if let Err(err) = client_clone.handle_network_event(the_event) {
+                        if let Err(err) =
+                            client_clone.handle_network_event(the_event, &mut peers_added)
+                        {
                             warn!("Error handling network event: {err}");
                         }
                         trace!(
@@ -148,12 +153,9 @@ impl Client {
                     }
                     Err(_elapse_err) => {
                         debug!("Client inactivity... waiting for a network event");
-                        if let Err(error) = client_clone
-                            .events_channel
-                            .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT))
-                        {
-                            error!("Error broadcasting inactive client event: {error}");
-                        }
+                        client_clone
+                            .events_broadcaster
+                            .broadcast(ClientEvent::InactiveClient(INACTIVITY_TIMEOUT));
                     }
                 }
             }
@@ -187,80 +189,45 @@ impl Client {
                         } else {
                             info!("The client still does not know enough network nodes.");
                         }
-                        continue;
                     }
-                    Ok(ClientEvent::GossipsubMsg { .. }) => {}
                     Err(err) => {
                         error!("Unexpected error during client startup {err:?}");
                         println!("Unexpected error during client startup {err:?}");
-                        return Err(err);
+                        return Err(err.into());
                     }
+                    _ => {}
                 }
             }}
         }
 
-        // The above loop breaks if `ConnectedToNetwork` is received, but we might need the
-        // receiver to still be active for us to not get any error if any other event is sent
-        let mut client_events_rx = client.events_channel();
-        spawn(async move {
-            loop {
-                let _ = client_events_rx.recv().await;
-            }
-        });
         Ok(client)
     }
 
-    /// Set up our initial progress bar for network connectivity
-    fn setup_connection_progress() -> ProgressBar {
-        // Network connection progress bar
-        let progress = ProgressBar::new_spinner();
-        progress.enable_steady_tick(Duration::from_millis(120));
-        progress.set_message("Connecting to The SAFE Network...");
-        let new_style = progress.style().tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈🔗");
-        progress.set_style(new_style);
-
-        progress.set_message("Connecting to The SAFE Network...");
-
-        progress
-    }
-
-    fn handle_network_event(&mut self, event: NetworkEvent) -> Result<()> {
+    fn handle_network_event(&mut self, event: NetworkEvent, peers_added: &mut usize) -> Result<()> {
         match event {
             NetworkEvent::PeerAdded(peer_id, _connected_peer) => {
-                self.peers_added += 1;
                 debug!("PeerAdded: {peer_id}");
+                *peers_added += 1;
 
+                // notify the listeners that we are waiting on CLOSE_GROUP_SIZE peers before emitting ConnectedToNetwork
+                self.events_broadcaster.broadcast(ClientEvent::PeerAdded {
+                    max_peers_to_connect: CLOSE_GROUP_SIZE,
+                });
                 // In case client running in non-local-discovery mode,
                 // it may take some time to fill up the RT.
                 // To avoid such delay may fail the query with RecordNotFound,
                 // wait till certain amount of peers populated into RT
-                if self.peers_added >= CLOSE_GROUP_SIZE {
-                    if let Some(progress) = &self.progress {
-                        progress.finish_with_message("Connected to the Network");
-                        // Remove the progress bar
-                        self.progress = None;
-                    }
-
-                    self.events_channel
-                        .broadcast(ClientEvent::ConnectedToNetwork)?;
+                if *peers_added >= CLOSE_GROUP_SIZE {
+                    self.events_broadcaster
+                        .broadcast(ClientEvent::ConnectedToNetwork);
                 } else {
-                    debug!(
-                        "{}/{CLOSE_GROUP_SIZE} initial peers found.",
-                        self.peers_added
-                    );
-
-                    if let Some(progress) = &self.progress {
-                        progress.set_message(format!(
-                            "{}/{CLOSE_GROUP_SIZE} initial peers found.",
-                            self.peers_added
-                        ));
-                    }
+                    debug!("{peers_added}/{CLOSE_GROUP_SIZE} initial peers found.",);
                 }
             }
             NetworkEvent::GossipsubMsgReceived { topic, msg }
             | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
-                self.events_channel
-                    .broadcast(ClientEvent::GossipsubMsg { topic, msg })?;
+                self.events_broadcaster
+                    .broadcast(ClientEvent::GossipsubMsg { topic, msg });
             }
             _other => {}
         }
@@ -270,7 +237,7 @@ impl Client {
 
     /// Get the client events channel.
     pub fn events_channel(&self) -> ClientEventsReceiver {
-        self.events_channel.subscribe()
+        self.events_broadcaster.subscribe()
     }
 
     /// Sign the given data

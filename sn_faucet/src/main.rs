@@ -11,11 +11,16 @@ mod faucet_server;
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{bail, eyre, Result};
 use faucet_server::{restart_faucet_server, run_faucet_server};
-use sn_client::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client};
+use indicatif::ProgressBar;
+use sn_client::{
+    get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client, ClientEvent,
+    ClientEventsBroadcaster, ClientEventsReceiver,
+};
 use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_transfers::{MainPubkey, NanoTokens, Transfer};
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
+use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{error, info};
 use tracing_core::Level;
 
@@ -55,7 +60,14 @@ async fn main() -> Result<()> {
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
-    match Client::new(secret_key, bootstrap_peers, false, None).await {
+    let broadcaster = ClientEventsBroadcaster::default();
+    let handle = spawn_connection_progress_bar(broadcaster.subscribe());
+    let result = Client::new(secret_key, bootstrap_peers, false, None, Some(broadcaster)).await;
+
+    // await on the progress bar to complete before handling the client result. If client errors out, we would
+    // want to make the progress bar clean up gracefully.
+    handle.await?;
+    match result {
         Ok(client) => {
             if let Err(err) = faucet_cmds(opt.cmd.clone(), &client).await {
                 error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
@@ -65,6 +77,48 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Helper to subscribe to the client events broadcaster and spin up a progress bar that terminates when the
+/// client successfully connects to the network or if it errors out.
+fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> JoinHandle<()> {
+    // Network connection progress bar
+    let progress_bar = ProgressBar::new_spinner();
+    progress_bar.enable_steady_tick(Duration::from_millis(120));
+    progress_bar.set_message("Connecting to The SAFE Network...");
+    let new_style = progress_bar.style().tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈🔗");
+    progress_bar.set_style(new_style);
+
+    progress_bar.set_message("Connecting to The SAFE Network...");
+
+    tokio::spawn(async move {
+        let mut peers_connected = 0;
+        loop {
+            match rx.recv().await {
+                Ok(ClientEvent::ConnectedToNetwork) => {
+                    progress_bar.finish_with_message("Connected to the Network");
+                    break;
+                }
+                Ok(ClientEvent::PeerAdded {
+                    max_peers_to_connect,
+                }) => {
+                    peers_connected += 1;
+                    progress_bar.set_message(format!(
+                        "{peers_connected}/{max_peers_to_connect} initial peers found.",
+                    ));
+                }
+                Err(RecvError::Lagged(_)) => {
+                    // Even if the receiver is lagged, we would still get the ConnectedToNetwork during each new
+                    // connection. Thus it would be okay to skip this error.
+                }
+                Err(RecvError::Closed) => {
+                    progress_bar.finish_with_message("Could not connect to the network");
+                    break;
+                }
+                _ => {}
+            }
+        }
+    })
 }
 
 #[derive(Parser)]
