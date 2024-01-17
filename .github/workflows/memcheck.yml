@@ -62,7 +62,7 @@ jobs:
       - name: Start a local network
         env:
           SN_LOG: "all"
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -235,7 +235,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_memcheck

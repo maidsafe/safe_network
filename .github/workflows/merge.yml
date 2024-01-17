@@ -146,7 +146,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -273,7 +273,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -302,7 +302,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -316,7 +316,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_gossipsub_e2e
@@ -346,7 +346,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -386,7 +386,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_spend
@@ -424,7 +424,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -452,7 +452,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn
@@ -544,7 +544,7 @@ jobs:
           timeout-minutes: 30
 
         - name: Start a local network
-          uses: maidsafe/sn-local-testnet-action@main
+          uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
           with:
             action: start
             interval: 2000
@@ -579,7 +579,7 @@ jobs:
 
         - name: Stop the local network and upload logs
           if: always()
-          uses: maidsafe/sn-local-testnet-action@main
+          uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
           with:
             action: stop
             log_file_prefix: safe_test_logs_data_location
@@ -648,7 +648,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -727,7 +727,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           platform: ubuntu-latest
@@ -790,7 +790,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -934,7 +934,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           log_file_prefix: safe_test_logs_heavy_replicate_bench

@@ -50,7 +50,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: start
           interval: 2000
@@ -112,7 +112,7 @@ jobs:
 
       - name: Stop the local network
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: RolandSherwin/sn-local-testnet-action@simplify_log_upload
         with:
           action: stop
           platform: ubuntu-latest
