@@ -34,6 +34,7 @@ pub struct WalletClient {
 }
 
 impl WalletClient {
+
     /// Create a new wallet client.
     ///
     /// # Arguments
