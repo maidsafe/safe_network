@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.0...sn_client-v0.102.1) - 2024-01-17
+
+### Other
+- fixed typo
+- filled missing arguments
+- formatting
+- formatting
+- new wallet docs
+
 ## [0.102.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.101.13...sn_client-v0.102.0) - 2024-01-17
 
 ### Fixed
