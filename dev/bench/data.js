@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705486038049,
+  "lastUpdate": 1705486122094,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "b84fe6b64c992a3f277df609af0c246bfa1a6069",
-          "message": "fix: avoid verification too close to put; remove un-necessary wait for put",
-          "timestamp": "2023-09-18T13:43:51Z",
-          "tree_id": "596f8096ef20f8f0f129a65e1948742636fbd0f1",
-          "url": "https://github.com/maidsafe/safe_network/commit/b84fe6b64c992a3f277df609af0c246bfa1a6069"
-        },
-        "date": 1695048873880,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 61.267967,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "319b7f9a4359b760f8aa69843b44d7e5a5ce64e3",
           "message": "fix: shorter wait on verification put",
           "timestamp": "2023-09-19T05:34:18Z",
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/4367fb710be752b45534a02cea5d0cf98970915f"
         },
         "date": 1705421462046,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 45,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "digital@engineer.com",
+            "name": "Jason Paul",
+            "username": "mofobit"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "44939878c8dad60ffb5d6cd07ce950c1e6ce7c1c",
+          "message": "docs: new wallet client example",
+          "timestamp": "2024-01-17T09:16:13Z",
+          "tree_id": "ba949addd66283dac9b31287c1fe086cfb0db597",
+          "url": "https://github.com/maidsafe/safe_network/commit/44939878c8dad60ffb5d6cd07ce950c1e6ce7c1c"
+        },
+        "date": 1705486120966,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
