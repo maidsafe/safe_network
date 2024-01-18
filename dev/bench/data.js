@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705571841736,
+  "lastUpdate": 1705571924428,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "310879f528079a6603a8604a6dd6f739e35785c1",
-          "message": "chore: error handling when failed fetch store cost",
-          "timestamp": "2023-09-19T10:01:59Z",
-          "tree_id": "4fdbc95567f0c2209203676d2cd23f22b23ec928",
-          "url": "https://github.com/maidsafe/safe_network/commit/310879f528079a6603a8604a6dd6f739e35785c1"
-        },
-        "date": 1695121649847,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58.118145,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 42,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e0075322593241dca80c16626e06d28813a89ec4",
+          "message": "feat: set quic as default transport\n\nBREADKING CHANGE: quic and tcp are not compatible",
+          "timestamp": "2024-01-18T10:42:20+01:00",
+          "tree_id": "efe17dde2c1ef64084b0839e32116f231d262f41",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0075322593241dca80c16626e06d28813a89ec4"
+        },
+        "date": 1705571923278,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
