@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.17](https://github.com/maidsafe/sn-node-manager/compare/v0.1.16...v0.1.17) - 2024-01-18
+
+### Added
+- add quic/tcp features and set quic as default
+
 ## [0.1.16](https://github.com/maidsafe/sn-node-manager/compare/v0.1.15...v0.1.16) - 2024-01-16
 
 ### Other
