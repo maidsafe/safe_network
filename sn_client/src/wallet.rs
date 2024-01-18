@@ -169,8 +169,7 @@ impl WalletClient {
         }
     }
 
-    /// Remove the payment for a given network address from disk
-    /// Get the payment detail from a given address within the network.
+    /// Remove the payment for a given network address from disk.
     ///
     /// # Arguments
     /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
@@ -213,8 +212,34 @@ impl WalletClient {
         self.wallet.mark_note_as_spent(cash_note_key);
     }
 
-    /// Send tokens to another wallet. Can optionally verify the store has been successful.
-    /// Note: This will attempt to GET the Spend from the network.
+    /// Send tokens to another wallet. Can also verify the store has been successful.
+    /// This will attempt to GET the Spend from the network.
+    ///
+    /// # Arguments
+    /// * `amount` - [`NanoTokens`](sn_transfers::NanoTokens).
+    /// * `to` - [`MainPubkey`](sn_transfers::MainPubkey).
+    /// * `verify_store` - A boolean to verify store.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::io::Bytes;
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// use sn_transfers::NanoTokens;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let nano = NanoTokens::from(10);
+    /// let main_pub_key = MainSecretKey::random().main_pubkey();
+    /// let payment = wallet_client.send_cash_note(nano,main_pub_key, true);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn send_cash_note(
         &mut self,
         amount: NanoTokens,
@@ -321,7 +346,7 @@ impl WalletClient {
     ///
     /// Note storage cost is _per record_, and it's zero if not required for this operation.
     /// This can optionally verify the store has been successful.
-    /// Note: This will attempt to GET the cash_note from the network
+    /// This will attempt to GET the cash_note from the network
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -425,7 +450,7 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     /// Returns the amount paid for storage, including the network royalties fee paid.
     /// This can optionally verify the store has been successful.
-    /// Note: This will attempt to GET the cash_note from the network.
+    /// This will attempt to GET the cash_note from the network.
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
@@ -503,7 +528,7 @@ impl WalletClient {
     }
 
     /// Resend failed transactions. This can optionally verify the store has been successful.
-    /// Note: This will attempt to GET the cash_note from the network.
+    /// This will attempt to GET the cash_note from the network.
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
@@ -711,7 +736,7 @@ pub async fn send(
 }
 
 /// Send tokens to another wallet. Can optionally verify the store has been successful.
-/// Note: This will attempt to GET the Spend from the network.
+/// This will attempt to GET the Spend from the network.
 pub async fn broadcast_signed_spends(
     from: LocalWallet,
     client: &Client,
