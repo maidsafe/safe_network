@@ -26,8 +26,7 @@ use std::{
 use tokio::{task::JoinSet, time::sleep};
 use xor_name::XorName;
 
-/// A wallet client can be used to send and
-/// receive tokens to/from other wallets.
+/// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {
     client: Client,
     wallet: LocalWallet,
@@ -127,7 +126,33 @@ impl WalletClient {
         self.wallet.unconfirmed_spend_requests()
     }
 
-    /// Get the payment for a given network address
+    /// Get the payment detail from a given address within the network.
+    ///
+    /// # Arguments
+    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    ///
+    /// # Example
+    /// ```no_run
+    /// // Getting the payment for an address using a random PeerId
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::io::Bytes;
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// use libp2p_identity::PeerId;
+    /// use sn_protocol::NetworkAddress;
+    ///
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let network_address = NetworkAddress::from_peer(PeerId::random());
+    /// let payment = wallet_client.get_payment_for_addr(&network_address)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<Payment> {
         match &address.as_xorname() {
             Some(xorname) => {
@@ -144,7 +169,33 @@ impl WalletClient {
         }
     }
 
-    /// Remove the payment for a given network address from disk
+    /// Remove the payment for a given network address from disk.
+    ///
+    /// # Arguments
+    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    ///
+    /// # Example
+    /// ```no_run
+    /// // Removing a payment address using a random PeerId
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::io::Bytes;
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// use libp2p_identity::PeerId;
+    /// use sn_protocol::NetworkAddress;
+    ///
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let network_address = NetworkAddress::from_peer(PeerId::random());
+    /// let payment = wallet_client.remove_payment_for_addr(&network_address)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn remove_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<()> {
         match &address.as_xorname() {
             Some(xorname) => {
@@ -156,12 +207,39 @@ impl WalletClient {
     }
 
     /// Remove CashNote from available_cash_notes
+    //TODO: Unused
     pub fn mark_note_as_spent(&mut self, cash_note_key: UniquePubkey) {
         self.wallet.mark_note_as_spent(cash_note_key);
     }
 
-    /// Send tokens to another wallet.
-    /// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
+    /// Send tokens to another wallet. Can also verify the store has been successful.
+    /// This will attempt to GET the Spend from the network.
+    ///
+    /// # Arguments
+    /// * `amount` - [`NanoTokens`](sn_transfers::NanoTokens).
+    /// * `to` - [`MainPubkey`](sn_transfers::MainPubkey).
+    /// * `verify_store` - A boolean to verify store.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::io::Bytes;
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// use sn_transfers::NanoTokens;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let nano = NanoTokens::from(10);
+    /// let main_pub_key = MainSecretKey::random().main_pubkey();
+    /// let payment = wallet_client.send_cash_note(nano,main_pub_key, true);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn send_cash_note(
         &mut self,
         amount: NanoTokens,
@@ -267,7 +345,8 @@ impl WalletClient {
     ///   `skipped_chunks` is the list of content already exists in network and no need to upload
     ///
     /// Note storage cost is _per record_, and it's zero if not required for this operation.
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// This can optionally verify the store has been successful.
+    /// This will attempt to GET the cash_note from the network
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -369,10 +448,9 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
-    ///
     /// Returns the amount paid for storage, including the network royalties fee paid.
-    ///
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// This can optionally verify the store has been successful.
+    /// This will attempt to GET the cash_note from the network.
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
@@ -449,8 +527,8 @@ impl WalletClient {
         Ok(total_cost)
     }
 
-    /// Resend failed txs
-    /// This can optionally verify the store has been successful (this will attempt to GET the cash_note from the network)
+    /// Resend failed transactions. This can optionally verify the store has been successful.
+    /// This will attempt to GET the cash_note from the network.
     pub async fn resend_pending_txs(&mut self, verify_store: bool) {
         if self
             .client
@@ -546,7 +624,7 @@ impl Client {
         Ok(cashnotes)
     }
 
-    /// Verify that the spends refered to in the CashNote exist on the network.
+    /// Verify that the spends referred to (in the CashNote) exist on the network.
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
@@ -598,7 +676,7 @@ pub async fn send(
     // Wallet shall be all clear to progress forward.
     let mut attempts = 0;
     while wallet_client.unconfirmed_spend_requests_exist() {
-        info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
+        info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
         wallet_client.resend_pending_txs(verify_store).await;
 
@@ -612,8 +690,8 @@ pub async fn send(
     }
 
     if did_error {
-        error!("Wallet has pre-unconfirmed txs, cann't progress further.");
-        println!("Wallet has pre-unconfirmed txs, cann't progress further.");
+        error!("Wallet has pre-unconfirmed transactions, can't progress further.");
+        println!("Wallet has pre-unconfirmed transactions, can't progress further.");
         return Err(WalletError::UnconfirmedTxAfterRetries.into());
     }
 
@@ -656,8 +734,8 @@ pub async fn send(
     Ok(new_cash_note)
 }
 
-/// Send tokens to another wallet.
-/// Can optionally verify the store has been successful (this will attempt to GET the Spend from the network)
+/// Send tokens to another wallet. Can optionally verify the store has been successful.
+/// This will attempt to GET the Spend from the network.
 pub async fn broadcast_signed_spends(
     from: LocalWallet,
     client: &Client,
