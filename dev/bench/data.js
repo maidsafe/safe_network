@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705565493432,
+  "lastUpdate": 1705571841736,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "06f886a5c4dd671c1dd8ed948ace4011b0ffd461",
-          "message": "chore: allow chunks to be Quorum::One\n\nAs they are self-verifiable we don't need majority there",
-          "timestamp": "2023-09-20T05:42:04Z",
-          "tree_id": "6b6efac35c4fdc15848152bb51de05bf203ea69c",
-          "url": "https://github.com/maidsafe/safe_network/commit/06f886a5c4dd671c1dd8ed948ace4011b0ffd461"
-        },
-        "date": 1695192120103,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09509721587812059,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5435333489891793,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.529911381652327,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 66.47207404825758,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e0075322593241dca80c16626e06d28813a89ec4",
+          "message": "feat: set quic as default transport\n\nBREADKING CHANGE: quic and tcp are not compatible",
+          "timestamp": "2024-01-18T10:42:20+01:00",
+          "tree_id": "efe17dde2c1ef64084b0839e32116f231d262f41",
+          "url": "https://github.com/maidsafe/safe_network/commit/e0075322593241dca80c16626e06d28813a89ec4"
+        },
+        "date": 1705571838463,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.354495431406241,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9450848873925644,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.22755764796662,
             "unit": "MiB/s"
           }
         ]
