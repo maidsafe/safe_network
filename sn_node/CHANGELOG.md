@@ -2908,6 +2908,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - set quic as default transport
 
+## [0.103.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.3...sn_node-v0.103.4) - 2024-01-18
+
+### Added
+- *(test)* obtain node reward balance by querying the nodes
+- *(rpc)* add wallet balance to NodeInfo response
+
+### Fixed
+- *(test)* get fixed amounts for Droplet and NonDroplet tests
+- *(test)* add settings to skip genesis node for droplet
+- *(test)* add retry during rpc connection and small fixes
+
+### Other
+- *(test)* use logs instead of println for small running tests
+- *(node)* change RPC log level to debug
+- *(test)* connect to RPC endpoint with retries
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
