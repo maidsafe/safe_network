@@ -660,7 +660,7 @@ mod tests {
 
         add(
             AddServiceOptions {
-                local: true,
+                local: false,
                 genesis: false,
                 count: Some(3),
                 peers: vec![],
@@ -966,7 +966,7 @@ mod tests {
 
         add(
             AddServiceOptions {
-                local: true,
+                local: false,
                 genesis: false,
                 count: None,
                 peers: vec![],
