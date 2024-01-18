@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.39](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.38...sn_transfers-v0.14.39) - 2024-01-18
+
+### Added
+- *(faucet)* download snapshot of maid balances
+
 ## [0.14.38](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.37...sn_transfers-v0.14.38) - 2024-01-16
 
 ### Fixed
