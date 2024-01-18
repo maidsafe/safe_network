@@ -32,7 +32,7 @@ use std::{
 use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Code, Request, Response, Status};
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 
 // Defining a struct to hold information used by our gRPC service backend
 struct SafeNodeRpcService {
@@ -52,7 +52,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<NodeInfoRequest>,
     ) -> Result<Response<NodeInfoResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -69,6 +69,11 @@ impl SafeNode for SafeNodeRpcService {
             pid: process::id(),
             bin_version: env!("CARGO_PKG_VERSION").to_string(),
             uptime_secs: self.started_instant.elapsed().as_secs(),
+            wallet_balance: self
+                .running_node
+                .get_node_wallet_balance()
+                .expect("Failed to get node wallet balance")
+                .as_nano(),
         });
 
         Ok(resp)
@@ -78,7 +83,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<NetworkInfoRequest>,
     ) -> Result<Response<NetworkInfoResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -104,7 +109,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<NodeEventsRequest>,
     ) -> Result<Response<Self::NodeEventsStream>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -144,7 +149,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<TransferNotifsFilterRequest>,
     ) -> Result<Response<TransferNotifsFilterResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -175,7 +180,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<RecordAddressesRequest>,
     ) -> Result<Response<RecordAddressesResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -197,7 +202,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<KBucketsRequest>,
     ) -> Result<Response<KBucketsResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -223,7 +228,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<GossipsubSubscribeRequest>,
     ) -> Result<Response<GossipsubSubscribeResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -253,7 +258,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<GossipsubUnsubscribeRequest>,
     ) -> Result<Response<GossipsubUnsubscribeResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -274,7 +279,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<GossipsubPublishRequest>,
     ) -> Result<Response<GossipsubPublishResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -294,7 +299,7 @@ impl SafeNode for SafeNodeRpcService {
     }
 
     async fn stop(&self, request: Request<StopRequest>) -> Result<Response<StopResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -322,7 +327,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<RestartRequest>,
     ) -> Result<Response<RestartResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()
@@ -342,7 +347,7 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<UpdateRequest>,
     ) -> Result<Response<UpdateResponse>, Status> {
-        trace!(
+        debug!(
             "RPC request received at {}: {:?}",
             self.addr,
             request.get_ref()

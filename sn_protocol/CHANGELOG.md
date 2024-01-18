@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.12](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.11...sn_protocol-v0.10.12) - 2024-01-18
+
+### Added
+- *(rpc)* add wallet balance to NodeInfo response
+
 ## [0.10.11](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.10...sn_protocol-v0.10.11) - 2024-01-18
 
 ### Added

@@ -10,11 +10,8 @@
 mod common;
 
 use crate::common::{
-    client::{
-        get_all_rpc_addresses, get_gossip_client, get_gossip_client_and_wallet,
-        PAYING_WALLET_INITIAL_BALANCE,
-    },
-    get_all_peer_ids, node_restart,
+    client::{get_all_rpc_addresses, get_gossip_client_and_funded_wallet},
+    get_all_peer_ids, get_safenode_rpc_client, node_restart,
 };
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
@@ -27,8 +24,7 @@ use sn_client::{Client, FilesApi, FilesUpload};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest, RecordAddressesRequest},
-    storage::ChunkAddress,
+    safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -40,8 +36,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tonic::Request;
-use tracing::error;
-use xor_name::XorName;
+use tracing::{debug, error, info};
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -66,7 +61,7 @@ const CHURN_COUNT: u8 = 20;
 
 /// Default number of chunks that should be PUT to the network.
 // It can be overridden by setting the 'CHUNK_COUNT' env var.
-const CHUNK_COUNT: usize = 50;
+const CHUNK_COUNT: usize = 5;
 
 type NodeIndex = usize;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
@@ -74,8 +69,6 @@ type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_data_location() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_multi_threaded_tokio_test("verify_data_location");
-
-    query_content_task();
 
     let churn_count = if let Ok(str) = std::env::var("CHURN_COUNT") {
         str.parse::<u8>()?
@@ -91,16 +84,21 @@ async fn verify_data_location() -> Result<()> {
         "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
-    let node_rpc_address = get_all_rpc_addresses()?;
+    info!(
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        VERIFICATION_DELAY*churn_count as u32
+    );
+    let node_rpc_address = get_all_rpc_addresses(true)?;
     let mut all_peers = get_all_peer_ids(&node_rpc_address).await?;
 
     // Store chunks
     println!("Creating a client and paying wallet...");
+    debug!("Creating a client and paying wallet...");
+
     let paying_wallet_dir = TempDir::new()?;
 
     let (client, _paying_wallet) =
-        get_gossip_client_and_wallet(paying_wallet_dir.path(), PAYING_WALLET_INITIAL_BALANCE)
-            .await?;
+        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     store_chunks(client, chunk_count, paying_wallet_dir.to_path_buf()).await?;
 
@@ -122,11 +120,12 @@ async fn verify_data_location() -> Result<()> {
 
             // wait for the dead peer to be removed from the RT and the replication flow to finish
             println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
+            info!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
             tokio::time::sleep(VERIFICATION_DELAY).await;
 
             // get the new PeerId for the current NodeIndex
-            let endpoint = format!("https://{rpc_address}");
-            let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+            let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
+
             let response = rpc_client
                 .node_info(Request::new(NodeInfoRequest {}))
                 .await?;
@@ -140,32 +139,9 @@ async fn verify_data_location() -> Result<()> {
     }
 }
 
-// Spawns a task which periodically queries random content
-fn query_content_task() {
-    let _handle = tokio::spawn(async move {
-        let delay = Duration::from_millis(1);
-        loop {
-            // thread random rng
-            let mut rng = OsRng;
-            let client = get_gossip_client().await;
-            // let's choose a random content to query
-            let random_addr = ChunkAddress::new(XorName::random(&mut rng));
-            tracing::trace!("Querying content {random_addr:?}");
-
-            if let Err(error) = client.get_chunk(random_addr, false).await {
-                tracing::error!(
-                    "Error querying content random content (as expected) {random_addr:?} : {error}"
-                );
-            }
-
-            tokio::time::sleep(delay).await;
-        }
-    });
-}
-
 fn print_node_close_groups(all_peers: &[PeerId]) {
     let all_peers = all_peers.to_vec();
-    println!("\nNode close groups:");
+    info!("\nNode close groups:");
 
     for (node_index, peer) in all_peers.iter().enumerate() {
         let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
@@ -180,7 +156,7 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
                     .expect("peer to be in iterator")
             })
             .collect::<Vec<_>>();
-        println!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
+        info!("Close for {node_index}: {peer:?} are {closest_peers_idx:?}");
     }
 }
 
@@ -188,8 +164,7 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
     let mut record_holders = RecordHolders::default();
 
     for (node_index, rpc_address) in node_rpc_addresses.iter().enumerate() {
-        let endpoint = format!("https://{rpc_address}");
-        let mut rpc_client = SafeNodeClient::connect(endpoint).await?;
+        let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
 
         let records_response = rpc_client
             .record_addresses(Request::new(RecordAddressesRequest {}))
@@ -201,7 +176,7 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
             holders.insert(node_index);
         }
     }
-    println!("Obtained the current set of Record Key holders");
+    debug!("Obtained the current set of Record Key holders");
     Ok(record_holders)
 }
 
@@ -212,8 +187,8 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 
     println!("*********************************************");
     println!("Verifying data across all peers {all_peers:?}");
-    tracing::info!("*********************************************");
-    tracing::info!("Verifying data across all peers {all_peers:?}");
+    info!("*********************************************");
+    info!("Verifying data across all peers {all_peers:?}");
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {
@@ -221,6 +196,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
         let record_holders = get_records_and_holders(node_rpc_addresses).await?;
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
+            info!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             let record_key = KBucketKey::from(key.to_vec());
             let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
                 .into_iter()
@@ -232,11 +208,11 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                 .map(|i| all_peers[*i])
                 .collect::<BTreeSet<_>>();
 
-            println!(
+            info!(
                 "Expected to be held by {:?} nodes: {expected_holders:?}",
                 expected_holders.len()
             );
-            println!(
+            info!(
                 "Actually held by {:?} nodes      : {actual_holders:?}",
                 actual_holders.len()
             );
@@ -249,14 +225,16 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                     .filter(|expected| !actual_holders.contains(expected))
                     .for_each(|expected| missing_peers.push(*expected));
 
-                error!(
-                    "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key),
-                );
-                println!(
-                    "Record {:?} is not stored by {missing_peers:?}",
-                    PrettyPrintRecordKey::from(key),
-                );
+                if !missing_peers.is_empty() {
+                    error!(
+                        "Record {:?} is not stored by {missing_peers:?}",
+                        PrettyPrintRecordKey::from(key),
+                    );
+                    println!(
+                        "Record {:?} is not stored by {missing_peers:?}",
+                        PrettyPrintRecordKey::from(key),
+                    );
+                }
             }
 
             let mut failed_peers = Vec::new();
@@ -275,22 +253,26 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
             println!("Verification failed for {:?} entries", failed.len());
 
             failed.iter().for_each(|(key, failed_peers)| {
-                failed_peers
-                    .iter()
-                    .for_each(|peer| println!("Record {key:?} is not stored inside {peer:?}",));
+                failed_peers.iter().for_each(|peer| {
+                    println!("Record {key:?} is not stored inside {peer:?}");
+                    error!("Record {key:?} is not stored inside {peer:?}");
+                });
             });
-            println!("State of each node:");
+            info!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                println!("Record {key:?} is currently held by node indexes {node_index:?}");
+                info!("Record {key:?} is currently held by node indices {node_index:?}");
             });
-            println!("Node index map:");
+            info!("Node index map:");
             all_peers
                 .iter()
                 .enumerate()
-                .for_each(|(idx, peer)| println!("{idx} : {peer:?}"));
+                .for_each(|(idx, peer)| info!("{idx} : {peer:?}"));
             verification_attempts += 1;
-            println!("Sleeping before retrying verification");
-            tokio::time::sleep(REVERIFICATION_DELAY).await;
+            println!("Sleeping before retrying verification. {verification_attempts}/{VERIFICATION_ATTEMPTS}");
+            info!("Sleeping before retrying verification. {verification_attempts}/{VERIFICATION_ATTEMPTS}");
+            if verification_attempts < VERIFICATION_ATTEMPTS {
+                tokio::time::sleep(REVERIFICATION_DELAY).await;
+            }
         } else {
             // if successful, break out of the loop
             break;
@@ -299,9 +281,11 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 
     if !failed.is_empty() {
         println!("Verification failed after {VERIFICATION_ATTEMPTS} times");
+        error!("Verification failed after {VERIFICATION_ATTEMPTS} times");
         Err(eyre!("Verification failed for: {failed:?}"))
     } else {
         println!("All the Records have been verified!");
+        info!("All the Records have been verified!");
         Ok(())
     }
 }
@@ -335,7 +319,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let (head_chunk_addr, _data_map, _file_size, chunks) =
             FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
 
-        println!(
+        debug!(
             "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_chunk_addr:?}",
             chunks.len(),
             random_bytes.len()
@@ -347,9 +331,14 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
+        info!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
     }
 
     println!(
+        "{chunk_count:?} Chunks were stored in {:?}",
+        start.elapsed()
+    );
+    info!(
         "{chunk_count:?} Chunks were stored in {:?}",
         start.elapsed()
     );
