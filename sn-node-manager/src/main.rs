@@ -17,7 +17,7 @@ use crate::add_service::{add, AddServiceOptions};
 use crate::config::*;
 use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
 use crate::helpers::download_and_extract_release;
-use crate::local::{kill_network, run_network, LocalNetworkOptions};
+use crate::local::{kill_network, run_faucet, run_network, LocalNetworkOptions};
 use crate::service::{NodeServiceManager, ServiceControl};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
@@ -112,6 +112,24 @@ pub enum SubCmd {
         #[clap(long)]
         user: Option<String>,
         /// The version of safenode
+        #[clap(long)]
+        version: Option<String>,
+    },
+    /// Add one or more new safenode services.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "faucet")]
+    Faucet {
+        /// Path to a faucet binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "version")]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// The version of the faucet to use.
+        ///
+        /// The version and path arguments are mutually exclusive.
         #[clap(long)]
         version: Option<String>,
     },
@@ -336,6 +354,33 @@ async fn main() -> Result<()> {
             .await?;
 
             node_registry.save()?;
+
+            Ok(())
+        }
+        SubCmd::Faucet {
+            path,
+            peers,
+            version,
+        } => {
+            println!("=================================================");
+            println!("                 Running Faucet                  ");
+            println!("=================================================");
+
+            let local_node_reg_path = &get_local_node_registry_path()?;
+            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
+            if !local_node_registry.nodes.is_empty() {
+                return Err(eyre!("A local network is already running")
+                    .suggestion("Use the kill command to destroy the network then try again"));
+            }
+
+            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+            let faucet_path =
+                get_bin_path(path, ReleaseType::Faucet, version, &*release_repo).await?;
+
+            let peers = get_peers_from_args(peers).await?;
+            run_faucet(&mut local_node_registry, faucet_path, peers[0].clone()).await?;
+
+            local_node_registry.save()?;
 
             Ok(())
         }
