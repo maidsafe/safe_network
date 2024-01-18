@@ -6,14 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::Client;
-use crate::Error;
-
-use futures::future::join_all;
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
-use sn_transfers::{NanoTokens, SignedSpend, SpendAddress, WalletError, WalletResult};
-use std::collections::{BTreeMap, BTreeSet};
+use serde::{Deserialize, Serialize};
+use sn_transfers::{NanoTokens, SignedSpend, SpendAddress};
+use std::collections::BTreeMap;
+
+use crate::error::{Error, Result};
 
 /// A DAG representing the spends from a specific Spend all the way to the UTXOs.
 /// Starting from Genesis, this would encompass all the spends that have happened on the network
@@ -29,7 +28,7 @@ use std::collections::{BTreeMap, BTreeSet};
 ///                       -> Spend4 ---> UTXO_8
 ///
 /// ```
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct SpendDag {
     /// A directed graph of spend addresses
     dag: DiGraph<SpendAddress, NanoTokens>,
@@ -43,6 +42,18 @@ impl SpendDag {
             dag: DiGraph::new(),
             spends: BTreeMap::new(),
         }
+    }
+
+    pub fn load_from_file(path: &str) -> Result<Self> {
+        let bytes = std::fs::read(path)?;
+        let dag: SpendDag = rmp_serde::from_slice(&bytes)?;
+        Ok(dag)
+    }
+
+    pub fn dump_to_file(&self, path: &str) -> Result<()> {
+        let bytes = rmp_serde::to_vec(&self)?;
+        std::fs::write(path, bytes)?;
+        Ok(())
     }
 
     /// Insert a spend into the dag
@@ -109,6 +120,40 @@ impl SpendDag {
         }
     }
 
+    /// checks for existing spend at this address and inserts it if it's new
+    /// returns true if it did insert and false if it was already in the DAG
+    /// errors out but saves the spend in case of a double spend
+    pub fn check_and_insert(
+        &mut self,
+        spend_addr: SpendAddress,
+        spend: SignedSpend,
+    ) -> Result<bool> {
+        if let Some(existing_spends) = self.spends.get(&spend_addr) {
+            match existing_spends.as_slice() {
+                // there is an already an entry for the same spend at this address
+                [(Some(existing_spend), _)] if existing_spend == &spend => Ok(false),
+                // there is already an entry for another spend at this address
+                [(Some(existing_spend), _)] if existing_spend != &spend => {
+                    // save and report double spend
+                    self.insert(spend_addr, spend.clone());
+                    Err(Error::DoubleSpend(spend_addr))
+                }
+                // there is an UTXO entry for this address
+                [(None, _)] => {
+                    // save spend
+                    self.insert(spend_addr, spend);
+                    Ok(true)
+                }
+                // there are already multiple spends at this address
+                _ => Err(Error::DoubleSpend(spend_addr)),
+            }
+        } else {
+            // there is no entry for this address
+            self.insert(spend_addr, spend);
+            Ok(true)
+        }
+    }
+
     pub fn get_utxos(&self) -> Vec<SpendAddress> {
         let mut leaves = Vec::new();
         for node_index in self.dag.node_indices() {
@@ -129,70 +174,18 @@ impl SpendDag {
     }
 }
 
-impl Client {
-    pub async fn build_spend_dag_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
-        let mut dag = SpendDag::new();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        // get first spend
-        let first_spend = self
-            .get_spend_from_network(spend_addr)
-            .await
-            .map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
-        dag.insert(spend_addr, first_spend.clone());
-
-        // use iteration instead of recursion to avoid stack overflow
-        let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
-        let mut verified_tx = BTreeSet::new();
-        let mut gen = 0;
-        let start = std::time::Instant::now();
-
-        while !txs_to_follow.is_empty() {
-            let mut next_gen_tx = BTreeSet::new();
-
-            for descendant_tx in txs_to_follow.iter() {
-                let descendant_tx_hash = descendant_tx.hash();
-                let descendant_keys = descendant_tx
-                    .outputs
-                    .iter()
-                    .map(|output| output.unique_pubkey);
-                let addrs_to_follow = descendant_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?}");
-
-                // get all descendant spends in parallel
-                let tasks: Vec<_> = addrs_to_follow
-                    .clone()
-                    .map(|a| self.get_spend_from_network(a))
-                    .collect();
-                let spends_res = join_all(tasks).await.into_iter().collect::<Vec<_>>();
-
-                // add spends to dag
-                for res in spends_res.iter().zip(addrs_to_follow) {
-                    match res {
-                        (Ok(spend), addr) => {
-                            dag.insert(addr, spend.clone());
-                            next_gen_tx.insert(spend.spend.spent_tx.clone());
-                        }
-                        (Err(Error::MissingSpendRecord(_)), addr) => {
-                            trace!("Reached UTXO at {addr:?}");
-                        }
-                        (Err(err), addr) => {
-                            error!("Could not verify transfer at {addr:?}: {err:?}");
-                        }
-                    }
-                }
-            }
-
-            // only verify tx we haven't already verified
-            gen += 1;
-            verified_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
-            txs_to_follow = next_gen_tx
-                .into_iter()
-                .filter(|tx| !verified_tx.contains(&tx.hash()))
-                .collect();
-        }
-
-        let elapsed = start.elapsed();
-        info!("Finished building SpendDAG in {elapsed:?}");
-        Ok(dag)
+    #[test]
+    fn test_spend_dag_serialisation() {
+        let dag = SpendDag::new();
+        let serialized_data = rmp_serde::to_vec(&dag).expect("Serialization failed");
+        let deserialized_instance: SpendDag =
+            rmp_serde::from_slice(&serialized_data).expect("Deserialization failed");
+        let reserialized_data =
+            rmp_serde::to_vec(&deserialized_instance).expect("Serialization failed");
+        assert_eq!(reserialized_data, serialized_data);
     }
 }

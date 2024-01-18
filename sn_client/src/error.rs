@@ -54,6 +54,12 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+    #[error("Double spend detected at address: {0:?}")]
+    DoubleSpend(SpendAddress),
+    #[error("Serialization error: {0:?}")]
+    Serialization(#[from] rmp_serde::encode::Error),
+    #[error("Deserialization error: {0:?}")]
+    Deserialization(#[from] rmp_serde::decode::Error),
 
     #[error("There is no Spend record at this address: {0:?}")]
     MissingSpendRecord(SpendAddress),
