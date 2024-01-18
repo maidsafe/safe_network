@@ -502,6 +502,24 @@ fn start_new_node_process() {
     let args: Vec<String> = env::args().collect();
 
     info!("Original args are: {args:?}");
+    info!("Current exe is: {current_exe:?}");
+
+    // Convert current exe path to string, log an error and return if it fails
+    let current_exe = match current_exe.to_str() {
+        Some(s) => {
+            // remove "(deleted)" string from current exe path
+            if s.contains(" (deleted)") {
+                warn!("The current executable path contains ' (deleted)', which may lead to unexpected behavior. This has been removed from the exe location string");
+                s.replace(" (deleted)", "")
+            } else {
+                s.to_string()
+            }
+        }
+        None => {
+            error!("Failed to convert current executable path to string");
+            return;
+        }
+    };
 
     // Create a new Command instance to run the current executable
     let mut cmd = Command::new(current_exe);
