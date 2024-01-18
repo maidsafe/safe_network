@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705571927047,
+  "lastUpdate": 1705577903165,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "22b379796152807aeb0b644b0987f402004973c1",
-          "message": "ci: install protobuf compiler for ubuntu workflows",
-          "timestamp": "2023-09-20T06:06:43Z",
-          "tree_id": "0da8fca346fb9496980db205bd05dfc0c0ce4463",
-          "url": "https://github.com/maidsafe/safe_network/commit/22b379796152807aeb0b644b0987f402004973c1"
-        },
-        "date": 1695194995679,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10646063261230496,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5348787861428431,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.518205835277292,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.22755764796662,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d2e69a5a29abbbd8dbaede3e0fada12e48fa212b",
+          "message": "fix(test): get fixed amounts for Droplet and NonDroplet tests",
+          "timestamp": "2024-01-18T10:53:38Z",
+          "tree_id": "06e1379dc5bd835a762a8722200a6ff2d3caa02a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2e69a5a29abbbd8dbaede3e0fada12e48fa212b"
+        },
+        "date": 1705577900827,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3266927386665304,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9257329078093874,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.269064527960104,
             "unit": "MiB/s"
           }
         ]
