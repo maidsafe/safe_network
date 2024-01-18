@@ -36,8 +36,8 @@ impl WalletClient {
     /// Create a new wallet client.
     ///
     /// # Arguments
-    /// * `client` - A instance of the struct [`sn_client::Client`](self::Client)
-    /// * `wallet` - An instance of the struct [`sn_transfers::LocalWallet`](self::LocalWallet)
+    /// * `client` - A instance of the struct [`sn_client::Client`](Client)
+    /// * `wallet` - An instance of the struct [`sn_transfers::LocalWallet`](LocalWallet)
     ///
     /// # Example
     /// ```no_run
@@ -129,7 +129,7 @@ impl WalletClient {
     /// Get the payment detail from a given address within the network.
     ///
     /// # Arguments
-    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    /// * `address` - The [`NetworkAddress`](NetworkAddress).
     ///
     /// # Example
     /// ```no_run
@@ -172,7 +172,7 @@ impl WalletClient {
     /// Remove the payment for a given network address from disk.
     ///
     /// # Arguments
-    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    /// * `address` - The [`NetworkAddress`](NetworkAddress).
     ///
     /// # Example
     /// ```no_run
