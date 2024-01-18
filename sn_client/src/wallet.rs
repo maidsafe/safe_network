@@ -322,12 +322,13 @@ impl WalletClient {
         }
     }
 
-    /// Get storecost from the network
-    /// Returns the MainPubkey of the node to pay and the price in NanoTokens
-    pub async fn get_store_cost_at_address(
-        &self,
-        address: NetworkAddress,
-    ) -> WalletResult<PayeeQuote> {
+    /// Get storecost from the network.
+    /// # Arguments
+    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
+    /// # Returns
+    /// * [`MainPubkey`](sn_transfers::MainPubkey) of the node to pay and the price in NanoTokens.
+    //TODO: Unused(No usages found in all Places)
+    async fn get_store_cost_at_address(&self, address: NetworkAddress) -> WalletResult<PayeeQuote> {
         self.client
             .network
             .get_store_costs_from_network(address)
