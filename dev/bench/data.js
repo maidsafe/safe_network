@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705577985572,
+  "lastUpdate": 1705577987078,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "a73c7227f12b2c5efead35c0d1c46bea2d304362",
-          "message": "chore: update deps",
-          "timestamp": "2023-09-19T12:36:31Z",
-          "tree_id": "69f0a03712e0fae574b0a8e6e5e4466ae67132a0",
-          "url": "https://github.com/maidsafe/safe_network/commit/a73c7227f12b2c5efead35c0d1c46bea2d304362"
-        },
-        "date": 1695131865547,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 224.07169,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 172,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 254,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d2e69a5a29abbbd8dbaede3e0fada12e48fa212b",
+          "message": "fix(test): get fixed amounts for Droplet and NonDroplet tests",
+          "timestamp": "2024-01-18T10:53:38Z",
+          "tree_id": "06e1379dc5bd835a762a8722200a6ff2d3caa02a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2e69a5a29abbbd8dbaede3e0fada12e48fa212b"
+        },
+        "date": 1705577986695,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 221,
             "unit": "MB"
           },
           {
