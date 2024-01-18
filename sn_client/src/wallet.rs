@@ -653,7 +653,8 @@ impl Client {
         }
         Err(WalletError::CouldNotVerifyTransfer(
             "The spends in network were not the same as the ones in the CashNote. \
-            The parents of this CashNote are probably double spends.".into(),
+            The parents of this CashNote are probably double spends."
+                .into(),
         ))
     }
 }
