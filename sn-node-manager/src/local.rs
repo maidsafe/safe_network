@@ -294,21 +294,6 @@ pub async fn run_node(
 /// Private Helpers
 ///
 
-/// Builds a MultiAddress taking into account any required ffeature set of the nodes.
-/// Default is a quic multiaddress
-fn build_multiaddr(port: u16, peer_id: PeerId) -> Multiaddr {
-    let addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
-
-    #[cfg(feature = "tcp")]
-    let addr = addr.with(libp2p::multiaddr::Protocol::Tcp(port));
-    #[cfg(feature = "quic")]
-    let addr = addr
-        .with(libp2p::multiaddr::Protocol::Udp(port))
-        .with(libp2p::multiaddr::Protocol::QuicV1);
-
-    addr.with(libp2p::multiaddr::Protocol::P2p(peer_id))
-}
-
 #[cfg(target_os = "windows")]
 fn get_username() -> Result<String> {
     Ok(std::env::var("USERNAME")?)
