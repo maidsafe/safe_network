@@ -163,6 +163,23 @@ pub struct LocalNetworkOptions {
     pub skip_validation: bool,
 }
 
+pub async fn run_faucet(
+    node_registry: &mut NodeRegistry,
+    path: PathBuf,
+    peer: Multiaddr,
+) -> Result<()> {
+    let launcher = LocalSafeLauncher {
+        safenode_bin_path: PathBuf::new(),
+        faucet_bin_path: path,
+    };
+
+    println!("Launching the faucet server...");
+    let faucet_pid = launcher.launch_faucet(&peer)?;
+    node_registry.faucet_pid = Some(faucet_pid);
+
+    Ok(())
+}
+
 pub async fn run_network(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
