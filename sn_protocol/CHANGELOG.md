@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.11](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.10...sn_protocol-v0.10.11) - 2024-01-18
+
+### Added
+- set quic as default transport
+
 ## [0.10.10](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.9...sn_protocol-v0.10.10) - 2024-01-18
 
 ### Other
