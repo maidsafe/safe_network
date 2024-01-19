@@ -11,6 +11,7 @@ use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use sn_client::Client;
 use sn_transfers::{LocalWallet, NanoTokens};
+use std::collections::HashMap;
 use std::path::{self, Path, PathBuf};
 use tiny_http::{Response, Server};
 use tracing::{debug, error, info, trace};
@@ -151,7 +152,7 @@ fn deposit(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_maid_snapshot() -> Result<Vec<MaidBalance>> {
+fn load_maid_snapshot() -> Result<HashMap<String, u32>> {
     // If the faucet restarts there will be an existing snapshot which should
     // be used to avoid conflicts in the balances between two different
     // snapshots.
@@ -167,12 +168,12 @@ fn load_maid_snapshot() -> Result<Vec<MaidBalance>> {
     }
 }
 
-fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<Vec<MaidBalance>> {
+fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<HashMap<String, u32>> {
     let content = std::fs::read_to_string(snapshot_path)?;
     parse_snapshot(content)
 }
 
-fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<Vec<MaidBalance>> {
+fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<String, u32>> {
     // make the request
     let response = minreq::get(SNAPSHOT_URL).send()?;
     // check the request is ok
@@ -189,8 +190,9 @@ fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<Vec<MaidBalance
     parse_snapshot(body.to_string())
 }
 
-fn parse_snapshot(json_str: String) -> Result<Vec<MaidBalance>> {
+fn parse_snapshot(json_str: String) -> Result<HashMap<String, u32>> {
     let balances: Vec<MaidBalance> = serde_json::from_str(&json_str)?;
+    let mut balances_map: HashMap<String, u32> = HashMap::new();
     // verify the snapshot is ok
     // balances must match the ico amount, which is slightly higher than
     // 2^32/10 because of the ico process.
@@ -202,7 +204,9 @@ fn parse_snapshot(json_str: String) -> Result<Vec<MaidBalance>> {
         // The reserved amount is the amount currently for sale on omni dex.
         // If it's not included the total is lower than expected.
         let r_int = b.reserved.parse::<u32>()?;
-        total += b_int + r_int;
+        let address_balance = b_int + r_int;
+        total += address_balance;
+        balances_map.insert(b.address.clone(), address_balance);
     }
     if total != supply {
         let msg = format!("Incorrect snapshot total, got {total} want {supply}");
@@ -210,5 +214,5 @@ fn parse_snapshot(json_str: String) -> Result<Vec<MaidBalance>> {
     }
     // log the total number of balances that were parsed
     info!("Parsed {} maid balances from the snapshot", balances.len());
-    Ok(balances)
+    Ok(balances_map)
 }
