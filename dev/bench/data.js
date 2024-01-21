@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705608637068,
+  "lastUpdate": 1705870739352,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8f9791027e76183f95dcf96522426b9f06a48efd",
-          "message": "fix: make clearer cli send asks for whole token amounts, not nanos",
-          "timestamp": "2023-09-20T09:02:59Z",
-          "tree_id": "76883c1f6d3f5a00bff0672765a29c92b211e1f0",
-          "url": "https://github.com/maidsafe/safe_network/commit/8f9791027e76183f95dcf96522426b9f06a48efd"
-        },
-        "date": 1695204301777,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1058300061550275,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5312544585796894,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.738527231375829,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.677361394036524,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b8925fed87528fdd6b682fc7f971a9827754b8c1",
+          "message": "chore(deps): update deps to fix h2 vulnerability error",
+          "timestamp": "2024-01-21T20:18:56Z",
+          "tree_id": "e2e696984dc71aa720259eece798c896c28ea1c8",
+          "url": "https://github.com/maidsafe/safe_network/commit/b8925fed87528fdd6b682fc7f971a9827754b8c1"
+        },
+        "date": 1705870736783,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3511941130750067,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9589175601253466,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.887181989573996,
             "unit": "MiB/s"
           }
         ]
