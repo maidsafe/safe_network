@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705870820982,
+  "lastUpdate": 1705870822771,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "06f886a5c4dd671c1dd8ed948ace4011b0ffd461",
-          "message": "chore: allow chunks to be Quorum::One\n\nAs they are self-verifiable we don't need majority there",
-          "timestamp": "2023-09-20T05:42:04Z",
-          "tree_id": "6b6efac35c4fdc15848152bb51de05bf203ea69c",
-          "url": "https://github.com/maidsafe/safe_network/commit/06f886a5c4dd671c1dd8ed948ace4011b0ffd461"
-        },
-        "date": 1695192409992,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 193.3271,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 160,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 89,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b8925fed87528fdd6b682fc7f971a9827754b8c1",
+          "message": "chore(deps): update deps to fix h2 vulnerability error",
+          "timestamp": "2024-01-21T20:18:56Z",
+          "tree_id": "e2e696984dc71aa720259eece798c896c28ea1c8",
+          "url": "https://github.com/maidsafe/safe_network/commit/b8925fed87528fdd6b682fc7f971a9827754b8c1"
+        },
+        "date": 1705870822178,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 240,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
