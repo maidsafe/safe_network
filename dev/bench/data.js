@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705938407865,
+  "lastUpdate": 1705938410568,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8f9791027e76183f95dcf96522426b9f06a48efd",
-          "message": "fix: make clearer cli send asks for whole token amounts, not nanos",
-          "timestamp": "2023-09-20T09:02:59Z",
-          "tree_id": "76883c1f6d3f5a00bff0672765a29c92b211e1f0",
-          "url": "https://github.com/maidsafe/safe_network/commit/8f9791027e76183f95dcf96522426b9f06a48efd"
-        },
-        "date": 1695204619023,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 235.29062,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac",
+          "message": "fix: create parent directories\n\nWhen saving the node registry, it should create all the directories in its path.",
+          "timestamp": "2024-01-22T16:30:12+01:00",
+          "tree_id": "3eb64d4aff9cffab6209f874ca14e27f0d7e4ea7",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac"
+        },
+        "date": 1705938409485,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 226,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 89,
             "unit": "MB"
           }
         ]
