@@ -74,7 +74,6 @@ impl WalletClient {
     /// wallet_client.store_local_wallet()?;
     /// # Ok(())
     /// # }
-    /// ```
     pub fn store_local_wallet(&mut self) -> WalletResult<()> {
         self.wallet.deposit_and_store_to_disk(&vec![])
     }
@@ -477,7 +476,7 @@ impl WalletClient {
         ))
     }
 
-    /// Send tokens to nodes closest to the data we want to make storage payment for.
+    /// Send tokens to nodes closest to the data that we want to make storage payments for.
     /// # Returns:
     ///
     /// * [WalletResult](Result)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
@@ -489,6 +488,26 @@ impl WalletClient {
     /// * verify_store - This optional check can verify if the store has been successful.
     ///
     /// Verification will be attempted via GET request through a Spend on the network.
+    ///
+    /// # Example
+    ///```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::collections::BTreeMap;
+    /// use xor_name::XorName;
+    /// use sn_transfers::{MainPubkey, Payment, PaymentQuote};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let mut cost_map:BTreeMap<XorName,(MainPubkey,PaymentQuote)> = BTreeMap::new();
+    /// wallet_client.pay_for_records(&cost_map,true).await?;
+    /// # Ok(())
+    /// # }
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
