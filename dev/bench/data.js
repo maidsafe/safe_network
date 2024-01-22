@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705914607473,
+  "lastUpdate": 1705914692495,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "22b379796152807aeb0b644b0987f402004973c1",
-          "message": "ci: install protobuf compiler for ubuntu workflows",
-          "timestamp": "2023-09-20T06:06:43Z",
-          "tree_id": "0da8fca346fb9496980db205bd05dfc0c0ce4463",
-          "url": "https://github.com/maidsafe/safe_network/commit/22b379796152807aeb0b644b0987f402004973c1"
-        },
-        "date": 1695195302235,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 64.14745,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bbcbd222feeffc0a331825550000bd2c0b484a87",
+          "message": "feat: spend dag utils",
+          "timestamp": "2024-01-22T08:08:29Z",
+          "tree_id": "03e95828c7909bebdf9ddbf5982d3c3c923c8f67",
+          "url": "https://github.com/maidsafe/safe_network/commit/bbcbd222feeffc0a331825550000bd2c0b484a87"
+        },
+        "date": 1705914692123,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
