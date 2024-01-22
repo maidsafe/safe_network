@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705938118232,
+  "lastUpdate": 1705938321709,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ee170432e7d932e4fa5bc5f41f13ab160a8cf454",
-          "message": "ci: disable arm builds for now",
-          "timestamp": "2023-09-20T13:44:09+02:00",
-          "tree_id": "4ed041629cb61f3e0579021f5de869967b8cf8f3",
-          "url": "https://github.com/maidsafe/safe_network/commit/ee170432e7d932e4fa5bc5f41f13ab160a8cf454"
-        },
-        "date": 1695211936783,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10465256838688838,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5605003302532333,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.478871211632132,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.82359361551722,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac",
+          "message": "fix: create parent directories\n\nWhen saving the node registry, it should create all the directories in its path.",
+          "timestamp": "2024-01-22T16:30:12+01:00",
+          "tree_id": "3eb64d4aff9cffab6209f874ca14e27f0d7e4ea7",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac"
+        },
+        "date": 1705938318559,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3472061911524416,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9024374093303895,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.51182850886464,
             "unit": "MiB/s"
           }
         ]
