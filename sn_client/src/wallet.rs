@@ -12,7 +12,7 @@ use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
-use sn_networking::{GetRecordError, PayeeQuote};
+use sn_networking::GetRecordError;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
