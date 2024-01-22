@@ -199,9 +199,15 @@ impl Transaction {
             return Err(Error::UniquePubkeyNotUniqueInTx);
         }
 
-        // Verify that each signed spend is valid
+        // Verify that each signed spend is an output of our tx and that it is valid
         let spent_tx_hash = self.hash();
         for signed_spend in signed_spends.iter() {
+            let pk = signed_spend.unique_pubkey();
+            let is_in_tx = |o: &Output| o.unique_pubkey() == pk;
+            if !signed_spend.spend.parent_tx.outputs.iter().any(is_in_tx) {
+                debug!("OutputNotFound: {pk:?} is not an output of tx {spent_tx_hash:?}");
+                return Err(Error::OutputNotFound);
+            }
             signed_spend.verify(spent_tx_hash)?;
         }
 
