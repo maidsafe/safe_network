@@ -322,20 +322,6 @@ impl WalletClient {
         }
     }
 
-    /// Get storecost from the network.
-    /// # Arguments
-    /// * `address` - The [`NetworkAddress`](self::NetworkAddress).
-    /// # Returns
-    /// * [`MainPubkey`](sn_transfers::MainPubkey) of the node to pay and the price in NanoTokens.
-    //TODO: Unused(No usages found in all Places)
-    async fn get_store_cost_at_address(&self, address: NetworkAddress) -> WalletResult<PayeeQuote> {
-        self.client
-            .network
-            .get_store_costs_from_network(address)
-            .await
-            .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
-    }
-
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
     /// The returned result is: ((storage_cost, royalties_fees), (payee_map, skipped_chunks))
