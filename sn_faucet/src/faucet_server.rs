@@ -19,7 +19,8 @@ use tracing::{debug, error, info, trace};
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
-const PUBKEYS_URL: &str = "https://pastebin.com/raw/pUm6tVRN";
+const PUBKEYS_URL: &str =
+    "https://github.com/maidsafe/safe_network/raw/main/sn_faucet/maid_address_pubkeys.csv";
 const HTTP_STATUS_OK: i32 = 200;
 
 type MaidAddress = String; // base58 encoded
@@ -271,11 +272,12 @@ fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
     let response = minreq::get(PUBKEYS_URL).send()?;
     // check the request is ok
     if response.status_code != 200 {
-        let msg = format!(
+        info!(
             "Pubkey request failed with http status {}",
             response.status_code
         );
-        return Err(eyre!(msg));
+        // The existing data is ok, no need to fail to start the server here
+        return Ok(pubkeys);
     }
     // parse the response as csv, each row has format:
     // address,pkhex
