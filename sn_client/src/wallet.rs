@@ -370,7 +370,7 @@ impl WalletClient {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let mut rng = rand::thread_rng();
     /// let xor_name = XorName::random(&mut rng);
     /// let address = RegisterAddress::new(xor_name, client.signer_pk());
