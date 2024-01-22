@@ -57,6 +57,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Create and fund a wallet to pay for files storage
         run: |
@@ -116,6 +119,9 @@ jobs:
         with:
           action: stop
           platform: ubuntu-latest
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       #########################
       ### Mem Analysis      ###

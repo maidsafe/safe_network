@@ -71,6 +71,9 @@ jobs:
           platform: ubuntu-latest
           set-safe-peers: false
           join: true
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
@@ -241,6 +244,8 @@ jobs:
           log_file_prefix: safe_test_logs_memcheck
           platform: ubuntu-latest
           build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check node memory usage
         shell: bash

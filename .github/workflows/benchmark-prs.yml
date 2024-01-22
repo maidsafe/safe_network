@@ -56,6 +56,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -222,6 +225,8 @@ jobs:
           log_file_prefix: safe_test_logs_benchmark
           platform: ubuntu-latest
           build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Upload Faucet folder
         uses: actions/upload-artifact@main

@@ -153,6 +153,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -278,6 +281,9 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_e2e
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
   gossipsub:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -309,6 +315,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
@@ -321,6 +330,9 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_gossipsub_e2e
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
   spend_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
@@ -353,6 +365,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -391,6 +406,9 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_spend
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
   churn:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -431,6 +449,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -457,6 +478,9 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_churn
           platform: ${{ matrix.os }}
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Verify restart of nodes using rg
         shell: bash
@@ -551,6 +575,9 @@ jobs:
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
+            node-manager-branch: port_delay
+            node-manager-repo-owner: RolandSherwin
 
         - name: Check SAFE_PEERS was set
           shell: bash
@@ -584,6 +611,9 @@ jobs:
             action: stop
             log_file_prefix: safe_test_logs_data_location
             platform: ${{ matrix.os }}
+            build: true
+            node-manager-branch: port_delay
+            node-manager-repo-owner: RolandSherwin
 
         - name: Verify restart of nodes using rg
           shell: bash
@@ -656,6 +686,8 @@ jobs:
           faucet-path: target/release/faucet
           platform: ubuntu-latest
           build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -689,6 +721,8 @@ jobs:
           platform: ubuntu-latest
           log_file_prefix: safe_test_logs_large_file_upload
           build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check the home dir leftover space
         run: |
@@ -770,6 +804,9 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -912,3 +949,6 @@ jobs:
           action: stop
           log_file_prefix: safe_test_logs_heavy_replicate_bench
           platform: ubuntu-latest
+          build: true
+          node-manager-branch: port_delay
+          node-manager-repo-owner: RolandSherwin
