@@ -347,10 +347,10 @@ impl WalletClient {
     /// * ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
     ///
     /// Where:
-    ///   * `storage_cost` is the total cost for the all contents
-    ///   * `royalties_fees` is the total royalty fess for the all contents
-    ///   * `payee_map` is the payees selected for each content
-    ///   * `skipped_chunks` is the list of content already exists in network and no need to upload
+    ///   * `storage_cost` - The total cost for the all contents
+    ///   * `royalties_fees` -  The total royalty fess for the all contents
+    ///   * `payee_map` - The payees selected for each content
+    ///   * `skipped_chunks` - The list of content already exists in network and no need to upload
     ///
     /// Note that storage cost is _per record_, and it's zero if not required for this operation.
     /// This can optionally verify the store has been successful.
@@ -423,7 +423,7 @@ impl WalletClient {
         (NanoTokens, NanoTokens),
         (Vec<(XorName, PeerId)>, Vec<XorName>),
     )> {
-        // get store cost from network in parrallel
+        // get store cost from network in parallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
             let client = self.client.clone();
@@ -481,9 +481,17 @@ impl WalletClient {
     }
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
-    /// Returns the amount paid for storage, including the network royalties fee paid.
-    /// This can optionally verify the store has been successful.
-    /// This will attempt to GET the cash_note from the network.
+    /// # Returns:
+    ///
+    /// * [WalletResult](Result)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
+    ///
+    /// This return contains the amount paid for storage. Including the network royalties fee paid.
+    ///
+    /// # Params:
+    /// * cost_map - [BTreeMap](BTreeMap) ([XorName](XorName),([MainPubkey](MainPubkey), [PaymentQuote](PaymentQuote)))
+    /// * verify_store - This optional check can verify if the store has been successful.
+    ///
+    /// Verification will be attempted via GET request through a Spend on the network.
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
