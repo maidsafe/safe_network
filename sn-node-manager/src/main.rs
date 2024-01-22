@@ -391,7 +391,7 @@ async fn main() -> Result<()> {
             node_path,
             node_version,
             peers,
-            skip_validation,
+            skip_validation: _,
         } => {
             println!("=================================================");
             println!("             Joining Local Network               ");
@@ -431,7 +431,7 @@ async fn main() -> Result<()> {
                 node_count: count,
                 peers,
                 safenode_bin_path: node_path,
-                skip_validation,
+                skip_validation: true,
             };
             run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
             Ok(())
@@ -499,7 +499,7 @@ async fn main() -> Result<()> {
             faucet_version,
             node_path,
             node_version,
-            skip_validation,
+            skip_validation: _,
         } => {
             let local_node_reg_path = &get_local_node_registry_path()?;
             let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -534,7 +534,7 @@ async fn main() -> Result<()> {
                 node_count: count,
                 peers: None,
                 safenode_bin_path: node_path,
-                skip_validation,
+                skip_validation: true,
             };
             run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
 
