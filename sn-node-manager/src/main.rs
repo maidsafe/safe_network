@@ -288,7 +288,7 @@ pub enum SubCmd {
     },
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
