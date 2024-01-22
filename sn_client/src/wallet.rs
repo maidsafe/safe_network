@@ -343,16 +343,42 @@ impl WalletClient {
 
     /// Send tokens to nodes closest to the data we want to make storage payment for.
     ///
-    /// The returned result is: ((storage_cost, royalties_fees), (payee_map, skipped_chunks))
-    /// Where:
-    ///   `storage_cost` is the total cost for the all contents
-    ///   `royalties_fees` is the total royalty fess for the all contents
-    ///   `payee_map` is the payees selected for each content
-    ///   `skipped_chunks` is the list of content already exists in network and no need to upload
+    /// # The Returned Result
+    /// * ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
     ///
-    /// Note storage cost is _per record_, and it's zero if not required for this operation.
+    /// Where:
+    ///   * `storage_cost` is the total cost for the all contents
+    ///   * `royalties_fees` is the total royalty fess for the all contents
+    ///   * `payee_map` is the payees selected for each content
+    ///   * `skipped_chunks` is the list of content already exists in network and no need to upload
+    ///
+    /// Note that storage cost is _per record_, and it's zero if not required for this operation.
     /// This can optionally verify the store has been successful.
-    /// * verify_store - A boolean to verify store. Set this to true for mandatory verification.
+    /// * verify_store - Is a boolean to verify store. Set this to true for mandatory verification.
+    ///
+    /// # Example
+    ///```no_run
+    /// // Paying for a random Register Address
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use xor_name::XorName;
+    /// use sn_protocol::NetworkAddress;
+    /// use sn_registers::{Permissions, RegisterAddress};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let mut rng = rand::thread_rng();
+    /// let xor_name = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xor_name, client.signer_pk());
+    /// let net_addr = NetworkAddress::from_register_address(address);
+    /// let cost = wallet_client.pay_for_storage(std::iter::once(net_addr)).await?;
+    /// # Ok(())
+    /// # }
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
