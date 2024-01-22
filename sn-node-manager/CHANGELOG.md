@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.18](https://github.com/maidsafe/sn-node-manager/compare/v0.1.17...v0.1.18) - 2024-01-22
+
+### Added
+- provide `faucet` command
+- `status` command enhancements
+- provide `--local` flag for `add`
+
+### Other
+- fixup after rebase
+- provide script for local network
+- additional info in `status` cmd
+
 ## [0.1.17](https://github.com/maidsafe/sn-node-manager/compare/v0.1.16...v0.1.17) - 2024-01-18
 
 ### Added
