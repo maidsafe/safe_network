@@ -4659,7 +4659,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.12.34"
+version = "0.12.35"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4782,7 +4782,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.10.13"
+version = "0.10.14"
 dependencies = [
  "blsttc",
  "bytes",

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.14](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.13...sn_protocol-v0.10.14) - 2024-01-22
+
+### Fixed
+- create parent directories
+
+### Other
+- include connected peers in node
+
 ## [0.10.13](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.12...sn_protocol-v0.10.13) - 2024-01-22
 
 ### Other
