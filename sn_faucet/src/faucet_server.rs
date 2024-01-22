@@ -20,11 +20,15 @@ use tracing::{debug, error, info, trace};
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
 const PUBKEYS_URL: &str = "https://pastebin.com/raw/pUm6tVRN";
+const HTTP_STATUS_OK: i32 = 200;
+
+type MaidAddress = String; // base58 encoded
+type MaidPubkey = String; // hex encoded
 
 // Parsed from json in SNAPSHOT_URL
 #[derive(Serialize, Deserialize)]
 struct MaidBalance {
-    address: String,
+    address: MaidAddress,
     balance: String,
     reserved: String,
 }
@@ -164,7 +168,7 @@ fn deposit(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_maid_snapshot() -> Result<HashMap<String, u32>> {
+fn load_maid_snapshot() -> Result<HashMap<MaidAddress, NanoTokens>> {
     // If the faucet restarts there will be an existing snapshot which should
     // be used to avoid conflicts in the balances between two different
     // snapshots.
@@ -180,16 +184,16 @@ fn load_maid_snapshot() -> Result<HashMap<String, u32>> {
     }
 }
 
-fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<HashMap<String, u32>> {
+fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<HashMap<MaidAddress, NanoTokens>> {
     let content = std::fs::read_to_string(snapshot_path)?;
     parse_snapshot(content)
 }
 
-fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<String, u32>> {
+fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<MaidAddress, NanoTokens>> {
     // make the request
     let response = minreq::get(SNAPSHOT_URL).send()?;
     // check the request is ok
-    if response.status_code != 200 {
+    if response.status_code != HTTP_STATUS_OK {
         let msg = format!("Snapshot failed with http status {}", response.status_code);
         return Err(eyre!(msg));
     }
@@ -202,22 +206,35 @@ fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<String,
     parse_snapshot(body.to_string())
 }
 
-fn parse_snapshot(json_str: String) -> Result<HashMap<String, u32>> {
+fn parse_snapshot(json_str: String) -> Result<HashMap<MaidAddress, NanoTokens>> {
     let balances: Vec<MaidBalance> = serde_json::from_str(&json_str)?;
-    let mut balances_map: HashMap<String, u32> = HashMap::new();
+    let mut balances_map: HashMap<MaidAddress, NanoTokens> = HashMap::new();
     // verify the snapshot is ok
     // balances must match the ico amount, which is slightly higher than
     // 2^32/10 because of the ico process.
     // see https://omniexplorer.info/asset/3
-    let supply: u32 = 452_552_412;
-    let mut total: u32 = 0;
+    let supply = NanoTokens::from(452_552_412_000_000_000);
+    let mut total = NanoTokens::zero();
     for b in &balances {
-        let b_int = b.balance.parse::<u32>()?;
         // The reserved amount is the amount currently for sale on omni dex.
         // If it's not included the total is lower than expected.
-        let r_int = b.reserved.parse::<u32>()?;
-        let address_balance = b_int + r_int;
-        total += address_balance;
+        // So the amount of maid an address owns is balance + reserved.
+        let balance = NanoTokens::from_str(&b.balance)?;
+        let reserved = NanoTokens::from_str(&b.reserved)?;
+        let address_balance = match balance.checked_add(reserved) {
+            Some(b) => b,
+            None => {
+                let msg = format!("Nanos overflowed adding maid {balance} + {reserved}");
+                return Err(eyre!(msg));
+            }
+        };
+        total = match total.checked_add(address_balance) {
+            Some(b) => b,
+            None => {
+                let msg = format!("Nanos overflowed adding maid {total} + {address_balance}");
+                return Err(eyre!(msg));
+            }
+        };
         balances_map.insert(b.address.clone(), address_balance);
     }
     if total != supply {
@@ -229,9 +246,9 @@ fn parse_snapshot(json_str: String) -> Result<HashMap<String, u32>> {
     Ok(balances_map)
 }
 
-fn load_maid_pubkeys() -> Result<HashMap<String, String>> {
+fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
     info!("Loading public keys for distributions");
-    let mut pubkeys: HashMap<String, String> = HashMap::new();
+    let mut pubkeys: HashMap<MaidAddress, MaidPubkey> = HashMap::new();
     // load from existing files
     let pk_dir = get_pubkeys_data_dir_path()?;
     let file_list = std::fs::read_dir(pk_dir)?;
