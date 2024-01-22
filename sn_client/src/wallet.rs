@@ -329,6 +329,7 @@ impl WalletClient {
 
     /// Get storecost from the network
     /// Returns the MainPubkey of the node to pay and the price in NanoTokens
+    // TODO: Unused (No usages found in all places)
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
