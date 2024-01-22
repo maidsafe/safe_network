@@ -284,7 +284,7 @@ impl WalletClient {
     /// Send signed spends to another wallet.
     /// Can optionally verify if the store has been successful.
     /// Verification will be attempted via GET request through a Spend on the network.
-    // TODO: Unused
+    // TODO: Unused. Private method.
     async fn send_signed_spends(
         &mut self,
         signed_spends: BTreeSet<SignedSpend>,
