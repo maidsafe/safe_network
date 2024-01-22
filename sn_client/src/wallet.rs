@@ -413,7 +413,7 @@ impl WalletClient {
     /// Existing chunks will have the store cost set to Zero.
     /// The payment procedure shall be skipped, and the chunk upload as well.
     /// Hence the list of existing chunks will be returned.
-    // TODO: Unused. Private method.
+    // TODO: Used only once in current file: Set to Private. No Docs issued.
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -521,7 +521,7 @@ impl WalletClient {
         if self.wallet.unconfirmed_spend_requests_exist() {
             info!("Pre-Unconfirmed transactions exist. Resending in 1 second...");
             sleep(Duration::from_secs(1)).await;
-            self.resend_pending_txs(verify_store).await;
+            self.resend_pending_transactions(verify_store).await;
 
             return Err(WalletError::CouldNotSendMoney(
                 "Wallet has pre-unconfirmed transactions. Resend, and try again.".to_string(),
@@ -589,7 +589,8 @@ impl WalletClient {
 
     /// Resend failed transactions. This can optionally verify the store has been successful.
     /// This will attempt to GET the cash_note from the network.
-    pub async fn resend_pending_txs(&mut self, verify_store: bool) {
+    // TODO: Used only once in current file: Set to Private. No Docs issued.
+    async fn resend_pending_transactions(&mut self, verify_store: bool) {
         if self
             .client
             .send_spends(
@@ -738,7 +739,7 @@ pub async fn send(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_txs(verify_store).await;
+        wallet_client.resend_pending_transactions(verify_store).await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -768,7 +769,7 @@ pub async fn send(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_txs(verify_store).await;
+            wallet_client.resend_pending_transactions(verify_store).await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
@@ -813,7 +814,7 @@ pub async fn broadcast_signed_spends(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_txs(verify_store).await;
+        wallet_client.resend_pending_transactions(verify_store).await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -843,7 +844,7 @@ pub async fn broadcast_signed_spends(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_txs(verify_store).await;
+            wallet_client.resend_pending_transactions(verify_store).await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
