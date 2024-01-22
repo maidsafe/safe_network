@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705938030662,
+  "lastUpdate": 1705938116684,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a14e60a87062648a6105ec0583b94fd518170ee6",
-          "message": "chore: wee dep updates",
-          "timestamp": "2023-09-20T10:05:20+02:00",
-          "tree_id": "924b8a3f6b3cf73355d8f8e503fa1ef6940820e0",
-          "url": "https://github.com/maidsafe/safe_network/commit/a14e60a87062648a6105ec0583b94fd518170ee6"
-        },
-        "date": 1695198987578,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 66.80576,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/bbcbd222feeffc0a331825550000bd2c0b484a87"
         },
         "date": 1705914692123,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d004fb588d63539a7b15d4a7457ee31feb1fde53",
+          "message": "docs: wallet docs",
+          "timestamp": "2024-01-22T15:01:40Z",
+          "tree_id": "b975ba4969f20352e094278ec897116ae3ccdcde",
+          "url": "https://github.com/maidsafe/safe_network/commit/d004fb588d63539a7b15d4a7457ee31feb1fde53"
+        },
+        "date": 1705938116295,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
