@@ -414,6 +414,7 @@ impl WalletClient {
     /// Existing chunks will have the store cost set to Zero.
     /// The payment procedure shall be skipped, and the chunk upload as well.
     /// Hence the list of existing chunks will be returned.
+    // TODO: Unused. Private method.
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
