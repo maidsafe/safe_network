@@ -633,7 +633,7 @@ impl WalletClient {
         self.wallet
     }
 
-    /// Returns a reference to the inner wallet
+    /// Returns a mutable wallet instance
     ///
     /// Return type: [LocalWallet](LocalWallet)
     ///
