@@ -64,7 +64,7 @@ pub(crate) struct ChunkManager {
     artifacts_dir: PathBuf,
     files_to_chunk: Vec<(OsString, PathXorName, PathBuf)>,
     chunks: BTreeMap<PathXorName, ChunkedFile>,
-    verified_files: Vec<(OsString, ChunkAddress)>,
+    completed_files: Vec<(OsString, ChunkAddress)>,
     resumed_chunk_count: usize,
     resumed_files_count: usize,
 }
@@ -78,7 +78,7 @@ impl ChunkManager {
             artifacts_dir,
             files_to_chunk: Default::default(),
             chunks: Default::default(),
-            verified_files: Default::default(),
+            completed_files: Default::default(),
             resumed_files_count: 0,
             resumed_chunk_count: 0,
         }
@@ -98,7 +98,7 @@ impl ChunkManager {
         // clean up
         self.files_to_chunk = Default::default();
         self.chunks = Default::default();
-        self.verified_files = Default::default();
+        self.completed_files = Default::default();
         self.resumed_chunk_count = 0;
         self.resumed_files_count = 0;
 
@@ -152,9 +152,9 @@ impl ChunkManager {
                 .retain(|(_, path_xor, _)| !path_xors.contains(path_xor));
         }
 
-        // Get the list of verified files
+        // Get the list of completed files
         {
-            let verified_files = self.chunks.iter().filter_map(|(_, chunked_file)| {
+            let completed_files = self.chunks.iter().filter_map(|(_, chunked_file)| {
                 if chunked_file.chunks.is_empty() {
                     Some((
                         chunked_file.file_name.clone(),
@@ -165,7 +165,7 @@ impl ChunkManager {
                 }
             });
 
-            self.verified_files.extend(verified_files);
+            self.completed_files.extend(completed_files);
         }
 
         // Return early if no more files to chunk
@@ -359,7 +359,7 @@ impl ChunkManager {
             // todo: should we remove the entry? ig so
             if let Some(chunked_file) = self.chunks.remove(path_xor) {
                 trace!("removed {path_xor:?} from chunks list");
-                self.verified_files.push((
+                self.completed_files.push((
                     chunked_file.file_name.clone(),
                     chunked_file.head_chunk_address,
                 ));
@@ -398,13 +398,13 @@ impl ChunkManager {
     }
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
-    /// verified
-    pub(crate) fn verified_files(&self) -> &Vec<(OsString, ChunkAddress)> {
-        &self.verified_files
+    /// completed
+    pub(crate) fn completed_files(&self) -> &Vec<(OsString, ChunkAddress)> {
+        &self.completed_files
     }
 
-    /// Return the filename of unverified_files.
-    pub(crate) fn unverified_files(&self) -> Vec<&OsString> {
+    /// Return the list of Filenames that have some chunks that are yet to be marked as completed.
+    pub(crate) fn incomplete_files(&self) -> Vec<&OsString> {
         self.chunks
             .values()
             .map(|chunked_file| &chunked_file.file_name)
@@ -412,7 +412,7 @@ impl ChunkManager {
     }
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
-    /// verified
+    /// completed
     pub(crate) fn already_put_chunks(
         &mut self,
         files_path: &Path,
@@ -721,8 +721,8 @@ mod tests {
         assert_eq!(chunked_file_from_dir.head_chunk_address, file_xor_addr);
         assert_eq!(path_xor_from_dir, path_xor);
 
-        // 2. file should not be marked as verified
-        assert!(manager.verified_files.is_empty());
+        // 2. file should not be marked as completed
+        assert!(manager.completed_files.is_empty());
 
         Ok(())
     }
@@ -746,8 +746,8 @@ mod tests {
 
         manager.mark_completed_all()?;
 
-        // all 5 files should be marked as verified
-        assert_eq!(manager.verified_files.len(), 5);
+        // all 5 files should be marked as completed
+        assert_eq!(manager.completed_files.len(), 5);
 
         // all 5 folders should exist
         for (path_xor, chunked_file) in manager_clone.chunks.iter() {
@@ -791,7 +791,7 @@ mod tests {
 
         // 2. assert the two managers
         assert_eq!(manager.chunks, new_manager.chunks);
-        assert_eq!(manager.verified_files, new_manager.verified_files);
+        assert_eq!(manager.completed_files, new_manager.completed_files);
 
         Ok(())
     }
@@ -838,8 +838,8 @@ mod tests {
             total_chunks_count - 1
         );
 
-        // 2. files should not be added to verified
-        assert_eq!(new_manager.verified_files.len(), 0);
+        // 2. files should not be added to completed files
+        assert_eq!(new_manager.completed_files.len(), 0);
 
         Ok(())
     }
@@ -869,8 +869,8 @@ mod tests {
         // 2. the resumed stats should be 0
         assert_eq!(new_manager.resumed_chunk_count, 0);
 
-        // 3. make sure the files are added to verified list
-        assert_eq!(new_manager.verified_files.len(), 5);
+        // 3. make sure the files are added to completed list
+        assert_eq!(new_manager.completed_files.len(), 5);
 
         Ok(())
     }

@@ -290,10 +290,10 @@ async fn upload_files(
             }
             println!("**************************************");
 
-            if chunk_manager.verified_files().is_empty() {
+            if chunk_manager.completed_files().is_empty() {
                 println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
             }
-            for (file_name, addr) in chunk_manager.verified_files() {
+            for (file_name, addr) in chunk_manager.completed_files() {
                 let hex_addr = addr.to_hex();
                 if let Some(file_name) = file_name.to_str() {
                     println!("\"{file_name}\" {hex_addr}");
@@ -363,7 +363,7 @@ async fn upload_files(
         // terminates with an error. This race condition can happen as we bail on `upload_result` before we await the
         // handler.
         if !upload_terminated_with_error {
-            for file_name in chunk_manager.unverified_files() {
+            for file_name in chunk_manager.incomplete_files() {
                 if let Some(file_name) = file_name.to_str() {
                     println!("Unverified file \"{file_name}\", suggest to re-upload again.");
                     info!("Unverified {file_name}");
@@ -383,7 +383,7 @@ async fn upload_files(
                 println!("*      to publish the datamaps.      *");
             }
             println!("**************************************");
-            for (file_name, addr) in chunk_manager.verified_files() {
+            for (file_name, addr) in chunk_manager.completed_files() {
                 let hex_addr = addr.to_hex();
                 if let Some(file_name) = file_name.to_str() {
                     println!("\"{file_name}\" {hex_addr}");
