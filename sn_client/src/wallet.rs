@@ -605,7 +605,25 @@ impl WalletClient {
         }
     }
 
-    /// Return the wallet.
+    /// * Returns the wallet: [LocalWallet](LocalWallet)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let paying_wallet = wallet_client.into_wallet();
+    /// // Display the wallet balance in the terminal
+    /// println!("{}",paying_wallet.balance());
+    /// # Ok(())
+    /// # }
     pub fn into_wallet(self) -> LocalWallet {
         self.wallet
     }
