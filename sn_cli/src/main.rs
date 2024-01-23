@@ -18,7 +18,10 @@ use crate::{
         files::files_cmds,
         gossipsub::gossipsub_cmds,
         register::register_cmds,
-        wallet::hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
+        wallet::{
+            hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
+            wo_wallet::{wo_wallet_cmds, wo_wallet_cmds_without_client, WatchOnlyWalletCmds},
+        },
         SubCmd,
     },
 };
@@ -76,12 +79,22 @@ async fn main() -> Result<()> {
     if let SubCmd::Wallet(cmds) = &opt.cmd {
         if let WalletCmds::Address
         | WalletCmds::Balance { .. }
-        | WalletCmds::Transaction { .. }
         | WalletCmds::Deposit { .. }
         | WalletCmds::Create { .. }
         | WalletCmds::Sign { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
+            return Ok(());
+        }
+    }
+
+    if let SubCmd::Wowallet(cmds) = &opt.cmd {
+        if let WatchOnlyWalletCmds::Addresses
+        | WatchOnlyWalletCmds::Balance { .. }
+        | WatchOnlyWalletCmds::Deposit { .. }
+        | WatchOnlyWalletCmds::Create { .. } = cmds
+        {
+            wo_wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
         }
     }
@@ -104,7 +117,10 @@ async fn main() -> Result<()> {
     };
 
     // use gossipsub only for the wallet cmd that requires it.
-    let joins_gossipsub = matches!(opt.cmd, SubCmd::Wallet(WalletCmds::ReceiveOnline { .. }));
+    let joins_gossipsub = matches!(
+        opt.cmd,
+        SubCmd::Wowallet(WatchOnlyWalletCmds::ReceiveOnline { .. })
+    );
 
     // get the broadcaster as we want to have our own progress bar.
     let broadcaster = ClientEventsBroadcaster::default();
@@ -130,6 +146,9 @@ async fn main() -> Result<()> {
     match opt.cmd {
         SubCmd::Wallet(cmds) => {
             wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+        }
+        SubCmd::Wowallet(cmds) => {
+            wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Files(cmds) => {
             files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
