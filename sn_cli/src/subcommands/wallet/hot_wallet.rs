@@ -22,10 +22,7 @@ use sn_transfers::{
     Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
     UnsignedTransfer, WalletError,
 };
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{path::Path, str::FromStr};
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -88,15 +85,6 @@ pub enum WalletCmds {
         #[clap(name = "to")]
         to: String,
     },
-    /// Builds an unsigned transaction to be signed offline.
-    Transaction {
-        /// The number of SafeNetworkTokens to transfer.
-        #[clap(name = "amount")]
-        amount: String,
-        /// Hex-encoded public address of the recipient.
-        #[clap(name = "to")]
-        to: String,
-    },
     /// Signs a transaction to be then broadcasted to the network.
     Sign {
         /// Hex-encoded unsigned transaction. It requires a hot-wallet was created for CLI.
@@ -111,20 +99,6 @@ pub enum WalletCmds {
         /// Encrypted transfer.
         #[clap(name = "transfer")]
         transfer: String,
-    },
-    /// Listen for transfer notifications from the network over gossipsub protocol.
-    ///
-    /// Transfers will be deposited to a local (watch-only) wallet.
-    ///
-    /// Only cash notes owned by the provided public key will be accepted, verified to be valid
-    /// against the network, and deposited onto a locally stored watch-only wallet.
-    ReceiveOnline {
-        /// Hex-encoded main public key
-        #[clap(name = "pk")]
-        pk: String,
-        /// Optional path where to store the wallet
-        #[clap(name = "path")]
-        path: Option<PathBuf>,
     },
     /// Verify a spend on the Network.
     Verify {

@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 pub(crate) mod helpers;
 pub(crate) mod hot_wallet;
+pub(crate) mod wo_wallet;
 
 use sn_transfers::{CashNote, LocalWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
 
@@ -15,13 +16,11 @@ use std::{collections::BTreeSet, io::Read, path::Path};
 
 // TODO: convert this into a Trait part of the wallet APIs.
 enum WalletApiHelper {
-    #[allow(dead_code)]
     WatchOnlyWallet(WatchOnlyWallet),
     HotWallet(LocalWallet),
 }
 
 impl WalletApiHelper {
-    #[allow(dead_code)]
     pub fn watch_only_from_pk(main_pk: MainPubkey, root_dir: &Path) -> Result<Self> {
         let wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
         Ok(Self::WatchOnlyWallet(wallet))
