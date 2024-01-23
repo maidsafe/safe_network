@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706024196090,
+  "lastUpdate": 1706024283935,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "0d24c3fa8e61a5cf9db2cac6d9b1e6c52fa20e68",
-          "message": "ci: fix x-platform release builds for protobuf compiler",
-          "timestamp": "2023-09-20T12:16:08+02:00",
-          "tree_id": "d737a8bba0504317bb37023d15bde4044caa8466",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d24c3fa8e61a5cf9db2cac6d9b1e6c52fa20e68"
-        },
-        "date": 1695206841625,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56.889343,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "4a7962aa490d6316a2aa5371e188faee63d68026",
           "message": "ci: use action to install protobuf",
           "timestamp": "2023-09-20T12:56:42+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f118bc6e620f75f871fe762f1d4e10fb5aa8164c",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 5.4.4 to 5.4.5\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 5.4.4 to 5.4.5.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/0d749a1a91d4770e983a7b8f83d4a3f0e7e0874e...5ce82f5d814d4010519d15f0552aec4f17a1e1fe)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-01-23T16:20:22+01:00",
+          "tree_id": "fcab8887a8668c6f4863ae8fab73b28edf3e1c90",
+          "url": "https://github.com/maidsafe/safe_network/commit/f118bc6e620f75f871fe762f1d4e10fb5aa8164c"
+        },
+        "date": 1706024283266,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 76,
             "unit": "MB"
           }
         ]
