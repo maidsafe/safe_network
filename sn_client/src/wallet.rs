@@ -479,7 +479,7 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data that we want to make storage payments for.
     /// # Returns:
     ///
-    /// * [WalletResult](Result)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
+    /// * [WalletResult](WalletResult)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
     ///
     /// This return contains the amount paid for storage. Including the network royalties fee paid.
     ///
