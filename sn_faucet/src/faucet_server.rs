@@ -25,6 +25,7 @@ const HTTP_STATUS_OK: i32 = 200;
 
 type MaidAddress = String; // base58 encoded
 type MaidPubkey = String; // hex encoded
+type Snapshot = HashMap<MaidAddress, NanoTokens>;
 
 // Parsed from json in SNAPSHOT_URL
 #[derive(Serialize, Deserialize)]
@@ -169,7 +170,7 @@ fn deposit(root_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_maid_snapshot() -> Result<HashMap<MaidAddress, NanoTokens>> {
+fn load_maid_snapshot() -> Result<Snapshot> {
     // If the faucet restarts there will be an existing snapshot which should
     // be used to avoid conflicts in the balances between two different
     // snapshots.
@@ -185,12 +186,12 @@ fn load_maid_snapshot() -> Result<HashMap<MaidAddress, NanoTokens>> {
     }
 }
 
-fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<HashMap<MaidAddress, NanoTokens>> {
+fn maid_snapshot_from_file(snapshot_path: PathBuf) -> Result<Snapshot> {
     let content = std::fs::read_to_string(snapshot_path)?;
     parse_snapshot(content)
 }
 
-fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<MaidAddress, NanoTokens>> {
+fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<Snapshot> {
     // make the request
     let response = minreq::get(SNAPSHOT_URL).send()?;
     // check the request is ok
@@ -207,9 +208,9 @@ fn maid_snapshot_from_internet(snapshot_path: PathBuf) -> Result<HashMap<MaidAdd
     parse_snapshot(body.to_string())
 }
 
-fn parse_snapshot(json_str: String) -> Result<HashMap<MaidAddress, NanoTokens>> {
+fn parse_snapshot(json_str: String) -> Result<Snapshot> {
     let balances: Vec<MaidBalance> = serde_json::from_str(&json_str)?;
-    let mut balances_map: HashMap<MaidAddress, NanoTokens> = HashMap::new();
+    let mut balances_map: Snapshot = Snapshot::new();
     // verify the snapshot is ok
     // balances must match the ico amount, which is slightly higher than
     // 2^32/10 because of the ico process.
