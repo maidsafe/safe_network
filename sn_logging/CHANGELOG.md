@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.17](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.16...sn_logging-v0.2.17) - 2024-01-23
+
+### Other
+- *(node)* reduce MAX_UNCOMPRESSED_LOG_FILES to 10
+
 ## [0.2.16](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.15...sn_logging-v0.2.16) - 2023-12-06
 
 ### Other
