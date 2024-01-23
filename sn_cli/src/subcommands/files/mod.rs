@@ -8,7 +8,7 @@
 
 mod chunk_manager;
 
-pub(crate) use chunk_manager::{ChunkManager, UPLOADED_FILES};
+pub(crate) use chunk_manager::ChunkManager;
 
 use bytes::Bytes;
 use clap::Parser;
@@ -40,6 +40,9 @@ use xor_name::XorName;
 
 /// The default folder to download files to.
 const DOWNLOAD_FOLDER: &str = "safe_files";
+
+/// Subdir for storing uploaded file into
+const UPLOADED_FILES: &str = "uploaded_files";
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -95,7 +98,17 @@ pub struct UploadedFile {
 }
 
 impl UploadedFile {
-    pub fn write(&self, path: &Path) -> Result<()> {
+    /// Write an UploadedFile to a path identified by the hex of the head ChunkAddress.
+    /// If you want to update the data_map to None, calling this function will overwrite the previous value.
+    pub fn write(&self, root_dir: &Path, head_chunk_address: &ChunkAddress) -> Result<()> {
+        let uploaded_files = root_dir.join(UPLOADED_FILES);
+        if !uploaded_files.exists() {
+            if let Err(error) = std::fs::create_dir_all(&uploaded_files) {
+                error!("Failed to create {uploaded_files:?} because {error:?}");
+            }
+        }
+        let uploaded_file_path = uploaded_files.join(head_chunk_address.to_hex());
+
         if self.data_map.is_none() {
             warn!(
                 "No datamap being written for {:?} as it is empty",
@@ -107,9 +120,9 @@ impl UploadedFile {
             err
         })?;
 
-        std::fs::write(path, serialized).map_err(|err| {
+        std::fs::write(&uploaded_file_path, serialized).map_err(|err| {
             error!(
-                "Could not write UploadedFile of {:?} to {path:?}",
+                "Could not write UploadedFile of {:?} to {uploaded_file_path:?}",
                 self.filename
             );
             err
