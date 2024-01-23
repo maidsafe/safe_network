@@ -233,7 +233,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     }
 
     let _ = wallet_client
-        .mut_wallet()
+        .mutable_wallet()
         .local_send_storage_payment(&no_data_payments)?;
 
     sleep(Duration::from_secs(5)).await;
@@ -331,7 +331,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
     );
 
     let _ = wallet_client
-        .mut_wallet()
+        .mutable_wallet()
         .local_send_storage_payment(&no_data_payments)?;
 
     // this should fail to store as the amount paid is not enough

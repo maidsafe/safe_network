@@ -610,8 +610,8 @@ impl WalletClient {
         self.wallet
     }
 
-    /// Return ref to inner waller
-    pub fn mut_wallet(&mut self) -> &mut LocalWallet {
+    /// Return reference to the inner wallet
+    pub fn mutable_wallet(&mut self) -> &mut LocalWallet {
         &mut self.wallet
     }
 }
