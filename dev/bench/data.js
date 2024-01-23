@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1705938410568,
+  "lastUpdate": 1706024196090,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d18d4c1c628f00536c333767e10ff693bde720c8",
-          "message": "fix: revert protoc/tonic-build update, remove protoc-builder install on ci\n\nReinstate arm builds",
-          "timestamp": "2023-09-20T15:11:05+02:00",
-          "tree_id": "e92c7074a99c1c4a5cff78c5bf148d1801f0a5c6",
-          "url": "https://github.com/maidsafe/safe_network/commit/d18d4c1c628f00536c333767e10ff693bde720c8"
-        },
-        "date": 1695217183944,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10403125300669275,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5701195990052789,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.474802079664452,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.51182850886464,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f118bc6e620f75f871fe762f1d4e10fb5aa8164c",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 5.4.4 to 5.4.5\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 5.4.4 to 5.4.5.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/0d749a1a91d4770e983a7b8f83d4a3f0e7e0874e...5ce82f5d814d4010519d15f0552aec4f17a1e1fe)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-01-23T16:20:22+01:00",
+          "tree_id": "fcab8887a8668c6f4863ae8fab73b28edf3e1c90",
+          "url": "https://github.com/maidsafe/safe_network/commit/f118bc6e620f75f871fe762f1d4e10fb5aa8164c"
+        },
+        "date": 1706024193209,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3124670320380858,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8578563410543985,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 55.37543493000989,
             "unit": "MiB/s"
           }
         ]
