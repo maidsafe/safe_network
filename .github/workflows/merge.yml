@@ -552,6 +552,13 @@ jobs:
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
 
+        - name: Verify node registry for node-manager
+          if: always()
+          shell: bash
+          run: |
+            cd "${{ matrix.safe_path }}"
+            cat local_node_registry.json
+
         - name: Check SAFE_PEERS was set
           shell: bash
           run: |
