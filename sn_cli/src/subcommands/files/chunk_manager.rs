@@ -29,9 +29,6 @@ use xor_name::XorName;
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
 
-/// Subdir for storing uploaded file into
-pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
-
 // The unique hex encoded hash(path)
 // This allows us to uniquely identify if a file has been chunked or not.
 // An alternative to use instead of filename as it might not be unique
@@ -367,30 +364,13 @@ impl ChunkManager {
                     chunked_file.head_chunk_address,
                 ));
 
-                // write the data_map addr and or data_map to the UPLOADED_FILES dir
-                let filename_hex = chunked_file.head_chunk_address.to_hex();
-
-                // ensure self.root_dir.join(UPLOADED_FILES) exists
-                let uploaded_files = self.root_dir.join(UPLOADED_FILES);
-                if !uploaded_files.exists() {
-                    if let Err(error) = fs::create_dir_all(&uploaded_files) {
-                        error!("Failed to create {uploaded_files:?} because {error:?}");
-                    }
-                }
-
-                let uploaded_file_path = uploaded_files.join(&filename_hex);
-
-                warn!(
-                    "Marking {uploaded_file_path:?} as completed for chunked_file {:?}",
-                    chunked_file
-                );
-
                 let uploaded_file_metadata = UploadedFile {
                     filename: chunked_file.file_name,
                     data_map: chunked_file.data_map,
                 };
                 // errors are logged by write()
-                let _result = uploaded_file_metadata.write(&uploaded_file_path);
+                let _result =
+                    uploaded_file_metadata.write(&self.root_dir, &chunked_file.head_chunk_address);
             }
         }
         Ok(())
