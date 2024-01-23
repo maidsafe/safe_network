@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706024285924,
+  "lastUpdate": 1706029332218,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d9eaf409b07df97d8eb2d38495c43b2f4aac1831",
-          "message": "ci: fix borked release workflow file",
-          "timestamp": "2023-09-20T15:24:04+02:00",
-          "tree_id": "c85c43491058cf956502b3a582474c998cefad9b",
-          "url": "https://github.com/maidsafe/safe_network/commit/d9eaf409b07df97d8eb2d38495c43b2f4aac1831"
-        },
-        "date": 1695218013124,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10267987370624779,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5610936366801373,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.472002434224588,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.37543493000989,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d47b4520155d355aa6d6d6c8552e3770767afa31",
+          "message": "chore(node): reduce MAX_UNCOMPRESSED_LOG_FILES to 10",
+          "timestamp": "2024-01-23T16:09:31Z",
+          "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
+          "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
+        },
+        "date": 1706029329849,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3600729871852764,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9244608688374976,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.07501716166913,
             "unit": "MiB/s"
           }
         ]
