@@ -779,7 +779,9 @@ pub async fn send(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_transactions(verify_store).await;
+        wallet_client
+            .resend_pending_transactions(verify_store)
+            .await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -809,7 +811,9 @@ pub async fn send(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_transactions(verify_store).await;
+            wallet_client
+                .resend_pending_transactions(verify_store)
+                .await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
@@ -854,7 +858,9 @@ pub async fn broadcast_signed_spends(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_transactions(verify_store).await;
+        wallet_client
+            .resend_pending_transactions(verify_store)
+            .await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -884,7 +890,9 @@ pub async fn broadcast_signed_spends(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_transactions(verify_store).await;
+            wallet_client
+                .resend_pending_transactions(verify_store)
+                .await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
