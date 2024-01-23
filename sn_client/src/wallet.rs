@@ -340,24 +340,23 @@ impl WalletClient {
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
 
-    /// Send tokens to nodes closest to the data we want to make storage payment for.
+    /// Send tokens to nodes closest to the data we want to make storage payment for. Runs mandatory verification.
     ///
-    /// # The Returned Result
-    /// * ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
+    /// # Arguments
+    /// - content_addrs - [Iterator](Iterator)<Items = [NetworkAddress](NetworkAddress)>
     ///
-    /// Where:
-    ///   * `storage_cost` - The total cost for the all contents
-    ///   * `royalties_fees` -  The total royalty fess for the all contents
-    ///   * `payee_map` - The payees selected for each content
-    ///   * `skipped_chunks` - The list of content already exists in network and no need to upload
+    /// # Returns:
+    /// # ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
     ///
+    ///  * `storage_cost` - The total cost for the all contents ([`NanoTokens`](NanoTokens))
+    ///  * `royalties_fees` - the total royalty fess for the all contents ([`NanoTokens`](NanoTokens))
+    ///  * `payee_map` - The payees selected for each content ([Vec](Vec)<([`XorName`](XorName), [`PeerId`](PeerId))>)
+    ///  * `skipped_chunks` - the list of content already exists in network and no need to upload ([Vec](Vec)<[`XorName`](XorName)>)
     /// Note that storage cost is _per record_, and it's zero if not required for this operation.
-    /// This can optionally verify the store has been successful.
-    /// * verify_store - Is a boolean to verify store. Set this to true for mandatory verification.
+    /// mandatory verification.
     ///
     /// # Example
     ///```no_run
-    /// // Paying for a random Register Address
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
@@ -375,6 +374,8 @@ impl WalletClient {
     /// let xor_name = XorName::random(&mut rng);
     /// let address = RegisterAddress::new(xor_name, client.signer_pk());
     /// let net_addr = NetworkAddress::from_register_address(address);
+    ///
+    /// // Paying for a random Register Address
     /// let cost = wallet_client.pay_for_storage(std::iter::once(net_addr)).await?;
     /// # Ok(())
     /// # }
