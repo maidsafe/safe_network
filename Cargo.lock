@@ -1795,7 +1795,7 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06683b93020a07e3dbcf5f8c0f6d40080d725bea7936fc01ad345c01b97dc270"
 dependencies = [
- "base64 0.21.6",
+ "base64 0.21.7",
  "bytes",
  "headers-core",
  "http",
@@ -4610,7 +4610,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.8"
+version = "0.89.9"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4649,7 +4649,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.102.6"
+version = "0.102.7"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4683,7 +4683,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "blsttc",
  "clap 4.4.18",
@@ -4759,7 +4759,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.103.8"
+version = "0.103.9"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4811,7 +4811,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4896,7 +4896,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.3.29"
+version = "0.3.30"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
