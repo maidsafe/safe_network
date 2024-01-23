@@ -17,13 +17,14 @@ use color_eyre::{
 use sn_client::{Client, ClientEvent};
 use sn_transfers::{
     CashNoteRedemption, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, SignedSpend,
-    Transfer, UniquePubkey, WalletError,
+    Transfer, UniquePubkey, WalletError, WatchOnlyWallet,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
     str::FromStr,
 };
+use walkdir::WalkDir;
 
 const DEFAULT_RECEIVE_ONLINE_WALLET_DIR: &str = "receive_online";
 const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
@@ -37,8 +38,8 @@ pub enum WatchOnlyWalletCmds {
     /// Print the wallet balance.
     Balance {
         /// The hex-encoded public key of an existing watch-only wallet.
-        #[clap(long, name = "public key")]
-        pk: String,
+        #[clap(name = "public key")]
+        pk: Option<String>,
     },
     /// Deposit CashNotes from the received directory to the local wallet.
     /// Or Read a hex encoded CashNote from stdin.
@@ -62,13 +63,11 @@ pub enum WatchOnlyWalletCmds {
         #[clap(long, name = "public key")]
         pk: String,
     },
-    /// Create a hot or watch-only wallet from the given (hex-encoded) key.
+    /// Create a watch-only wallet from the given (hex-encoded) key.
     Create {
-        /// Hex-encoded main secret or public key. If the key is a secret key a hot-wallet will be created
-        /// which can be used to sign and broadcast transfers. Otherwise, if the passed key is a public key,
-        /// then a watch-only wallet is created.
-        #[clap(name = "key")]
-        key: String,
+        /// Hex-encoded main public key.
+        #[clap(name = "public key")]
+        pk: String,
     },
     /// Builds an unsigned transaction to be signed offline. It requires an existing watch-only wallet.
     Transaction {
@@ -89,7 +88,7 @@ pub enum WatchOnlyWalletCmds {
     /// use the 'receive' command to claim the funds.
     Broadcast {
         /// Hex-encoded signed transaction.
-        #[clap(name = "signed_tx")]
+        #[clap(name = "signed Tx")]
         signed_tx: String,
     },
     /// Listen for transfer notifications from the network over gossipsub protocol.
@@ -100,7 +99,7 @@ pub enum WatchOnlyWalletCmds {
     /// against the network, and deposited onto a locally stored watch-only wallet.
     ReceiveOnline {
         /// Hex-encoded main public key
-        #[clap(name = "pk")]
+        #[clap(name = "public key")]
         pk: String,
         /// Optional path where to store the wallet
         #[clap(name = "path")]
@@ -126,18 +125,37 @@ pub(crate) async fn wo_wallet_cmds_without_client(
 ) -> Result<()> {
     match cmds {
         WatchOnlyWalletCmds::Addresses => {
-            /* TODO !!!:
-            for main_pk in pks {
-                let wo_wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
-                println!("{:?}", wo_wallet.address());
+            let wallets = get_watch_only_wallets(root_dir)?;
+            println!(
+                "Addresses of {} watch-only wallets found at {}:",
+                wallets.len(),
+                root_dir.display()
+            );
+            for wo_wallet in wallets {
+                println!("- {:?}", wo_wallet.address());
             }
-            */
             Ok(())
         }
         WatchOnlyWalletCmds::Balance { pk } => {
-            let main_pk = MainPubkey::from_hex(pk)?;
-            let watch_only_wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
-            println!("{}", watch_only_wallet.balance());
+            if let Some(pk) = pk {
+                let main_pk = MainPubkey::from_hex(pk)?;
+                let watch_only_wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
+                println!("{}", watch_only_wallet.balance());
+            } else {
+                let wallets = get_watch_only_wallets(root_dir)?;
+                println!(
+                    "Balances of {} watch-only wallets found at {}:",
+                    wallets.len(),
+                    root_dir.display()
+                );
+                for wo_wallet in wallets {
+                    println!(
+                        "{:?}: {}",
+                        wo_wallet.address().public_key(),
+                        wo_wallet.balance()
+                    );
+                }
+            }
             Ok(())
         }
         WatchOnlyWalletCmds::Deposit {
@@ -149,8 +167,8 @@ pub(crate) async fn wo_wallet_cmds_without_client(
             let mut wallet = WalletApiHelper::watch_only_from_pk(main_pk, root_dir)?;
             wallet.deposit(*stdin, cash_note.as_deref())
         }
-        WatchOnlyWalletCmds::Create { key } => {
-            let pk = PublicKey::from_hex(key)
+        WatchOnlyWalletCmds::Create { pk } => {
+            let pk = PublicKey::from_hex(pk)
                 .map_err(|err| eyre!("Failed to parse hex-encoded PK: {err:?}"))?;
             let main_pk = MainPubkey::new(pk);
             let main_pubkey = main_pk.public_key();
@@ -188,6 +206,28 @@ pub(crate) async fn wo_wallet_cmds(
             "{cmd:?} has to be processed before connecting to the network"
         )),
     }
+}
+
+fn get_watch_only_wallets(root_dir: &Path) -> Result<Vec<WatchOnlyWallet>> {
+    let mut wallets = vec![];
+    for entry in WalkDir::new(root_dir.display().to_string())
+        .into_iter()
+        .flatten()
+    {
+        if let Some(file_name) = entry.path().file_name().and_then(|name| name.to_str()) {
+            if file_name.starts_with("pk_") {
+                let wallet_dir = root_dir.join(file_name);
+                if let Ok(wo_wallet) = WatchOnlyWallet::load_from_path(&wallet_dir) {
+                    wallets.push(wo_wallet);
+                }
+            }
+        }
+    }
+    if wallets.is_empty() {
+        bail!("No watch-only wallets found at {}", root_dir.display());
+    }
+
+    Ok(wallets)
 }
 
 fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Path) -> Result<()> {
