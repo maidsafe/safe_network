@@ -646,12 +646,12 @@ impl WalletClient {
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let paying_wallet = wallet_client.mutable_wallet();
+    /// let paying_wallet = wallet_client.mut_wallet();
     /// // Display the mutable wallet balance in the terminal
     /// println!("{}",paying_wallet.balance());
     /// # Ok(())
     /// # }
-    pub fn mutable_wallet(&mut self) -> &mut LocalWallet {
+    pub fn mut_wallet(&mut self) -> &mut LocalWallet {
         &mut self.wallet
     }
 }
