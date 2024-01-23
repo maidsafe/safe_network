@@ -15,6 +15,7 @@ members = [
     "sn_registers",
     "sn_testnet",
     "sn_transfers",
+    "token_supplies",
 ]
 
 [workspace.lints.rust]
