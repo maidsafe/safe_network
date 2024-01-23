@@ -92,7 +92,8 @@ async fn main() -> Result<()> {
         if let WatchOnlyWalletCmds::Addresses
         | WatchOnlyWalletCmds::Balance { .. }
         | WatchOnlyWalletCmds::Deposit { .. }
-        | WatchOnlyWalletCmds::Create { .. } = cmds
+        | WatchOnlyWalletCmds::Create { .. }
+        | WatchOnlyWalletCmds::Transaction { .. } = cmds
         {
             wo_wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());

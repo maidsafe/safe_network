@@ -41,13 +41,13 @@ pub enum WatchOnlyWalletCmds {
         #[clap(name = "public key")]
         pk: Option<String>,
     },
-    /// Deposit CashNotes from the received directory to the local wallet.
+    /// Deposit CashNotes from the received directory to the chosen watch-only wallet.
     /// Or Read a hex encoded CashNote from stdin.
     ///
     /// The default received directory is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/wallet/cash_notes
-    ///  - macOS: $HOME/Library/Application Support/safe/wallet/cash_notes
-    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\cash_notes
+    ///  - Linux: $HOME/.local/share/safe/client/<pk>/cash_notes
+    ///  - macOS: $HOME/Library/Application Support/safe/client/<pk>/cash_notes
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\client\<pk>\cash_notes
     ///
     /// If you find the default path unwieldy, you can also set the RECEIVED_CASHNOTES_PATH environment
     /// variable to a path you would prefer to work with.
@@ -60,7 +60,7 @@ pub enum WatchOnlyWalletCmds {
         #[clap(long)]
         cash_note: Option<String>,
         /// The hex-encoded public key of an existing watch-only wallet to deposit into it.
-        #[clap(long, name = "public key")]
+        #[clap(name = "public key")]
         pk: String,
     },
     /// Create a watch-only wallet from the given (hex-encoded) key.
@@ -131,7 +131,7 @@ pub(crate) async fn wo_wallet_cmds_without_client(
                 wallets.len(),
                 root_dir.display()
             );
-            for wo_wallet in wallets {
+            for (wo_wallet, _) in wallets {
                 println!("- {:?}", wo_wallet.address());
             }
             Ok(())
@@ -148,13 +148,15 @@ pub(crate) async fn wo_wallet_cmds_without_client(
                     wallets.len(),
                     root_dir.display()
                 );
-                for wo_wallet in wallets {
-                    println!(
-                        "{:?}: {}",
-                        wo_wallet.address().public_key(),
-                        wo_wallet.balance()
-                    );
+                let mut total = NanoTokens::zero();
+                for (wo_wallet, folder_name) in wallets {
+                    let balance = wo_wallet.balance();
+                    println!("{folder_name}: {balance}");
+                    total = total
+                        .checked_add(balance)
+                        .ok_or(eyre!("Failed to add to total balance"))?;
                 }
+                println!("Total: {total}");
             }
             Ok(())
         }
@@ -208,7 +210,7 @@ pub(crate) async fn wo_wallet_cmds(
     }
 }
 
-fn get_watch_only_wallets(root_dir: &Path) -> Result<Vec<WatchOnlyWallet>> {
+fn get_watch_only_wallets(root_dir: &Path) -> Result<Vec<(WatchOnlyWallet, String)>> {
     let mut wallets = vec![];
     for entry in WalkDir::new(root_dir.display().to_string())
         .into_iter()
@@ -218,7 +220,7 @@ fn get_watch_only_wallets(root_dir: &Path) -> Result<Vec<WatchOnlyWallet>> {
             if file_name.starts_with("pk_") {
                 let wallet_dir = root_dir.join(file_name);
                 if let Ok(wo_wallet) = WatchOnlyWallet::load_from_path(&wallet_dir) {
-                    wallets.push(wo_wallet);
+                    wallets.push((wo_wallet, file_name.to_string()));
                 }
             }
         }
