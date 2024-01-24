@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706098423074,
+  "lastUpdate": 1706098510353,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d18d4c1c628f00536c333767e10ff693bde720c8",
-          "message": "fix: revert protoc/tonic-build update, remove protoc-builder install on ci\n\nReinstate arm builds",
-          "timestamp": "2023-09-20T15:11:05+02:00",
-          "tree_id": "e92c7074a99c1c4a5cff78c5bf148d1801f0a5c6",
-          "url": "https://github.com/maidsafe/safe_network/commit/d18d4c1c628f00536c333767e10ff693bde720c8"
-        },
-        "date": 1695217500673,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 62.431232,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "d9eaf409b07df97d8eb2d38495c43b2f4aac1831",
           "message": "ci: fix borked release workflow file",
           "timestamp": "2023-09-20T15:24:04+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "c0bd504905959a117ed94cadd9fd478baab238a4",
+          "message": "fix(node): warn if \"(deleted)\" exists in exe name during restart",
+          "timestamp": "2024-01-24T11:34:25Z",
+          "tree_id": "bd5b5ab3bf56b54ffb2eb08bfb7019a1d6365073",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0bd504905959a117ed94cadd9fd478baab238a4"
+        },
+        "date": 1706098510014,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
