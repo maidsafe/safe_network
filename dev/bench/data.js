@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706098512031,
+  "lastUpdate": 1706104432847,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "d1c55406d2c8956295f19daadb2a31b016471830",
-          "message": "ci: remove unused prebuild for unit tests",
-          "timestamp": "2023-09-20T19:00:32Z",
-          "tree_id": "a5aaa4c7bb4373f95fbee06ca8d9429d2478a8d3",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1c55406d2c8956295f19daadb2a31b016471830"
-        },
-        "date": 1695241937727,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09527464747274249,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5574330553225821,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.507345787723039,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.49666561890334,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "780d1e7d9f53840baa8d1b8c9e0b7c42612ec259",
+          "message": "fix(node): add missing rpc feat for sn_protocol",
+          "timestamp": "2024-01-24T14:37:28+01:00",
+          "tree_id": "52ec7de108a872cf75b9815725383d23991b6cba",
+          "url": "https://github.com/maidsafe/safe_network/commit/780d1e7d9f53840baa8d1b8c9e0b7c42612ec259"
+        },
+        "date": 1706104430457,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3239132955329327,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.85321605999601,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 55.96417674067063,
             "unit": "MiB/s"
           }
         ]
