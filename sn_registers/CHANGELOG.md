@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.7...sn_registers-v0.3.8) - 2024-01-24
+
+### Added
+- remove registers self_encryption dep
+
 ## [0.3.7](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.6...sn_registers-v0.3.7) - 2024-01-11
 
 ### Fixed

@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.36](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.35...sn_networking-v0.12.36) - 2024-01-24
+
+### Added
+- client webtransport-websys feat
+- initial webtransport-websys wasm setup
+
+### Fixed
+- *(node)* warn if "(deleted)" exists in exe name during restart
+
+### Other
+- tidy up wasm32 as target arch rather than a feat
+
 ## [0.12.35](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.34...sn_networking-v0.12.35) - 2024-01-22
 
 ### Other

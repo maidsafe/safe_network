@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.7...sn_client-v0.102.8) - 2024-01-24
+
+### Added
+- client webtransport-websys feat
+
+### Other
+- tidy up wasm32 as target arch rather than a feat
+
 ## [0.102.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.6...sn_client-v0.102.7) - 2024-01-23
 
 ### Other

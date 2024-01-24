@@ -2959,6 +2959,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.103.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.11...sn_node-v0.103.12) - 2024-01-24
+
+### Fixed
+- *(node)* warn if "(deleted)" exists in exe name during restart
+
+### Other
+- tidy up wasm32 as target arch rather than a feat
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
