@@ -31,13 +31,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check contact peer
         shell: bash
@@ -172,13 +173,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
@@ -218,13 +220,14 @@ jobs:
           CARGO_TARGET_DIR: "./transfer-target"
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       # This should be first to avoid slow reward acceptance etc
       - name: execute the nodes rewards tests
@@ -302,13 +305,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
@@ -421,13 +425,14 @@ jobs:
           timeout-minutes: 30
 
         - name: Start a local network
-          uses: maidsafe/sn-local-testnet-action@main
+          uses: jacderida/sn-local-testnet-action@build-node-manager
           with:
             action: start
             interval: 2000
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
 
         - name: Verify the Routing table of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture

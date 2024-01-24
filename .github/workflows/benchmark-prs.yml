@@ -47,7 +47,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         env:
           SN_LOG: "all"
         with:
@@ -56,6 +56,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
