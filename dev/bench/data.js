@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706088951619,
+  "lastUpdate": 1706088953342,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "ee170432e7d932e4fa5bc5f41f13ab160a8cf454",
-          "message": "ci: disable arm builds for now",
-          "timestamp": "2023-09-20T13:44:09+02:00",
-          "tree_id": "4ed041629cb61f3e0579021f5de869967b8cf8f3",
-          "url": "https://github.com/maidsafe/safe_network/commit/ee170432e7d932e4fa5bc5f41f13ab160a8cf454"
-        },
-        "date": 1695212259852,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 213.27872,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 178,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "d18d4c1c628f00536c333767e10ff693bde720c8",
           "message": "fix: revert protoc/tonic-build update, remove protoc-builder install on ci\n\nReinstate arm builds",
           "timestamp": "2023-09-20T15:11:05+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d47b4520155d355aa6d6d6c8552e3770767afa31",
+          "message": "chore(node): reduce MAX_UNCOMPRESSED_LOG_FILES to 10",
+          "timestamp": "2024-01-23T16:09:31Z",
+          "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
+          "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
+        },
+        "date": 1706088952914,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
