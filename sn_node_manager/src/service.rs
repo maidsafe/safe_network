@@ -19,11 +19,13 @@ use std::net::SocketAddr;
 use std::net::TcpListener as SocketBinder;
 #[cfg(not(feature = "tcp"))]
 use std::net::UdpSocket as SocketBinder;
+use std::path::PathBuf;
 use std::time::Duration;
 use std::{ffi::OsString, thread::sleep};
-
-use std::path::PathBuf;
 use sysinfo::{Pid, System, SystemExt};
+
+// The UDP port might fail to unbind even when dropped and this can cause the safenode process to throw errors.
+const PORT_UNBINDING_DELAY: Duration = Duration::from_secs(3);
 
 #[derive(Debug, PartialEq)]
 pub struct ServiceConfig {
@@ -152,7 +154,14 @@ impl ServiceControl for NodeServiceManager {
     }
 
     fn is_port_free(&self, port: u16) -> bool {
-        SocketBinder::bind(("127.0.0.1", port)).is_ok()
+        let socket = SocketBinder::bind(("127.0.0.1", port));
+        let is_free = socket.is_ok();
+        drop(socket);
+        // Sleep a little while to make sure that we've dropped the socket.
+        // Without the delay, we may face 'Port already in use' error, when trying to re-use this port.
+        sleep(PORT_UNBINDING_DELAY);
+
+        is_free
     }
 
     fn is_service_process_running(&self, pid: u32) -> bool {
@@ -169,7 +178,7 @@ impl ServiceControl for NodeServiceManager {
         drop(socket);
         // Sleep a little while to make sure that we've dropped the socket.
         // Without the delay, we may face 'Port already in use' error, when trying to re-use this port.
-        sleep(Duration::from_secs(1));
+        sleep(PORT_UNBINDING_DELAY);
 
         Ok(port)
     }

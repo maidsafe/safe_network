@@ -389,7 +389,7 @@ pub(crate) fn start_rpc_service(
             .serve(addr)
             .await
         {
-            error!("RPC Server failed to start: {e}");
+            error!("RPC Server failed to start: {e:?}");
         }
     });
 }
