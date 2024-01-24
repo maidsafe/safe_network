@@ -4816,9 +4816,9 @@ dependencies = [
  "serde_json",
  "service-manager",
  "sn-releases",
- "sn_node_rpc_client 0.2.22",
- "sn_peers_acquisition 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_protocol 0.10.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sn_node_rpc_client",
+ "sn_peers_acquisition",
+ "sn_protocol",
  "sysinfo",
  "tokio",
  "users",
@@ -4852,15 +4852,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sn_build_info"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89eb34413a70b367d936782385c202a857c4972cd6a34edfd0fabaaa0de94f5"
-dependencies = [
- "vergen",
-]
-
-[[package]]
 name = "sn_cli"
 version = "0.89.11"
 dependencies = [
@@ -4883,53 +4874,19 @@ dependencies = [
  "reqwest",
  "rmp-serde",
  "serde",
- "sn_build_info 0.1.4",
- "sn_client 0.102.7",
- "sn_logging 0.2.17",
- "sn_peers_acquisition 0.2.3",
- "sn_protocol 0.10.14",
- "sn_registers 0.3.7",
- "sn_transfers 0.14.40",
+ "sn_build_info",
+ "sn_client",
+ "sn_logging",
+ "sn_peers_acquisition",
+ "sn_protocol",
+ "sn_registers",
+ "sn_transfers",
  "tempfile",
  "tokio",
  "tracing",
  "tracing-core",
  "url",
  "walkdir",
- "xor_name",
-]
-
-[[package]]
-name = "sn_client"
-version = "0.101.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f57cea8c74676c6cead5ab2a3dc4a54f1d6842883f3cdf3e2e4e4ba11410eab"
-dependencies = [
- "async-trait",
- "backoff",
- "blsttc",
- "bytes",
- "custom_debug",
- "futures",
- "hex",
- "indicatif",
- "itertools 0.11.0",
- "libp2p 0.53.2",
- "petgraph",
- "rand",
- "rayon",
- "rmp-serde",
- "self_encryption",
- "serde",
- "sn_networking 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_protocol 0.10.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_registers 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_transfers 0.14.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "tempfile",
- "thiserror",
- "tiny-keccak",
- "tokio",
- "tracing",
  "xor_name",
 ]
 
@@ -4955,10 +4912,10 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
- "sn_networking 0.12.35",
- "sn_protocol 0.10.14",
- "sn_registers 0.3.7",
- "sn_transfers 0.14.40",
+ "sn_networking",
+ "sn_protocol",
+ "sn_registers",
+ "sn_transfers",
  "tempfile",
  "thiserror",
  "tiny-keccak",
@@ -4979,10 +4936,10 @@ dependencies = [
  "minreq",
  "serde",
  "serde_json",
- "sn_client 0.102.7",
- "sn_logging 0.2.17",
- "sn_peers_acquisition 0.2.3",
- "sn_transfers 0.14.40",
+ "sn_client",
+ "sn_logging",
+ "sn_peers_acquisition",
+ "sn_transfers",
  "tiny_http",
  "tokio",
  "tracing",
@@ -5013,26 +4970,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sn_logging"
-version = "0.2.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d53e0d671205f2c9968f1c25349eeac5bf35febbdb582f882d78229cc99f7cb"
-dependencies = [
- "chrono",
- "dirs-next",
- "file-rotate",
- "serde",
- "serde_json",
- "sysinfo",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "sn_networking"
 version = "0.12.35"
 dependencies = [
@@ -5053,89 +4990,13 @@ dependencies = [
  "rayon",
  "rmp-serde",
  "serde",
- "sn_protocol 0.10.14",
- "sn_transfers 0.14.40",
+ "sn_protocol",
+ "sn_transfers",
  "sysinfo",
  "thiserror",
  "tiny-keccak",
  "tokio",
  "tracing",
- "xor_name",
-]
-
-[[package]]
-name = "sn_networking"
-version = "0.12.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75f4705326216e78ed2c8dc30f4ccc086c00f95e268e80d82674c17c89015f77"
-dependencies = [
- "async-trait",
- "backoff",
- "bytes",
- "custom_debug",
- "futures",
- "itertools 0.11.0",
- "libp2p 0.53.2",
- "rand",
- "rayon",
- "rmp-serde",
- "serde",
- "sn_protocol 0.10.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_transfers 0.14.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror",
- "tiny-keccak",
- "tokio",
- "tracing",
- "xor_name",
-]
-
-[[package]]
-name = "sn_node"
-version = "0.102.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4961be35e6f59bb6b2e8e0c4f70718f487c1f5b99dcda1ffdff51326b4840a0c"
-dependencies = [
- "assert_fs",
- "async-trait",
- "blsttc",
- "bytes",
- "chrono",
- "clap 4.4.18",
- "color-eyre",
- "crdts",
- "custom_debug",
- "dirs-next",
- "eyre",
- "file-rotate",
- "futures",
- "hex",
- "itertools 0.11.0",
- "lazy_static",
- "libp2p 0.53.2",
- "prost 0.9.0",
- "rand",
- "rayon",
- "rmp-serde",
- "self_encryption",
- "serde",
- "sn_build_info 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_client 0.101.13",
- "sn_logging 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_networking 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_peers_acquisition 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_protocol 0.10.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_registers 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_transfers 0.14.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "strum",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic 0.6.2",
- "tracing",
- "tracing-appender",
- "tracing-core",
- "tracing-subscriber",
- "walkdir",
  "xor_name",
 ]
 
@@ -5168,14 +5029,14 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
- "sn_build_info 0.1.4",
- "sn_client 0.102.7",
- "sn_logging 0.2.17",
- "sn_networking 0.12.35",
- "sn_peers_acquisition 0.2.3",
- "sn_protocol 0.10.14",
- "sn_registers 0.3.7",
- "sn_transfers 0.14.40",
+ "sn_build_info",
+ "sn_client",
+ "sn_logging",
+ "sn_networking",
+ "sn_peers_acquisition",
+ "sn_protocol",
+ "sn_registers",
+ "sn_transfers",
  "strum",
  "tempfile",
  "thiserror",
@@ -5193,34 +5054,6 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.2.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b98545e933f05fb6d7f4191f1c7c9f5efcc56ae4d653e02924fd6d54520eeaa4"
-dependencies = [
- "assert_fs",
- "async-trait",
- "blsttc",
- "clap 4.4.18",
- "color-eyre",
- "hex",
- "libp2p 0.52.4",
- "libp2p-identity",
- "sn_client 0.101.13",
- "sn_logging 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_node 0.102.22",
- "sn_peers_acquisition 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_protocol 0.10.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_transfers 0.14.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tonic 0.6.2",
- "tracing",
- "tracing-core",
-]
-
-[[package]]
-name = "sn_node_rpc_client"
 version = "0.3.11"
 dependencies = [
  "assert_fs",
@@ -5231,12 +5064,12 @@ dependencies = [
  "hex",
  "libp2p 0.52.4",
  "libp2p-identity",
- "sn_client 0.102.7",
- "sn_logging 0.2.17",
- "sn_node 0.103.11",
- "sn_peers_acquisition 0.2.3",
- "sn_protocol 0.10.14",
- "sn_transfers 0.14.40",
+ "sn_client",
+ "sn_logging",
+ "sn_node",
+ "sn_peers_acquisition",
+ "sn_protocol",
+ "sn_transfers",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5260,19 +5093,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sn_peers_acquisition"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5561c337c6bb182cd1717cbef9c730017c02bada4b6e3eec21062f113d7d2477"
-dependencies = [
- "clap 4.4.18",
- "libp2p 0.53.2",
- "rand",
- "thiserror",
- "tracing",
-]
-
-[[package]]
 name = "sn_protocol"
 version = "0.10.14"
 dependencies = [
@@ -5289,37 +5109,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "sn_registers 0.3.7",
- "sn_transfers 0.14.40",
- "thiserror",
- "tiny-keccak",
- "tonic 0.6.2",
- "tonic-build",
- "tracing",
- "xor_name",
-]
-
-[[package]]
-name = "sn_protocol"
-version = "0.10.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7dc890fa2e02bc2b39520ca751f77deefcc5f388a7facf009e77b3b73ff9137"
-dependencies = [
- "blsttc",
- "bytes",
- "color-eyre",
- "crdts",
- "custom_debug",
- "dirs-next",
- "hex",
- "libp2p 0.53.2",
- "prost 0.9.0",
- "rmp-serde",
- "serde",
- "serde_json",
- "sha2",
- "sn_registers 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "sn_transfers 0.14.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sn_registers",
+ "sn_transfers",
  "thiserror",
  "tiny-keccak",
  "tonic 0.6.2",
@@ -5338,23 +5129,6 @@ dependencies = [
  "hex",
  "proptest",
  "rand",
- "rmp-serde",
- "self_encryption",
- "serde",
- "thiserror",
- "tiny-keccak",
- "xor_name",
-]
-
-[[package]]
-name = "sn_registers"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2ea96f03e22d11243e29ed2067f82709a13d0e1830621cd682b709e32eb667d"
-dependencies = [
- "blsttc",
- "crdts",
- "hex",
  "rmp-serde",
  "self_encryption",
  "serde",
@@ -5401,30 +5175,6 @@ dependencies = [
  "hex",
  "lazy_static",
  "pprof",
- "rand",
- "rayon",
- "rmp-serde",
- "serde",
- "thiserror",
- "tiny-keccak",
- "tokio",
- "tracing",
- "walkdir",
- "xor_name",
-]
-
-[[package]]
-name = "sn_transfers"
-version = "0.14.40"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37ee92d8c2a701bb70f07916c389875c39d298454a1ae4bf6642a876ea4b0c65"
-dependencies = [
- "blsttc",
- "custom_debug",
- "dirs-next",
- "fs2",
- "hex",
- "lazy_static",
  "rand",
  "rayon",
  "rmp-serde",
