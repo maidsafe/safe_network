@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706104530295,
+  "lastUpdate": 1706104531714,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d9eaf409b07df97d8eb2d38495c43b2f4aac1831",
-          "message": "ci: fix borked release workflow file",
-          "timestamp": "2023-09-20T15:24:04+02:00",
-          "tree_id": "c85c43491058cf956502b3a582474c998cefad9b",
-          "url": "https://github.com/maidsafe/safe_network/commit/d9eaf409b07df97d8eb2d38495c43b2f4aac1831"
-        },
-        "date": 1695218335987,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 238.8992,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 176,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "780d1e7d9f53840baa8d1b8c9e0b7c42612ec259",
+          "message": "fix(node): add missing rpc feat for sn_protocol",
+          "timestamp": "2024-01-24T14:37:28+01:00",
+          "tree_id": "52ec7de108a872cf75b9815725383d23991b6cba",
+          "url": "https://github.com/maidsafe/safe_network/commit/780d1e7d9f53840baa8d1b8c9e0b7c42612ec259"
+        },
+        "date": 1706104531361,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 226,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
             "unit": "MB"
           }
         ]
