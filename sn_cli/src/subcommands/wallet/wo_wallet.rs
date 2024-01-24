@@ -16,8 +16,8 @@ use color_eyre::{
 };
 use sn_client::{Client, ClientEvent};
 use sn_transfers::{
-    CashNoteRedemption, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, SignedSpend,
-    Transfer, UniquePubkey, WalletError, WatchOnlyWallet,
+    CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend,
+    UniquePubkey, WalletError, WatchOnlyWallet,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -45,9 +45,9 @@ pub enum WatchOnlyWalletCmds {
     /// Or Read a hex encoded CashNote from stdin.
     ///
     /// The default received directory is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/client/<pk>/cash_notes
-    ///  - macOS: $HOME/Library/Application Support/safe/client/<pk>/cash_notes
-    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\client\<pk>\cash_notes
+    ///  - Linux: $HOME/.local/share/safe/client/\<pk\>/cash_notes
+    ///  - macOS: $HOME/Library/Application Support/safe/client/\<pk\>/cash_notes
+    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\client\\<pk\>\cash_notes
     ///
     /// If you find the default path unwieldy, you can also set the RECEIVED_CASHNOTES_PATH environment
     /// variable to a path you would prefer to work with.
@@ -83,9 +83,9 @@ pub enum WatchOnlyWalletCmds {
     },
     /// Broadcast a transaction that was signed offline.
     ///
-    /// This command will create and encrypt the transfer for the recipient.
-    /// This encrypted transfer can then be shared with the recipient, who can then
-    /// use the 'receive' command to claim the funds.
+    /// This command will create the cash note for the recipient.
+    /// This cash note can then be shared with the recipient, who can then
+    /// use the 'deposit' command to use/claim the funds.
     Broadcast {
         /// Hex-encoded signed transaction.
         #[clap(name = "signed Tx")]
@@ -194,7 +194,7 @@ pub(crate) async fn wo_wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WatchOnlyWalletCmds::Broadcast { signed_tx } => {
-            broadcast_signed_spends(signed_tx, client, root_dir, verify_store).await
+            broadcast_signed_spends(signed_tx, client, verify_store).await
         }
         WatchOnlyWalletCmds::ReceiveOnline { pk, path } => {
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
@@ -261,15 +261,11 @@ fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Pat
     Ok(())
 }
 
-// FIXME!!!: we need to be able to store change cash-note onto a watchonly wallet too.
-// To achieve this, we need to adapt/refactor WalletClient.
 async fn broadcast_signed_spends(
     signed_tx: String,
     client: &Client,
-    root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir)?;
     let (signed_spends, output_details, change_id): (
         BTreeSet<SignedSpend>,
         BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
@@ -320,25 +316,36 @@ async fn broadcast_signed_spends(
     }
 
     println!("Broadcasting the transaction to the network...");
-    let cash_note = sn_client::broadcast_signed_spends(
-        wallet,
-        client,
-        signed_spends,
-        tx,
-        change_id,
-        output_details,
-        verify_store,
-    )
-    .await?;
+    let transfer = OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
+
+    // return the first CashNote (assuming there is only one because we only sent to one recipient)
+    let cash_note = match &transfer.created_cash_notes[..] {
+        [cashnote] => cashnote.to_hex()?,
+        [_multiple, ..] => bail!("Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."),
+        [] =>bail!("No CashNotes were built from the Tx.")
+    };
+
+    // send to network
+    client
+        .send_spends(transfer.all_spend_requests.iter(), verify_store)
+        .await
+        .map_err(|err| {
+            eyre!("The transfer was not successfully registered in the network: {err:?}")
+        })?;
 
     println!("Transaction broadcasted!.");
-    let wallet = LocalWallet::load_from(root_dir)?;
-    println!("New wallet balance is {}.", wallet.balance());
 
-    let transfer = Transfer::transfer_from_cash_note(&cash_note)?.to_hex()?;
-    println!("The encrypted transfer has been successfully created.");
-    println!("Please share this to the recipient:\n\n{transfer}\n");
-    println!("The recipient can then use the 'receive' command to claim the funds.");
+    println!("The recipient's cash note has been successfully created.");
+    println!("Please share this to the recipient:\n\n{cash_note}\n");
+    println!("The recipient can then use the wallet 'deposit' command to verify the transfer, and/or be able to use the funds.\n");
+
+    if let Some(cash_note) = transfer.change_cash_note {
+        println!(
+            "A change cash note has also been created:\n\n{}\n",
+            cash_note.to_hex()?
+        );
+        println!("You should use the wallet 'deposit' command to be able to use these funds.\n");
+    }
 
     Ok(())
 }
