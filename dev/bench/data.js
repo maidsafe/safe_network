@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706104531714,
+  "lastUpdate": 1706106474091,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "3c1432cf780fa909aa76e4c822207a5cfbe2c180",
-          "message": "chore: store uploaded files list as text\n\nFor the uploaded files list, rather than serialize to binary, we use a simple text format. The user\ncan now see the addresses of all the files they've uploaded, and use this information to retrieve\nthem, if need be. We are also now just using one file, appending to it for each upload.\n\nNow that this file is human readable, the `files ls` command was deemed unnecessary and was\ntherefore removed.\n\nWith respect to the `files` commands, I've also taken the opportunity to make the language in the\ntext output more concise and matter of fact. For example, we don't really need to use things like\nexclamation marks in the text.",
-          "timestamp": "2023-09-21T06:25:42Z",
-          "tree_id": "ed96928a4b8b6c310136178e09363e69521999c2",
-          "url": "https://github.com/maidsafe/safe_network/commit/3c1432cf780fa909aa76e4c822207a5cfbe2c180"
-        },
-        "date": 1695281748556,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10374021936898625,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5627292417205652,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.723004706745361,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.96417674067063,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176",
+          "message": "chore(test): lift up the expectations within address sim test",
+          "timestamp": "2024-01-24T13:25:21Z",
+          "tree_id": "1337b090c980eca5ef5f025f697d9e3c61e4e0a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176"
+        },
+        "date": 1706106471647,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3383399315028817,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.9146599995125693,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.36535309694364,
             "unit": "MiB/s"
           }
         ]
