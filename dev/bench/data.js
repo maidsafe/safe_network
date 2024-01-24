@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706106567136,
+  "lastUpdate": 1706106568662,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "e2bbedea254dcd1dd37658fcc424ff73a936a7e1",
-          "message": "feat: downward compatible for patch version updates",
-          "timestamp": "2023-09-20T16:01:11+02:00",
-          "tree_id": "5a83f894085ef96af9f6d12e961c2d2f20d9766c",
-          "url": "https://github.com/maidsafe/safe_network/commit/e2bbedea254dcd1dd37658fcc424ff73a936a7e1"
-        },
-        "date": 1695220390990,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 227.37715,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 186,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "2878e324e987d22ac33f7b5823aa0c4dfcd2531b",
           "message": "chore: more iterations for verify reward update",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 226,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176",
+          "message": "chore(test): lift up the expectations within address sim test",
+          "timestamp": "2024-01-24T13:25:21Z",
+          "tree_id": "1337b090c980eca5ef5f025f697d9e3c61e4e0a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176"
+        },
+        "date": 1706106568312,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 230,
             "unit": "MB"
           },
           {
