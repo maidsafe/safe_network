@@ -4666,7 +4666,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.13"
+version = "0.89.14"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4705,7 +4705,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.102.8"
+version = "0.102.9"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4740,7 +4740,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.13"
+version = "0.3.14"
 dependencies = [
  "blsttc",
  "clap 4.4.18",
@@ -4785,7 +4785,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.12.36"
+version = "0.12.37"
 dependencies = [
  "async-trait",
  "backoff",
