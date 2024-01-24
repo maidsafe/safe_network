@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.41](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.40...sn_transfers-v0.14.41) - 2024-01-24
+
+### Fixed
+- dont lock files with wasm
+
+### Other
+- make tokio dev dep for transfers
+
 ## [0.14.40](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.39...sn_transfers-v0.14.40) - 2024-01-22
 
 ### Added

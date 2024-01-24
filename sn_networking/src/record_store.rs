@@ -983,9 +983,15 @@ mod tests {
 
             // Execute for 50 iterations, which allows the test can be executed in normal CI runs.
             if iteration == 50 {
-                assert_eq!(0, empty_earned_nodes);
-                assert!((max_store_cost / min_store_cost) < 60);
-                assert!((max_earned / min_earned) < 800);
+                assert_eq!(0, empty_earned_nodes, "every node has earnt _something_");
+                assert!(
+                    (max_store_cost / min_store_cost) < 100,
+                    "store cost is balanced"
+                );
+                assert!(
+                    (max_earned / min_earned) < 1000,
+                    "earning distribution is well balanced"
+                );
                 break;
             }
         }

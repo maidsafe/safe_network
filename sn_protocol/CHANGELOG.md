@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.14...sn_protocol-v0.11.0) - 2024-01-24
+
+### Added
+- make RPC portions or protocol a feature
+- client webtransport-websys feat
+
 ## [0.10.14](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.13...sn_protocol-v0.10.14) - 2024-01-22
 
 ### Fixed
