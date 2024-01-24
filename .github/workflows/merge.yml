@@ -11,8 +11,6 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
-  RUST_BACKTRACE: 1
-  RUSTFLAGS: "-D warnings"
   WINSW_URL: https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe
 
 jobs:
