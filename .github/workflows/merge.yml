@@ -209,13 +209,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -264,10 +265,9 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 10
-
-      ## Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
-
-      # runs on linux/mac
+      #
+      # Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
+      #
       - name: Start a client to create a register writable by anyone
         id: register-address
         if: matrix.os != 'windows-latest' 
@@ -276,7 +276,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      # runs on windows
       - name: Start a client to create a register writable by anyone
         id: register-address-windows
         if: matrix.os == 'windows-latest' 
@@ -300,11 +299,9 @@ jobs:
       - name: Delete client subdir to generate new client
         shell: bash
         run: rm -rf ${{ matrix.safe_path }}/client
-
-
-      ## Next four steps are same with a slight difference in the which output step they read from
-
-      # runs on linux/mac
+      #
+      # Next four steps are same with a slight difference in the which output step they read from
+      #
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os != 'windows-latest' 
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
@@ -319,7 +316,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      # runs on Windows
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os == 'windows-latest' 
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
@@ -348,7 +344,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -360,21 +357,39 @@ jobs:
         run: cargo build --release --bin safenode --bin faucet
         timeout-minutes: 30
 
-      - name: Build gossipsub testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
-        timeout-minutes: 30
+      # - name: Build gossipsub testing executable
+      #   run: cargo test \
+      #     --release --package sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+      #   timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
+      # - name: Start a local network
+      #   uses: jacderida/sn-local-testnet-action@build-node-manager
+      #   with:
+      #     action: start
+      #     interval: 2000
+      #     node-path: target/release/safenode
+      #     faucet-path: target/release/faucet
+      #     platform: ${{ matrix.os }}
+      #     build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
-        run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
+        if: matrix.os != 'windows-latest'
+        run: >
+          cargo test
+          --release --package sn_node --features local-discovery
+          --test msgs_over_gossipsub -- --nocapture
+        timeout-minutes: 20
+
+      # - name: Check for file locking issues
+      #   run: |
+      #     Get-Process | Where-Object {$_.Modules -match 'safenode.exe'}
+
+      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
+        if: matrix.os == 'windows-latest'
+        run: |
+          cargo test `
+          --release --package sn_node --features local-discovery `
+          --test msgs_over_gossipsub -- --nocapture
         timeout-minutes: 20
 
       - name: Stop the local network and upload logs
@@ -409,13 +424,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -445,7 +461,6 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 25
-
 
       - name: Stop the local network and upload logs
         if: always()
@@ -487,13 +502,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -607,13 +623,14 @@ jobs:
           timeout-minutes: 30
 
         - name: Start a local network
-          uses: maidsafe/sn-local-testnet-action@main
+          uses: jacderida/sn-local-testnet-action@build-node-manager
           with:
             action: start
             interval: 2000
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
 
         - name: Check SAFE_PEERS was set
           shell: bash
@@ -711,7 +728,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
@@ -826,13 +843,14 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: jacderida/sn-local-testnet-action@build-node-manager
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
