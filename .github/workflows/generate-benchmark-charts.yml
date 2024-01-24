@@ -214,13 +214,13 @@ jobs:
         shell: bash
         run: |
           num_of_times=$(
-            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long cmd handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total cmd long handling time is: $total_long_handling_ms ms"
@@ -229,13 +229,13 @@ jobs:
           total_long_handling=$(($total_long_handling_ms))
           total_num_of_times=$(($num_of_times))
           num_of_times=$(
-            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long event handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total event long handling time is: $total_long_handling_ms ms"
