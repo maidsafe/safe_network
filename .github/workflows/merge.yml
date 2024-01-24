@@ -171,7 +171,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
+          ${{ matrix.elevated }} cargo test --package sn_node_manager --release --test e2e -- --nocapture
 
       # A simple test seemed to confirm that the Powershell step runs as admin by default.
       - name: run integration test in powershell
@@ -184,7 +184,7 @@ jobs:
           Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
           $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-          cargo test --release --package sn-node-manager --test e2e -- --nocapture
+          cargo test --release --package sn_node_manager --test e2e -- --nocapture
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
