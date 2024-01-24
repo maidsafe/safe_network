@@ -6,14 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::target_arch::sleep;
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
 use sysinfo::{Pid, PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::time::sleep;
 use tokio::time::Duration;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::tokio::sleep;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 const TO_MB: u64 = 1_000_000;

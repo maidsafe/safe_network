@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
+use crate::target_arch::{spawn, Instant};
 use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use libp2p::{
     identity::PeerId,
@@ -22,8 +23,6 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::NanoTokens;
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -32,13 +31,6 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::task::spawn;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::spawn_local as spawn;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
-
 use xor_name::XorName;
 
 /// Max number of records a node can store

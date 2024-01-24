@@ -7,18 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
+use crate::target_arch::Instant;
 use libp2p::{
     kad::{RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
 use std::collections::HashMap;
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
-
 use tokio::time::Duration;
 
 // Max parallel fetches that can be undertaken at the same time.

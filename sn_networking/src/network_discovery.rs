@@ -6,15 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::target_arch::Instant;
 use libp2p::{kad::KBucketKey, PeerId};
 use rand::{thread_rng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sn_protocol::NetworkAddress;
 use std::collections::{btree_map::Entry, BTreeMap};
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
 
 // The number of PeerId to generate when starting an instance of NetworkDiscovery
 const INITIAL_GENERATION_ATTEMPTS: usize = 10_000;
