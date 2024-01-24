@@ -528,16 +528,12 @@ fn calculate_cost_for_records(step: usize, received_payment_count: usize) -> u64
 #[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
+
     use super::*;
-
     use crate::{close_group_majority, sort_peers_by_key, REPLICATE_RANGE};
-
     use bytes::Bytes;
     use eyre::ContextCompat;
-    use libp2p::{
-        core::multihash::Multihash,
-        kad::{KBucketKey, RecordKey},
-    };
+    use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
     use sn_protocol::storage::{try_serialize_record, ChunkAddress};
     use std::collections::BTreeMap;
@@ -549,30 +545,7 @@ mod tests {
     #[derive(Clone, Debug)]
     struct ArbitraryKey(Key);
     #[derive(Clone, Debug)]
-    struct ArbitraryPeerId(PeerId);
-    #[derive(Clone, Debug)]
-    struct ArbitraryKBucketKey(KBucketKey<PeerId>);
-    #[derive(Clone, Debug)]
     struct ArbitraryRecord(Record);
-    #[derive(Clone, Debug)]
-    struct ArbitraryProviderRecord(ProviderRecord);
-
-    impl Arbitrary for ArbitraryPeerId {
-        fn arbitrary(g: &mut Gen) -> ArbitraryPeerId {
-            let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
-            let peer_id = PeerId::from_multihash(
-                Multihash::wrap(MULITHASH_CODE, &hash).expect("Failed to gen Multihash"),
-            )
-            .expect("Failed to create PeerId");
-            ArbitraryPeerId(peer_id)
-        }
-    }
-
-    impl Arbitrary for ArbitraryKBucketKey {
-        fn arbitrary(_: &mut Gen) -> ArbitraryKBucketKey {
-            ArbitraryKBucketKey(KBucketKey::from(PeerId::random()))
-        }
-    }
 
     impl Arbitrary for ArbitraryKey {
         fn arbitrary(g: &mut Gen) -> ArbitraryKey {
@@ -599,18 +572,6 @@ mod tests {
                 expires: None,
             };
             ArbitraryRecord(record)
-        }
-    }
-
-    impl Arbitrary for ArbitraryProviderRecord {
-        fn arbitrary(g: &mut Gen) -> ArbitraryProviderRecord {
-            let record = ProviderRecord {
-                key: ArbitraryKey::arbitrary(g).0,
-                provider: PeerId::random(),
-                expires: None,
-                addresses: vec![],
-            };
-            ArbitraryProviderRecord(record)
         }
     }
 
