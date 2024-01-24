@@ -110,12 +110,14 @@ jobs:
       ### Stop Network      ###
       #########################
 
-      - name: Stop the local network
+      - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest
+          log_file_prefix: safe_test_logs_generate_bench_charts
+          build: true
 
       #########################
       ### Mem Analysis      ###
