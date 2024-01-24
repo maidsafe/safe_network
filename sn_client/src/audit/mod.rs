@@ -17,15 +17,12 @@ use super::{
 };
 
 use futures::future::join_all;
+use sn_networking::target_arch::Instant;
 use sn_transfers::{
     CashNoteRedemption, SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
     NETWORK_ROYALTIES_PK,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
 use std::{collections::BTreeSet, iter::Iterator, path::Path};
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
 
 impl Client {
     /// Verify that a spend is valid on the network.

@@ -37,6 +37,7 @@ use libp2p::quic::{tokio::Transport as TokioTransport, Config as TransportConfig
 #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
 use libp2p::websocket::WsConfig;
 
+use crate::target_arch::{interval, spawn, Instant};
 #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
 use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig};
 #[cfg(target_arch = "wasm32")]
@@ -69,23 +70,8 @@ use std::{
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::time::interval;
 use tokio::time::Duration;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::tokio::interval;
-
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::task::spawn;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::spawn_local as spawn;
-
 use tracing::warn;
-
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {

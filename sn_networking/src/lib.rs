@@ -24,7 +24,11 @@ mod network_discovery;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+pub mod target_arch;
 mod transfers;
+
+// re-export arch dependent deps for use in the crate, or above
+pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
     cmd::SwarmLocalState,
@@ -61,16 +65,10 @@ use tokio::sync::{
     mpsc::{self, Sender},
     oneshot,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::task::spawn;
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::time::sleep;
+
 use tokio::time::Duration;
 use tracing::trace;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::spawn_local as spawn;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::tokio::sleep;
+
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
 

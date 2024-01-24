@@ -32,10 +32,7 @@ use libp2p::{
     Multiaddr, PeerId, TransportError,
 };
 
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
+use crate::target_arch::Instant;
 
 use sn_protocol::{
     messages::{CmdResponse, Query, Request, Response},

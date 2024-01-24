@@ -23,6 +23,7 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
+use sn_networking::target_arch::{interval, spawn, timeout, Instant};
 use sn_networking::{
     multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
     NetworkEvent, PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
@@ -38,25 +39,16 @@ use sn_protocol::{
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
+
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
     path::PathBuf,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::task::spawn;
+
 use tokio::time::Duration;
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::time::{interval, timeout};
+
 use tracing::trace;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::spawn_local as spawn;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::tokio::{interval, timeout};
 use xor_name::XorName;
 
 /// The maximum duration the client will wait for a connection to the network before timing out.
@@ -89,11 +81,9 @@ impl Client {
 
         info!("Startup a client with peers {peers:?} and local {local:?} flag");
         info!("Starting Kad swarm in client mode...");
-        debug!("Starting Kad swarm in client mode.1..");
-        trace!("Starting Kad swarm in client mode..2.");
 
         #[cfg(target_arch = "wasm32")]
-        let root_dir = PathBuf::from("dumb");
+        let root_dir = PathBuf::from("dummy path, wasm32/browser environments will not use this");
         #[cfg(not(target_arch = "wasm32"))]
         let root_dir = std::env::temp_dir();
         trace!("Starting Kad swarm in client mode..{root_dir:?}.");

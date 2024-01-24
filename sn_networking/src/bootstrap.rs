@@ -7,15 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{driver::PendingGetClosestType, SwarmDriver};
-#[cfg(not(target_arch = "wasm32"))]
-use std::time::Instant;
 use tokio::time::Duration;
-#[cfg(not(target_arch = "wasm32"))]
-use tokio::time::{interval, Interval};
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::std::Instant;
-#[cfg(target_arch = "wasm32")]
-use wasmtimer::tokio::{interval, Interval};
+
+use crate::target_arch::{interval, Instant, Interval};
 
 /// The interval in which kad.bootstrap is called
 pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(5);
