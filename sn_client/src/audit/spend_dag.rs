@@ -11,6 +11,7 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use serde::{Deserialize, Serialize};
 use sn_transfers::{NanoTokens, SignedSpend, SpendAddress};
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use crate::error::{Error, Result};
 
@@ -44,13 +45,13 @@ impl SpendDag {
         }
     }
 
-    pub fn load_from_file(path: &str) -> Result<Self> {
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let bytes = std::fs::read(path)?;
         let dag: SpendDag = rmp_serde::from_slice(&bytes)?;
         Ok(dag)
     }
 
-    pub fn dump_to_file(&self, path: &str) -> Result<()> {
+    pub fn dump_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let bytes = rmp_serde::to_vec(&self)?;
         std::fs::write(path, bytes)?;
         Ok(())
@@ -58,6 +59,8 @@ impl SpendDag {
 
     /// Insert a spend into the dag
     /// Creating edges (links) from its ancestors and to its descendants
+    /// If the inserted spend is already known, it will be ignored
+    /// If the inserted spend is a double spend, it will be saved along with the previous spend
     pub fn insert(&mut self, spend_addr: SpendAddress, spend: SignedSpend) {
         // get existing entries for this address
         let entries = self.spends.entry(spend_addr).or_default();
@@ -171,6 +174,20 @@ impl SpendDag {
 
     pub fn dump_dot_format(&self) -> String {
         format!("{:?}", Dot::with_config(&self.dag, &[]))
+    }
+
+    /// Merges the given dag into ours
+    pub fn merge(&mut self, sub_dag: SpendDag) {
+        for (addr, spends) in sub_dag.spends {
+            for (spend, _idx) in spends {
+                // only add spends to the dag, ignoring utxos
+                // utxos will be added automatically as their ancestors are added
+                // edges are updated by the insert method
+                if let Some(spend) = spend {
+                    self.insert(addr, spend);
+                }
+            }
+        }
     }
 }
 
