@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706171876006,
+  "lastUpdate": 1706179156766,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "163381bbf5da61df47b8d9cbfee3d0c0cb24e670",
-          "message": "ci: add initial benchmarks for sn_transfers",
-          "timestamp": "2023-09-21T09:58:20Z",
-          "tree_id": "d4cc7392b2a2c859fc9505c3510949d7dd64f7d6",
-          "url": "https://github.com/maidsafe/safe_network/commit/163381bbf5da61df47b8d9cbfee3d0c0cb24e670"
-        },
-        "date": 1695294187457,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10222568274965584,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.556044435683499,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.610295377888284,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.54803105958706,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8d7cc12ca0fd91fc51d6be2aea56db050e21866d",
+          "message": "ci: move websockets and wasm to cross platform workflow file",
+          "timestamp": "2024-01-25T11:23:10+01:00",
+          "tree_id": "92a8cfef5c506ff12aed3892e61140c9ef60175d",
+          "url": "https://github.com/maidsafe/safe_network/commit/8d7cc12ca0fd91fc51d6be2aea56db050e21866d"
+        },
+        "date": 1706179154461,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3018085035058207,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8745485651398341,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.384780602819,
             "unit": "MiB/s"
           }
         ]
