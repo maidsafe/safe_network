@@ -16,9 +16,9 @@ use sn_transfers::{create_faucet_wallet, LocalWallet, NanoTokens, Transfer};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::Path,
-    time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
+use tokio::time::{Duration, Instant};
 use tracing::{error, info, warn};
 
 /// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.

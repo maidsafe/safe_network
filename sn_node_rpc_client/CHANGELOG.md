@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.2...sn_node_rpc_client-v0.4.3) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.4.2](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.1...sn_node_rpc_client-v0.4.2) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
+## [0.4.1](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.0...sn_node_rpc_client-v0.4.1) - 2024-01-25
+
+### Other
+- *(release)* sn_cli-v0.89.14/sn_networking-v0.12.37/sn_faucet-v0.3.14/sn_client-v0.102.9
+
 ## [0.4.0](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.3.11...sn_node_rpc_client-v0.4.0) - 2024-01-24
 
 ### Added

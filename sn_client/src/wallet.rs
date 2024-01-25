@@ -12,18 +12,21 @@ use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
+use sn_networking::target_arch::Instant;
 use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, DerivationIndex, LocalWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
-    time::{Duration, Instant},
 };
+use tokio::time::Duration;
 use tokio::{task::JoinSet, time::sleep};
+
 use xor_name::XorName;
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.

@@ -12,7 +12,7 @@ use sn_protocol::safenode_proto::{
 };
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::time::Duration;
+use tokio::time::Duration;
 use tonic::Request;
 
 #[derive(Debug, Clone)]

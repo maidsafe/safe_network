@@ -8,12 +8,10 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.3.14"
+version = "0.3.17"
 
 [features]
-default = ["quic"]
-# required to pass on flag to node builds
-quic = ["sn_client/quic"]
+default = []
 
 [[bin]]
 path="src/main.rs"
@@ -28,10 +26,10 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 minreq = { version = "2.11.0", features = ["https-rustls"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-sn_client = { path = "../sn_client", version = "0.102.9" }
+sn_client = { path = "../sn_client", version = "0.102.10" }
 sn_logging = { path = "../sn_logging", version = "0.2.17" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.4" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.41" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.5" }
+sn_transfers = { path = "../sn_transfers", version = "0.14.42" }
 tiny_http = { version="0.12", features = ["ssl-rustls"] }
 tokio = { version = "1.32.0", features = ["parking_lot", "rt"] }
 tracing = { version = "~0.1.26" }

@@ -24,7 +24,11 @@ mod network_discovery;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+pub mod target_arch;
 mod transfers;
+
+// re-export arch dependent deps for use in the crate, or above
+pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
     cmd::SwarmLocalState,
@@ -56,12 +60,14 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
-    time::Duration,
 };
 use tokio::sync::{
     mpsc::{self, Sender},
     oneshot,
 };
+
+use tokio::time::Duration;
+use tracing::trace;
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
@@ -87,6 +93,8 @@ pub const fn close_group_majority() -> usize {
 
 /// Max duration for all GET attempts
 const MAX_GET_RETRY_DURATION_MS: u64 = 6800;
+
+#[cfg(not(target_arch = "wasm32"))]
 const MAX_GET_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS);
 /// Max duration for all PUT attempts
 const MAX_PUT_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS * 3);
@@ -333,7 +341,7 @@ impl Network {
             } else {
                 MIN_WAIT_BEFORE_READING_A_PUT + MIN_WAIT_BEFORE_READING_A_PUT
             };
-            tokio::time::sleep(waiting_time).await;
+            sleep(waiting_time).await;
         }
 
         Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
@@ -415,10 +423,36 @@ impl Network {
         Ok(())
     }
 
+    /// Get a record from the network
+    /// This differs from non-wasm32 builds as no retries are applied
+    #[cfg(target_arch = "wasm32")]
+    pub async fn get_record_from_network(
+        &self,
+        key: RecordKey,
+        cfg: &GetRecordCfg,
+    ) -> Result<Record> {
+        let pretty_key = PrettyPrintRecordKey::from(&key);
+        info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+            key: key.clone(),
+            sender,
+            cfg: cfg.clone(),
+        })?;
+        let result = receiver.await.map_err(|e| {
+            error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
+            Error::InternalMsgChannelDropped
+        })?;
+
+        result.map_err(Error::from)
+    }
+
     /// Get the Record from the network
     /// Carry out re-attempts if required
     /// In case a target_record is provided, only return when fetched target.
     /// Otherwise count it as a failure when all attempts completed.
+    ///
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn get_record_from_network(
         &self,
         key: RecordKey,
@@ -581,7 +615,7 @@ impl Network {
                 .gen_range(MIN_WAIT_BEFORE_READING_A_PUT..MAX_WAIT_BEFORE_READING_A_PUT);
             // Small wait before we attempt to verify.
             // There will be `re-attempts` to be carried out within the later step anyway.
-            tokio::time::sleep(wait_duration).await;
+            sleep(wait_duration).await;
             debug!("Attempting to verify {pretty_key:?} after we've slept for {wait_duration:?}");
 
             // Verify the record is stored, requiring re-attempts
@@ -869,7 +903,7 @@ pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) 
     }
 
     // Spawn a task to send the SwarmCmd and keep this fn sync
-    let _handle = tokio::spawn(async move {
+    let _handle = spawn(async move {
         if let Err(error) = swarm_cmd_sender.send(cmd).await {
             error!("Failed to send SwarmCmd: {}", error);
         }

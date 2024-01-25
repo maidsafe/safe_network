@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.17](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.16...sn_faucet-v0.3.17) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.16](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.15...sn_faucet-v0.3.16) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
+## [0.3.15](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.14...sn_faucet-v0.3.15) - 2024-01-25
+
+### Other
+- update dependencies
+
 ## [0.3.14](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.13...sn_faucet-v0.3.14) - 2024-01-24
 
 ### Other
