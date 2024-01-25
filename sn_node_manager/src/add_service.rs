@@ -6,16 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::config::create_owned_dir;
-use crate::helpers::download_and_extract_release;
-use crate::service::{ServiceConfig, ServiceControl};
 use crate::VerbosityLevel;
+use crate::{
+    config::create_owned_dir,
+    helpers::download_and_extract_release,
+    service::{ServiceConfig, ServiceControl},
+};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::Multiaddr;
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
-use std::path::PathBuf;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 
 pub struct AddServiceOptions {
     pub count: Option<u16>,
@@ -23,7 +28,7 @@ pub struct AddServiceOptions {
     pub local: bool,
     pub peers: Vec<Multiaddr>,
     pub port: Option<u16>,
-    pub rpc_port: Option<u16>,
+    pub rpc_address: Option<Ipv4Addr>,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
@@ -58,13 +63,11 @@ pub async fn add(
         }
     }
 
-    if install_options.count.is_some()
-        && (install_options.port.is_some() || install_options.rpc_port.is_some())
-    {
+    if install_options.count.is_some() && install_options.port.is_some() {
         let count = install_options.count.unwrap();
         if count > 1 {
             return Err(eyre!(
-                "Custom ports can only be used when adding a single service"
+                "Custom node port can only be used when adding a single service"
             ));
         }
     }
@@ -73,13 +76,6 @@ pub async fn add(
         let port = install_options.port.unwrap();
         if !service_control.is_port_free(port) {
             return Err(eyre!("Port {port} is already in use")
-                .suggestion("Please try again with an available port"));
-        }
-    }
-    if install_options.rpc_port.is_some() {
-        let rpc_port = install_options.rpc_port.unwrap();
-        if !service_control.is_port_free(rpc_port) {
-            return Err(eyre!("Port {rpc_port} is already in use")
                 .suggestion("Please try again with an available port"));
         }
     }
@@ -109,10 +105,11 @@ pub async fn add(
         } else {
             service_control.get_available_port()?
         };
-        let rpc_port = if let Some(port) = install_options.rpc_port {
-            port
+        let rpc_free_port = service_control.get_available_port()?;
+        let rpc_socket_addr = if let Some(addr) = install_options.rpc_address {
+            SocketAddr::new(IpAddr::V4(addr), rpc_free_port)
         } else {
-            service_control.get_available_port()?
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_free_port)
         };
 
         let service_name = format!("safenode{node_number}");
@@ -140,7 +137,7 @@ pub async fn add(
             name: service_name.clone(),
             peers: install_options.peers.clone(),
             node_port,
-            rpc_port,
+            rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
         });
@@ -153,7 +150,7 @@ pub async fn add(
                     service_data_dir_path.to_string_lossy().into_owned(),
                     service_log_dir_path.to_string_lossy().into_owned(),
                     node_port,
-                    rpc_port,
+                    rpc_socket_addr,
                 ));
 
                 node_registry.nodes.push(Node {
@@ -162,7 +159,7 @@ pub async fn add(
                     user: install_options.user.clone(),
                     number: node_number,
                     port: node_port,
-                    rpc_port,
+                    rpc_socket_addr,
                     version: version.clone(),
                     status: NodeStatus::Added,
                     pid: None,
@@ -220,9 +217,7 @@ mod tests {
     use assert_fs::prelude::*;
     use assert_matches::assert_matches;
     use async_trait::async_trait;
-    use mockall::mock;
-    use mockall::predicate::*;
-    use mockall::Sequence;
+    use mockall::{mock, predicate::*, Sequence};
     use predicates::prelude::*;
     use sn_releases::{
         ArchiveType, Platform, ProgressCallback, ReleaseType, Result as SnReleaseResult,
@@ -354,7 +349,7 @@ mod tests {
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
@@ -373,7 +368,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: None,
-                rpc_port: None,
+                rpc_address: None,
                 url: None,
                 user: get_username(),
                 version: None,
@@ -397,7 +392,10 @@ mod tests {
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
-        assert_eq!(node_registry.nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
+        );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode1"))
@@ -428,7 +426,7 @@ mod tests {
                 user: "safe".to_string(),
                 number: 1,
                 port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 version: latest_version.to_string(),
                 status: NodeStatus::Added,
                 pid: None,
@@ -452,7 +450,7 @@ mod tests {
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let custom_port = 12000;
-        let custom_rpc_port = 12001;
+        let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
         let result = add(
             AddServiceOptions {
@@ -464,7 +462,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
+                rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
                 version: None,
@@ -506,7 +504,7 @@ mod tests {
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let custom_port = 12000;
-        let custom_rpc_port = 12001;
+        let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
         let result = add(
             AddServiceOptions {
@@ -518,7 +516,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
+                rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
                 version: None,
@@ -625,7 +623,7 @@ mod tests {
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
@@ -658,7 +656,7 @@ mod tests {
                     .join("safenode2")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8082,
-                rpc_port: 8083,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
@@ -691,7 +689,7 @@ mod tests {
                     .join("safenode3")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8084,
-                rpc_port: 8085,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
@@ -707,7 +705,7 @@ mod tests {
                 count: Some(3),
                 peers: vec![],
                 port: None,
-                rpc_port: None,
+                rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -728,7 +726,10 @@ mod tests {
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
-        assert_eq!(node_registry.nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
+        );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode1"))
@@ -743,7 +744,10 @@ mod tests {
         assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
         assert_eq!(node_registry.nodes[1].port, 8082);
-        assert_eq!(node_registry.nodes[1].rpc_port, 8083);
+        assert_eq!(
+            node_registry.nodes[1].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083)
+        );
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode2"))
@@ -758,7 +762,10 @@ mod tests {
         assert_eq!(node_registry.nodes[2].user, get_username());
         assert_eq!(node_registry.nodes[2].number, 3);
         assert_eq!(node_registry.nodes[2].port, 8084);
-        assert_eq!(node_registry.nodes[2].rpc_port, 8085);
+        assert_eq!(
+            node_registry.nodes[2].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085)
+        );
         assert_eq!(
             node_registry.nodes[2].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode3"))
@@ -852,7 +859,7 @@ mod tests {
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
@@ -868,7 +875,7 @@ mod tests {
                 count: None,
                 peers: vec![],
                 port: None,
-                rpc_port: None,
+                rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -889,7 +896,10 @@ mod tests {
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
-        assert_eq!(node_registry.nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
+        );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode1"))
@@ -920,7 +930,7 @@ mod tests {
                 user: "safe".to_string(),
                 number: 1,
                 port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 version: latest_version.to_string(),
                 status: NodeStatus::Added,
                 pid: None,
@@ -1005,7 +1015,7 @@ mod tests {
                     .join("safenode2")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8082,
-                rpc_port: 8083,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
@@ -1021,7 +1031,7 @@ mod tests {
                 count: None,
                 peers: vec![],
                 port: None,
-                rpc_port: None,
+                rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -1042,7 +1052,10 @@ mod tests {
         assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
         assert_eq!(node_registry.nodes[1].port, 8082);
-        assert_eq!(node_registry.nodes[1].rpc_port, 8083);
+        assert_eq!(
+            node_registry.nodes[1].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083)
+        );
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode2"))
@@ -1132,7 +1145,7 @@ mod tests {
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
                 node_port: 8080,
-                rpc_port: 8081,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
@@ -1151,7 +1164,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: None,
-                rpc_port: None,
+                rpc_address: None,
                 url: Some(url.to_string()),
                 user: get_username(),
                 version: None,
@@ -1173,7 +1186,10 @@ mod tests {
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, 8080);
-        assert_eq!(node_registry.nodes[0].rpc_port, 8081);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
+        );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode1"))
@@ -1210,18 +1226,11 @@ mod tests {
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let custom_port = 12000;
-        let custom_rpc_port = 12001;
 
         let mut seq = Sequence::new();
         mock_service_control
             .expect_is_port_free()
             .with(eq(custom_port))
-            .times(1)
-            .returning(|_| true)
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_is_port_free()
-            .with(eq(custom_rpc_port))
             .times(1)
             .returning(|_| true)
             .in_sequence(&mut seq);
@@ -1264,6 +1273,11 @@ mod tests {
             .times(1)
             .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
             .in_sequence(&mut seq);
+        mock_service_control
+            .expect_get_available_port()
+            .times(1)
+            .returning(|| Ok(12001))
+            .in_sequence(&mut seq);
 
         mock_service_control
             .expect_install()
@@ -1277,7 +1291,7 @@ mod tests {
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
                 node_port: custom_port,
-                rpc_port: custom_rpc_port,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
@@ -1296,7 +1310,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
+                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
                 url: None,
                 user: get_username(),
                 version: None,
@@ -1318,7 +1332,10 @@ mod tests {
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
         assert_eq!(node_registry.nodes[0].port, custom_port);
-        assert_eq!(node_registry.nodes[0].rpc_port, custom_rpc_port);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
+        );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
             Some(node_logs_dir.to_path_buf().join("safenode1"))
@@ -1351,7 +1368,6 @@ mod tests {
         node_logs_dir.create_dir_all()?;
 
         let custom_port = 12000;
-        let custom_rpc_port = 12001;
 
         mock_service_control
             .expect_is_port_free()
@@ -1369,7 +1385,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
+                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
                 url: None,
                 user: get_username(),
                 version: None,
@@ -1386,76 +1402,6 @@ mod tests {
             Err(e) => {
                 assert_eq!(
                     format!("Port {custom_port} is already in use"),
-                    e.to_string()
-                )
-            }
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn add_node_should_return_error_if_custom_rpc_port_is_in_use() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut mock_service_control = MockServiceControl::new();
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-
-        let custom_port = 12000;
-        let custom_rpc_port = 12001;
-
-        let mut seq = Sequence::new();
-        mock_service_control
-            .expect_is_port_free()
-            .with(eq(custom_port))
-            .times(1)
-            .returning(|_| true)
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_is_port_free()
-            .with(eq(custom_rpc_port))
-            .times(1)
-            .returning(|_| false)
-            .in_sequence(&mut seq);
-
-        let result = add(
-            AddServiceOptions {
-                local: true,
-                genesis: false,
-                count: None,
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
-                port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
-                url: None,
-                user: get_username(),
-                version: None,
-            },
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(MockSafeReleaseRepository::new()),
-            VerbosityLevel::Normal,
-        )
-        .await;
-
-        match result {
-            Ok(_) => panic!("This test should result in an error"),
-            Err(e) => {
-                assert_eq!(
-                    format!("Port {custom_rpc_port} is already in use"),
                     e.to_string()
                 )
             }
@@ -1482,7 +1428,6 @@ mod tests {
         node_logs_dir.create_dir_all()?;
 
         let custom_port = 12000;
-        let custom_rpc_port = 12001;
 
         let result = add(
             AddServiceOptions {
@@ -1494,7 +1439,7 @@ mod tests {
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
                 port: Some(custom_port),
-                rpc_port: Some(custom_rpc_port),
+                rpc_address: None,
                 url: None,
                 user: get_username(),
                 version: None,
@@ -1510,7 +1455,7 @@ mod tests {
             Ok(_) => panic!("This test should result in an error"),
             Err(e) => {
                 assert_eq!(
-                    format!("Custom ports can only be used when adding a single service"),
+                    format!("Custom node port can only be used when adding a single service"),
                     e.to_string()
                 )
             }

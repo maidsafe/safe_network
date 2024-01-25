@@ -13,10 +13,7 @@ use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_protocol::test_utils::DeploymentInventory;
 use sn_transfers::{create_faucet_wallet, LocalWallet, NanoTokens, Transfer};
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::Path,
-};
+use std::{net::SocketAddr, path::Path};
 use tokio::sync::Mutex;
 use tokio::time::{Duration, Instant};
 use tracing::{error, info, warn};
@@ -92,7 +89,7 @@ pub fn get_all_rpc_addresses(skip_genesis_for_droplet: bool) -> Result<Vec<Socke
             let addresses = local_node_registry
                 .nodes
                 .iter()
-                .map(|n| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), n.rpc_port))
+                .map(|n| n.rpc_socket_addr)
                 .collect::<Vec<SocketAddr>>();
             Ok(addresses)
         }

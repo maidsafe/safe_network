@@ -13,12 +13,14 @@ mod helpers;
 mod local;
 mod service;
 
-use crate::add_service::{add, AddServiceOptions};
-use crate::config::*;
-use crate::control::{remove, start, status, stop, upgrade, UpgradeResult};
-use crate::helpers::download_and_extract_release;
-use crate::local::{kill_network, run_faucet, run_network, LocalNetworkOptions};
-use crate::service::{NodeServiceManager, ServiceControl};
+use crate::{
+    add_service::{add, AddServiceOptions},
+    config::*,
+    control::{remove, start, status, stop, upgrade, UpgradeResult},
+    helpers::download_and_extract_release,
+    local::{kill_network, run_faucet, run_network, LocalNetworkOptions},
+    service::{NodeServiceManager, ServiceControl},
+};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
@@ -28,8 +30,7 @@ use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
@@ -109,13 +110,11 @@ pub enum SubCmd {
         /// This option only applies when a single service is being added.
         #[clap(long)]
         port: Option<u16>,
-        /// Specify a port for the node's RPC service to run on.
+        /// Specify an Ipv4Addr for the node's RPC service to run on. The ports are assigned automatically.
         ///
-        /// If not used, a port will be selected at random.
-        ///
-        /// This option only applies when a single service is being added.
+        /// If not used, the localhost will be used with a random port.
         #[clap(long)]
-        rpc_port: Option<u16>,
+        rpc_address: Option<Ipv4Addr>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -323,7 +322,7 @@ async fn main() -> Result<()> {
             log_dir_path,
             peers,
             port,
-            rpc_port,
+            rpc_address,
             url,
             user,
             version,
@@ -356,7 +355,7 @@ async fn main() -> Result<()> {
                     count,
                     peers: get_peers_from_args(peers).await?,
                     port,
-                    rpc_port,
+                    rpc_address,
                     safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
                     service_log_dir_path,
@@ -582,7 +581,7 @@ async fn main() -> Result<()> {
                     .find(|x| x.service_name == *name)
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
-                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 start(node, &NodeServiceManager {}, &rpc_client, verbosity).await?;
                 node_registry.save()?;
             } else if let Some(ref peer_id) = peer_id {
@@ -598,17 +597,15 @@ async fn main() -> Result<()> {
                         ))
                     })?;
 
-                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 start(node, &NodeServiceManager {}, &rpc_client, verbosity).await?;
                 node_registry.save()?;
             } else {
                 let mut failed_services = Vec::new();
                 let node_count = node_registry.nodes.len();
                 for i in 0..node_count {
-                    let rpc_client = RpcClient::new(&format!(
-                        "https://127.0.0.1:{}",
-                        node_registry.nodes[i].rpc_port
-                    ));
+                    let rpc_client =
+                        RpcClient::from_socket_addr(node_registry.nodes[i].rpc_socket_addr);
                     let result = start(
                         &mut node_registry.nodes[i],
                         &NodeServiceManager {},
@@ -774,7 +771,7 @@ async fn main() -> Result<()> {
                     .find(|x| x.service_name == *name)
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
-                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 let result = upgrade(
                     node,
                     &safenode_download_path,
@@ -808,7 +805,7 @@ async fn main() -> Result<()> {
                         ))
                     })?;
 
-                let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 let result = upgrade(
                     node,
                     &safenode_download_path,
@@ -831,8 +828,7 @@ async fn main() -> Result<()> {
                 }
             } else {
                 for node in node_registry.nodes.iter_mut() {
-                    let rpc_client =
-                        RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+                    let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                     let result = upgrade(
                         node,
                         &safenode_download_path,

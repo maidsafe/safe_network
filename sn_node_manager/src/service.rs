@@ -36,7 +36,7 @@ pub struct ServiceConfig {
     pub name: String,
     pub node_port: u16,
     pub peers: Vec<Multiaddr>,
-    pub rpc_port: u16,
+    pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: String,
 }
@@ -190,7 +190,7 @@ impl ServiceControl for NodeServiceManager {
             OsString::from("--port"),
             OsString::from(config.node_port.to_string()),
             OsString::from("--rpc"),
-            OsString::from(format!("127.0.0.1:{}", config.rpc_port)),
+            OsString::from(config.rpc_socket_addr.to_string()),
             OsString::from("--root-dir"),
             OsString::from(config.data_dir_path.to_string_lossy().to_string()),
             OsString::from("--log-output-dest"),

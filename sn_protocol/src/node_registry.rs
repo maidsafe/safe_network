@@ -9,11 +9,13 @@
 use crate::Error;
 use color_eyre::Result;
 use libp2p::{Multiaddr, PeerId};
-use serde::de::Error as DeError;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use std::{
+    io::{Read, Write},
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeStatus {
@@ -92,7 +94,7 @@ pub struct Node {
     pub user: String,
     pub number: u16,
     pub port: u16,
-    pub rpc_port: u16,
+    pub rpc_socket_addr: SocketAddr,
     pub status: NodeStatus,
     pub pid: Option<u32>,
     #[serde(

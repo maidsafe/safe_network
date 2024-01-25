@@ -10,6 +10,7 @@ use sn_protocol::safenode_proto::{
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
     RestartRequest, StopRequest, UpdateRequest,
 };
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::time::Duration;
@@ -54,10 +55,15 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    pub fn new(endpoint: &str) -> RpcClient {
-        RpcClient {
+    pub fn new(endpoint: &str) -> Self {
+        Self {
             endpoint: endpoint.to_string(),
         }
+    }
+
+    pub fn from_socket_addr(socket: SocketAddr) -> Self {
+        let endpoint = format!("https://{socket}");
+        Self { endpoint }
     }
 }
 

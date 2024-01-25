@@ -15,6 +15,7 @@ use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use std::io::Read;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
@@ -25,7 +26,12 @@ pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
     fn get_safenode_version(&self) -> Result<String>;
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
-    fn launch_node(&self, port: u16, rpc_port: u16, peers: Vec<Multiaddr>) -> Result<()>;
+    fn launch_node(
+        &self,
+        port: u16,
+        rpc_socket_addr: SocketAddr,
+        peers: Vec<Multiaddr>,
+    ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
@@ -75,7 +81,12 @@ impl Launcher for LocalSafeLauncher {
         Ok(child.id())
     }
 
-    fn launch_node(&self, port: u16, rpc_port: u16, peers: Vec<Multiaddr>) -> Result<()> {
+    fn launch_node(
+        &self,
+        port: u16,
+        rpc_socket_addr: SocketAddr,
+        peers: Vec<Multiaddr>,
+    ) -> Result<()> {
         let mut args = Vec::new();
         if peers.is_empty() {
             args.push("--first".to_string())
@@ -89,7 +100,7 @@ impl Launcher for LocalSafeLauncher {
         args.push("--port".to_string());
         args.push(port.to_string());
         args.push("--rpc".to_string());
-        args.push(format!("127.0.0.1:{rpc_port}"));
+        args.push(rpc_socket_addr.to_string());
 
         Command::new(self.safenode_bin_path.clone())
             .args(args)
@@ -204,10 +215,20 @@ pub async fn run_network(
     } else {
         let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
-        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
+        let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
+        let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
-        let node = run_node(number, true, port, rpc_port, vec![], &launcher, &rpc_client).await?;
+        let node = run_node(
+            number,
+            true,
+            port,
+            rpc_socket_addr,
+            vec![],
+            &launcher,
+            &rpc_client,
+        )
+        .await?;
         node_registry.nodes.push(node.clone());
         (vec![node.get_multiaddr().unwrap()], 2)
     };
@@ -215,14 +236,15 @@ pub async fn run_network(
     for _ in start..=network_options.node_count {
         let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
-        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{rpc_port}"));
+        let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
+        let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
         let node = run_node(
             number,
             false,
             port,
-            rpc_port,
+            rpc_socket_addr,
             peers.clone(),
             &launcher,
             &rpc_client,
@@ -256,7 +278,7 @@ pub async fn run_node(
     number: u16,
     genesis: bool,
     port: u16,
-    rpc_port: u16,
+    rpc_socket_addr: SocketAddr,
     peer: Vec<Multiaddr>,
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
@@ -264,7 +286,7 @@ pub async fn run_node(
     let version = launcher.get_safenode_version()?;
 
     println!("Launching node {number}...");
-    launcher.launch_node(port, rpc_port, peer.clone())?;
+    launcher.launch_node(port, rpc_socket_addr, peer.clone())?;
     launcher.wait(2);
 
     let node_info = rpc_client.node_info().await?;
@@ -279,7 +301,7 @@ pub async fn run_node(
         user: get_username()?,
         number,
         port,
-        rpc_port,
+        rpc_socket_addr,
         version: version.clone(),
         status: NodeStatus::Running,
         pid: Some(node_info.pid),
@@ -325,7 +347,7 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
     all_peers.extend(additional_peers);
 
     for node in node_registry.nodes.iter() {
-        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let net_info = rpc_client.network_info().await?;
         let peers = net_info.connected_peers;
         println!("Node {} has {} peers", node.peer_id.unwrap(), peers.len());
@@ -382,14 +404,14 @@ mod tests {
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let port = 12000;
-        let rpc_port = 13000;
+        let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_get_safenode_version()
             .times(1)
             .returning(|| Ok("0.100.12".to_string()));
         mock_launcher
             .expect_launch_node()
-            .with(eq(port), eq(rpc_port), eq(vec![]))
+            .with(eq(port), eq(rpc_socket_addr), eq(vec![]))
             .times(1)
             .returning(|_, _, _| Ok(()));
         mock_launcher
@@ -429,7 +451,7 @@ mod tests {
             1,
             true,
             port,
-            rpc_port,
+            rpc_socket_addr,
             vec![],
             &mock_launcher,
             &mock_rpc_client,
@@ -450,7 +472,7 @@ mod tests {
         assert_eq!(node.number, 1);
         assert_eq!(node.pid, Some(1000));
         assert_eq!(node.port, port);
-        assert_eq!(node.rpc_port, rpc_port);
+        assert_eq!(node.rpc_socket_addr, rpc_socket_addr);
         assert_eq!(node.status, NodeStatus::Running);
         assert_eq!(
             node.safenode_path,
