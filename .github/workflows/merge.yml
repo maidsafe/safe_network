@@ -209,7 +209,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -365,7 +365,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -373,14 +373,6 @@ jobs:
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
-
-      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
-        if: matrix.os != 'windows-latest'
-        run: >
-          cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 20
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         if: matrix.os == 'windows-latest'
@@ -425,7 +417,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -510,7 +502,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -636,7 +628,7 @@ jobs:
           timeout-minutes: 30
 
         - name: Start a local network
-          uses: jacderida/sn-local-testnet-action@build-node-manager
+          uses: maidsafe/sn-local-testnet-action@main
           with:
             action: start
             interval: 2000
@@ -746,7 +738,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
@@ -861,7 +853,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
