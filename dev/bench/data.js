@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706184658056,
+  "lastUpdate": 1706184762814,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "3c1432cf780fa909aa76e4c822207a5cfbe2c180",
-          "message": "chore: store uploaded files list as text\n\nFor the uploaded files list, rather than serialize to binary, we use a simple text format. The user\ncan now see the addresses of all the files they've uploaded, and use this information to retrieve\nthem, if need be. We are also now just using one file, appending to it for each upload.\n\nNow that this file is human readable, the `files ls` command was deemed unnecessary and was\ntherefore removed.\n\nWith respect to the `files` commands, I've also taken the opportunity to make the language in the\ntext output more concise and matter of fact. For example, we don't really need to use things like\nexclamation marks in the text.",
-          "timestamp": "2023-09-21T06:25:42Z",
-          "tree_id": "ed96928a4b8b6c310136178e09363e69521999c2",
-          "url": "https://github.com/maidsafe/safe_network/commit/3c1432cf780fa909aa76e4c822207a5cfbe2c180"
-        },
-        "date": 1695282089093,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 71.507965,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e8f21591958fb17171b6fa71b76e2db702c24be8",
+          "message": "fix(CI): log in trace during generate bench chart run",
+          "timestamp": "2024-01-25T12:55:06+01:00",
+          "tree_id": "e5f6d73a630a2ac2e9e66e06f6ae0ae462755119",
+          "url": "https://github.com/maidsafe/safe_network/commit/e8f21591958fb17171b6fa71b76e2db702c24be8"
+        },
+        "date": 1706184762452,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
