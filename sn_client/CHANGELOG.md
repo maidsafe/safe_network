@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.11...sn_client-v0.102.12) - 2024-01-25
+
+### Other
+- improved pay for storage
+- mut wallet description
+- revert to mut wallet
+- change to wallet result
+- cargo fmt
+- into wallet doc
+- into wallet doc
+- expand abbreviations mutable wallet
+- pay for storage clone for test pass
+- expand on abbreviation and added detail
+- pay for records example
+- pay for records and cleanup
+- pay for storage once detail
+- send unsigned detail
+- pay for storage
+- get store cost at addr unused
+
 ## [0.102.11](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.10...sn_client-v0.102.11) - 2024-01-25
 
 ### Other
