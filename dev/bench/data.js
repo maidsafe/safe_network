@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706179156766,
+  "lastUpdate": 1706179254851,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "d1c55406d2c8956295f19daadb2a31b016471830",
-          "message": "ci: remove unused prebuild for unit tests",
-          "timestamp": "2023-09-20T19:00:32Z",
-          "tree_id": "a5aaa4c7bb4373f95fbee06ca8d9429d2478a8d3",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1c55406d2c8956295f19daadb2a31b016471830"
-        },
-        "date": 1695242208802,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58.19187,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8d7cc12ca0fd91fc51d6be2aea56db050e21866d",
+          "message": "ci: move websockets and wasm to cross platform workflow file",
+          "timestamp": "2024-01-25T11:23:10+01:00",
+          "tree_id": "92a8cfef5c506ff12aed3892e61140c9ef60175d",
+          "url": "https://github.com/maidsafe/safe_network/commit/8d7cc12ca0fd91fc51d6be2aea56db050e21866d"
+        },
+        "date": 1706179254520,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
