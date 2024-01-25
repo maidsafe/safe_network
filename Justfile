@@ -108,13 +108,13 @@ build-release-artifacts arch:
     cargo install cross
     cross build --release --features=network-contacts --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
-    cross build --release --target $arch --bin testnet
+    cross build --release --target $arch --bin safenode-manager
     cross build --release --target $arch --bin faucet
     cross build --release --target $arch --bin safenode_rpc_client
   else
     cargo build --release --features=network-contacts --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
-    cargo build --release --target $arch --bin testnet
+    cargo build --release --target $arch --bin safenode-manager
     cargo build --release --target $arch --bin faucet
     cargo build --release --target $arch --bin safenode_rpc_client
   fi
@@ -159,6 +159,10 @@ package-release-assets bin version="":
   )
 
   bin="{{bin}}"
+  supported_bins=("safe" "safenode" "safenode-manager" "faucet" "safenode_rpc_client")
+  crate=""
+
+  bin="{{bin}}"
   case "$bin" in
     safe)
       crate="sn_cli"
@@ -166,8 +170,8 @@ package-release-assets bin version="":
     safenode)
       crate="sn_node"
       ;;
-    testnet)
-      crate="sn_testnet"
+    safenode-manager)
+      crate="sn_node_manager"
       ;;
     faucet)
       crate="sn_faucet"
@@ -176,7 +180,7 @@ package-release-assets bin version="":
       crate="sn_node_rpc_client"
       ;;
     *)
-      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+      echo "The $bin binary is not supported"
       exit 1
       ;;
   esac
@@ -207,7 +211,7 @@ upload-release-assets:
   binary_crates=(
     "sn_cli"
     "sn_node"
-    "sn_testnet"
+    "sn-node-manager"
     "sn_faucet"
     "sn_node_rpc_client"
   )
@@ -234,9 +238,9 @@ upload-release-assets:
             bin_name="safenode"
             bucket="sn-node"
             ;;
-          sn_testnet)
-            bin_name="testnet"
-            bucket="sn-testnet"
+          sn-node-manager)
+            bin_name="safenode-manager"
+            bucket="sn-node-manager"
             ;;
           sn_faucet)
             bin_name="faucet"
@@ -247,7 +251,7 @@ upload-release-assets:
             bucket="sn-node-rpc-client"
             ;;
           *)
-            echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+            echo "The $crate is not supported"
             exit 1
             ;;
         esac
@@ -257,13 +261,16 @@ upload-release-assets:
         for crate_with_version in "${crates_with_versions[@]}"; do
           if [[ $crate_with_version == $crate-v* ]]; then
             (
-              echo "Uploading $bin_name assets to $crate_with_version release..."
               cd deploy/$bin_name
-              ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               echo "Uploading $bin_name assets to S3 bucket..."
               for file in *.zip *.tar.gz; do
                 aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
               done
+
+              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
+                echo "Uploading $bin_name assets to $crate_with_version release..."
+                ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
+              fi
             )
           fi
         done
@@ -282,8 +289,8 @@ upload-release-assets-to-s3 bin_name:
     safenode)
       bucket="sn-node"
       ;;
-    testnet)
-      bucket="sn-testnet"
+    safenode-manager)
+      bucket="sn-node-manager"
       ;;
     faucet)
       bucket="sn-faucet"
@@ -292,7 +299,7 @@ upload-release-assets-to-s3 bin_name:
       bucket="sn-node-rpc-client"
       ;;
     *)
-      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+      echo "The {{bin_name}} binary is not supported"
       exit 1
       ;;
   esac
@@ -301,10 +308,3 @@ upload-release-assets-to-s3 bin_name:
   for file in *.zip *.tar.gz; do
     aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
   done
-
-run-local-network:
-  #!/usr/bin/env bash
-  pgrep safenode | xargs kill -9
-  pgrep faucet | xargs kill -9
-  rm -rf ~/.local/share/safe
-  cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 1000
