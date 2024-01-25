@@ -102,7 +102,7 @@ pub enum SubCmd {
         /// This option can be used to test a safenode binary that has been built from a forked
         /// branch and uploaded somewhere. A typical use case would be for a developer who launches
         /// a testnet to test some changes they have on a fork.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// The user the service should run as.
         ///
@@ -307,14 +307,6 @@ async fn main() -> Result<()> {
         } => {
             if !is_running_as_root() {
                 return Err(eyre!("The add command must run as the root user"));
-            }
-
-            if url.is_some() && version.is_some() {
-                return Err(
-                    eyre!("The url and version arguments are mutually exclusive").suggestion(
-                        "Please try again specifying either url or version, but not both.",
-                    ),
-                );
             }
 
             println!("=================================================");
