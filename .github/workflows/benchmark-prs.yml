@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-          
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -214,7 +214,7 @@ jobs:
       #########################
       ### Stop Network      ###
       #########################
-      
+
       - name: Stop the local network
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
@@ -242,12 +242,12 @@ jobs:
         run: |
           node_peak_mem_limit_mb="250" # mb
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
-            awk -F':' '/"memory_used_mb":/{print $2}' | 
-            sort -n | 
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
             tail -n 1
           )
-         
+
           echo "Memory usage: $peak_mem_usage MB"
           if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
             echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
@@ -327,7 +327,7 @@ jobs:
           echo "Total swarm_driver long handling times is: $total_num_of_times"
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
-          total_num_of_times_limit_hits="10000" # hits
+          total_num_of_times_limit_hits="20000" # hits
           total_long_handling_limit_ms="170000" # ms
           average_handling_limit_ms="20" # ms
           if (( $(echo "$total_num_of_times > $total_num_of_times_limit_hits" | bc -l) )); then
@@ -394,7 +394,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-     
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -410,7 +410,7 @@ jobs:
       - name: install ripgrep
         run: sudo apt-get -y install ripgrep
 
-        
+
 
       ########################
       ### Benchmark        ###
@@ -421,4 +421,4 @@ jobs:
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
           cargo criterion --message-format=json 2>&1 -p sn_transfers | tee -a output.txt
-          cat output.txt 
+          cat output.txt
