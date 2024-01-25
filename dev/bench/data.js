@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706179256275,
+  "lastUpdate": 1706184658056,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "afd0411cf9d407c5a01183edff4b872c77c12760",
-          "message": "feat(cli): deps update and arbitrary change for cli\n\nBREAKING CHANGE: dbc deprecation did seemingly not kick off a release\nfor the CLI.",
-          "timestamp": "2023-09-22T10:29:19+02:00",
-          "tree_id": "3f6ed5aedec944479d2346b8c11c5bc03027f2c4",
-          "url": "https://github.com/maidsafe/safe_network/commit/afd0411cf9d407c5a01183edff4b872c77c12760"
-        },
-        "date": 1695373375762,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0979255969152994,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5181714698880914,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.551227440260452,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.384780602819,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e8f21591958fb17171b6fa71b76e2db702c24be8",
+          "message": "fix(CI): log in trace during generate bench chart run",
+          "timestamp": "2024-01-25T12:55:06+01:00",
+          "tree_id": "e5f6d73a630a2ac2e9e66e06f6ae0ae462755119",
+          "url": "https://github.com/maidsafe/safe_network/commit/e8f21591958fb17171b6fa71b76e2db702c24be8"
+        },
+        "date": 1706184655682,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2968393599061065,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8343461443937545,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.93288637253372,
             "unit": "MiB/s"
           }
         ]
