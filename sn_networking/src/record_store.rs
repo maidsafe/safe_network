@@ -9,6 +9,10 @@
 
 use crate::target_arch::{spawn, Instant};
 use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
+use aes_gcm_siv::{
+    aead::{Aead, KeyInit, OsRng},
+    Aes256GcmSiv, Nonce,
+};
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -18,6 +22,7 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
+use rand::RngCore;
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
@@ -56,6 +61,9 @@ pub struct NodeRecordStore {
     record_count_metric: Option<Gauge>,
     /// Counting how many times got paid
     received_payment_count: usize,
+    /// Encyption cipher for the records, randomly generated at node startup
+    /// Plus a 4 byte nonce starter
+    encryption_details: (Aes256GcmSiv, [u8; 4]),
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -79,6 +87,16 @@ impl Default for NodeRecordStoreConfig {
     }
 }
 
+/// Generate an encryption nonce for a given record key and nonce_starter bytes.
+fn generate_nonce_for_record(nonce_starter: &[u8; 4], key: &Key) -> Nonce {
+    let mut nonce_bytes = nonce_starter.to_vec();
+    nonce_bytes.extend_from_slice(key.as_ref());
+    // Ensure the final nonce is exactly 96 bits long by padding or truncating as necessary
+    // https://crypto.stackexchange.com/questions/26790/how-bad-it-is-using-the-same-iv-twice-with-aes-gcm
+    nonce_bytes.resize(12, 0); // 12 (u8) * 8 = 96 bits
+    Nonce::from_iter(nonce_bytes)
+}
+
 impl NodeRecordStore {
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub fn with_config(
@@ -87,6 +105,10 @@ impl NodeRecordStore {
         network_event_sender: mpsc::Sender<NetworkEvent>,
         swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
     ) -> Self {
+        let key = Aes256GcmSiv::generate_key(&mut OsRng);
+        let cipher = Aes256GcmSiv::new(&key);
+        let mut nonce_starter = [0u8; 4];
+        OsRng.fill_bytes(&mut nonce_starter);
         NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
@@ -97,6 +119,7 @@ impl NodeRecordStore {
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
             received_payment_count: 0,
+            encryption_details: (cipher, nonce_starter),
         }
     }
 
@@ -117,26 +140,42 @@ impl NodeRecordStore {
         hex_string
     }
 
-    fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
+    fn read_from_disk<'a>(
+        encryption_details: &(Aes256GcmSiv, [u8; 4]),
+        key: &Key,
+        storage_dir: &Path,
+    ) -> Option<Cow<'a, Record>> {
+        let (cipher, nonce_starter) = encryption_details;
+
         let start = Instant::now();
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
+        let nonce = generate_nonce_for_record(nonce_starter, key);
         // we should only be reading if we know the record is written to disk properly
         match fs::read(file_path) {
-            Ok(value) => {
+            Ok(ciphertext) => {
                 // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                 info!(
                     "Retrieved record from disk! filename: {filename} after {:?}",
                     start.elapsed()
                 );
-                let record = Record {
-                    key: key.clone(),
-                    value,
-                    publisher: None,
-                    expires: None,
-                };
-                Some(Cow::Owned(record))
+
+                match cipher.decrypt(&nonce, ciphertext.as_ref()) {
+                    Ok(value) => {
+                        let record = Record {
+                            key: key.clone(),
+                            value,
+                            publisher: None,
+                            expires: None,
+                        };
+                        return Some(Cow::Owned(record));
+                    }
+                    Err(error) => {
+                        error!("Error while decrypting record. filename: {filename}: {error:?}");
+                        None
+                    }
+                }
             }
             Err(err) => {
                 error!("Error while reading file. filename: {filename}, error: {err:?}");
@@ -252,27 +291,38 @@ impl NodeRecordStore {
             let _ = metric.set(self.records.len() as i64);
         }
 
+        let (cipher, nonce_starter) = self.encryption_details.clone();
+        let nonce = generate_nonce_for_record(&nonce_starter, &r.key);
         let cloned_cmd_sender = self.swarm_cmd_sender.clone();
         spawn(async move {
-            let cmd = match fs::write(&file_path, r.value) {
-                Ok(_) => {
-                    // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-                    info!("Wrote record {record_key:?} to disk! filename: {filename}");
+            match cipher.encrypt(&nonce, r.value.as_ref()) {
+                Ok(value) => {
+                    let cmd = match fs::write(&file_path, value) {
+                        Ok(_) => {
+                            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+                            info!("Wrote record {record_key:?} to disk! filename: {filename}");
 
-                    SwarmCmd::AddLocalRecordAsStored {
-                        key: r.key,
-                        record_type,
-                    }
-                }
-                Err(err) => {
-                    error!(
+                            SwarmCmd::AddLocalRecordAsStored {
+                                key: r.key,
+                                record_type,
+                            }
+                        }
+                        Err(err) => {
+                            error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                    SwarmCmd::RemoveFailedLocalRecord { key: r.key }
-                }
-            };
+                            SwarmCmd::RemoveFailedLocalRecord { key: r.key }
+                        }
+                    };
 
-            send_swarm_cmd(cloned_cmd_sender, cmd);
+                    send_swarm_cmd(cloned_cmd_sender, cmd);
+                }
+                Err(error) => {
+                    warn!(
+                        "Failed to encrypt record {record_key:?} filename: {filename} : {error:?}"
+                    );
+                }
+            }
         });
 
         Ok(())
@@ -341,7 +391,7 @@ impl RecordStore for NodeRecordStore {
 
         debug!("GET request for Record key: {key}");
 
-        Self::read_from_disk(k, &self.config.storage_dir)
+        Self::read_from_disk(&self.encryption_details, k, &self.config.storage_dir)
     }
 
     fn put(&mut self, record: Record) -> Result<()> {
@@ -732,8 +782,12 @@ mod tests {
                 // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
                 let mut iteration = 0;
                 while iteration < max_iterations {
-                    if NodeRecordStore::read_from_disk(&pruned_key, &store_config.storage_dir)
-                        .is_none()
+                    if NodeRecordStore::read_from_disk(
+                        &store.encryption_details,
+                        &pruned_key,
+                        &store_config.storage_dir,
+                    )
+                    .is_none()
                     {
                         break;
                     }
