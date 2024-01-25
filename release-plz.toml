@@ -53,3 +53,27 @@ name = "sn_transfers"
 changelog_update = true
 git_release_enable = false
 publish = true
+
+[[package]]
+name = "sn_testnet"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_faucet"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "sn_node_rpc_client"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
+name = "token_supplies"
+changelog_update = true
+git_release_enable = false
+publish = true
