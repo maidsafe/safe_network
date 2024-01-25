@@ -357,8 +357,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build gossipsub testing executable
-        run: cargo test \
-          --release --package sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -378,19 +377,14 @@ jobs:
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         if: matrix.os != 'windows-latest'
         run: >
-          cargo test
-          --release --package sn_node --features local-discovery
-          --test msgs_over_gossipsub -- --nocapture
+          cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 20
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         if: matrix.os == 'windows-latest'
-        run: |
-          cargo test `
-          --release --package sn_node --features local-discovery `
-          --test msgs_over_gossipsub -- --nocapture
+        run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 20
