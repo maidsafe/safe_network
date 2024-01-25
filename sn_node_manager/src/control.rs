@@ -112,7 +112,7 @@ pub async fn status(
     // Again confirm that services which are marked running are still actually running.
     // If they aren't we'll mark them as stopped.
     for node in &mut node_registry.nodes {
-        let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         if let NodeStatus::Running = node.status {
             if let Some(pid) = node.pid {
                 // First we can try the PID we have now. If there is still a process running with
@@ -171,7 +171,7 @@ pub async fn status(
                 node.peer_id.map_or("-".to_string(), |p| p.to_string())
             );
             println!("Port: {}", node.port);
-            println!("RPC Port: {}", node.rpc_port);
+            println!("RPC Socket: {}", node.rpc_socket_addr);
             println!(
                 "Multiaddr: {}",
                 node.get_multiaddr()
@@ -346,6 +346,9 @@ mod tests {
         NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions,
     };
     use sn_protocol::node_registry::{Node, NodeStatus};
+    use std::net::IpAddr;
+    use std::net::Ipv4Addr;
+    use std::net::SocketAddr;
     use std::path::PathBuf;
     use std::str::FromStr;
 
@@ -398,7 +401,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Added,
             pid: None,
             peer_id: None,
@@ -462,7 +465,7 @@ mod tests {
             user: "safe".to_string(),
             number: 2,
             port: 8082,
-            rpc_port: 8083,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
             status: NodeStatus::Stopped,
             pid: Some(1001),
             peer_id: Some(PeerId::from_str(
@@ -528,7 +531,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
@@ -585,7 +588,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
@@ -634,7 +637,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
@@ -676,7 +679,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Added,
             pid: None,
             peer_id: None,
@@ -715,7 +718,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
@@ -759,7 +762,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
@@ -798,7 +801,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
@@ -846,7 +849,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
@@ -897,7 +900,7 @@ mod tests {
             user: "safe".to_string(),
             number: 1,
             port: 8080,
-            rpc_port: 8081,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
