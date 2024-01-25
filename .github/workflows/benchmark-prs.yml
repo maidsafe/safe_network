@@ -47,7 +47,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         env:
           SN_LOG: "all"
         with:

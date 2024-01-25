@@ -62,7 +62,7 @@ jobs:
       - name: Start a local network
         env:
           SN_LOG: "all"
-        uses: jacderida/sn-local-testnet-action@build-node-manager
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
