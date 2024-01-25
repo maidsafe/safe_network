@@ -4753,7 +4753,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.15"
+version = "0.89.16"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4792,7 +4792,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.102.9"
+version = "0.102.10"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4834,7 +4834,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "blsttc",
  "clap 4.4.18",
@@ -4879,7 +4879,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.12.37"
+version = "0.12.38"
 dependencies = [
  "async-trait",
  "backoff",
@@ -4913,7 +4913,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.103.13"
+version = "0.103.14"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4965,7 +4965,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -4991,7 +4991,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "clap 4.4.18",
  "libp2p 0.53.2",
@@ -5005,7 +5005,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5049,7 +5049,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.3.34"
+version = "0.3.35"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
@@ -5073,7 +5073,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.14.41"
+version = "0.14.42"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -5472,7 +5472,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "dirs-next",
  "reqwest",

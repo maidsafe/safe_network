@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.11.0...sn_protocol-v0.11.1) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
 ## [0.11.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.10.14...sn_protocol-v0.11.0) - 2024-01-24
 
 ### Added

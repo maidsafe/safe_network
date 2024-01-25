@@ -2972,6 +2972,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(release)* sn_cli-v0.89.14/sn_networking-v0.12.37/sn_faucet-v0.3.14/sn_client-v0.102.9
 
+## [0.103.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.13...sn_node-v0.103.14) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
