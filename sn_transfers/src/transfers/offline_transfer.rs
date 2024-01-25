@@ -39,6 +39,83 @@ pub struct OfflineTransfer {
     pub all_spend_requests: Vec<SignedSpend>,
 }
 
+impl OfflineTransfer {
+    pub fn from_transaction(
+        signed_spends: BTreeSet<SignedSpend>,
+        tx: Transaction,
+        change_id: UniquePubkey,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    ) -> Result<Self> {
+        let cash_note_builder =
+            CashNoteBuilder::new(tx.clone(), output_details, signed_spends.clone());
+
+        // Perform validations of input tx and signed spends,
+        // as well as building the output CashNotes.
+        let mut created_cash_notes: Vec<_> = cash_note_builder
+            .build()?
+            .into_iter()
+            .map(|(cash_note, _)| cash_note)
+            .collect();
+
+        let mut change_cash_note = None;
+        created_cash_notes.retain(|created| {
+            if created.unique_pubkey() == change_id {
+                change_cash_note = Some(created.clone());
+                false
+            } else {
+                true
+            }
+        });
+
+        Ok(Self {
+            tx,
+            created_cash_notes,
+            change_cash_note,
+            all_spend_requests: signed_spends.into_iter().collect(),
+        })
+    }
+
+    /// A function for creating an offline transfer of tokens.
+    /// This is done by creating new cash_notes to the recipients (and a change cash_note if any)
+    /// by selecting from the available input cash_notes, and creating the necessary
+    /// spends to do so.
+    ///
+    /// Those signed spends are found in each new cash_note, and must be uploaded to the network
+    /// for the transaction to take effect.
+    /// The peers will validate each signed spend they receive, before accepting it.
+    /// Once enough peers have accepted all the spends of the transaction, and serve
+    /// them upon request, the transaction will be completed.
+    pub fn new(
+        available_cash_notes: CashNotesAndSecretKey,
+        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
+        change_to: MainPubkey,
+        reason_hash: Hash,
+    ) -> Result<Self> {
+        let total_output_amount = recipients
+            .iter()
+            .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
+                total.checked_add(*amount)
+            })
+            .ok_or_else(|| {
+                Error::CashNoteReissueFailed(
+                    "Overflow occurred while summing the amounts for the recipients.".to_string(),
+                )
+            })?;
+
+        // We need to select the necessary number of cash_notes from those that we were passed.
+        let (cash_notes_to_spend, change_amount) =
+            select_inputs(available_cash_notes, total_output_amount)?;
+
+        let selected_inputs = TransferInputs {
+            cash_notes_to_spend,
+            recipients,
+            change: (change_amount, change_to),
+        };
+
+        create_offline_transfer_with(selected_inputs, reason_hash)
+    }
+}
+
 /// The input details necessary to
 /// carry out a transfer of tokens.
 #[derive(Debug)]
@@ -50,46 +127,6 @@ struct TransferInputs {
     pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input cash_notes.
     pub change: (NanoTokens, MainPubkey),
-}
-
-/// A function for creating an offline transfer of tokens.
-/// This is done by creating new cash_notes to the recipients (and a change cash_note if any)
-/// by selecting from the available input cash_notes, and creating the necessary
-/// spends to do so.
-///
-/// Those signed spends are found in each new cash_note, and must be uploaded to the network
-/// for the transaction to take effect.
-/// The peers will validate each signed spend they receive, before accepting it.
-/// Once enough peers have accepted all the spends of the transaction, and serve
-/// them upon request, the transaction will be completed.
-pub fn create_offline_transfer(
-    available_cash_notes: CashNotesAndSecretKey,
-    recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
-    change_to: MainPubkey,
-    reason_hash: Hash,
-) -> Result<OfflineTransfer> {
-    let total_output_amount = recipients
-        .iter()
-        .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
-            total.checked_add(*amount)
-        })
-        .ok_or_else(|| {
-            Error::CashNoteReissueFailed(
-                "Overflow occurred while summing the amounts for the recipients.".to_string(),
-            )
-        })?;
-
-    // We need to select the necessary number of cash_notes from those that we were passed.
-    let (cash_notes_to_spend, change_amount) =
-        select_inputs(available_cash_notes, total_output_amount)?;
-
-    let selected_inputs = TransferInputs {
-        cash_notes_to_spend,
-        recipients,
-        change: (change_amount, change_to),
-    };
-
-    create_offline_transfer_with(selected_inputs, reason_hash)
 }
 
 /// A function for creating an unsigned transfer of tokens.
@@ -128,40 +165,6 @@ pub fn create_unsigned_transfer(
 
     // Get the unsigned Spends.
     tx_builder.build_unsigned_transfer(reason_hash, network_royalties, change_id)
-}
-
-pub fn offline_transfer_from_transaction(
-    signed_spends: BTreeSet<SignedSpend>,
-    tx: Transaction,
-    change_id: UniquePubkey,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
-) -> Result<OfflineTransfer> {
-    let cash_note_builder = CashNoteBuilder::new(tx.clone(), output_details, signed_spends.clone());
-
-    // Perform validations of input tx and signed spends,
-    // as well as building the output CashNotes.
-    let mut created_cash_notes: Vec<_> = cash_note_builder
-        .build()?
-        .into_iter()
-        .map(|(cash_note, _)| cash_note)
-        .collect();
-
-    let mut change_cash_note = None;
-    created_cash_notes.retain(|created| {
-        if created.unique_pubkey() == change_id {
-            change_cash_note = Some(created.clone());
-            false
-        } else {
-            true
-        }
-    });
-
-    Ok(OfflineTransfer {
-        tx,
-        created_cash_notes,
-        change_cash_note,
-        all_spend_requests: signed_spends.into_iter().collect(),
-    })
 }
 
 /// Select the necessary number of cash_notes from those that we were passed.

@@ -9,8 +9,8 @@ use super::{
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
-        get_unconfirmed_spend_requests, load_cash_notes_from_disk, load_created_cash_note,
-        remove_cash_notes, remove_unconfirmed_spend_requests, store_created_cash_notes,
+        get_unconfirmed_spend_requests, load_created_cash_note, remove_cash_notes,
+        remove_unconfirmed_spend_requests, store_created_cash_notes,
         store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
@@ -20,10 +20,7 @@ use super::{
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
-    transfers::{
-        create_offline_transfer, offline_transfer_from_transaction, CashNotesAndSecretKey,
-        OfflineTransfer,
-    },
+    transfers::{CashNotesAndSecretKey, OfflineTransfer},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
     MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
     WalletError, NETWORK_ROYALTIES_PK,
@@ -111,9 +108,12 @@ impl LocalWallet {
         )
     }
 
-    /// Remove CashNote from available_cash_notes and add it to spent_cash_notes.
-    pub fn mark_note_as_spent(&mut self, cash_note_id: UniquePubkey) {
-        self.watchonly_wallet.mark_notes_as_spent(&[cash_note_id]);
+    /// Remove referenced CashNotes from available_cash_notes
+    pub fn mark_notes_as_spent<'a, T>(&mut self, unique_pubkeys: T)
+    where
+        T: IntoIterator<Item = &'a UniquePubkey>,
+    {
+        self.watchonly_wallet.mark_notes_as_spent(unique_pubkeys);
     }
 
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
@@ -122,9 +122,7 @@ impl LocalWallet {
 
     /// Try to load any new cash_notes from the `cash_notes dir` in the wallet dir.
     pub fn try_load_cash_notes(&mut self) -> Result<()> {
-        let deposited = load_cash_notes_from_disk(self.watchonly_wallet.wallet_dir())?;
-        self.deposit_and_store_to_disk(&deposited)?;
-        Ok(())
+        self.watchonly_wallet.try_load_cash_notes()
     }
 
     /// Loads a serialized wallet from a path and given main key.
@@ -323,7 +321,7 @@ impl LocalWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let transfer = create_offline_transfer(
+        let transfer = OfflineTransfer::new(
             available_cash_notes,
             to_unique_keys,
             self.address(),
@@ -347,7 +345,7 @@ impl LocalWallet {
         output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
     ) -> Result<Vec<CashNote>> {
         let transfer =
-            offline_transfer_from_transaction(signed_spends, tx, change_id, output_details)?;
+            OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
 
         let created_cash_notes = transfer.created_cash_notes.clone();
 
@@ -419,7 +417,7 @@ impl LocalWallet {
         debug!("Available CashNotes: {:#?}", available_cash_notes);
         let reason_hash = Default::default();
         let start = Instant::now();
-        let offline_transfer = create_offline_transfer(
+        let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
             recipients,
             self.address(),
@@ -614,11 +612,8 @@ mod tests {
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
-            data_payments::PaymentQuote,
-            local_store::WALLET_DIR_NAME,
-            wallet_file::{get_wallet, store_wallet},
-            watch_only::WatchOnlyWallet,
-            KeyLessWallet,
+            data_payments::PaymentQuote, local_store::WALLET_DIR_NAME, wallet_file::store_wallet,
+            watch_only::WatchOnlyWallet, KeyLessWallet,
         },
         MainSecretKey, NanoTokens, SpendAddress,
     };
@@ -641,7 +636,8 @@ mod tests {
 
         store_wallet(&wallet_dir, &wallet)?;
 
-        let deserialized = get_wallet(&wallet_dir)?.expect("There to be a wallet on disk.");
+        let deserialized =
+            KeyLessWallet::load_from(&wallet_dir)?.expect("There to be a wallet on disk.");
 
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());

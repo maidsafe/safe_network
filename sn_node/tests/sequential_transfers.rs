@@ -13,7 +13,7 @@ use common::client::{get_gossip_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
 use sn_logging::LogBuilder;
-use sn_transfers::{create_offline_transfer, rng, DerivationIndex, Hash, NanoTokens};
+use sn_transfers::{rng, DerivationIndex, Hash, NanoTokens, OfflineTransfer};
 use tracing::info;
 
 #[tokio::test]
@@ -89,9 +89,9 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let reason_hash = Hash::default();
 
     let transfer_to_2 =
-        create_offline_transfer(some_cash_notes, vec![to2_unique_key], to1, reason_hash).unwrap();
+        OfflineTransfer::new(some_cash_notes, vec![to2_unique_key], to1, reason_hash).unwrap();
     let transfer_to_3 =
-        create_offline_transfer(same_cash_notes, vec![to3_unique_key], to1, reason_hash).unwrap();
+        OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason_hash).unwrap();
 
     // send both transfers to the network
     // upload won't error out, only error out during verification.

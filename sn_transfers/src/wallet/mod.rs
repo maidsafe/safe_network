@@ -59,8 +59,8 @@ mod local_store;
 mod wallet_file;
 mod watch_only;
 
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use crate::{NanoTokens, UniquePubkey};
+use wallet_file::wallet_file_name;
 
 pub use self::{
     data_payments::{Payment, PaymentQuote},
@@ -71,7 +71,8 @@ pub use self::{
 };
 pub(crate) use keys::store_new_keypair;
 
-use crate::{NanoTokens, UniquePubkey};
+use serde::{Deserialize, Serialize};
+use std::{collections::BTreeMap, fs, path::Path};
 
 #[derive(Default, Serialize, Deserialize)]
 pub(super) struct KeyLessWallet {
@@ -79,6 +80,50 @@ pub(super) struct KeyLessWallet {
 }
 
 impl KeyLessWallet {
+    /// Returns `Some(KeyLessWallet)` or None if file doesn't exist.
+    /// If the file is being written to, it will wait until the write is complete before reading.
+    pub fn load_from(wallet_dir: &Path) -> Result<Option<Self>> {
+        let path = wallet_file_name(wallet_dir);
+        if !path.is_file() {
+            return Ok(None);
+        }
+
+        let mut attempts = 0;
+        let mut wallet: Option<Self> = None;
+
+        // Attempt to read the file and deserialize it. If the file is currently being written to,
+        // it will wait and try again. After 10 attempts, it will return an error.
+        while wallet.is_none() && attempts < 10 {
+            info!("Attempting to read wallet file");
+            match fs::read(&path) {
+                Ok(data) => match rmp_serde::from_slice(&data) {
+                    Ok(deserialized_wallet) => wallet = Some(deserialized_wallet),
+                    Err(_) => {
+                        attempts += 1;
+                        info!("Attempt {attempts} to read wallet file failed... ");
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                    }
+                },
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    attempts += 1;
+                    info!("Attempt {attempts} to read wallet file failed... ");
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                Err(e) => return Err(Error::from(e)),
+            }
+        }
+
+        // If the file could not be read and deserialized after 10 attempts, return an error.
+        if wallet.is_none() {
+            return Err(Error::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Could not read and deserialize wallet file after multiple attempts",
+            )));
+        }
+
+        Ok(wallet)
+    }
+
     pub fn balance(&self) -> NanoTokens {
         let mut balance = 0;
         for (_unique_pubkey, value) in self.available_cash_notes.iter() {

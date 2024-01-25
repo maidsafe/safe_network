@@ -11,7 +11,7 @@ use super::{
     keys::{get_main_pubkey, store_new_pubkey},
     local_store::WalletExclusiveAccess,
     wallet_file::{
-        get_wallet, load_created_cash_note, store_created_cash_notes, store_wallet,
+        load_cash_notes_from_disk, load_created_cash_note, store_created_cash_notes, store_wallet,
         wallet_lockfile_name,
     },
     KeyLessWallet,
@@ -25,7 +25,7 @@ use crate::{
 use fs2::FileExt;
 use serde::Serialize;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
     path::{Path, PathBuf},
 };
@@ -99,6 +99,22 @@ impl WatchOnlyWallet {
         let _ = fs::remove_file(payment_file_path);
     }
 
+    /// Try to load any new cash_notes from the `cash_notes` dir in the wallet dir.
+    pub fn try_load_cash_notes(&mut self) -> Result<()> {
+        let cash_notes = load_cash_notes_from_disk(&self.wallet_dir)?;
+        let spent_unique_pubkeys: BTreeSet<_> = cash_notes
+            .iter()
+            .flat_map(|cn| cn.src_tx.inputs.iter().map(|input| input.unique_pubkey()))
+            .collect();
+        self.deposit(&cash_notes)?;
+        self.mark_notes_as_spent(spent_unique_pubkeys);
+
+        let exclusive_access = self.lock()?;
+        self.store(exclusive_access)?;
+
+        Ok(())
+    }
+
     /// Loads a serialized wallet from a given path and main pub key.
     pub fn load_from(wallet_dir: &Path, main_pubkey: MainPubkey) -> Result<Self> {
         let main_pubkey = match get_main_pubkey(wallet_dir)? {
@@ -113,26 +129,15 @@ impl WatchOnlyWallet {
                 main_pubkey
             }
         };
-        let keyless_wallet = match get_wallet(wallet_dir)? {
-            Some(keyless_wallet) => {
-                debug!(
-                    "Loaded wallet from {wallet_dir:#?} with balance {:?}",
-                    keyless_wallet.balance()
-                );
-                keyless_wallet
-            }
-            None => {
-                let keyless_wallet = KeyLessWallet::default();
-                store_wallet(wallet_dir, &keyless_wallet)?;
-                keyless_wallet
-            }
-        };
+        Self::load_keyless_wallet(wallet_dir, main_pubkey)
+    }
 
-        Ok(Self {
-            main_pubkey,
-            wallet_dir: wallet_dir.to_path_buf(),
-            keyless_wallet,
-        })
+    /// Loads a serialized wallet from a given path, no additional element will
+    /// be added to the provided path and strictly taken as the wallet files location.
+    pub fn load_from_path(wallet_dir: &Path) -> Result<Self> {
+        let main_pubkey =
+            get_main_pubkey(wallet_dir)?.ok_or(Error::PubkeyNotFound(wallet_dir.to_path_buf()))?;
+        Self::load_keyless_wallet(wallet_dir, main_pubkey)
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -200,7 +205,7 @@ impl WatchOnlyWallet {
     }
 
     /// Reloads the wallet from disk.
-    /// Note: this will drop any data held in memory and completely replaced with what's read fom disk.
+    /// FIXME: this will drop any data held in memory and completely replaced with what's read fom disk.
     pub fn reload(&mut self) -> Result<()> {
         *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
         Ok(())
@@ -278,6 +283,30 @@ impl WatchOnlyWallet {
     }
 
     // Helpers
+
+    // Read the KeyLessWallet from disk, or build an empty one, and return WatchOnlyWallet
+    fn load_keyless_wallet(wallet_dir: &Path, main_pubkey: MainPubkey) -> Result<Self> {
+        let keyless_wallet = match KeyLessWallet::load_from(wallet_dir)? {
+            Some(keyless_wallet) => {
+                debug!(
+                    "Loaded wallet from {wallet_dir:#?} with balance {:?}",
+                    keyless_wallet.balance()
+                );
+                keyless_wallet
+            }
+            None => {
+                let keyless_wallet = KeyLessWallet::default();
+                store_wallet(wallet_dir, &keyless_wallet)?;
+                keyless_wallet
+            }
+        };
+
+        Ok(Self {
+            main_pubkey,
+            wallet_dir: wallet_dir.to_path_buf(),
+            keyless_wallet,
+        })
+    }
 
     // Stores the wallet to disk.
     // This requires having exclusive access to the wallet to prevent concurrent processes from writing to it

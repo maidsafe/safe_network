@@ -211,7 +211,7 @@ impl WalletClient {
     /// Remove CashNote from available_cash_notes
     //TODO: Unused
     pub fn mark_note_as_spent(&mut self, cash_note_key: UniquePubkey) {
-        self.wallet.mark_note_as_spent(cash_note_key);
+        self.wallet.mark_notes_as_spent(&[cash_note_key]);
     }
 
     /// Send tokens to another wallet. Can also verify the store has been successful.
@@ -565,7 +565,7 @@ impl WalletClient {
             if let WalletError::DoubleSpendAttemptedForCashNotes(spent_cash_notes) = &error {
                 for cash_note_key in spent_cash_notes {
                     warn!("Removing double spends CashNote from wallet: {cash_note_key:?}");
-                    self.wallet.mark_note_as_spent(*cash_note_key);
+                    self.wallet.mark_notes_as_spent([cash_note_key]);
                     self.wallet.clear_specific_spend_request(*cash_note_key);
                 }
             }
