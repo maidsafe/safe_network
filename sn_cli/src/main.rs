@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -18,7 +18,7 @@ use crate::{
         files::files_cmds,
         gossipsub::gossipsub_cmds,
         register::register_cmds,
-        wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
+        wallet::hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
         SubCmd,
     },
 };
@@ -76,9 +76,9 @@ async fn main() -> Result<()> {
     if let SubCmd::Wallet(cmds) = &opt.cmd {
         if let WalletCmds::Address
         | WalletCmds::Balance { .. }
+        | WalletCmds::Transaction { .. }
         | WalletCmds::Deposit { .. }
         | WalletCmds::Create { .. }
-        | WalletCmds::Transaction { .. }
         | WalletCmds::Sign { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
