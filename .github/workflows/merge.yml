@@ -11,6 +11,7 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
+  WINSW_URL: https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe
 
 jobs:
   cargo-udeps:
@@ -121,6 +122,68 @@ jobs:
           # we do many more runs on the nightly run
           PROPTEST_CASES: 50 
 
+  node-manager-unit-tests:
+    name: node manager unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: cargo cache registry, index and build
+        uses: actions/cache@v2.1.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
+      - shell: bash
+        run: cargo test --release --bin safenode-manager
+
+  node-manager-integration-tests:
+    name: node manager integration tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, elevated: sudo env PATH="$PATH" }
+          - { os: macos-latest, elevated: sudo }
+          - { os: windows-latest }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - shell: bash
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        run: |
+          ${{ matrix.elevated }} rustup default stable
+          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
+
+      # A simple test seemed to confirm that the Powershell step runs as admin by default.
+      - name: run integration test in powershell
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          curl -L -o WinSW.exe $env:WINSW_URL
+
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
+          Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
+          $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
+
+          cargo test --release --package sn-node-manager --test e2e -- --nocapture
+
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests
@@ -153,6 +216,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -201,10 +265,9 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 10
-
-      ## Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
-
-      # runs on linux/mac
+      #
+      # Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
+      #
       - name: Start a client to create a register writable by anyone
         id: register-address
         if: matrix.os != 'windows-latest' 
@@ -213,7 +276,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      # runs on windows
       - name: Start a client to create a register writable by anyone
         id: register-address-windows
         if: matrix.os == 'windows-latest' 
@@ -237,11 +299,9 @@ jobs:
       - name: Delete client subdir to generate new client
         shell: bash
         run: rm -rf ${{ matrix.safe_path }}/client
-
-
-      ## Next four steps are same with a slight difference in the which output step they read from
-
-      # runs on linux/mac
+      #
+      # Next four steps are same with a slight difference in the which output step they read from
+      #
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os != 'windows-latest' 
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
@@ -256,7 +316,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      # runs on Windows
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os == 'windows-latest' 
         run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
@@ -299,6 +358,10 @@ jobs:
 
       - name: Build gossipsub testing executable
         run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Start a local network
@@ -309,9 +372,13 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
+        if: matrix.os == 'windows-latest'
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
+        env:
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 20
 
       - name: Stop the local network and upload logs
@@ -343,6 +410,10 @@ jobs:
 
       - name: Build testing executable
         run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Start a local network
@@ -353,6 +424,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -369,20 +441,22 @@ jobs:
         run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
       - name: execute the spend tests
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
       - name: execute the storage payment tests
         run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
-
 
       - name: Stop the local network and upload logs
         if: always()
@@ -421,6 +495,10 @@ jobs:
 
       - name: Build churn tests
         run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Start a local network
@@ -431,6 +509,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash
@@ -448,6 +527,7 @@ jobs:
           TEST_DURATION_MINS: 5
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Stop the local network and upload logs
@@ -540,7 +620,11 @@ jobs:
           timeout-minutes: 30
 
         - name: Build data location and routing table tests
-          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run  
+          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
+          env:
+            # only set the target dir for windows to bypass the linker issue.
+            # happens if we build the node manager via testnet action
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 30
 
         - name: Start a local network
@@ -551,6 +635,7 @@ jobs:
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
 
         - name: Check SAFE_PEERS was set
           shell: bash
@@ -564,6 +649,8 @@ jobs:
 
         - name: Verify the routing tables of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          env:
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
       
         - name: Verify the location of the data on the network
@@ -571,10 +658,13 @@ jobs:
           env:
             CHURN_COUNT: 3
             SN_LOG: "all"
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
 
         - name: Verify the routing tables of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          env:
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
 
         - name: Stop the local network and upload logs
@@ -770,6 +860,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
 
       - name: Check SAFE_PEERS was set
         shell: bash

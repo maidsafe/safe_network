@@ -38,6 +38,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Check contact peer
         shell: bash
@@ -179,6 +180,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
@@ -225,6 +227,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       # This should be first to avoid slow reward acceptance etc
       - name: execute the nodes rewards tests
@@ -309,6 +312,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
+          build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
@@ -428,6 +432,7 @@ jobs:
             node-path: target/release/safenode
             faucet-path: target/release/faucet
             platform: ${{ matrix.os }}
+            build: true
 
         - name: Verify the Routing table of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture

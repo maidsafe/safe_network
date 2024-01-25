@@ -61,7 +61,6 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 - [Peers Acquisition](https://github.com/maidsafe/sn_peers_acqisition/blob/master/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/sn_build_info/blob/master/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
-
 ## Run your MaidSafe Local Test Network in 4 easy Steps
 Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
 <br>
@@ -92,8 +91,6 @@ killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --
 ```
 
 ## Token transfers
-
-Start a local network and a faucet as described above.
 
 - Get your wallet address
   `cargo run --release --bin safe -- wallet address`
@@ -215,6 +212,7 @@ Feel free to clone and modify this project. Pull requests are welcome.<br>You ca
 ## Conventional Commits
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
+
 
 ## License
 
