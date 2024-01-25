@@ -344,8 +344,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -357,20 +356,24 @@ jobs:
         run: cargo build --release --bin safenode --bin faucet
         timeout-minutes: 30
 
-      # - name: Build gossipsub testing executable
-      #   run: cargo test \
-      #     --release --package sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
-      #   timeout-minutes: 30
+      - name: Build gossipsub testing executable
+        run: cargo test \
+          --release --package sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 30
 
-      # - name: Start a local network
-      #   uses: jacderida/sn-local-testnet-action@build-node-manager
-      #   with:
-      #     action: start
-      #     interval: 2000
-      #     node-path: target/release/safenode
-      #     faucet-path: target/release/faucet
-      #     platform: ${{ matrix.os }}
-      #     build: true
+      - name: Start a local network
+        uses: jacderida/sn-local-testnet-action@build-node-manager
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+          build: true
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         if: matrix.os != 'windows-latest'
@@ -378,11 +381,9 @@ jobs:
           cargo test
           --release --package sn_node --features local-discovery
           --test msgs_over_gossipsub -- --nocapture
+        env:
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 20
-
-      # - name: Check for file locking issues
-      #   run: |
-      #     Get-Process | Where-Object {$_.Modules -match 'safenode.exe'}
 
       - name: Gossipsub - nodes to subscribe to topics, and publish messages 
         if: matrix.os == 'windows-latest'
@@ -390,6 +391,8 @@ jobs:
           cargo test `
           --release --package sn_node --features local-discovery `
           --test msgs_over_gossipsub -- --nocapture
+        env:
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 20
 
       - name: Stop the local network and upload logs
@@ -421,6 +424,10 @@ jobs:
 
       - name: Build testing executable
         run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Start a local network
@@ -448,18 +455,21 @@ jobs:
         run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
       - name: execute the spend tests
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
       - name: execute the storage payment tests
         run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
       - name: Stop the local network and upload logs
@@ -499,6 +509,10 @@ jobs:
 
       - name: Build churn tests
         run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Start a local network
@@ -527,6 +541,7 @@ jobs:
           TEST_DURATION_MINS: 5
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
       - name: Stop the local network and upload logs
@@ -619,7 +634,11 @@ jobs:
           timeout-minutes: 30
 
         - name: Build data location and routing table tests
-          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run  
+          run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
+          env:
+            # only set the target dir for windows to bypass the linker issue.
+            # happens if we build the node manager via testnet action
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 30
 
         - name: Start a local network
@@ -644,6 +663,8 @@ jobs:
 
         - name: Verify the routing tables of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          env:
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
       
         - name: Verify the location of the data on the network
@@ -651,10 +672,13 @@ jobs:
           env:
             CHURN_COUNT: 3
             SN_LOG: "all"
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
 
         - name: Verify the routing tables of the nodes
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture 
+          env:
+            CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
 
         - name: Stop the local network and upload logs
