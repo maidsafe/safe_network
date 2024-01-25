@@ -31,7 +31,6 @@ pub use genesis::{
     is_genesis_parent_tx, load_genesis_wallet, Error as GenesisError, GENESIS_CASHNOTE,
     GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK,
 };
-pub use transfers::create_offline_transfer;
 pub use wallet::bls_secret_from_hex;
 pub use wallet::{
     Error as WalletError, LocalWallet, Payment, PaymentQuote, Result as WalletResult,

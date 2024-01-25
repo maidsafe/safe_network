@@ -30,8 +30,5 @@
 mod offline_transfer;
 mod transfer;
 
-pub use offline_transfer::{
-    create_offline_transfer, create_unsigned_transfer, offline_transfer_from_transaction,
-    CashNotesAndSecretKey, OfflineTransfer,
-};
+pub use offline_transfer::{create_unsigned_transfer, CashNotesAndSecretKey, OfflineTransfer};
 pub use transfer::{CashNoteRedemption, Transfer};

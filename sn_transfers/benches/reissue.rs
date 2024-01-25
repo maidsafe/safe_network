@@ -10,8 +10,8 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
-    create_first_cash_note_from_key, create_offline_transfer, rng, CashNote, DerivationIndex, Hash,
-    MainSecretKey, NanoTokens,
+    create_first_cash_note_from_key, rng, CashNote, DerivationIndex, Hash, MainSecretKey,
+    NanoTokens, OfflineTransfer,
 };
 use std::collections::BTreeSet;
 
@@ -34,7 +34,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
 
     // transfer to N_OUTPUTS recipients
     let zero = DerivationIndex([0u8; 32]);
-    let offline_transfer = create_offline_transfer(
+    let offline_transfer = OfflineTransfer::new(
         vec![(starting_cashnote, Some(starting_main_key.derive_key(&zero)))],
         recipients,
         starting_main_key.main_pubkey(),
@@ -89,7 +89,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
     // transfer to N_OUTPUTS recipients derived from recipient_of_100_mainkey
     let derive = starting_cashnote.derivation_index();
-    let offline_transfer = create_offline_transfer(
+    let offline_transfer = OfflineTransfer::new(
         vec![(
             starting_cashnote,
             Some(starting_main_key.derive_key(&derive)),
@@ -135,7 +135,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     )];
 
     // create transfer to merge all of the cashnotes into one
-    let many_to_one_transfer = create_offline_transfer(
+    let many_to_one_transfer = OfflineTransfer::new(
         many_cashnotes,
         one_single_recipient,
         starting_main_key.main_pubkey(),

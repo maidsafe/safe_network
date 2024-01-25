@@ -42,6 +42,9 @@ pub enum Error {
     /// Main pub key doesn't match the key found when loading wallet from path
     #[error("Main pub key doesn't match the key found when loading wallet from path: {0:#?}")]
     PubKeyMismatch(std::path::PathBuf),
+    /// Main pub key not found when loading wallet from path
+    #[error("Main pub key not found: {0:#?}")]
+    PubkeyNotFound(std::path::PathBuf),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,
