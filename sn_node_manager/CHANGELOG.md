@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.20](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.19...sn-node-manager-v0.1.20) - 2024-01-25
+
+### Fixed
+- *(manager)* increase port unbinding time
+
+### Other
+- rename sn_node_manager crate
+- *(manager)* rename node manager crate
+
 ## [0.1.19](https://github.com/maidsafe/sn-node-manager/compare/v0.1.18...v0.1.19) - 2024-01-23
 
 ### Fixed
