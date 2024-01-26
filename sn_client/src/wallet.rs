@@ -663,6 +663,27 @@ impl WalletClient {
 impl Client {
     /// Send spend requests to the network.
     /// This can optionally verify the spends have been correctly stored before returning
+    ///
+    /// # Arguments
+    /// * spend_requests - [Iterator](Iterator)<Item = [SignedSpend](SignedSpend)>
+    /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// use bls::SecretKey;
+    /// use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// // An example of sending storage payment transfers over the network with validation
+    /// wallet_client.send_spends(wallet.unconfirmed_spend_requests().iter(),true)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn send_spends(
         &self,
         spend_requests: impl Iterator<Item = &SignedSpend>,
