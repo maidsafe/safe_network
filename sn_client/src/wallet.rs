@@ -734,6 +734,42 @@ impl Client {
     }
 
     /// Receive a Transfer, verify and redeem CashNotes from the Network.
+    ///
+    /// # Arguments
+    /// * transfer: &[Transfer](Transfer) - Borrowed value for [Transfer](Transfer)
+    /// * wallet: &[LocalWallet](LocalWallet) - Borrowed value for [LocalWallet](LocalWallet)
+    ///
+    /// # Return Value
+    /// * [WalletResult](WalletResult)<[Vec](Vec)<[CashNote](CashNote)>>
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// use bls::SecretKey;
+    /// use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use tracing::error;
+    /// use sn_transfers::Transfer;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// let transfer = Transfer::from_hex("13abc").unwrap();
+    /// // An example for using client.receive() for cashNotes
+    /// let cashnotes = match client.receive(&transfer, &wallet).await {
+    ///                 Ok(cashnotes) => cashnotes,
+    ///                 Err(err) => {
+    ///                     println!("Failed to verify and redeem transfer: {err:?}");
+    ///                     error!("Failed to verify and redeem transfer: {err:?}");
+    ///                     return Err(err.into());
+    ///                 }
+    ///             };
+    /// # Ok(())
+    ///
+    /// # }
+    /// ```
     pub async fn receive(
         &self,
         transfer: &Transfer,
