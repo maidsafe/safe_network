@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.21](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.20...sn_faucet-v0.3.21) - 2024-01-26
+
+### Other
+- update dependencies
+
 ## [0.3.20](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.19...sn_faucet-v0.3.20) - 2024-01-25
 
 ### Other
