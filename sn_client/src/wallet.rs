@@ -665,8 +665,9 @@ impl Client {
     /// This can optionally verify the spends have been correctly stored before returning
     ///
     /// # Arguments
-    /// * spend_requests - [Iterator](Iterator)<Item = [SignedSpend](SignedSpend)>
+    /// * spend_requests - [Iterator](Iterator)<[SignedSpend](SignedSpend)>
     /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
+    ///
     /// # Example
     /// ```no_run
     /// use sn_client::{Client, WalletClient, Error};
@@ -759,7 +760,7 @@ impl Client {
     /// let transfer = Transfer::from_hex("13abc").unwrap();
     /// // An example for using client.receive() for cashNotes
     /// let cash_notes = match client.receive(&transfer, &wallet).await {
-    ///                 Ok(cashnotes) => cashnotes,
+    ///                 Ok(cash_notes) => cash_notes,
     ///                 Err(err) => {
     ///                     println!("Failed to verify and redeem transfer: {err:?}");
     ///                     error!("Failed to verify and redeem transfer: {err:?}");
@@ -849,6 +850,42 @@ impl Client {
 
 /// Use the client to send a CashNote from a local wallet to an address.
 /// This marks the spent CashNote as spent in the Network
+///
+/// # Arguments
+/// * from - [LocalWallet](LocalWallet)
+/// * amount - [NanoTokens](NanoTokens)
+/// * to - [MainPubkey](MainPubkey)
+/// * client - [Client](Client)
+/// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
+///
+/// # Return value
+/// [Result](Result)<[CashNote](CashNote)>
+///
+/// # Example
+/// ```no_run
+/// use sn_client::{Client, WalletClient, Error};
+/// # use tempfile::TempDir;
+/// use bls::SecretKey;
+/// use sn_transfers::{LocalWallet, MainSecretKey};
+/// # #[tokio::main]
+/// # async fn main() -> Result<(),Error>{
+/// use tracing::error;
+/// use sn_client::send;
+/// use sn_transfers::Transfer;
+/// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+/// # let tmp_path = TempDir::new()?.path().to_owned();
+/// let mut first_wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+/// let mut second_wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+///     let tokens = send(
+///         first_wallet, // From
+///         second_wallet.balance(), // To
+///         second_wallet.address(), // Amount
+///         &client, // Client
+///         true, // Verification
+///     ).await?;
+/// # Ok(())
+/// # }
+/// ```
 pub async fn send(
     from: LocalWallet,
     amount: NanoTokens,
