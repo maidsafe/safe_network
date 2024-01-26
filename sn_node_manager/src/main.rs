@@ -33,12 +33,33 @@ use std::str::FromStr;
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
+#[derive(Clone, PartialEq)]
+enum VerbosityLevel {
+    Minimal,
+    Normal,
+    Full,
+}
+
+impl From<u8> for VerbosityLevel {
+    fn from(verbosity: u8) -> Self {
+        match verbosity {
+            1 => VerbosityLevel::Minimal,
+            2 => VerbosityLevel::Normal,
+            3 => VerbosityLevel::Full,
+            _ => VerbosityLevel::Normal,
+        }
+    }
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Cmd {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
+
+    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
+    verbose: u8,
 }
 
 #[derive(Subcommand, Debug)]
@@ -292,6 +313,8 @@ pub enum SubCmd {
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
+    let verbosity = VerbosityLevel::from(args.verbose);
+
     match args.cmd {
         SubCmd::Add {
             count,
@@ -309,10 +332,12 @@ async fn main() -> Result<()> {
                 return Err(eyre!("The add command must run as the root user"));
             }
 
-            println!("=================================================");
-            println!("              Add Safenode Services              ");
-            println!("=================================================");
-            println!("{} service(s) to be added", count.unwrap_or(1));
+            if verbosity != VerbosityLevel::Minimal {
+                println!("=================================================");
+                println!("              Add Safenode Services              ");
+                println!("=================================================");
+                println!("{} service(s) to be added", count.unwrap_or(1));
+            }
 
             let service_user = user.unwrap_or("safe".to_string());
             let service_manager = NodeServiceManager {};
@@ -342,6 +367,7 @@ async fn main() -> Result<()> {
                 &mut node_registry,
                 &service_manager,
                 release_repo,
+                verbosity,
             )
             .await?;
 
@@ -542,9 +568,11 @@ async fn main() -> Result<()> {
                 return Err(eyre!("The start command must run as the root user"));
             }
 
-            println!("=================================================");
-            println!("             Start Safenode Services             ");
-            println!("=================================================");
+            if verbosity != VerbosityLevel::Minimal {
+                println!("=================================================");
+                println!("             Start Safenode Services             ");
+                println!("=================================================");
+            }
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if let Some(ref name) = service_name {
@@ -555,7 +583,7 @@ async fn main() -> Result<()> {
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
                 let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
-                start(node, &NodeServiceManager {}, &rpc_client).await?;
+                start(node, &NodeServiceManager {}, &rpc_client, verbosity).await?;
                 node_registry.save()?;
             } else if let Some(ref peer_id) = peer_id {
                 let peer_id = PeerId::from_str(peer_id)?;
@@ -571,7 +599,7 @@ async fn main() -> Result<()> {
                     })?;
 
                 let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
-                start(node, &NodeServiceManager {}, &rpc_client).await?;
+                start(node, &NodeServiceManager {}, &rpc_client, verbosity).await?;
                 node_registry.save()?;
             } else {
                 let mut failed_services = Vec::new();
@@ -585,6 +613,7 @@ async fn main() -> Result<()> {
                         &mut node_registry.nodes[i],
                         &NodeServiceManager {},
                         &rpc_client,
+                        verbosity.clone(),
                     )
                     .await;
                     match result {
