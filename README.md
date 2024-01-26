@@ -20,7 +20,7 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 ### For Users
 
 - [CLI](https://github.com/maidsafe/safe_network/blob/main/sn_cli/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the safe network. Nodes can be run on comoodity hardware and provide storage space and validation of transactions to the network.
+- [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the safe network. Nodes can be run on commodity hardware and provide storage space and validation of transactions to the network.
 
 ### For Developers
 
@@ -58,7 +58,7 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 - [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
 - [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol used by the safe network.
 - [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The transfers crate, used to send and receive tokens on the network.
-- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acqisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
+- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
 ## Run your MaidSafe Local Test Network in 4 easy Steps
