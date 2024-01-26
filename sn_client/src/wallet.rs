@@ -966,7 +966,51 @@ pub async fn send(
 }
 
 /// Send tokens to another wallet. Can optionally verify the store has been successful.
+///
 /// Verification will be attempted via GET request through a Spend on the network.
+///
+/// # Arguments
+/// * from - [LocalWallet](LocalWallet),
+/// * client - [Client](Client),
+/// * signed_spends - [BTreeSet](BTreeSet)<[SignedSpend](SignedSpend)>,
+/// * transaction - [Transaction](Transaction),
+/// * change_id - [UniquePubkey](UniquePubkey),
+/// * output_details - [BTreeMap](BTreeMap)<[UniquePubkey](UniquePubkey), ([MainPubkey](MainPubkey), [DerivationIndex](DerivationIndex))>,
+/// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
+///
+/// # Return value
+/// [WalletResult](WalletResult)<[CashNote](CashNote)>
+/// # Example
+/// ```no_run
+/// use sn_client::{Client, WalletClient, Error};
+/// # use tempfile::TempDir;
+/// use bls::SecretKey;
+/// use sn_transfers::{LocalWallet, MainSecretKey};
+/// # #[tokio::main]
+/// # async fn main() -> Result<(),Error>{
+/// use std::collections::{BTreeMap, BTreeSet};
+/// use tracing::error;
+/// use sn_transfers::{Transaction, Transfer, UniquePubkey};
+/// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+/// # let tmp_path = TempDir::new()?.path().to_owned();
+/// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+/// let mut wallet_client = WalletClient::new(client.clone(), wallet.clone());///
+/// let transaction = Transaction {inputs: Vec::new(),outputs: Vec::new(),};
+///
+/// println!("Broadcasting the transaction to the network...");
+///  let cash_note = sn_client::broadcast_signed_spends(
+///     wallet,
+///     &client,
+///     BTreeSet::default(),
+///     transaction,
+///     UniquePubkey::new(SecretKey::random()),
+///     BTreeMap::new(),
+///     true
+///  ).await?;
+///
+/// # Ok(())
+/// # }
+/// ```
 pub async fn broadcast_signed_spends(
     from: LocalWallet,
     client: &Client,
