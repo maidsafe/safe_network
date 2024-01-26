@@ -758,7 +758,7 @@ impl Client {
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let transfer = Transfer::from_hex("13abc").unwrap();
     /// // An example for using client.receive() for cashNotes
-    /// let cashnotes = match client.receive(&transfer, &wallet).await {
+    /// let cash_notes = match client.receive(&transfer, &wallet).await {
     ///                 Ok(cashnotes) => cashnotes,
     ///                 Err(err) => {
     ///                     println!("Failed to verify and redeem transfer: {err:?}");
@@ -784,6 +784,37 @@ impl Client {
     }
 
     /// Verify that the spends referred to (in the CashNote) exist on the network.
+    ///
+    /// # Arguments
+    /// * cash_note - [CashNote](CashNote)
+    ///
+    /// # Return value
+    /// [WalletResult](WalletResult)
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// use bls::SecretKey;
+    /// use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use tracing::error;
+    /// use sn_transfers::Transfer;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// let transfer = Transfer::from_hex("").unwrap();
+    /// let cash_notes = client.receive(&transfer, &wallet).await?;
+    /// // Verification:
+    /// for cash_note in cash_notes {
+    ///     println!("{}" , client.verify_cashnote(&cash_note).await.unwrap());
+    /// }
+    /// # Ok(())
+    ///
+    /// # }
+    /// ```
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
