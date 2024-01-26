@@ -556,6 +556,7 @@ async fn main() -> Result<()> {
 
                 let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
                 start(node, &NodeServiceManager {}, &rpc_client).await?;
+                node_registry.save()?;
             } else if let Some(ref peer_id) = peer_id {
                 let peer_id = PeerId::from_str(peer_id)?;
                 let node = node_registry
@@ -571,15 +572,42 @@ async fn main() -> Result<()> {
 
                 let rpc_client = RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
                 start(node, &NodeServiceManager {}, &rpc_client).await?;
+                node_registry.save()?;
             } else {
-                for node in node_registry.nodes.iter_mut() {
-                    let rpc_client =
-                        RpcClient::new(&format!("https://127.0.0.1:{}", node.rpc_port));
-                    start(node, &NodeServiceManager {}, &rpc_client).await?;
+                let mut failed_services = Vec::new();
+                let node_count = node_registry.nodes.len();
+                for i in 0..node_count {
+                    let rpc_client = RpcClient::new(&format!(
+                        "https://127.0.0.1:{}",
+                        node_registry.nodes[i].rpc_port
+                    ));
+                    let result = start(
+                        &mut node_registry.nodes[i],
+                        &NodeServiceManager {},
+                        &rpc_client,
+                    )
+                    .await;
+                    match result {
+                        Ok(()) => {
+                            node_registry.save()?;
+                        }
+                        Err(e) => {
+                            failed_services
+                                .push((node_registry.nodes[i].service_name.clone(), e.to_string()));
+                        }
+                    }
+                }
+
+                if !failed_services.is_empty() {
+                    println!("Failed to start {} service(s):", failed_services.len());
+                    for failed in failed_services.iter() {
+                        println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+                    }
+                    return Err(eyre!("Failed to start one or more services").suggestion(
+                        "However, any services that were successfully started will be usable.",
+                    ));
                 }
             }
-
-            node_registry.save()?;
 
             Ok(())
         }
