@@ -53,13 +53,13 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 
 ### For the Technical
 
-- [Logging](https://github.com/maidsafe/sn_logging/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
-- [Metrics](https://github.com/maidsafe/sn_metrics/README.md) The metrics crate used by the safe network.
-- [Networking](https://github.com/maidsafe/sn_networking/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
-- [Protocol](https://github.com/maidsafe/sn_protocol/README.md) The protocol used by the safe network.
-- [Transfers](https://github.com/maidsafe/sn_transfers/README.md) The transfers crate, used to send and receive tokens on the network.
-- [Peers Acquisition](https://github.com/maidsafe/sn_peers_acqisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
-- [Build Info](https://github.com/maidsafe/sn_build_info/README.md) Small helper used to get the build/commit versioning info for debug purposes.
+- [Logging](https://github.com/maidsafe/safe_network/blob/main/sn_logging/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
+- [Metrics](https://github.com/maidsafe/safe_network/blob/main/sn_metrics/README.md) The metrics crate used by the safe network.
+- [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
+- [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol used by the safe network.
+- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The transfers crate, used to send and receive tokens on the network.
+- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acqisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
+- [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
 ## Run your MaidSafe Local Test Network in 4 easy Steps
 Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
