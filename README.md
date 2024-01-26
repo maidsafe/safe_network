@@ -19,7 +19,7 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/sn_cli/blob/master/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
+- [CLI](https://github.com/maidsafe/safe_network/blob/main/sn_cli/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/sn_node/blob/master/README.md) The backbone of the safe network. Nodes can be run on comoodity hardware and provide storage space and validation of transactions to the network.
 
 ### For Developers
