@@ -54,7 +54,7 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 ### For the Technical
 
 - [Logging](https://github.com/maidsafe/safe_network/blob/main/sn_logging/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
-- [Metrics](https://github.com/maidsafe/safe_network/blob/main/sn_metrics/README.md) The metrics crate used by the safe network.
+- [Metrics](https://github.com/maidsafe/safe_network/blob/main/metrics/README.md) The metrics crate used by the safe network.
 - [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
 - [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol used by the safe network.
 - [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The transfers crate, used to send and receive tokens on the network.
