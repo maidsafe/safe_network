@@ -9,6 +9,7 @@
 use crate::config::create_owned_dir;
 use crate::helpers::download_and_extract_release;
 use crate::service::{ServiceConfig, ServiceControl};
+use crate::VerbosityLevel;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::Multiaddr;
@@ -42,6 +43,7 @@ pub async fn add(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     release_repo: Box<dyn SafeReleaseRepositoryInterface>,
+    verbosity: VerbosityLevel,
 ) -> Result<()> {
     if install_options.genesis {
         if let Some(count) = install_options.count {
@@ -188,11 +190,13 @@ pub async fn add(
         println!("Services Added:");
         for install in added_service_data.iter() {
             println!(" {} {}", "✓".green(), install.0);
-            println!("    - Safenode path: {}", install.1);
-            println!("    - Data path: {}", install.2);
-            println!("    - Log path: {}", install.3);
-            println!("    - Service port: {}", install.4);
-            println!("    - RPC port: {}", install.5);
+            if verbosity != VerbosityLevel::Minimal {
+                println!("    - Safenode path: {}", install.1);
+                println!("    - Data path: {}", install.2);
+                println!("    - Log path: {}", install.3);
+                println!("    - Service port: {}", install.4);
+                println!("    - RPC port: {}", install.5);
+            }
         }
         println!("[!] Note: newly added services have not been started");
     }
@@ -377,6 +381,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -467,6 +472,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(MockSafeReleaseRepository::new()),
+            VerbosityLevel::Normal,
         )
         .await;
 
@@ -520,6 +526,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(MockSafeReleaseRepository::new()),
+            VerbosityLevel::Normal,
         )
         .await;
 
@@ -711,6 +718,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -871,6 +879,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -1023,6 +1032,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -1149,6 +1159,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -1293,6 +1304,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(mock_release_repo),
+            VerbosityLevel::Normal,
         )
         .await?;
 
@@ -1365,6 +1377,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(MockSafeReleaseRepository::new()),
+            VerbosityLevel::Normal,
         )
         .await;
 
@@ -1434,6 +1447,7 @@ mod tests {
             &mut node_registry,
             &mock_service_control,
             Box::new(MockSafeReleaseRepository::new()),
+            VerbosityLevel::Normal,
         )
         .await;
 
@@ -1488,6 +1502,7 @@ mod tests {
             &mut node_registry,
             &MockServiceControl::new(),
             Box::new(MockSafeReleaseRepository::new()),
+            VerbosityLevel::Normal,
         )
         .await;
 

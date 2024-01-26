@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::service::ServiceControl;
+use crate::VerbosityLevel;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use semver::Version;
@@ -24,6 +25,7 @@ pub async fn start(
     node: &mut Node,
     service_control: &dyn ServiceControl,
     rpc_client: &dyn RpcActions,
+    verbosity: VerbosityLevel,
 ) -> Result<()> {
     if let NodeStatus::Running = node.status {
         // The last time we checked the service was running, but it doesn't mean it's actually
@@ -38,7 +40,9 @@ pub async fn start(
 
     // At this point the service either hasn't been started for the first time or it has been
     // stopped. If it was stopped, it was either intentional or because it crashed.
-    println!("Attempting to start {}...", node.service_name);
+    if verbosity != VerbosityLevel::Minimal {
+        println!("Attempting to start {}...", node.service_name);
+    }
     service_control.start(&node.service_name)?;
 
     // Give the node a little bit of time to start before initiating the node info query.
@@ -49,8 +53,10 @@ pub async fn start(
     node.status = NodeStatus::Running;
 
     println!("{} Started {} service", "✓".green(), node.service_name);
-    println!("  - Peer ID: {}", node_info.peer_id);
-    println!("  - Logs: {}", node_info.log_path.to_string_lossy());
+    if verbosity != VerbosityLevel::Minimal {
+        println!("  - Peer ID: {}", node_info.peer_id);
+        println!("  - Logs: {}", node_info.log_path.to_string_lossy());
+    }
 
     Ok(())
 }
@@ -306,7 +312,7 @@ pub async fn upgrade(
             .as_ref()
             .ok_or_else(|| eyre!("Unable to obtain safenode path for current node"))?,
     )?;
-    start(node, service_control, rpc_client).await?;
+    start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
     node.version = latest_version.to_string();
 
     Ok(UpgradeResult::Upgraded(
@@ -403,7 +409,13 @@ mod tests {
             )),
             connected_peers: None,
         };
-        start(&mut node, &mock_service_control, &mock_rpc_client).await?;
+        start(
+            &mut node,
+            &mock_service_control,
+            &mock_rpc_client,
+            VerbosityLevel::Normal,
+        )
+        .await?;
 
         assert_eq!(node.pid, Some(1000));
         assert_eq!(
@@ -463,7 +475,13 @@ mod tests {
             )),
             connected_peers: None,
         };
-        start(&mut node, &mock_service_control, &mock_rpc_client).await?;
+        start(
+            &mut node,
+            &mock_service_control,
+            &mock_rpc_client,
+            VerbosityLevel::Normal,
+        )
+        .await?;
 
         assert_matches!(node.status, NodeStatus::Running);
         assert_eq!(node.pid, Some(1001));
@@ -523,7 +541,13 @@ mod tests {
             )),
             connected_peers: None,
         };
-        start(&mut node, &mock_service_control, &mock_rpc_client).await?;
+        start(
+            &mut node,
+            &mock_service_control,
+            &mock_rpc_client,
+            VerbosityLevel::Normal,
+        )
+        .await?;
 
         Ok(())
     }
@@ -574,7 +598,13 @@ mod tests {
             )),
             connected_peers: None,
         };
-        start(&mut node, &mock_service_control, &mock_rpc_client).await?;
+        start(
+            &mut node,
+            &mock_service_control,
+            &mock_rpc_client,
+            VerbosityLevel::Normal,
+        )
+        .await?;
 
         Ok(())
     }
