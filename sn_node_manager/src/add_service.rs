@@ -96,6 +96,8 @@ pub async fn add(
         .to_string();
 
     let mut added_service_data = vec![];
+    let mut failed_service_data = vec![];
+
     let current_node_count = node_registry.nodes.len() as u16;
     let target_node_count = current_node_count + install_options.count.unwrap_or(1);
     let mut node_number = current_node_count + 1;
@@ -128,7 +130,7 @@ pub async fn add(
             service_safenode_path.clone(),
         )?;
 
-        service_control.install(ServiceConfig {
+        let result = service_control.install(ServiceConfig {
             local: install_options.local,
             data_dir_path: service_data_dir_path.clone(),
             genesis: install_options.genesis,
@@ -139,50 +141,70 @@ pub async fn add(
             rpc_port,
             safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
-        })?;
-
-        added_service_data.push((
-            service_name.clone(),
-            service_safenode_path.to_string_lossy().into_owned(),
-            service_data_dir_path.to_string_lossy().into_owned(),
-            service_log_dir_path.to_string_lossy().into_owned(),
-            node_port,
-            rpc_port,
-        ));
-
-        node_registry.nodes.push(Node {
-            genesis: install_options.genesis,
-            service_name,
-            user: install_options.user.clone(),
-            number: node_number,
-            port: node_port,
-            rpc_port,
-            version: version.clone(),
-            status: NodeStatus::Added,
-            pid: None,
-            peer_id: None,
-            log_dir_path: Some(service_log_dir_path.clone()),
-            data_dir_path: Some(service_data_dir_path.clone()),
-            safenode_path: Some(service_safenode_path),
-            connected_peers: None,
         });
+
+        match result {
+            Ok(()) => {
+                added_service_data.push((
+                    service_name.clone(),
+                    service_safenode_path.to_string_lossy().into_owned(),
+                    service_data_dir_path.to_string_lossy().into_owned(),
+                    service_log_dir_path.to_string_lossy().into_owned(),
+                    node_port,
+                    rpc_port,
+                ));
+
+                node_registry.nodes.push(Node {
+                    genesis: install_options.genesis,
+                    service_name,
+                    user: install_options.user.clone(),
+                    number: node_number,
+                    port: node_port,
+                    rpc_port,
+                    version: version.clone(),
+                    status: NodeStatus::Added,
+                    pid: None,
+                    peer_id: None,
+                    log_dir_path: Some(service_log_dir_path.clone()),
+                    data_dir_path: Some(service_data_dir_path.clone()),
+                    safenode_path: Some(service_safenode_path),
+                    connected_peers: None,
+                });
+                // We save the node registry for each service because it's possible any number of
+                // services could fail to be added.
+                node_registry.save()?;
+            }
+            Err(e) => {
+                failed_service_data.push((service_name.clone(), e.to_string()));
+            }
+        }
 
         node_number += 1;
     }
 
     std::fs::remove_file(safenode_download_path)?;
 
-    println!("Services Added:");
-    for install in added_service_data.iter() {
-        println!(" {} {}", "✓".green(), install.0);
-        println!("    - Safenode path: {}", install.1);
-        println!("    - Data path: {}", install.2);
-        println!("    - Log path: {}", install.3);
-        println!("    - Service port: {}", install.4);
-        println!("    - RPC port: {}", install.5);
+    if !added_service_data.is_empty() {
+        println!("Services Added:");
+        for install in added_service_data.iter() {
+            println!(" {} {}", "✓".green(), install.0);
+            println!("    - Safenode path: {}", install.1);
+            println!("    - Data path: {}", install.2);
+            println!("    - Log path: {}", install.3);
+            println!("    - Service port: {}", install.4);
+            println!("    - RPC port: {}", install.5);
+        }
+        println!("[!] Note: newly added services have not been started");
     }
 
-    println!("[!] Note: newly added services have not been started");
+    if !failed_service_data.is_empty() {
+        println!("Failed to add {} service(s):", failed_service_data.len());
+        for failed in failed_service_data.iter() {
+            println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+        }
+        return Err(eyre!("Failed to add one or more services")
+            .suggestion("However, any services that were successfully added will be usable."));
+    }
 
     Ok(())
 }
@@ -245,11 +267,14 @@ mod tests {
 
     #[tokio::test]
     async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -359,6 +384,7 @@ mod tests {
         node_data_dir.assert(predicate::path::is_dir());
         node_logs_dir.assert(predicate::path::is_dir());
 
+        node_reg_path.assert(predicates::path::is_file());
         assert_eq!(node_registry.nodes.len(), 1);
         assert!(node_registry.nodes[0].genesis);
         assert_eq!(node_registry.nodes[0].version, latest_version);
@@ -383,11 +409,14 @@ mod tests {
     #[tokio::test]
     async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_node(
     ) -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mock_service_control = MockServiceControl::new();
 
         let latest_version = "0.96.4";
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![Node {
                 genesis: true,
                 service_name: "safenode1".to_string(),
@@ -451,10 +480,13 @@ mod tests {
 
     #[tokio::test]
     async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mock_service_control = MockServiceControl::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -501,11 +533,14 @@ mod tests {
 
     #[tokio::test]
     async fn add_node_should_use_latest_version_and_add_three_services() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -731,11 +766,14 @@ mod tests {
 
     #[tokio::test]
     async fn add_node_should_use_specific_version_and_add_one_service() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -858,12 +896,15 @@ mod tests {
 
     #[tokio::test]
     async fn add_new_node_should_add_another_service() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let latest_version = "0.96.4";
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![Node {
                 genesis: true,
                 service_name: "safenode1".to_string(),
@@ -1007,13 +1048,16 @@ mod tests {
 
     #[tokio::test]
     async fn add_should_add_a_service_with_safenode_from_a_url() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let url = "https://sn-node.s3.eu-west-2.amazonaws.com/jacderida/file-upload-address/safenode-charlie-x86_64-unknown-linux-musl.tar.gz";
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1134,11 +1178,14 @@ mod tests {
 
     #[tokio::test]
     async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1275,10 +1322,13 @@ mod tests {
 
     #[tokio::test]
     async fn add_node_should_return_error_if_custom_port_is_in_use() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1333,10 +1383,13 @@ mod tests {
 
     #[tokio::test]
     async fn add_node_should_return_error_if_custom_rpc_port_is_in_use() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut mock_service_control = MockServiceControl::new();
 
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
@@ -1400,8 +1453,11 @@ mod tests {
     #[tokio::test]
     async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_service_is_used(
     ) -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
         let mut node_registry = NodeRegistry {
-            save_path: PathBuf::new(),
+            save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             faucet_pid: None,
         };
