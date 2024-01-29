@@ -39,7 +39,7 @@ const WALLET_DIR_NAME: &str = "wallet";
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
 
-/// A wallet that can only receive tokens.
+/// A hot-wallet.
 pub struct LocalWallet {
     /// The secret key with which we can access
     /// all the tokens in the available_cash_notes.
