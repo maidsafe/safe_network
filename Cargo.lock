@@ -4996,7 +4996,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.23"
+version = "0.89.24"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5077,7 +5077,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.22"
+version = "0.3.23"
 dependencies = [
  "blsttc",
  "clap 4.4.18",
