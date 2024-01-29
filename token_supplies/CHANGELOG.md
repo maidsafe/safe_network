@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.13](https://github.com/maidsafe/safe_network/compare/token_supplies-v0.1.12...token_supplies-v0.1.13) - 2024-01-29
+
+### Other
+- update dependencies
+
 ## [0.1.12](https://github.com/maidsafe/safe_network/compare/token_supplies-v0.1.11...token_supplies-v0.1.12) - 2024-01-29
 
 ### Other
