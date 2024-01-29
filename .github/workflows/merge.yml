@@ -374,8 +374,7 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
-        if: matrix.os == 'windows-latest'
+      - name: Gossipsub - nodes to subscribe to topics, and publish messages
         run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
