@@ -14,7 +14,16 @@ path="src/main.rs"
 name="safenode-manager"
 
 [features]
-default = []
+chaos = []
+default = ["quic"]
+local-discovery = []
+network-contacts = []
+open-metrics = []
+otlp = []
+quic = []
+statemap = []
+tcp = []
+websockets = []
 
 [dependencies]
 clap = { version = "4.4.6", features = ["derive", "env"]}

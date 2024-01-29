@@ -30,7 +30,7 @@ use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
-use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{net::Ipv4Addr, path::PathBuf, process::{Command, Stdio}, str::FromStr};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
@@ -140,6 +140,11 @@ pub enum SubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "faucet")]
     Faucet {
+        /// Set to build the safenode and faucet binaries.
+        ///
+        /// This assumes the command is being run from the root of the safe_network repository.
+        #[clap(long)]
+        build: bool,
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -169,6 +174,11 @@ pub enum SubCmd {
     /// being managed by the node manager.
     #[clap(name = "join")]
     Join {
+        /// Set to build the safenode and faucet binaries.
+        ///
+        /// This assumes the command is being run from the root of the safe_network repository.
+        #[clap(long)]
+        build: bool,
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
@@ -224,28 +234,33 @@ pub enum SubCmd {
     /// will be downloaded.
     #[clap(name = "run")]
     Run {
+        /// Set to build the safenode and faucet binaries.
+        ///
+        /// This assumes the command is being run from the root of the safe_network repository.
+        #[clap(long)]
+        build: bool,
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version")]
+        #[clap(long, conflicts_with = "faucet_version", conflicts_with = "build")]
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
         /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "build")]
         faucet_version: Option<String>,
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "node_version")]
+        #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
         /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
+        #[clap(long, conflicts_with = "build")]
         node_version: Option<String>,
         /// Set to skip the network validation process
         #[clap(long)]
@@ -375,6 +390,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Faucet {
+            build,
             path,
             peers,
             version,
@@ -392,7 +408,7 @@ async fn main() -> Result<()> {
 
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
             let faucet_path =
-                get_bin_path(path, ReleaseType::Faucet, version, &*release_repo).await?;
+                get_bin_path(build, path, ReleaseType::Faucet, version, &*release_repo).await?;
 
             let peers = get_peers_from_args(peers).await?;
             run_faucet(&mut local_node_registry, faucet_path, peers[0].clone()).await?;
@@ -402,6 +418,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Join {
+            build,
             count,
             faucet_path,
             faucet_version,
@@ -419,6 +436,7 @@ async fn main() -> Result<()> {
 
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
             let faucet_path = get_bin_path(
+                build,
                 faucet_path,
                 ReleaseType::Faucet,
                 faucet_version,
@@ -426,6 +444,7 @@ async fn main() -> Result<()> {
             )
             .await?;
             let node_path = get_bin_path(
+                build,
                 node_path,
                 ReleaseType::Safenode,
                 node_version,
@@ -511,6 +530,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Run {
+            build,
             count,
             faucet_path,
             faucet_version,
@@ -531,6 +551,7 @@ async fn main() -> Result<()> {
 
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
             let faucet_path = get_bin_path(
+                build,
                 faucet_path,
                 ReleaseType::Faucet,
                 faucet_version,
@@ -538,6 +559,7 @@ async fn main() -> Result<()> {
             )
             .await?;
             let node_path = get_bin_path(
+                build,
                 node_path,
                 ReleaseType::Safenode,
                 node_version,
@@ -889,16 +911,76 @@ fn is_running_as_root() -> bool {
 }
 
 async fn get_bin_path(
-    path_option: Option<PathBuf>,
+    build: bool,
+    path: Option<PathBuf>,
     release_type: ReleaseType,
     version: Option<String>,
     release_repo: &dyn SafeReleaseRepositoryInterface,
 ) -> Result<PathBuf> {
-    if let Some(path) = path_option {
+    if build {
+        build_binary(&release_type)?;
+        Ok(PathBuf::from("target")
+            .join("release")
+            .join(release_type.to_string()))
+    } else if let Some(path) = path {
         Ok(path)
     } else {
         let (download_path, _) =
             download_and_extract_release(release_type, None, version, release_repo).await?;
         Ok(download_path)
     }
+}
+
+fn build_binary(bin_type: &ReleaseType) -> Result<()> {
+    let mut args = vec!["build", "--release"];
+    let bin_name = bin_type.to_string();
+    args.push("--bin");
+    args.push(&bin_name);
+
+    // Keep features consistent to avoid recompiling.
+    if cfg!(feature = "chaos") {
+        println!("*** Building testnet with CHAOS enabled. Watch out. ***");
+        args.push("--features");
+        args.push("chaos");
+    }
+    if cfg!(feature = "statemap") {
+        args.extend(["--features", "statemap"]);
+    }
+    if cfg!(feature = "otlp") {
+        args.extend(["--features", "otlp"]);
+    }
+    if cfg!(feature = "local-discovery") {
+        args.extend(["--features", "local-discovery"]);
+    }
+    if cfg!(feature = "network-contacts") {
+        args.extend(["--features", "network-contacts"]);
+    }
+    if cfg!(feature = "websockets") {
+        args.extend(["--features", "websockets"]);
+    }
+    if cfg!(feature = "open-metrics") {
+        args.extend(["--features", "open-metrics"]);
+    }
+
+    let build_binary_msg = format!("Building {} binary", bin_name);
+    let banner = "=".repeat(build_binary_msg.len());
+    println!("{}\n{}\n{}", banner, build_binary_msg, banner);
+
+    let mut build_result = Command::new("cargo");
+    let _ = build_result.args(args.clone());
+
+    if let Ok(val) = std::env::var("CARGO_TARGET_DIR") {
+        let _ = build_result.env("CARGO_TARGET_DIR", val);
+    }
+
+    let build_result = build_result
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()?;
+
+    if !build_result.status.success() {
+        return Err(eyre!("Failed to build binaries"));
+    }
+
+    Ok(())
 }
