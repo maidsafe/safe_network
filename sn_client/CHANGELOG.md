@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.13](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.12...sn_client-v0.102.13) - 2024-01-29
+
+### Other
+- *(sn_transfers)* making some functions/helpers to be constructor methods of public structs
+
 ## [0.102.12](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.11...sn_client-v0.102.12) - 2024-01-25
 
 ### Other

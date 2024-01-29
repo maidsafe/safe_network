@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.43](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.42...sn_transfers-v0.14.43) - 2024-01-29
+
+### Other
+- *(sn_transfers)* making some functions/helpers to be constructor methods of public structs
+
 ## [0.14.42](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.41...sn_transfers-v0.14.42) - 2024-01-25
 
 ### Added
