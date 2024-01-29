@@ -21,10 +21,14 @@ impl Client {
         let mut dag = SpendDag::new();
 
         // get first spend
-        let first_spend = self
-            .get_spend_from_network(spend_addr)
-            .await
-            .map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
+        let first_spend = match self.get_spend_from_network(spend_addr).await {
+            Ok(s) => s,
+            Err(Error::MissingSpendRecord(_)) => {
+                trace!("UTXO at {spend_addr:?}");
+                return Ok(dag);
+            }
+            Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
+        };
         dag.insert(spend_addr, first_spend.clone());
 
         // use iteration instead of recursion to avoid stack overflow
