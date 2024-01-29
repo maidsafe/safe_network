@@ -1,0 +1,51 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "A command-line application for installing, managing and operating `safenode` as a service."
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn-node-manager"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.24"
+
+[[bin]]
+path="src/main.rs"
+name="safenode-manager"
+
+[features]
+default = ["quic"]
+quic = []
+tcp = []
+
+[dependencies]
+clap = { version = "4.4.6", features = ["derive", "env"]}
+colored = "2.0.4"
+color-eyre = "~0.6"
+dirs-next = "2.0.0"
+indicatif = { version = "0.17.5", features = ["tokio"] }
+libp2p = { version="0.53", features = [] }
+libp2p-identity = { version="0.2.7", features = ["rand"] }
+semver = "1.0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+service-manager = "0.5.1"
+sn_node_rpc_client =  { path = "../sn_node_rpc_client", version = "0.4.8" } 
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.4" }
+sn_protocol = { path = "../sn_protocol", version = "0.11.0" }
+sn-releases = "0.1.6"
+sysinfo = "0.29.10"
+tokio = { version = "1.26", features = ["full"] }
+uuid = { version = "1.5.0", features = ["v4"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+nix = { version = "0.27.1", features = ["fs", "user"] }
+users = "0.11"
+
+[dev-dependencies]
+assert_cmd = "2.0.12"
+assert_fs = "1.0.13"
+assert_matches = "1.5.0"
+async-trait = "0.1"
+mockall = "0.11.3"
+predicates = "2.0"

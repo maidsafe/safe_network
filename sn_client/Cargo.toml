@@ -8,14 +8,14 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.102.7"
+version = "0.102.12"
 
 [features]
-default=["quic"]
+default=[]
 local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 # required to pass on flag to node builds
-quic = ["sn_networking/quic"]
+websockets = ["sn_networking/websockets"]
 
 [dependencies]
 async-trait = "0.1"
@@ -34,14 +34,14 @@ rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_networking = { path = "../sn_networking", version = "0.12.35" }
-sn_protocol = { path = "../sn_protocol", version = "0.10.14" }
-sn_registers = { path = "../sn_registers", version = "0.3.7" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.40" }
+sn_networking = { path = "../sn_networking", version = "0.12.39" }
+sn_protocol = { path = "../sn_protocol", version = "0.11.1" }
+sn_registers = { path = "../sn_registers", version = "0.3.8" }
+sn_transfers = { path = "../sn_transfers", version = "0.14.42" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
-tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time", "fs"] }
+tokio = { version = "1.35.0", features = ["io-util", "macros", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 
@@ -52,3 +52,20 @@ libp2p-identity = { version="0.2.7", features = ["rand"] }
 
 [lints]
 workspace = true
+
+
+# to allow wasm compilation
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.12", features = ["js"] }
+wasm-bindgen = "0.2.90"
+wasm-bindgen-futures = "0.4.40"
+sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.5" }
+console_error_panic_hook = "0.1.6"
+tracing-wasm = "0.2.1"
+wasmtimer = "0.2.0"
+web-sys = { version= "0.3.22", features=["console"] }
+

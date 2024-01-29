@@ -47,7 +47,7 @@ pub enum ClientEvent {
     ConnectedToNetwork,
     /// No network activity has been received for a given duration
     /// we should error out
-    InactiveClient(std::time::Duration),
+    InactiveClient(tokio::time::Duration),
     /// Gossipsub message received on a topic the client has subscribed to
     GossipsubMsg {
         /// Topic the message was published on

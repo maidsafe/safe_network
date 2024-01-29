@@ -71,6 +71,7 @@ jobs:
           platform: ubuntu-latest
           set-safe-peers: false
           join: true
+          build: true
 
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
@@ -141,6 +142,21 @@ jobs:
           TEST_TOTAL_CHURN_CYCLES: 15
           SN_LOG: "all"
         timeout-minutes: 30
+
+      - name: Check current files
+        run: ls -la
+      - name: Check safenode file
+        run: ls /home/runner/work/safe_network/safe_network/target/release
+        
+      - name: Check there was no restart issues
+        run: |
+          if rg 'Failed to execute hard-restart command' $NODE_DATA_PATH; then
+            echo "Restart issues detected"
+            exit 1
+          else
+            echo "No restart issues detected"
+          fi
+
 
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
@@ -317,13 +333,13 @@ jobs:
         #   rg "SwarmCmd handled in [^m,µ,n]*s:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats
         run: |
           num_of_times=$(
-            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long cmd handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmCmd handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total cmd long handling time is: $total_long_handling_ms ms"
@@ -332,13 +348,13 @@ jobs:
           total_long_handling=$(($total_long_handling_ms))
           total_num_of_times=$(($num_of_times))
           num_of_times=$(
-            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long event handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmEvent handled in [^,]*ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total event long handling time is: $total_long_handling_ms ms"

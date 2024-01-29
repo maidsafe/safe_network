@@ -26,12 +26,22 @@ use crate::{
     Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
-#[cfg(feature = "quic")]
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
 use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-#[cfg(feature = "quic")]
-use libp2p::quic;
+// default transports
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
+use libp2p::quic::{tokio::Transport as TokioTransport, Config as TransportConfig};
+
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+use libp2p::websocket::WsConfig;
+
+use crate::target_arch::{interval, spawn, Instant};
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig};
+#[cfg(target_arch = "wasm32")]
+use libp2p::websocket_websys::Transport as WebSocketTransport;
 use libp2p::{
     autonat,
     identity::Keypair,
@@ -57,10 +67,10 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    time::{Duration, Instant},
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
+use tokio::time::Duration;
 use tracing::warn;
 
 /// The ways in which the Get Closest queries are used.
@@ -317,16 +327,22 @@ impl NetworkBuilder {
         )?;
 
         // Listen on the provided address
-        let listen_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
+        let listen_socket_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
 
-        #[cfg(not(feature = "quic"))]
-        let listen_addr = Multiaddr::from(listen_addr.ip()).with(Protocol::Tcp(listen_addr.port()));
+        // Flesh out the multiaddress
+        let start_addr = Multiaddr::from(listen_socket_addr.ip());
 
-        #[cfg(feature = "quic")]
-        let listen_addr = Multiaddr::from(listen_addr.ip())
-            .with(Protocol::Udp(listen_addr.port()))
-            .with(Protocol::QuicV1);
+        let listen_addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
+            start_addr
+                .with(Protocol::Tcp(listen_socket_addr.port()))
+                .with(Protocol::Ws("/".into()))
+        } else {
+            start_addr
+                .with(Protocol::Udp(listen_socket_addr.port()))
+                .with(Protocol::QuicV1)
+        };
 
+        debug!("Attempting to listen on: {listen_addr:?}");
         let _listener_id = swarm_driver
             .swarm
             .listen_on(listen_addr)
@@ -373,7 +389,11 @@ impl NetworkBuilder {
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Node (PID: {}) with PeerId: {peer_id}", std::process::id());
+        #[cfg(not(target_arch = "wasm32"))]
+        info!(
+            "Process (PID: {}) with PeerId: {peer_id}",
+            std::process::id()
+        );
         info!(
             "Self PeerID {peer_id} is represented as kbucket_key {:?}",
             PrettyPrintKBucketKey(NetworkAddress::from_peer(peer_id).as_kbucket_key())
@@ -452,9 +472,15 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        // Transport
-        #[cfg(not(feature = "quic"))]
-        let mut transport = libp2p::tcp::tokio::Transport::new(libp2p::tcp::Config::default())
+        // Default quic transport.
+        // cannot be built for wasm32
+        #[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
+        let main_transport = TokioTransport::new(TransportConfig::new(&self.keypair))
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
+
+        #[cfg(target_arch = "wasm32")]
+        let main_transport = WebSocketTransport::default()
             .upgrade(libp2p::core::upgrade::Version::V1)
             .authenticate(
                 libp2p::noise::Config::new(&self.keypair)
@@ -463,9 +489,18 @@ impl NetworkBuilder {
             .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
-        #[cfg(feature = "quic")]
-        let mut transport = libp2p::quic::tokio::Transport::new(quic::Config::new(&self.keypair))
-            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let tcp = TokioTransport::new(TransportConfig::default());
+
+        // tcp websocket transport for node builds
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let main_transport = WsConfig::new(tcp)
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
             .boxed();
 
         let gossipsub = if self.enable_gossip {
@@ -504,11 +539,13 @@ impl NetworkBuilder {
 
         let gossipsub = Toggle::from(gossipsub);
 
-        if !self.local {
+        let transport = if !self.local {
             debug!("Preventing non-global dials");
-            // Wrap TCP or UDP in a transport that prevents dialing local addresses.
-            transport = libp2p::core::transport::global_only::Transport::new(transport).boxed();
-        }
+            // Wrap upper in a transport that prevents dialing local addresses.
+            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
+        } else {
+            main_transport
+        };
 
         // Disable AutoNAT if we are either running locally or a client.
         let autonat = if !self.local && !is_client {
@@ -539,10 +576,18 @@ impl NetworkBuilder {
             autonat,
             gossipsub,
         };
+
+        #[cfg(not(target_arch = "wasm32"))]
         let swarm_config = libp2p::swarm::Config::with_tokio_executor()
+            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        #[cfg(target_arch = "wasm32")]
+        let swarm_config = libp2p::swarm::Config::with_wasm_executor()
             .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
+
+        let bootstrap = ContinuousBootstrap::new();
+        let replication_fetcher = ReplicationFetcher::new(peer_id);
 
         let swarm_driver = SwarmDriver {
             swarm,
@@ -550,9 +595,9 @@ impl NetworkBuilder {
             local: self.local,
             is_client,
             connected_peers: 0,
-            bootstrap: ContinuousBootstrap::new(),
+            bootstrap,
             close_group: Default::default(),
-            replication_fetcher: ReplicationFetcher::new(peer_id),
+            replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
             cmd_receiver: swarm_cmd_receiver,
@@ -632,7 +677,7 @@ impl SwarmDriver {
     /// and command receiver messages, ensuring efficient handling of multiple
     /// asynchronous tasks.
     pub async fn run(mut self) {
-        let mut bootstrap_interval = tokio::time::interval(BOOTSTRAP_INTERVAL);
+        let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
@@ -644,7 +689,7 @@ impl SwarmDriver {
                 },
                 some_cmd = self.cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
-                        let start = std::time::Instant::now();
+                        let start = Instant::now();
                         let cmd_string = format!("{cmd:?}");
                         if let Err(err) = self.handle_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
@@ -674,7 +719,7 @@ impl SwarmDriver {
         let capacity = event_sender.capacity();
 
         // push the event off thread so as to be non-blocking
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             if capacity == 0 {
                 warn!(
                     "NetworkEvent channel is full. Await capacity to send: {:?}",

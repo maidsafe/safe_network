@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.2.4...sn_peers_acquisition-v0.2.5) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
+## [0.2.4](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.2.3...sn_peers_acquisition-v0.2.4) - 2024-01-24
+
+### Added
+- initial webtransport-websys wasm setup
+
+### Other
+- tidy up wasm32 as target arch rather than a feat
+
 ## [0.2.3](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.2.2...sn_peers_acquisition-v0.2.3) - 2024-01-18
 
 ### Added

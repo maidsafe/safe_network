@@ -21,6 +21,7 @@ use crate::{
     transfers::create_unsigned_transfer, wallet::data_payments::PaymentDetails, CashNote,
     DerivationIndex, Hash, MainPubkey, NanoTokens, UniquePubkey, UnsignedTransfer,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
 use serde::Serialize;
 use std::{
@@ -296,6 +297,8 @@ impl WatchOnlyWallet {
             .write(true)
             .truncate(true)
             .open(lock)?;
+
+        #[cfg(not(target_arch = "wasm32"))]
         file.lock_exclusive()?;
         Ok(file)
     }

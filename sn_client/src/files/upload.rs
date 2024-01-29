@@ -169,6 +169,7 @@ impl FilesUpload {
     /// If you want to track the upload progress, use the `get_upload_events` method.
     pub async fn upload_chunks(&mut self, mut chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
         trace!("Uploading chunks {:?}", chunks.len());
+
         // make sure we log that the event sender is absent atleast once
         self.logged_event_sender_absence = false;
 
@@ -406,7 +407,7 @@ impl FilesUpload {
         verify_store: bool,
     ) -> (ChunkInfo, Result<()>) {
         let chunk_address = ChunkAddress::new(chunk_info.name);
-        let bytes = match tokio::fs::read(chunk_info.path.clone()).await {
+        let bytes = match std::fs::read(chunk_info.path.clone()) {
             Ok(bytes) => Bytes::from(bytes),
             Err(error) => {
                 warn!("Chunk {chunk_address:?} could not be read from the system from {:?}. 

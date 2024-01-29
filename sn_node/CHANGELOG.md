@@ -2949,6 +2949,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(release)* sn_protocol-v0.10.14/sn_networking-v0.12.35
 
+## [0.103.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.9...sn_node-v0.103.10) - 2024-01-23
+
+### Other
+- update dependencies
+
+## [0.103.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.10...sn_node-v0.103.11) - 2024-01-23
+
+### Other
+- update dependencies
+
+## [0.103.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.11...sn_node-v0.103.12) - 2024-01-24
+
+### Fixed
+- *(node)* warn if "(deleted)" exists in exe name during restart
+
+### Other
+- tidy up wasm32 as target arch rather than a feat
+
+## [0.103.13](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.12...sn_node-v0.103.13) - 2024-01-25
+
+### Other
+- *(release)* sn_cli-v0.89.14/sn_networking-v0.12.37/sn_faucet-v0.3.14/sn_client-v0.102.9
+
+## [0.103.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.13...sn_node-v0.103.14) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
+## [0.103.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.14...sn_node-v0.103.15) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.103.16](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.15...sn_node-v0.103.16) - 2024-01-25
+
+### Fixed
+- *(manager)* increase port unbinding time
+
+## [0.103.17](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.16...sn_node-v0.103.17) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.103.18](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.17...sn_node-v0.103.18) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.103.19](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.18...sn_node-v0.103.19) - 2024-01-26
+
+### Other
+- update dependencies
+
+## [0.103.20](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.19...sn_node-v0.103.20) - 2024-01-29
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

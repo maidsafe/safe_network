@@ -1,4 +1,4 @@
-# The Safe Network
+ # The Safe Network
 
 [SafenetForum.org](https://safenetforum.org/)
 
@@ -19,27 +19,47 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/sn_cli/blob/master/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe/sn_node/blob/master/README.md) The backbone of the safe network. Nodes can be run on comoodity hardware and provide storage space and validation of transactions to the network.
+- [CLI](https://github.com/maidsafe/safe_network/blob/main/sn_cli/README.md) The Command Line Interface, allowing users to interact with the network from their terminal.
+- [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the safe network. Nodes can be run on commodity hardware and provide storage space and validation of transactions to the network.
 
 ### For Developers
 
-- [Client](https://github.com/maidsafe/sn_client/blob/master/README.md) The client APIs allowing use of the SafeNetwork to users and developers.
-- [Registers](https://github.com/maidsafe/sn_registers/blob/master/README.md) The CRDT registers structures available on the network.
-- [Testnet](https://github.com/maidsafe/sn_testnet/blob/master/README.md) The testnet crate, used to set up a local network for development and testing.
-- [Faucet](https://github.com/maidsafe/sn_faucet/blob/master/README.md) The local faucet server, used to claim genesis and request tokens from the network.
-- [Node RPC](https://github.com/maidsafe/sn_node_rpc_client/blob/master/README.md) The RPC server used by the nodes to expose API calls to the outside world.
+- [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs allowing use of the SafeNetwork to users and developers.
+- [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The CRDT registers structures available on the network.
+- [Testnet](https://github.com/maidsafe/safe_network/blob/main/sn_testnet/README.md) The testnet crate, used to set up a local network for development and testing.
+- [Faucet](https://github.com/maidsafe/safe_network/blob/main/sn_faucet/README.md) The local faucet server, used to claim genesis and request tokens from the network.
+- [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The RPC server used by the nodes to expose API calls to the outside world.
+
+#### Transport Protocols and Architectures
+
+The Safe Network uses `quic` as the default transport protocol.
+
+The `websockets` feature is available for the `sn_networking` crate, and above, and will allow for tcp over websockets.
+
+If building for `wasm32` then `websockets` are enabled by default as this is the only method avilable to communicate with a network as things stand. (And that network must have `websockets` enabled.)
+
+##### Building for wasm32
+
+- Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+- `cd sn_client && wasm-pack build`
+
+You can then pull this package into a web app eg, to use it.
+
+eg `await safe.get_data("/ip4/127.0.0.1/tcp/59324/ws/p2p/12D3KooWG6kyBwLVHj5hYK2SqGkP4GqrCz5gfwsvPBYic4c4TeUz","9d7e115061066126482a229822e6d68737bd67d826c269762c0f64ce87af6b4c")`
+
+#### Browser usage
+
+Browser usage is highly experimental, but the wasm32 target for `sn_client` _should_ work here. YMMV until stabilised.
 
 ### For the Technical
 
-- [Logging](https://github.com/maidsafe/sn_logging/blob/master/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
-- [Metrics](https://github.com/maidsafe/sn_metrics/blob/master/README.md) The metrics crate used by the safe network.
-- [Networking](https://github.com/maidsafe/sn_networking/blob/master/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
-- [Protocol](https://github.com/maidsafe/sn_protocol/blob/master/README.md) The protocol used by the safe network.
-- [Transfers](https://github.com/maidsafe/sn_transfers/blob/master/README.md) The transfers crate, used to send and receive tokens on the network.
-- [Peers Acquisition](https://github.com/maidsafe/sn_peers_acqisition/blob/master/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
-- [Build Info](https://github.com/maidsafe/sn_build_info/blob/master/README.md) Small helper used to get the build/commit versioning info for debug purposes.
-
+- [Logging](https://github.com/maidsafe/safe_network/blob/main/sn_logging/README.md) The generalised logging crate used by the safe network (backed by the tracing crate).
+- [Metrics](https://github.com/maidsafe/safe_network/blob/main/metrics/README.md) The metrics crate used by the safe network.
+- [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The networking layer, built atop libp2p which allows nodes and clients to communicate.
+- [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol used by the safe network.
+- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The transfers crate, used to send and receive tokens on the network.
+- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
+- [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
 ## Run your MaidSafe Local Test Network in 4 easy Steps
 Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
@@ -71,8 +91,6 @@ killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --
 ```
 
 ## Token transfers
-
-Start a local network and a faucet as described above.
 
 - Get your wallet address
   `cargo run --release --bin safe -- wallet address`
@@ -194,6 +212,7 @@ Feel free to clone and modify this project. Pull requests are welcome.<br>You ca
 ## Conventional Commits
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
+
 
 ## License
 

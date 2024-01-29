@@ -243,11 +243,13 @@ impl Testnet {
         std::thread::sleep(std::time::Duration::from_millis(self.node_launch_interval));
 
         let peer_id = self.rpc_client.obtain_peer_id(rpc_address).await?;
-        #[cfg(not(feature = "quic"))]
-        let genesis_multi_addr = format!("/ip4/127.0.0.1/tcp/{genesis_port:?}/p2p/{peer_id}");
-        #[cfg(feature = "quic")]
-        let genesis_multi_addr =
-            format!("/ip4/127.0.0.1/udp/{genesis_port:?}/quic-v1/p2p/{peer_id}");
+
+        let genesis_multi_addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
+            format!("/ip4/127.0.0.1/tcp/{genesis_port:?}/ws/p2p/{peer_id}")
+        } else {
+            format!("/ip4/127.0.0.1/udp/{genesis_port:?}/quic-v1/p2p/{peer_id}")
+        };
+
         Ok(genesis_multi_addr)
     }
 
@@ -465,8 +467,11 @@ mod test {
             .launch_genesis(vec!["--log-format".to_string(), "json".to_string()])
             .await?;
 
-        if !cfg!(feature = "quic") {
-            assert_eq!(format!("/ip4/127.0.0.1/tcp/11101/p2p/{peer_id}"), multiaddr);
+        if cfg!(feature = "websockets") {
+            assert_eq!(
+                format!("/ip4/127.0.0.1/tcp/11101/ws/p2p/{peer_id}"),
+                multiaddr
+            );
         } else {
             assert_eq!(
                 format!("/ip4/127.0.0.1/udp/11101/quic-v1/p2p/{peer_id}"),
@@ -539,8 +544,11 @@ mod test {
             .launch_genesis(vec!["--log-format".to_string(), "json".to_string()])
             .await?;
 
-        if !cfg!(feature = "quic") {
-            assert_eq!(format!("/ip4/127.0.0.1/tcp/11101/p2p/{peer_id}"), multiaddr);
+        if cfg!(feature = "websockets") {
+            assert_eq!(
+                format!("/ip4/127.0.0.1/tcp/11101/ws/p2p/{peer_id}"),
+                multiaddr
+            );
         } else {
             assert_eq!(
                 format!("/ip4/127.0.0.1/udp/11101/quic-v1/p2p/{peer_id}"),

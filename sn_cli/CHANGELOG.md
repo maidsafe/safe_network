@@ -6,6 +6,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.22](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.21...sn_cli-v0.89.22) - 2024-01-29
+
+### Other
+- update dependencies
+
+## [0.89.21](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.20...sn_cli-v0.89.21) - 2024-01-26
+
+### Other
+- update dependencies
+
+## [0.89.20](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.19...sn_cli-v0.89.20) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.19](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.18...sn_cli-v0.89.19) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.18](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.17...sn_cli-v0.89.18) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.17](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.16...sn_cli-v0.89.17) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.16](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.15...sn_cli-v0.89.16) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.15](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.14...sn_cli-v0.89.15) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.89.14](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.13...sn_cli-v0.89.14) - 2024-01-24
+
+### Other
+- update dependencies
+
+## [0.89.13](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.12...sn_cli-v0.89.13) - 2024-01-24
+
+### Other
+- update dependencies
+
+## [0.89.12](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.11...sn_cli-v0.89.12) - 2024-01-24
+
+### Other
+- update dependencies
+
+## [0.89.11](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.10...sn_cli-v0.89.11) - 2024-01-23
+
+### Other
+- update dependencies
+
+## [0.89.10](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.9...sn_cli-v0.89.10) - 2024-01-23
+
+### Other
+- update dependencies
+
 ## [0.89.9](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.8...sn_cli-v0.89.9) - 2024-01-23
 
 ### Other

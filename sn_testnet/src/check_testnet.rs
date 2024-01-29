@@ -187,7 +187,10 @@ pub async fn obtain_peer_id(address: SocketAddr) -> Result<PeerId> {
 // Parse node logs files and extract info for each of them
 fn nodes_info_from_logs(path: &Path) -> Result<BTreeMap<u32, NodeInfo>> {
     let mut nodes = BTreeMap::<PathBuf, NodeInfo>::new();
-    let re = Regex::new(r"Node \(PID: (\d+)\) with PeerId: (.*)")?;
+
+    // If this regex misses the pid defaults to 0 for all nodes, so the count
+    // will be off
+    let re = Regex::new(r"Process \(PID: (\d+)\) with PeerId: (.*)")?;
 
     let re_listener = Regex::new("Local node is listening on \"(.+)\"")?;
 

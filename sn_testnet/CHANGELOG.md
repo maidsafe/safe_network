@@ -2602,6 +2602,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.3.31](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.30...sn_testnet-v0.3.31) - 2024-01-23
+
+### Other
+- update dependencies
+
+## [0.3.32](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.31...sn_testnet-v0.3.32) - 2024-01-23
+
+### Other
+- update dependencies
+
+## [0.3.33](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.32...sn_testnet-v0.3.33) - 2024-01-24
+
+### Other
+- update dependencies
+
+## [0.3.34](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.33...sn_testnet-v0.3.34) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.35](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.34...sn_testnet-v0.3.35) - 2024-01-25
+
+### Added
+- client webtransport-websys feat
+
+## [0.3.36](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.35...sn_testnet-v0.3.36) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.37](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.36...sn_testnet-v0.3.37) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.38](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.37...sn_testnet-v0.3.38) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.39](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.38...sn_testnet-v0.3.39) - 2024-01-25
+
+### Other
+- update dependencies
+
+## [0.3.40](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.39...sn_testnet-v0.3.40) - 2024-01-26
+
+### Other
+- update dependencies
+
+## [0.3.41](https://github.com/maidsafe/safe_network/compare/sn_testnet-v0.3.40...sn_testnet-v0.3.41) - 2024-01-29
+
+### Other
+- update dependencies
+
 ## v0.1.0 (2023-03-16)
 
 <csr-id-4f04bd1a5d1c747bfc6b5d39824dd108f8546b7b/>

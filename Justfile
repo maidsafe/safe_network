@@ -2,6 +2,69 @@
 
 release_repo := "maidsafe/safe_network"
 
+droplet-testbed:
+  #!/usr/bin/env bash
+
+  DROPLET_NAME="node-manager-testbed"
+  REGION="lon1"
+  SIZE="s-1vcpu-1gb"
+  IMAGE="ubuntu-20-04-x64"
+  SSH_KEY_ID="30878672"
+
+  droplet_ip=$(doctl compute droplet list \
+    --format Name,PublicIPv4 --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
+
+  if [ -z "$droplet_ip" ]; then
+    droplet_id=$(doctl compute droplet create $DROPLET_NAME \
+      --region $REGION \
+      --size $SIZE \
+      --image $IMAGE \
+      --ssh-keys $SSH_KEY_ID \
+      --format ID \
+      --no-header \
+      --wait)
+    if [ -z "$droplet_id" ]; then
+      echo "Failed to obtain droplet ID"
+      exit 1
+    fi
+
+    echo "Droplet ID: $droplet_id"
+    echo "Waiting for droplet IP address..."
+    droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
+    while [ -z "$droplet_ip" ]; do
+      echo "Still waiting to obtain droplet IP address..."
+      sleep 5
+      droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
+    done
+  fi
+  echo "Droplet IP address: $droplet_ip"
+
+  nc -zw1 $droplet_ip 22
+  exit_code=$?
+  while [ $exit_code -ne 0 ]; do
+    echo "Waiting on SSH to become available..."
+    sleep 5
+    nc -zw1 $droplet_ip 22
+    exit_code=$?
+  done
+
+  cargo build --release --target x86_64-unknown-linux-musl
+  scp -r ./target/x86_64-unknown-linux-musl/release/safenode-manager \
+    root@$droplet_ip:/root/safenode-manager
+
+kill-testbed:
+  #!/usr/bin/env bash
+
+  DROPLET_NAME="node-manager-testbed"
+
+  droplet_id=$(doctl compute droplet list \
+    --format Name,ID --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
+
+  if [ -z "$droplet_ip" ]; then
+    echo "Deleting droplet with ID $droplet_id"
+    doctl compute droplet delete $droplet_id
+  fi
+
 build-release-artifacts arch:
   #!/usr/bin/env bash
   set -e
@@ -45,13 +108,13 @@ build-release-artifacts arch:
     cargo install cross
     cross build --release --features=network-contacts --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
-    cross build --release --target $arch --bin testnet
+    cross build --release --target $arch --bin safenode-manager
     cross build --release --target $arch --bin faucet
     cross build --release --target $arch --bin safenode_rpc_client
   else
     cargo build --release --features=network-contacts --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
-    cargo build --release --target $arch --bin testnet
+    cargo build --release --target $arch --bin safenode-manager
     cargo build --release --target $arch --bin faucet
     cargo build --release --target $arch --bin safenode_rpc_client
   fi
@@ -96,6 +159,10 @@ package-release-assets bin version="":
   )
 
   bin="{{bin}}"
+  supported_bins=("safe" "safenode" "safenode-manager" "faucet" "safenode_rpc_client")
+  crate=""
+
+  bin="{{bin}}"
   case "$bin" in
     safe)
       crate="sn_cli"
@@ -103,8 +170,8 @@ package-release-assets bin version="":
     safenode)
       crate="sn_node"
       ;;
-    testnet)
-      crate="sn_testnet"
+    safenode-manager)
+      crate="sn_node_manager"
       ;;
     faucet)
       crate="sn_faucet"
@@ -113,7 +180,7 @@ package-release-assets bin version="":
       crate="sn_node_rpc_client"
       ;;
     *)
-      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+      echo "The $bin binary is not supported"
       exit 1
       ;;
   esac
@@ -144,7 +211,7 @@ upload-release-assets:
   binary_crates=(
     "sn_cli"
     "sn_node"
-    "sn_testnet"
+    "sn-node-manager"
     "sn_faucet"
     "sn_node_rpc_client"
   )
@@ -171,9 +238,9 @@ upload-release-assets:
             bin_name="safenode"
             bucket="sn-node"
             ;;
-          sn_testnet)
-            bin_name="testnet"
-            bucket="sn-testnet"
+          sn-node-manager)
+            bin_name="safenode-manager"
+            bucket="sn-node-manager"
             ;;
           sn_faucet)
             bin_name="faucet"
@@ -184,7 +251,7 @@ upload-release-assets:
             bucket="sn-node-rpc-client"
             ;;
           *)
-            echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+            echo "The $crate is not supported"
             exit 1
             ;;
         esac
@@ -194,13 +261,16 @@ upload-release-assets:
         for crate_with_version in "${crates_with_versions[@]}"; do
           if [[ $crate_with_version == $crate-v* ]]; then
             (
-              echo "Uploading $bin_name assets to $crate_with_version release..."
               cd deploy/$bin_name
-              ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               echo "Uploading $bin_name assets to S3 bucket..."
               for file in *.zip *.tar.gz; do
                 aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
               done
+
+              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
+                echo "Uploading $bin_name assets to $crate_with_version release..."
+                ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
+              fi
             )
           fi
         done
@@ -219,8 +289,8 @@ upload-release-assets-to-s3 bin_name:
     safenode)
       bucket="sn-node"
       ;;
-    testnet)
-      bucket="sn-testnet"
+    safenode-manager)
+      bucket="sn-node-manager"
       ;;
     faucet)
       bucket="sn-faucet"
@@ -229,7 +299,7 @@ upload-release-assets-to-s3 bin_name:
       bucket="sn-node-rpc-client"
       ;;
     *)
-      echo "The only supported binaries are safe, safenode, testnet, faucet, safenode_rpc_client"
+      echo "The {{bin_name}} binary is not supported"
       exit 1
       ;;
   esac
@@ -238,10 +308,3 @@ upload-release-assets-to-s3 bin_name:
   for file in *.zip *.tar.gz; do
     aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
   done
-
-run-local-network:
-  #!/usr/bin/env bash
-  pgrep safenode | xargs kill -9
-  pgrep faucet | xargs kill -9
-  rm -rf ~/.local/share/safe
-  cargo run --bin testnet --features local-discovery -- --build-node --build-faucet --interval 1000

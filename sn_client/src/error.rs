@@ -11,8 +11,9 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 use super::ClientEvent;
 use sn_registers::{Entry, EntryHash};
 use sn_transfers::SpendAddress;
-use std::{collections::BTreeSet, time::Duration};
+use std::collections::BTreeSet;
 use thiserror::Error;
+use tokio::time::Duration;
 
 /// Internal error.
 #[derive(Debug, Error)]

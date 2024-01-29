@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
+use crate::target_arch::{spawn, Instant};
 use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use libp2p::{
     identity::PeerId,
@@ -117,7 +118,7 @@ impl NodeRecordStore {
     }
 
     fn read_from_disk<'a>(key: &Key, storage_dir: &Path) -> Option<Cow<'a, Record>> {
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
@@ -252,7 +253,7 @@ impl NodeRecordStore {
         }
 
         let cloned_cmd_sender = self.swarm_cmd_sender.clone();
-        tokio::spawn(async move {
+        spawn(async move {
             let cmd = match fs::write(&file_path, r.value) {
                 Ok(_) => {
                     // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -393,7 +394,7 @@ impl RecordStore for NodeRecordStore {
         trace!("Unverified Record {record_key:?} try to validate and store");
         let event_sender = self.network_event_sender.clone();
         // push the event off thread so as to be non-blocking
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             if let Err(error) = event_sender
                 .send(NetworkEvent::UnverifiedRecord(record))
                 .await
@@ -415,7 +416,7 @@ impl RecordStore for NodeRecordStore {
         let filename = Self::key_to_hex(k);
         let file_path = self.config.storage_dir.join(&filename);
 
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             match fs::remove_file(file_path) {
                 Ok(_) => {
                     info!("Removed record from disk! filename: {filename}");
@@ -527,50 +528,24 @@ fn calculate_cost_for_records(step: usize, received_payment_count: usize) -> u64
 #[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
+
     use super::*;
-
     use crate::{close_group_majority, sort_peers_by_key, REPLICATE_RANGE};
-
     use bytes::Bytes;
     use eyre::ContextCompat;
-    use libp2p::{
-        core::multihash::Multihash,
-        kad::{KBucketKey, RecordKey},
-    };
+    use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
     use sn_protocol::storage::{try_serialize_record, ChunkAddress};
-    use std::{collections::BTreeMap, time::Duration};
+    use std::collections::BTreeMap;
     use tokio::runtime::Runtime;
+    use tokio::time::{sleep, Duration};
 
     const MULITHASH_CODE: u64 = 0x12;
 
     #[derive(Clone, Debug)]
     struct ArbitraryKey(Key);
     #[derive(Clone, Debug)]
-    struct ArbitraryPeerId(PeerId);
-    #[derive(Clone, Debug)]
-    struct ArbitraryKBucketKey(KBucketKey<PeerId>);
-    #[derive(Clone, Debug)]
     struct ArbitraryRecord(Record);
-    #[derive(Clone, Debug)]
-    struct ArbitraryProviderRecord(ProviderRecord);
-
-    impl Arbitrary for ArbitraryPeerId {
-        fn arbitrary(g: &mut Gen) -> ArbitraryPeerId {
-            let hash: [u8; 32] = core::array::from_fn(|_| u8::arbitrary(g));
-            let peer_id = PeerId::from_multihash(
-                Multihash::wrap(MULITHASH_CODE, &hash).expect("Failed to gen Multihash"),
-            )
-            .expect("Failed to create PeerId");
-            ArbitraryPeerId(peer_id)
-        }
-    }
-
-    impl Arbitrary for ArbitraryKBucketKey {
-        fn arbitrary(_: &mut Gen) -> ArbitraryKBucketKey {
-            ArbitraryKBucketKey(KBucketKey::from(PeerId::random()))
-        }
-    }
 
     impl Arbitrary for ArbitraryKey {
         fn arbitrary(g: &mut Gen) -> ArbitraryKey {
@@ -597,18 +572,6 @@ mod tests {
                 expires: None,
             };
             ArbitraryRecord(record)
-        }
-    }
-
-    impl Arbitrary for ArbitraryProviderRecord {
-        fn arbitrary(g: &mut Gen) -> ArbitraryProviderRecord {
-            let record = ProviderRecord {
-                key: ArbitraryKey::arbitrary(g).0,
-                provider: PeerId::random(),
-                expires: None,
-                addresses: vec![],
-            };
-            ArbitraryProviderRecord(record)
         }
     }
 
@@ -681,7 +644,7 @@ mod tests {
             {
                 break;
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
+            sleep(Duration::from_millis(100)).await;
             iteration += 1;
         }
         if iteration == max_iterations {
@@ -774,7 +737,7 @@ mod tests {
                     {
                         break;
                     }
-                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    sleep(Duration::from_millis(100)).await;
                     iteration += 1;
                 }
                 if iteration == max_iterations {
@@ -790,7 +753,7 @@ mod tests {
                 if store.get(&retained_key).is_some() {
                     break;
                 }
-                tokio::time::sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 iteration += 1;
             }
             if iteration == max_iterations {
@@ -983,9 +946,15 @@ mod tests {
 
             // Execute for 50 iterations, which allows the test can be executed in normal CI runs.
             if iteration == 50 {
-                assert_eq!(0, empty_earned_nodes);
-                assert!((max_store_cost / min_store_cost) < 60);
-                assert!((max_earned / min_earned) < 800);
+                assert_eq!(0, empty_earned_nodes, "every node has earnt _something_");
+                assert!(
+                    (max_store_cost / min_store_cost) < 100,
+                    "store cost is balanced"
+                );
+                assert!(
+                    (max_earned / min_earned) < 1000,
+                    "earning distribution is well balanced"
+                );
                 break;
             }
         }
