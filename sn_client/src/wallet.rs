@@ -77,7 +77,6 @@ impl WalletClient {
     /// wallet_client.store_local_wallet()?;
     /// # Ok(())
     /// # }
-    /// ```
     pub fn store_local_wallet(&mut self) -> WalletResult<()> {
         self.wallet.deposit_and_store_to_disk(&vec![])
     }
@@ -284,7 +283,7 @@ impl WalletClient {
     /// Send signed spends to another wallet.
     /// Can optionally verify if the store has been successful.
     /// Verification will be attempted via GET request through a Spend on the network.
-    // TODO: Unused
+    // TODO: Unused. Private method.
     async fn send_signed_spends(
         &mut self,
         signed_spends: BTreeSet<SignedSpend>,
@@ -329,6 +328,7 @@ impl WalletClient {
 
     /// Get storecost from the network
     /// Returns the MainPubkey of the node to pay and the price in NanoTokens
+    // TODO: Unused (No usages found in all places)
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,
@@ -340,18 +340,45 @@ impl WalletClient {
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
 
-    /// Send tokens to nodes closest to the data we want to make storage payment for.
+    /// Send tokens to nodes closest to the data we want to make storage payment for. Runs mandatory verification.
     ///
-    /// The returned result is: ((storage_cost, royalties_fees), (payee_map, skipped_chunks))
-    /// Where:
-    ///   `storage_cost` is the total cost for the all contents
-    ///   `royalties_fees` is the total royalty fess for the all contents
-    ///   `payee_map` is the payees selected for each content
-    ///   `skipped_chunks` is the list of content already exists in network and no need to upload
+    /// # Arguments
+    /// - content_addrs - [Iterator](Iterator)<Items = [NetworkAddress](NetworkAddress)>
     ///
-    /// Note storage cost is _per record_, and it's zero if not required for this operation.
-    /// This can optionally verify the store has been successful.
-    /// * verify_store - A boolean to verify store. Set this to true for mandatory verification.
+    /// # Returns:
+    /// # ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
+    ///
+    ///  * `storage_cost` - The total cost for the all contents ([`NanoTokens`](NanoTokens))
+    ///  * `royalties_fees` - the total royalty fess for the all contents ([`NanoTokens`](NanoTokens))
+    ///  * `payee_map` - The payees selected for each content ([Vec](Vec)<([`XorName`](XorName), [`PeerId`](PeerId))>)
+    ///  * `skipped_chunks` - the list of content already exists in network and no need to upload ([Vec](Vec)<[`XorName`](XorName)>)
+    /// Note that storage cost is _per record_, and it's zero if not required for this operation.
+    /// mandatory verification.
+    ///
+    /// # Example
+    ///```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use xor_name::XorName;
+    /// use sn_protocol::NetworkAddress;
+    /// use sn_registers::{Permissions, RegisterAddress};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// let mut rng = rand::thread_rng();
+    /// let xor_name = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xor_name, client.signer_pk());
+    /// let net_addr = NetworkAddress::from_register_address(address);
+    ///
+    /// // Paying for a random Register Address
+    /// let cost = wallet_client.pay_for_storage(std::iter::once(net_addr)).await?;
+    /// # Ok(())
+    /// # }
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -387,6 +414,7 @@ impl WalletClient {
     /// Existing chunks will have the store cost set to Zero.
     /// The payment procedure shall be skipped, and the chunk upload as well.
     /// Hence the list of existing chunks will be returned.
+    // TODO: Used only once in current file: Set to Private. No Docs issued.
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
@@ -395,7 +423,7 @@ impl WalletClient {
         (NanoTokens, NanoTokens),
         (Vec<(XorName, PeerId)>, Vec<XorName>),
     )> {
-        // get store cost from network in parrallel
+        // get store cost from network in parallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
             let client = self.client.clone();
@@ -452,10 +480,38 @@ impl WalletClient {
         ))
     }
 
-    /// Send tokens to nodes closest to the data we want to make storage payment for.
-    /// Returns the amount paid for storage, including the network royalties fee paid.
-    /// This can optionally verify the store has been successful.
-    /// This will attempt to GET the cash_note from the network.
+    /// Send tokens to nodes closest to the data that we want to make storage payments for.
+    /// # Returns:
+    ///
+    /// * [WalletResult](WalletResult)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
+    ///
+    /// This return contains the amount paid for storage. Including the network royalties fee paid.
+    ///
+    /// # Params:
+    /// * cost_map - [BTreeMap](BTreeMap) ([XorName](XorName),([MainPubkey](MainPubkey), [PaymentQuote](PaymentQuote)))
+    /// * verify_store - This optional check can verify if the store has been successful.
+    ///
+    /// Verification will be attempted via GET request through a Spend on the network.
+    ///
+    /// # Example
+    ///```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use std::collections::BTreeMap;
+    /// use xor_name::XorName;
+    /// use sn_transfers::{MainPubkey, Payment, PaymentQuote};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let mut cost_map:BTreeMap<XorName,(MainPubkey,PaymentQuote)> = BTreeMap::new();
+    /// wallet_client.pay_for_records(&cost_map,true).await?;
+    /// # Ok(())
+    /// # }
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
@@ -466,7 +522,7 @@ impl WalletClient {
         if self.wallet.unconfirmed_spend_requests_exist() {
             info!("Pre-Unconfirmed transactions exist. Resending in 1 second...");
             sleep(Duration::from_secs(1)).await;
-            self.resend_pending_txs(verify_store).await;
+            self.resend_pending_transactions(verify_store).await;
 
             return Err(WalletError::CouldNotSendMoney(
                 "Wallet has pre-unconfirmed transactions. Resend, and try again.".to_string(),
@@ -534,7 +590,8 @@ impl WalletClient {
 
     /// Resend failed transactions. This can optionally verify the store has been successful.
     /// This will attempt to GET the cash_note from the network.
-    pub async fn resend_pending_txs(&mut self, verify_store: bool) {
+    // TODO: Used only once in current file: Set to Private. No Docs issued.
+    async fn resend_pending_transactions(&mut self, verify_store: bool) {
         if self
             .client
             .send_spends(
@@ -552,12 +609,52 @@ impl WalletClient {
         }
     }
 
-    /// Return the wallet.
+    /// Returns the wallet:
+    ///
+    /// Return type: [LocalWallet](LocalWallet)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let paying_wallet = wallet_client.into_wallet();
+    /// // Display the wallet balance in the terminal
+    /// println!("{}",paying_wallet.balance());
+    /// # Ok(())
+    /// # }
     pub fn into_wallet(self) -> LocalWallet {
         self.wallet
     }
 
-    /// Return ref to inner waller
+    /// Returns a mutable wallet instance
+    ///
+    /// Return type: [LocalWallet](LocalWallet)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{LocalWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// # let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// let paying_wallet = wallet_client.mut_wallet();
+    /// // Display the mutable wallet balance in the terminal
+    /// println!("{}",paying_wallet.balance());
+    /// # Ok(())
+    /// # }
     pub fn mut_wallet(&mut self) -> &mut LocalWallet {
         &mut self.wallet
     }
@@ -683,7 +780,9 @@ pub async fn send(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_txs(verify_store).await;
+        wallet_client
+            .resend_pending_transactions(verify_store)
+            .await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -713,7 +812,9 @@ pub async fn send(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_txs(verify_store).await;
+            wallet_client
+                .resend_pending_transactions(verify_store)
+                .await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
@@ -758,7 +859,9 @@ pub async fn broadcast_signed_spends(
     while wallet_client.unconfirmed_spend_requests_exist() {
         info!("Pre-Unconfirmed txs exist, sending again after 1 second...");
         sleep(Duration::from_secs(1)).await;
-        wallet_client.resend_pending_txs(verify_store).await;
+        wallet_client
+            .resend_pending_transactions(verify_store)
+            .await;
 
         if attempts > 10 {
             // save the error state, but break out of the loop so we can save
@@ -788,7 +891,9 @@ pub async fn broadcast_signed_spends(
         while wallet_client.unconfirmed_spend_requests_exist() {
             info!("Unconfirmed txs exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
-            wallet_client.resend_pending_txs(verify_store).await;
+            wallet_client
+                .resend_pending_transactions(verify_store)
+                .await;
 
             if attempts > 10 {
                 // save the error state, but break out of the loop so we can save
