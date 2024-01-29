@@ -34,7 +34,7 @@ use std::str::FromStr;
 const DEFAULT_NODE_COUNT: u16 = 25;
 
 #[derive(Clone, PartialEq)]
-enum VerbosityLevel {
+pub enum VerbosityLevel {
     Minimal,
     Normal,
     Full,
