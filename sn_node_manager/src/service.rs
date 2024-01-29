@@ -21,7 +21,7 @@ use std::{
 };
 use sysinfo::{Pid, System, SystemExt};
 
-/// 5
+/// 6
 #[derive(Debug, PartialEq)]
 pub struct ServiceConfig {
     pub data_dir_path: PathBuf,
