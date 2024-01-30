@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.17](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.16...sn_client-v0.102.17) - 2024-01-30
+
+### Other
+- *(client)* log client upload failure error
+
 ## [0.102.16](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.15...sn_client-v0.102.16) - 2024-01-30
 
 ### Fixed
