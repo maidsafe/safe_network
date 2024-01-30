@@ -92,7 +92,7 @@ pub const fn close_group_majority() -> usize {
 }
 
 /// Max duration for all GET attempts
-const MAX_GET_RETRY_DURATION_MS: u64 = 6800;
+const MAX_GET_RETRY_DURATION_MS: u64 = 60000;
 
 #[cfg(not(target_arch = "wasm32"))]
 const MAX_GET_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS);

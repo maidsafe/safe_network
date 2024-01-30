@@ -105,7 +105,7 @@ const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
-const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(25);
+const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`

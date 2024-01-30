@@ -373,9 +373,9 @@ async fn spawn_royalties_payment_client_listener(
     let handle = tokio::spawn(async move {
         let mut count = 0;
 
-        // if expected royalties is 0 or 1 we'll wait for 20s as a minimum,
-        // otherwise we'll wait for 10s per expected royalty
-        let secs = std::cmp::max(40, expected_royalties as u64 * 15);
+        // if expected royalties is 0 or 1 we'll wait for 300s as a minimum,
+        // otherwise we'll wait for 60s per expected royalty
+        let secs = std::cmp::max(300, expected_royalties as u64 * 60);
         let duration = Duration::from_secs(secs);
         info!("Awaiting transfers notifs for {duration:?}...");
         if timeout(duration, async {
