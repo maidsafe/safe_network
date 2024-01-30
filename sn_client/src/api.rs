@@ -476,6 +476,7 @@ impl Client {
             .await
         {
             error!("Failed to verify the existence of chunk {address:?} with err {err:?}");
+            return Err(err.into());
         }
 
         Ok(())
