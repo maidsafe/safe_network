@@ -239,6 +239,11 @@ pub enum SubCmd {
         /// This assumes the command is being run from the root of the safe_network repository.
         #[clap(long)]
         build: bool,
+        /// Set to remove the client data directory.
+        ///
+        /// This can be useful for clearing wallets from previous local networks.
+        #[clap(long)]
+        clean: bool,
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
@@ -478,9 +483,11 @@ async fn main() -> Result<()> {
             if local_node_registry.nodes.is_empty() {
                 println!("No local network is currently running");
             } else {
-                println!("=================================================");
-                println!("             Killing Local Network               ");
-                println!("=================================================");
+                if verbosity != VerbosityLevel::Minimal {
+                    println!("=================================================");
+                    println!("             Killing Local Network               ");
+                    println!("=================================================");
+                }
                 kill_network(&local_node_registry, keep_directories)?;
                 std::fs::remove_file(local_reg_path)?;
             }
@@ -531,6 +538,7 @@ async fn main() -> Result<()> {
         }
         SubCmd::Run {
             build,
+            clean,
             count,
             faucet_path,
             faucet_version,
@@ -545,9 +553,21 @@ async fn main() -> Result<()> {
                     .suggestion("Use the kill command to destroy the network then try again"));
             }
 
-            println!("=================================================");
-            println!("             Launching Local Network             ");
-            println!("=================================================");
+            if clean {
+                let client_data_path = dirs_next::data_dir()
+                    .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+                    .join("safe")
+                    .join("client");
+                if client_data_path.is_dir() {
+                    std::fs::remove_dir_all(client_data_path)?;
+                }
+            }
+
+            if verbosity != VerbosityLevel::Minimal {
+                println!("=================================================");
+                println!("             Launching Local Network             ");
+                println!("=================================================");
+            }
 
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
             let faucet_path = get_bin_path(
