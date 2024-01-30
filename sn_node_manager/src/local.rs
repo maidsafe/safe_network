@@ -131,6 +131,21 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         }
     }
 
+    let faucet_data_path = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+        .join("safe")
+        .join("test_faucet");
+    if faucet_data_path.is_dir() {
+        std::fs::remove_dir_all(faucet_data_path)?;
+    }
+    let genesis_data_path = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+        .join("safe")
+        .join("test_genesis");
+    if genesis_data_path.is_dir() {
+        std::fs::remove_dir_all(genesis_data_path)?;
+    }
+
     for node in node_registry.nodes.iter() {
         println!("{}:", node.service_name);
         // If the PID is not set it means the `status` command ran and determined the node was
