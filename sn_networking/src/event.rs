@@ -503,8 +503,11 @@ impl SwarmDriver {
                                     there_is_a_serious_issue = true
                                 }
                                 TransportError::Other(err) => {
-                                    let problematic_errors =
-                                        ["ConnectionRefused", "HostUnreachable"];
+                                    let problematic_errors = [
+                                        "ConnectionRefused",
+                                        "HostUnreachable",
+                                        "HandshakeTimedOut",
+                                    ];
                                     // It is really difficult to match this error, due to being eg:
                                     // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
                                     // if we can match that, let's. But meanwhile we'll check the message
