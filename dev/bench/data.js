@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706630576340,
+  "lastUpdate": 1706630578143,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "4614570c13921ac79ea324c6f3bbbe2951ec8bbe",
-          "message": "chore(networking): reduce identify log noise",
-          "timestamp": "2023-09-21T10:17:04+02:00",
-          "tree_id": "97877ad20a6b7711a923e9a5f96d4944a4fff0b5",
-          "url": "https://github.com/maidsafe/safe_network/commit/4614570c13921ac79ea324c6f3bbbe2951ec8bbe"
-        },
-        "date": 1695286125942,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 217.10847,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 165,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "163381bbf5da61df47b8d9cbfee3d0c0cb24e670",
           "message": "ci: add initial benchmarks for sn_transfers",
           "timestamp": "2023-09-21T09:58:20Z",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e2f68048f58f69a2e507e3f8c4281bd12b24655d",
+          "message": "ci: build node manager on local network start\n\nThis is required until we update the Github Action to pull the latest release of the node manager.\nThis couldn't be done initially because we were moving the releases to the `safe_network`\nrepository, but it should be doable now.",
+          "timestamp": "2024-01-30T16:18:53+01:00",
+          "tree_id": "9225280e0e85850135bd77ace378122e2af6c8d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/e2f68048f58f69a2e507e3f8c4281bd12b24655d"
+        },
+        "date": 1706630577528,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
