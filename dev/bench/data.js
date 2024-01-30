@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706637914742,
+  "lastUpdate": 1706637916350,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "163381bbf5da61df47b8d9cbfee3d0c0cb24e670",
-          "message": "ci: add initial benchmarks for sn_transfers",
-          "timestamp": "2023-09-21T09:58:20Z",
-          "tree_id": "d4cc7392b2a2c859fc9505c3510949d7dd64f7d6",
-          "url": "https://github.com/maidsafe/safe_network/commit/163381bbf5da61df47b8d9cbfee3d0c0cb24e670"
-        },
-        "date": 1695294529285,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 217.7024,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 158,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "afd0411cf9d407c5a01183edff4b872c77c12760",
           "message": "feat(cli): deps update and arbitrary change for cli\n\nBREAKING CHANGE: dbc deprecation did seemingly not kick off a release\nfor the CLI.",
           "timestamp": "2023-09-22T10:29:19+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "62fef44192483768f0ce10fdbd36c6849ea75c66",
+          "message": "chore(client): log client upload failure error",
+          "timestamp": "2024-01-30T17:18:16Z",
+          "tree_id": "59ad39ea613dc9fadfa87252f7e27a9a24e28ecc",
+          "url": "https://github.com/maidsafe/safe_network/commit/62fef44192483768f0ce10fdbd36c6849ea75c66"
+        },
+        "date": 1706637915849,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
