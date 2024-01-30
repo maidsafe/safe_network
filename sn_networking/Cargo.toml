@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.12.40"
+version = "0.12.41"
 
 [features]
 default=["libp2p/quic"]
@@ -30,7 +30,7 @@ rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_protocol = { path = "../sn_protocol", version = "0.11.2" }
+sn_protocol = { path = "../sn_protocol", version = "0.11.3" }
 sn_transfers = { path = "../sn_transfers", version = "0.14.43" }
 sysinfo = { version = "0.29.0", default-features = false, optional = true }
 thiserror = "1.0.23"

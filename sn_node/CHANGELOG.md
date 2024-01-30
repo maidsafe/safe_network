@@ -3017,6 +3017,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.103.23](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.22...sn_node-v0.103.23) - 2024-01-30
+
+### Other
+- *(manager)* provide rpc address instead of rpc port
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
