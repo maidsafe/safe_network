@@ -10,6 +10,7 @@ use crate::service::ServiceControl;
 use crate::VerbosityLevel;
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
+use libp2p::multiaddr::Protocol;
 use semver::Version;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
@@ -48,6 +49,14 @@ pub async fn start(
     // Give the node a little bit of time to start before initiating the node info query.
     service_control.wait(3);
     let node_info = rpc_client.node_info().await?;
+    let network_info = rpc_client.network_info().await?;
+    node.listen_addr = Some(
+        network_info
+            .listeners
+            .into_iter()
+            .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
+            .collect(),
+    );
     node.pid = Some(node_info.pid);
     node.peer_id = Some(node_info.peer_id);
     node.status = NodeStatus::Running;
@@ -170,13 +179,8 @@ pub async fn status(
                 "Peer ID: {}",
                 node.peer_id.map_or("-".to_string(), |p| p.to_string())
             );
-            println!("Port: {}", node.port);
             println!("RPC Socket: {}", node.rpc_socket_addr);
-            println!(
-                "Multiaddr: {}",
-                node.get_multiaddr()
-                    .map_or("-".to_string(), |m| m.to_string())
-            );
+            println!("Listen Addresses: {:?}", node.listen_addr);
             println!(
                 "PID: {}",
                 node.pid.map_or("-".to_string(), |p| p.to_string())
@@ -400,10 +404,10 @@ mod tests {
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Added,
             pid: None,
+            listen_addr: None,
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
@@ -464,10 +468,10 @@ mod tests {
             service_name: "Safenode service 2".to_string(),
             user: "safe".to_string(),
             number: 2,
-            port: 8082,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
             status: NodeStatus::Stopped,
             pid: Some(1001),
+            listen_addr: None,
             peer_id: Some(PeerId::from_str(
                 "12D3KooWAAqZWsjhdZTX7tniJ7Dwye3nEbp1dx1wE96sbgL51obs",
             )?),
@@ -530,10 +534,10 @@ mod tests {
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
+            listen_addr: None,
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
@@ -587,9 +591,9 @@ mod tests {
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
+            listen_addr: None,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
@@ -636,10 +640,10 @@ mod tests {
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
+            listen_addr: None,
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
@@ -678,10 +682,10 @@ mod tests {
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Added,
             pid: None,
+            listen_addr: None,
             peer_id: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
@@ -717,11 +721,11 @@ mod tests {
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
+            listen_addr: None,
             log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
             data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
             safenode_path: Some(PathBuf::from(
@@ -761,11 +765,11 @@ mod tests {
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
+            listen_addr: None,
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
             safenode_path: Some(safenode_bin.to_path_buf()),
@@ -800,10 +804,10 @@ mod tests {
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
+            listen_addr: None,
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
@@ -848,10 +852,10 @@ mod tests {
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Running,
             pid: Some(1000),
+            listen_addr: None,
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
@@ -899,11 +903,11 @@ mod tests {
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
             number: 1,
-            port: 8080,
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: NodeStatus::Stopped,
             pid: None,
             peer_id: None,
+            listen_addr: None,
             log_dir_path: Some(log_dir.to_path_buf()),
             data_dir_path: Some(data_dir.to_path_buf()),
             safenode_path: Some(safenode_bin.to_path_buf()),

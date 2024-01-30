@@ -27,7 +27,6 @@ pub struct AddServiceOptions {
     pub genesis: bool,
     pub local: bool,
     pub peers: Vec<Multiaddr>,
-    pub port: Option<u16>,
     pub rpc_address: Option<Ipv4Addr>,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
@@ -63,23 +62,6 @@ pub async fn add(
         }
     }
 
-    if install_options.count.is_some() && install_options.port.is_some() {
-        let count = install_options.count.unwrap();
-        if count > 1 {
-            return Err(eyre!(
-                "Custom node port can only be used when adding a single service"
-            ));
-        }
-    }
-
-    if install_options.port.is_some() {
-        let port = install_options.port.unwrap();
-        if !service_control.is_port_free(port) {
-            return Err(eyre!("Port {port} is already in use")
-                .suggestion("Please try again with an available port"));
-        }
-    }
-
     let (safenode_download_path, version) = download_and_extract_release(
         ReleaseType::Safenode,
         install_options.url,
@@ -100,11 +82,6 @@ pub async fn add(
     let target_node_count = current_node_count + install_options.count.unwrap_or(1);
     let mut node_number = current_node_count + 1;
     while node_number <= target_node_count {
-        let node_port = if let Some(port) = install_options.port {
-            port
-        } else {
-            service_control.get_available_port()?
-        };
         let rpc_free_port = service_control.get_available_port()?;
         let rpc_socket_addr = if let Some(addr) = install_options.rpc_address {
             SocketAddr::new(IpAddr::V4(addr), rpc_free_port)
@@ -136,7 +113,6 @@ pub async fn add(
             log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
             peers: install_options.peers.clone(),
-            node_port,
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
@@ -149,7 +125,6 @@ pub async fn add(
                     service_safenode_path.to_string_lossy().into_owned(),
                     service_data_dir_path.to_string_lossy().into_owned(),
                     service_log_dir_path.to_string_lossy().into_owned(),
-                    node_port,
                     rpc_socket_addr,
                 ));
 
@@ -158,10 +133,10 @@ pub async fn add(
                     service_name,
                     user: install_options.user.clone(),
                     number: node_number,
-                    port: node_port,
                     rpc_socket_addr,
                     version: version.clone(),
                     status: NodeStatus::Added,
+                    listen_addr: None,
                     pid: None,
                     peer_id: None,
                     log_dir_path: Some(service_log_dir_path.clone()),
@@ -191,8 +166,7 @@ pub async fn add(
                 println!("    - Safenode path: {}", install.1);
                 println!("    - Data path: {}", install.2);
                 println!("    - Log path: {}", install.3);
-                println!("    - Service port: {}", install.4);
-                println!("    - RPC port: {}", install.5);
+                println!("    - RPC port: {}", install.4);
             }
         }
         println!("[!] Note: newly added services have not been started");
@@ -329,11 +303,6 @@ mod tests {
         mock_service_control
             .expect_get_available_port()
             .times(1)
-            .returning(|| Ok(8080))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
@@ -348,7 +317,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
@@ -367,7 +335,6 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
-                port: None,
                 rpc_address: None,
                 url: None,
                 user: get_username(),
@@ -391,7 +358,6 @@ mod tests {
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(
             node_registry.nodes[0].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
@@ -425,10 +391,10 @@ mod tests {
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
                 number: 1,
-                port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 version: latest_version.to_string(),
                 status: NodeStatus::Added,
+                listen_addr: None,
                 pid: None,
                 peer_id: None,
                 log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
@@ -449,7 +415,6 @@ mod tests {
         let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
-        let custom_port = 12000;
         let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
         let result = add(
@@ -461,7 +426,6 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
-                port: Some(custom_port),
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
@@ -503,7 +467,6 @@ mod tests {
         let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
-        let custom_port = 12000;
         let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
         let result = add(
@@ -515,7 +478,6 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
-                port: Some(custom_port),
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
@@ -603,11 +565,6 @@ mod tests {
         mock_service_control
             .expect_get_available_port()
             .times(1)
-            .returning(|| Ok(8080))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
@@ -622,7 +579,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
@@ -633,11 +589,6 @@ mod tests {
             .in_sequence(&mut seq);
 
         // Expected calls for second installation
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8082))
-            .in_sequence(&mut seq);
         mock_service_control
             .expect_get_available_port()
             .times(1)
@@ -655,7 +606,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode2")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8082,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
@@ -666,11 +616,6 @@ mod tests {
             .in_sequence(&mut seq);
 
         // Expected calls for third installation
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8084))
-            .in_sequence(&mut seq);
         mock_service_control
             .expect_get_available_port()
             .times(1)
@@ -688,7 +633,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode3")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8084,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
@@ -704,7 +648,6 @@ mod tests {
                 genesis: false,
                 count: Some(3),
                 peers: vec![],
-                port: None,
                 rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -725,7 +668,6 @@ mod tests {
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(
             node_registry.nodes[0].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
@@ -743,7 +685,6 @@ mod tests {
         assert_eq!(node_registry.nodes[1].service_name, "safenode2");
         assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
-        assert_eq!(node_registry.nodes[1].port, 8082);
         assert_eq!(
             node_registry.nodes[1].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083)
@@ -761,7 +702,6 @@ mod tests {
         assert_eq!(node_registry.nodes[2].service_name, "safenode3");
         assert_eq!(node_registry.nodes[2].user, get_username());
         assert_eq!(node_registry.nodes[2].number, 3);
-        assert_eq!(node_registry.nodes[2].port, 8084);
         assert_eq!(
             node_registry.nodes[2].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085)
@@ -839,11 +779,6 @@ mod tests {
         mock_service_control
             .expect_get_available_port()
             .times(1)
-            .returning(|| Ok(8080))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
@@ -858,7 +793,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
@@ -874,7 +808,6 @@ mod tests {
                 genesis: false,
                 count: None,
                 peers: vec![],
-                port: None,
                 rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -895,7 +828,6 @@ mod tests {
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(
             node_registry.nodes[0].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
@@ -929,12 +861,12 @@ mod tests {
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
                 number: 1,
-                port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 version: latest_version.to_string(),
                 status: NodeStatus::Added,
                 pid: None,
                 peer_id: None,
+                listen_addr: None,
                 log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
                 data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
                 safenode_path: Some(PathBuf::from(
@@ -995,11 +927,6 @@ mod tests {
         mock_service_control
             .expect_get_available_port()
             .times(1)
-            .returning(|| Ok(8082))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
             .returning(|| Ok(8083))
             .in_sequence(&mut seq);
 
@@ -1014,7 +941,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode2")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8082,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
@@ -1030,7 +956,6 @@ mod tests {
                 genesis: false,
                 count: None,
                 peers: vec![],
-                port: None,
                 rpc_address: None,
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1051,7 +976,6 @@ mod tests {
         assert_eq!(node_registry.nodes[1].service_name, "safenode2");
         assert_eq!(node_registry.nodes[1].user, get_username());
         assert_eq!(node_registry.nodes[1].number, 2);
-        assert_eq!(node_registry.nodes[1].port, 8082);
         assert_eq!(
             node_registry.nodes[1].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083)
@@ -1125,11 +1049,6 @@ mod tests {
         mock_service_control
             .expect_get_available_port()
             .times(1)
-            .returning(|| Ok(8080))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
@@ -1144,7 +1063,6 @@ mod tests {
                     .to_path_buf()
                     .join("safenode1")
                     .join(SAFENODE_FILE_NAME),
-                node_port: 8080,
                 rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
@@ -1163,7 +1081,6 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 peers: vec![],
-                port: None,
                 rpc_address: None,
                 url: Some(url.to_string()),
                 user: get_username(),
@@ -1185,7 +1102,6 @@ mod tests {
         assert_eq!(node_registry.nodes[0].service_name, "safenode1");
         assert_eq!(node_registry.nodes[0].user, get_username());
         assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].port, 8080);
         assert_eq!(
             node_registry.nodes[0].rpc_socket_addr,
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
@@ -1199,267 +1115,6 @@ mod tests {
             Some(node_data_dir.to_path_buf().join("safenode1"))
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-        let latest_version = "0.96.4";
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-        safenode_download_path.write_binary(b"fake safenode bin")?;
-
-        let custom_port = 12000;
-
-        let mut seq = Sequence::new();
-        mock_service_control
-            .expect_is_port_free()
-            .with(eq(custom_port))
-            .times(1)
-            .returning(|_| true)
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_get_latest_version()
-            .times(1)
-            .returning(|_| Ok(latest_version.to_string()))
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                always(), // We will extract to a temporary directory
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(12001))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_install()
-            .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: custom_port,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
-            }))
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        add(
-            AddServiceOptions {
-                local: false,
-                genesis: false,
-                count: None,
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
-                port: Some(custom_port),
-                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
-                url: None,
-                user: get_username(),
-                version: None,
-            },
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(mock_release_repo),
-            VerbosityLevel::Normal,
-        )
-        .await?;
-
-        safenode_download_path.assert(predicate::path::missing());
-        node_data_dir.assert(predicate::path::is_dir());
-        node_logs_dir.assert(predicate::path::is_dir());
-
-        assert_eq!(node_registry.nodes.len(), 1);
-        assert_eq!(node_registry.nodes[0].version, latest_version);
-        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, get_username());
-        assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(node_registry.nodes[0].port, custom_port);
-        assert_eq!(
-            node_registry.nodes[0].rpc_socket_addr,
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
-        );
-        assert_eq!(
-            node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
-        );
-        assert_eq!(
-            node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
-        );
-        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn add_node_should_return_error_if_custom_port_is_in_use() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut mock_service_control = MockServiceControl::new();
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-
-        let custom_port = 12000;
-
-        mock_service_control
-            .expect_is_port_free()
-            .with(eq(custom_port))
-            .times(1)
-            .returning(|_| false);
-
-        let result = add(
-            AddServiceOptions {
-                local: true,
-                genesis: false,
-                count: None,
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
-                port: Some(custom_port),
-                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
-                url: None,
-                user: get_username(),
-                version: None,
-            },
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(MockSafeReleaseRepository::new()),
-            VerbosityLevel::Normal,
-        )
-        .await;
-
-        match result {
-            Ok(_) => panic!("This test should result in an error"),
-            Err(e) => {
-                assert_eq!(
-                    format!("Port {custom_port} is already in use"),
-                    e.to_string()
-                )
-            }
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_service_is_used(
-    ) -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-
-        let custom_port = 12000;
-
-        let result = add(
-            AddServiceOptions {
-                local: true,
-                genesis: false,
-                count: Some(3),
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
-                port: Some(custom_port),
-                rpc_address: None,
-                url: None,
-                user: get_username(),
-                version: None,
-            },
-            &mut node_registry,
-            &MockServiceControl::new(),
-            Box::new(MockSafeReleaseRepository::new()),
-            VerbosityLevel::Normal,
-        )
-        .await;
-
-        match result {
-            Ok(_) => panic!("This test should result in an error"),
-            Err(e) => {
-                assert_eq!(
-                    format!("Custom node port can only be used when adding a single service"),
-                    e.to_string()
-                )
-            }
-        }
 
         Ok(())
     }
