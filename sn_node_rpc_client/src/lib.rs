@@ -3,18 +3,16 @@ mod error;
 pub use crate::error::{Error, Result};
 
 use async_trait::async_trait;
-use libp2p::kad::RecordKey;
-use libp2p::{Multiaddr, PeerId};
+use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
     RestartRequest, StopRequest, UpdateRequest,
 };
-use std::net::SocketAddr;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{net::SocketAddr, path::PathBuf, str::FromStr};
 use tokio::time::Duration;
 use tonic::Request;
+use tracing::error;
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
@@ -55,6 +53,9 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
+    const MAX_CONNECTION_RETRY_ATTEMPTS: u8 = 5;
+    const CONNECTION_RETRY_DELAY_SEC: Duration = Duration::from_secs(1);
+
     pub fn new(endpoint: &str) -> Self {
         Self {
             endpoint: endpoint.to_string(),
@@ -65,13 +66,41 @@ impl RpcClient {
         let endpoint = format!("https://{socket}");
         Self { endpoint }
     }
+
+    // Connect to the RPC endpoint with retry
+    async fn connect_with_retry(&self) -> Result<SafeNodeClient<tonic::transport::Channel>> {
+        let mut attempts = 0;
+        loop {
+            match SafeNodeClient::connect(self.endpoint.clone()).await {
+                Ok(rpc_client) => break Ok(rpc_client),
+                Err(err) => {
+                    attempts += 1;
+                    tokio::time::sleep(Self::CONNECTION_RETRY_DELAY_SEC).await;
+                    if attempts >= Self::MAX_CONNECTION_RETRY_ATTEMPTS {
+                        return Err(Error::RpcEndpointConnectionFailure(err));
+                    }
+                    error!(
+                        "Could not connect to RPC endpoint {:?}. Retrying {attempts}/{}",
+                        self.endpoint,
+                        Self::MAX_CONNECTION_RETRY_ATTEMPTS
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[async_trait]
 impl RpcActions for RpcClient {
     async fn node_info(&self) -> Result<NodeInfo> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
-        let response = client.node_info(Request::new(NodeInfoRequest {})).await?;
+        let mut client = self.connect_with_retry().await?;
+        let response = client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await
+            .map_err(|err| {
+                error!("Could not obtain NodeInfo through RPC: {err:?}");
+                err
+            })?;
         let node_info_resp = response.get_ref();
         let peer_id = PeerId::from_bytes(&node_info_resp.peer_id)?;
         let node_info = NodeInfo {
@@ -86,10 +115,14 @@ impl RpcActions for RpcClient {
     }
 
     async fn network_info(&self) -> Result<NetworkInfo> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let response = client
             .network_info(Request::new(NetworkInfoRequest {}))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not obtain NetworkInfo through RPC: {err:?}");
+                err
+            })?;
         let network_info = response.get_ref();
 
         let mut connected_peers = Vec::new();
@@ -111,10 +144,14 @@ impl RpcActions for RpcClient {
     }
 
     async fn record_addresses(&self) -> Result<Vec<RecordAddress>> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let response = client
             .record_addresses(Request::new(RecordAddressesRequest {}))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not obtain RecordAddresses through RPC: {err:?}");
+                err
+            })?;
         let mut record_addresses = vec![];
         for bytes in response.get_ref().addresses.iter() {
             let key = libp2p::kad::RecordKey::from(bytes.clone());
@@ -124,57 +161,81 @@ impl RpcActions for RpcClient {
     }
 
     async fn gossipsub_subscribe(&self, topic: &str) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
                 topic: topic.to_string(),
             }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not Subscribe to gossip topic {topic:?} through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 
     async fn gossipsub_unsubscribe(&self, topic: &str) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .unsubscribe_from_topic(Request::new(GossipsubUnsubscribeRequest {
                 topic: topic.to_string(),
             }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not unsubscribe from gossip topic {topic:?} through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 
     async fn gossipsub_publish(&self, topic: &str, msg: &str) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .publish_on_topic(Request::new(GossipsubPublishRequest {
                 topic: topic.to_string(),
                 msg: msg.into(),
             }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not publish on topic {topic:?}, msg: {msg:?} through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 
     async fn node_restart(&self, delay_millis: u64) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .restart(Request::new(RestartRequest { delay_millis }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not restart node through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 
     async fn node_stop(&self, delay_millis: u64) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .stop(Request::new(StopRequest { delay_millis }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not stop node through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 
     async fn node_update(&self, delay_millis: u64) -> Result<()> {
-        let mut client = SafeNodeClient::connect(self.endpoint.clone()).await?;
+        let mut client = self.connect_with_retry().await?;
         let _response = client
             .update(Request::new(UpdateRequest { delay_millis }))
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Could not update node through RPC: {err:?}");
+                err
+            })?;
         Ok(())
     }
 }
