@@ -14,9 +14,7 @@ path="src/main.rs"
 name="safenode-manager"
 
 [features]
-default = ["quic"]
-quic = []
-tcp = []
+default = []
 
 [dependencies]
 clap = { version = "4.4.6", features = ["derive", "env"]}

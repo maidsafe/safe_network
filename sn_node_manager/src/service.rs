@@ -15,10 +15,7 @@ use service_manager::{
     ServiceUninstallCtx,
 };
 use std::net::SocketAddr;
-#[cfg(feature = "tcp")]
-use std::net::TcpListener as SocketBinder;
-#[cfg(not(feature = "tcp"))]
-use std::net::UdpSocket as SocketBinder;
+use std::net::TcpListener;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::{ffi::OsString, thread::sleep};
@@ -153,7 +150,7 @@ impl ServiceControl for NodeServiceManager {
     }
 
     fn is_port_free(&self, port: u16) -> bool {
-        let socket = SocketBinder::bind(("127.0.0.1", port));
+        let socket = TcpListener::bind(("127.0.0.1", port));
         let is_free = socket.is_ok();
         drop(socket);
         // Sleep a little while to make sure that we've dropped the socket.
@@ -172,7 +169,7 @@ impl ServiceControl for NodeServiceManager {
     fn get_available_port(&self) -> Result<u16> {
         let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
 
-        let socket = SocketBinder::bind(addr)?;
+        let socket = TcpListener::bind(addr)?;
         let port = socket.local_addr()?.port();
         drop(socket);
         // Sleep a little while to make sure that we've dropped the socket.
