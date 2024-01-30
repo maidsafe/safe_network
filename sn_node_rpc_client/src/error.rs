@@ -13,4 +13,6 @@ pub enum Error {
     TonicStatusError(#[from] tonic::Status),
     #[error(transparent)]
     TonicTransportError(#[from] tonic::transport::Error),
+    #[error("Could not connect to the RPC endpoint {0:?}")]
+    RpcEndpointConnectionFailure(tonic::transport::Error),
 }
