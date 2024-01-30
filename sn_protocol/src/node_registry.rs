@@ -93,7 +93,6 @@ pub struct Node {
     pub service_name: String,
     pub user: String,
     pub number: u16,
-    pub port: u16,
     pub rpc_socket_addr: SocketAddr,
     pub status: NodeStatus,
     pub pid: Option<u32>,
@@ -102,6 +101,7 @@ pub struct Node {
         deserialize_with = "deserialize_peer_id"
     )]
     pub peer_id: Option<PeerId>,
+    pub listen_addr: Option<Vec<Multiaddr>>,
     pub data_dir_path: Option<PathBuf>,
     pub log_dir_path: Option<PathBuf>,
     pub safenode_path: Option<PathBuf>,
@@ -110,29 +110,6 @@ pub struct Node {
         deserialize_with = "deserialize_connected_peers"
     )]
     pub connected_peers: Option<Vec<PeerId>>,
-}
-
-impl Node {
-    pub fn get_multiaddr(&self) -> Option<Multiaddr> {
-        if let Some(peer_id) = self.peer_id {
-            let start_addr = Multiaddr::from(std::net::Ipv4Addr::LOCALHOST);
-            // default
-            let addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
-                start_addr
-                    .with(libp2p::multiaddr::Protocol::Tcp(self.port))
-                    .with(libp2p::multiaddr::Protocol::Ws("/".into()))
-            } else {
-                start_addr
-                    .with(libp2p::multiaddr::Protocol::Udp(self.port))
-                    .with(libp2p::multiaddr::Protocol::QuicV1)
-            };
-
-            let peer = addr.with(libp2p::multiaddr::Protocol::P2p(peer_id));
-
-            return Some(peer);
-        }
-        None
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
