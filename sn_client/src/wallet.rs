@@ -40,7 +40,7 @@ impl WalletClient {
     ///
     /// # Arguments
     /// * `client` - A instance of the struct [`sn_client::Client`](Client)
-    /// * `wallet` - An instance of the struct [`sn_transfers::LocalWallet`](LocalWallet)
+    /// * `wallet` - An instance of the struct [`LocalWallet`]
     ///
     /// # Example
     /// ```no_run
@@ -131,7 +131,7 @@ impl WalletClient {
     ///  Returns the Cached Payment for a provided NetworkAddress.
     ///
     /// # Arguments
-    /// * `address` - The [`NetworkAddress`](NetworkAddress).
+    /// * `address` - The [`NetworkAddress`].
     ///
     /// # Example
     /// ```no_run
@@ -174,7 +174,7 @@ impl WalletClient {
     /// Remove the payment for a given network address from disk.
     ///
     /// # Arguments
-    /// * `address` - The [`NetworkAddress`](NetworkAddress).
+    /// * `address` - The [`NetworkAddress`].
     ///
     /// # Example
     /// ```no_run
@@ -218,8 +218,8 @@ impl WalletClient {
     /// Verification will be attempted via GET request through a Spend on the network.
     ///
     /// # Arguments
-    /// * `amount` - [`NanoTokens`](NanoTokens).
-    /// * `to` - [`MainPubkey`](MainPubkey).
+    /// * `amount` - [`NanoTokens`].
+    /// * `to` - [`MainPubkey`].
     /// * `verify_store` - A boolean to verify store. Set this to true for mandatory verification.
     ///
     /// # Example
@@ -343,15 +343,15 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data we want to make storage payment for. Runs mandatory verification.
     ///
     /// # Arguments
-    /// - content_addrs - [Iterator](Iterator)<Items = [NetworkAddress](NetworkAddress)>
+    /// - content_addrs - [Iterator]<Items = [`NanoTokens`]>
     ///
     /// # Returns:
     /// # ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
     ///
-    ///  * `storage_cost` - The total cost for the all contents ([`NanoTokens`](NanoTokens))
-    ///  * `royalties_fees` - the total royalty fess for the all contents ([`NanoTokens`](NanoTokens))
-    ///  * `payee_map` - The payees selected for each content ([Vec](Vec)<([`XorName`](XorName), [`PeerId`](PeerId))>)
-    ///  * `skipped_chunks` - the list of content already exists in network and no need to upload ([Vec](Vec)<[`XorName`](XorName)>)
+    ///  * `storage_cost` - The total cost for the all contents ([`NanoTokens`])
+    ///  * `royalties_fees` - the total royalty fess for the all contents ([`NanoTokens`])
+    ///  * `payee_map` - The payees selected for each content ([Vec]<([`XorName`], [`PeerId`])>)
+    ///  * `skipped_chunks` - the list of content already exists in network and no need to upload ([Vec]<[`XorName`]>)
     /// Note that storage cost is _per record_, and it's zero if not required for this operation.
     /// mandatory verification.
     ///
@@ -483,12 +483,12 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data that we want to make storage payments for.
     /// # Returns:
     ///
-    /// * [WalletResult](WalletResult)<([NanoTokens](NanoTokens), [NanoTokens](NanoTokens))>
+    /// * [WalletResult]<([NanoTokens], [NanoTokens])>
     ///
     /// This return contains the amount paid for storage. Including the network royalties fee paid.
     ///
     /// # Params:
-    /// * cost_map - [BTreeMap](BTreeMap) ([XorName](XorName),([MainPubkey](MainPubkey), [PaymentQuote](PaymentQuote)))
+    /// * cost_map - [BTreeMap]([XorName],([MainPubkey], [PaymentQuote]))
     /// * verify_store - This optional check can verify if the store has been successful.
     ///
     /// Verification will be attempted via GET request through a Spend on the network.
@@ -611,7 +611,7 @@ impl WalletClient {
 
     /// Returns the wallet:
     ///
-    /// Return type: [LocalWallet](LocalWallet)
+    /// Return type: [LocalWallet]
     ///
     /// # Example
     /// ```no_run
@@ -636,7 +636,7 @@ impl WalletClient {
 
     /// Returns a mutable wallet instance
     ///
-    /// Return type: [LocalWallet](LocalWallet)
+    /// Return type: [LocalWallet]
     ///
     /// # Example
     /// ```no_run
@@ -665,7 +665,7 @@ impl Client {
     /// This can optionally verify the spends have been correctly stored before returning
     ///
     /// # Arguments
-    /// * spend_requests - [Iterator](Iterator)<[SignedSpend](SignedSpend)>
+    /// * spend_requests - [Iterator]<[SignedSpend]>
     /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
     ///
     /// # Example
@@ -679,9 +679,11 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// let mut wallet_client = WalletClient::new(client, wallet);
     /// // An example of sending storage payment transfers over the network with validation
-    /// wallet_client.send_spends(wallet.unconfirmed_spend_requests().iter(),true)?;
+    /// client.send_spends(
+    ///     wallet.unconfirmed_spend_requests().iter(),
+    ///     true
+    /// ).await.expect("");
     /// # Ok(())
     /// # }
     /// ```
@@ -737,11 +739,11 @@ impl Client {
     /// Receive a Transfer, verify and redeem CashNotes from the Network.
     ///
     /// # Arguments
-    /// * transfer: &[Transfer](Transfer) - Borrowed value for [Transfer](Transfer)
-    /// * wallet: &[LocalWallet](LocalWallet) - Borrowed value for [LocalWallet](LocalWallet)
+    /// * transfer: &[Transfer] - Borrowed value for [Transfer]
+    /// * wallet: &[LocalWallet] - Borrowed value for [LocalWallet]
     ///
     /// # Return Value
-    /// * [WalletResult](WalletResult)<[Vec](Vec)<[CashNote](CashNote)>>
+    /// * [WalletResult]<[Vec]<[CashNote]>>
     ///
     /// # Example
     /// ```no_run
@@ -756,7 +758,6 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let transfer = Transfer::from_hex("13abc").unwrap();
     /// // An example for using client.receive() for cashNotes
     /// let cash_notes = match client.receive(&transfer, &wallet).await {
@@ -787,10 +788,10 @@ impl Client {
     /// Verify that the spends referred to (in the CashNote) exist on the network.
     ///
     /// # Arguments
-    /// * cash_note - [CashNote](CashNote)
+    /// * cash_note - [CashNote]
     ///
     /// # Return value
-    /// [WalletResult](WalletResult)
+    /// [WalletResult]
     ///
     /// # Example
     /// ```no_run
@@ -805,12 +806,11 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let transfer = Transfer::from_hex("").unwrap();
     /// let cash_notes = client.receive(&transfer, &wallet).await?;
     /// // Verification:
     /// for cash_note in cash_notes {
-    ///     println!("{}" , client.verify_cashnote(&cash_note).await.unwrap());
+    ///     println!("{:?}" , client.verify_cashnote(&cash_note).await.unwrap());
     /// }
     /// # Ok(())
     ///
@@ -852,14 +852,11 @@ impl Client {
 /// This marks the spent CashNote as spent in the Network
 ///
 /// # Arguments
-/// * from - [LocalWallet](LocalWallet)
-/// * amount - [NanoTokens](NanoTokens)
-/// * to - [MainPubkey](MainPubkey)
-/// * client - [Client](Client)
+/// * from - [LocalWallet]
+/// * amount - [NanoTokens]
+/// * to - [MainPubkey]
+/// * client - [Client]
 /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
-///
-/// # Return value
-/// [Result](Result)<[CashNote](CashNote)>
 ///
 /// # Example
 /// ```no_run
@@ -970,16 +967,16 @@ pub async fn send(
 /// Verification will be attempted via GET request through a Spend on the network.
 ///
 /// # Arguments
-/// * from - [LocalWallet](LocalWallet),
-/// * client - [Client](Client),
-/// * signed_spends - [BTreeSet](BTreeSet)<[SignedSpend](SignedSpend)>,
-/// * transaction - [Transaction](Transaction),
-/// * change_id - [UniquePubkey](UniquePubkey),
-/// * output_details - [BTreeMap](BTreeMap)<[UniquePubkey](UniquePubkey), ([MainPubkey](MainPubkey), [DerivationIndex](DerivationIndex))>,
+/// * from - [LocalWallet],
+/// * client - [Client],
+/// * signed_spends - [BTreeSet]<[SignedSpend]>,
+/// * transaction - [Transaction],
+/// * change_id - [UniquePubkey],
+/// * output_details - [BTreeMap]<[UniquePubkey], ([MainPubkey], [DerivationIndex])>,
 /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
 ///
 /// # Return value
-/// [WalletResult](WalletResult)<[CashNote](CashNote)>
+/// [WalletResult]<[CashNote]>
 /// # Example
 /// ```no_run
 /// use sn_client::{Client, WalletClient, Error};
@@ -994,8 +991,8 @@ pub async fn send(
 /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
 /// # let tmp_path = TempDir::new()?.path().to_owned();
 /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-/// let mut wallet_client = WalletClient::new(client.clone(), wallet.clone());///
 /// let transaction = Transaction {inputs: Vec::new(),outputs: Vec::new(),};
+/// let secret_key = UniquePubkey::new(SecretKey::random().public_key());
 ///
 /// println!("Broadcasting the transaction to the network...");
 ///  let cash_note = sn_client::broadcast_signed_spends(
@@ -1003,7 +1000,7 @@ pub async fn send(
 ///     &client,
 ///     BTreeSet::default(),
 ///     transaction,
-///     UniquePubkey::new(SecretKey::random()),
+///     secret_key,
 ///     BTreeMap::new(),
 ///     true
 ///  ).await?;
