@@ -10,11 +10,7 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 - [For Users](#for-Users)
 - [For Developers](#for-developers)
 - [For the Technical](#for-the-technical)
-- [Run your MaidSafe Local Test Network in 4 easy Steps](#Run-your-MaidSafe-Local-Test-Network-in-4-easy-Steps)
-- [Token transfers](#token-transfers)
-- [Auditing](#auditing)
-- [Using example app which exercises the Register APIs](#using-example-app-which-exercises-the-register-apis)
-- [Using the example RPC client app to query info and send cmds to a running safenode](#using-the-example-rpc-client-app-to-query-info-and-send-cmds-to-a-running-safenode)
+- [Using a Local Network](#Using-a-local-network)
 - [Metrics Dashboard](#metrics-dashboard)
 
 ### For Users
@@ -61,122 +57,170 @@ Browser usage is highly experimental, but the wasm32 target for `sn_client` _sho
 - [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md) The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small helper used to get the build/commit versioning info for debug purposes.
 
-## Run your MaidSafe Local Test Network in 4 easy Steps
-Before you start, make sure to have **[Rust installed](https://www.rust-lang.org/learn/get-started)** and the latest version with `rustup update`
-<br>
-1. Create your Local Test Network : <br>
+## Using a Local Network
+
+We can explore the network's features by using multiple node processes to form a local network.
+
+The latest version of [Rust](https://www.rust-lang.org/learn/get-started) should be installed. If you already have an installation, use `rustup update` to get the latest version.
+
+Run all the commands from the root of this repository.
+
+### Run the Network
+
+Follow these steps to create a local network:
+1. Create the test network: <br>
 ```bash
-cargo run --bin testnet --features="local-discovery" -- --build-node --build-faucet --interval 100 --clean
+cargo run --bin safenode-manager --features local-discovery -- run --build
 ```
-2. Build a Tokenized Wallet : <br>
+2. Verify node status: <br>
 ```bash
-cargo run --release --bin safe --features=local-discovery -- wallet get-faucet 127.0.0.1:8000
+cargo run --bin safenode-manager --features local-discovery -- status
 ```
-3. Upload your chosen Directory to the Local Test Network : <br>
+3. Build a tokenized wallet: <br>
 ```bash
-cargo run --release --bin safe --features=local-discovery -- files upload <directory-path-goes-here>
+cargo run --bin safe --features local-discovery -- wallet get-faucet 127.0.0.1:8000
 ```
-4. Download the Directory Contents from the Local Test Network : <br>
+
+The node manager's `run` command starts the node processes and a faucet process, the latter of which will dispense tokens for use with the network. The `status` command should show twenty-five running nodes. The `wallet` command retrieves some tokens, which enables file uploads.
+
+### Files
+
+The file storage capability can be demonstrated by uploading files to the local network, then retrieving them.
+
+Upload a file or a directory:
 ```bash
-cargo run --release --bin safe --features=local-discovery -- files download
+cargo run --bin safe --features local-discovery -- files upload <path>
 ```
-## Shut down Your Test Network
-On Windows (PowerShell)
+
+The output will show that the upload costs some tokens.
+
+Now download the files again:
 ```bash
-Get-Process safenode | Stop-Process; Get-Process faucet | Stop-Process
-```
-For MacOS<br>
-```bash
-killall safenode || true && RUST_LOG=safenode,safe cargo run --bin testnet -- --build-node --build-faucet --interval 100  && export SAFE_PEERS=$(rg "listening on \".+\"" ~/.local/share/safe -u | rg '/ip4.*$' -m1 -o | rg '"' -r '')
+cargo run --bin safe --features local-discovery -- files download
 ```
 
-## Token transfers
+### Token Transfers
 
-- Get your wallet address
-  `cargo run --release --bin safe -- wallet address`
+Use your local wallet to demonstrate sending tokens and receiving transfers.
 
-- Send tokens to an address, this will output a Transfer hex string that you must send to the recipient out-of-band
-  `cargo run --release --bin safe -- wallet send [amount] [address]`
-
-- Receive tokens from a Transfer hex string
-  `cargo run --release --bin safe -- wallet receive [transfer]`
-
-## Auditing
-
-- Verify a Spend on the Network (optionally recursively all the way back to genesis)
-  `cargo run --release --bin safe -- wallet verify [--genesis] [spend address]`
-
-- Audit all the Spends on the Network from Genesis
-  `cargo run --release --bin safe -- wallet audit`
-
-## Using example app which exercises the Register APIs
-
-You can run the `registers` example client app from multiple consoles simultaneously,
-to write to the same Register on the network, identified by its nickname and
-using different usernames from each instance launched, e.g.:
-
-From first console:
+First, get your wallet address:
 ```
-cargo run --release --example registers -- --user alice --reg-nickname myregister
+cargo run --bin safe -- wallet address
 ```
 
-From a second console:
+Now send some tokens to that address: 
 ```
-cargo run --release --example registers -- --user bob --reg-nickname myregister
+cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 ```
 
-## Using the example RPC client app to query info and send cmds to a running safenode
+This will output a transfer as a hex string, which should be sent to the recipient out-of-band.
 
-- Query basic node info
+For demonstration purposes, copy the transfer string and use it to receive the transfer in your own wallet:
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 info
+cargo run --bin safe --features local-discovery -- wallet receive [transfer]
+```
+
+### Auditing
+
+We can verify a spend, optionally going back to the genesis transaction:
+```
+cargo run --bin safe --features local-discovery -- wallet verify [--genesis] [spend address]
+```
+
+All spends from genesis can be audited:
+```
+cargo run --bin safe --features local-discovery -- wallet audit
+```
+
+### Registers
+
+Registers are one of the network's data types. The workspace here has an example app demonstrating
+their use:
+```
+cargo run --example registers --features=local-discovery -- --user alice --reg-nickname myregister
+```
+
+### RPC
+
+The node manager launches each node process with a remote procedure call (RPC) service. The workspace has a client binary that can be used to run commands against these services.
+
+Run the `status` command with the `--details` flag to get the RPC port for each node:
+```
+$ cargo run --bin safenode-manager -- status --details
+...
+===================================
+safenode-local25 - RUNNING
+===================================
+Version: 0.103.21
+Peer ID: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+Port: 38835
+RPC Port: 34416
+Multiaddr: /ip4/127.0.0.1/udp/38835/quic-v1/p2p/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+PID: 62369
+Data path: /home/chris/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+Log path: /home/chris/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+Bin path: target/release/safenode
+Connected peers: 24
+```
+
+Now you can run RPC commands against any node.
+
+The `info` command will retrieve basic information about the node:
+```
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 info
 Node info:
-===================
-RPC endpoint: http://127.0.0.1:12001
-Peer Id: 12D3KooWB5CXPPtbVzZ7K9dv8xLj4JAPVEQu7ehibs2bWrqwiowy
-Logs dir: /home/bochaco/.safe/node/local-test-network/safenode-1
-PID: 490955
-Binary version: 0.1.0
-Time since last restart: 650s
+==========
+RPC endpoint: https://127.0.0.1:34416
+Peer Id: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+Logs dir: /home/chris/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+PID: 62369
+Binary version: 0.103.21
+Time since last restart: 1614s
 ```
 
-- Query info about node's connections to the network:
+The `netinfo` command will return connected peers and listeners:
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 netinfo
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 netinfo
 Node's connections to the Network:
 
 Connected peers:
-Peer: 12D3KooWCRN4jQjyACrHq4mAq1ZLDDnA1E9cDGoGuXP1pZbRDJee
-Peer: 12D3KooWFc2PX9Y7bQfUULHrg1VYeNAVKyS5mUjQJfzDy3NqSn2t
-Peer: 12D3KooWA2jeb4YdkTb5zw2ajWK4zqgoVaMN5y1eDrkUCXoin94V
-Peer: 12D3KooWLHZBRw47aqXCedSYvv4QQWsYdEX9HnDV6YwZBjujWAZV
-Peer: 12D3KooWJUExWkuqProAgTBhABMeQoi25zBpqdmGEncs1X62NCtV
-Peer: 12D3KooWENu5uDQsSdb4XCVeLZhXav922uyWHnyfLFwC5KZGKrpR
-Peer: 12D3KooWSaEKWKPGh5Q3fQrn6xqsyvQsKT2y5XxxZXjCqQbP35eE
-Peer: 12D3KooWNCvmBaz1MkByYkYArxKVQdiCA4bKDDBgFBtBzcpfDwA5
-Peer: 12D3KooWJPkWZHnsqwwHCWXj5MV3MaoNXksTKRGMNjAcaqydYKRv
+Peer: 12D3KooWJkD2pB2WdczBJWt4ZSAWfFFMa8FHe6w9sKvH2mZ6RKdm
+Peer: 12D3KooWRNCqFYX8dJKcSTAgxcy5CLMcEoM87ZSzeF43kCVCCFnc
+Peer: 12D3KooWLDUFPR2jCZ88pyYCNMZNa4PruweMsZDJXUvVeg1sSMtN
+Peer: 12D3KooWC8GR5NQeJwTsvn9SKChRZqJU8XS8ZzKPwwgBi63FHdUQ
+Peer: 12D3KooWJGERJnGd5N814V295zq1CioxUUWKgNZy4zJmBLodAPEj
+Peer: 12D3KooWJ9KHPwwiRpgxwhwsjCiHecvkr2w3JsUQ1MF8q9gzWV6U
+Peer: 12D3KooWSBafke1pzz3KUXbH875GYcMLVqVht5aaXNSRtbie6G9g
+Peer: 12D3KooWJtKc4C7SRkei3VURDpnsegLUuQuyKxzRpCtsJGhakYfX
+Peer: 12D3KooWKg8HsTQ2XmBVCeGxk7jHTxuyv4wWCWE2pLPkrhFHkwXQ
+Peer: 12D3KooWQshef5sJy4rEhrtq2cHGagdNLCvcvMn9VXwMiLnqjPFA
+Peer: 12D3KooWLfXHapVy4VV1DxWndCt3PmqkSRjFAigsSAaEnKzrtukD
 
 Node's listeners:
-Listener: /ip4/127.0.0.1/udp/47117/quic-v1
-Listener: /ip4/192.168.0.155/udp/47117/quic-v1
-Listener: /ip4/172.17.0.1/udp/47117/quic-v1
+Listener: /ip4/127.0.0.1/udp/38835/quic-v1
+Listener: /ip4/192.168.1.86/udp/38835/quic-v1
+Listener: /ip4/172.17.0.1/udp/38835/quic-v1
+Listener: /ip4/172.18.0.1/udp/38835/quic-v1
+Listener: /ip4/172.20.0.1/udp/38835/quic-v1
 ```
 
-- Restarting/Updating/Stopping a node
+Node control commands:
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 restart 5000
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 restart 5000
 Node successfully received the request to restart in 5s
 
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 stop 6000
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 stop 6000
 Node successfully received the request to stop in 6s
 
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 update 7000
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 update 7000
 Node successfully received the request to try to update in 7s
 ```
 
-- Listening to network royalties payments events
+NOTE: it is preferable to use the node manager to control the node rather than RPC commands.
+
+Listening to royalty payment events:
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 transfers
+$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
 Listening to transfers notifications... (press Ctrl+C to exit)
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
@@ -184,35 +228,37 @@ CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
 CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
-
 ```
 
-A path to local disk where to store royalties payments cash notes received can be provided as well, e.g.:
+The `transfers` command can provide a path for royalty payment cash notes:
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:12001 transfers ./royalties-cash-notes
+$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
 Listening to transfers notifications... (press Ctrl+C to exit)
 Writing cash notes to: ./royalties-cash-notes
-
 ```
-Each CashNote is written to a separate file in respective recipient public address dir in the created cash_notes dir. Each file is named after the CashNote id.
 
-# Metrics Dashboard
+Each received cash note is written to a file in the directory above, under another directory corresponding to the public address of the recipient.
+
+### Tear Down
+
+When you're finished experimenting, tear down the network:
+```
+cargo run --bin safenode-manager -- kill
+```
+
+## Metrics Dashboard
 
 Use the `open-metrics` feature flag on the node / client to start an [OpenMetrics](https://github.com/OpenObservability/OpenMetrics/) exporter. The metrics are served via a webserver started at a random port. Check the log file / stdout to find the webserver URL, `Metrics server on http://127.0.0.1:xxxx/metrics`
 
 The metrics can then be collected using a collector (for e.g. Prometheus) and the data can then be imported into any visualization tool (for e.g., Grafana) to be further analyzed. Refer to this [Guide](./metrics/README.md) to easily setup a dockerized Grafana dashboard to visualize the metrics.
 
-
-
 ## Contributing
 
 Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit **[The MaidSafe Forum](https://safenetforum.org/)** for discussion or if you would like to join our online community.
 
-
-## Conventional Commits
+### Conventional Commits
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
-
 
 ## License
 
