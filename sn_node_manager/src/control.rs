@@ -397,6 +397,15 @@ mod tests {
                 uptime: std::time::Duration::from_secs(1), // the service was just started
             })
         });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
 
         let mut node = Node {
             genesis: false,
@@ -461,6 +470,15 @@ mod tests {
                 uptime: std::time::Duration::from_secs(1),
             })
         });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
 
         let mut node = Node {
             genesis: false,
