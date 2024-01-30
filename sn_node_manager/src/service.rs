@@ -34,7 +34,6 @@ pub struct ServiceConfig {
     pub local: bool,
     pub log_dir_path: PathBuf,
     pub name: String,
-    pub node_port: u16,
     pub peers: Vec<Multiaddr>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
@@ -187,8 +186,6 @@ impl ServiceControl for NodeServiceManager {
         let label: ServiceLabel = config.name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
         let mut args = vec![
-            OsString::from("--port"),
-            OsString::from(config.node_port.to_string()),
             OsString::from("--rpc"),
             OsString::from(config.rpc_socket_addr.to_string()),
             OsString::from("--root-dir"),

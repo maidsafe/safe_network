@@ -9,6 +9,7 @@
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
+use libp2p::multiaddr::Protocol;
 use libp2p::{Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
@@ -28,9 +29,8 @@ pub trait Launcher {
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
     fn launch_node(
         &self,
-        port: u16,
         rpc_socket_addr: SocketAddr,
-        peers: Vec<Multiaddr>,
+        bootstrap_peers: Vec<Multiaddr>,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -83,22 +83,19 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_node(
         &self,
-        port: u16,
         rpc_socket_addr: SocketAddr,
-        peers: Vec<Multiaddr>,
+        bootstrap_peers: Vec<Multiaddr>,
     ) -> Result<()> {
         let mut args = Vec::new();
-        if peers.is_empty() {
+        if bootstrap_peers.is_empty() {
             args.push("--first".to_string())
         } else {
-            for peer in peers {
+            for peer in bootstrap_peers {
                 args.push("--peer".to_string());
                 args.push(peer.to_string());
             }
         }
         args.push("--local".to_string());
-        args.push("--port".to_string());
-        args.push(port.to_string());
         args.push("--rpc".to_string());
         args.push(rpc_socket_addr.to_string());
 
@@ -201,19 +198,18 @@ pub async fn run_network(
         faucet_bin_path: network_options.faucet_bin_path.to_path_buf(),
     };
 
-    let (peers, start) = if network_options.join {
+    let (bootstrap_peers, start) = if network_options.join {
         if let Some(peers) = network_options.peers {
             (peers, 1)
         } else {
             let peer = node_registry
                 .nodes
                 .iter()
-                .find_map(|n| n.get_multiaddr())
+                .find_map(|n| n.listen_addr.clone())
                 .ok_or_else(|| eyre!("Unable to obtain a peer to connect to"))?;
-            (vec![peer], 1)
+            (peer, 1)
         }
     } else {
-        let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
@@ -222,7 +218,6 @@ pub async fn run_network(
         let node = run_node(
             number,
             true,
-            port,
             rpc_socket_addr,
             vec![],
             &launcher,
@@ -230,11 +225,10 @@ pub async fn run_network(
         )
         .await?;
         node_registry.nodes.push(node.clone());
-        (vec![node.get_multiaddr().unwrap()], 2)
+        (node.listen_addr.unwrap(), 2)
     };
 
     for _ in start..=network_options.node_count {
-        let port = service_control.get_available_port()?;
         let rpc_port = service_control.get_available_port()?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
@@ -243,9 +237,8 @@ pub async fn run_network(
         let node = run_node(
             number,
             false,
-            port,
             rpc_socket_addr,
-            peers.clone(),
+            bootstrap_peers.clone(),
             &launcher,
             &rpc_client,
         )
@@ -262,12 +255,12 @@ pub async fn run_network(
     if !network_options.skip_validation {
         println!("Waiting for 10 seconds before validating the network...");
         std::thread::sleep(std::time::Duration::from_secs(10));
-        validate_network(node_registry, peers.clone()).await?;
+        validate_network(node_registry, bootstrap_peers.clone()).await?;
     }
 
     if !network_options.join {
         println!("Launching the faucet server...");
-        let faucet_pid = launcher.launch_faucet(&peers[0])?;
+        let faucet_pid = launcher.launch_faucet(&bootstrap_peers[0])?;
         node_registry.faucet_pid = Some(faucet_pid);
     }
 
@@ -277,22 +270,26 @@ pub async fn run_network(
 pub async fn run_node(
     number: u16,
     genesis: bool,
-    port: u16,
     rpc_socket_addr: SocketAddr,
-    peer: Vec<Multiaddr>,
+    bootstrap_peers: Vec<Multiaddr>,
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<Node> {
     let version = launcher.get_safenode_version()?;
 
     println!("Launching node {number}...");
-    launcher.launch_node(port, rpc_socket_addr, peer.clone())?;
+    launcher.launch_node(rpc_socket_addr, bootstrap_peers.clone())?;
     launcher.wait(2);
 
     let node_info = rpc_client.node_info().await?;
     let peer_id = node_info.peer_id;
     let network_info = rpc_client.network_info().await?;
     let connected_peers = Some(network_info.connected_peers);
+    let listen_addrs = network_info
+        .listeners
+        .into_iter()
+        .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
+        .collect();
 
     Ok(Node {
         connected_peers,
@@ -300,11 +297,11 @@ pub async fn run_node(
         service_name: format!("safenode-local{number}"),
         user: get_username()?,
         number,
-        port,
         rpc_socket_addr,
         version: version.clone(),
         status: NodeStatus::Running,
         pid: Some(node_info.pid),
+        listen_addr: Some(listen_addrs),
         peer_id: Some(peer_id),
         log_dir_path: Some(node_info.log_path),
         data_dir_path: Some(node_info.data_path),
@@ -403,7 +400,6 @@ mod tests {
         let mut mock_rpc_client = MockRpcClient::new();
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
-        let port = 12000;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_get_safenode_version()
@@ -411,9 +407,9 @@ mod tests {
             .returning(|| Ok("0.100.12".to_string()));
         mock_launcher
             .expect_launch_node()
-            .with(eq(port), eq(rpc_socket_addr), eq(vec![]))
+            .with(eq(rpc_socket_addr), eq(vec![]))
             .times(1)
-            .returning(|_, _, _| Ok(()));
+            .returning(|_, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(2))
@@ -450,7 +446,6 @@ mod tests {
         let node = run_node(
             1,
             true,
-            port,
             rpc_socket_addr,
             vec![],
             &mock_launcher,
@@ -471,7 +466,6 @@ mod tests {
         );
         assert_eq!(node.number, 1);
         assert_eq!(node.pid, Some(1000));
-        assert_eq!(node.port, port);
         assert_eq!(node.rpc_socket_addr, rpc_socket_addr);
         assert_eq!(node.status, NodeStatus::Running);
         assert_eq!(
