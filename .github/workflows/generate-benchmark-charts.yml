@@ -59,6 +59,7 @@ jobs:
           node-path: target/release/safenode
           faucet-path: target/release/faucet
           platform: ubuntu-latest
+          build: true
 
       - name: Create and fund a wallet to pay for files storage
         run: |
