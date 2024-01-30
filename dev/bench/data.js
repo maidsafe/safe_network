@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706184765898,
+  "lastUpdate": 1706630469926,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ce2da847ce38d0d996ca3f51e8bfd9bdc10fc732",
-          "message": "test(gossipsub): CI testing with nodes subscribing to gossipsub topics and publishing messages",
-          "timestamp": "2023-09-22T11:02:07Z",
-          "tree_id": "74f6d7ae48b84d12e96833b37e7f594f80e15433",
-          "url": "https://github.com/maidsafe/safe_network/commit/ce2da847ce38d0d996ca3f51e8bfd9bdc10fc732"
-        },
-        "date": 1695384266352,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10105750680838148,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5704600089492843,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.911499777745423,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.93288637253372,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e2f68048f58f69a2e507e3f8c4281bd12b24655d",
+          "message": "ci: build node manager on local network start\n\nThis is required until we update the Github Action to pull the latest release of the node manager.\nThis couldn't be done initially because we were moving the releases to the `safe_network`\nrepository, but it should be doable now.",
+          "timestamp": "2024-01-30T16:18:53+01:00",
+          "tree_id": "9225280e0e85850135bd77ace378122e2af6c8d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/e2f68048f58f69a2e507e3f8c4281bd12b24655d"
+        },
+        "date": 1706630467185,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2217269170190985,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6938701052467218,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 53.75318430076641,
             "unit": "MiB/s"
           }
         ]
