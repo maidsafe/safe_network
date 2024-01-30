@@ -179,9 +179,7 @@ impl FilesUpload {
         self.upload_royalty_fees = NanoTokens::zero();
         self.upload_final_balance = NanoTokens::zero();
 
-        #[allow(unused_assignments)]
-        let mut result = Ok(());
-
+        let mut result;
         let mut last_failed = 0;
         let mut for_failed_chunks = false;
         loop {
@@ -190,6 +188,8 @@ impl FilesUpload {
             // Any error raised from `upload` function is un-recoverable
             // and shall terminate the overall upload immediately.
             if result.is_err() {
+                error!("Upload terminated due to un-recoverable error {result:?}");
+                println!("Upload terminated due to un-recoverable error {result:?}");
                 // send an event indicating that the upload process completed with an error
                 self.send_event(FileUploadEvent::Error);
                 break;
