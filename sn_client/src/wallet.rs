@@ -680,10 +680,7 @@ impl Client {
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// // An example of sending storage payment transfers over the network with validation
-    /// client.send_spends(
-    ///     wallet.unconfirmed_spend_requests().iter(),
-    ///     true
-    /// ).await.expect("");
+    /// client.send_spends(wallet.unconfirmed_spend_requests().iter(),true).await?;
     /// # Ok(())
     /// # }
     /// ```
