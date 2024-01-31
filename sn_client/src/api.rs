@@ -73,12 +73,18 @@ impl Client {
     /// * 'signer' - [SecretKey]
     /// * 'peers' - [Option]<[Vec]<[Multiaddr]>>
     /// * 'enable_gossip' - Boolean
-    /// * 'connection_timeout' - [Option]<[Duration]>
+    /// * 'connection_timeout' - [Option]<[Duration]> : Specification for client connection timeout set via Optional
     /// * 'client_event_broadcaster' - [Option]<[ClientEventsBroadcaster]>
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn new(
         signer: SecretKey,
