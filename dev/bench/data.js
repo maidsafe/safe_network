@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706715034118,
+  "lastUpdate": 1706715136293,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ce2da847ce38d0d996ca3f51e8bfd9bdc10fc732",
-          "message": "test(gossipsub): CI testing with nodes subscribing to gossipsub topics and publishing messages",
-          "timestamp": "2023-09-22T11:02:07Z",
-          "tree_id": "74f6d7ae48b84d12e96833b37e7f594f80e15433",
-          "url": "https://github.com/maidsafe/safe_network/commit/ce2da847ce38d0d996ca3f51e8bfd9bdc10fc732"
-        },
-        "date": 1695384587356,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58.42944,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7965a29334462ecd9ab05f78e850d5f46e8ae7a",
+          "message": "refactor(manager): remove unused service method",
+          "timestamp": "2024-01-31T16:18:00+01:00",
+          "tree_id": "716bb33dfb1a3e1346f18388ea60dfdd295a7345",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7965a29334462ecd9ab05f78e850d5f46e8ae7a"
+        },
+        "date": 1706715135831,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
