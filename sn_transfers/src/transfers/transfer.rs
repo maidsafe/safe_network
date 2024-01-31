@@ -57,10 +57,10 @@ impl Transfer {
     /// Creates a Transfer from the given cash_note
     /// This Transfer can be sent safely to the recipients as all data in it is encrypted
     /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
-    pub fn transfer_from_cash_note(cash_note: &CashNote) -> Result<Transfer> {
+    pub fn transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
         let recipient = cash_note.main_pubkey;
         let u = CashNoteRedemption::from_cash_note(cash_note)?;
-        let t = Transfer::create(vec![u], recipient)
+        let t = Self::create(vec![u], recipient)
             .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)
     }
@@ -68,7 +68,7 @@ impl Transfer {
     /// This function is used to create a Network Royalties Transfer from a CashNote
     /// can be done offline, and sent to the recipient.
     /// Note that this type of transfer is not encrypted
-    pub(crate) fn royalties_transfer_from_cash_note(cash_note: &CashNote) -> Result<Transfer> {
+    pub(crate) fn royalties_transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
         let cnr = CashNoteRedemption::from_cash_note(cash_note)?;
         Ok(Self::NetworkRoyalties(vec![cnr]))
     }
@@ -108,7 +108,7 @@ impl Transfer {
     pub fn from_hex(hex: &str) -> Result<Self> {
         let mut bytes = hex::decode(hex).map_err(|_| Error::TransferDeserializationFailed)?;
         bytes.reverse();
-        let transfer: Transfer =
+        let transfer: Self =
             rmp_serde::from_slice(&bytes).map_err(|_| Error::TransferDeserializationFailed)?;
         Ok(transfer)
     }
