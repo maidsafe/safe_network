@@ -50,7 +50,6 @@ pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, config: ServiceConfig) -> Result<()>;
-    fn is_port_free(&self, port: u16) -> bool;
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
@@ -148,17 +147,6 @@ impl ServiceControl for NodeServiceManager {
     #[cfg(target_os = "windows")]
     fn create_service_user(&self, _username: &str) -> Result<()> {
         Ok(())
-    }
-
-    fn is_port_free(&self, port: u16) -> bool {
-        let socket = TcpListener::bind(("127.0.0.1", port));
-        let is_free = socket.is_ok();
-        drop(socket);
-        // Sleep a little while to make sure that we've dropped the socket.
-        // Without the delay, we may face 'Port already in use' error, when trying to re-use this port.
-        sleep(PORT_UNBINDING_DELAY);
-
-        is_free
     }
 
     fn is_service_process_running(&self, pid: u32) -> bool {
