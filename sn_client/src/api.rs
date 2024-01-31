@@ -70,9 +70,11 @@ impl Client {
     /// Defaults to 180 seconds.
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'signer' - [SecretKey]
+    /// * 'peers' - [Option]<[Vec]<[Multiaddr]>>
+    /// * 'enable_gossip' - Boolean
+    /// * 'connection_timeout' - [Option]<[Duration]>
+    /// * 'client_event_broadcaster' - [Option]<[ClientEventsBroadcaster]>
     ///
     /// # Example
     /// ```no_run
@@ -260,11 +262,11 @@ impl Client {
     }
 
     /// Get the client events channel.
+    ///
+    /// Return Type:
+    ///
+    /// [ClientEventsReceiver]
     /// 
-    /// # Arguments
-    ///
-    /// Return type
-    ///
     /// # Example
     /// ```no_run
     /// 
@@ -273,12 +275,14 @@ impl Client {
         self.events_broadcaster.subscribe()
     }
 
-    /// Sign the given data
+    /// Sign the given data.
     ///
     /// # Arguments
-    /// * '' -
+    /// * '' - //TODO
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Signature](Signature)
     ///
     /// # Example
     /// ```no_run
@@ -288,12 +292,11 @@ impl Client {
         self.signer.sign(data)
     }
 
-    /// Return a reference to the signer secret key
+    /// Return a reference to the signer secret key.
     ///
-    /// # Arguments
-    /// * '' -
+    /// Return Type:
     ///
-    /// Return type
+    /// [SecretKey]
     ///
     /// # Example
     /// ```no_run
@@ -303,12 +306,11 @@ impl Client {
         &self.signer
     }
 
-    /// Return the public key of the data signing key
+    /// Return the public key of the data signing key.
     ///
-    /// # Arguments
-    /// * '' -
+    /// Return Type:
     ///
-    /// Return type
+    /// [PublicKey]
     ///
     /// # Example
     /// ```no_run
@@ -321,10 +323,13 @@ impl Client {
     /// Get a register from network
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'address' - [RegisterAddress]
+    /// * 'is_verifying' - Boolean
     ///
-    /// Return type
+    /// Return Type:
     ///
+    /// [Result]<[SignedRegister]>
+    /// 
     /// # Example
     /// ```no_run
     /// 
@@ -372,10 +377,12 @@ impl Client {
     /// Retrieve a Register from the network.
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'address' - [RegisterAddress]
     ///
-    /// Return type
+    /// Return Type:
     ///
+    /// [Result]<[ClientRegister]>
+    /// 
     /// # Example
     /// ```no_run
     /// 
@@ -389,10 +396,15 @@ impl Client {
     /// Tops up payments and retries if necessary and verification failed
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'address' - [XorName]
+    /// * 'wallet_client' - [WalletClient]
+    /// * 'verify_store' - Boolean
+    /// * 'perms' - [Permissions]
     ///
-    /// Return type
-    ///
+    /// Return Type:
+    /// 
+    /// [Result]<([ClientRegister], [NanoTokens], [NanoTokens])>
+    /// 
     /// # Example
     /// ```no_run
     /// 
@@ -452,9 +464,10 @@ impl Client {
     /// Store `Chunk` as a record.
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'chunk' - [Chunk]
+    /// * 'payee' - [PeerId]
+    /// * 'payment' - [Payment]
+    /// * 'verify_store' - Boolean
     ///
     /// # Example
     /// ```no_run
@@ -518,8 +531,12 @@ impl Client {
     /// Description
     /// 
     /// # Arguments
+    /// * 'address' - [ChunkAddress]
+    /// * 'show_holders' - Boolean
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Result]<[Chunk]>
     ///
     /// # Example
     /// ```no_run
@@ -588,9 +605,11 @@ impl Client {
     /// Verify if a `Register` is stored by expected nodes on the network.
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'address' - [RegisterAddress]
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Result]<[SignedRegister]>
     ///
     /// # Example
     /// ```no_run
@@ -601,12 +620,11 @@ impl Client {
         self.get_signed_register_from_network(address, true).await
     }
 
-    /// Send a `SpendCashNote` request to the network
+    /// Send a `SpendCashNote` request to the network.
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'spend' - [SignedSpend]
+    /// * 'verify_store' - Boolean
     ///
     /// # Example
     /// ```no_run
@@ -659,12 +677,14 @@ impl Client {
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
-    /// Get a spend from network
+    /// Get a spend from network.
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'address' - [SpendAddress]
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Result]<[SignedSpend]>
     ///
     /// # Example
     /// ```no_run
@@ -762,9 +782,7 @@ impl Client {
     /// Subscribe to given gossipsub topic
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'topic_id' - [String]
     ///
     /// # Example
     /// ```no_run
@@ -780,9 +798,7 @@ impl Client {
     /// Unsubscribe from given gossipsub topic
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'topic_id' - [String]
     ///
     /// # Example
     /// ```no_run
@@ -797,9 +813,8 @@ impl Client {
     /// Publish message on given topic
     ///
     /// # Arguments
-    /// * '' -
-    ///
-    /// Return type
+    /// * 'topic_id' - [String]
+    /// * 'msg' - [Bytes]
     ///
     /// # Example
     /// ```no_run
@@ -818,9 +833,12 @@ impl Client {
     /// Else returns a list of CashNotes that can be spent by the owner.
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'main_pubkey' - [MainPubkey]
+    /// * 'cashnote_redemptions' - [CashNoteRedemption]
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Result]<[Vec]<[CashNote]>>
     ///
     /// # Example
     /// ```no_run
@@ -843,9 +861,12 @@ impl Client {
     /// Returns a vec of any chunks that could not be verified
     ///
     /// # Arguments
-    /// * '' -
+    /// * 'chunks_paths' - [([XorName], [PathBuf])]
+    /// * 'batch_size' - usize
     ///
-    /// Return type
+    /// Return Type:
+    ///
+    /// [Result]<[Vec]<([XorName], [PathBuf])>>
     ///
     /// # Example
     /// ```no_run
