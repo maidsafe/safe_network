@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706719460806,
+  "lastUpdate": 1706719568072,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "58ebb4a12979e1975a33b164b92e0382bc781a94",
-          "message": "chore(client): serialize ClientEvent",
-          "timestamp": "2023-09-25T04:50:47Z",
-          "tree_id": "8d937581c9bb8995c822006a866872be201f9d71",
-          "url": "https://github.com/maidsafe/safe_network/commit/58ebb4a12979e1975a33b164b92e0382bc781a94"
-        },
-        "date": 1695622106931,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 65.99885,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/f7965a29334462ecd9ab05f78e850d5f46e8ae7a"
         },
         "date": 1706715135831,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34",
+          "message": "docs: nano tokens to network address",
+          "timestamp": "2024-01-31T15:53:23Z",
+          "tree_id": "522aeb4ed4d1ce663baad2cc0f81802e4cbf5fb3",
+          "url": "https://github.com/maidsafe/safe_network/commit/7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34"
+        },
+        "date": 1706719567734,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
