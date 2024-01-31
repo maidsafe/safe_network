@@ -30,7 +30,12 @@ use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
-use std::{net::Ipv4Addr, path::PathBuf, process::{Command, Stdio}, str::FromStr};
+use std::{
+    net::Ipv4Addr,
+    path::PathBuf,
+    process::{Command, Stdio},
+    str::FromStr,
+};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
@@ -368,6 +373,14 @@ async fn main() -> Result<()> {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
 
+            let (safenode_download_path, version) = download_and_extract_release(
+                ReleaseType::Safenode,
+                url.clone(),
+                version,
+                &*release_repo,
+            )
+            .await?;
+
             add(
                 AddServiceOptions {
                     local,
@@ -376,6 +389,7 @@ async fn main() -> Result<()> {
                     peers: get_peers_from_args(peers).await?,
                     node_port: port,
                     rpc_address,
+                    safenode_bin_path: safenode_download_path,
                     safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
                     service_log_dir_path,
@@ -385,7 +399,6 @@ async fn main() -> Result<()> {
                 },
                 &mut node_registry,
                 &service_manager,
-                release_repo,
                 verbosity,
             )
             .await?;
