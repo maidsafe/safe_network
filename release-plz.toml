@@ -55,12 +55,6 @@ git_release_enable = false
 publish = true
 
 [[package]]
-name = "sn_testnet"
-changelog_update = true
-git_release_enable = false
-publish = true
-
-[[package]]
 name = "sn_faucet"
 changelog_update = true
 git_release_enable = false

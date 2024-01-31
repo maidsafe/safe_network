@@ -47,7 +47,6 @@ async fn main() -> Result<()> {
             ("sn_peers_acquisition".to_string(), Level::TRACE),
             ("sn_protocol".to_string(), Level::TRACE),
             ("sn_registers".to_string(), Level::TRACE),
-            ("sn_testnet".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
         ];
         let mut log_builder = LogBuilder::new(logging_targets);

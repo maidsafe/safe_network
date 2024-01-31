@@ -22,7 +22,7 @@ The Data on the Safe Network is Decentralised, Autonomous, and  built atop of Ka
 
 - [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs allowing use of the SafeNetwork to users and developers.
 - [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The CRDT registers structures available on the network.
-- [Testnet](https://github.com/maidsafe/safe_network/blob/main/sn_testnet/README.md) The testnet crate, used to set up a local network for development and testing.
+- [Node Manager](https://github.com/maidsafe/safe_network/blob/main/sn_node_manager/README.md) Use to create a local network for development and testing.
 - [Faucet](https://github.com/maidsafe/safe_network/blob/main/sn_faucet/README.md) The local faucet server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The RPC server used by the nodes to expose API calls to the outside world.
 

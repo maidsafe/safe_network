@@ -93,10 +93,6 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_cli
 
-      - name: Run testnet tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_testnet
-
       - name: Run client tests
         timeout-minutes: 25
         run: cargo test --release --package sn_client
