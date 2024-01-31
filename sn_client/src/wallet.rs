@@ -343,7 +343,7 @@ impl WalletClient {
     /// Send tokens to nodes closest to the data we want to make storage payment for. Runs mandatory verification.
     ///
     /// # Arguments
-    /// - content_addrs - [Iterator]<Items = [`NanoTokens`]>
+    /// - content_addrs - [Iterator]<Items = [`NetworkAddress`]>
     ///
     /// # Returns:
     /// # ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
