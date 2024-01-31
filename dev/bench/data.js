@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706692864639,
+  "lastUpdate": 1706692866515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -35194,6 +35194,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 112417,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a89378711b18b97c443c87d1ae64e4f188b57fda",
+          "message": "chore(rpc): add retry during initial connection and better error logging",
+          "timestamp": "2024-01-31T08:25:28Z",
+          "tree_id": "9cb8cb1dc54aeaf6af5e3b0f7c69ce57ef117668",
+          "url": "https://github.com/maidsafe/safe_network/commit/a89378711b18b97c443c87d1ae64e4f188b57fda"
+        },
+        "date": 1706692866135,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 16887,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 94623,
             "unit": "ms"
           },
           {
