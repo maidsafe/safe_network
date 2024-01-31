@@ -23,7 +23,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::Permissions;
-use sn_transfers::LocalWallet;
+use sn_transfers::HotWallet;
 use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -294,7 +294,7 @@ async fn data_availability_during_churn() -> Result<()> {
 // Spawns a task which periodically creates CashNotes at random locations.
 fn create_cash_note_task(
     client: Client,
-    transfers_wallet: LocalWallet,
+    transfers_wallet: HotWallet,
     content: ContentList,
     cash_notes: CashNoteMap,
     churn_period: Duration,

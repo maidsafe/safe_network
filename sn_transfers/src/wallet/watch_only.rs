@@ -8,8 +8,8 @@
 
 use super::{
     error::{Error, Result},
+    hot_wallet::WalletExclusiveAccess,
     keys::{get_main_pubkey, store_new_pubkey},
-    local_store::WalletExclusiveAccess,
     wallet_file::{
         load_cash_notes_from_disk, load_created_cash_note, store_created_cash_notes, store_wallet,
         wallet_lockfile_name,

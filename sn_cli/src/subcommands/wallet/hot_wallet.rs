@@ -19,7 +19,7 @@ use color_eyre::{
 };
 use sn_client::{Client, Error as ClientError};
 use sn_transfers::{
-    Error as TransferError, LocalWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
+    Error as TransferError, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
     UnsignedTransfer, WalletError,
 };
 use std::{path::Path, str::FromStr};
@@ -175,12 +175,12 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                     return Ok(());
                 }
                 // remove existing wallet
-                let new_location = LocalWallet::clear(root_dir)?;
+                let new_location = HotWallet::clear(root_dir)?;
                 println!("Old wallet stored at {}", new_location.display());
             }
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
-            let local_wallet = LocalWallet::create_from_key(root_dir, main_sk)?;
+            let local_wallet = HotWallet::create_from_key(root_dir, main_sk)?;
             let balance = local_wallet.balance();
             println!(
                 "Hot Wallet created (balance {balance}) for main public key: {main_pubkey:?}."
@@ -220,7 +220,7 @@ async fn send(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let from = LocalWallet::load_from(root_dir)?;
+    let from = HotWallet::load_from(root_dir)?;
     let amount = match NanoTokens::from_str(&amount) {
         Ok(amount) => amount,
         Err(err) => {
@@ -238,7 +238,7 @@ async fn send(
 
     let cash_note = match sn_client::send(from, amount, to, client, verify_store).await {
         Ok(cash_note) => {
-            let wallet = LocalWallet::load_from(root_dir)?;
+            let wallet = HotWallet::load_from(root_dir)?;
             println!("Sent {amount:?} to {to:?}");
             println!("New wallet balance is {}.", wallet.balance());
             cash_note
@@ -271,7 +271,7 @@ async fn send(
 }
 
 fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir)?;
+    let wallet = HotWallet::load_from(root_dir)?;
     let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
     println!("The unsigned transaction has been successfully decoded:");

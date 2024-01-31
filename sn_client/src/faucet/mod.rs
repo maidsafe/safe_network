@@ -8,7 +8,7 @@
 
 use crate::{wallet::send, Client, Result};
 use sn_transfers::{
-    create_faucet_wallet, load_genesis_wallet, CashNote, LocalWallet, MainPubkey, NanoTokens,
+    create_faucet_wallet, load_genesis_wallet, CashNote, HotWallet, MainPubkey, NanoTokens,
 };
 
 /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
@@ -31,7 +31,7 @@ pub async fn get_tokens_from_faucet(
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
-pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<LocalWallet> {
+pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<HotWallet> {
     println!("Loading faucet...");
     info!("Loading faucet...");
     let mut faucet_wallet = create_faucet_wallet();

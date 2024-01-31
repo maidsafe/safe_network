@@ -54,8 +54,8 @@
 
 mod data_payments;
 mod error;
+mod hot_wallet;
 mod keys;
-mod local_store;
 mod wallet_file;
 mod watch_only;
 
@@ -65,8 +65,8 @@ use wallet_file::wallet_file_name;
 pub use self::{
     data_payments::{Payment, PaymentQuote},
     error::{Error, Result},
+    hot_wallet::HotWallet,
     keys::bls_secret_from_hex,
-    local_store::LocalWallet,
     watch_only::WatchOnlyWallet,
 };
 pub(crate) use keys::store_new_keypair;

@@ -11,7 +11,7 @@ use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::{eyre, Result};
 use sn_client::Client;
-use sn_transfers::{LocalWallet, NanoTokens};
+use sn_transfers::{HotWallet, NanoTokens};
 use std::path::{self, Path, PathBuf};
 use tiny_http::{Response, Server};
 use tracing::{debug, error, trace};
@@ -117,7 +117,7 @@ fn get_test_faucet_data_dir_path() -> Result<PathBuf> {
 }
 
 fn deposit(root_dir: &Path) -> Result<()> {
-    let mut wallet = LocalWallet::load_from(root_dir)?;
+    let mut wallet = HotWallet::load_from(root_dir)?;
 
     let previous_balance = wallet.balance();
 

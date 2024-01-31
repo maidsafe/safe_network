@@ -40,7 +40,7 @@ const WALLET_DIR_NAME: &str = "wallet";
 pub type WalletExclusiveAccess = File;
 
 /// A hot-wallet.
-pub struct LocalWallet {
+pub struct HotWallet {
     /// The secret key with which we can access
     /// all the tokens in the available_cash_notes.
     key: MainSecretKey,
@@ -51,7 +51,7 @@ pub struct LocalWallet {
     unconfirmed_spend_requests: BTreeSet<SignedSpend>,
 }
 
-impl LocalWallet {
+impl HotWallet {
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
@@ -185,7 +185,7 @@ impl LocalWallet {
     /// Moves all files for the current wallet, including keys and cashnotes
     /// to directory root_dir/wallet_<short_address>
     pub fn clear(root_dir: &Path) -> Result<PathBuf> {
-        let wallet = LocalWallet::load_from(root_dir)?;
+        let wallet = HotWallet::load_from(root_dir)?;
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         let addr_short = &format!("{:?}", wallet.address())[0..10];
         let new_name = format!("{WALLET_DIR_NAME}_{addr_short}");
@@ -608,11 +608,11 @@ impl LocalWallet {
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::LocalWallet;
+    use super::HotWallet;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
-            data_payments::PaymentQuote, local_store::WALLET_DIR_NAME, wallet_file::store_wallet,
+            data_payments::PaymentQuote, hot_wallet::WALLET_DIR_NAME, wallet_file::store_wallet,
             watch_only::WatchOnlyWallet, KeyLessWallet,
         },
         MainSecretKey, NanoTokens, SpendAddress,
@@ -651,7 +651,7 @@ mod tests {
         let main_pubkey = key.main_pubkey();
         let dir = create_temp_dir();
 
-        let deposit_only = LocalWallet {
+        let deposit_only = HotWallet {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
@@ -678,7 +678,7 @@ mod tests {
         let main_pubkey = key.main_pubkey();
         let dir = create_temp_dir();
 
-        let mut deposit_only = LocalWallet {
+        let mut deposit_only = HotWallet {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
@@ -703,7 +703,7 @@ mod tests {
         let genesis = create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
-        let mut deposit_only = LocalWallet {
+        let mut deposit_only = HotWallet {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
@@ -724,7 +724,7 @@ mod tests {
             .expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
-        let mut local_wallet = LocalWallet {
+        let mut local_wallet = HotWallet {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
@@ -747,7 +747,7 @@ mod tests {
             create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");
         let dir = create_temp_dir();
 
-        let mut deposit_only = LocalWallet {
+        let mut deposit_only = HotWallet {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
@@ -770,12 +770,12 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut depositor = LocalWallet::load_from(&root_dir)?;
+        let mut depositor = HotWallet::load_from(&root_dir)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit_and_store_to_disk(&vec![genesis])?;
 
-        let deserialized = LocalWallet::load_from(&root_dir)?;
+        let deserialized = HotWallet::load_from(&root_dir)?;
 
         assert_eq!(depositor.address(), deserialized.address());
         assert_eq!(GENESIS_CASHNOTE_AMOUNT, depositor.balance().as_nano());
@@ -814,7 +814,7 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&root_dir)?;
+        let mut sender = HotWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -846,7 +846,7 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&root_dir)?;
+        let mut sender = HotWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -858,7 +858,7 @@ mod tests {
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
 
-        let deserialized = LocalWallet::load_from(&root_dir)?;
+        let deserialized = HotWallet::load_from(&root_dir)?;
 
         assert_eq!(sender.address(), deserialized.address());
         assert_eq!(
@@ -899,7 +899,7 @@ mod tests {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&sender_root_dir)?;
+        let mut sender = HotWallet::load_from(&sender_root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -909,7 +909,7 @@ mod tests {
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let mut recipient = LocalWallet::load_from(&recipient_root_dir)?;
+        let mut recipient = HotWallet::load_from(&recipient_root_dir)?;
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
@@ -956,7 +956,7 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = LocalWallet::load_from(&root_dir)?;
+        let mut sender = HotWallet::load_from(&root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;

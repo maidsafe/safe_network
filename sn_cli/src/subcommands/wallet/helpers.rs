@@ -8,7 +8,7 @@
 
 use color_eyre::{eyre::eyre, Result};
 use sn_client::Client;
-use sn_transfers::{LocalWallet, SpendAddress, Transfer, UniquePubkey, GENESIS_CASHNOTE};
+use sn_transfers::{HotWallet, SpendAddress, Transfer, UniquePubkey, GENESIS_CASHNOTE};
 use std::path::Path;
 use url::Url;
 
@@ -34,7 +34,7 @@ pub async fn audit(
 }
 
 pub async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
-    let wallet = LocalWallet::load_from(root_dir)?;
+    let wallet = HotWallet::load_from(root_dir)?;
     let address_hex = wallet.address().to_hex();
     let url = if !url.contains("://") {
         format!("{}://{}", "http", url)
@@ -79,7 +79,7 @@ pub async fn receive(
     println!("Successfully parsed transfer. ");
 
     println!("Verifying transfer with the Network...");
-    let mut wallet = LocalWallet::load_from(root_dir)?;
+    let mut wallet = HotWallet::load_from(root_dir)?;
     let cashnotes = match client.receive(&transfer, &wallet).await {
         Ok(cashnotes) => cashnotes,
         Err(err) => {
