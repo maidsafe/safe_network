@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706730091934,
+  "lastUpdate": 1706730094903,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -35311,6 +35311,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 106009,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "06a9b80f1f3544501eef894ea4147616904cda6f",
+          "message": "chore: remove the `sn_testnet` crate\n\nThis crate is made obsolete by the node manager, which we can now switch to for development work.\n\nIt had already been removed from the release process, but I did discover references to it in two\nother scripts, which are not used any more, so I also removed those.",
+          "timestamp": "2024-01-31T18:45:50Z",
+          "tree_id": "a3c79a68dd8c21b1b23f03714252a293c32b2346",
+          "url": "https://github.com/maidsafe/safe_network/commit/06a9b80f1f3544501eef894ea4147616904cda6f"
+        },
+        "date": 1706730093652,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17115,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 99033,
             "unit": "ms"
           },
           {
