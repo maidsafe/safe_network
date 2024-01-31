@@ -17,6 +17,7 @@ use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
+use dialoguer::Confirm;
 use sn_client::{Client, Error as ClientError};
 use sn_transfers::{
     Error as TransferError, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
@@ -90,6 +91,9 @@ pub enum WalletCmds {
         /// Hex-encoded unsigned transaction. It requires a hot-wallet was created for CLI.
         #[clap(name = "tx")]
         tx: String,
+        /// Avoid prompts by assuming `yes` as the answer.
+        #[clap(long, name = "force", default_value = "false")]
+        force: bool,
     },
     /// Receive a transfer created by the 'send' or 'broadcast' command.
     Receive {
@@ -187,7 +191,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             );
             Ok(())
         }
-        WalletCmds::Sign { tx } => sign_transaction(tx, root_dir),
+        WalletCmds::Sign { tx, force } => sign_transaction(tx, root_dir, *force),
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
 }
@@ -270,7 +274,7 @@ async fn send(
     Ok(())
 }
 
-fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
+fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     let wallet = HotWallet::load_from(root_dir)?;
     let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
@@ -299,16 +303,16 @@ fn sign_transaction(tx: &str, root_dir: &Path) -> Result<()> {
         bail!("Transaction is corrupted, no transaction information found.");
     }
 
-    use dialoguer::Confirm;
+    if !force {
+        println!("\n** Please make sure the above information is correct before signing it. **\n");
+        let confirmation = Confirm::new()
+            .with_prompt("Do you want to sign the above transaction?")
+            .interact()?;
 
-    println!("\n** Please make sure the above information is correct before signing it. **\n");
-    let confirmation = Confirm::new()
-        .with_prompt("Do you want to sign the above transaction?")
-        .interact()?;
-
-    if !confirmation {
-        println!("Transaction not signed.");
-        return Ok(());
+        if !confirmation {
+            println!("Transaction not signed.");
+            return Ok(());
+        }
     }
 
     println!("Signing the transaction with local hot-wallet...");
