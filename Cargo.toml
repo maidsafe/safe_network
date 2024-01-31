@@ -14,7 +14,6 @@ members = [
     "sn_node_manager",
     "sn_protocol",
     "sn_registers",
-    "sn_testnet",
     "sn_transfers",
     "token_supplies",
 ]
@@ -35,5 +34,3 @@ uninlined_format_args = "warn"
 unicode_not_nfc = "warn"
 unused_async = "warn"
 unwrap_used = "warn"
-
-
