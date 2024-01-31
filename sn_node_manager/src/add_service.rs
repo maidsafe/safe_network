@@ -6,17 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::VerbosityLevel;
 use crate::{
     config::create_owned_dir,
-    helpers::download_and_extract_release,
     service::{ServiceConfig, ServiceControl},
+    VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::Multiaddr;
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -29,12 +27,13 @@ pub struct AddServiceOptions {
     pub peers: Vec<Multiaddr>,
     pub node_port: Option<u16>,
     pub rpc_address: Option<Ipv4Addr>,
+    pub safenode_bin_path: PathBuf,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
     pub url: Option<String>,
     pub user: String,
-    pub version: Option<String>,
+    pub version: String,
 }
 
 /// Install safenode as a service.
@@ -47,7 +46,6 @@ pub async fn add(
     install_options: AddServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
-    release_repo: Box<dyn SafeReleaseRepositoryInterface>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if install_options.genesis {
@@ -72,14 +70,8 @@ pub async fn add(
         }
     }
 
-    let (safenode_download_path, version) = download_and_extract_release(
-        ReleaseType::Safenode,
-        install_options.url,
-        install_options.version,
-        &*release_repo,
-    )
-    .await?;
-    let safenode_file_name = safenode_download_path
+    let safenode_file_name = install_options
+        .safenode_bin_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
         .to_string_lossy()
@@ -90,6 +82,7 @@ pub async fn add(
 
     let current_node_count = node_registry.nodes.len() as u16;
     let target_node_count = current_node_count + install_options.count.unwrap_or(1);
+
     let mut node_number = current_node_count + 1;
     while node_number <= target_node_count {
         let rpc_free_port = service_control.get_available_port()?;
@@ -112,7 +105,7 @@ pub async fn add(
         create_owned_dir(service_log_dir_path.clone(), &install_options.user)?;
 
         std::fs::copy(
-            safenode_download_path.clone(),
+            install_options.safenode_bin_path.clone(),
             service_safenode_path.clone(),
         )?;
 
@@ -145,7 +138,7 @@ pub async fn add(
                     user: install_options.user.clone(),
                     number: node_number,
                     rpc_socket_addr,
-                    version: version.clone(),
+                    version: install_options.version.clone(),
                     status: NodeStatus::Added,
                     listen_addr: None,
                     pid: None,
@@ -167,7 +160,7 @@ pub async fn add(
         node_number += 1;
     }
 
-    std::fs::remove_file(safenode_download_path)?;
+    std::fs::remove_file(install_options.safenode_bin_path)?;
 
     if !added_service_data.is_empty() {
         println!("Services Added:");
@@ -254,14 +247,6 @@ mod tests {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_reg_path = tmp_data_dir.child("node_reg.json");
 
-        let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
@@ -271,46 +256,14 @@ mod tests {
         let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
+        let mut node_registry = NodeRegistry {
+            save_path: node_reg_path.to_path_buf(),
+            nodes: vec![],
+            faucet_pid: None,
+        };
+
+        let mut mock_service_control = MockServiceControl::new();
         let mut seq = Sequence::new();
-        mock_release_repo
-            .expect_get_latest_version()
-            .times(1)
-            .returning(|_| Ok(latest_version.to_string()))
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                always(), // We will extract to a temporary directory
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
-
         mock_service_control
             .expect_get_available_port()
             .times(1)
@@ -343,6 +296,7 @@ mod tests {
                 local: true,
                 genesis: true,
                 count: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -351,11 +305,10 @@ mod tests {
                 rpc_address: None,
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(mock_release_repo),
             VerbosityLevel::Normal,
         )
         .await?;
@@ -435,6 +388,7 @@ mod tests {
                 local: true,
                 genesis: true,
                 count: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -443,11 +397,10 @@ mod tests {
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(MockSafeReleaseRepository::new()),
             VerbosityLevel::Normal,
         )
         .await;
@@ -473,6 +426,7 @@ mod tests {
             faucet_pid: None,
         };
 
+        let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("safenode1");
         node_data_dir.create_dir_all()?;
@@ -488,6 +442,7 @@ mod tests {
                 local: true,
                 genesis: true,
                 count: Some(3),
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -496,11 +451,10 @@ mod tests {
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(MockSafeReleaseRepository::new()),
             VerbosityLevel::Normal,
         )
         .await;
@@ -519,7 +473,6 @@ mod tests {
         let node_reg_path = tmp_data_dir.child("node_reg.json");
 
         let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
@@ -537,44 +490,6 @@ mod tests {
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
-        mock_release_repo
-            .expect_get_latest_version()
-            .times(1)
-            .returning(|_| Ok(latest_version.to_string()))
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(&format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                always(),
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
 
         // Expected calls for first installation
         mock_service_control
@@ -668,16 +583,16 @@ mod tests {
                 peers: vec![],
                 node_port: None,
                 rpc_address: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(mock_release_repo),
             VerbosityLevel::Normal,
         )
         .await?;
@@ -739,140 +654,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_node_should_use_specific_version_and_add_one_service() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-
-        let specific_version = "0.95.0";
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-        safenode_download_path.write_binary(b"fake safenode bin")?;
-
-        let mut seq = Sequence::new();
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(specific_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    specific_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    specific_version
-                ))),
-                always(),
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8081))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_install()
-            .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
-            }))
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        add(
-            AddServiceOptions {
-                local: false,
-                genesis: false,
-                count: None,
-                peers: vec![],
-                node_port: None,
-                rpc_address: None,
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                url: None,
-                user: get_username(),
-                version: Some(specific_version.to_string()),
-            },
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(mock_release_repo),
-            VerbosityLevel::Normal,
-        )
-        .await?;
-
-        assert_eq!(node_registry.nodes.len(), 1);
-        assert_eq!(node_registry.nodes[0].version, specific_version);
-        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, get_username());
-        assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(
-            node_registry.nodes[0].rpc_socket_addr,
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
-        );
-        assert_eq!(
-            node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
-        );
-        assert_eq!(
-            node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
-        );
-        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn add_new_node_should_add_another_service() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_reg_path = tmp_data_dir.child("node_reg.json");
 
         let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let latest_version = "0.96.4";
         let mut node_registry = NodeRegistry {
@@ -906,45 +692,6 @@ mod tests {
         safenode_download_path.write_binary(b"fake safenode bin")?;
 
         let mut seq = Sequence::new();
-        mock_release_repo
-            .expect_get_latest_version()
-            .times(1)
-            .returning(|_| Ok(latest_version.to_string()))
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                always(),
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
-
         mock_service_control
             .expect_get_available_port()
             .times(1)
@@ -980,16 +727,16 @@ mod tests {
                 peers: vec![],
                 node_port: None,
                 rpc_address: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(mock_release_repo),
             VerbosityLevel::Normal,
         )
         .await?;
@@ -1017,140 +764,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_should_add_a_service_with_safenode_from_a_url() -> Result<()> {
-        let tmp_data_dir = assert_fs::TempDir::new()?;
-        let node_reg_path = tmp_data_dir.child("node_reg.json");
-
-        let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
-
-        let url = "https://sn-node.s3.eu-west-2.amazonaws.com/jacderida/file-upload-address/safenode-charlie-x86_64-unknown-linux-musl.tar.gz";
-
-        let mut node_registry = NodeRegistry {
-            save_path: node_reg_path.to_path_buf(),
-            nodes: vec![],
-            faucet_pid: None,
-        };
-        let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
-        node_data_dir.create_dir_all()?;
-        let node_logs_dir = temp_dir.child("logs");
-        node_logs_dir.create_dir_all()?;
-        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-        safenode_download_path.write_binary(b"fake safenode bin")?;
-
-        let mut seq = Sequence::new();
-
-        mock_release_repo
-            .expect_download_release()
-            .with(
-                eq(url),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _| {
-                Ok(PathBuf::from(
-                    "/tmp/safenode-charlie-x86_64-unknown-linux-musl.tar.gz",
-                ))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(
-                    "/tmp/safenode-charlie-x86_64-unknown-linux-musl.tar.gz",
-                )),
-                always(), // We will extract to a temporary directory
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_get_available_port()
-            .times(1)
-            .returning(|| Ok(8081))
-            .in_sequence(&mut seq);
-
-        mock_service_control
-            .expect_install()
-            .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
-            }))
-            .returning(|_| Ok(()))
-            .in_sequence(&mut seq);
-
-        add(
-            AddServiceOptions {
-                local: false,
-                genesis: false,
-                count: None,
-                safenode_dir_path: temp_dir.to_path_buf(),
-                service_data_dir_path: node_data_dir.to_path_buf(),
-                service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
-                node_port: None,
-                rpc_address: None,
-                url: Some(url.to_string()),
-                user: get_username(),
-                version: None,
-            },
-            &mut node_registry,
-            &mock_service_control,
-            Box::new(mock_release_repo),
-            VerbosityLevel::Normal,
-        )
-        .await?;
-
-        safenode_download_path.assert(predicate::path::missing());
-        node_data_dir.assert(predicate::path::is_dir());
-        node_logs_dir.assert(predicate::path::is_dir());
-
-        assert_eq!(node_registry.nodes.len(), 1);
-        assert_eq!(node_registry.nodes[0].version, "custom");
-        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-        assert_eq!(node_registry.nodes[0].user, get_username());
-        assert_eq!(node_registry.nodes[0].number, 1);
-        assert_eq!(
-            node_registry.nodes[0].rpc_socket_addr,
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
-        );
-        assert_eq!(
-            node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
-        );
-        assert_eq!(
-            node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
-        );
-        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_reg_path = tmp_data_dir.child("node_reg.json");
 
         let mut mock_service_control = MockServiceControl::new();
-        let mut mock_release_repo = MockSafeReleaseRepository::new();
 
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
@@ -1170,44 +788,6 @@ mod tests {
 
         let mut seq = Sequence::new();
 
-        mock_release_repo
-            .expect_get_latest_version()
-            .times(1)
-            .returning(|_| Ok(latest_version.to_string()))
-            .in_sequence(&mut seq);
-
-        mock_release_repo
-            .expect_download_release_from_s3()
-            .with(
-                eq(&ReleaseType::Safenode),
-                eq(latest_version),
-                always(), // Varies per platform
-                eq(&ArchiveType::TarGz),
-                always(), // Temporary directory which doesn't really matter
-                always(), // Callback for progress bar which also doesn't matter
-            )
-            .times(1)
-            .returning(move |_, _, _, _, _, _| {
-                Ok(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                )))
-            })
-            .in_sequence(&mut seq);
-
-        let safenode_download_path_clone = safenode_download_path.to_path_buf().clone();
-        mock_release_repo
-            .expect_extract_release_archive()
-            .with(
-                eq(PathBuf::from(format!(
-                    "/tmp/safenode-{}-x86_64-unknown-linux-musl.tar.gz",
-                    latest_version
-                ))),
-                always(), // We will extract to a temporary directory
-            )
-            .times(1)
-            .returning(move |_, _| Ok(safenode_download_path_clone.clone()))
-            .in_sequence(&mut seq);
         mock_service_control
             .expect_get_available_port()
             .times(1)
@@ -1240,6 +820,7 @@ mod tests {
                 local: false,
                 genesis: false,
                 count: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -1248,11 +829,10 @@ mod tests {
                 rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &mock_service_control,
-            Box::new(mock_release_repo),
             VerbosityLevel::Normal,
         )
         .await?;
@@ -1294,6 +874,7 @@ mod tests {
             nodes: vec![],
             faucet_pid: None,
         };
+        let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
         let node_data_dir = temp_dir.child("data");
         node_data_dir.create_dir_all()?;
@@ -1307,6 +888,7 @@ mod tests {
                 local: true,
                 genesis: false,
                 count: Some(3),
+                safenode_bin_path: PathBuf::new(),
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
@@ -1315,11 +897,10 @@ mod tests {
                 rpc_address: None,
                 url: None,
                 user: get_username(),
-                version: None,
+                version: latest_version.to_string(),
             },
             &mut node_registry,
             &MockServiceControl::new(),
-            Box::new(MockSafeReleaseRepository::new()),
             VerbosityLevel::Normal,
         )
         .await;
