@@ -5020,7 +5020,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.1.31"
+version = "0.1.32"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -5078,7 +5078,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.31"
+version = "0.89.32"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5159,7 +5159,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.30"
+version = "0.3.31"
 dependencies = [
  "bitcoin",
  "blsttc",
@@ -5240,7 +5240,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.103.27"
+version = "0.103.28"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5292,7 +5292,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.15"
+version = "0.4.16"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5376,7 +5376,7 @@ dependencies = [
 
 [[package]]
 name = "sn_testnet"
-version = "0.3.48"
+version = "0.3.49"
 dependencies = [
  "assert_fs",
  "clap 3.2.25",
@@ -5811,7 +5811,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.18"
+version = "0.1.19"
 dependencies = [
  "dirs-next",
  "reqwest",
