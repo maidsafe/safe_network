@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706729984247,
+  "lastUpdate": 1706730089159,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "fa9058c8ee3a9f87b95355a630102f97a48f5ef9",
-          "message": "feat(peers): use rustls-tls and readd https to the network-contacts url",
-          "timestamp": "2023-09-25T07:59:25Z",
-          "tree_id": "cbff2f2f4bf4d39bee4268430b065cd2a02c169d",
-          "url": "https://github.com/maidsafe/safe_network/commit/fa9058c8ee3a9f87b95355a630102f97a48f5ef9"
-        },
-        "date": 1695632805419,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 64.958466,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "5927ba7577484febf01e67ff45cfcfd5ab3725f9",
           "message": "feat(cli): wrap repayment error for clarity",
           "timestamp": "2023-09-25T08:55:01Z",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "06a9b80f1f3544501eef894ea4147616904cda6f",
+          "message": "chore: remove the `sn_testnet` crate\n\nThis crate is made obsolete by the node manager, which we can now switch to for development work.\n\nIt had already been removed from the release process, but I did discover references to it in two\nother scripts, which are not used any more, so I also removed those.",
+          "timestamp": "2024-01-31T18:45:50Z",
+          "tree_id": "a3c79a68dd8c21b1b23f03714252a293c32b2346",
+          "url": "https://github.com/maidsafe/safe_network/commit/06a9b80f1f3544501eef894ea4147616904cda6f"
+        },
+        "date": 1706730088025,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
