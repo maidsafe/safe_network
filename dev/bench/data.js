@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706719568072,
+  "lastUpdate": 1706719569525,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "58ebb4a12979e1975a33b164b92e0382bc781a94",
-          "message": "chore(client): serialize ClientEvent",
-          "timestamp": "2023-09-25T04:50:47Z",
-          "tree_id": "8d937581c9bb8995c822006a866872be201f9d71",
-          "url": "https://github.com/maidsafe/safe_network/commit/58ebb4a12979e1975a33b164b92e0382bc781a94"
-        },
-        "date": 1695622109495,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 207.95392,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 171,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34",
+          "message": "docs: nano tokens to network address",
+          "timestamp": "2024-01-31T15:53:23Z",
+          "tree_id": "522aeb4ed4d1ce663baad2cc0f81802e4cbf5fb3",
+          "url": "https://github.com/maidsafe/safe_network/commit/7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34"
+        },
+        "date": 1706719569174,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
