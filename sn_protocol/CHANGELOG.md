@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.11.3...sn_protocol-v0.12.0) - 2024-01-31
+
+### Other
+- *(protocol)* [**breaking**] remove node's port from NodeRegistry
+
 ## [0.11.3](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.11.2...sn_protocol-v0.11.3) - 2024-01-30
 
 ### Other

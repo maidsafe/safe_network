@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.43](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.42...sn_networking-v0.12.43) - 2024-01-31
+
+### Fixed
+- evict node on handshake timeout
+
 ## [0.12.42](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.41...sn_networking-v0.12.42) - 2024-01-30
 
 ### Added

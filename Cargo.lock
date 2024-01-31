@@ -5117,7 +5117,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.102.17"
+version = "0.102.18"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5205,7 +5205,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.12.42"
+version = "0.12.43"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5332,7 +5332,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.11.3"
+version = "0.12.0"
 dependencies = [
  "blsttc",
  "bytes",
