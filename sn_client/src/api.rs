@@ -58,14 +58,23 @@ const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl Client {
+
     /// A quick client that only takes some peers to connect to
     pub async fn quick_start(peers: Option<Vec<Multiaddr>>) -> Result<Self> {
         Self::new(SecretKey::random(), peers, false, None, None).await
     }
+
     /// Instantiate a new client.
     ///
     /// Optionally specify the maximum time the client will wait for a connection to the network before timing out.
-    /// Defaults to 180s
+    /// Defaults to 180 seconds.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn new(
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
@@ -248,26 +257,61 @@ impl Client {
     }
 
     /// Get the client events channel.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn events_channel(&self) -> ClientEventsReceiver {
         self.events_broadcaster.subscribe()
     }
 
     /// Sign the given data
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
     }
 
     /// Return a reference to the signer secret key
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn signer(&self) -> &SecretKey {
         &self.signer
     }
 
     /// Return the public key of the data signing key
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn signer_pk(&self) -> PublicKey {
         self.signer.public_key()
     }
 
     /// Get a register from network
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
@@ -309,6 +353,13 @@ impl Client {
     }
 
     /// Retrieve a Register from the network.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn get_register(&self, address: RegisterAddress) -> Result<ClientRegister> {
         info!("Retrieving a Register replica at {address}");
         ClientRegister::retrieve(self.clone(), address).await
@@ -316,6 +367,13 @@ impl Client {
 
     /// Create a new Register on the Network.
     /// Tops up payments and retries if necessary and verification failed
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn create_and_pay_for_register(
         &self,
         address: XorName,
@@ -369,6 +427,13 @@ impl Client {
     }
 
     /// Store `Chunk` as a record.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
@@ -423,6 +488,15 @@ impl Client {
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
+
+    /// Description
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
@@ -457,7 +531,8 @@ impl Client {
     }
 
     /// Verify if a `Chunk` is stored by expected nodes on the network.
-    pub async fn verify_chunk_stored(&self, chunk: &Chunk) -> Result<()> {
+    /// TODO: Single local use. Marked Private.
+    async fn verify_chunk_stored(&self, chunk: &Chunk) -> Result<()> {
         let address = chunk.network_address();
         info!("Verifying chunk: {address:?}");
         let random_nonce = thread_rng().gen::<u64>();
@@ -483,12 +558,26 @@ impl Client {
     }
 
     /// Verify if a `Register` is stored by expected nodes on the network.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
         self.get_signed_register_from_network(address, true).await
     }
 
     /// Send a `SpendCashNote` request to the network
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub(crate) async fn network_store_spend(
         &self,
         spend: SignedSpend,
@@ -537,6 +626,13 @@ impl Client {
     }
 
     /// Get a spend from network
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
 
@@ -627,6 +723,13 @@ impl Client {
     }
 
     /// Subscribe to given gossipsub topic
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
         info!("Subscribing to topic id: {topic_id}");
         self.network.subscribe_to_topic(topic_id)?;
@@ -635,6 +738,13 @@ impl Client {
     }
 
     /// Unsubscribe from given gossipsub topic
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
         info!("Unsubscribing from topic id: {topic_id}");
         self.network.unsubscribe_from_topic(topic_id)?;
@@ -642,6 +752,13 @@ impl Client {
     }
 
     /// Publish message on given topic
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
         self.network.publish_on_topic(topic_id, msg)?;
@@ -653,6 +770,13 @@ impl Client {
     /// Verify CashNoteRedemptions and rebuild spendable currency from them.
     /// Returns an `Error::InvalidTransfer` if any CashNoteRedemption is not valid
     /// Else returns a list of CashNotes that can be spent by the owner.
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn verify_cash_notes_redemptions(
         &self,
         main_pubkey: MainPubkey,
@@ -668,6 +792,13 @@ impl Client {
     /// Verify that chunks were uploaded
     ///
     /// Returns a vec of any chunks that could not be verified
+    ///
+    /// # Arguments
+    ///
+    /// # Returns
+    ///
+    /// # Examples
+    ///
     pub async fn verify_uploaded_chunks(
         &self,
         chunks_paths: &[(XorName, PathBuf)],
