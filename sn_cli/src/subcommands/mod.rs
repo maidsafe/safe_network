@@ -15,10 +15,13 @@ use clap::Subcommand;
 #[derive(Subcommand, Debug)]
 pub(super) enum SubCmd {
     #[clap(name = "wallet", subcommand)]
-    /// Commands for wallet management
+    /// Commands for a hot-wallet management.
+    /// A hot-wallet holds the secret key, thus it can be used for signing transfers/transactions.
     Wallet(wallet::hot_wallet::WalletCmds),
     #[clap(name = "wowallet", subcommand)]
     /// Commands for watch-only wallet management
+    /// A watch-only wallet holds only the public key, thus it cannot be used for signing
+    /// transfers/transactions, but only to query balances and broadcast offline signed transactions.
     WatchOnlyWallet(wallet::wo_wallet::WatchOnlyWalletCmds),
     #[clap(name = "files", subcommand)]
     /// Commands for file management

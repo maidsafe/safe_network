@@ -82,9 +82,8 @@ pub enum WatchOnlyWalletCmds {
         #[clap(name = "to")]
         to: String,
     },
-    /// Broadcast a transaction that was signed offline.
+    /// This command will create the cash note for the recipient and broadcast it to the network.
     ///
-    /// This command will create the cash note for the recipient.
     /// This cash note can then be shared with the recipient, who can then
     /// use the 'deposit' command to use/claim the funds.
     Broadcast {
