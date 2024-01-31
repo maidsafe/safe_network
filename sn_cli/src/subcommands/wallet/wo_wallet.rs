@@ -14,6 +14,7 @@ use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
+use dialoguer::Confirm;
 use sn_client::{Client, ClientEvent};
 use sn_transfers::{
     CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend,
@@ -90,6 +91,9 @@ pub enum WatchOnlyWalletCmds {
         /// Hex-encoded signed transaction.
         #[clap(name = "signed Tx")]
         signed_tx: String,
+        /// Avoid prompts by assuming `yes` as the answer.
+        #[clap(long, name = "force", default_value = "false")]
+        force: bool,
     },
     /// Listen for transfer notifications from the network over gossipsub protocol.
     ///
@@ -193,8 +197,8 @@ pub(crate) async fn wo_wallet_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        WatchOnlyWalletCmds::Broadcast { signed_tx } => {
-            broadcast_signed_spends(signed_tx, client, verify_store).await
+        WatchOnlyWalletCmds::Broadcast { signed_tx, force } => {
+            broadcast_signed_spends(signed_tx, client, verify_store, force).await
         }
         WatchOnlyWalletCmds::ReceiveOnline { pk, path } => {
             let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
@@ -265,6 +269,7 @@ async fn broadcast_signed_spends(
     signed_tx: String,
     client: &Client,
     verify_store: bool,
+    force: bool,
 ) -> Result<()> {
     let (signed_spends, output_details, change_id): (
         BTreeSet<SignedSpend>,
@@ -303,16 +308,18 @@ async fn broadcast_signed_spends(
         bail!("Transaction is corrupted, no transaction information found.");
     };
 
-    use dialoguer::Confirm;
+    if !force {
+        println!(
+            "\n** Please make sure the above information is correct before broadcasting it. **\n"
+        );
+        let confirmation = Confirm::new()
+            .with_prompt("Do you want to broadcast the above transaction?")
+            .interact()?;
 
-    println!("\n** Please make sure the above information is correct before broadcasting it. **\n");
-    let confirmation = Confirm::new()
-        .with_prompt("Do you want to broadcast the above transaction?")
-        .interact()?;
-
-    if !confirmation {
-        println!("Transaction was not broadcasted.");
-        return Ok(());
+        if !confirmation {
+            println!("Transaction was not broadcasted.");
+            return Ok(());
+        }
     }
 
     println!("Broadcasting the transaction to the network...");

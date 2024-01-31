@@ -19,7 +19,7 @@ pub(super) enum SubCmd {
     Wallet(wallet::hot_wallet::WalletCmds),
     #[clap(name = "wowallet", subcommand)]
     /// Commands for watch-only wallet management
-    Wowallet(wallet::wo_wallet::WatchOnlyWalletCmds),
+    WatchOnlyWallet(wallet::wo_wallet::WatchOnlyWalletCmds),
     #[clap(name = "files", subcommand)]
     /// Commands for file management
     Files(files::FilesCmds),

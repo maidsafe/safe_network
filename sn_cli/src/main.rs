@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let SubCmd::Wowallet(cmds) = &opt.cmd {
+    if let SubCmd::WatchOnlyWallet(cmds) = &opt.cmd {
         if let WatchOnlyWalletCmds::Addresses
         | WatchOnlyWalletCmds::Balance { .. }
         | WatchOnlyWalletCmds::Deposit { .. }
@@ -120,7 +120,7 @@ async fn main() -> Result<()> {
     // use gossipsub only for the wallet cmd that requires it.
     let joins_gossipsub = matches!(
         opt.cmd,
-        SubCmd::Wowallet(WatchOnlyWalletCmds::ReceiveOnline { .. })
+        SubCmd::WatchOnlyWallet(WatchOnlyWalletCmds::ReceiveOnline { .. })
     );
 
     // get the broadcaster as we want to have our own progress bar.
@@ -148,7 +148,7 @@ async fn main() -> Result<()> {
         SubCmd::Wallet(cmds) => {
             wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
-        SubCmd::Wowallet(cmds) => {
+        SubCmd::WatchOnlyWallet(cmds) => {
             wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Files(cmds) => {
