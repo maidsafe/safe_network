@@ -16,6 +16,14 @@ use std::path::{self, Path, PathBuf};
 use tiny_http::{Response, Server};
 use tracing::{debug, error, trace};
 
+#[derive(Serialize, Deserialize)]
+struct Distribution {
+    #[serde(with = "serde_bytes")]
+    transfer: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    encrypted_secret_key: Vec<u8>,
+}
+
 /// Run the faucet server.
 ///
 /// This will listen on port 8000 and send a transfer of tokens as response to any GET request.
@@ -60,8 +68,9 @@ pub async fn restart_faucet_server(client: &Client) -> Result<()> {
 async fn startup_server(client: &Client) -> Result<()> {
     #[cfg(feature = "distribution")]
     {
-        let _balances = token_distribution::load_maid_snapshot()?;
-        let _keys = token_distribution::load_maid_pubkeys()?;
+        let balances = token_distribution::load_maid_snapshot()?;
+        let keys = token_distribution::load_maid_pubkeys()?;
+        token_distribution::distribute_from_maid_to_tokens(client, balances, keys).await;
     }
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
