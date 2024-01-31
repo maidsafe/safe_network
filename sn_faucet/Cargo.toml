@@ -24,9 +24,13 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
+ecies = { version="0.2.6", default-features = false, features = ["pure"] }
+hex = "0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
+rmp-serde = "1.1.2"
 serde = { version = "1.0.193", features = ["derive"] }
+serde_bytes = "0.11.12"
 serde_json = "1.0.108"
 sn_client = { path = "../sn_client", version = "0.103.3" }
 sn_logging = { path = "../sn_logging", version = "0.2.18" }
