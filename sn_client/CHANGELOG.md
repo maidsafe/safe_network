@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.18...sn_client-v0.102.19) - 2024-01-31
+
+### Other
+- nano tokens to network address
+- change to question mark from expect
+- test doc changes to remove code and refactor for pr
+- broadcast signed spends
+- send
+- verify cash note
+- receive and cargo fmt
+- send spends
+
 ## [0.102.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.102.17...sn_client-v0.102.18) - 2024-01-31
 
 ### Other
