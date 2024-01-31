@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706719571114,
+  "lastUpdate": 1706729984247,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "6ed9ccc524489cfe4cdd00ebc23442869461ad6b",
-          "message": "refactor(transfers): unused variable removal",
-          "timestamp": "2023-09-25T13:32:06Z",
-          "tree_id": "e0f34321de13c9006998379bc09bd0333d18bab8",
-          "url": "https://github.com/maidsafe/safe_network/commit/6ed9ccc524489cfe4cdd00ebc23442869461ad6b"
-        },
-        "date": 1695652582096,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11077569374128328,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5432240309248351,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.661323092233973,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 52.74112312497081,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "06a9b80f1f3544501eef894ea4147616904cda6f",
+          "message": "chore: remove the `sn_testnet` crate\n\nThis crate is made obsolete by the node manager, which we can now switch to for development work.\n\nIt had already been removed from the release process, but I did discover references to it in two\nother scripts, which are not used any more, so I also removed those.",
+          "timestamp": "2024-01-31T18:45:50Z",
+          "tree_id": "a3c79a68dd8c21b1b23f03714252a293c32b2346",
+          "url": "https://github.com/maidsafe/safe_network/commit/06a9b80f1f3544501eef894ea4147616904cda6f"
+        },
+        "date": 1706729980741,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1780923153282017,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.695565965539414,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 53.98078944326242,
             "unit": "MiB/s"
           }
         ]
