@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.18](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.17...sn_logging-v0.2.18) - 2024-01-31
+
+### Other
+- remove the `sn_testnet` crate
+
 ## [0.2.17](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.16...sn_logging-v0.2.17) - 2024-01-23
 
 ### Other
