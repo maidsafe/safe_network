@@ -275,7 +275,21 @@ impl Client {
     /// 
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error, ClientEvent};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Using client.events_channel() to publish messages
+    /// let mut events_channel = client.events_channel();
+    /// while let Ok(event) = events_channel.recv().await {
+    ///     if let ClientEvent::GossipsubMsg { msg, .. } = event {
+    ///     let msg = String::from_utf8(msg.to_vec()).unwrap();
+    ///     println!("New message published: {msg}");
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn events_channel(&self) -> ClientEventsReceiver {
         self.events_broadcaster.subscribe()
