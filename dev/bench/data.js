@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706715139555,
+  "lastUpdate": 1706719460806,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "d42700499afb6d8ed62539a97b0d56dd2275095b",
-          "message": "chore: udeps",
-          "timestamp": "2023-09-25T09:22:32Z",
-          "tree_id": "ffd9d00aa624342d8b3cec3d006df5358599dc88",
-          "url": "https://github.com/maidsafe/safe_network/commit/d42700499afb6d8ed62539a97b0d56dd2275095b"
-        },
-        "date": 1695638386298,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1111112833410077,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5688247180616218,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.736050143899283,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 54.37087500934137,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34",
+          "message": "docs: nano tokens to network address",
+          "timestamp": "2024-01-31T15:53:23Z",
+          "tree_id": "522aeb4ed4d1ce663baad2cc0f81802e4cbf5fb3",
+          "url": "https://github.com/maidsafe/safe_network/commit/7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34"
+        },
+        "date": 1706719458408,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.156002978853212,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6633083041145627,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 52.74112312497081,
             "unit": "MiB/s"
           }
         ]
