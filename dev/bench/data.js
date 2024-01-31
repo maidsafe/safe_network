@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706692863000,
+  "lastUpdate": 1706692864639,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "afd0411cf9d407c5a01183edff4b872c77c12760",
-          "message": "feat(cli): deps update and arbitrary change for cli\n\nBREAKING CHANGE: dbc deprecation did seemingly not kick off a release\nfor the CLI.",
-          "timestamp": "2023-09-22T10:29:19+02:00",
-          "tree_id": "3f6ed5aedec944479d2346b8c11c5bc03027f2c4",
-          "url": "https://github.com/maidsafe/safe_network/commit/afd0411cf9d407c5a01183edff4b872c77c12760"
-        },
-        "date": 1695373669029,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 215.98209,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 166,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a89378711b18b97c443c87d1ae64e4f188b57fda",
+          "message": "chore(rpc): add retry during initial connection and better error logging",
+          "timestamp": "2024-01-31T08:25:28Z",
+          "tree_id": "9cb8cb1dc54aeaf6af5e3b0f7c69ce57ef117668",
+          "url": "https://github.com/maidsafe/safe_network/commit/a89378711b18b97c443c87d1ae64e4f188b57fda"
+        },
+        "date": 1706692864262,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
