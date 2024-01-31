@@ -31,6 +31,7 @@ pub struct ServiceConfig {
     pub local: bool,
     pub log_dir_path: PathBuf,
     pub name: String,
+    pub node_port: Option<u16>,
     pub peers: Vec<Multiaddr>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
@@ -196,6 +197,10 @@ impl ServiceControl for NodeServiceManager {
         }
         if config.local {
             args.push(OsString::from("--local"));
+        }
+        if let Some(node_port) = config.node_port {
+            args.push(OsString::from("--port"));
+            args.push(OsString::from(node_port.to_string()));
         }
 
         if !config.peers.is_empty() {
