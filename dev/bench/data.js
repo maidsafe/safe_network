@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706692866515,
+  "lastUpdate": 1706715034118,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5927ba7577484febf01e67ff45cfcfd5ab3725f9",
-          "message": "feat(cli): wrap repayment error for clarity",
-          "timestamp": "2023-09-25T08:55:01Z",
-          "tree_id": "fb647b3e26725f6b59573e8159b421066810e89a",
-          "url": "https://github.com/maidsafe/safe_network/commit/5927ba7577484febf01e67ff45cfcfd5ab3725f9"
-        },
-        "date": 1695635968183,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11459698321331618,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5670746285820482,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 6.7291765190238015,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 54.32325206939389,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7965a29334462ecd9ab05f78e850d5f46e8ae7a",
+          "message": "refactor(manager): remove unused service method",
+          "timestamp": "2024-01-31T16:18:00+01:00",
+          "tree_id": "716bb33dfb1a3e1346f18388ea60dfdd295a7345",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7965a29334462ecd9ab05f78e850d5f46e8ae7a"
+        },
+        "date": 1706715031580,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2181798763964506,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7176415601596289,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 54.37087500934137,
             "unit": "MiB/s"
           }
         ]
