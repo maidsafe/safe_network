@@ -106,6 +106,13 @@ pub enum SubCmd {
         /// Specify an Ipv4Addr for the node's RPC service to run on. The ports are assigned automatically.
         ///
         /// If not used, the localhost will be used with a random port.
+        /// Specify a port for the node to run on.
+        ///
+        /// If not used, a port will be selected at random.
+        ///
+        /// This option only applies when a single service is being added.
+        #[clap(long)]
+        port: Option<u16>,
         #[clap(long)]
         rpc_address: Option<Ipv4Addr>,
         /// Provide a safenode binary using a URL.
@@ -314,6 +321,7 @@ async fn main() -> Result<()> {
             local,
             log_dir_path,
             peers,
+            port,
             rpc_address,
             url,
             user,
@@ -346,6 +354,7 @@ async fn main() -> Result<()> {
                     genesis: peers.first,
                     count,
                     peers: get_peers_from_args(peers).await?,
+                    node_port: port,
                     rpc_address,
                     safenode_dir_path: service_data_dir_path.clone(),
                     service_data_dir_path,
