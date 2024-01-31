@@ -70,11 +70,14 @@ impl Client {
     /// Defaults to 180 seconds.
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn new(
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
@@ -257,13 +260,15 @@ impl Client {
     }
 
     /// Get the client events channel.
-    ///
+    /// 
     /// # Arguments
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn events_channel(&self) -> ClientEventsReceiver {
         self.events_broadcaster.subscribe()
     }
@@ -271,11 +276,14 @@ impl Client {
     /// Sign the given data
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
     }
@@ -283,11 +291,14 @@ impl Client {
     /// Return a reference to the signer secret key
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn signer(&self) -> &SecretKey {
         &self.signer
     }
@@ -295,11 +306,14 @@ impl Client {
     /// Return the public key of the data signing key
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn signer_pk(&self) -> PublicKey {
         self.signer.public_key()
     }
@@ -307,11 +321,14 @@ impl Client {
     /// Get a register from network
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
@@ -355,11 +372,14 @@ impl Client {
     /// Retrieve a Register from the network.
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn get_register(&self, address: RegisterAddress) -> Result<ClientRegister> {
         info!("Retrieving a Register replica at {address}");
         ClientRegister::retrieve(self.clone(), address).await
@@ -369,11 +389,14 @@ impl Client {
     /// Tops up payments and retries if necessary and verification failed
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn create_and_pay_for_register(
         &self,
         address: XorName,
@@ -429,11 +452,14 @@ impl Client {
     /// Store `Chunk` as a record.
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
@@ -490,13 +516,15 @@ impl Client {
 
 
     /// Description
-    ///
+    /// 
     /// # Arguments
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
@@ -560,11 +588,14 @@ impl Client {
     /// Verify if a `Register` is stored by expected nodes on the network.
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
         self.get_signed_register_from_network(address, true).await
@@ -573,11 +604,14 @@ impl Client {
     /// Send a `SpendCashNote` request to the network
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub(crate) async fn network_store_spend(
         &self,
         spend: SignedSpend,
@@ -628,11 +662,14 @@ impl Client {
     /// Get a spend from network
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
 
@@ -725,11 +762,14 @@ impl Client {
     /// Subscribe to given gossipsub topic
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
         info!("Subscribing to topic id: {topic_id}");
         self.network.subscribe_to_topic(topic_id)?;
@@ -740,11 +780,14 @@ impl Client {
     /// Unsubscribe from given gossipsub topic
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
         info!("Unsubscribing from topic id: {topic_id}");
         self.network.unsubscribe_from_topic(topic_id)?;
@@ -754,11 +797,14 @@ impl Client {
     /// Publish message on given topic
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
         self.network.publish_on_topic(topic_id, msg)?;
@@ -772,11 +818,14 @@ impl Client {
     /// Else returns a list of CashNotes that can be spent by the owner.
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn verify_cash_notes_redemptions(
         &self,
         main_pubkey: MainPubkey,
@@ -794,11 +843,14 @@ impl Client {
     /// Returns a vec of any chunks that could not be verified
     ///
     /// # Arguments
+    /// * '' -
     ///
-    /// # Returns
+    /// Return type
     ///
-    /// # Examples
-    ///
+    /// # Example
+    /// ```no_run
+    /// 
+    /// ```
     pub async fn verify_uploaded_chunks(
         &self,
         chunks_paths: &[(XorName, PathBuf)],
