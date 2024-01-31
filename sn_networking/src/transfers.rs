@@ -13,8 +13,8 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{
-    CashNote, CashNoteRedemption, DerivationIndex, LocalWallet, MainPubkey, SignedSpend,
-    Transaction, Transfer, UniquePubkey,
+    CashNote, CashNoteRedemption, DerivationIndex, HotWallet, MainPubkey, SignedSpend, Transaction,
+    Transfer, UniquePubkey,
 };
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
@@ -116,7 +116,7 @@ impl Network {
     pub async fn verify_and_unpack_transfer(
         &self,
         transfer: &Transfer,
-        wallet: &LocalWallet,
+        wallet: &HotWallet,
     ) -> Result<Vec<CashNote>> {
         // get CashNoteRedemptions from encrypted Transfer
         trace!("Decyphering Transfer");

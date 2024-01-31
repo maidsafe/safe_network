@@ -9,7 +9,7 @@ pub(crate) mod helpers;
 pub(crate) mod hot_wallet;
 pub(crate) mod wo_wallet;
 
-use sn_transfers::{CashNote, LocalWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
+use sn_transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
 
 use color_eyre::Result;
 use std::{collections::BTreeSet, io::Read, path::Path};
@@ -17,7 +17,7 @@ use std::{collections::BTreeSet, io::Read, path::Path};
 // TODO: convert this into a Trait part of the wallet APIs.
 enum WalletApiHelper {
     WatchOnlyWallet(WatchOnlyWallet),
-    HotWallet(LocalWallet),
+    HotWallet(HotWallet),
 }
 
 impl WalletApiHelper {
@@ -27,7 +27,7 @@ impl WalletApiHelper {
     }
 
     pub fn load_from(root_dir: &Path) -> Result<Self> {
-        let wallet = LocalWallet::load_from(root_dir)?;
+        let wallet = HotWallet::load_from(root_dir)?;
         Ok(Self::HotWallet(wallet))
     }
 

@@ -23,7 +23,7 @@ use sn_protocol::safenode_proto::{
 };
 use sn_registers::Permissions;
 use sn_transfers::{
-    CashNoteRedemption, LocalWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
+    CashNoteRedemption, HotWallet, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK,
 };
 use std::net::SocketAddr;
 use tokio::{
@@ -364,7 +364,7 @@ async fn spawn_royalties_payment_client_listener(
 ) -> Result<JoinHandle<Result<(usize, NanoTokens), eyre::Report>>> {
     let temp_dir = assert_fs::TempDir::new()?;
     let sk = SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)?;
-    let mut wallet = LocalWallet::load_from_path(&temp_dir, Some(MainSecretKey::new(sk)))?;
+    let mut wallet = HotWallet::load_from_path(&temp_dir, Some(MainSecretKey::new(sk)))?;
     let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
     client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())?;
 

@@ -262,7 +262,7 @@ impl Client {
         let mut count = 0;
         let royalties_key = *NETWORK_ROYALTIES_PK;
         let mut wallet =
-            sn_transfers::LocalWallet::load_from(root_dir).expect("Failed to load wallet");
+            sn_transfers::HotWallet::load_from(root_dir).expect("Failed to load wallet");
         for spend in spends {
             for derivation_idx in spend.spend.network_royalties.iter() {
                 count += 1;

@@ -26,7 +26,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    calculate_royalties_fee, is_genesis_parent_tx, CashNote, CashNoteRedemption, LocalWallet,
+    calculate_royalties_fee, is_genesis_parent_tx, CashNote, CashNoteRedemption, HotWallet,
     NanoTokens, Payment, SignedSpend, Transfer, UniquePubkey, WalletError, GENESIS_CASHNOTE,
     NETWORK_ROYALTIES_PK,
 };
@@ -422,7 +422,7 @@ impl Node {
     async fn cash_notes_from_transfers(
         &self,
         transfers: Vec<Transfer>,
-        wallet: &LocalWallet,
+        wallet: &HotWallet,
         pretty_key: PrettyPrintRecordKey<'static>,
     ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNoteRedemption>)> {
         let royalties_pk = *NETWORK_ROYALTIES_PK;
@@ -498,7 +498,7 @@ impl Node {
         trace!("Validating record payment for {pretty_key}");
 
         // load wallet
-        let mut wallet = LocalWallet::load_from(&self.network.root_dir_path)?;
+        let mut wallet = HotWallet::load_from(&self.network.root_dir_path)?;
         let old_balance = wallet.balance().as_nano();
 
         // unpack transfer

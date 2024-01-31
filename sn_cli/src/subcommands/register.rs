@@ -12,7 +12,7 @@ use color_eyre::{eyre::WrapErr, Result, Section};
 use sn_client::{Client, Error as ClientError, WalletClient};
 use sn_protocol::storage::RegisterAddress;
 use sn_registers::Permissions;
-use sn_transfers::LocalWallet;
+use sn_transfers::HotWallet;
 use std::path::Path;
 use xor_name::XorName;
 
@@ -86,7 +86,7 @@ async fn create_register(
     verify_store: bool,
 ) -> Result<()> {
     trace!("Starting to pay for Register storage");
-    let wallet = LocalWallet::load_from(root_dir)
+    let wallet = HotWallet::load_from(root_dir)
         .wrap_err("Unable to read wallet file in {path:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",

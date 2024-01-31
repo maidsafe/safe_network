@@ -17,7 +17,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress,
 };
-use sn_transfers::{LocalWallet, NanoTokens};
+use sn_transfers::{HotWallet, NanoTokens};
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -58,7 +58,7 @@ impl FilesApi {
     /// Create a new WalletClient for a given root directory.
     pub fn wallet(&self) -> Result<WalletClient> {
         let path = self.wallet_dir.as_path();
-        let wallet = LocalWallet::load_from(path)?;
+        let wallet = HotWallet::load_from(path)?;
 
         Ok(WalletClient::new(self.client.clone(), wallet))
     }

@@ -12,10 +12,12 @@ use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_protocol::test_utils::DeploymentInventory;
-use sn_transfers::{create_faucet_wallet, LocalWallet, NanoTokens, Transfer};
+use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
-use tokio::sync::Mutex;
-use tokio::time::{Duration, Instant};
+use tokio::{
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 use tracing::{error, info, warn};
 
 /// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.
@@ -36,9 +38,9 @@ lazy_static! {
     static ref FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-/// Load LocalWallet from dir
-pub fn get_wallet(root_dir: &Path) -> LocalWallet {
-    LocalWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
+/// Load HotWallet from dir
+pub fn get_wallet(root_dir: &Path) -> HotWallet {
+    HotWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
 }
 
 /// Get the node count
@@ -108,11 +110,11 @@ pub async fn get_gossip_client() -> Client {
 
 /// Adds funds to the provided to_wallet_dir
 /// If SN_INVENTORY flag is passed, the amount is retrieved from the faucet url
-/// else obtain it from the provided faucet LocalWallet
+/// else obtain it from the provided faucet HotWallet
 ///
 /// We obtain 100 SNT from the network per call. Use `get_gossip_client_and_wallet` during the initial setup which would
 /// obtain 10*100 SNT
-pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Result<LocalWallet> {
+pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Result<HotWallet> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
             Droplet::get_funded_wallet(client, to_wallet_dir, inventory.faucet_address, false).await
@@ -127,7 +129,7 @@ pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Resul
 ///
 /// We get a maximum of 10*100 SNT from the network. This is hardcoded as the Droplet tests have the fetch the
 /// coins from the faucet and each request is limited to 100 SNT.
-pub async fn get_gossip_client_and_funded_wallet(root_dir: &Path) -> Result<(Client, LocalWallet)> {
+pub async fn get_gossip_client_and_funded_wallet(root_dir: &Path) -> Result<(Client, HotWallet)> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
             let client = Droplet::get_gossip_client(&inventory).await;
@@ -174,7 +176,7 @@ impl NonDroplet {
         client: &Client,
         root_dir: &Path,
         initial_wallet: bool,
-    ) -> Result<LocalWallet> {
+    ) -> Result<HotWallet> {
         let wallet_balance = if initial_wallet {
             NanoTokens::from(INITIAL_WALLET_BALANCE)
         } else {
@@ -206,7 +208,7 @@ impl NonDroplet {
         Ok(local_wallet)
     }
 
-    async fn load_faucet_wallet() -> Result<LocalWallet> {
+    async fn load_faucet_wallet() -> Result<HotWallet> {
         info!("Loading faucet...");
         let now = Instant::now();
         for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
@@ -258,7 +260,7 @@ impl Droplet {
         root_dir: &Path,
         faucet_socket: String,
         initial_wallet: bool,
-    ) -> Result<LocalWallet> {
+    ) -> Result<HotWallet> {
         let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
         let requests_to_faucet = if initial_wallet {

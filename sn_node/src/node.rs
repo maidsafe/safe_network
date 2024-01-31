@@ -22,7 +22,7 @@ use sn_protocol::{
     messages::{ChunkProof, CmdResponse, Query, QueryResponse, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{CashNoteRedemption, LocalWallet, MainPubkey, MainSecretKey, NanoTokens};
+use sn_transfers::{CashNoteRedemption, HotWallet, MainPubkey, MainSecretKey, NanoTokens};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -104,7 +104,7 @@ impl NodeBuilder {
         let reward_key = MainSecretKey::random();
         let reward_address = reward_key.main_pubkey();
 
-        let mut wallet = LocalWallet::load_from_main_key(&self.root_dir, reward_key)?;
+        let mut wallet = HotWallet::load_from_main_key(&self.root_dir, reward_key)?;
         // store in case it's a fresh wallet created if none was found
         wallet.deposit_and_store_to_disk(&vec![])?;
 

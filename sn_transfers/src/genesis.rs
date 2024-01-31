@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::wallet::LocalWallet;
+use super::wallet::HotWallet;
 
 use crate::{
     CashNote, DerivationIndex, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey,
@@ -84,7 +84,7 @@ pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
     parent_tx == &GENESIS_CASHNOTE.src_tx
 }
 
-pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
+pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
     info!("Loading genesis...");
     let mut genesis_wallet = create_genesis_wallet();
 
@@ -103,7 +103,7 @@ pub fn load_genesis_wallet() -> Result<LocalWallet, Error> {
     Ok(genesis_wallet)
 }
 
-fn create_genesis_wallet() -> LocalWallet {
+fn create_genesis_wallet() -> HotWallet {
     let root_dir = get_genesis_dir();
     let wallet_dir = root_dir.join("wallet");
     std::fs::create_dir_all(&wallet_dir).expect("Genesis wallet path to be successfully created.");
@@ -115,7 +115,7 @@ fn create_genesis_wallet() -> LocalWallet {
     crate::wallet::store_new_keypair(&wallet_dir, &main_key)
         .expect("Genesis key shall be successfully stored.");
 
-    LocalWallet::load_from(&root_dir)
+    HotWallet::load_from(&root_dir)
         .expect("Faucet wallet (after genesis) shall be created successfully.")
 }
 
@@ -175,11 +175,11 @@ pub fn create_first_cash_note_from_key(
     Ok(genesis_cash_note)
 }
 
-pub fn create_faucet_wallet() -> LocalWallet {
+pub fn create_faucet_wallet() -> HotWallet {
     let root_dir = get_faucet_dir();
 
     println!("Loading faucet wallet... {root_dir:#?}");
-    LocalWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
+    HotWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
 }
 
 // We need deterministic and fix path for the genesis wallet.
