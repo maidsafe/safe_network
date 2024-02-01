@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706809576961,
+  "lastUpdate": 1706809680661,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "6ed9ccc524489cfe4cdd00ebc23442869461ad6b",
-          "message": "refactor(transfers): unused variable removal",
-          "timestamp": "2023-09-25T13:32:06Z",
-          "tree_id": "e0f34321de13c9006998379bc09bd0333d18bab8",
-          "url": "https://github.com/maidsafe/safe_network/commit/6ed9ccc524489cfe4cdd00ebc23442869461ad6b"
-        },
-        "date": 1695652879604,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 62.541824,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "230775fda3e1c7b132f8916813540e9e405053c6",
+          "message": "fix(node): clean up on_going_fetch as well",
+          "timestamp": "2024-02-01T16:45:42Z",
+          "tree_id": "4b06b4f9a4492d4fb3afa0f625ac6b449aa9ebca",
+          "url": "https://github.com/maidsafe/safe_network/commit/230775fda3e1c7b132f8916813540e9e405053c6"
+        },
+        "date": 1706809680259,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
