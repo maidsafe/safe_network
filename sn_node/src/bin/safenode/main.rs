@@ -536,8 +536,8 @@ fn start_new_node_process() {
         Err(e) => {
             // Do not return an error as this isn't a critical failure.
             // The current node can continue.
-            eprintln!("Failed to execute hard-restart command: {e}");
-            error!("Failed to execute hard-restart command: {}", e);
+            eprintln!("Failed to execute hard-restart command: {e:?}");
+            error!("Failed to execute hard-restart command: {e:?}");
 
             return;
         }

@@ -75,12 +75,12 @@ pub async fn get_safenode_rpc_client(
         if let Ok(rpc_client) = SafeNodeClient::connect(endpoint.clone()).await {
             break Ok(rpc_client);
         }
-        println!("Could not connect to rpc {endpoint:?} after restarting. retrying");
-        error!("Could not connect to rpc {endpoint:?} after restarting. retrying");
-        tokio::time::sleep(Duration::from_secs(1)).await;
         attempts += 1;
+        println!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
+        error!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
+        tokio::time::sleep(Duration::from_secs(1)).await;
         if attempts >= 10 {
-            bail!("FAILED TO CONNECT to {endpoint:?} even after 10 retries");
+            bail!("Failed to connect to {endpoint:?} even after 10 retries");
         }
     }
 }
@@ -108,6 +108,31 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
 
 pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
     let mut rpc_client = get_safenode_rpc_client(*addr).await?;
+
+    let response = rpc_client
+        .node_info(Request::new(NodeInfoRequest {}))
+        .await?;
+    let root_dir = Path::new(&response.get_ref().data_dir);
+    debug!("Obtained root dir from node {root_dir:?}.");
+
+    let record_store = root_dir.join("record_store");
+    if record_store.exists() {
+        println!("Removing content from the record store {record_store:?}");
+        info!("Removing content from the record store {record_store:?}");
+        std::fs::remove_dir_all(record_store)?;
+    }
+    let secret_key_file = root_dir.join("secret-key");
+    if secret_key_file.exists() {
+        println!("Removing secret-key file {secret_key_file:?}");
+        info!("Removing secret-key file {secret_key_file:?}");
+        std::fs::remove_file(secret_key_file)?;
+    }
+    let wallet_dir = root_dir.join("wallet");
+    if wallet_dir.exists() {
+        println!("Removing wallet dir {wallet_dir:?}");
+        info!("Removing wallet dir {wallet_dir:?}");
+        std::fs::remove_dir_all(wallet_dir)?;
+    }
 
     let _response = rpc_client
         .restart(Request::new(RestartRequest { delay_millis: 0 }))
