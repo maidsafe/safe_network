@@ -459,10 +459,26 @@ impl Client {
     /// Return Type:
     ///
     /// [Result]<[ClientRegister]>
-    /// 
+    ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use xor_name::XorName;
+    /// use sn_registers::RegisterAddress;
+    /// // Set up a client
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Set up an address
+    /// let mut rng = rand::thread_rng();
+    /// let owner = SecretKey::random().public_key();
+    /// let meta = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(meta, owner);
+    /// // Get the register
+    /// let retrieved_register = client.get_register(address);
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn get_register(&self, address: RegisterAddress) -> Result<ClientRegister> {
         info!("Retrieving a Register replica at {address}");
