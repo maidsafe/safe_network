@@ -8,6 +8,9 @@
 
 mod faucet_server;
 
+#[cfg(feature = "distribution")]
+mod token_distribution;
+
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{bail, eyre, Result};
 use faucet_server::{restart_faucet_server, run_faucet_server};
