@@ -497,10 +497,39 @@ impl Client {
     /// Return Type:
     /// 
     /// [Result]<([ClientRegister], [NanoTokens], [NanoTokens])>
-    /// 
+    ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, WalletClient, Error};
+    /// use tempfile::TempDir;
+    /// use bls::SecretKey;
+    /// use sn_transfers::{LocalWallet, MainSecretKey};
+    /// use xor_name::XorName;
+    /// use sn_registers::RegisterAddress;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// // Set up Client, Wallet, etc
+    /// use sn_registers::Permissions;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let tmp_path = TempDir::new()?.path().to_owned();
+    /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// // Set up an address
+    /// let mut rng = rand::thread_rng();
+    /// let owner = SecretKey::random().public_key();
+    /// let meta = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(meta, owner);
+    /// // Example:
+    ///     let (mut client_register, _storage_cost, _royalties_fees) = client
+    ///         .create_and_pay_for_register(
+    ///             meta,
+    ///             &mut wallet_client,
+    ///             true,
+    ///             Permissions::new_owner_only(),
+    ///         )
+    ///         .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn create_and_pay_for_register(
         &self,
