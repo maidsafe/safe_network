@@ -646,7 +646,7 @@ impl Client {
     }
 
 
-    /// Description
+    /// Get chunk from chunk address.
     ///
     /// # Arguments
     /// * 'address' - [ChunkAddress]
@@ -658,7 +658,22 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    ///
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use xor_name::XorName;
+    /// use sn_protocol::storage::ChunkAddress;
+    /// // client
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // chunk address
+    /// let mut rng = rand::thread_rng();
+    /// let xor_name = XorName::random(&mut rng);
+    /// let chunk_address = ChunkAddress::new(xor_name);
+    /// // get chunk
+    /// let chunk = client.get_chunk(chunk_address,true).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
