@@ -21,7 +21,7 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(15);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(30);
 
 // The time at which the key was sent to be fetched from the peer.
 type ReplicationRequestSentTime = Instant;
@@ -90,7 +90,8 @@ impl ReplicationFetcher {
         info!("Next to fetch....");
 
         if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
-            warn!("Replication Fetcher doesn't have free capacity.");
+            warn!("Replication Fetcher doesn't have free capacity. Currently has {} entries in queue.",
+                self.to_be_fetched.len());
             return vec![];
         }
 
@@ -180,6 +181,14 @@ impl ReplicationFetcher {
         existing_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
     ) {
         self.to_be_fetched.retain(|(key, t, _), _| {
+            if let Some((_addr, record_type)) = existing_keys.get(key) {
+                // check the address only against similar record types
+                t != record_type
+            } else {
+                true
+            }
+        });
+        self.on_going_fetches.retain(|(key, t), _| {
             if let Some((_addr, record_type)) = existing_keys.get(key) {
                 // check the address only against similar record types
                 t != record_type
