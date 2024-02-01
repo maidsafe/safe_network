@@ -393,7 +393,23 @@ impl Client {
     /// 
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use xor_name::XorName;
+    /// use sn_registers::RegisterAddress;
+    /// // Set up a client
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Set up an address
+    /// let mut rng = rand::thread_rng();
+    /// let owner = SecretKey::random().public_key();
+    /// let meta = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(meta, owner);
+    /// // Get a signed register
+    /// let signed_register = client.get_signed_register_from_network(address,true);
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn get_signed_register_from_network(
         &self,
