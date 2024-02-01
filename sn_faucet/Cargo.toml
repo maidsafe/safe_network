@@ -12,7 +12,7 @@ version = "0.3.33"
 
 [features]
 default = []
-distribition = ["bitcoin"]
+distribition = ["bitcoin", "minreq"]
 
 [[bin]]
 path="src/main.rs"
@@ -25,7 +25,7 @@ clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
-minreq = { version = "2.11.0", features = ["https-rustls"] }
+minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 sn_client = { path = "../sn_client", version = "0.102.19" }
