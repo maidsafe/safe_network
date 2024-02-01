@@ -277,29 +277,47 @@ impl FilesDownload {
         };
 
         // first try to deserialize a LargeFile, if it works, we go and seek it
-        if let Ok(data_map) = self.unpack_chunk(head_chunk.clone()).await {
-            // read_all emits
-            match self
-                .read(data_map, downloaded_file_path, false, false)
-                .await?
-            {
-                DownloadReturnType::EncryptedChunks(_) => {
-                    error!("IncorrectDownloadOption: we should not be getting the encrypted chunks back as it is set to false.");
-                    Err(ClientError::IncorrectDownloadOption)
+        match self.unpack_chunk(head_chunk.clone()).await {
+            Ok(data_map) => {
+                // read_all emits
+                match self
+                    .read(data_map, downloaded_file_path, false, false)
+                    .await?
+                {
+                    DownloadReturnType::EncryptedChunks(_) => {
+                        error!("IncorrectDownloadOption: we should not be getting the encrypted chunks back as it is set to false.");
+                        Err(ClientError::IncorrectDownloadOption)
+                    }
+                    DownloadReturnType::DecryptedBytes(bytes) => Ok(Some(bytes)),
+                    DownloadReturnType::WrittenToFileSystem => Ok(None),
                 }
-                DownloadReturnType::DecryptedBytes(bytes) => Ok(Some(bytes)),
-                DownloadReturnType::WrittenToFileSystem => Ok(None),
             }
-        } else {
-            self.send_event(FilesDownloadEvent::ChunksCount(1)).await?;
-            self.send_event(FilesDownloadEvent::Downloaded(address))
-                .await?;
-            // if an error occurs, we assume it's a SmallFile
-            if let Some(path) = downloaded_file_path {
-                fs::write(path, head_chunk.value().clone())?;
-                Ok(None)
-            } else {
-                Ok(Some(head_chunk.value().clone()))
+            Err(ClientError::Chunks(ChunksError::Deserialisation(_))) => {
+                // Only in case of a deserialisation error,
+                // shall consider the head chunk to be a SmallFile.
+                // With the min-size now set to 3 Bytes, such case shall be rare.
+                // Hence raise a warning for it.
+                warn!("Consider head chunk {address:?} as an SmallFile");
+                println!("Consider head chunk {address:?} as an SmallFile");
+
+                self.send_event(FilesDownloadEvent::ChunksCount(1)).await?;
+                self.send_event(FilesDownloadEvent::Downloaded(address))
+                    .await?;
+                if let Some(path) = downloaded_file_path {
+                    fs::write(path, head_chunk.value().clone())?;
+                    Ok(None)
+                } else {
+                    Ok(Some(head_chunk.value().clone()))
+                }
+            }
+            Err(err) => {
+                // For large data_map that consists of multiple chunks,
+                // `unpack_chunk` function will try to fetch those chunks from network.
+                // During the process, any chunk could be failed to download,
+                // hence trigger an error to be raised.
+                error!("Encounter error when unpack head_chunk {address:?} : {err:?}");
+                println!("Encounter error when unpack head_chunk {address:?} : {err:?}");
+                Err(err)
             }
         }
     }
