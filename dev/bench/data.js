@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706796002927,
+  "lastUpdate": 1706796004521,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "d42700499afb6d8ed62539a97b0d56dd2275095b",
-          "message": "chore: udeps",
-          "timestamp": "2023-09-25T09:22:32Z",
-          "tree_id": "ffd9d00aa624342d8b3cec3d006df5358599dc88",
-          "url": "https://github.com/maidsafe/safe_network/commit/d42700499afb6d8ed62539a97b0d56dd2275095b"
-        },
-        "date": 1695638737661,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 222.99034,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 179,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "33fc1892bb636e4720f3cdbc3b7c69dce6770489",
+          "message": "refactor(cli): use 'completed' files everywhere",
+          "timestamp": "2024-02-01T13:04:15Z",
+          "tree_id": "286c97a46ee2cea87cf864defa53294902a2af65",
+          "url": "https://github.com/maidsafe/safe_network/commit/33fc1892bb636e4720f3cdbc3b7c69dce6770489"
+        },
+        "date": 1706796004155,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
