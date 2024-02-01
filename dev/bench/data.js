@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706788258090,
+  "lastUpdate": 1706788259371,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5927ba7577484febf01e67ff45cfcfd5ab3725f9",
-          "message": "feat(cli): wrap repayment error for clarity",
-          "timestamp": "2023-09-25T08:55:01Z",
-          "tree_id": "fb647b3e26725f6b59573e8159b421066810e89a",
-          "url": "https://github.com/maidsafe/safe_network/commit/5927ba7577484febf01e67ff45cfcfd5ab3725f9"
-        },
-        "date": 1695636263083,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 212.11546,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 171,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "718a99dd066d924576c10fe7ade2adb74bf127b2",
+          "message": "fix(network): refactor cfg to allow get_record reattempts",
+          "timestamp": "2024-02-01T10:41:13Z",
+          "tree_id": "53b4b5459af7a58e84f6c683e06232888bf44a56",
+          "url": "https://github.com/maidsafe/safe_network/commit/718a99dd066d924576c10fe7ade2adb74bf127b2"
+        },
+        "date": 1706788259027,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
             "unit": "MB"
           },
           {
