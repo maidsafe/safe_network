@@ -202,11 +202,17 @@ impl ServiceControl for NodeServiceManager {
             args.push(OsString::from(peers_str));
         }
 
+        // Temporary fix to enable the restart cmd to properly restart a running service.
+        #[cfg(target_os = "linux")]
+        let contents = Some(format!("KillMode=process"));
+        #[cfg(not(target_os = "linux"))]
+        let contents = None;
+
         manager.install(ServiceInstallCtx {
             label: label.clone(),
             program: config.safenode_path.to_path_buf(),
             args,
-            contents: None,
+            contents,
             username: Some(config.service_user.to_string()),
             working_directory: None,
             environment: None,
