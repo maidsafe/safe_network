@@ -298,7 +298,7 @@ impl Client {
     /// Sign the given data.
     ///
     /// # Arguments
-    /// * '' - //TODO
+    /// * 'data' - bytes; i.e bytes of an sn_registers::Register instance
     ///
     /// Return Type:
     ///
@@ -306,7 +306,34 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use tracing::callsite::register;
+    /// use xor_name::XorName;
+    /// use sn_registers::Register;
+    /// use sn_protocol::messages::RegisterCmd;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    ///
+    /// // Set up register prerequisites
+    /// let mut rng = rand::thread_rng();
+    /// let meta = XorName::random(&mut rng);
+    /// let owner_sk = SecretKey::random();
+    /// let owner_pk = owner_sk.public_key();
+    ///
+    /// // set up register
+    /// let mut register = Register::new(owner_pk, meta, Default::default());
+    /// let mut register_clone = register.clone();
+    ///
+    /// // Use of client.sign() with register through RegisterCmd::Create
+    /// let cmd = RegisterCmd::Create {
+    ///    register,
+    ///    signature: client.sign(register_clone.bytes()?),
+    /// };
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
