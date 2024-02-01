@@ -3057,6 +3057,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - remove the `sn_testnet` crate
 
+## [0.103.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.30...sn_node-v0.103.31) - 2024-02-01
+
+### Fixed
+- *(network)* refactor cfg to allow get_record reattempts
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
