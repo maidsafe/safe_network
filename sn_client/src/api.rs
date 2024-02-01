@@ -347,7 +347,14 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let secret_key_reference = client.signer();
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn signer(&self) -> &SecretKey {
         &self.signer
