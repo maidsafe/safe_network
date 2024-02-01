@@ -709,7 +709,7 @@ impl Client {
     }
 
     /// Verify if a `Chunk` is stored by expected nodes on the network.
-    /// TODO: Single local use. Marked Private.
+    /// Single local use. Marked Private.
     async fn verify_chunk_stored(&self, chunk: &Chunk) -> Result<()> {
         let address = chunk.network_address();
         info!("Verifying chunk: {address:?}");
@@ -746,7 +746,23 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// use xor_name::XorName;
+    /// use sn_registers::RegisterAddress;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// // Set up Client
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Set up an address
+    /// let mut rng = rand::thread_rng();
+    /// let owner = SecretKey::random().public_key();
+    /// let meta = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(meta, owner);
+    /// // Verify address is stored
+    /// let is_stored = client.verify_register_stored(address).await.is_ok();
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
