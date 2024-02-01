@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.36](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.35...sn_cli-v0.89.36) - 2024-02-01
+
+### Fixed
+- *(cli)* move UploadedFiles creation logic from ChunkManager
+- *(cli)* chunk manager to return error if fs operation fails
+
+### Other
+- *(cli)* use 'completed' files everywhere
+
 ## [0.89.35](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.34...sn_cli-v0.89.35) - 2024-02-01
 
 ### Other

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.45](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.44...sn_networking-v0.12.45) - 2024-02-01
+
+### Fixed
+- *(cli)* chunk manager to return error if fs operation fails
+
 ## [0.12.44](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.43...sn_networking-v0.12.44) - 2024-02-01
 
 ### Fixed
