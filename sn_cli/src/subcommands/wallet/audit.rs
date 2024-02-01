@@ -14,7 +14,7 @@ use sn_transfers::{SpendAddress, GENESIS_CASHNOTE};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
 
-pub(crate) async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> {
+async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> {
     let dag_path = root_dir.join(SPEND_DAG_FILENAME);
     let dag = match SpendDag::load_from_file(&dag_path) {
         Ok(mut dag) => {
@@ -32,4 +32,17 @@ pub(crate) async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result
     dag.dump_to_file(dag_path)?;
 
     Ok(dag)
+}
+
+pub async fn audit(client: &Client, to_dot: bool, root_dir: &Path) -> Result<()> {
+    if to_dot {
+        let dag = gather_spend_dag(client, root_dir).await?;
+        println!("{}", dag.dump_dot_format());
+    } else {
+        //NB TODO use the above DAG to audit too
+        println!("Auditing the Currency, note that this might take a very long time...");
+        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
+        client.follow_spend(genesis_addr).await?;
+    }
+    Ok(())
 }

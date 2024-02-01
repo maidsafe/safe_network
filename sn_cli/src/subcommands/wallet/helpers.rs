@@ -8,30 +8,9 @@
 
 use color_eyre::{eyre::eyre, Result};
 use sn_client::Client;
-use sn_transfers::{LocalWallet, SpendAddress, Transfer, UniquePubkey, GENESIS_CASHNOTE};
+use sn_transfers::{LocalWallet, SpendAddress, Transfer, UniquePubkey};
 use std::path::Path;
 use url::Url;
-
-pub async fn audit(
-    client: &Client,
-    to_dot: bool,
-    find_royalties: bool,
-    root_dir: &Path,
-) -> Result<()> {
-    let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
-
-    if to_dot {
-        let dag = client.build_spend_dag_from(genesis_addr).await?;
-        println!("{}", dag.dump_dot_format());
-    } else {
-        println!("Auditing the Currency, note that this might take a very long time...");
-        client
-            .follow_spend(genesis_addr, find_royalties, root_dir)
-            .await?;
-    }
-
-    Ok(())
-}
 
 pub async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
     let wallet = LocalWallet::load_from(root_dir)?;
