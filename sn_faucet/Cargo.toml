@@ -12,13 +12,14 @@ version = "0.3.36"
 
 [features]
 default = []
+distribition = ["bitcoin"]
 
 [[bin]]
 path="src/main.rs"
 name="faucet"
 
 [dependencies]
-bitcoin = "0.31.0"
+bitcoin = { version = "0.31.0", optional = true}
 bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
