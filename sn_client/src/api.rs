@@ -583,7 +583,7 @@ impl Client {
         Ok((reg, total_cost, total_royalties))
     }
 
-    /// Store `Chunk` as a record.
+    /// Store `Chunk` as a record. Protected method.
     ///
     /// # Arguments
     /// * 'chunk' - [Chunk]
@@ -591,10 +591,6 @@ impl Client {
     /// * 'payment' - [Payment]
     /// * 'verify_store' - Boolean
     ///
-    /// # Example
-    /// ```no_run
-    /// 
-    /// ```
     pub(super) async fn store_chunk(
         &self,
         chunk: Chunk,
@@ -651,7 +647,7 @@ impl Client {
 
 
     /// Description
-    /// 
+    ///
     /// # Arguments
     /// * 'address' - [ChunkAddress]
     /// * 'show_holders' - Boolean
@@ -662,7 +658,7 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    ///
     /// ```
     pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
