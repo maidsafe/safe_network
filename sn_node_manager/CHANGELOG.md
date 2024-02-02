@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.40](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.39...sn-node-manager-v0.1.40) - 2024-02-02
+
+### Fixed
+- *(manager)* set the entire service file details for linux
+- *(manager)* set safenode service KillMode to fix restarts
+
 ## [0.1.39](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.38...sn-node-manager-v0.1.39) - 2024-02-02
 
 ### Other
