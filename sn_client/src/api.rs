@@ -971,7 +971,15 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Unsubscribing to the gossipsub topic "Royalty Transfer Notification"
+    /// client.unsubscribe_from_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"))?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
         info!("Unsubscribing from topic id: {topic_id}");
