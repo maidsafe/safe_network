@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.38](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.37...sn-node-manager-v0.1.38) - 2024-02-02
+
+### Other
+- update dependencies
+
 ## [0.1.37](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.36...sn-node-manager-v0.1.37) - 2024-02-01
 
 ### Other

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.37](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.36...sn_faucet-v0.3.37) - 2024-02-02
+
+### Added
+- make token distribution an option
+
+### Fixed
+- minreq as optional dep
+
 ## [0.3.36](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.35...sn_faucet-v0.3.36) - 2024-02-01
 
 ### Other
