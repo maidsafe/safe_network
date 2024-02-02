@@ -502,16 +502,17 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_transfers::{LocalWallet, MainSecretKey};
+    /// use sn_transfers::{MainSecretKey};
     /// use xor_name::XorName;
     /// use sn_registers::RegisterAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// // Set up Client, Wallet, etc
     /// use sn_registers::Permissions;
+    /// use sn_transfers::HotWallet;
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
-    /// let mut wallet = LocalWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
