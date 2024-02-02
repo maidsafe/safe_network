@@ -16,6 +16,8 @@ local-discovery=["libp2p/mdns"]
 # tcp is automatically enabled when compiling for wasm32
 websockets=["libp2p/tcp"]
 open-metrics=["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
+encrypt-records=[]
+
 
 [dependencies]
 async-trait = "0.1"
