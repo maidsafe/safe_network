@@ -12,7 +12,7 @@ version = "0.3.42"
 
 [features]
 default = []
-distribition = ["bitcoin", "minreq"]
+distribution = ["bitcoin", "minreq"]
 
 [[bin]]
 path="src/main.rs"

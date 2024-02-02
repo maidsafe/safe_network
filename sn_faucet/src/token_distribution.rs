@@ -6,13 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::send_tokens;
 use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
+use sn_client::Client;
 use sn_transfers::{MainPubkey, NanoTokens};
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
-use tracing::{debug, error, info, trace};
+use tracing::info;
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
@@ -30,6 +31,14 @@ struct MaidBalance {
     address: MaidAddress,
     balance: String,
     reserved: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Distribution {
+    #[serde(with = "serde_bytes")]
+    transfer: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    encrypted_secret_key: Vec<u8>,
 }
 
 // This is different to test_faucet_data_dir because it should *not* be
@@ -236,8 +245,8 @@ fn save_address_pk(address: &str, pk_hex: &str) -> Result<()> {
     Ok(())
 }
 
-async fn distribute_from_maid_to_tokens(
-    client: &Client,
+pub async fn distribute_from_maid_to_tokens(
+    client: Client,
     snapshot: Snapshot,
     pubkeys: HashMap<MaidAddress, MaidPubkey>,
 ) {
@@ -247,7 +256,7 @@ async fn distribute_from_maid_to_tokens(
             continue;
         }
         let maid_pk = &pubkeys[&addr];
-        let _ = create_distribution(client, &addr, maid_pk, amount).await;
+        let _ = create_distribution(&client, &addr, maid_pk, amount).await;
     }
 }
 
