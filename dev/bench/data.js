@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706895308190,
+  "lastUpdate": 1706895407289,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "69f800aaad75248a999271d15b6850f37e256399",
-          "message": "ci: update client log locations for checks",
-          "timestamp": "2023-09-27T10:48:49Z",
-          "tree_id": "668541e67d401d22778feb187f1d83189d28aea0",
-          "url": "https://github.com/maidsafe/safe_network/commit/69f800aaad75248a999271d15b6850f37e256399"
-        },
-        "date": 1695815346818,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49.782784,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "b54b7bf920256221656b598d4313913722de089b",
           "message": "feat(client): fail fast when a chunk is missing",
           "timestamp": "2023-09-27T11:05:40Z",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b9aaadf803c6f2deec28f1e75316ff7f91c2d73a",
+          "message": "fix(ci): update references to point to the main repo",
+          "timestamp": "2024-02-02T16:40:10Z",
+          "tree_id": "e361de3387edc8ff097e8691c03345c410580317",
+          "url": "https://github.com/maidsafe/safe_network/commit/b9aaadf803c6f2deec28f1e75316ff7f91c2d73a"
+        },
+        "date": 1706895406928,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
