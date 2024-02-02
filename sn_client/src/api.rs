@@ -72,7 +72,7 @@ impl Client {
     /// # Arguments
     /// * 'signer' - [SecretKey]
     /// * 'peers' - [Option]<[Vec]<[Multiaddr]>>
-    /// * 'enable_gossip' - Boolean
+    /// * 'enable_gossip' - Boolean: Signifies whether the client should attempt to join the gossip layer in the network. i.e to monitor network royalties.
     /// * 'connection_timeout' - [Option]<[Duration]> : Specification for client connection timeout set via Optional
     /// * 'client_event_broadcaster' - [Option]<[ClientEventsBroadcaster]>
     ///
@@ -769,16 +769,12 @@ impl Client {
         self.get_signed_register_from_network(address, true).await
     }
 
-    /// Send a `SpendCashNote` request to the network.
+    /// Send a `SpendCashNote` request to the network. Protected method.
     ///
     /// # Arguments
     /// * 'spend' - [SignedSpend]
     /// * 'verify_store' - Boolean
     ///
-    /// # Example
-    /// ```no_run
-    /// 
-    /// ```
     pub(crate) async fn network_store_spend(
         &self,
         spend: SignedSpend,
@@ -837,7 +833,23 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// use xor_name::XorName;
+    /// use sn_transfers::SpendAddress;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Create a SpendAddress
+    /// let mut rng = rand::thread_rng();
+    /// let meta = XorName::random(&mut rng);
+    /// let spend_address = SpendAddress::new(meta);
+    /// // Here we get the spend address
+    /// let spend = client.get_spend_from_network(spend_address).await?;
+    /// // Example: We can use the spend address to get its unique public key:
+    /// let unique_pubkey = spend.unique_pubkey();
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
