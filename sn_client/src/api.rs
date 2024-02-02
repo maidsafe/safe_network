@@ -301,7 +301,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Signature](Signature)
+    /// [Signature]
     ///
     /// # Example
     /// ```no_run
@@ -388,7 +388,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[SignedRegister]>
+    /// Result<[SignedRegister]>
     ///
     /// # Example
     /// ```no_run
@@ -457,7 +457,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[ClientRegister]>
+    /// Result<[ClientRegister]>
     ///
     /// # Example
     /// ```no_run
@@ -495,7 +495,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<([ClientRegister], [NanoTokens], [NanoTokens])>
+    /// Result<([ClientRegister], [NanoTokens], [NanoTokens])>
     ///
     /// # Example
     /// ```no_run
@@ -652,7 +652,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[Chunk]>
+    /// Result<[Chunk]>
     ///
     /// # Example
     /// ```no_run
@@ -740,7 +740,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[SignedRegister]>
+    /// Result<[SignedRegister]>
     ///
     /// # Example
     /// ```no_run
@@ -827,7 +827,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[SignedSpend]>
+    /// Result<[SignedSpend]>
     ///
     /// # Example
     /// ```no_run
@@ -1022,7 +1022,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[Vec]<[CashNote]>>
+    /// Result<[Vec]<[CashNote]>>
     ///
     /// # Example
     /// ```no_run
@@ -1066,7 +1066,7 @@ impl Client {
     ///
     /// Return Type:
     ///
-    /// [Result]<[Vec]<([XorName], [PathBuf])>>
+    /// Result<[Vec]<([XorName], [PathBuf])>>
     ///
     /// # Example
     /// ```no_run
