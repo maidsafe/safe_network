@@ -58,7 +58,6 @@ const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl Client {
-
     /// A quick client that only takes some peers to connect to
     pub async fn quick_start(peers: Option<Vec<Multiaddr>>) -> Result<Self> {
         Self::new(SecretKey::random(), peers, false, None, None).await
@@ -272,7 +271,7 @@ impl Client {
     /// Return Type:
     ///
     /// [ClientEventsReceiver]
-    /// 
+    ///
     /// # Example
     /// ```no_run
     /// use sn_client::{Client, Error, ClientEvent};
@@ -495,7 +494,7 @@ impl Client {
     /// * 'perms' - [Permissions]
     ///
     /// Return Type:
-    /// 
+    ///
     /// [Result]<([ClientRegister], [NanoTokens], [NanoTokens])>
     ///
     /// # Example
@@ -644,7 +643,6 @@ impl Client {
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
-
 
     /// Get chunk from chunk address.
     ///
