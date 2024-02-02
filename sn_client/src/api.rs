@@ -995,7 +995,17 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Unsubscribing to the gossipsub topic "Royalty Transfer Notification"
+    /// let msg = String::from("Transfer Successful.");
+    /// // Note the use of .into() to set the argument as bytes
+    /// client.publish_on_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"), msg.into())?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
         info!("Publishing msg on topic id: {topic_id}");
