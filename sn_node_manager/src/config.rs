@@ -17,7 +17,7 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
 
     let path = Path::new("/var/safenode-manager/");
-    if !path.exists() {
+    if is_running_as_root() && !path.exists() {
         std::fs::create_dir_all(path)?;
         let mut perm = std::fs::metadata(path)?.permissions();
         perm.set_mode(0o755); // set permissions to rwxr-xr-x
@@ -29,8 +29,28 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 
 #[cfg(unix)]
 pub fn get_node_registry_path() -> Result<PathBuf> {
+    use std::os::unix::fs::PermissionsExt;
+
     let path = get_node_manager_path()?;
-    Ok(path.join("node_registry.json"))
+    let node_registry_path = path.join("node_registry.json");
+    if is_running_as_root() && !node_registry_path.exists() {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(node_registry_path.clone())?;
+        // Set the permissions of /var/safenode-manager/node_registry.json to rwxrwxrwx. The
+        // `status` command updates the registry with the latest information it has on the
+        // services at the time it runs. It's normally the case that service management status
+        // operations do not require elevated privileges. If we want that to be the case, we
+        // need to give all users the ability to write to the registry file. Everything else in
+        // the /var/safenode-manager directory and its subdirectories will still require
+        // elevated privileges.
+        let mut perm = std::fs::metadata(node_registry_path.clone())?.permissions();
+        perm.set_mode(0o777);
+        std::fs::set_permissions(node_registry_path.clone(), perm)?;
+    }
+
+    Ok(node_registry_path)
 }
 
 #[cfg(unix)]
@@ -104,4 +124,15 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
         std::fs::create_dir_all(&path)?;
     }
     Ok(path.join("node_registry.json"))
+}
+
+#[cfg(unix)]
+pub fn is_running_as_root() -> bool {
+    users::get_effective_uid() == 0
+}
+
+#[cfg(windows)]
+pub fn is_running_as_root() -> bool {
+    // The Windows implementation for this will be much more complex.
+    true
 }
