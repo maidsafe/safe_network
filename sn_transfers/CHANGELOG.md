@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.43...sn_transfers-v0.15.0) - 2024-02-02
+
+### Other
+- *(cli)* minor changes to cli comments
+- [**breaking**] renaming LocalWallet to HotWallet as it holds the secret key for signing tx
+- *(readme)* add instructions of out-of-band transaction signing
+
 ## [0.14.43](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.42...sn_transfers-v0.14.43) - 2024-01-29
 
 ### Other

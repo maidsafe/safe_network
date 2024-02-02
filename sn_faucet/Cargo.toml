@@ -28,10 +28,10 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-sn_client = { path = "../sn_client", version = "0.102.22" }
+sn_client = { path = "../sn_client", version = "0.103.0" }
 sn_logging = { path = "../sn_logging", version = "0.2.18" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.5" }
-sn_transfers = { path = "../sn_transfers", version = "0.14.43" }
+sn_transfers = { path = "../sn_transfers", version = "0.15.0" }
 tiny_http = { version="0.12", features = ["ssl-rustls"] }
 tokio = { version = "1.32.0", features = ["parking_lot", "rt"] }
 tracing = { version = "~0.1.26" }
