@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.0...sn_networking-v0.13.1) - 2024-02-02
+
+### Added
+- *(nodes)* make encryption of records a feature, disabled by default
+
 ## [0.13.0](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.12.46...sn_networking-v0.13.0) - 2024-02-02
 
 ### Other

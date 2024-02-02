@@ -3077,6 +3077,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.103.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.34...sn_node-v0.103.35) - 2024-02-02
+
+### Added
+- *(nodes)* make encryption of records a feature, disabled by default
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
