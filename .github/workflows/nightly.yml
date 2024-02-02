@@ -628,8 +628,9 @@ jobs:
             echo "We are logging an extremely large data"
             exit 1
           fi
-          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }' 
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -640,10 +641,12 @@ jobs:
           then
             echo "Sanity check pass for local safe path"
           fi
-          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }' 
           then
-            echo "Sanity check pass for wan logs"
+            echo "We are logging an extremely large data"
+            exit 1
           fi
 
       # - name: post notification to slack on failure
@@ -817,8 +820,9 @@ jobs:
             echo "We are logging an extremely large data"
             exit 1
           fi
-          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }' 
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -829,10 +833,12 @@ jobs:
           then
             echo "Sanity check pass for local safe path"
           fi
-          # the wan log dir contains: testnet/machine/node(or faucet)/node_name/logs
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/*/logs | awk 'length($0) > 1000 { print; exit 1 }'
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }' 
           then
-            echo "Sanity check pass for wan logs"
+            echo "We are logging an extremely large data"
+            exit 1
           fi
 
       # - name: post notification to slack on failure
