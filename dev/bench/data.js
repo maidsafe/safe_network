@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706874156826,
+  "lastUpdate": 1706874158273,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "david.irvine@maidsafe.net",
-            "name": "David Irvine",
-            "username": "dirvine"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "45c118e9664495cb600f56b27c10273288c7859e",
-          "message": "feat(close group): Change close group size to 5",
-          "timestamp": "2023-09-26T10:40:02Z",
-          "tree_id": "5850a7a0d747e2b4bfd06043b1988eaf3b6ee7bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/45c118e9664495cb600f56b27c10273288c7859e"
-        },
-        "date": 1695728465548,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 122.851326,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 101,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "99bcf7272fd40788d968935f27647c223c85f370",
+          "message": "docs(cli): minor changes to cli comments",
+          "timestamp": "2024-02-02T10:38:39Z",
+          "tree_id": "af2fe4a728cdb1339139cd7e816f828001823df5",
+          "url": "https://github.com/maidsafe/safe_network/commit/99bcf7272fd40788d968935f27647c223c85f370"
+        },
+        "date": 1706874157854,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
