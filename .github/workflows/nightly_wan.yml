@@ -30,7 +30,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: create
           rust-log: debug
@@ -49,11 +49,10 @@ jobs:
           # if we were to run on a PR, use the below
           # custom-node-bin-org-name: ${{ github.actor }}"
           # custom-node-bin-branch-name: ${{ github.event.pull_request.head.ref }}
-          # Prevent deployer from fetching the latest release. It contains the `network-contacts` feature turned on.
+          # Specify custom branch to prevent the deployer from fetching the latest release.
+          # The latest release contains the `network-contacts` feature turned on.
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Check env variables
         shell: bash
@@ -98,7 +97,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: logs
           rust-log: debug
@@ -113,9 +112,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Upload local logs
         if: always()
@@ -129,7 +126,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: destroy
           rust-log: debug
@@ -144,9 +141,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -175,7 +170,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: create
           rust-log: debug
@@ -192,9 +187,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Check env variables
         shell: bash
@@ -208,7 +201,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: logs
           rust-log: debug
@@ -223,9 +216,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Upload local logs
         if: always()
@@ -239,7 +230,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: destroy
           rust-log: debug
@@ -254,9 +245,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly    
+          custom-node-bin-branch-name: main
 
   spend_test:
     name: Spend tests against network
@@ -278,7 +267,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: create
           rust-log: debug
@@ -295,9 +284,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Check env variables
         shell: bash
@@ -330,7 +317,7 @@ jobs:
       
       - name: Fetch network logs
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: logs
           rust-log: debug
@@ -345,9 +332,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Upload local logs
         if: always()
@@ -361,7 +346,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: destroy
           rust-log: debug
@@ -376,9 +361,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -420,7 +403,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: create
           rust-log: debug
@@ -437,9 +420,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Check env variables
         shell: bash
@@ -461,7 +442,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: logs
           rust-log: debug
@@ -476,9 +457,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Upload local logs
         if: always()
@@ -492,7 +471,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: destroy
           rust-log: debug
@@ -507,9 +486,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
       
       - name: Verify restart of nodes using rg
         shell: bash
@@ -626,7 +603,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: create
           rust-log: debug
@@ -643,9 +620,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Check env variables
         shell: bash
@@ -669,7 +644,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: logs
           rust-log: debug
@@ -684,9 +659,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Upload local logs
         if: always()
@@ -700,7 +673,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: RolandSherwin/sn-testnet-action@wan_nightly
+        uses: maidsafe/sn-testnet-action@main
         with:
           action: destroy
           rust-log: debug
@@ -715,9 +688,7 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: wan_nightly
-          testnet-tool-repo-user: RolandSherwin
-          testnet-tool-repo-branch: wan_nightly
+          custom-node-bin-branch-name: main
 
       - name: Verify restart of nodes using rg
         shell: bash
