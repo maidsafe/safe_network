@@ -1000,7 +1000,6 @@ impl Client {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// // Unsubscribing to the gossipsub topic "Royalty Transfer Notification"
     /// let msg = String::from("Transfer Successful.");
     /// // Note the use of .into() to set the argument as bytes
     /// client.publish_on_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"), msg.into())?;
@@ -1013,8 +1012,8 @@ impl Client {
         Ok(())
     }
 
-    /// This function is used to receive a list of CashNoteRedemptions and turn it back into spendable CashNotes.
-    /// Needs Network connection.
+    /// This function is used to receive a Vector of CashNoteRedemptions and turn them back into spendable CashNotes.
+    /// For this we need a network connection.
     /// Verify CashNoteRedemptions and rebuild spendable currency from them.
     /// Returns an `Error::InvalidTransfer` if any CashNoteRedemption is not valid
     /// Else returns a list of CashNotes that can be spent by the owner.
@@ -1029,7 +1028,23 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Create a main public key
+    /// let pk = SecretKey::random().public_key();
+    /// let main_pub_key = MainPubkey::new(pk);
+    /// // Create a Cash Note Redemption Vector
+    /// let cash_note = CashNote::from_hex("&hex").unwrap();
+    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
+    /// // Verify the cash note redemptions
+    /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn verify_cash_notes_redemptions(
         &self,
