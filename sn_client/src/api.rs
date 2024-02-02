@@ -319,12 +319,12 @@ impl Client {
     ///
     /// // Set up register prerequisites
     /// let mut rng = rand::thread_rng();
-    /// let meta = XorName::random(&mut rng);
+    /// let xorname = XorName::random(&mut rng);
     /// let owner_sk = SecretKey::random();
     /// let owner_pk = owner_sk.public_key();
     ///
     /// // set up register
-    /// let mut register = Register::new(owner_pk, meta, Default::default());
+    /// let mut register = Register::new(owner_pk, xorname, Default::default());
     /// let mut register_clone = register.clone();
     ///
     /// // Use of client.sign() with register through RegisterCmd::Create
@@ -390,7 +390,7 @@ impl Client {
     /// Return Type:
     ///
     /// [Result]<[SignedRegister]>
-    /// 
+    ///
     /// # Example
     /// ```no_run
     /// use sn_client::{Client, Error};
@@ -404,8 +404,8 @@ impl Client {
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
-    /// let meta = XorName::random(&mut rng);
-    /// let address = RegisterAddress::new(meta, owner);
+    /// let xorname = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xorname, owner);
     /// // Get a signed register
     /// let signed_register = client.get_signed_register_from_network(address,true);
     /// # Ok(())
@@ -473,8 +473,8 @@ impl Client {
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
-    /// let meta = XorName::random(&mut rng);
-    /// let address = RegisterAddress::new(meta, owner);
+    /// let xorname = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xorname, owner);
     /// // Get the register
     /// let retrieved_register = client.get_register(address);
     /// # Ok(())
@@ -517,12 +517,12 @@ impl Client {
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
-    /// let meta = XorName::random(&mut rng);
-    /// let address = RegisterAddress::new(meta, owner);
+    /// let xorname = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xorname, owner);
     /// // Example:
     ///     let (mut client_register, _storage_cost, _royalties_fees) = client
     ///         .create_and_pay_for_register(
-    ///             meta,
+    ///             xorname,
     ///             &mut wallet_client,
     ///             true,
     ///             Permissions::new_owner_only(),
@@ -668,8 +668,8 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// // chunk address
     /// let mut rng = rand::thread_rng();
-    /// let xor_name = XorName::random(&mut rng);
-    /// let chunk_address = ChunkAddress::new(xor_name);
+    /// let xorname = XorName::random(&mut rng);
+    /// let chunk_address = ChunkAddress::new(xorname);
     /// // get chunk
     /// let chunk = client.get_chunk(chunk_address,true).await?;
     /// # Ok(())
@@ -757,8 +757,8 @@ impl Client {
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
-    /// let meta = XorName::random(&mut rng);
-    /// let address = RegisterAddress::new(meta, owner);
+    /// let xorname = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xorname, owner);
     /// // Verify address is stored
     /// let is_stored = client.verify_register_stored(address).await.is_ok();
     /// # Ok(())
@@ -842,8 +842,8 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// // Create a SpendAddress
     /// let mut rng = rand::thread_rng();
-    /// let meta = XorName::random(&mut rng);
-    /// let spend_address = SpendAddress::new(meta);
+    /// let xorname = XorName::random(&mut rng);
+    /// let spend_address = SpendAddress::new(xorname);
     /// // Here we get the spend address
     /// let spend = client.get_spend_from_network(spend_address).await?;
     /// // Example: We can use the spend address to get its unique public key:
@@ -1072,7 +1072,25 @@ impl Client {
     ///
     /// # Example
     /// ```no_run
-    /// 
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use std::path::PathBuf;
+    /// use xor_name::XorName;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Setup for chunk_path
+    /// let mut chunk_path = PathBuf::from("/");
+    /// // Setup an XorName
+    /// let mut rng = rand::thread_rng();
+    /// let xorname = XorName::random(&mut rng);
+    /// // set up the vector for check
+    /// let tuple_arg = (xorname,chunk_path);
+    /// let vector = vec![tuple_arg.clone(), tuple_arg.clone()];
+    /// // Verify Chunks
+    /// let verified_chunks = client.verify_uploaded_chunks(&vector,1).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn verify_uploaded_chunks(
         &self,
