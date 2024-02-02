@@ -16,14 +16,6 @@ use std::path::{self, Path, PathBuf};
 use tiny_http::{Response, Server};
 use tracing::{debug, error, trace};
 
-#[derive(Serialize, Deserialize)]
-struct Distribution {
-    #[serde(with = "serde_bytes")]
-    transfer: Vec<u8>,
-    #[serde(with = "serde_bytes")]
-    encrypted_secret_key: Vec<u8>,
-}
-
 /// Run the faucet server.
 ///
 /// This will listen on port 8000 and send a transfer of tokens as response to any GET request.
@@ -73,9 +65,11 @@ async fn startup_server(client: &Client) -> Result<()> {
         // Each distribution takes about 500ms to create, so for thousands of
         // initial distributions this takes many minutes. This is run in the
         // background instead of blocking the server from starting.
-        tokio::spawn(
-            token_distribution::distribute_from_maid_to_tokens(client.clone(), balances, keys)
-        );
+        tokio::spawn(token_distribution::distribute_from_maid_to_tokens(
+            client.clone(),
+            balances,
+            keys,
+        ));
     }
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
