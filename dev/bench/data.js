@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706888814257,
+  "lastUpdate": 1706888816938,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "e1f251af977f4e464da7f26f080b73baed73f6de",
-          "message": "fix: benches",
-          "timestamp": "2023-09-27T09:59:28Z",
-          "tree_id": "b4628acc5023d9b2ebfc7a1853dca1975ac10a47",
-          "url": "https://github.com/maidsafe/safe_network/commit/e1f251af977f4e464da7f26f080b73baed73f6de"
-        },
-        "date": 1695812437328,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 161.66093,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 135,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f0f851cbaca85048adfbe22904473b52bd946e3e",
+          "message": "feat(nodes): make encryption of records a feature, disabled by default",
+          "timestamp": "2024-02-02T14:42:36Z",
+          "tree_id": "cd083ee7152523c7e2fdd414fec0790a94da57c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/f0f851cbaca85048adfbe22904473b52bd946e3e"
+        },
+        "date": 1706888815812,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
