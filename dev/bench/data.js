@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706888819751,
+  "lastUpdate": 1706895308190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "02b9dd4eb0ededd3f192585dd3cf572d3f7450a0",
-          "message": "feat: client to client transfers",
-          "timestamp": "2023-09-28T07:11:53Z",
-          "tree_id": "c663caa335b0c67e50b19a895c5f65bddebc1543",
-          "url": "https://github.com/maidsafe/safe_network/commit/02b9dd4eb0ededd3f192585dd3cf572d3f7450a0"
-        },
-        "date": 1695888605757,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11202218924098221,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5715609887138998,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.731184830103079,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.006859817087744,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b9aaadf803c6f2deec28f1e75316ff7f91c2d73a",
+          "message": "fix(ci): update references to point to the main repo",
+          "timestamp": "2024-02-02T16:40:10Z",
+          "tree_id": "e361de3387edc8ff097e8691c03345c410580317",
+          "url": "https://github.com/maidsafe/safe_network/commit/b9aaadf803c6f2deec28f1e75316ff7f91c2d73a"
+        },
+        "date": 1706895305789,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2385908448337815,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.806858950543893,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.91684348952852,
             "unit": "MiB/s"
           }
         ]
