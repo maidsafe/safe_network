@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706888816938,
+  "lastUpdate": 1706888819751,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -35545,6 +35545,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 96920,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f0f851cbaca85048adfbe22904473b52bd946e3e",
+          "message": "feat(nodes): make encryption of records a feature, disabled by default",
+          "timestamp": "2024-02-02T14:42:36Z",
+          "tree_id": "cd083ee7152523c7e2fdd414fec0790a94da57c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/f0f851cbaca85048adfbe22904473b52bd946e3e"
+        },
+        "date": 1706888818575,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6454,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35624,
             "unit": "ms"
           },
           {
