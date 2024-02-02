@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706864984958,
+  "lastUpdate": 1706865083851,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bf8cc2b8b18e222c5c9379e268cd5ebb944696ac",
-          "message": "feat(apis): adding client and node APIs, as well as safenode RPC service to unsubscribe from gossipsub topics",
-          "timestamp": "2023-09-26T04:53:16Z",
-          "tree_id": "17e9d251e8a0ffbf04640775e6c9290e3efa91f0",
-          "url": "https://github.com/maidsafe/safe_network/commit/bf8cc2b8b18e222c5c9379e268cd5ebb944696ac"
-        },
-        "date": 1695707890352,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57.12691,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "david.irvine@maidsafe.net",
             "name": "David Irvine",
             "username": "dirvine"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0934948e69f4cf0830951e88c29a8e0d1e04a758",
+          "message": "fix: minreq as optional dep",
+          "timestamp": "2024-02-02T08:10:45Z",
+          "tree_id": "9104067953c318deacb4c19a5609d3bf25f310d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/0934948e69f4cf0830951e88c29a8e0d1e04a758"
+        },
+        "date": 1706865083495,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
