@@ -140,42 +140,58 @@ impl NodeRecordStore {
         hex_string
     }
 
+    /// Upon read perform any data transformations required to return a `Record`.
+    fn get_record_from_bytes<'a>(
+        bytes: Vec<u8>,
+        key: &Key,
+        encryption_details: &(Aes256GcmSiv, [u8; 4]),
+    ) -> Option<Cow<'a, Record>> {
+        let mut record = Record {
+            key: key.clone(),
+            value: bytes,
+            publisher: None,
+            expires: None,
+        };
+
+        // if we're not encrypting, lets just return the record
+        if !cfg!(feature = "encrypt-records") {
+            return Some(Cow::Owned(record));
+        }
+
+        let (cipher, nonce_starter) = encryption_details;
+        let nonce = generate_nonce_for_record(nonce_starter, key);
+
+        match cipher.decrypt(&nonce, record.value.as_ref()) {
+            Ok(value) => {
+                record.value = value;
+                return Some(Cow::Owned(record));
+            }
+            Err(error) => {
+                error!("Error while decrypting record. key: {key:?}: {error:?}");
+                None
+            }
+        }
+    }
+
     fn read_from_disk<'a>(
         encryption_details: &(Aes256GcmSiv, [u8; 4]),
         key: &Key,
         storage_dir: &Path,
     ) -> Option<Cow<'a, Record>> {
-        let (cipher, nonce_starter) = encryption_details;
-
         let start = Instant::now();
         let filename = Self::key_to_hex(key);
         let file_path = storage_dir.join(&filename);
 
-        let nonce = generate_nonce_for_record(nonce_starter, key);
         // we should only be reading if we know the record is written to disk properly
         match fs::read(file_path) {
-            Ok(ciphertext) => {
+            Ok(bytes) => {
                 // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                 info!(
                     "Retrieved record from disk! filename: {filename} after {:?}",
                     start.elapsed()
                 );
 
-                match cipher.decrypt(&nonce, ciphertext.as_ref()) {
-                    Ok(value) => {
-                        let record = Record {
-                            key: key.clone(),
-                            value,
-                            publisher: None,
-                            expires: None,
-                        };
-                        return Some(Cow::Owned(record));
-                    }
-                    Err(error) => {
-                        error!("Error while decrypting record. filename: {filename}: {error:?}");
-                        None
-                    }
-                }
+                Self::get_record_from_bytes(bytes, key, encryption_details)
             }
             Err(err) => {
                 error!("Error while reading file. filename: {filename}, error: {err:?}");
@@ -272,6 +288,31 @@ impl NodeRecordStore {
         );
     }
 
+    /// Prepare record bytes for storage
+    /// If feats are enabled, this will eg, encrypt the record for storage
+    fn prepare_record_bytes(
+        record: Record,
+        encryption_details: (Aes256GcmSiv, [u8; 4]),
+    ) -> Option<Vec<u8>> {
+        if !cfg!(feature = "encrypt-records") {
+            return Some(record.value);
+        }
+
+        let (cipher, nonce_starter) = encryption_details;
+        let nonce = generate_nonce_for_record(&nonce_starter, &record.key);
+
+        match cipher.encrypt(&nonce, record.value.as_ref()) {
+            Ok(value) => Some(value),
+            Err(error) => {
+                warn!(
+                    "Failed to encrypt record {:?} : {error:?}",
+                    PrettyPrintRecordKey::from(&record.key),
+                );
+                None
+            }
+        }
+    }
+
     /// Warning: Write's a `Record` to disk without validation
     /// Should be used in context where the `Record` is trusted
     ///
@@ -291,37 +332,27 @@ impl NodeRecordStore {
             let _ = metric.set(self.records.len() as i64);
         }
 
-        let (cipher, nonce_starter) = self.encryption_details.clone();
-        let nonce = generate_nonce_for_record(&nonce_starter, &r.key);
+        let encryption_details = self.encryption_details.clone();
         let cloned_cmd_sender = self.swarm_cmd_sender.clone();
         spawn(async move {
-            match cipher.encrypt(&nonce, r.value.as_ref()) {
-                Ok(value) => {
-                    let cmd = match fs::write(&file_path, value) {
-                        Ok(_) => {
-                            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-                            info!("Wrote record {record_key:?} to disk! filename: {filename}");
+            let key = r.key.clone();
+            if let Some(bytes) = Self::prepare_record_bytes(r, encryption_details) {
+                let cmd = match fs::write(&file_path, bytes) {
+                    Ok(_) => {
+                        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+                        info!("Wrote record {record_key:?} to disk! filename: {filename}");
 
-                            SwarmCmd::AddLocalRecordAsStored {
-                                key: r.key,
-                                record_type,
-                            }
-                        }
-                        Err(err) => {
-                            error!(
+                        SwarmCmd::AddLocalRecordAsStored { key, record_type }
+                    }
+                    Err(err) => {
+                        error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                            SwarmCmd::RemoveFailedLocalRecord { key: r.key }
-                        }
-                    };
+                        SwarmCmd::RemoveFailedLocalRecord { key }
+                    }
+                };
 
-                    send_swarm_cmd(cloned_cmd_sender, cmd);
-                }
-                Err(error) => {
-                    warn!(
-                        "Failed to encrypt record {record_key:?} filename: {filename} : {error:?}"
-                    );
-                }
+                send_swarm_cmd(cloned_cmd_sender, cmd);
             }
         });
 
