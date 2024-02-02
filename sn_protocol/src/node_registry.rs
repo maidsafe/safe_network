@@ -140,9 +140,21 @@ impl NodeRegistry {
                 faucet_pid: None,
             });
         }
+
         let mut file = std::fs::File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
+
+        // It's possible for the file to be empty if the user runs a `status` command before any
+        // services were added.
+        if contents.is_empty() {
+            return Ok(NodeRegistry {
+                save_path: path.to_path_buf(),
+                nodes: vec![],
+                faucet_pid: None,
+            });
+        }
+
         let registry = serde_json::from_str(&contents)?;
         Ok(registry)
     }
@@ -153,5 +165,8 @@ pub fn get_local_node_registry_path() -> Result<PathBuf> {
         .ok_or_else(|| Error::UserDataDirectoryNotObtainable)?
         .join("safe")
         .join("local_node_registry.json");
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
     Ok(path)
 }
