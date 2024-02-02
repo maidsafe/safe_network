@@ -3082,6 +3082,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - *(nodes)* make encryption of records a feature, disabled by default
 
+## [0.103.36](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.35...sn_node-v0.103.36) - 2024-02-02
+
+### Fixed
+- *(test)* remove content from root dir as restarted node re-uses the same dir
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
