@@ -735,7 +735,9 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::get_closest_peers";
                 trace!(
-                    "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
+                    "Query task {id:?} of key {:?} returned with peers {:?}, {stats:?} - {step:?}",
+                    hex::encode(closest_peers.key.clone()),
+                    closest_peers.peers,
                 );
 
                 if let Entry::Occupied(mut entry) = self.pending_get_closest_peers.entry(id) {
