@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707149156804,
+  "lastUpdate": 1707149256310,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "54c15d458d350a45da1d408930f175c457e4d3b5",
-          "message": "fix(client): just skip empty files",
-          "timestamp": "2023-09-29T07:06:03Z",
-          "tree_id": "d230814f921a5bca510fcf8a04cb44bab295e7c2",
-          "url": "https://github.com/maidsafe/safe_network/commit/54c15d458d350a45da1d408930f175c457e4d3b5"
-        },
-        "date": 1695974759063,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49.000446,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "bzeeman+github@live.nl",
             "name": "Benno",
             "username": "b-zee"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "0dc5d98f8bad7bd78b37168b8b60aecd334bc944",
+          "message": "chore(ci): make deps optional if used only inside a feature",
+          "timestamp": "2024-02-05T14:45:21Z",
+          "tree_id": "54ee50bf645b4fe435671a3140895f6be3b62fd3",
+          "url": "https://github.com/maidsafe/safe_network/commit/0dc5d98f8bad7bd78b37168b8b60aecd334bc944"
+        },
+        "date": 1707149255177,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
