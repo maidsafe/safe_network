@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707151997319,
+  "lastUpdate": 1707152097975,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "d22af4ea21f58aefe5143ff8a69a02e0ee9ec719",
-          "message": "fix(cli): dont bail on errors during repay/upload",
-          "timestamp": "2023-09-29T09:49:18Z",
-          "tree_id": "208cd2b2dfa37082be1ebd2181201683a0bab1ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/d22af4ea21f58aefe5143ff8a69a02e0ee9ec719"
-        },
-        "date": 1695984770374,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56.92211,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/0dc5d98f8bad7bd78b37168b8b60aecd334bc944"
         },
         "date": 1707149255177,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "439522916dff685a674e991dd68e920da3987056",
+          "message": "fix: avoid log raw bytes of key accidently",
+          "timestamp": "2024-02-05T15:07:08Z",
+          "tree_id": "9d02ef4c9063bdd742de1d1abb3778297c82ee8d",
+          "url": "https://github.com/maidsafe/safe_network/commit/439522916dff685a674e991dd68e920da3987056"
+        },
+        "date": 1707152097614,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
