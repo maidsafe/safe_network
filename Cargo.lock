@@ -5195,6 +5195,7 @@ dependencies = [
  "eyre",
  "futures",
  "getrandom",
+ "hex",
  "hyper",
  "itertools 0.11.0",
  "libp2p 0.53.2",
