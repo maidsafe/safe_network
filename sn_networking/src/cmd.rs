@@ -329,7 +329,7 @@ impl SwarmDriver {
                     .iter()
                     .map(|(_, (_, result_map, _))| result_map.len())
                     .sum();
-                trace!("We now have {} pending get record attempts and cached {total_records} fetched copies",
+                info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());
             }
             SwarmCmd::GetLocalStoreCost { key, sender } => {

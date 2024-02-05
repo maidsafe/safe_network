@@ -8,7 +8,7 @@
 
 use libp2p::{
     gossipsub::{PublishError, SubscriptionError},
-    kad::{self, Record},
+    kad::{self, QueryId, Record},
     request_response::{OutboundFailure, OutboundRequestId},
     swarm::DialError,
     PeerId, TransportError,
@@ -181,8 +181,8 @@ pub enum Error {
     #[error("Outbound Error")]
     OutboundError(#[from] OutboundFailure),
 
-    #[error("A Kademlia event has been dropped: {0:?}")]
-    ReceivedKademliaEventDropped(kad::Event),
+    #[error("A Kademlia event has been dropped: {query_id:?} {event}")]
+    ReceivedKademliaEventDropped { query_id: QueryId, event: String },
 
     #[error("The oneshot::sender has been dropped")]
     SenderDropped(#[from] oneshot::error::RecvError),
