@@ -17,14 +17,18 @@ impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
     /// Does not verify the validity of the transactions
-    pub async fn build_spend_dag_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
+    pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
         let mut dag = SpendDag::new();
 
         // get first spend
-        let first_spend = self
-            .get_spend_from_network(spend_addr)
-            .await
-            .map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
+        let first_spend = match self.get_spend_from_network(spend_addr).await {
+            Ok(s) => s,
+            Err(Error::MissingSpendRecord(_)) => {
+                trace!("UTXO at {spend_addr:?}");
+                return Ok(dag);
+            }
+            Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
+        };
         dag.insert(spend_addr, first_spend.clone());
 
         // use iteration instead of recursion to avoid stack overflow
@@ -102,7 +106,7 @@ impl Client {
     ///                            ...
     ///
     /// ```
-    pub async fn extend_spend_dag(
+    pub async fn spend_dag_extend(
         &self,
         dag: &mut SpendDag,
         spend_addr: SpendAddress,
@@ -198,6 +202,17 @@ impl Client {
         let elapsed = start.elapsed();
         let n = verified_tx.len();
         info!("Verified all the way to known spends or genesis! Through {depth} generations, verifying {n} transactions in {elapsed:?}");
+        Ok(())
+    }
+
+    /// Extends an existing SpendDag starting from the utxos in this DAG
+    /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
+    pub async fn spend_dag_continue_from_utxos(&self, dag: &mut SpendDag) -> WalletResult<()> {
+        let utxos = dag.get_utxos();
+        for utxo in utxos {
+            let sub_dag = self.spend_dag_build_from(utxo).await?;
+            dag.merge(sub_dag);
+        }
         Ok(())
     }
 }

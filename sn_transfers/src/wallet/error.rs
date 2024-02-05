@@ -36,6 +36,9 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+    /// Failed to fetch spend from network
+    #[error("Failed to fetch spend from network: {0}")]
+    FailedToGetSpend(String),
     /// Failed to parse bytes into a bls key
     #[error("Unconfirmed transactions still persist even after retries")]
     UnconfirmedTxAfterRetries,

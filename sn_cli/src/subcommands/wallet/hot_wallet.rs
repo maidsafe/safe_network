@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    helpers::{audit, get_faucet, receive, verify_spend},
+    audit::audit,
+    helpers::{get_faucet, receive, verify_spend},
     WalletApiHelper,
 };
 use crate::get_stdin_response;
@@ -123,10 +124,6 @@ pub enum WalletCmds {
         /// EXPERIMENTAL Dump Audit DAG in dot format on stdout
         #[clap(long, default_value = "false")]
         dot: bool,
-        /// EXPERIMENTAL Find and redeem all Network Royalties
-        /// only works if the wallet has the Network Royalties private key
-        #[clap(long, default_value = "false")]
-        royalties: bool,
     },
 }
 
@@ -206,7 +203,7 @@ pub(crate) async fn wallet_cmds(
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await,
         WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await,
         WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await,
-        WalletCmds::Audit { dot, royalties } => audit(client, dot, royalties, root_dir).await,
+        WalletCmds::Audit { dot } => audit(client, dot, root_dir).await,
         WalletCmds::Verify {
             spend_address,
             genesis,
