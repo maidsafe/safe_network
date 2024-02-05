@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.43](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.42...sn_faucet-v0.3.43) - 2024-02-05
+
+### Added
+- *(faucet)* initial distributions in background
+- *(faucet)* create distributions for maid addrs
+
+### Other
+- *(ci)* make deps optional if used only inside a feature
+- *(faucet)* fix typo/clippy/fmt after rebase
+
 ## [0.3.42](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.41...sn_faucet-v0.3.42) - 2024-02-05
 
 ### Other
