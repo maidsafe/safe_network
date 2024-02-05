@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.103.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.103.2...sn_client-v0.103.3) - 2024-02-05
+
+### Other
+- change to hot wallet
+- docs formatting
+- cargo fmt changes
+- example for api verify uploaded chunks
+- example for api verify cash note redemptions
+- example for api publish on topic
+- example for api unsubscribe to topic
+- example for api subscribe to topic
+- example for api get spend from network
+- example for api verify register stored
+- example for api get chunk
+- example for api store chunk
+- example for api create and pay for register
+- example for api get register
+- example for api get signed reg from network
+- example for api signer pk
+- example for api signer
+- example for api sign
+- example for api events channel
+- example for api new
+- apply format and params to doc templates
+- better template set
+- mark applicable functions with empty headers
+
 ## [0.103.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.103.1...sn_client-v0.103.2) - 2024-02-05
 
 ### Other
