@@ -60,8 +60,16 @@ pub async fn restart_faucet_server(client: &Client) -> Result<()> {
 async fn startup_server(client: &Client) -> Result<()> {
     #[cfg(feature = "distribution")]
     {
-        let _balances = token_distribution::load_maid_snapshot()?;
-        let _keys = token_distribution::load_maid_pubkeys()?;
+        let balances = token_distribution::load_maid_snapshot()?;
+        let keys = token_distribution::load_maid_pubkeys()?;
+        // Each distribution takes about 500ms to create, so for thousands of
+        // initial distributions this takes many minutes. This is run in the
+        // background instead of blocking the server from starting.
+        tokio::spawn(token_distribution::distribute_from_maid_to_tokens(
+            client.clone(),
+            balances,
+            keys,
+        ));
     }
     let server =
         Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;

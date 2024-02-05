@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.4](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.3...sn_networking-v0.13.4) - 2024-02-05
+
+### Fixed
+- *(node)* avoid logging record value
+
+## [0.13.3](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.2...sn_networking-v0.13.3) - 2024-02-05
+
+### Fixed
+- avoid log raw bytes of key accidently
+
 ## [0.13.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.1...sn_networking-v0.13.2) - 2024-02-05
 
 ### Other

@@ -6,12 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::send_tokens;
 use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
-use sn_transfers::NanoTokens;
+use sn_client::Client;
+use sn_transfers::{MainPubkey, NanoTokens};
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
-use tracing::{debug, error, info, trace};
+use tracing::info;
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
@@ -31,6 +33,14 @@ struct MaidBalance {
     reserved: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Distribution {
+    #[serde(with = "serde_bytes")]
+    transfer: Vec<u8>,
+    #[serde(with = "serde_bytes")]
+    encrypted_secret_key: Vec<u8>,
+}
+
 // This is different to test_faucet_data_dir because it should *not* be
 // removed when --clean flag is specified.
 fn get_snapshot_data_dir_path() -> Result<PathBuf> {
@@ -46,6 +56,15 @@ fn get_pubkeys_data_dir_path() -> Result<PathBuf> {
         .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
         .join("safe_snapshot")
         .join("pubkeys");
+    std::fs::create_dir_all(dir.clone())?;
+    Ok(dir.to_path_buf())
+}
+
+fn get_distributions_data_dir_path() -> Result<PathBuf> {
+    let dir = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .join("safe_snapshot")
+        .join("distributions");
     std::fs::create_dir_all(dir.clone())?;
     Ok(dir.to_path_buf())
 }
@@ -224,4 +243,126 @@ fn save_address_pk(address: &str, pk_hex: &str) -> Result<()> {
     let addr_path = get_pubkeys_data_dir_path()?.join(address);
     std::fs::write(addr_path, pk_hex)?;
     Ok(())
+}
+
+pub async fn distribute_from_maid_to_tokens(
+    client: Client,
+    snapshot: Snapshot,
+    pubkeys: HashMap<MaidAddress, MaidPubkey>,
+) {
+    for (addr, amount) in snapshot {
+        // check if this snapshot address has a pubkey
+        if !pubkeys.contains_key(&addr) {
+            continue;
+        }
+        let maid_pk = &pubkeys[&addr];
+        let _ = create_distribution(&client, &addr, maid_pk, amount).await;
+    }
+}
+
+async fn create_distribution(
+    client: &Client,
+    addr: &MaidAddress,
+    maid_pk: &MaidPubkey,
+    amount: NanoTokens,
+) -> Result<String> {
+    // validate the pk and the address match
+    // because we can't be sure if this addr:pk pair has been pre-verified
+    // and we don't want to encrypt using the wrong pubkey for the address
+    if !maid_pk_matches_address(addr, maid_pk) {
+        let msg = format!("Not creating distribution for mismatched addr:pk {addr} {maid_pk}");
+        info!(msg);
+        return Err(eyre!(msg));
+    }
+    // check if this distribution has already been created
+    let root = get_distributions_data_dir_path()?;
+    let dist_path = root.join(addr);
+    if dist_path.exists() {
+        let dist_hex = match std::fs::read_to_string(dist_path.clone()) {
+            Ok(content) => content,
+            Err(err) => {
+                let msg = format!(
+                    "Error reading distribution file {}: {}",
+                    dist_path.display(),
+                    err
+                );
+                info!(msg);
+                return Err(eyre!(msg));
+            }
+        };
+        return Ok(dist_hex);
+    }
+    info!(
+        "Distributing {} to {} using pubkey {}",
+        amount, addr, maid_pk
+    );
+    // create a new random secret key to transfer this distribution to
+    let dist_sk = bls::SecretKey::random();
+    let dist_pk = MainPubkey(dist_sk.public_key()).to_hex();
+    // create a transfer to this new distribution key
+    let transfer_hex = match send_tokens(client, &amount.to_string(), &dist_pk).await {
+        Ok(t) => t,
+        Err(err) => {
+            let msg = format!("Failed send for {addr}: {err}");
+            info!(msg);
+            return Err(eyre!(msg));
+        }
+    };
+    let transfer = match hex::decode(transfer_hex) {
+        Ok(t) => t,
+        Err(err) => {
+            let msg = format!("Failed to decode transfer to {addr}: {err}");
+            info!(msg);
+            return Err(eyre!(msg));
+        }
+    };
+    // encrypt the secret key using the maid pubkey
+    let dist_sk_bytes = dist_sk.to_bytes();
+    let maid_pk_bytes = match hex::decode(maid_pk) {
+        Ok(b) => b,
+        Err(err) => {
+            let msg = format!("Failed to decode maid pk {maid_pk}: {err}");
+            info!(msg);
+            return Err(eyre!(msg));
+        }
+    };
+    let enc_dist_sk = match ecies::encrypt(&maid_pk_bytes, &dist_sk_bytes) {
+        Ok(ct) => ct,
+        Err(err) => {
+            let msg = format!("Failed to encrypt secret key for {addr}: {err}");
+            info!(msg);
+            return Err(eyre!(msg));
+        }
+    };
+    // create the distribution
+    let dist = Distribution {
+        transfer,
+        encrypted_secret_key: enc_dist_sk,
+    };
+    // serialize the distribution using message pack
+    let dist_bytes = match rmp_serde::to_vec_named(&dist) {
+        Ok(b) => b,
+        Err(err) => {
+            let msg = format!("Failed to encode distribution for {addr}: {err}");
+            info!(msg);
+            return Err(eyre!(msg));
+        }
+    };
+    let dist_hex = hex::encode(dist_bytes);
+    // save the distribution
+    match std::fs::write(dist_path.clone(), dist_hex.clone()) {
+        Ok(_) => {}
+        Err(err) => {
+            let msg = format!(
+                "Failed to write distribution to file {}: {}",
+                dist_path.display(),
+                err
+            );
+            info!(msg);
+            info!("The distribution hex that failed to write to file:");
+            info!(dist_hex);
+            return Err(eyre!(msg));
+        }
+    };
+    Ok(dist_hex)
 }

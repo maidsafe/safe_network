@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_networking"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.13.2"
+version = "0.13.4"
 
 [features]
 default=["libp2p/quic"]
@@ -23,6 +23,7 @@ encrypt-records=[]
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
+hex = "~0.4.3"
 hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
 itertools = "~0.11.0"
 custom_debug = "~0.5.0"

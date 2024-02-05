@@ -727,7 +727,7 @@ impl SwarmDriver {
         let event_string;
 
         match kad_event {
-            ref event @ kad::Event::OutboundQueryProgressed {
+            kad::Event::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetClosestPeers(Ok(ref closest_peers)),
                 ref stats,
@@ -735,7 +735,9 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::get_closest_peers";
                 trace!(
-                    "Query task {id:?} returned with peers {closest_peers:?}, {stats:?} - {step:?}"
+                    "Query task {id:?} of key {:?} returned with peers {:?}, {stats:?} - {step:?}",
+                    hex::encode(closest_peers.key.clone()),
+                    closest_peers.peers,
                 );
 
                 if let Entry::Occupied(mut entry) = self.pending_get_closest_peers.entry(id) {
@@ -761,11 +763,14 @@ impl SwarmDriver {
                     }
                 } else {
                     trace!("Can't locate query task {id:?}, it has likely been completed already.");
-                    return Err(Error::ReceivedKademliaEventDropped(event.clone()));
+                    return Err(Error::ReceivedKademliaEventDropped {
+                        query_id: id,
+                        event: "GetClosestPeers Ok".to_string(),
+                    });
                 }
             }
             // Handle GetClosestPeers timeouts
-            ref event @ kad::Event::OutboundQueryProgressed {
+            kad::Event::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetClosestPeers(Err(ref err)),
                 ref stats,
@@ -779,7 +784,10 @@ impl SwarmDriver {
                         trace!(
                             "Can't locate query task {id:?}, it has likely been completed already."
                         );
-                        Error::ReceivedKademliaEventDropped(event.clone())
+                        Error::ReceivedKademliaEventDropped {
+                            query_id: id,
+                            event: "Get ClosestPeers error".to_string(),
+                        }
                     })?;
 
                 // We have `current_closest` from previous progress,
