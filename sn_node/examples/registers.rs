@@ -23,12 +23,19 @@ use tokio::time::sleep;
 #[derive(Parser, Debug)]
 #[clap(name = "registers cli")]
 struct Opt {
+    // A name for this user in the example
     #[clap(long)]
     user: String,
 
-    #[clap(long)]
+    // Create register and give it a nickname (first user)
+    #[clap(long, default_value = "")]
     reg_nickname: String,
 
+    // Get existing register with given network address (any other user)
+    #[clap(long, default_value = "", conflicts_with = "reg_nickname")]
+    reg_address: String,
+
+    // Delay before synchronising local register with the network
     #[clap(long, default_value_t = 2000)]
     delay_millis: u64,
 }
@@ -37,7 +44,8 @@ struct Opt {
 async fn main() -> Result<()> {
     let opt = Opt::parse();
     let user = opt.user;
-    let reg_nickname = opt.reg_nickname;
+    let mut reg_nickname = opt.reg_nickname;
+    let reg_address_string = opt.reg_address;
     let delay = Duration::from_millis(opt.delay_millis);
 
     // let's build a random secret key to sign our Register ops
@@ -47,13 +55,26 @@ async fn main() -> Result<()> {
     let client = Client::new(signer, None, false, None, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
+    // We'll retrieve (or create if not found) a Register, and write on it
+    // in offline mode, syncing with the network periodically.
+
+    let mut meta = XorName::from_content(reg_nickname.as_bytes());
+    let reg_address = if !reg_nickname.is_empty() {
+        meta = XorName::from_content(reg_nickname.as_bytes());
+        RegisterAddress::new(meta, client.signer_pk())
+    } else {
+        reg_nickname = format!("{reg_address_string:<6}...");
+        RegisterAddress::from_hex(&reg_address_string)
+            .wrap_err("cannot parse hex register address")?
+    };
+
+    // Loading a local wallet. It needs to have a non-zero balance for
+    // this example to be able to pay for the Register's storage.
     let root_dir = dirs_next::data_dir()
         .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
         .join("safe")
         .join("client");
 
-    // Loading a local wallet. It needs to have a non-zero balance for
-    // this example to be able to pay for the Register's storage.
     let wallet = HotWallet::load_from(&root_dir)
         .wrap_err("Unable to read wallet file in {root_dir:?}")
         .suggestion(
@@ -61,12 +82,8 @@ async fn main() -> Result<()> {
         )?;
     let mut wallet_client = WalletClient::new(client.clone(), wallet);
 
-    // we'll retrieve (or create if not found) a Register, and write on it
-    // in offline mode, syncing with the network periodically.
-    let meta = XorName::from_content(reg_nickname.as_bytes());
-    let address = RegisterAddress::new(meta, client.signer_pk());
     println!("Retrieving Register '{reg_nickname}' from SAFE, as user '{user}'");
-    let mut reg_replica = match client.get_register(address).await {
+    let mut reg_replica = match client.get_register(reg_address).await {
         Ok(register) => {
             println!(
                 "Register '{reg_nickname}' found at {:?}!",
@@ -75,7 +92,7 @@ async fn main() -> Result<()> {
             register
         }
         Err(_) => {
-            println!("Register '{reg_nickname}' not found, creating it at {address}");
+            println!("Register '{reg_nickname}' not found, creating it at {reg_address}");
             let (register, _cost, _royalties_fees) = client
                 .create_and_pay_for_register(
                     meta,
@@ -111,18 +128,20 @@ async fn main() -> Result<()> {
         println!("--------------");
 
         let input_text = prompt_user();
-        println!("Writing msg (offline) to Register: '{input_text}'");
-        let msg = format!("[{user}]: {input_text}");
-        match reg_replica.write(msg.as_bytes()) {
-            Ok(()) => {}
-            Err(Error::ContentBranchDetected(branches)) => {
-                println!(
-                    "Branches ({}) detected in Register, let's merge them all...",
-                    branches.len()
-                );
-                reg_replica.write_merging_branches(msg.as_bytes())?;
+        if !input_text.is_empty() {
+            println!("Writing msg (offline) to Register: '{input_text}'");
+            let msg = format!("[{user}]: {input_text}");
+            match reg_replica.write(msg.as_bytes()) {
+                Ok(()) => {}
+                Err(Error::ContentBranchDetected(branches)) => {
+                    println!(
+                        "Branches ({}) detected in Register, let's merge them all...",
+                        branches.len()
+                    );
+                    reg_replica.write_merging_branches(msg.as_bytes())?;
+                }
+                Err(err) => return Err(err.into()),
             }
-            Err(err) => return Err(err.into()),
         }
 
         // Sync with network after a delay
@@ -136,7 +155,7 @@ async fn main() -> Result<()> {
 fn prompt_user() -> String {
     let mut input_text = String::new();
     println!();
-    println!("Enter new text to write onto the Register:");
+    println!("Enter a blank line to receive updates, or some text to be written.");
     io::stdin()
         .read_line(&mut input_text)
         .expect("Failed to read text from stdin");
