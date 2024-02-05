@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707141115396,
+  "lastUpdate": 1707141118128,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4f5d54cad6f851d5df7c40589c8b063f429de2c2",
-          "message": "feat(networking): remove optional_semaphore being passed down from apps",
-          "timestamp": "2023-09-27T12:42:50Z",
-          "tree_id": "1ae0c18b67248931b29ab06f0fba07842329faa8",
-          "url": "https://github.com/maidsafe/safe_network/commit/4f5d54cad6f851d5df7c40589c8b063f429de2c2"
-        },
-        "date": 1695822357820,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 160.70656,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "294164c4339a7abd86c6d594cec7d15adc44277a",
+          "message": "docs: change to hot wallet",
+          "timestamp": "2024-02-05T14:37:25+01:00",
+          "tree_id": "731470957a8bc7e1edcc94bcb411d7d0adf79be1",
+          "url": "https://github.com/maidsafe/safe_network/commit/294164c4339a7abd86c6d594cec7d15adc44277a"
+        },
+        "date": 1707141116917,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
