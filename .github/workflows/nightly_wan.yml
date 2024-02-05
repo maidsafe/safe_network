@@ -500,47 +500,51 @@ jobs:
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
       
-      - name: Verify restart of nodes using rg
-        shell: bash
-        timeout-minutes: 1
-        # get the counts, then the specific line, and then the digit count only
-        # then check we have an expected level of restarts
-        # TODO: make this use an env var, or relate to testnet size
-        run : |
-          restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "Restart $restart_count nodes"
-          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "PeerRemovedFromRoutingTable $peer_removed times"
-          if [ $peer_removed -lt $restart_count ]; then
-            echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-            exit 1
-          fi
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-          echo "Node dir count is $node_count"
-        # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+      # TODO: re-enable the below scripts once we have proper way to restart nodes. 
+      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
+      # log location and the logs are over written. Hence the scripts might give false outputs.
 
-        # if [ $restart_count -lt $node_count ]; then
-        #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
-        #   exit 1
-        # fi
+      # - name: Verify restart of nodes using rg
+      #   shell: bash
+      #   timeout-minutes: 1
+      #   # get the counts, then the specific line, and then the digit count only
+      #   # then check we have an expected level of restarts
+      #   # TODO: make this use an env var, or relate to testnet size
+      #   run : |
+      #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
+      #       rg "(\d+) matches" | rg "\d+" -o)
+      #     echo "Restart $restart_count nodes"
+      #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
+      #       rg "(\d+) matches" | rg "\d+" -o)
+      #     echo "PeerRemovedFromRoutingTable $peer_removed times"
+      #     if [ $peer_removed -lt $restart_count ]; then
+      #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
+      #       exit 1
+      #     fi
+      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+      #     echo "Node dir count is $node_count"
+      #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
 
-      - name: Verify data replication using rg
-        shell: bash
-        timeout-minutes: 1
-        # get the counts, then the specific line, and then the digit count only
-        # then check we have an expected level of replication
-        # TODO: make this use an env var, or relate to testnet size
-        run : |
-          fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.wan_logs_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "Carried out $fetching_attempt_count fetching attempts"
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-          if [ $fetching_attempt_count -lt $node_count ]; then
-            echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
-            exit 1
-          fi
+      #   # if [ $restart_count -lt $node_count ]; then
+      #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+      #   #   exit 1
+      #   # fi
+
+      # - name: Verify data replication using rg
+      #   shell: bash
+      #   timeout-minutes: 1
+      #   # get the counts, then the specific line, and then the digit count only
+      #   # then check we have an expected level of replication
+      #   # TODO: make this use an env var, or relate to testnet size
+      #   run : |
+      #     fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.wan_logs_path }}" -c --stats | \
+      #       rg "(\d+) matches" | rg "\d+" -o)
+      #     echo "Carried out $fetching_attempt_count fetching attempts"
+      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+      #     if [ $fetching_attempt_count -lt $node_count ]; then
+      #       echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
+      #       exit 1
+      #     fi
 
       # Only error out after uploading the logs
       - name: Don't log raw data
@@ -704,31 +708,35 @@ jobs:
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
 
-      - name: Verify restart of nodes using rg
-        shell: bash
-        timeout-minutes: 1
-        # get the counts, then the specific line, and then the digit count only
-        # then check we have an expected level of restarts
-        # TODO: make this use an env var, or relate to testnet size
-        run : |
-          restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "Restart $restart_count nodes"
-          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "PeerRemovedFromRoutingTable $peer_removed times"
-          if [ $peer_removed -lt $restart_count ]; then
-            echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-            exit 1
-          fi
-          node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-          echo "Node dir count is $node_count"
-        # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+      # TODO: re-enable the below scripts once we have proper way to restart nodes. 
+      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
+      # log location and the logs are over written. Hence the scripts might give false outputs.
 
-        # if [ $restart_count -lt $node_count ]; then
-        #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
-        #   exit 1
-        # fi
+      # - name: Verify restart of nodes using rg
+      #   shell: bash
+      #   timeout-minutes: 1
+      #   # get the counts, then the specific line, and then the digit count only
+      #   # then check we have an expected level of restarts
+      #   # TODO: make this use an env var, or relate to testnet size
+      #   run : |
+      #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
+      #       rg "(\d+) matches" | rg "\d+" -o)
+      #     echo "Restart $restart_count nodes"
+      #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
+      #       rg "(\d+) matches" | rg "\d+" -o)
+      #     echo "PeerRemovedFromRoutingTable $peer_removed times"
+      #     if [ $peer_removed -lt $restart_count ]; then
+      #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
+      #       exit 1
+      #     fi
+      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+      #     echo "Node dir count is $node_count"
+      #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+
+      #   # if [ $restart_count -lt $node_count ]; then
+      #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+      #   #   exit 1
+      #   # fi
 
       # Only error out after uploading the logs
       - name: Don't log raw data
