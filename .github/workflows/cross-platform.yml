@@ -6,8 +6,8 @@ on:
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
     branches: [main]
-  pull_request:
-    branches: ["*"]
+  # pull_request:
+  #   branches: ["*"]
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.

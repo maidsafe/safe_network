@@ -1,6 +1,8 @@
 name: PR Benchmarks
 
-on: pull_request
+on:
+  merge_group:
+    branches: [main]
 
 env:
   CARGO_INCREMENTAL: '0'

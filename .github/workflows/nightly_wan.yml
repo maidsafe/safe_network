@@ -1,6 +1,8 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
+  pull_request:
+    branches: ["*"]
   schedule:
     - cron:  '0 0 * * *'
   workflow_dispatch:
@@ -30,7 +32,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: create
           re-attempts: 3
@@ -54,6 +56,8 @@ jobs:
           # The latest release contains the `network-contacts` feature turned on.
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Check env variables
         shell: bash
@@ -98,7 +102,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: logs
           re-attempts: 3
@@ -115,6 +119,8 @@ jobs:
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Upload local logs
         if: always()
@@ -128,7 +134,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: destroy
           re-attempts: 3
@@ -145,6 +151,8 @@ jobs:
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -173,7 +181,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: create
           re-attempts: 3
@@ -192,6 +200,8 @@ jobs:
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Check env variables
         shell: bash
@@ -205,7 +215,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: logs
           re-attempts: 3
@@ -222,6 +232,8 @@ jobs:
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Upload local logs
         if: always()
@@ -235,7 +247,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: destroy
           re-attempts: 3
@@ -252,6 +264,8 @@ jobs:
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
   spend_test:
     name: Spend tests against network
@@ -273,7 +287,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: create
           re-attempts: 3
@@ -292,6 +306,8 @@ jobs:
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Check env variables
         shell: bash
@@ -324,7 +340,7 @@ jobs:
       
       - name: Fetch network logs
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: logs
           re-attempts: 3
@@ -341,6 +357,8 @@ jobs:
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Upload local logs
         if: always()
@@ -354,7 +372,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: destroy
           re-attempts: 3
@@ -371,6 +389,8 @@ jobs:
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -412,7 +432,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: create
           re-attempts: 3
@@ -431,6 +451,8 @@ jobs:
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Check env variables
         shell: bash
@@ -452,7 +474,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: logs
           re-attempts: 3
@@ -469,6 +491,8 @@ jobs:
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Upload local logs
         if: always()
@@ -482,7 +506,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: destroy
           re-attempts: 3
@@ -499,6 +523,8 @@ jobs:
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
       
       # TODO: re-enable the below scripts once we have proper way to restart nodes. 
       # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
@@ -618,7 +644,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: create
           re-attempts: 3
@@ -637,6 +663,8 @@ jobs:
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Check env variables
         shell: bash
@@ -660,7 +688,7 @@ jobs:
 
       - name: Fetch network logs
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: logs
           re-attempts: 3
@@ -677,6 +705,8 @@ jobs:
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       - name: Upload local logs
         if: always()
@@ -690,7 +720,7 @@ jobs:
 
       - name: Stop the WAN network
         if: always()
-        uses: maidsafe/sn-testnet-action@main
+        uses: RolandSherwin/sn-testnet-action@wan_nightly
         with:
           action: destroy
           re-attempts: 3
@@ -707,6 +737,8 @@ jobs:
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
+          testnet-tool-repo-user: joshuef
+          testnet-tool-repo-branch: UpdateSnapshot
 
       # TODO: re-enable the below scripts once we have proper way to restart nodes. 
       # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
