@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707123704355,
+  "lastUpdate": 1707123706999,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "b54b7bf920256221656b598d4313913722de089b",
-          "message": "feat(client): fail fast when a chunk is missing",
-          "timestamp": "2023-09-27T11:05:40Z",
-          "tree_id": "2c613bf2096fc06f9c6fc30d635e8270ae59598e",
-          "url": "https://github.com/maidsafe/safe_network/commit/b54b7bf920256221656b598d4313913722de089b"
-        },
-        "date": 1695817571387,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 133.17734,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 41,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "4f5d54cad6f851d5df7c40589c8b063f429de2c2",
           "message": "feat(networking): remove optional_semaphore being passed down from apps",
           "timestamp": "2023-09-27T12:42:50Z",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "507285f58b467b963fd9682678cb2e2c1b2722b2",
+          "message": "fix: node manager `status` permissions error\n\nA user reported an issue in the `status` command resulting in an error. The `status` command\nactually attempts to report on two different things: installed services and a local network. It\nfirst tried to report on the status of services, and in the process, it attempts to create the\n`/var/safenode-manager` directory if it does not exist, because that's where the node registry file\nis stored. So, if you ran the command as a non-root user, it would result in a permissions error.\nThe error didn't occur on on my machine because it happened to be the case that I had already\ncreated that directory.\n\nI've now changed the command so that it will first query whether a local network exists, then return\nif that is the case, without trying to query for installed services. In the case of no local\nnetwork, when a query is made for installed services, the command will run without root access.",
+          "timestamp": "2024-02-05T08:04:16Z",
+          "tree_id": "0493aac5a72d33b30fdbafa5af70f11541025e9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/507285f58b467b963fd9682678cb2e2c1b2722b2"
+        },
+        "date": 1707123705910,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
