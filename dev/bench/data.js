@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707146512782,
+  "lastUpdate": 1707149156804,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "13d00e7b676294f6b93788f346a6daef297f0e20",
-          "message": "chore(client): more logs around StoreCost retrieveal\n\nWe're seeing odd hangs, this may well help",
-          "timestamp": "2023-10-02T07:45:38Z",
-          "tree_id": "c70a73bd67476f272c0172896622786e4c0d9858",
-          "url": "https://github.com/maidsafe/safe_network/commit/13d00e7b676294f6b93788f346a6daef297f0e20"
-        },
-        "date": 1696236196191,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10911247581393023,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6180024099121333,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.302408539962679,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.59835802553807,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "0dc5d98f8bad7bd78b37168b8b60aecd334bc944",
+          "message": "chore(ci): make deps optional if used only inside a feature",
+          "timestamp": "2024-02-05T14:45:21Z",
+          "tree_id": "54ee50bf645b4fe435671a3140895f6be3b62fd3",
+          "url": "https://github.com/maidsafe/safe_network/commit/0dc5d98f8bad7bd78b37168b8b60aecd334bc944"
+        },
+        "date": 1707149153216,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2706642582666585,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8692309853302629,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.59256850741337,
             "unit": "MiB/s"
           }
         ]
