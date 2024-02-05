@@ -715,10 +715,17 @@ jobs:
         shell: bash
         run: sudo apt-get install -y ripgrep
 
-      - name: Check the home dir available space
+      - name: Check the available space
         run: |
           df
+          echo "Home dir:"
           du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
 
       - name: Download material, 2.34G
         shell: bash
@@ -749,6 +756,18 @@ jobs:
           else
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
+    
+      - name: Check the available space post download
+        run: |
+          df
+          echo "Home dir:"
+          du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
 
       - name: Create and fund a wallet to pay for files storage
         run: |
