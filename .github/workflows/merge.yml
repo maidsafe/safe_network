@@ -747,6 +747,13 @@ jobs:
           platform: ubuntu-latest
           build: true
 
+      - name: Move built binaries out and clear out target dir
+        shell: bash
+        run: |
+          mv target/release/faucet ~/faucet
+          mv target/release/safe ~/safe
+          rm -rf target
+
       - name: Check SAFE_PEERS was set
         shell: bash
         run: |
@@ -771,14 +778,14 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
         timeout-minutes: 5
 
       - name: Start a client to upload
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "ubuntu-18.04.6-desktop-amd64.iso" -r 0
+        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-18.04.6-desktop-amd64.iso" -r 0
         env:
           SN_LOG: "all"
         timeout-minutes: 30
