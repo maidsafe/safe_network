@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.12.1...sn_protocol-v0.12.2) - 2024-02-05
+
+### Fixed
+- node manager `status` permissions error
+
 ## [0.12.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.12.0...sn_protocol-v0.12.1) - 2024-02-02
 
 ### Other

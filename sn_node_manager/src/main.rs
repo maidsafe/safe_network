@@ -697,24 +697,6 @@ async fn main() -> Result<()> {
             fail,
             json,
         } => {
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if !node_registry.nodes.is_empty() {
-                if !json {
-                    println!("=================================================");
-                    println!("                Safenode Services                ");
-                    println!("=================================================");
-                }
-                status(
-                    &mut node_registry,
-                    &NodeServiceManager {},
-                    details,
-                    json,
-                    fail,
-                )
-                .await?;
-                node_registry.save()?;
-            }
-
             let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
             if !local_node_registry.nodes.is_empty() {
                 if !json {
@@ -731,6 +713,25 @@ async fn main() -> Result<()> {
                 )
                 .await?;
                 local_node_registry.save()?;
+                return Ok(());
+            }
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if !node_registry.nodes.is_empty() {
+                if !json {
+                    println!("=================================================");
+                    println!("                Safenode Services                ");
+                    println!("=================================================");
+                }
+                status(
+                    &mut node_registry,
+                    &NodeServiceManager {},
+                    details,
+                    json,
+                    fail,
+                )
+                .await?;
+                node_registry.save()?;
             }
 
             Ok(())
@@ -930,17 +931,6 @@ async fn main() -> Result<()> {
             Ok(())
         }
     }
-}
-
-#[cfg(unix)]
-fn is_running_as_root() -> bool {
-    users::get_effective_uid() == 0
-}
-
-#[cfg(windows)]
-fn is_running_as_root() -> bool {
-    // The Windows implementation for this will be much more complex.
-    true
 }
 
 async fn get_bin_path(
