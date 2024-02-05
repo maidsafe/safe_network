@@ -10,7 +10,7 @@ use crate::{
     get_quorum_value, Error, GetRecordCfg, GetRecordError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
-    kad::{self, PeerRecord, ProgressStep, QueryId, QueryResult, QueryStats, Record},
+    kad::{self, PeerRecord, ProgressStep, QueryId, QueryStats, Record},
     PeerId,
 };
 use sn_protocol::PrettyPrintRecordKey;
@@ -60,7 +60,7 @@ impl SwarmDriver {
         &mut self,
         query_id: QueryId,
         peer_record: PeerRecord,
-        stats: QueryStats,
+        _stats: QueryStats,
         step: ProgressStep,
     ) -> Result<()> {
         let peer_id = if let Some(peer_id) = peer_record.peer {
@@ -68,11 +68,10 @@ impl SwarmDriver {
         } else {
             self.self_peer_id
         };
+        let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
         if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
             let (_sender, result_map, cfg) = entry.get_mut();
-
-            let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
 
             if !cfg.expected_holders.is_empty() {
                 if cfg.expected_holders.remove(&peer_id) {
@@ -128,14 +127,10 @@ impl SwarmDriver {
             }
         } else {
             // return error if the entry cannot be found
-            return Err(Error::ReceivedKademliaEventDropped(
-                kad::Event::OutboundQueryProgressed {
-                    id: query_id,
-                    result: QueryResult::GetRecord(Ok(kad::GetRecordOk::FoundRecord(peer_record))),
-                    stats,
-                    step,
-                },
-            ));
+            return Err(Error::ReceivedKademliaEventDropped {
+                query_id,
+                event: format!("Accumulate Get Record of {pretty_key:?}"),
+            });
         }
         Ok(())
     }
@@ -213,8 +208,8 @@ impl SwarmDriver {
         &mut self,
         query_id: QueryId,
         get_record_err: kad::GetRecordError,
-        stats: QueryStats,
-        step: ProgressStep,
+        _stats: QueryStats,
+        _step: ProgressStep,
     ) -> Result<()> {
         match &get_record_err {
             kad::GetRecordError::NotFound { .. } | kad::GetRecordError::QuorumFailed { .. } => {
@@ -222,12 +217,10 @@ impl SwarmDriver {
                 let (sender, _, cfg) =
                 self.pending_get_record.remove(&query_id).ok_or_else(|| {
                     trace!("Can't locate query task {query_id:?}, it has likely been completed already.");
-                    Error::ReceivedKademliaEventDropped( kad::Event::OutboundQueryProgressed {
-                        id: query_id,
-                        result: QueryResult::GetRecord(Err(get_record_err.clone())),
-                        stats,
-                        step,
-                    })
+                    Error::ReceivedKademliaEventDropped {
+                            query_id,
+                            event: "GetRecordError NotFound or QuorumFailed".to_string(),
+                        }
                 })?;
 
                 if cfg.expected_holders.is_empty() {
@@ -247,12 +240,10 @@ impl SwarmDriver {
                         trace!(
                             "Can't locate query task {query_id:?} for {pretty_key:?}, it has likely been completed already."
                         );
-                        Error::ReceivedKademliaEventDropped( kad::Event::OutboundQueryProgressed {
-                            id: query_id,
-                            result: QueryResult::GetRecord(Err(get_record_err.clone())),
-                            stats,
-                            step,
-                        })
+                        Error::ReceivedKademliaEventDropped {
+                            query_id,
+                            event: format!("GetRecordError Timeout {pretty_key:?}"),
+                        }
                     })?;
 
                 let required_response_count = get_quorum_value(&cfg.get_quorum);
