@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707123709786,
+  "lastUpdate": 1707141005729,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "d22af4ea21f58aefe5143ff8a69a02e0ee9ec719",
-          "message": "fix(cli): dont bail on errors during repay/upload",
-          "timestamp": "2023-09-29T09:49:18Z",
-          "tree_id": "208cd2b2dfa37082be1ebd2181201683a0bab1ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/d22af4ea21f58aefe5143ff8a69a02e0ee9ec719"
-        },
-        "date": 1695984528763,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11376849773485334,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6098593769843028,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.804473415290332,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.504148551783075,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "294164c4339a7abd86c6d594cec7d15adc44277a",
+          "message": "docs: change to hot wallet",
+          "timestamp": "2024-02-05T14:37:25+01:00",
+          "tree_id": "731470957a8bc7e1edcc94bcb411d7d0adf79be1",
+          "url": "https://github.com/maidsafe/safe_network/commit/294164c4339a7abd86c6d594cec7d15adc44277a"
+        },
+        "date": 1707141001959,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.213366607857111,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7698090335467542,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.13619621724441,
             "unit": "MiB/s"
           }
         ]
