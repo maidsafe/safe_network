@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.0...sn_transfers-v0.15.1) - 2024-02-06
+
+### Fixed
+- *(node)* derive reward_key from main keypair
+
 ## [0.15.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.43...sn_transfers-v0.15.0) - 2024-02-02
 
 ### Other
