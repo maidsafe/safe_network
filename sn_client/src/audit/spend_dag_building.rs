@@ -24,6 +24,7 @@ impl Client {
         let first_spend = match self.get_spend_from_network(spend_addr).await {
             Ok(s) => s,
             Err(Error::MissingSpendRecord(_)) => {
+                // the cashnote was not spent yet, so it's an UTXO
                 trace!("UTXO at {spend_addr:?}");
                 return Ok(dag);
             }
@@ -106,7 +107,7 @@ impl Client {
     ///                            ...
     ///
     /// ```
-    pub async fn spend_dag_extend(
+    pub async fn spend_dag_extend_until(
         &self,
         dag: &mut SpendDag,
         spend_addr: SpendAddress,
