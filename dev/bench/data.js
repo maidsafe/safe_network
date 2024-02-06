@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707228817533,
+  "lastUpdate": 1707228914460,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e7b3fd8cdb194f30800af621e1f39192fa7b4f40",
-          "message": "feat: remove unused fee output",
-          "timestamp": "2023-10-02T12:06:37Z",
-          "tree_id": "fb0793d0a30dc860b376b05f88ad7ce0f5e6df86",
-          "url": "https://github.com/maidsafe/safe_network/commit/e7b3fd8cdb194f30800af621e1f39192fa7b4f40"
-        },
-        "date": 1696252346624,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54.99699,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "66e0be740269ef1cdb370f29d1c79ebf1c8a2684",
+          "message": "fix(node): derive reward_key from main keypair",
+          "timestamp": "2024-02-06T15:01:48+01:00",
+          "tree_id": "6256900b191e32c45bcba910ec980fb3edf99dad",
+          "url": "https://github.com/maidsafe/safe_network/commit/66e0be740269ef1cdb370f29d1c79ebf1c8a2684"
+        },
+        "date": 1707228914098,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
