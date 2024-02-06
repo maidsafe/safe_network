@@ -14,19 +14,21 @@ use crate::common::{
     get_all_peer_ids, get_safenode_rpc_client, node_restart,
 };
 use assert_fs::TempDir;
+use common::client::get_wallet;
 use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, FilesApi, FilesUpload};
+use sn_client::{Client, FilesApi, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
     safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_registers::{Permissions, RegisterAddress};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     fs::File,
@@ -37,6 +39,7 @@ use std::{
 };
 use tonic::Request;
 use tracing::{debug, error, info};
+use xor_name::XorName;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -60,8 +63,11 @@ const REVERIFICATION_DELAY: Duration =
 const CHURN_COUNT: u8 = 20;
 
 /// Default number of chunks that should be PUT to the network.
-// It can be overridden by setting the 'CHUNK_COUNT' env var.
+/// It can be overridden by setting the 'CHUNK_COUNT' env var.
 const CHUNK_COUNT: usize = 5;
+/// Default number of registers that should be PUT to the network.
+/// It can be overridden by setting the 'REGISTER_COUNT' env var.
+const REGISTER_COUNT: usize = 5;
 
 type NodeIndex = usize;
 type RecordHolders = HashMap<RecordKey, HashSet<NodeIndex>>;
@@ -80,12 +86,17 @@ async fn verify_data_location() -> Result<()> {
     } else {
         CHUNK_COUNT
     };
+    let register_count = if let Ok(str) = std::env::var("REGISTER_COUNT") {
+        str.parse::<usize>()?
+    } else {
+        REGISTER_COUNT
+    };
     println!(
-        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
     info!(
-        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}\nIt will take approx {:?}",
+        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
     let node_rpc_address = get_all_rpc_addresses(true)?;
@@ -100,7 +111,8 @@ async fn verify_data_location() -> Result<()> {
     let (client, _paying_wallet) =
         get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
-    store_chunks(client, chunk_count, paying_wallet_dir.to_path_buf()).await?;
+    store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
+    store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;
 
     // Verify data location initially
     verify_location(&all_peers, &node_rpc_address).await?;
@@ -346,5 +358,51 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
     // to make sure the last chunk was stored
     tokio::time::sleep(Duration::from_secs(10)).await;
 
+    Ok(())
+}
+
+async fn store_registers(client: Client, register_count: usize, wallet_dir: PathBuf) -> Result<()> {
+    let start = Instant::now();
+    let paying_wallet = get_wallet(&wallet_dir);
+    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+
+    let mut uploaded_registers_count = 0;
+    loop {
+        if uploaded_registers_count >= register_count {
+            break;
+        }
+        let meta = XorName(rand::random());
+        let owner = client.signer_pk();
+
+        let addr = RegisterAddress::new(meta, owner);
+        println!("Creating Register at {addr:?}");
+        debug!("Creating Register at {addr:?}");
+
+        let (mut register, ..) = client
+            .create_and_pay_for_register(
+                meta,
+                &mut wallet_client,
+                true,
+                Permissions::new_owner_only(),
+            )
+            .await?;
+
+        println!("Editing Register at {addr:?}");
+        debug!("Editing Register at {addr:?}");
+        register.write_online("entry".as_bytes(), true).await?;
+
+        uploaded_registers_count += 1;
+    }
+    println!(
+        "{register_count:?} Registers were stored in {:?}",
+        start.elapsed()
+    );
+    info!(
+        "{register_count:?} Registers were stored in {:?}",
+        start.elapsed()
+    );
+
+    // to make sure the last register was stored
+    tokio::time::sleep(Duration::from_secs(10)).await;
     Ok(())
 }
