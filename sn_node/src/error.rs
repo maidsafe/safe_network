@@ -86,4 +86,8 @@ pub enum Error {
         paid: NanoTokens,
         expected: NanoTokens,
     },
+
+    // ---------- Initialize Errors
+    #[error("Failed to generate a reward key")]
+    FailedToGenerateRewardKey,
 }

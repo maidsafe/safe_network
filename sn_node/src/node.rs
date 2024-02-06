@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{error::Result, event::NodeEventsChannel, Marker, NodeEvent};
+use super::{
+    error::{Error, Result},
+    event::NodeEventsChannel,
+    Marker, NodeEvent,
+};
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
@@ -100,8 +104,14 @@ impl NodeBuilder {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub fn build_and_run(self) -> Result<RunningNode> {
-        // TODO: Make this key settable, and accessible via API
-        let reward_key = MainSecretKey::random();
+        // Using the signature as the seed of generating the reward_key
+        let sig_vec = match self.keypair.sign(b"generate reward seed") {
+            Ok(sig) => sig,
+            Err(_err) => return Err(Error::FailedToGenerateRewardKey),
+        };
+        let mut rng = sn_transfers::rng::from_vec(&sig_vec);
+
+        let reward_key = MainSecretKey::random_from_rng(&mut rng);
         let reward_address = reward_key.main_pubkey();
 
         let mut wallet = HotWallet::load_from_main_key(&self.root_dir, reward_key)?;

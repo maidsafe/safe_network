@@ -48,6 +48,7 @@ pub mod rng {
         rngs::{StdRng, ThreadRng},
         SeedableRng,
     };
+    use tiny_keccak::{Hasher, Sha3};
 
     pub fn thread_rng() -> ThreadRng {
         crate::rand::thread_rng()
@@ -55,5 +56,37 @@ pub mod rng {
 
     pub fn from_seed(seed: <StdRng as SeedableRng>::Seed) -> StdRng {
         StdRng::from_seed(seed)
+    }
+
+    // Using hash to covert `Vec<u8>` into `[u8; 32]',
+    // and using it as seed to generate a determined Rng.
+    pub fn from_vec(vec: &[u8]) -> StdRng {
+        let mut sha3 = Sha3::v256();
+        sha3.update(vec);
+        let mut hash = [0u8; 32];
+        sha3.finalize(&mut hash);
+
+        from_seed(hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rng::from_vec;
+
+    #[test]
+    fn confirm_generating_same_key() {
+        let rng_seed = b"testing generating same key";
+        let content = b"some context to try with";
+
+        let mut rng_1 = from_vec(rng_seed);
+        let reward_key_1 = MainSecretKey::random_from_rng(&mut rng_1);
+        let sig = reward_key_1.sign(content);
+
+        let mut rng_2 = from_vec(rng_seed);
+        let reward_key_2 = MainSecretKey::random_from_rng(&mut rng_2);
+
+        assert!(reward_key_2.main_pubkey().verify(&sig, content));
     }
 }
