@@ -112,7 +112,7 @@ impl Launcher for LocalSafeLauncher {
     ///
     /// This is wrapped mainly just for unit testing.
     fn wait(&self, delay: u64) {
-        std::thread::sleep(std::time::Duration::from_secs(delay));
+        std::thread::sleep(std::time::Duration::from_millis(delay));
     }
 }
 
@@ -180,6 +180,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 pub struct LocalNetworkOptions {
     pub faucet_bin_path: PathBuf,
     pub join: bool,
+    pub interval: u64,
     pub node_count: u16,
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
@@ -233,6 +234,7 @@ pub async fn run_network(
         let node = run_node(
             number,
             true,
+            network_options.interval,
             rpc_socket_addr,
             vec![],
             &launcher,
@@ -242,6 +244,7 @@ pub async fn run_network(
         node_registry.nodes.push(node.clone());
         (node.listen_addr.unwrap(), 2)
     };
+    node_registry.save()?;
 
     for _ in start..=network_options.node_count {
         let rpc_port = service_control.get_available_port()?;
@@ -252,6 +255,7 @@ pub async fn run_network(
         let node = run_node(
             number,
             false,
+            network_options.interval,
             rpc_socket_addr,
             bootstrap_peers.clone(),
             &launcher,
@@ -285,6 +289,7 @@ pub async fn run_network(
 pub async fn run_node(
     number: u16,
     genesis: bool,
+    interval: u64,
     rpc_socket_addr: SocketAddr,
     bootstrap_peers: Vec<Multiaddr>,
     launcher: &dyn Launcher,
@@ -294,7 +299,7 @@ pub async fn run_node(
 
     println!("Launching node {number}...");
     launcher.launch_node(rpc_socket_addr, bootstrap_peers.clone())?;
-    launcher.wait(2);
+    launcher.wait(interval);
 
     let node_info = rpc_client.node_info().await?;
     let peer_id = node_info.peer_id;
@@ -427,7 +432,7 @@ mod tests {
             .returning(|_, _| Ok(()));
         mock_launcher
             .expect_wait()
-            .with(eq(2))
+            .with(eq(100))
             .times(1)
             .returning(|_| ());
         mock_launcher
@@ -461,6 +466,7 @@ mod tests {
         let node = run_node(
             1,
             true,
+            100,
             rpc_socket_addr,
             vec![],
             &mock_launcher,

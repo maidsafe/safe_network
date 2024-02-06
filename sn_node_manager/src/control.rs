@@ -22,6 +22,9 @@ pub enum UpgradeResult {
     Error(String),
 }
 
+// macOS seems to require this delay to be in seconds rather than milliseconds.
+const RPC_START_UP_DELAY_MS: u64 = 3000;
+
 pub async fn start(
     node: &mut Node,
     service_control: &dyn ServiceControl,
@@ -47,7 +50,7 @@ pub async fn start(
     service_control.start(&node.service_name)?;
 
     // Give the node a little bit of time to start before initiating the node info query.
-    service_control.wait(3);
+    service_control.wait(RPC_START_UP_DELAY_MS);
     let node_info = rpc_client.node_info().await?;
     let network_info = rpc_client.network_info().await?;
     node.listen_addr = Some(
@@ -384,7 +387,7 @@ mod tests {
             .returning(|_| Ok(()));
         mock_service_control
             .expect_wait()
-            .with(eq(3))
+            .with(eq(3000))
             .times(1)
             .returning(|_| ());
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -457,7 +460,7 @@ mod tests {
             .returning(|_| Ok(()));
         mock_service_control
             .expect_wait()
-            .with(eq(3))
+            .with(eq(3000))
             .times(1)
             .returning(|_| ());
         mock_rpc_client.expect_node_info().times(1).returning(|| {
