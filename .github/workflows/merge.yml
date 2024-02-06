@@ -747,7 +747,9 @@ jobs:
           platform: ubuntu-latest
           build: true
 
-      - name: Move built binaries out and clear out target dir
+      # The test currently fails because the GH runner runs out of disk space. So we clear out the target dir here.
+      # Might be related to additional deps used in the codebase.
+      - name: Move built binaries and clear out target dir
         shell: bash
         run: |
           mv target/release/faucet ~/faucet
