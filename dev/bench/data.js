@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707223731570,
+  "lastUpdate": 1707223835247,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "902706b5c6ef2181c88ef1b90de2aa11b44ac690",
-          "message": "feat(client): show feedback on long wait for costs",
-          "timestamp": "2023-10-02T08:13:12Z",
-          "tree_id": "ad4cc7064f905820892017689f07bc3da92e474a",
-          "url": "https://github.com/maidsafe/safe_network/commit/902706b5c6ef2181c88ef1b90de2aa11b44ac690"
-        },
-        "date": 1696238964371,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53.911552,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3b7dd48cac22d3c5301a485afff8f05eb4208f94",
+          "message": "chore(ci): upgrade libp2p version to be consistent across crates",
+          "timestamp": "2024-02-06T13:31:16+01:00",
+          "tree_id": "ea544d951034803a3ea6563c2477098848f099a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/3b7dd48cac22d3c5301a485afff8f05eb4208f94"
+        },
+        "date": 1707223834865,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
