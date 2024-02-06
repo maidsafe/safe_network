@@ -253,7 +253,7 @@ pub(crate) async fn files_cmds(
 
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
-async fn upload_files(
+pub(crate) async fn upload_files(
     files_path: PathBuf,
     make_data_public: bool,
     client: &Client,
@@ -272,7 +272,9 @@ async fn upload_files(
     if files_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
+
     let mut chunk_manager = ChunkManager::new(&root_dir);
+    println!("Starting to chunk {files_path:?} now.");
     chunk_manager.chunk_path(&files_path, true, make_data_public)?;
 
     // Return early if we already uploaded them

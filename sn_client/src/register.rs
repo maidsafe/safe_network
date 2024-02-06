@@ -37,21 +37,19 @@ pub struct ClientRegister {
 
 impl ClientRegister {
     /// Central helper func to create a client register
-    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Result<Self> {
+    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Self {
         let public_key = client.signer_pk();
 
         let register = Register::new(public_key, meta, perms);
-        let reg = Self {
+        Self {
             client,
             register,
             ops: LinkedList::new(),
-        };
-
-        Ok(reg)
+        }
     }
 
     /// Create a new Register Locally.
-    pub fn create(client: Client, meta: XorName) -> Result<Self> {
+    pub fn create(client: Client, meta: XorName) -> Self {
         Self::create_register(client, meta, Permissions::new_owner_only())
     }
 
@@ -63,7 +61,7 @@ impl ClientRegister {
         verify_store: bool,
         perms: Permissions,
     ) -> Result<(Self, NanoTokens, NanoTokens)> {
-        let mut reg = Self::create_register(client, meta, perms)?;
+        let mut reg = Self::create_register(client, meta, perms);
         let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
         Ok((reg, storage_cost, royalties_fees))
     }

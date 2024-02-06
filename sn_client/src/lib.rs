@@ -16,6 +16,7 @@ mod error;
 mod event;
 mod faucet;
 mod files;
+mod folders;
 mod register;
 mod wallet;
 
@@ -29,6 +30,7 @@ pub use self::{
         upload::{FileUploadEvent, FilesUpload},
         FilesApi, BATCH_SIZE,
     },
+    folders::{FolderEntry, FoldersApi},
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
