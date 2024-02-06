@@ -26,10 +26,15 @@ jobs:
         with:
           # we need rustfmt here while we have a build step
           components: rustfmt
+
       - name: Install cargo-udeps
         run: cargo install cargo-udeps --locked
+
       - name: Run cargo-udeps
         run: cargo +nightly udeps --all-targets
+        # ignore the error cause by the latest nightly changes.
+        # should be fixed by https://github.com/dalek-cryptography/curve25519-dalek/pull/619
+        continue-on-error: true
 
   lint:
     runs-on: ubuntu-latest
@@ -47,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
