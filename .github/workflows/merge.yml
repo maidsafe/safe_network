@@ -14,22 +14,24 @@ env:
   WINSW_URL: https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe
 
 jobs:
-  cargo-udeps:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Unused dependency check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # ignored due to nightly failure.
+  # should be fixed by https://github.com/dalek-cryptography/curve25519-dalek/pull/619
+  # cargo-udeps:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: Unused dependency check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly  # Needs nightly to distinguish between deps of different versions
-        with:
-          # we need rustfmt here while we have a build step
-          components: rustfmt
-      - name: Install cargo-udeps
-        run: cargo install cargo-udeps --locked
-      - name: Run cargo-udeps
-        run: cargo +nightly udeps --all-targets
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@nightly  # Needs nightly to distinguish between deps of different versions
+  #       with:
+  #         # we need rustfmt here while we have a build step
+  #         components: rustfmt
+  #     - name: Install cargo-udeps
+  #       run: cargo install cargo-udeps --locked
+  #     - name: Run cargo-udeps
+  #       run: cargo +nightly udeps --all-targets
 
   lint:
     runs-on: ubuntu-latest
