@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::helpers::get_bin_version;
 use crate::service::ServiceControl;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -15,7 +16,6 @@ use libp2p::{Multiaddr, PeerId};
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
-use std::io::Read;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -25,7 +25,6 @@ use sysinfo::{Pid, ProcessExt, System, SystemExt};
 #[cfg_attr(test, automock)]
 pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
-    fn get_safenode_version(&self) -> Result<String>;
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
     fn launch_node(
         &self,
@@ -44,27 +43,6 @@ pub struct LocalSafeLauncher {
 impl Launcher for LocalSafeLauncher {
     fn get_safenode_path(&self) -> PathBuf {
         self.safenode_bin_path.clone()
-    }
-
-    fn get_safenode_version(&self) -> Result<String> {
-        let mut cmd = Command::new(&self.safenode_bin_path)
-            .arg("--version")
-            .stdout(Stdio::piped())
-            .spawn()?;
-
-        let mut output = String::new();
-        cmd.stdout
-            .as_mut()
-            .ok_or_else(|| eyre!("Failed to capture stdout"))?
-            .read_to_string(&mut output)?;
-
-        let version = output
-            .split_whitespace()
-            .nth(2)
-            .ok_or_else(|| eyre!("Failed to parse version"))?
-            .to_string();
-
-        Ok(version)
     }
 
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32> {
@@ -232,11 +210,14 @@ pub async fn run_network(
 
         let number = (node_registry.nodes.len() as u16) + 1;
         let node = run_node(
-            number,
-            true,
-            network_options.interval,
-            rpc_socket_addr,
-            vec![],
+            RunNodeOptions {
+                version: get_bin_version(&launcher.get_safenode_path())?,
+                number,
+                genesis: true,
+                interval: network_options.interval,
+                rpc_socket_addr,
+                bootstrap_peers: vec![],
+            },
             &launcher,
             &rpc_client,
         )
@@ -253,11 +234,14 @@ pub async fn run_network(
 
         let number = (node_registry.nodes.len() as u16) + 1;
         let node = run_node(
-            number,
-            false,
-            network_options.interval,
-            rpc_socket_addr,
-            bootstrap_peers.clone(),
+            RunNodeOptions {
+                version: get_bin_version(&launcher.get_safenode_path())?,
+                number,
+                genesis: false,
+                interval: network_options.interval,
+                rpc_socket_addr,
+                bootstrap_peers: bootstrap_peers.clone(),
+            },
             &launcher,
             &rpc_client,
         )
@@ -286,20 +270,26 @@ pub async fn run_network(
     Ok(())
 }
 
+pub struct RunNodeOptions {
+    pub version: String,
+    pub number: u16,
+    pub genesis: bool,
+    pub interval: u64,
+    pub rpc_socket_addr: SocketAddr,
+    pub bootstrap_peers: Vec<Multiaddr>,
+}
+
 pub async fn run_node(
-    number: u16,
-    genesis: bool,
-    interval: u64,
-    rpc_socket_addr: SocketAddr,
-    bootstrap_peers: Vec<Multiaddr>,
+    run_options: RunNodeOptions,
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<Node> {
-    let version = launcher.get_safenode_version()?;
-
-    println!("Launching node {number}...");
-    launcher.launch_node(rpc_socket_addr, bootstrap_peers.clone())?;
-    launcher.wait(interval);
+    println!("Launching node {}...", run_options.number);
+    launcher.launch_node(
+        run_options.rpc_socket_addr,
+        run_options.bootstrap_peers.clone(),
+    )?;
+    launcher.wait(run_options.interval);
 
     let node_info = rpc_client.node_info().await?;
     let peer_id = node_info.peer_id;
@@ -313,12 +303,12 @@ pub async fn run_node(
 
     Ok(Node {
         connected_peers,
-        genesis,
-        service_name: format!("safenode-local{number}"),
+        genesis: run_options.genesis,
+        service_name: format!("safenode-local{}", run_options.number),
         user: get_username()?,
-        number,
-        rpc_socket_addr,
-        version: version.clone(),
+        number: run_options.number,
+        rpc_socket_addr: run_options.rpc_socket_addr,
+        version: run_options.version.to_string(),
         status: NodeStatus::Running,
         pid: Some(node_info.pid),
         listen_addr: Some(listen_addrs),
@@ -422,10 +412,6 @@ mod tests {
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
-            .expect_get_safenode_version()
-            .times(1)
-            .returning(|| Ok("0.100.12".to_string()));
-        mock_launcher
             .expect_launch_node()
             .with(eq(rpc_socket_addr), eq(vec![]))
             .times(1)
@@ -464,11 +450,14 @@ mod tests {
             });
 
         let node = run_node(
-            1,
-            true,
-            100,
-            rpc_socket_addr,
-            vec![],
+            RunNodeOptions {
+                version: "0.100.12".to_string(),
+                number: 1,
+                genesis: true,
+                interval: 100,
+                rpc_socket_addr,
+                bootstrap_peers: vec![],
+            },
             &mock_launcher,
             &mock_rpc_client,
         )
