@@ -140,9 +140,7 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
-    /// Add one or more new safenode services.
-    ///
-    /// This command must run as the root/administrative user.
+    /// Run a faucet server for use with a local network.
     #[clap(name = "faucet")]
     Faucet {
         /// Set to build the safenode and faucet binaries.
@@ -197,6 +195,11 @@ pub enum SubCmd {
         /// The version and path arguments are mutually exclusive.
         #[clap(long)]
         faucet_version: Option<String>,
+        /// An interval applied between launching each node.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -244,9 +247,7 @@ pub enum SubCmd {
         /// This assumes the command is being run from the root of the safe_network repository.
         #[clap(long)]
         build: bool,
-        /// Set to remove the client data directory.
-        ///
-        /// This can be useful for clearing wallets from previous local networks.
+        /// Set to remove the client data directory and kill any existing local network.
         #[clap(long)]
         clean: bool,
         /// The number of nodes to run.
@@ -262,6 +263,11 @@ pub enum SubCmd {
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         faucet_version: Option<String>,
+        /// An interval applied between launching each node.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -440,6 +446,7 @@ async fn main() -> Result<()> {
             count,
             faucet_path,
             faucet_version,
+            interval,
             node_path,
             node_version,
             peers,
@@ -481,6 +488,7 @@ async fn main() -> Result<()> {
             };
             let options = LocalNetworkOptions {
                 faucet_bin_path: faucet_path,
+                interval,
                 join: true,
                 node_count: count,
                 peers,
@@ -490,22 +498,7 @@ async fn main() -> Result<()> {
             run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
             Ok(())
         }
-        SubCmd::Kill { keep_directories } => {
-            let local_reg_path = &get_local_node_registry_path()?;
-            let local_node_registry = NodeRegistry::load(local_reg_path)?;
-            if local_node_registry.nodes.is_empty() {
-                println!("No local network is currently running");
-            } else {
-                if verbosity != VerbosityLevel::Minimal {
-                    println!("=================================================");
-                    println!("             Killing Local Network               ");
-                    println!("=================================================");
-                }
-                kill_network(&local_node_registry, keep_directories)?;
-                std::fs::remove_file(local_reg_path)?;
-            }
-            Ok(())
-        }
+        SubCmd::Kill { keep_directories } => kill_local_network(verbosity, keep_directories),
         SubCmd::Remove {
             peer_id,
             service_name,
@@ -555,18 +548,15 @@ async fn main() -> Result<()> {
             count,
             faucet_path,
             faucet_version,
+            interval,
             node_path,
             node_version,
             skip_validation: _,
         } => {
+            // In the clean case, the node registry must be loaded *after* the existing network has
+            // been killed, which clears it out.
             let local_node_reg_path = &get_local_node_registry_path()?;
-            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
-            if !local_node_registry.nodes.is_empty() {
-                return Err(eyre!("A local network is already running")
-                    .suggestion("Use the kill command to destroy the network then try again"));
-            }
-
-            if clean {
+            let mut local_node_registry = if clean {
                 let client_data_path = dirs_next::data_dir()
                     .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
                     .join("safe")
@@ -574,7 +564,16 @@ async fn main() -> Result<()> {
                 if client_data_path.is_dir() {
                     std::fs::remove_dir_all(client_data_path)?;
                 }
-            }
+                kill_local_network(verbosity.clone(), false)?;
+                NodeRegistry::load(local_node_reg_path)?
+            } else {
+                let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
+                if !local_node_registry.nodes.is_empty() {
+                    return Err(eyre!("A local network is already running")
+                        .suggestion("Use the kill command to destroy the network then try again"));
+                }
+                local_node_registry
+            };
 
             if verbosity != VerbosityLevel::Minimal {
                 println!("=================================================");
@@ -603,6 +602,7 @@ async fn main() -> Result<()> {
             let options = LocalNetworkOptions {
                 faucet_bin_path: faucet_path,
                 join: false,
+                interval,
                 node_count: count,
                 peers: None,
                 safenode_bin_path: node_path,
@@ -1005,5 +1005,22 @@ fn build_binary(bin_type: &ReleaseType) -> Result<()> {
         return Err(eyre!("Failed to build binaries"));
     }
 
+    Ok(())
+}
+
+fn kill_local_network(verbosity: VerbosityLevel, keep_directories: bool) -> Result<()> {
+    let local_reg_path = &get_local_node_registry_path()?;
+    let local_node_registry = NodeRegistry::load(local_reg_path)?;
+    if local_node_registry.nodes.is_empty() {
+        println!("No local network is currently running");
+    } else {
+        if verbosity != VerbosityLevel::Minimal {
+            println!("=================================================");
+            println!("             Killing Local Network               ");
+            println!("=================================================");
+        }
+        kill_network(&local_node_registry, keep_directories)?;
+        std::fs::remove_file(local_reg_path)?;
+    }
     Ok(())
 }

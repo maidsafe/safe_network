@@ -4949,9 +4949,9 @@ dependencies = [
 
 [[package]]
 name = "sn-releases"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bb737feba172449d8fa5ab6470c014c25f94b971fd7773043308335efdc77c0"
+checksum = "0fd09c844c16b72f6a34a090f642a9685d48f86345f67d607586900a93c0fd47"
 dependencies = [
  "async-trait",
  "chrono",
