@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707228914460,
+  "lastUpdate": 1707228915845,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e7b3fd8cdb194f30800af621e1f39192fa7b4f40",
-          "message": "feat: remove unused fee output",
-          "timestamp": "2023-10-02T12:06:37Z",
-          "tree_id": "fb0793d0a30dc860b376b05f88ad7ce0f5e6df86",
-          "url": "https://github.com/maidsafe/safe_network/commit/e7b3fd8cdb194f30800af621e1f39192fa7b4f40"
-        },
-        "date": 1696252348372,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 152.10497,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 42,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "66e0be740269ef1cdb370f29d1c79ebf1c8a2684",
+          "message": "fix(node): derive reward_key from main keypair",
+          "timestamp": "2024-02-06T15:01:48+01:00",
+          "tree_id": "6256900b191e32c45bcba910ec980fb3edf99dad",
+          "url": "https://github.com/maidsafe/safe_network/commit/66e0be740269ef1cdb370f29d1c79ebf1c8a2684"
+        },
+        "date": 1707228915472,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
             "unit": "MB"
           },
           {
