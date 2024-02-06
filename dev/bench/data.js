@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707207867471,
+  "lastUpdate": 1707207965303,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "13d00e7b676294f6b93788f346a6daef297f0e20",
-          "message": "chore(client): more logs around StoreCost retrieveal\n\nWe're seeing odd hangs, this may well help",
-          "timestamp": "2023-10-02T07:45:38Z",
-          "tree_id": "c70a73bd67476f272c0172896622786e4c0d9858",
-          "url": "https://github.com/maidsafe/safe_network/commit/13d00e7b676294f6b93788f346a6daef297f0e20"
-        },
-        "date": 1696236420260,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52.75648,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d799a29ad276c8ae1ec9613691f4787930ea8c63",
+          "message": "feat: register example with two users in a simple cli chat app\n- add cli option to provide xor address\n- user entering blank line gets latest register values\n- documented in main README",
+          "timestamp": "2024-02-06T09:12:32+01:00",
+          "tree_id": "e4eb63c12132764d0687e3dc499418fffedad533",
+          "url": "https://github.com/maidsafe/safe_network/commit/d799a29ad276c8ae1ec9613691f4787930ea8c63"
+        },
+        "date": 1707207964988,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
