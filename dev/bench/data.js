@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707207968162,
+  "lastUpdate": 1707223731570,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3e77a56641698794a26dde1c43727ae311bc368e",
-          "message": "chore: remove tracing feat deps",
-          "timestamp": "2023-10-02T19:34:50Z",
-          "tree_id": "1b2c4a446271a5e4f0302de2242d5a0a2c5125a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e77a56641698794a26dde1c43727ae311bc368e"
-        },
-        "date": 1696278938580,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10699618006445025,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6067836311805272,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.729906387792152,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.26158119052988,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3b7dd48cac22d3c5301a485afff8f05eb4208f94",
+          "message": "chore(ci): upgrade libp2p version to be consistent across crates",
+          "timestamp": "2024-02-06T13:31:16+01:00",
+          "tree_id": "ea544d951034803a3ea6563c2477098848f099a1",
+          "url": "https://github.com/maidsafe/safe_network/commit/3b7dd48cac22d3c5301a485afff8f05eb4208f94"
+        },
+        "date": 1707223729093,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2980587397328023,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7931897588446577,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 54.50779164598584,
             "unit": "MiB/s"
           }
         ]
