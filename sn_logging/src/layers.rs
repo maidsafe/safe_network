@@ -28,7 +28,7 @@ use tracing_subscriber::{
 };
 
 const MAX_LOG_SIZE: usize = 20 * 1024 * 1024;
-const MAX_UNCOMPRESSED_LOG_FILES: usize = 10;
+const MAX_UNCOMPRESSED_LOG_FILES: usize = 100;
 const MAX_LOG_FILES: usize = 1000;
 // Everything is logged by default
 const ALL_SN_LOGS: &str = "all";
