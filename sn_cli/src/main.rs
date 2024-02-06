@@ -16,6 +16,7 @@ use crate::{
     cli::Opt,
     subcommands::{
         files::files_cmds,
+        folders::folders_cmds,
         gossipsub::gossipsub_cmds,
         register::register_cmds,
         wallet::{
@@ -153,6 +154,9 @@ async fn main() -> Result<()> {
         }
         SubCmd::Files(cmds) => {
             files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+        }
+        SubCmd::Folders(cmds) => {
+            folders_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
         SubCmd::Register(cmds) => {
             register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?

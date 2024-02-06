@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub(crate) mod files;
+pub(crate) mod folders;
 pub(crate) mod gossipsub;
 pub(crate) mod register;
 pub(crate) mod wallet;
@@ -27,6 +28,9 @@ pub(super) enum SubCmd {
     #[clap(name = "files", subcommand)]
     /// Commands for file management
     Files(files::FilesCmds),
+    #[clap(name = "folders", subcommand)]
+    /// Commands for folders management
+    Folders(folders::FoldersCmds),
     #[clap(name = "register", subcommand)]
     /// Commands for register management
     Register(register::RegisterCmds),
