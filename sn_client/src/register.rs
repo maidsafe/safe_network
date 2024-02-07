@@ -9,7 +9,10 @@
 use crate::{Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
-use libp2p::kad::{Quorum, Record};
+use libp2p::{
+    kad::{Quorum, Record},
+    PeerId,
+};
 use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -19,7 +22,6 @@ use sn_protocol::{
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
 use sn_transfers::{NanoTokens, Payment};
-
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
@@ -222,9 +224,13 @@ impl ClientRegister {
 
                 // Get payment proofs needed to publish the Register
                 let payment = wallet_client.get_payment_for_addr(&net_addr)?;
+                let payee = storage_payment_result
+                    .payee_map
+                    .get(&net_addr)
+                    .ok_or(Error::PayeeNotFound(net_addr))?;
 
                 debug!("payments found: {payment:?}");
-                self.publish_register(cmd, Some(payment), verify_store)
+                self.publish_register(cmd, Some((payment, *payee)), verify_store)
                     .await?;
                 self.register.clone()
             }
@@ -303,10 +309,11 @@ impl ClientRegister {
 
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
+    /// Optionally contains the Payment and the PeerId that we paid to.
     async fn publish_register(
         &self,
         cmd: RegisterCmd,
-        payment: Option<Payment>,
+        payment: Option<(Payment, PeerId)>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
@@ -338,23 +345,29 @@ impl ClientRegister {
 
         let network_address = NetworkAddress::from_register_address(*register.address());
         let key = network_address.to_record_key();
-        let record = match payment {
-            Some(payment) => Record {
-                key: key.clone(),
-                value: try_serialize_record(
-                    &(payment, &register),
-                    RecordKind::RegisterWithPayment,
-                )?
-                .to_vec(),
-                publisher: None,
-                expires: None,
-            },
-            None => Record {
-                key: key.clone(),
-                value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
-                publisher: None,
-                expires: None,
-            },
+        let (record, payee) = match payment {
+            Some((payment, payee)) => {
+                let record = Record {
+                    key: key.clone(),
+                    value: try_serialize_record(
+                        &(payment, &register),
+                        RecordKind::RegisterWithPayment,
+                    )?
+                    .to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+                (record, Some(vec![payee]))
+            }
+            None => {
+                let record = Record {
+                    key: key.clone(),
+                    value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+                (record, None)
+            }
         };
 
         let (record_to_verify, expected_holders) = if verify_store {
@@ -388,7 +401,7 @@ impl ClientRegister {
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             re_attempt: true,
-            use_put_record_to: None,
+            use_put_record_to: payee,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
 
