@@ -19,20 +19,29 @@ use sn_transfers::{
     CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
-
+use std::collections::HashMap;
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
 };
-use tokio::time::Duration;
-use tokio::{task::JoinSet, time::sleep};
-
+use tokio::{
+    task::JoinSet,
+    time::{sleep, Duration},
+};
 use xor_name::XorName;
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {
     client: Client,
     wallet: HotWallet,
+}
+
+/// The result of the payment made for a set of Content Addresses
+pub struct StoragePaymentResult {
+    pub storage_cost: NanoTokens,
+    pub royalty_fees: NanoTokens,
+    pub payee_map: HashMap<NetworkAddress, PeerId>,
+    pub skipped_chunks: Vec<XorName>,
 }
 
 impl WalletClient {
@@ -346,14 +355,7 @@ impl WalletClient {
     /// - content_addrs - [Iterator]<Items = [`NetworkAddress`]>
     ///
     /// # Returns:
-    /// # ( ( storage_cost, royalties_fees ), ( payee_map, skipped_chunks ) )
-    ///
-    ///  * `storage_cost` - The total cost for the all contents ([`NanoTokens`])
-    ///  * `royalties_fees` - the total royalty fess for the all contents ([`NanoTokens`])
-    ///  * `payee_map` - The payees selected for each content ([Vec]<([`XorName`], [`PeerId`])>)
-    ///  * `skipped_chunks` - the list of content already exists in network and no need to upload ([Vec]<[`XorName`]>)
-    /// Note that storage cost is _per record_, and it's zero if not required for this operation.
-    /// mandatory verification.
+    /// * [WalletResult]<StoragePaymentResult>
     ///
     /// # Example
     ///```no_run
@@ -382,10 +384,7 @@ impl WalletClient {
     pub async fn pay_for_storage(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-    ) -> WalletResult<(
-        (NanoTokens, NanoTokens),
-        (Vec<(XorName, PeerId)>, Vec<XorName>),
-    )> {
+    ) -> WalletResult<StoragePaymentResult> {
         let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
         // Using default ExponentialBackoff doesn't make sense,
@@ -399,7 +398,7 @@ impl WalletClient {
                 .pay_for_storage_once(c.clone().into_iter(), verify_store)
                 .await
             {
-                Ok(cost) => return Ok(cost),
+                Ok(payment_result) => return Ok(payment_result),
                 Err(WalletError::CouldNotSendMoney(err)) => {
                     warn!("Attempt to pay for data failed: {err:?}");
                     last_err = err;
@@ -419,10 +418,7 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
         verify_store: bool,
-    ) -> WalletResult<(
-        (NanoTokens, NanoTokens),
-        (Vec<(XorName, PeerId)>, Vec<XorName>),
-    )> {
+    ) -> WalletResult<StoragePaymentResult> {
         // get store cost from network in parallel
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
@@ -443,7 +439,8 @@ impl WalletClient {
         // collect store costs
         let mut cost_map = BTreeMap::default();
         let mut skipped_chunks = vec![];
-        let mut payee_map = vec![];
+        #[allow(clippy::mutable_key_type)]
+        let mut payee_map = HashMap::new();
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {
@@ -452,9 +449,9 @@ impl WalletClient {
                             skipped_chunks.push(xorname);
                             debug!("Skipped existing chunk {content_addr:?}");
                         } else {
-                            let _ = cost_map.insert(xorname, (cost.1, cost.2));
-                            payee_map.push((xorname, cost.0));
                             debug!("Storecost inserted into payment map for {content_addr:?}");
+                            let _ = cost_map.insert(xorname, (cost.1, cost.2));
+                            payee_map.insert(content_addr, cost.0);
                         }
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
@@ -471,13 +468,17 @@ impl WalletClient {
                 }
             }
         }
-        info!("Storecosts retrieved");
+        info!("Storecosts retrieved for all the provided content addrs");
 
         // pay for records
-        Ok((
-            self.pay_for_records(&cost_map, verify_store).await?,
-            (payee_map, skipped_chunks),
-        ))
+        let (storage_cost, royalty_fees) = self.pay_for_records(&cost_map, verify_store).await?;
+        let res = StoragePaymentResult {
+            storage_cost,
+            royalty_fees,
+            payee_map,
+            skipped_chunks,
+        };
+        Ok(res)
     }
 
     /// Send tokens to nodes closest to the data that we want to make storage payments for.

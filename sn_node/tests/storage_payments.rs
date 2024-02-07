@@ -127,12 +127,13 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     // let's first pay only for a subset of the addresses
     let subset_len = random_content_addrs.len() / 3;
     info!("Paying for {subset_len} random addresses...",);
-    let ((storage_cost, royalties_fees), _) = wallet_client
+    let storage_payment_result = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter().take(subset_len))
         .await?;
 
-    let total_cost = storage_cost
-        .checked_add(royalties_fees)
+    let total_cost = storage_payment_result
+        .storage_cost
+        .checked_add(storage_payment_result.royalty_fees)
         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
     // check we've paid only for the subset of addresses, 1 nano per addr
@@ -151,11 +152,12 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-    let ((storage_cost, royalties_fees), _) = wallet_client
+    let storage_payment_result = wallet_client
         .pay_for_storage(random_content_addrs.clone().into_iter())
         .await?;
-    let total_cost = storage_cost
-        .checked_add(royalties_fees)
+    let total_cost = storage_payment_result
+        .storage_cost
+        .checked_add(storage_payment_result.royalty_fees)
         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
