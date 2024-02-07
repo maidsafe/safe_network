@@ -10,10 +10,12 @@ use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use serde::{Deserialize, Serialize};
 use sn_transfers::{NanoTokens, SignedSpend, SpendAddress};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use crate::error::{Error, Result};
+
+use super::dag_error::DagError;
 
 /// A DAG representing the spends from a specific Spend all the way to the UTXOs.
 /// Starting from Genesis, this would encompass all the spends that have happened on the network
@@ -188,6 +190,165 @@ impl SpendDag {
                 }
             }
         }
+    }
+
+    /// helper that returns the spend at a given address if it is unique (not double spend) and not an UTXO
+    fn get_unique_spend_at(
+        &self,
+        addr: &SpendAddress,
+        recorded_errors: &mut Vec<DagError>,
+    ) -> Option<(&SignedSpend, usize)> {
+        let spends = self.spends.get(addr)?;
+        match spends.as_slice() {
+            // spend
+            [(Some(s), i)] => Some((s, *i)),
+            // utxo
+            [(None, _)] => None,
+            // double spend
+            _ => {
+                recorded_errors.push(DagError::DoubleSpend(*addr));
+                None
+            }
+        }
+    }
+
+    /// helper that returns the direct ancestors of a given spend
+    fn get_ancestor_spends(
+        &self,
+        spend: &SignedSpend,
+    ) -> std::result::Result<BTreeSet<SignedSpend>, DagError> {
+        let mut ancestors = BTreeSet::new();
+        for input in spend.spend.parent_tx.inputs.iter() {
+            let ancestor_addr = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
+            match self.get_unique_spend_at(&ancestor_addr, &mut vec![]) {
+                Some((ancestor_spend, _)) => {
+                    ancestors.insert(ancestor_spend.clone());
+                }
+                None => {
+                    return Err(DagError::MissingAncestry(ancestor_addr));
+                }
+            }
+        }
+        Ok(ancestors)
+    }
+
+    /// helper that returns all the descendants (recursively all the way to UTXOs) of a given spend
+    fn all_descendants(
+        &self,
+        addr: &SpendAddress,
+        recorded_errors: &mut Vec<DagError>,
+    ) -> BTreeSet<&SpendAddress> {
+        let mut descendants = BTreeSet::new();
+        let mut to_traverse = BTreeSet::from_iter(vec![addr]);
+        while let Some(current_addr) = to_traverse.pop_first() {
+            // get descendants via DAG
+            let (_, idx) = match self.get_unique_spend_at(current_addr, recorded_errors) {
+                Some(s) => s,
+                None => continue,
+            };
+            let descendants_via_dag: BTreeSet<&SpendAddress> = self
+                .dag
+                .neighbors_directed(NodeIndex::new(idx), petgraph::Direction::Outgoing)
+                .map(|i| &self.dag[i])
+                .collect();
+
+            // get descendants via Tx data
+            let descendants_via_tx: BTreeSet<SpendAddress> = self
+                .spends
+                .get(current_addr)
+                .cloned()
+                .unwrap_or(vec![])
+                .into_iter()
+                .filter_map(|(s, _)| s)
+                .flat_map(|s| s.spend.spent_tx.outputs.to_vec())
+                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                .collect();
+
+            // report inconsistencies
+            if descendants_via_dag != descendants_via_tx.iter().collect() {
+                recorded_errors.push(DagError::IncoherentDag(
+                    *current_addr,
+                    format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
+                ));
+            }
+
+            // continue traversal
+            let not_transversed = descendants_via_dag.difference(&descendants);
+            to_traverse.extend(not_transversed);
+            descendants.extend(descendants_via_dag.iter().cloned());
+        }
+        descendants
+    }
+
+    /// find all the orphans in the DAG and record them as OrphanSpend
+    fn find_orphans(&self, source: &SpendAddress, recorded_errors: &mut Vec<DagError>) {
+        let all_addresses: BTreeSet<&SpendAddress> = self.spends.keys().collect();
+        let descendants = self.all_descendants(source, recorded_errors);
+        let orphans: BTreeSet<&SpendAddress> =
+            all_addresses.difference(&descendants).cloned().collect();
+        for orphan in orphans {
+            let src = *source;
+            let orphan = *orphan;
+            recorded_errors.push(DagError::OrphanSpend { orphan, src });
+        }
+    }
+
+    /// Verify the DAG
+    /// Returns a list of errors found in the DAG
+    /// Note that the `MissingSource` error makes the entire DAG invalid
+    pub fn verify(&self, source: &SpendAddress) -> Vec<DagError> {
+        let mut recorded_errors = Vec::new();
+
+        // verify DAG source is unique (Genesis in case of a complete DAG)
+        let (_source_spend, _) = match self.get_unique_spend_at(source, &mut recorded_errors) {
+            Some(s) => s,
+            None => {
+                recorded_errors.push(DagError::MissingSource(*source));
+                return recorded_errors;
+            }
+        };
+
+        // identify orphans
+        self.find_orphans(source, &mut recorded_errors);
+
+        // check all transactions
+        for (addr, _) in self.spends.iter() {
+            // get the spend at this address
+            let (spend, _) = match self.get_unique_spend_at(addr, &mut recorded_errors) {
+                Some(s) => s,
+                None => continue,
+            };
+
+            // get the ancestors of this spend
+            let ancestor_spends = match self.get_ancestor_spends(spend) {
+                Ok(a) => a,
+                Err(e) => {
+                    recorded_errors.push(e);
+                    continue;
+                }
+            };
+
+            // verify the tx
+            match spend
+                .spend
+                .parent_tx
+                .verify_against_inputs_spent(&ancestor_spends)
+            {
+                Ok(_) => (),
+                Err(e) => {
+                    // mark all descendants as poisoned if tx is invalid
+                    recorded_errors.push(DagError::InvalidTransaction(*addr, format!("{e}")));
+                    for d in self.all_descendants(addr, &mut recorded_errors) {
+                        recorded_errors.push(DagError::PoisonedAncestry(
+                            *d,
+                            format!("ancestor transaction was poisoned at: {addr:?}: {e}"),
+                        ))
+                    }
+                }
+            }
+        }
+
+        recorded_errors
     }
 }
 

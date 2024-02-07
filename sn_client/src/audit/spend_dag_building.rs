@@ -16,7 +16,7 @@ use std::collections::BTreeSet;
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
-    /// Does not verify the validity of the transactions
+    /// Once the DAG collected, verifies all the transactions
     pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
         let mut dag = SpendDag::new();
 
@@ -34,7 +34,7 @@ impl Client {
 
         // use iteration instead of recursion to avoid stack overflow
         let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
-        let mut verified_tx = BTreeSet::new();
+        let mut known_tx = BTreeSet::new();
         let mut gen = 0;
         let start = std::time::Instant::now();
 
@@ -74,17 +74,25 @@ impl Client {
                 }
             }
 
-            // only verify tx we haven't already verified
+            // only follow tx we haven't already gathered
             gen += 1;
-            verified_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
+            known_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
             txs_to_follow = next_gen_tx
                 .into_iter()
-                .filter(|tx| !verified_tx.contains(&tx.hash()))
+                .filter(|tx| !known_tx.contains(&tx.hash()))
                 .collect();
         }
 
         let elapsed = start.elapsed();
         info!("Finished building SpendDAG in {elapsed:?}");
+
+        // verify the DAG
+        info!("Now verifying SpendDAG...");
+        let start = std::time::Instant::now();
+        let recorded_errors = dag.verify(&spend_addr);
+        warn!("SpendDAG verification recorded errors: {recorded_errors:?}");
+        let elapsed = start.elapsed();
+        info!("Finished verifying SpendDAG in {elapsed:?}");
         Ok(dag)
     }
 
