@@ -42,7 +42,7 @@ use xor_name::XorName;
 const DOWNLOAD_FOLDER: &str = "safe_files";
 
 /// Subdir for storing uploaded file into
-const UPLOADED_FILES: &str = "uploaded_files";
+pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -532,7 +532,7 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     }
 }
 
-async fn download_file(
+pub(crate) async fn download_file(
     files_api: FilesApi,
     xor_name: XorName,
     // original file name and optional datamap chunk

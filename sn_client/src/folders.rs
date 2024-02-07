@@ -96,12 +96,12 @@ impl FoldersApi {
         })
     }
 
-    /// Returns the list of files of this Folder
-    pub fn files(&self) -> Result<Vec<(String, FolderEntry)>> {
-        let mut files = vec![];
+    /// Returns the list of entries of this Folder
+    pub fn entries(&self) -> Result<Vec<(String, FolderEntry)>> {
+        let mut entries = vec![];
         for (_, entry) in self.register.read() {
-            files.push(rmp_serde::from_slice(&entry)?)
+            entries.push(rmp_serde::from_slice(&entry)?)
         }
-        Ok(files)
+        Ok(entries)
     }
 }
