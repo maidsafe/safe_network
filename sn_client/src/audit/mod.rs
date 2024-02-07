@@ -6,9 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod dag_error;
 mod spend_dag;
 mod spend_dag_building;
 
+pub use dag_error::DagError;
 pub use spend_dag::SpendDag;
 
 use super::{
