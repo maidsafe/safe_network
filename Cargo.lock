@@ -4975,7 +4975,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.50"
+version = "0.89.51"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5014,7 +5014,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.103.7"
+version = "0.104.0"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5056,7 +5056,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.49"
+version = "0.3.50"
 dependencies = [
  "bitcoin",
  "blsttc",
@@ -5142,7 +5142,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.103.46"
+version = "0.104.0"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5194,7 +5194,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.34"
+version = "0.4.35"
 dependencies = [
  "assert_fs",
  "async-trait",

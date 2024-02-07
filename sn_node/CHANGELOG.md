@@ -3137,6 +3137,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - update dependencies
 
+## [0.104.0](https://github.com/maidsafe/safe_network/compare/sn_node-v0.103.46...sn_node-v0.104.0) - 2024-02-07
+
+### Added
+- *(client)* [**breaking**] make the result of the storage payment into a struct
+
+### Other
+- *(data_location)* create and edit registers
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore

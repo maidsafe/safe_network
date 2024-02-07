@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.103.7...sn_client-v0.104.0) - 2024-02-07
+
+### Added
+- *(client)* put register to the peer that we paid to
+- *(client)* [**breaking**] make the result of the storage payment into a struct
+
+### Fixed
+- rust docs error
+
 ## [0.103.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.103.6...sn_client-v0.103.7) - 2024-02-07
 
 ### Added
