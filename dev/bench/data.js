@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707320772287,
+  "lastUpdate": 1707320774049,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3e77a56641698794a26dde1c43727ae311bc368e",
-          "message": "chore: remove tracing feat deps",
-          "timestamp": "2023-10-02T19:34:50Z",
-          "tree_id": "1b2c4a446271a5e4f0302de2242d5a0a2c5125a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e77a56641698794a26dde1c43727ae311bc368e"
-        },
-        "date": 1696279185684,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 147.29216,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 40,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "0d60555638267e3607cf3203912cf0117c4f9e61",
+          "message": "feat: extendable local state DAG in cli",
+          "timestamp": "2024-02-07T14:50:56Z",
+          "tree_id": "93198813e754521e18ed6687ed58dd0d1d184bb7",
+          "url": "https://github.com/maidsafe/safe_network/commit/0d60555638267e3607cf3203912cf0117c4f9e61"
+        },
+        "date": 1707320773735,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
