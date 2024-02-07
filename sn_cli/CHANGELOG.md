@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.50](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.49...sn_cli-v0.89.50) - 2024-02-07
+
+### Added
+- extendable local state DAG in cli
+
 ## [0.89.49](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.48...sn_cli-v0.89.49) - 2024-02-06
 
 ### Other
