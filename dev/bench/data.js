@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707326312023,
+  "lastUpdate": 1707326412635,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "fcd802e8f2d23805a2c16e57865d861f43a8874e",
-          "message": "feat(node): remove failed records if write fails",
-          "timestamp": "2023-10-03T07:09:40Z",
-          "tree_id": "f663172f5f1484f349db48813685a1c4219149fa",
-          "url": "https://github.com/maidsafe/safe_network/commit/fcd802e8f2d23805a2c16e57865d861f43a8874e"
-        },
-        "date": 1696320629791,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50.425858,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "1cb965776dc13fd993e4d13b872c852ae172c6b1",
+          "message": "fix: rust docs error",
+          "timestamp": "2024-02-07T16:24:48Z",
+          "tree_id": "6fe382b693d2b84cb23d75de38568f74f35026a7",
+          "url": "https://github.com/maidsafe/safe_network/commit/1cb965776dc13fd993e4d13b872c852ae172c6b1"
+        },
+        "date": 1707326411732,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
