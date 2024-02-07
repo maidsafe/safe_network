@@ -30,7 +30,7 @@ pub use self::{
         FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
     },
     register::ClientRegister,
-    wallet::{broadcast_signed_spends, send, WalletClient},
+    wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
 pub(crate) use error::Result;
 

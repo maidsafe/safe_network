@@ -355,7 +355,7 @@ impl WalletClient {
     /// - content_addrs - [Iterator]<Items = [`NetworkAddress`]>
     ///
     /// # Returns:
-    /// * [WalletResult]<StoragePaymentResult>
+    /// * [WalletResult]<[StoragePaymentResult]>
     ///
     /// # Example
     ///```no_run
