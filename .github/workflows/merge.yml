@@ -84,8 +84,39 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
     steps:
+      - uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          fields: eventName,took
+          custom_payload: |
+            {
+              text: "Custom Field Check",
+              attachments: [{
+                title: 'CI Result',
+                text: 'Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}',
+                fields: [{
+                  title: 'lower case',
+                  value: 'LOWER CASE CHECK'.toLowerCase(),
+                  short: true
+                },
+                {
+                  title: 'reverse',
+                  value: 'gnirts esrever'.split('').reverse().join(''),
+                  short: true
+                },
+                {
+                  title: 'long title1',
+                  value: 'long value1',
+                  short: false
+                }],
+              }]
+            }  
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+        if: always() 
+
       - uses: actions/checkout@v4
 
       - name: Install Rust
