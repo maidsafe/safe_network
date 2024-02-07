@@ -9,6 +9,7 @@
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 use super::ClientEvent;
+use sn_protocol::NetworkAddress;
 use sn_registers::{Entry, EntryHash};
 use sn_transfers::SpendAddress;
 use std::collections::BTreeSet;
@@ -73,6 +74,9 @@ pub enum Error {
 
     #[error("The provided amount contains zero nanos")]
     AmountIsZero,
+
+    #[error("The payee for the address {0:?} was not found.")]
+    PayeeNotFound(NetworkAddress),
 
     /// CashNote add would overflow
     #[error("Total price exceed possible token amount")]
