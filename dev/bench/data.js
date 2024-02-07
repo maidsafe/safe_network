@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707231647990,
+  "lastUpdate": 1707320670320,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "56fb9e7ca595aa787b6023d61404092e7923866c",
-          "message": "feat: immediate stop on RecordNotFound",
-          "timestamp": "2023-10-03T08:38:32Z",
-          "tree_id": "3e15132f429c304a42303b15e0758d75224f03a2",
-          "url": "https://github.com/maidsafe/safe_network/commit/56fb9e7ca595aa787b6023d61404092e7923866c"
-        },
-        "date": 1696327067926,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1410932029823972,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.832935405207625,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 11.093599238927524,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.60556001457143,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "0d60555638267e3607cf3203912cf0117c4f9e61",
+          "message": "feat: extendable local state DAG in cli",
+          "timestamp": "2024-02-07T14:50:56Z",
+          "tree_id": "93198813e754521e18ed6687ed58dd0d1d184bb7",
+          "url": "https://github.com/maidsafe/safe_network/commit/0d60555638267e3607cf3203912cf0117c4f9e61"
+        },
+        "date": 1707320667821,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2747269511144856,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8314839262139062,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.15235212652136,
             "unit": "MiB/s"
           }
         ]
