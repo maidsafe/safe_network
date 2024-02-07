@@ -9,7 +9,9 @@
 pub(crate) mod download;
 pub(crate) mod upload;
 
-use crate::{chunks::Error as ChunksError, error::Result, Client, WalletClient};
+use crate::{
+    chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, WalletClient,
+};
 use bytes::Bytes;
 use libp2p::PeerId;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
@@ -17,7 +19,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress},
     NetworkAddress,
 };
-use sn_transfers::{HotWallet, NanoTokens};
+use sn_transfers::HotWallet;
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -143,17 +145,11 @@ impl FilesApi {
     /// Pay for a given set of chunks.
     ///
     /// Returns the cost and the resulting new balance of the local wallet.
-    pub async fn pay_for_chunks(
-        &self,
-        chunks: Vec<XorName>,
-    ) -> Result<(
-        (NanoTokens, NanoTokens, NanoTokens),
-        (Vec<(XorName, PeerId)>, Vec<XorName>),
-    )> {
+    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>) -> Result<StoragePaymentResult> {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let ((storage_cost, royalties_fees), (payee_map, skipped_chunks)) =
+        let res =
             wallet_client
                 .pay_for_storage(chunks.iter().map(|name| {
                     sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
@@ -161,11 +157,7 @@ impl FilesApi {
                 .await?;
 
         wallet_client.store_local_wallet()?;
-        let new_balance = wallet_client.balance();
-        Ok((
-            (storage_cost, royalties_fees, new_balance),
-            (payee_map, skipped_chunks),
-        ))
+        Ok(res)
     }
 
     // --------------------------------------------
