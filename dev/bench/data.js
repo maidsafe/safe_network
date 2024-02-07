@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707320775636,
+  "lastUpdate": 1707326312023,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "fbd5132fe1d2ade272febec11c2ee8b2b7860656",
-          "message": "chore: log status of pending_get_record",
-          "timestamp": "2023-10-03T11:10:46Z",
-          "tree_id": "6864c17d490d0f7fa36dc3ef55c34c6f88b151c4",
-          "url": "https://github.com/maidsafe/safe_network/commit/fbd5132fe1d2ade272febec11c2ee8b2b7860656"
-        },
-        "date": 1696335396316,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1483811920388545,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8536735696249315,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 11.086500192642108,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.15235212652136,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "1cb965776dc13fd993e4d13b872c852ae172c6b1",
+          "message": "fix: rust docs error",
+          "timestamp": "2024-02-07T16:24:48Z",
+          "tree_id": "6fe382b693d2b84cb23d75de38568f74f35026a7",
+          "url": "https://github.com/maidsafe/safe_network/commit/1cb965776dc13fd993e4d13b872c852ae172c6b1"
+        },
+        "date": 1707326308954,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.264800818384209,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.865529818732491,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.90310839604298,
             "unit": "MiB/s"
           }
         ]
