@@ -428,7 +428,7 @@ impl ChunkManager {
         Ok(self.get_chunks())
     }
 
-    /// Returns an iterator over the list of chunked files which belong to the provided path
+    /// Returns an iterator over the list of chunked files
     pub(crate) fn iter_chunked_files(&mut self) -> impl Iterator<Item = &ChunkedFile> {
         self.chunks.values()
     }

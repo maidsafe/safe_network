@@ -147,7 +147,7 @@ async fn main() -> Result<()> {
         // Sync with network after a delay
         println!("Syncing with SAFE in {delay:?}...");
         sleep(delay).await;
-        reg_replica.sync(&mut wallet_client, true).await?;
+        reg_replica.sync(&mut wallet_client, true, None).await?;
         println!("synced!");
     }
 }

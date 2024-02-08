@@ -8,17 +8,24 @@
 
 use super::files::{download_file, upload_files, ChunkManager, UploadedFile, UPLOADED_FILES};
 
-use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, BATCH_SIZE, MAX_UPLOAD_RETRIES};
-use sn_protocol::storage::{Chunk, ChunkAddress};
-use sn_registers::RegisterAddress;
+use sn_client::{
+    Client, FilesApi, FolderEntry, FoldersApi, WalletClient, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+};
+
+use sn_protocol::storage::{Chunk, ChunkAddress, RegisterAddress};
+use sn_transfers::HotWallet;
 
 use clap::Parser;
-use color_eyre::Result;
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use std::{
     collections::BTreeMap,
     fs::create_dir_all,
     path::{Path, PathBuf},
 };
+use tokio::task::JoinSet;
 use walkdir::WalkDir;
 
 #[derive(Parser, Debug)]
@@ -78,7 +85,6 @@ pub(crate) async fn folders_cmds(
             )
             .await?;
 
-            println!("Uploading folders hierarchy...");
             let mut chunk_manager = ChunkManager::new(root_dir);
             chunk_manager.chunk_path(&path, true, make_public)?;
 
@@ -106,6 +112,7 @@ pub(crate) async fn folders_cmds(
                 parent_folder.add_folder(dir_name, curr_folder_addr)?;
             }
 
+            // add chunked files to the corresponding Folders
             for chunked_file in chunk_manager.iter_chunked_files() {
                 if let (Some(file_name), Some(parent)) = (
                     chunked_file.file_name.to_str(),
@@ -117,15 +124,17 @@ pub(crate) async fn folders_cmds(
                 }
             }
 
-            // TODO: sync Folders concurrently
-            for (path, mut folder) in dirs_paths {
-                let address = folder.sync(verify_store).await?;
-                println!(
-                    "Folder (for {}) synced with the network at: {}",
-                    path.display(),
-                    address.to_hex()
-                );
-            }
+            println!("Paying for folders hierarchy and uploading...");
+            let root_dir_address = dirs_paths
+                .get(&path)
+                .map(|folder| *folder.address())
+                .ok_or(eyre!("Failed to obtain main Folder network address"))?;
+            pay_and_upload_folders(dirs_paths, verify_store, client, root_dir).await?;
+
+            println!(
+                "\nFolder hierarchy from {path:?} uploaded susccessfully at {}",
+                root_dir_address.to_hex()
+            );
         }
         FoldersCmds::Download {
             folder_addr,
@@ -201,6 +210,64 @@ pub(crate) async fn folders_cmds(
     Ok(())
 }
 
+// Make a single payment for all Folders (Registers) and upload them to the network
+async fn pay_and_upload_folders(
+    dirs_paths: BTreeMap<PathBuf, FoldersApi>,
+    verify_store: bool,
+    client: &Client,
+    root_dir: &Path,
+) -> Result<()> {
+    // Let's make the storage payment
+    let mut wallet_client = WalletClient::new(client.clone(), HotWallet::load_from(root_dir)?);
+    let net_addresses = dirs_paths.values().map(|folder| folder.as_net_addr());
+    let payment_result = wallet_client.pay_for_storage(net_addresses).await?;
+    let balance = wallet_client.balance();
+    match payment_result
+        .storage_cost
+        .checked_add(payment_result.royalty_fees)
+    {
+        Some(cost) => println!(
+            "Made payment of {cost} for {} Folders. New balance: {balance}",
+            dirs_paths.len()
+        ),
+        None => bail!("Failed to calculate total payment cost"),
+    }
+
+    // sync Folders concurrently
+    let mut tasks = JoinSet::new();
+    for (path, mut folder) in dirs_paths {
+        let net_addr = folder.as_net_addr();
+        let payment = wallet_client.get_payment_for_addr(&net_addr)?;
+        let payment_info = payment_result
+            .payee_map
+            .get(&net_addr)
+            .map(|payee| (payment, *payee));
+
+        tasks.spawn(async move {
+            match folder.sync(verify_store, payment_info).await {
+                Ok(addr) => println!(
+                    "Folder (for {}) synced with the network at: {}",
+                    path.display(),
+                    addr.to_hex()
+                ),
+                Err(err) => println!(
+                    "Failed to sync Folder (for {}) with the network: {err}",
+                    path.display(),
+                ),
+            }
+        });
+    }
+
+    while let Some(res) = tasks.join_next().await {
+        if let Err(err) = res {
+            println!("Failed to sync a Folder with the network: {err:?}");
+        }
+    }
+
+    Ok(())
+}
+
+// Download a Folder from the network and keep track of its subfolders and files
 async fn download_folder(
     root_dir: &Path,
     client: &Client,
