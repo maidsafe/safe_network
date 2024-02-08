@@ -32,9 +32,7 @@ pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
     cmd::SwarmLocalState,
-    driver::{
-        GetRecordCfg, NetworkBuilder, PutRecordCfg, RetryStrategy, SwarmDriver, VerificationKind,
-    },
+    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
     error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
@@ -55,7 +53,7 @@ use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    storage::RecordType,
+    storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};

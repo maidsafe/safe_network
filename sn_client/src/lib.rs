@@ -27,7 +27,7 @@ pub use self::{
     files::{
         download::{FilesDownload, FilesDownloadEvent},
         upload::{FileUploadEvent, FilesUpload},
-        FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+        FilesApi, BATCH_SIZE,
     },
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
@@ -91,7 +91,7 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
     console::log_1(&JsValue::from_str("Client started {chunk:?}"));
 
     let chunk = client
-        .get_chunk(ChunkAddress::new(xor_name), false)
+        .get_chunk(ChunkAddress::new(xor_name), false, None)
         .await
         .map_err(|e| JsError::new(&format!("Client get data failed: {e:?}")))?;
 

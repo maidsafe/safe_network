@@ -27,14 +27,14 @@ use sn_networking::{
     multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
     Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder, NetworkEvent,
-    PutRecordCfg, RetryStrategy, VerificationKind, CLOSE_GROUP_SIZE,
+    PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::ChunkProof,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
-        RecordKind, RegisterAddress, SpendAddress,
+        RecordKind, RegisterAddress, RetryStrategy, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -593,6 +593,7 @@ impl Client {
     /// * 'payee' - [PeerId]
     /// * 'payment' - [Payment]
     /// * 'verify_store' - Boolean
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
     ///
     pub(super) async fn store_chunk(
         &self,
@@ -600,9 +601,11 @@ impl Client {
         payee: PeerId,
         payment: Payment,
         verify_store: bool,
+        retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
+        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Balanced));
 
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
@@ -617,7 +620,7 @@ impl Client {
                 get_quorum: Quorum::N(
                     NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
                 ),
-                re_attempt: Some(RetryStrategy::Balanced),
+                re_attempt: retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
             };
@@ -641,7 +644,7 @@ impl Client {
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            re_attempt: Some(RetryStrategy::Balanced),
+            re_attempt: retry_strategy,
             use_put_record_to: Some(vec![payee]),
             verification,
         };
@@ -653,6 +656,7 @@ impl Client {
     /// # Arguments
     /// * 'address' - [ChunkAddress]
     /// * 'show_holders' - Boolean
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Quick by default
     ///
     /// Return Type:
     ///
@@ -677,7 +681,12 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
+    pub async fn get_chunk(
+        &self,
+        address: ChunkAddress,
+        show_holders: bool,
+        retry_strategy: Option<RetryStrategy>,
+    ) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
 
@@ -696,7 +705,7 @@ impl Client {
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: Some(RetryStrategy::Quick),
+            re_attempt: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
             target_record: None,
             expected_holders,
         };

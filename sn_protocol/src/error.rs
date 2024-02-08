@@ -20,6 +20,8 @@ pub enum Error {
     // ---------- Misc errors
     #[error("Could not obtain user's data directory")]
     UserDataDirectoryNotObtainable,
+    #[error("Could not parse RetryStrategy")]
+    ParseRetryStrategyError,
 
     // ---------- Chunk Proof errors
     #[error("Chunk does not exist {0:?}")]
