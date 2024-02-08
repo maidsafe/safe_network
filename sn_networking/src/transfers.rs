@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{close_group_majority, driver::GetRecordCfg, Error, GetRecordError, Network, Result};
+use crate::{
+    close_group_majority,
+    driver::{GetRecordCfg, RetryStrategy},
+    Error, GetRecordError, Network, Result,
+};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
@@ -48,7 +52,7 @@ impl Network {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: false,
+            re_attempt: None,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -67,12 +71,12 @@ impl Network {
     /// Gets a spend from the Network.
     /// We know it must be there, and has to be fetched from Quorum::All
     ///
-    /// If we get a quorum error, we enable re-try
+    /// If we get a quorum error, we increase the RetryStrategy
     pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -86,7 +90,7 @@ impl Network {
                 // if majority holds the spend, it might be worth it to try again.
                 if got >= close_group_majority() {
                     debug!("At least a majority nodes hold the spend {address:?}, so trying to get it again.");
-                    get_cfg.re_attempt = true;
+                    get_cfg.re_attempt = Some(RetryStrategy::Persistent);
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
                     return Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {
