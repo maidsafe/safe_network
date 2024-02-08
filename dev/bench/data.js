@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707413040032,
+  "lastUpdate": 1707413041680,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36291,6 +36291,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f16e2c6cff6f279acbcab280f8389d7d32da8b1f",
+          "message": "chore: obtain the version number from binary\n\nThe process for downloading and extracting a binary is changed to obtain the version by running the\nbinary that was obtained, using its `--version` argument.\n\nThis avoids the need to use a string like \"custom\" for the version number when the `--url` argument\nwas used.",
+          "timestamp": "2024-02-08T16:33:44Z",
+          "tree_id": "2f50793b79c03c14d47278ec090d38430759d7d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/f16e2c6cff6f279acbcab280f8389d7d32da8b1f"
+        },
+        "date": 1707413041286,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5903,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33550,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
