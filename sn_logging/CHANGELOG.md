@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.20](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.19...sn_logging-v0.2.20) - 2024-02-08
+
+### Other
+- Revert "chore: roll back to log more"
+
 ## [0.2.19](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.18...sn_logging-v0.2.19) - 2024-02-06
 
 ### Other
