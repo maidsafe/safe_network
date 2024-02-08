@@ -8,10 +8,14 @@
 
 use super::{error::Result, Client, ClientRegister, WalletClient};
 
-use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::HotWallet;
+use sn_protocol::{
+    storage::{ChunkAddress, RegisterAddress},
+    NetworkAddress,
+};
+use sn_transfers::{HotWallet, Payment};
 use xor_name::XorName;
 
+use libp2p::PeerId;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
@@ -50,6 +54,11 @@ impl FoldersApi {
         self.register.address()
     }
 
+    /// Return the address of the Folder (Register address) as a NetworkAddress
+    pub fn as_net_addr(&self) -> NetworkAddress {
+        NetworkAddress::RegisterAddress(*self.address())
+    }
+
     /// Create a new WalletClient from the directory set.
     pub fn wallet(&self) -> Result<WalletClient> {
         let path = self.wallet_dir.as_path();
@@ -75,9 +84,15 @@ impl FoldersApi {
     }
 
     /// Sync local Folder with the network.
-    pub async fn sync(&mut self, verify_store: bool) -> Result<RegisterAddress> {
+    pub async fn sync(
+        &mut self,
+        verify_store: bool,
+        payment_info: Option<(Payment, PeerId)>,
+    ) -> Result<RegisterAddress> {
         let mut wallet_client = self.wallet()?;
-        self.register.sync(&mut wallet_client, verify_store).await?;
+        self.register
+            .sync(&mut wallet_client, verify_store, payment_info)
+            .await?;
 
         Ok(*self.register.address())
     }
