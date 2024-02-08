@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707399444461,
+  "lastUpdate": 1707399446063,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36169,6 +36169,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30062,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "9e32aa47e00f725b854c9b51fc9b377512dab769",
+          "message": "ci: temporary debugging output for release process\n\nSomething is causing the build agent to run out of space. I have a suspicion it's possible that it's\nsomething to do with how `release-plz` determines changes in the crates, and it could be struggling\nbecause the number of crates in our workspace has grown.\n\nThe first thing is to enable debugging output, because I seen some `debug!` usage in the\n`release-plz` codebase. Hoping maybe that could provide some clues if it is `release-plz` that is\ncausing the disk usage.\n\nIf not, each step has output to display the disk usage, which hopefully may give us other clues.\n\nThis commit can be reverted when we have solved the issue.",
+          "timestamp": "2024-02-08T13:25:41Z",
+          "tree_id": "de9f57e68f0df34e88923c5a26d6f6196d203f7a",
+          "url": "https://github.com/maidsafe/safe_network/commit/9e32aa47e00f725b854c9b51fc9b377512dab769"
+        },
+        "date": 1707399445731,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5979,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34739,
             "unit": "ms"
           },
           {
