@@ -17,6 +17,7 @@ pub enum DagError {
     #[error("DAG is incoherent at {0:?}: {1}")]
     IncoherentDag(SpendAddress, String),
 
+    // Errors that mean a Spend in the DAG is invalid
     #[error("Double Spend at {0:?}")]
     DoubleSpend(SpendAddress),
     #[error("Spend at {0:?} has missing ancestors")]
@@ -30,4 +31,14 @@ pub enum DagError {
         orphan: SpendAddress,
         src: SpendAddress,
     },
+}
+
+impl DagError {
+    pub fn dag_is_invalid(&self) -> bool {
+        matches!(
+            self,
+            DagError::MissingSource(_)
+            | DagError::IncoherentDag(_, _)
+        )
+    }
 }
