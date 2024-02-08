@@ -419,14 +419,14 @@ impl Client {
         } else {
             Quorum::One
         };
-        let re_attempt = if is_verifying {
+        let retry_strategy = if is_verifying {
             Some(RetryStrategy::Balanced)
         } else {
             Some(RetryStrategy::Quick)
         };
         let get_cfg = GetRecordCfg {
             get_quorum,
-            re_attempt,
+            retry_strategy,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -620,7 +620,7 @@ impl Client {
                 get_quorum: Quorum::N(
                     NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
                 ),
-                re_attempt: retry_strategy,
+                retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
             };
@@ -644,7 +644,7 @@ impl Client {
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            re_attempt: retry_strategy,
+            retry_strategy,
             use_put_record_to: Some(vec![payee]),
             verification,
         };
@@ -705,7 +705,7 @@ impl Client {
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
+            retry_strategy: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
             target_record: None,
             expected_holders,
         };
@@ -820,13 +820,13 @@ impl Client {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: record_to_verify,
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
-            re_attempt: Some(RetryStrategy::Persistent),
+            retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
@@ -871,7 +871,7 @@ impl Client {
         );
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: None,
             expected_holders: Default::default(),
         };

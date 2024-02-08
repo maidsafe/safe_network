@@ -394,13 +394,13 @@ impl ClientRegister {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: record_to_verify,
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
-            re_attempt: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: payee,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };

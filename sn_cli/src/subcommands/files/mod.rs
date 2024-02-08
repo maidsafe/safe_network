@@ -367,7 +367,7 @@ async fn upload_files(
                 }
                 FileUploadEvent::PayedForChunks { .. } => {}
                 // Do not increment the progress bar of a chunk upload failure as the event can be emitted multiple
-                // times for a single chunk if re-attempts is enabled.
+                // times for a single chunk if retries are enabled.
                 FileUploadEvent::FailedToUpload(_) => {}
                 FileUploadEvent::Error => {
                     upload_terminated_with_error = true;

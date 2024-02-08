@@ -126,7 +126,7 @@ pub struct GetRecordCfg {
     /// The query will result in an error if we get records less than the provided Quorum
     pub get_quorum: Quorum,
     /// If enabled, the provided `RetryStrategy` is used to retry if a GET attempt fails.
-    pub re_attempt: Option<RetryStrategy>,
+    pub retry_strategy: Option<RetryStrategy>,
     /// Only return if we fetch the provided record.
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.
@@ -143,7 +143,7 @@ impl Debug for GetRecordCfg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut f = f.debug_struct("GetRecordCfg");
         f.field("get_quorum", &self.get_quorum)
-            .field("re_attempt", &self.re_attempt);
+            .field("retry_strategy", &self.retry_strategy);
 
         match &self.target_record {
             Some(record) => {
@@ -167,7 +167,7 @@ pub struct PutRecordCfg {
     /// Our nodes currently send `Ok()` response for every KAD PUT. Thus this field does not do anything atm.
     pub put_quorum: Quorum,
     /// If enabled, the provided `RetryStrategy` is used to retry if a PUT attempt fails.
-    pub re_attempt: Option<RetryStrategy>,
+    pub retry_strategy: Option<RetryStrategy>,
     /// Use the `kad::put_record_to` to PUT the record only to the specified peers. If this option is set to None, we
     /// will be using `kad::put_record` which would PUT the record to all the closest members of the record.
     pub use_put_record_to: Option<Vec<PeerId>>,
