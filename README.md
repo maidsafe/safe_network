@@ -105,7 +105,7 @@ The folders storage capability can be demonstrated by uploading folders to the l
 
 Upload a directory:
 ```bash
-cargo run --bin safe --features local-discovery -- files upload <dir-path>
+cargo run --bin safe --features local-discovery -- folders upload <dir-path>
 ```
 
 After it finishes uploading the complete directory, with files and sub-directories, it will show the address where the main directory can be pulled from.

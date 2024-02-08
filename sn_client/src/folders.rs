@@ -19,6 +19,7 @@ use libp2p::PeerId;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
+    ffi::OsString,
     path::{Path, PathBuf},
 };
 
@@ -68,19 +69,13 @@ impl FoldersApi {
     }
 
     /// Add provided file as entry of this Folder (locally).
-    pub fn add_file(&mut self, name: String, address: ChunkAddress) -> Result<()> {
-        let entry = (name, FolderEntry::File(address));
-        self.register
-            .write_atop(&rmp_serde::to_vec(&entry)?, &BTreeSet::default())?;
-        Ok(())
+    pub fn add_file(&mut self, name: OsString, address: ChunkAddress) -> Result<()> {
+        self.add_entry(name, FolderEntry::File(address))
     }
 
     /// Add subfolder as entry of this Folder (locally).
-    pub fn add_folder(&mut self, name: String, address: RegisterAddress) -> Result<()> {
-        let entry = (name, FolderEntry::Folder(address));
-        self.register
-            .write_atop(&rmp_serde::to_vec(&entry)?, &BTreeSet::default())?;
-        Ok(())
+    pub fn add_folder(&mut self, name: OsString, address: RegisterAddress) -> Result<()> {
+        self.add_entry(name, FolderEntry::Folder(address))
     }
 
     /// Sync local Folder with the network.
@@ -112,11 +107,24 @@ impl FoldersApi {
     }
 
     /// Returns the list of entries of this Folder
-    pub fn entries(&self) -> Result<Vec<(String, FolderEntry)>> {
+    pub fn entries(&self) -> Result<Vec<(OsString, FolderEntry)>> {
         let mut entries = vec![];
         for (_, entry) in self.register.read() {
-            entries.push(rmp_serde::from_slice(&entry)?)
+            let (name, folder_entry): (String, FolderEntry) = rmp_serde::from_slice(&entry)?;
+            entries.push((name.into(), folder_entry));
         }
         Ok(entries)
+    }
+
+    // Private helpers
+
+    // Add the given entry to the underlying Register
+    fn add_entry(&mut self, name: OsString, entry: FolderEntry) -> Result<()> {
+        // TODO: conversion to String will be removed when metadata is moved out of the Register
+        let name = name.into_string().unwrap_or("unknown".to_string());
+        let entry = (name, entry);
+        self.register
+            .write_atop(&rmp_serde::to_vec(&entry)?, &BTreeSet::default())?;
+        Ok(())
     }
 }
