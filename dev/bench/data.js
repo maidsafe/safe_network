@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707413038489,
+  "lastUpdate": 1707413040032,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "2f5e80c1ff2e154c34009b54dd773fc018a960bb",
-          "message": "chore: fix name discrepancy",
-          "timestamp": "2023-10-04T12:11:50Z",
-          "tree_id": "bc1715ba417eda875c453ced1b084ea522ef62a3",
-          "url": "https://github.com/maidsafe/safe_network/commit/2f5e80c1ff2e154c34009b54dd773fc018a960bb"
-        },
-        "date": 1696427165836,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 160,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30587,6 +30553,40 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/7d486c583b523be38b6a0ffbafb94a00b880a808"
         },
         "date": 1707410664024,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f16e2c6cff6f279acbcab280f8389d7d32da8b1f",
+          "message": "chore: obtain the version number from binary\n\nThe process for downloading and extracting a binary is changed to obtain the version by running the\nbinary that was obtained, using its `--version` argument.\n\nThis avoids the need to use a string like \"custom\" for the version number when the `--url` argument\nwas used.",
+          "timestamp": "2024-02-08T16:33:44Z",
+          "tree_id": "2f50793b79c03c14d47278ec090d38430759d7d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/f16e2c6cff6f279acbcab280f8389d7d32da8b1f"
+        },
+        "date": 1707413039628,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
