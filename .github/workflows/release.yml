@@ -70,7 +70,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-2
       GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-      RUST_LOG: debug
 
     steps:
       - uses: actions/checkout@v4
@@ -125,33 +124,21 @@ jobs:
       - name: publish and release
         shell: bash
         run: |
-          df -h
           cargo login ${{ secrets.CRATES_IO_TOKEN }}
           release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-          df -h
           just package-release-assets "safe"
-          df -h
           just package-release-assets "safenode"
-          df -h
           just package-release-assets "faucet"
-          df -h
           just package-release-assets "safenode_rpc_client"
-          df -h
           just package-release-assets "safenode-manager"
           # The versioned assets are uploaded to both the release and S3 in this target.
           just upload-release-assets
-          df -h
           # Now repackage and upload the artifacts to S3 using 'latest' for the version.
           just package-release-assets "safe" "latest"
-          df -h
           just package-release-assets "safenode" "latest"
-          df -h
           just package-release-assets "faucet" "latest"
-          df -h
           just package-release-assets "safenode_rpc_client" "latest"
-          df -h
           just package-release-assets "safenode-manager" "latest"
-          df -h
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
