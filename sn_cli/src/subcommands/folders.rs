@@ -8,11 +8,9 @@
 
 use super::files::{download_file, upload_files, ChunkManager, UploadedFile, UPLOADED_FILES};
 
-use sn_client::{
-    Client, FilesApi, FolderEntry, FoldersApi, WalletClient, BATCH_SIZE, MAX_UPLOAD_RETRIES,
-};
+use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, WalletClient, BATCH_SIZE};
 
-use sn_protocol::storage::{Chunk, ChunkAddress, RegisterAddress};
+use sn_protocol::storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
 use clap::Parser;
@@ -22,6 +20,7 @@ use color_eyre::{
 };
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     fs::create_dir_all,
     path::{Path, PathBuf},
 };
@@ -43,10 +42,12 @@ pub enum FoldersCmds {
         /// Should the file be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
         make_public: bool,
-        /// The retry_count for retrying failed chunks
-        /// during payment and upload processing.
-        #[clap(long, default_value_t = MAX_UPLOAD_RETRIES, short = 'r')]
-        max_retries: usize,
+        /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
+        ///
+        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
+        /// to 'persistent' (most effort).
+        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        retry_strategy: RetryStrategy,
     },
     Download {
         /// The hex address of a folder.
@@ -54,10 +55,16 @@ pub enum FoldersCmds {
         folder_addr: String,
         /// The name to apply to the downloaded folder.
         #[clap(name = "target folder name")]
-        folder_name: String,
+        folder_name: OsString,
         /// The batch_size for parallel downloading
         #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
+        /// Set the strategy to use on downloads failure.
+        ///
+        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
+        /// to 'persistent' (most effort).
+        #[clap(long, default_value_t = RetryStrategy::Quick, short = 'r', help = "Sets the retry strategy on download failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        retry_strategy: RetryStrategy,
     },
 }
 
@@ -71,8 +78,8 @@ pub(crate) async fn folders_cmds(
         FoldersCmds::Upload {
             path,
             batch_size,
-            max_retries,
             make_public,
+            retry_strategy,
         } => {
             upload_files(
                 path.clone(),
@@ -81,7 +88,7 @@ pub(crate) async fn folders_cmds(
                 root_dir.to_path_buf(),
                 verify_store,
                 batch_size,
-                max_retries,
+                retry_strategy,
             )
             .await?;
 
@@ -92,12 +99,12 @@ pub(crate) async fn folders_cmds(
 
             // add chunked files to the corresponding Folders
             for chunked_file in chunk_manager.iter_chunked_files() {
-                if let (Some(file_name), Some(parent)) = (
-                    chunked_file.file_name.to_str(),
-                    chunked_file.file_path.parent(),
-                ) {
+                if let Some(parent) = chunked_file.file_path.parent() {
                     if let Some(folder) = folders.get_mut(parent) {
-                        folder.add_file(file_name.to_string(), chunked_file.head_chunk_address)?;
+                        folder.add_file(
+                            chunked_file.file_name.clone(),
+                            chunked_file.head_chunk_address,
+                        )?;
                     }
                 }
             }
@@ -111,7 +118,7 @@ pub(crate) async fn folders_cmds(
             pay_and_upload_folders(folders, verify_store, client, root_dir).await?;
 
             println!(
-                "\nFolder hierarchy from {path:?} uploaded susccessfully at {}",
+                "\nFolder hierarchy from {path:?} uploaded successfully at {}",
                 root_dir_address.to_hex()
             );
         }
@@ -119,12 +126,13 @@ pub(crate) async fn folders_cmds(
             folder_addr,
             folder_name,
             batch_size,
+            retry_strategy,
         } => {
             let address =
                 RegisterAddress::from_hex(&folder_addr).expect("Failed to parse Folder address");
 
             let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
-            let download_folder_path = download_dir.join(folder_name);
+            let download_folder_path = download_dir.join(folder_name.clone());
             println!(
                 "Downloading onto {download_folder_path:?} from {} with batch-size {batch_size}",
                 address.to_hex()
@@ -136,12 +144,12 @@ pub(crate) async fn folders_cmds(
 
             let mut files_to_download = vec![];
             let mut folders_to_download =
-                vec![("".to_string(), address, download_folder_path.clone())];
+                vec![(folder_name, address, download_folder_path.clone())];
 
             while let Some((name, folder_addr, target_path)) = folders_to_download.pop() {
                 if !name.is_empty() {
                     println!(
-                        "Downloading Folder '{name}' from {}",
+                        "Downloading Folder {name:?} from {}",
                         hex::encode(folder_addr.xorname())
                     );
                 }
@@ -173,10 +181,11 @@ pub(crate) async fn folders_cmds(
                 download_file(
                     files_api.clone(),
                     *addr.xorname(),
-                    (file_name.into(), local_data_map),
+                    (file_name, local_data_map),
                     &path,
                     false,
                     batch_size,
+                    retry_strategy,
                 )
                 .await;
             }
@@ -197,18 +206,14 @@ fn build_folders_hierarchy(
         .filter_entry(|e| e.file_type().is_dir())
         .flatten()
         .filter_map(|entry| {
-            entry
-                .path()
-                .parent()
-                .zip(entry.file_name().to_str())
-                .map(|(parent, name)| {
-                    (
-                        entry.path().to_path_buf(),
-                        entry.depth(),
-                        parent.to_owned(),
-                        name.to_owned(),
-                    )
-                })
+            entry.path().parent().map(|parent| {
+                (
+                    entry.path().to_path_buf(),
+                    entry.depth(),
+                    parent.to_owned(),
+                    entry.file_name().to_owned(),
+                )
+            })
         })
     {
         let curr_folder_addr = *folders
@@ -290,8 +295,8 @@ async fn download_folder(
     client: &Client,
     target_path: &Path,
     folder_addr: RegisterAddress,
-    files_to_download: &mut Vec<(String, ChunkAddress, PathBuf)>,
-    folders_to_download: &mut Vec<(String, RegisterAddress, PathBuf)>,
+    files_to_download: &mut Vec<(OsString, ChunkAddress, PathBuf)>,
+    folders_to_download: &mut Vec<(OsString, RegisterAddress, PathBuf)>,
 ) -> Result<()> {
     create_dir_all(target_path)?;
     let folders_api = FoldersApi::retrieve(client.clone(), root_dir, folder_addr).await?;
