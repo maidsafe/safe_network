@@ -67,8 +67,6 @@ pub enum NodeEvent {
     SpendStored(UniquePubkey),
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
-    /// AutoNAT discovered we are behind a NAT, thus private.
-    BehindNat,
     /// Gossipsub message received
     GossipsubMsg {
         /// Topic the message was published on
