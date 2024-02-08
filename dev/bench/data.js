@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707413041680,
+  "lastUpdate": 1707418902505,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4e745d483115528fe327171a352c0118f5dc9a96",
-          "message": "feat: use progress bars on `files upload`\n\nChange the user interface for the `files upload` command to use progress bars to indicate the status\nof the following operations:\n\n* Splitting the input files into chunks\n* Uploading the split chunks\n* Verifying the chunks that were uploaded\n* Re-uploading any chunks that failed verification\n\nIt uses a simple approach, which is to create a new `ProgressBar` for each of the operations, rather\nthan attempt to use a `MultiBar` or re-use the same progress bar. In this simple approach, the\n`finish_and_clear` function removes the bar from stderr, then a new bar is created for the next\noperation.\n\nThe `println!` output from the client was removed in favour of returning that information back to\nthe caller.\n\nThere is much less text in the output of the command now, but it hopefully communicates everything\nthat's important.",
-          "timestamp": "2023-10-05T07:49:30Z",
-          "tree_id": "d48a73f002d67f1651c2aaf0f646a82c8aeca1d4",
-          "url": "https://github.com/maidsafe/safe_network/commit/4e745d483115528fe327171a352c0118f5dc9a96"
-        },
-        "date": 1696496569698,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.14737242956937477,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8876930657123244,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 11.285017686895815,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.950904763517165,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "c4953b2dc5a618f0ef137f6889d979bd849fd785",
+          "message": "docs: copyright update to current year",
+          "timestamp": "2024-02-08T18:14:03Z",
+          "tree_id": "786a54288d71668b6051c2567cdaa4f5b323eb2a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c4953b2dc5a618f0ef137f6889d979bd849fd785"
+        },
+        "date": 1707418899998,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2571220615351895,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8615643326823306,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.65106829206487,
             "unit": "MiB/s"
           }
         ]
