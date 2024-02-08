@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707410563830,
+  "lastUpdate": 1707410662968,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "b3658290234f8d937183dcebc1132f066d5037b7",
-          "message": "refactor(sn_transfers): clippy and fmt",
-          "timestamp": "2023-10-04T11:51:01Z",
-          "tree_id": "a55cc9f08fb432333b0251632da18d93fd29985c",
-          "url": "https://github.com/maidsafe/safe_network/commit/b3658290234f8d937183dcebc1132f066d5037b7"
-        },
-        "date": 1696424192360,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "7d486c583b523be38b6a0ffbafb94a00b880a808",
+          "message": "fix(bench): update retry strategy args",
+          "timestamp": "2024-02-08T15:56:33Z",
+          "tree_id": "8ead4ecac72f07861ded1f3af7986a0a3a8e7cc9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7d486c583b523be38b6a0ffbafb94a00b880a808"
+        },
+        "date": 1707410662606,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
