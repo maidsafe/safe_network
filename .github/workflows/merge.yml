@@ -235,13 +235,13 @@ jobs:
         timeout-minutes: 5
 
       - name: Start a client to upload files
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" -r 0
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 15
 
       - name: Start a client to download files
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files download
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files download --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -791,7 +791,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Start a client to upload
-        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-18.04.6-desktop-amd64.iso" -r 0
+        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-18.04.6-desktop-amd64.iso" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 30
@@ -906,7 +906,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Start a client to upload first file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" -r 0
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 5
@@ -940,7 +940,7 @@ jobs:
         timeout-minutes: 6
 
       - name: Use same client to upload second file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" -r 0
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -992,7 +992,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Use second client to upload third file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_3.tar.gz" -r 0
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 10

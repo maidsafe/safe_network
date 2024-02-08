@@ -105,7 +105,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip -r 0
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
         env:
           SN_LOG: "all"
       

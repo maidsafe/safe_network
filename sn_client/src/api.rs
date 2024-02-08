@@ -677,7 +677,7 @@ impl Client {
     /// let xorname = XorName::random(&mut rng);
     /// let chunk_address = ChunkAddress::new(xorname);
     /// // get chunk
-    /// let chunk = client.get_chunk(chunk_address,true).await?;
+    /// let chunk = client.get_chunk(chunk_address,true, None).await?;
     /// # Ok(())
     /// # }
     /// ```
