@@ -18,17 +18,19 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
     let dag_path = root_dir.join(SPEND_DAG_FILENAME);
     let dag = match SpendDag::load_from_file(&dag_path) {
         Ok(mut dag) => {
-            info!("Starting from the loaded spend dag on disk");
+            println!("Starting from the loaded spend dag on disk...");
             client.spend_dag_continue_from_utxos(&mut dag).await?;
             dag
         }
         Err(err) => {
+            println!("Starting from Genesis as found no local spend dag on disk...");
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
             client.spend_dag_build_from(genesis_addr).await?
         }
     };
 
+    println!("Creating a local backup to disk...");
     dag.dump_to_file(dag_path)?;
 
     Ok(dag)

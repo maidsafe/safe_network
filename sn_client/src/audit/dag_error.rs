@@ -37,8 +37,7 @@ impl DagError {
     pub fn dag_is_invalid(&self) -> bool {
         matches!(
             self,
-            DagError::MissingSource(_)
-            | DagError::IncoherentDag(_, _)
+            DagError::MissingSource(_) | DagError::IncoherentDag(_, _)
         )
     }
 }

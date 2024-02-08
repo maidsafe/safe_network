@@ -10,7 +10,7 @@ use super::wallet::HotWallet;
 
 use crate::{
     CashNote, DerivationIndex, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey,
-    NanoTokens, Transaction, TransactionBuilder,
+    NanoTokens, SignedSpend, Transaction, TransactionBuilder,
 };
 
 use bls::SecretKey;
@@ -82,6 +82,17 @@ lazy_static! {
 /// Return if provided Transaction is genesis parent tx.
 pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
     parent_tx == &GENESIS_CASHNOTE.src_tx
+}
+
+/// Return if provided Spend is genesis spend.
+pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
+    let bytes = spend.spend.to_bytes();
+    spend.spend.unique_pubkey == GENESIS_CASHNOTE.unique_pubkey()
+        && GENESIS_CASHNOTE
+            .unique_pubkey()
+            .verify(&spend.derived_key_sig, bytes)
+        && is_genesis_parent_tx(&spend.spend.parent_tx)
+        && spend.spend.token == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {

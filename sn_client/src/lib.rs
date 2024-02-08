@@ -21,7 +21,7 @@ mod register;
 mod wallet;
 
 pub use self::{
-    audit::{SpendDag, DagError},
+    audit::{DagError, SpendDag},
     error::Error,
     event::{ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
