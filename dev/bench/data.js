@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707387206062,
+  "lastUpdate": 1707387207789,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "56fb9e7ca595aa787b6023d61404092e7923866c",
-          "message": "feat: immediate stop on RecordNotFound",
-          "timestamp": "2023-10-03T08:38:32Z",
-          "tree_id": "3e15132f429c304a42303b15e0758d75224f03a2",
-          "url": "https://github.com/maidsafe/safe_network/commit/56fb9e7ca595aa787b6023d61404092e7923866c"
-        },
-        "date": 1696327278247,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 162,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 35,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "fbd5132fe1d2ade272febec11c2ee8b2b7860656",
           "message": "chore: log status of pending_get_record",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "69eaf0acf2fc1457c46bedd324bd564b71077daf",
+          "message": "Revert \"chore: roll back to log more\"\n\nThis reverts commit df945bfa31ae197f35e8dbe381282e69b4961142.",
+          "timestamp": "2024-02-08T11:02:09+01:00",
+          "tree_id": "5d9f9b98ea4f59351b1843d0a0aaf61ca3980652",
+          "url": "https://github.com/maidsafe/safe_network/commit/69eaf0acf2fc1457c46bedd324bd564b71077daf"
+        },
+        "date": 1707387207235,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
             "unit": "MB"
           },
           {
