@@ -53,8 +53,8 @@ pub enum FoldersCmds {
         #[clap(name = "address")]
         folder_addr: String,
         /// The name to apply to the downloaded folder.
-        #[clap(name = "target name")]
-        folder_name: Option<String>,
+        #[clap(name = "target folder name")]
+        folder_name: String,
         /// The batch_size for parallel downloading
         #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
@@ -124,11 +124,7 @@ pub(crate) async fn folders_cmds(
                 RegisterAddress::from_hex(&folder_addr).expect("Failed to parse Folder address");
 
             let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
-            let download_folder_path = if let Some(name) = folder_name {
-                download_dir.join(name)
-            } else {
-                download_dir
-            };
+            let download_folder_path = download_dir.join(folder_name);
             println!(
                 "Downloading onto {download_folder_path:?} from {} with batch-size {batch_size}",
                 address.to_hex()
