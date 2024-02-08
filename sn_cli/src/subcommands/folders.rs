@@ -88,29 +88,7 @@ pub(crate) async fn folders_cmds(
             let mut chunk_manager = ChunkManager::new(root_dir);
             chunk_manager.chunk_path(&path, true, make_public)?;
 
-            let mut dirs_paths = BTreeMap::<PathBuf, FoldersApi>::new();
-            for (dir_path, parent, dir_name) in WalkDir::new(&path)
-                .into_iter()
-                .filter_entry(|e| e.file_type().is_dir())
-                .flatten()
-                .filter(|e| e.depth() > 0)
-                .filter_map(|e| {
-                    e.path()
-                        .parent()
-                        .zip(e.file_name().to_str())
-                        .map(|(p, n)| (e.path().to_path_buf(), p.to_owned(), n.to_owned()))
-                })
-            {
-                let curr_folder_addr = *dirs_paths
-                    .entry(dir_path)
-                    .or_insert(FoldersApi::new(client.clone(), root_dir))
-                    .address();
-
-                let parent_folder = dirs_paths
-                    .entry(parent)
-                    .or_insert(FoldersApi::new(client.clone(), root_dir));
-                parent_folder.add_folder(dir_name, curr_folder_addr)?;
-            }
+            let mut folders = build_folders_hierarchy(&path, client, root_dir)?;
 
             // add chunked files to the corresponding Folders
             for chunked_file in chunk_manager.iter_chunked_files() {
@@ -118,18 +96,19 @@ pub(crate) async fn folders_cmds(
                     chunked_file.file_name.to_str(),
                     chunked_file.file_path.parent(),
                 ) {
-                    if let Some(folder) = dirs_paths.get_mut(parent) {
+                    if let Some(folder) = folders.get_mut(parent) {
                         folder.add_file(file_name.to_string(), chunked_file.head_chunk_address)?;
                     }
                 }
             }
 
             println!("Paying for folders hierarchy and uploading...");
-            let root_dir_address = dirs_paths
+            let root_dir_address = folders
                 .get(&path)
                 .map(|folder| *folder.address())
                 .ok_or(eyre!("Failed to obtain main Folder network address"))?;
-            pay_and_upload_folders(dirs_paths, verify_store, client, root_dir).await?;
+
+            pay_and_upload_folders(folders, verify_store, client, root_dir).await?;
 
             println!(
                 "\nFolder hierarchy from {path:?} uploaded susccessfully at {}",
@@ -210,16 +189,58 @@ pub(crate) async fn folders_cmds(
     Ok(())
 }
 
+// Build Folders hierarchy from the provided disk path
+fn build_folders_hierarchy(
+    path: &Path,
+    client: &Client,
+    root_dir: &Path,
+) -> Result<BTreeMap<PathBuf, FoldersApi>> {
+    let mut folders = BTreeMap::new();
+    for (dir_path, depth, parent, dir_name) in WalkDir::new(path)
+        .into_iter()
+        .filter_entry(|e| e.file_type().is_dir())
+        .flatten()
+        .filter_map(|entry| {
+            entry
+                .path()
+                .parent()
+                .zip(entry.file_name().to_str())
+                .map(|(parent, name)| {
+                    (
+                        entry.path().to_path_buf(),
+                        entry.depth(),
+                        parent.to_owned(),
+                        name.to_owned(),
+                    )
+                })
+        })
+    {
+        let curr_folder_addr = *folders
+            .entry(dir_path)
+            .or_insert(FoldersApi::new(client.clone(), root_dir))
+            .address();
+
+        if depth > 0 {
+            let parent_folder = folders
+                .entry(parent)
+                .or_insert(FoldersApi::new(client.clone(), root_dir));
+            parent_folder.add_folder(dir_name, curr_folder_addr)?;
+        }
+    }
+
+    Ok(folders)
+}
+
 // Make a single payment for all Folders (Registers) and upload them to the network
 async fn pay_and_upload_folders(
-    dirs_paths: BTreeMap<PathBuf, FoldersApi>,
+    folders: BTreeMap<PathBuf, FoldersApi>,
     verify_store: bool,
     client: &Client,
     root_dir: &Path,
 ) -> Result<()> {
     // Let's make the storage payment
     let mut wallet_client = WalletClient::new(client.clone(), HotWallet::load_from(root_dir)?);
-    let net_addresses = dirs_paths.values().map(|folder| folder.as_net_addr());
+    let net_addresses = folders.values().map(|folder| folder.as_net_addr());
     let payment_result = wallet_client.pay_for_storage(net_addresses).await?;
     let balance = wallet_client.balance();
     match payment_result
@@ -228,14 +249,14 @@ async fn pay_and_upload_folders(
     {
         Some(cost) => println!(
             "Made payment of {cost} for {} Folders. New balance: {balance}",
-            dirs_paths.len()
+            folders.len()
         ),
         None => bail!("Failed to calculate total payment cost"),
     }
 
     // sync Folders concurrently
     let mut tasks = JoinSet::new();
-    for (path, mut folder) in dirs_paths {
+    for (path, mut folder) in folders {
         let net_addr = folder.as_net_addr();
         let payment = wallet_client.get_payment_for_addr(&net_addr)?;
         let payment_info = payment_result
