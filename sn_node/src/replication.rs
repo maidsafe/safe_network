@@ -67,7 +67,7 @@ impl Node {
                     );
                     let get_cfg = GetRecordCfg {
                         get_quorum: Quorum::One,
-                        re_attempt: None,
+                        retry_strategy: None,
                         target_record: None,
                         expected_holders: Default::default(),
                     };

@@ -48,7 +48,7 @@ impl Network {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: None,
+            retry_strategy: None,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -72,7 +72,7 @@ impl Network {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
-            re_attempt: Some(RetryStrategy::Quick),
+            retry_strategy: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -86,7 +86,7 @@ impl Network {
                 // if majority holds the spend, it might be worth it to try again.
                 if got >= close_group_majority() {
                     debug!("At least a majority nodes hold the spend {address:?}, so trying to get it again.");
-                    get_cfg.re_attempt = Some(RetryStrategy::Persistent);
+                    get_cfg.retry_strategy = Some(RetryStrategy::Persistent);
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
                     return Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {

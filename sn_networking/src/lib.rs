@@ -268,10 +268,12 @@ impl Network {
         nonce: Nonce,
         expected_proof: ChunkProof,
         quorum: Quorum,
-        re_attempt: Option<RetryStrategy>,
+        retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
         let mut total_attempts = 1;
-        total_attempts += re_attempt.map(|strategy| strategy.get_count()).unwrap_or(0);
+        total_attempts += retry_strategy
+            .map(|strategy| strategy.get_count())
+            .unwrap_or(0);
 
         let pretty_key = PrettyPrintRecordKey::from(&chunk_address.to_record_key()).into_owned();
         let expected_n_verified = get_quorum_value(&quorum);
@@ -446,7 +448,7 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let retry_duration = cfg.re_attempt.map(|strategy| strategy.get_duration());
+        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
@@ -498,7 +500,7 @@ impl Network {
                 };
 
                 // if we don't want to retry, throw permanent error
-                if cfg.re_attempt.is_none() {
+                if cfg.retry_strategy.is_none() {
                     if let Err(e) = result {
                         return Err(BackoffError::Permanent(Error::from(e)));
                     }
@@ -550,7 +552,7 @@ impl Network {
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
-        let retry_duration = cfg.re_attempt.map(|strategy| strategy.get_duration());
+        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
@@ -566,7 +568,7 @@ impl Network {
             {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
-                if cfg.re_attempt.is_some() {
+                if cfg.retry_strategy.is_some() {
                     BackoffError::Transient { err, retry_after: None }
                 } else {
                     BackoffError::Permanent(err)
@@ -624,12 +626,10 @@ impl Network {
                     *nonce,
                     expected_proof.clone(),
                     get_cfg.get_quorum,
-                    get_cfg.re_attempt,
+                    get_cfg.retry_strategy,
                 )
                 .await?;
             } else {
-                // The `verify_chunk_existence` will carry out three times of re-attempts
-                // However, `get_record_from_network` will only carry out once.
                 self.get_record_from_network(record.key.clone(), get_cfg)
                     .await?;
             }
