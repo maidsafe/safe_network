@@ -9,7 +9,7 @@
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use serde::{Deserialize, Serialize};
-use sn_transfers::{NanoTokens, SignedSpend, SpendAddress};
+use sn_transfers::{is_genesis_spend, NanoTokens, SignedSpend, SpendAddress};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -242,7 +242,7 @@ impl SpendDag {
         let mut to_traverse = BTreeSet::from_iter(vec![addr]);
         while let Some(current_addr) = to_traverse.pop_first() {
             // get descendants via DAG
-            let (_, idx) = match self.get_unique_spend_at(current_addr, recorded_errors) {
+            let (spend, idx) = match self.get_unique_spend_at(current_addr, recorded_errors) {
                 Some(s) => s,
                 None => continue,
             };
@@ -266,10 +266,15 @@ impl SpendDag {
 
             // report inconsistencies
             if descendants_via_dag != descendants_via_tx.iter().collect() {
-                recorded_errors.push(DagError::IncoherentDag(
-                    *current_addr,
-                    format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
-                ));
+                if !is_genesis_spend(spend) {
+                    warn!("Incoherent DAG at: {current_addr:?}");
+                    recorded_errors.push(DagError::IncoherentDag(
+                        *current_addr,
+                        format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
+                    ));
+                } else {
+                    debug!("Found Genesis at: {current_addr:?}");
+                }
             }
 
             // continue traversal
@@ -297,9 +302,11 @@ impl SpendDag {
     /// Returns a list of errors found in the DAG
     /// Note that the `MissingSource` error makes the entire DAG invalid
     pub fn verify(&self, source: &SpendAddress) -> Vec<DagError> {
+        info!("Verifying DAG starting off: {source:?}");
         let mut recorded_errors = Vec::new();
 
         // verify DAG source is unique (Genesis in case of a complete DAG)
+        debug!("Verifying DAG source is unique: {source:?}");
         let (_source_spend, _) = match self.get_unique_spend_at(source, &mut recorded_errors) {
             Some(s) => s,
             None => {
@@ -309,15 +316,23 @@ impl SpendDag {
         };
 
         // identify orphans
+        debug!("Looking for orphans of {source:?}");
         self.find_orphans(source, &mut recorded_errors);
 
         // check all transactions
         for (addr, _) in self.spends.iter() {
+            debug!("Verifying transaction at: {addr:?}");
             // get the spend at this address
             let (spend, _) = match self.get_unique_spend_at(addr, &mut recorded_errors) {
                 Some(s) => s,
                 None => continue,
             };
+
+            // skip if genesis
+            if is_genesis_spend(spend) {
+                debug!("Skip transaction verification for Genesis at: {addr:?}");
+                continue;
+            }
 
             // get the ancestors of this spend
             let ancestor_spends = match self.get_ancestor_spends(spend) {
@@ -348,6 +363,10 @@ impl SpendDag {
             }
         }
 
+        info!(
+            "Found {} errors: {recorded_errors:#?}",
+            recorded_errors.len()
+        );
         recorded_errors
     }
 }
