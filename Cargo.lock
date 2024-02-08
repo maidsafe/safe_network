@@ -4927,7 +4927,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.56"
+version = "0.89.57"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5008,7 +5008,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.55"
+version = "0.3.56"
 dependencies = [
  "bitcoin",
  "blsttc",
