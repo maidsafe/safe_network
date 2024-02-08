@@ -57,7 +57,7 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
-    Gossipsub(libp2p::gossipsub::Event),
+    Gossipsub(Box<libp2p::gossipsub::Event>),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -87,7 +87,7 @@ impl From<libp2p::identify::Event> for NodeEvent {
 
 impl From<libp2p::gossipsub::Event> for NodeEvent {
     fn from(event: libp2p::gossipsub::Event) -> Self {
-        NodeEvent::Gossipsub(event)
+        NodeEvent::Gossipsub(Box::new(event))
     }
 }
 
@@ -339,9 +339,9 @@ impl SwarmDriver {
                 event_string = "gossip";
 
                 #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&event);
+                self.network_metrics.record(&*event);
                 if self.is_gossip_handler {
-                    match event {
+                    match *event {
                         libp2p::gossipsub::Event::Message {
                             message,
                             message_id,
