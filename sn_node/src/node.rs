@@ -16,7 +16,7 @@ use crate::metrics::NodeMetrics;
 use crate::RunningNode;
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
-use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
+use libp2p::{identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -337,13 +337,6 @@ impl Node {
                             };
                         }
                     });
-                }
-            }
-            NetworkEvent::NatStatusChanged(status) => {
-                event_header = "NatStatusChanged";
-                if matches!(status, NatStatus::Private) {
-                    tracing::warn!("NAT status is determined to be private!");
-                    self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
             NetworkEvent::ResponseReceived { res } => {

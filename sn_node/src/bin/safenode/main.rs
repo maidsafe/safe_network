@@ -321,20 +321,6 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         break;
                     }
                 }
-                Ok(NodeEvent::BehindNat) => {
-                    if let Err(err) = ctrl_tx
-                        .send(NodeCtrl::Stop {
-                            delay: Duration::from_secs(1),
-                            cause: eyre!("We have been determined to be behind a NAT. This means we are not reachable externally by other nodes. In the future, the network will implement relays that allow us to still join the network."),
-                        })
-                        .await
-                    {
-                        error!(
-                            "Failed to send node control msg to safenode bin main thread: {err}"
-                        );
-                        break;
-                    }
-                }
                 Ok(event) => {
                     /* we ignore other events */
                     trace!("Currently ignored node event {event:?}");

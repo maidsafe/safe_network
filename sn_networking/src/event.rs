@@ -21,7 +21,6 @@ use libp2p::mdns;
 #[cfg(feature = "open-metrics")]
 use libp2p::metrics::Recorder;
 use libp2p::{
-    autonat::{self, NatStatus},
     kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -58,7 +57,6 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
-    Autonat(autonat::Event),
     Gossipsub(libp2p::gossipsub::Event),
 }
 
@@ -84,12 +82,6 @@ impl From<mdns::Event> for NodeEvent {
 impl From<libp2p::identify::Event> for NodeEvent {
     fn from(event: libp2p::identify::Event) -> Self {
         NodeEvent::Identify(Box::new(event))
-    }
-}
-
-impl From<autonat::Event> for NodeEvent {
-    fn from(event: autonat::Event) -> Self {
-        NodeEvent::Autonat(event)
     }
 }
 
@@ -131,8 +123,6 @@ pub enum NetworkEvent {
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
-    /// AutoNAT status changed
-    NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
     /// Gossipsub message received
@@ -176,9 +166,6 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::NewListenAddr(addr) => {
                 write!(f, "NetworkEvent::NewListenAddr({addr:?})")
-            }
-            NetworkEvent::NatStatusChanged(nat_status) => {
-                write!(f, "NetworkEvent::NatStatusChanged({nat_status:?})")
             }
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
@@ -317,20 +304,6 @@ impl SwarmDriver {
                                     .kademlia
                                     .add_address(&peer_id, multiaddr.clone());
                             }
-
-                            // If the peer supports AutoNAT, add it as server
-                            if info.protocols.iter().any(|protocol| {
-                                protocol.to_string().starts_with("/libp2p/autonat/")
-                            }) {
-                                let a = &mut self.swarm.behaviour_mut().autonat;
-                                // It could be that we are on a local network and have AutoNAT disabled.
-                                if let Some(autonat) = a.as_mut() {
-                                    trace!(%peer_id, ?addrs, "identify: attempting to add peer as server");
-                                    for multiaddr in addrs {
-                                        autonat.add_server(peer_id, Some(multiaddr));
-                                    }
-                                }
-                            }
                         }
                     }
                     // Log the other Identify events.
@@ -359,31 +332,6 @@ impl SwarmDriver {
                     }
                     mdns::Event::Expired(peer) => {
                         trace!("mdns peer {peer:?} expired");
-                    }
-                }
-            }
-            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => {
-                event_string = "autonat";
-                match event {
-                    autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
-                    autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
-                    autonat::Event::StatusChanged { old, new } => {
-                        info!("AutoNAT status changed: {old:?} -> {new:?}");
-                        self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
-
-                        match new {
-                            NatStatus::Public(_addr) => {
-                                // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                                // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                                // to any peers anymore? (E.g., our connections timed out etc)
-                                // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                                // self.swarm.behaviour_mut().identify.push(all_peers);
-                            }
-                            NatStatus::Private => {
-                                // We could just straight out error here. In the future we might try to activate a relay mechanism.
-                            }
-                            NatStatus::Unknown => {}
-                        };
                     }
                 }
             }

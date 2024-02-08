@@ -27,7 +27,7 @@ hex = "~0.4.3"
 hyper = { version = "0.14", features = ["server", "tcp", "http1"], optional = true}
 itertools = "~0.11.0"
 custom_debug = "~0.5.0"
-libp2p = { version="0.53", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "autonat", "noise", "tcp", "yamux", "gossipsub",  "websocket"] }
+libp2p = { version="0.53", features = ["tokio", "dns", "kad", "macros", "request-response", "cbor","identify", "noise", "tcp", "yamux", "gossipsub",  "websocket"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
@@ -61,6 +61,6 @@ crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.12", features = ["js"] }
-libp2p = { version="0.53", features = ["tokio", "dns", "kad", "tcp", "macros", "request-response", "cbor","identify", "autonat", "noise", "yamux", "gossipsub", "websocket-websys", "wasm-bindgen"] }
+libp2p = { version="0.53", features = ["tokio", "dns", "kad", "tcp", "macros", "request-response", "cbor","identify", "noise", "yamux", "gossipsub", "websocket-websys", "wasm-bindgen"] }
 wasmtimer = "0.2.0"
 wasm-bindgen-futures = "0.4.40"
