@@ -30,8 +30,8 @@ fn safe_files_upload(dir: &str) {
         .arg("files")
         .arg("upload")
         .arg(dir)
-        .arg("-r") // no retries
-        .arg("0")
+        .arg("--retry-strategy") // no retries
+        .arg("quick")
         .output()
         .expect("Failed to execute command");
 
