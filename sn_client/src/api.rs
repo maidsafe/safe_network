@@ -382,7 +382,7 @@ impl Client {
     ///
     /// # Arguments
     /// * 'address' - [RegisterAddress]
-    /// * 'is_verifying' - Boolean
+    /// * 'is_verifying' - Boolean: If true, we fetch at-least 2 copies from the network with more retry attempts.
     ///
     /// Return Type:
     ///
@@ -414,14 +414,19 @@ impl Client {
         is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
-        let quorum = if is_verifying {
+        let get_quorum = if is_verifying {
             Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
         } else {
             Quorum::One
         };
+        let re_attempt = if is_verifying {
+            Some(RetryStrategy::Balanced)
+        } else {
+            Some(RetryStrategy::Quick)
+        };
         let get_cfg = GetRecordCfg {
-            get_quorum: quorum,
-            re_attempt: Some(RetryStrategy::Balanced),
+            get_quorum,
+            re_attempt,
             target_record: None,
             expected_holders: Default::default(),
         };
