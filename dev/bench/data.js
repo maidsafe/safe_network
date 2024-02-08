@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707326417217,
+  "lastUpdate": 1707383315398,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "d97e7873f9d3bdd7b072851a62120cbcb3afec33",
-          "message": "feat: faucet retry genesis claim on failure",
-          "timestamp": "2023-10-03T12:24:46Z",
-          "tree_id": "8a5f13cc7d9d2e318d53630ceb4a6b8c6c9f923b",
-          "url": "https://github.com/maidsafe/safe_network/commit/d97e7873f9d3bdd7b072851a62120cbcb3afec33"
-        },
-        "date": 1696339693290,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.15513072520038423,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8036969287462608,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 10.964299286582259,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.90310839604298,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "aadc8b4db09b26d0c23a76e9c5a8bd8c0772c5ea",
+          "message": "chore: improvements from dev feedback\n\nReduce the start up time for the local network by removing the wait in the `get_available_port`\nfunction. This function is now only being used to select ports for the RPC service, so it shouldn't\nbe subject to the same problems we had with the node when it switched over to Quic.\n\nAlso, the `--clean` argument on the run command has been extended to kill any existing local\nnetwork.",
+          "timestamp": "2024-02-08T08:11:51Z",
+          "tree_id": "d8b6bd786da80e90bde9735c0f651e0d64b1a2b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/aadc8b4db09b26d0c23a76e9c5a8bd8c0772c5ea"
+        },
+        "date": 1707383312729,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2800388751697707,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8197900272444454,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.46566342537118,
             "unit": "MiB/s"
           }
         ]
