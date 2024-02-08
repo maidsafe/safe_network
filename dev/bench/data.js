@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707383417947,
+  "lastUpdate": 1707383419489,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36096,6 +36096,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "aadc8b4db09b26d0c23a76e9c5a8bd8c0772c5ea",
+          "message": "chore: improvements from dev feedback\n\nReduce the start up time for the local network by removing the wait in the `get_available_port`\nfunction. This function is now only being used to select ports for the RPC service, so it shouldn't\nbe subject to the same problems we had with the node when it switched over to Quic.\n\nAlso, the `--clean` argument on the run command has been extended to kill any existing local\nnetwork.",
+          "timestamp": "2024-02-08T08:11:51Z",
+          "tree_id": "d8b6bd786da80e90bde9735c0f651e0d64b1a2b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/aadc8b4db09b26d0c23a76e9c5a8bd8c0772c5ea"
+        },
+        "date": 1707383419163,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6123,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36762,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
