@@ -99,6 +99,22 @@ Now download the files again:
 cargo run --bin safe --features local-discovery -- files download
 ```
 
+### Folders
+
+The folders storage capability can be demonstrated by uploading folders to the local network, then retrieving them.
+
+Upload a directory:
+```bash
+cargo run --bin safe --features local-discovery -- files upload <dir-path>
+```
+
+After it finishes uploading the complete directory, with files and sub-directories, it will show the address where the main directory can be pulled from.
+
+Now download the folders, optionally providing a target directory name:
+```bash
+cargo run --bin safe --features local-discovery -- folders download <address> [dir name]
+```
+
 ### Token Transfers
 
 Use your local wallet to demonstrate sending tokens and receiving transfers.
