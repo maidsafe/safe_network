@@ -125,8 +125,8 @@ pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
 pub struct GetRecordCfg {
     /// The query will result in an error if we get records less than the provided Quorum
     pub get_quorum: Quorum,
-    /// If set to true, we retry upto GET_RETRY_ATTEMPTS times
-    pub re_attempt: bool,
+    /// If enabled, the provided `RetryStrategy` is used to retry if a GET attempt fails.
+    pub re_attempt: Option<RetryStrategy>,
     /// Only return if we fetch the provided record.
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.
@@ -166,8 +166,8 @@ pub struct PutRecordCfg {
     /// just makes sure that we get atleast `n` successful responses defined by the Quorum.
     /// Our nodes currently send `Ok()` response for every KAD PUT. Thus this field does not do anything atm.
     pub put_quorum: Quorum,
-    /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
-    pub re_attempt: bool,
+    /// If enabled, the provided `RetryStrategy` is used to retry if a PUT attempt fails.
+    pub re_attempt: Option<RetryStrategy>,
     /// Use the `kad::put_record_to` to PUT the record only to the specified peers. If this option is set to None, we
     /// will be using `kad::put_record` which would PUT the record to all the closest members of the record.
     pub use_put_record_to: Option<Vec<PeerId>>,
@@ -185,6 +185,39 @@ pub enum VerificationKind {
         expected_proof: ChunkProof,
         nonce: Nonce,
     },
+}
+
+/// Represents the strategy for retrying operations. This encapsulates both the duration it may take for an operation to
+/// complete or the retry attempts that it may take. This allows the retry of each operation, e.g., PUT/GET of
+/// Chunk/Registers/Spend to be more flexible.
+///
+/// The Duration/Attempts is chosen based on the internal logic.
+#[derive(Clone, Debug, Copy)]
+pub enum RetryStrategy {
+    /// Quick: Resolves to a 15-second wait or 1 retry attempt.
+    Quick,
+    /// Balanced: Resolves to a 60-second wait or 3 retry attempts.
+    Balanced,
+    /// Persistent: Resolves to a 180-second wait or 6 retry attempts.
+    Persistent,
+}
+
+impl RetryStrategy {
+    pub fn get_duration(&self) -> Duration {
+        match self {
+            RetryStrategy::Quick => Duration::from_secs(15),
+            RetryStrategy::Balanced => Duration::from_secs(60),
+            RetryStrategy::Persistent => Duration::from_secs(180),
+        }
+    }
+
+    pub fn get_count(&self) -> usize {
+        match self {
+            RetryStrategy::Quick => 1,
+            RetryStrategy::Balanced => 3,
+            RetryStrategy::Persistent => 6,
+        }
+    }
 }
 
 /// NodeBehaviour struct

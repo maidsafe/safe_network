@@ -23,10 +23,11 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
-use sn_networking::target_arch::{interval, spawn, timeout, Instant};
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
-    NetworkEvent, PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
+    multiaddr_is_global,
+    target_arch::{interval, spawn, timeout, Instant},
+    Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder, NetworkEvent,
+    PutRecordCfg, RetryStrategy, VerificationKind, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -39,15 +40,12 @@ use sn_protocol::{
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
-
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
     path::PathBuf,
 };
-
 use tokio::time::Duration;
-
 use tracing::trace;
 use xor_name::XorName;
 
@@ -423,7 +421,7 @@ impl Client {
         };
         let get_cfg = GetRecordCfg {
             get_quorum: quorum,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Balanced),
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -614,7 +612,7 @@ impl Client {
                 get_quorum: Quorum::N(
                     NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
                 ),
-                re_attempt: true,
+                re_attempt: Some(RetryStrategy::Balanced),
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
             };
@@ -638,7 +636,7 @@ impl Client {
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Balanced),
             use_put_record_to: Some(vec![payee]),
             verification,
         };
@@ -693,7 +691,7 @@ impl Client {
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders,
         };
@@ -723,7 +721,7 @@ impl Client {
                 random_nonce,
                 expected_proof,
                 Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
-                false,
+                None,
             )
             .await
         {
@@ -808,13 +806,13 @@ impl Client {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Balanced),
             target_record: record_to_verify,
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
@@ -859,7 +857,7 @@ impl Client {
         );
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: true,
+            re_attempt: Some(RetryStrategy::Balanced),
             target_record: None,
             expected_holders: Default::default(),
         };
