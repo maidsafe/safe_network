@@ -16,7 +16,7 @@ use bytes::Bytes;
 use libp2p::PeerId;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
 use sn_protocol::{
-    storage::{Chunk, ChunkAddress},
+    storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
 use sn_transfers::HotWallet;
@@ -31,9 +31,6 @@ use xor_name::XorName;
 
 /// `BATCH_SIZE` determines the number of chunks that are processed in parallel during the payment and upload process.
 pub const BATCH_SIZE: usize = 16;
-
-/// The maximum number of retries to perform on a failed chunk.
-pub const MAX_UPLOAD_RETRIES: usize = 3;
 
 /// File APIs.
 #[derive(Clone)]
@@ -115,11 +112,13 @@ impl FilesApi {
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
     ///
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
     pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,
         payee: PeerId,
         verify_store: bool,
+        retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
         trace!("Client upload started for chunk: {chunk_addr:?} to {payee:?}");
@@ -133,7 +132,7 @@ impl FilesApi {
         );
 
         self.client
-            .store_chunk(chunk, payee, payment, verify_store)
+            .store_chunk(chunk, payee, payment, verify_store, retry_strategy)
             .await?;
 
         wallet_client.remove_payment_for_addr(&chunk_addr)?;
@@ -179,7 +178,7 @@ impl FilesApi {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, PeerId::random(), verify)
+            self.get_local_payment_and_upload_chunk(chunk, PeerId::random(), verify, None)
                 .await?;
         }
 

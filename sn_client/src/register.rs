@@ -13,11 +13,11 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use sn_networking::{GetRecordCfg, PutRecordCfg, RetryStrategy, VerificationKind};
+use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
-    storage::{try_serialize_record, RecordKind},
+    storage::{try_serialize_record, RecordKind, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};

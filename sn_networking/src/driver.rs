@@ -58,6 +58,7 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
+    storage::RetryStrategy,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
@@ -184,39 +185,6 @@ pub enum VerificationKind {
         expected_proof: ChunkProof,
         nonce: Nonce,
     },
-}
-
-/// Represents the strategy for retrying operations. This encapsulates both the duration it may take for an operation to
-/// complete or the retry attempts that it may take. This allows the retry of each operation, e.g., PUT/GET of
-/// Chunk/Registers/Spend to be more flexible.
-///
-/// The Duration/Attempts is chosen based on the internal logic.
-#[derive(Clone, Debug, Copy)]
-pub enum RetryStrategy {
-    /// Quick: Resolves to a 15-second wait or 1 retry attempt.
-    Quick,
-    /// Balanced: Resolves to a 60-second wait or 3 retry attempts.
-    Balanced,
-    /// Persistent: Resolves to a 180-second wait or 6 retry attempts.
-    Persistent,
-}
-
-impl RetryStrategy {
-    pub fn get_duration(&self) -> Duration {
-        match self {
-            RetryStrategy::Quick => Duration::from_secs(15),
-            RetryStrategy::Balanced => Duration::from_secs(60),
-            RetryStrategy::Persistent => Duration::from_secs(180),
-        }
-    }
-
-    pub fn get_count(&self) -> usize {
-        match self {
-            RetryStrategy::Quick => 1,
-            RetryStrategy::Balanced => 3,
-            RetryStrategy::Persistent => 6,
-        }
-    }
 }
 
 /// NodeBehaviour struct
