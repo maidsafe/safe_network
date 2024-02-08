@@ -3145,6 +3145,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Other
 - *(data_location)* create and edit registers
 
+## [0.104.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.0...sn_node-v0.104.1) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.104.2](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.1...sn_node-v0.104.2) - 2024-02-08
+
+### Other
+- Revert "chore: roll back to log more"
+
 ## v0.1.0 (2023-05-04)
 
 ### Chore
