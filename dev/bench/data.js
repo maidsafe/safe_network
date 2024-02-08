@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707410665986,
+  "lastUpdate": 1707412941069,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "89ef8e2b6939a3b991e0980e5b58a4401c792645",
-          "message": "fix(wallet): remove expect statments",
-          "timestamp": "2023-10-04T17:53:04Z",
-          "tree_id": "28f601b6e349141e50dd3eb761218c6fb7dc5956",
-          "url": "https://github.com/maidsafe/safe_network/commit/89ef8e2b6939a3b991e0980e5b58a4401c792645"
-        },
-        "date": 1696445705723,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.13858536623372314,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8198157129424073,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 11.899976271291436,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.23417372359731,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f16e2c6cff6f279acbcab280f8389d7d32da8b1f",
+          "message": "chore: obtain the version number from binary\n\nThe process for downloading and extracting a binary is changed to obtain the version by running the\nbinary that was obtained, using its `--version` argument.\n\nThis avoids the need to use a string like \"custom\" for the version number when the `--url` argument\nwas used.",
+          "timestamp": "2024-02-08T16:33:44Z",
+          "tree_id": "2f50793b79c03c14d47278ec090d38430759d7d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/f16e2c6cff6f279acbcab280f8389d7d32da8b1f"
+        },
+        "date": 1707412937610,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2637700864108825,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8475369662521233,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.950904763517165,
             "unit": "MiB/s"
           }
         ]
