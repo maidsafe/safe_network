@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.7...sn_networking-v0.13.8) - 2024-02-08
+
+### Added
+- move the RetryStrategy into protocol and use that during cli upload/download
+- *(network)* impl RetryStrategy to make the reattempts flexible
+
+### Other
+- *(network)* rename re-attempts to retry strategy
+
 ## [0.13.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.6...sn_networking-v0.13.7) - 2024-02-08
 
 ### Added
