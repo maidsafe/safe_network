@@ -18,8 +18,6 @@ use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-#[cfg(feature = "open-metrics")]
-use libp2p::metrics::Recorder;
 use libp2p::{
     kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
@@ -184,10 +182,6 @@ impl Debug for NetworkEvent {
 impl SwarmDriver {
     /// Handle `SwarmEvents`
     pub(super) fn handle_swarm_events(&mut self, event: SwarmEvent<NodeEvent>) -> Result<()> {
-        // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
-        // called individually on each behaviour.
-        #[cfg(feature = "open-metrics")]
-        self.network_metrics.record(&event);
         let start = Instant::now();
         let event_string;
         match event {
@@ -204,9 +198,7 @@ impl SwarmDriver {
             // Handle the Identify event from the libp2p swarm.
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
-                // Record the Identify event for metrics if the feature is enabled.
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&(*iden));
+
                 // Match on the Identify event.
                 match *iden {
                     // If the event is a Received event, handle the received peer information.
@@ -338,8 +330,6 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
                 event_string = "gossip";
 
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&*event);
                 if self.is_gossip_handler {
                     match *event {
                         libp2p::gossipsub::Event::Message {
@@ -669,8 +659,6 @@ impl SwarmDriver {
     }
 
     fn handle_kad_event(&mut self, kad_event: kad::Event) -> Result<()> {
-        #[cfg(feature = "open-metrics")]
-        self.network_metrics.record(&kad_event);
         let start = Instant::now();
         let event_string;
 
