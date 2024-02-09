@@ -14,6 +14,7 @@ use sn_transfers::{MainPubkey, NanoTokens};
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
+use url::Url;
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
@@ -256,24 +257,44 @@ pub async fn distribute_from_maid_to_tokens(
             continue;
         }
         let maid_pk = &pubkeys[&addr];
-        let _ = create_distribution(&client, &addr, maid_pk, amount).await;
+        let _ = create_distribution(&client, &addr, maid_pk, &amount).await;
     }
+}
+
+pub async fn handle_distribution_req(
+    client: &Client,
+    url: Url,
+    balances: Snapshot,
+) -> Result<String> {
+    let query: HashMap<String, String> = url.query_pairs().into_owned().collect();
+    let address = query
+        .get("address")
+        .ok_or(eyre!("Missing address in querystring"))?;
+    let pkhex = query
+        .get("pkhex")
+        .ok_or(eyre!("Missing pkhex in querystring"))?;
+    let amount = balances
+        .get(address)
+        .ok_or(eyre!("Address not in snapshot"))?;
+    create_distribution(client, address, pkhex, amount).await
 }
 
 async fn create_distribution(
     client: &Client,
     addr: &MaidAddress,
     maid_pk: &MaidPubkey,
-    amount: NanoTokens,
+    amount: &NanoTokens,
 ) -> Result<String> {
     // validate the pk and the address match
     // because we can't be sure if this addr:pk pair has been pre-verified
     // and we don't want to encrypt using the wrong pubkey for the address
     if !maid_pk_matches_address(addr, maid_pk) {
-        let msg = format!("Not creating distribution for mismatched addr:pk {addr} {maid_pk}");
+        let msg = format!("Not creating distribution for mismatched addr/pk {addr} {maid_pk}");
         info!(msg);
         return Err(eyre!(msg));
     }
+    // save this address and public key pair
+    save_address_pk(addr, maid_pk)?;
     // check if this distribution has already been created
     let root = get_distributions_data_dir_path()?;
     let dist_path = root.join(addr);
