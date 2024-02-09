@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707463403760,
+  "lastUpdate": 1707463405212,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36364,6 +36364,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33428,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0894052e7761c74d6fa320d0c6f1f763deb2f64d",
+          "message": "ci: use a different disk for the release process\n\nFor reasons not yet determined, the publishing process undertaken by `release-plz` is using up 20GB\nof disk space, which results in the root file system on the Github Actions build agent being filled\nup during the process, since the disk only has 20GB of free space.\n\nIt turns out there's another disk at `/mnt`, which has over 60GB of space, so we should be able to\nrun the release process from there, until we can resolve the problem with `release-plz`.\n\nI tested the manual checkout on the merge workflow just to make sure it worked ok.\n\nThis also upgrades the version of `release-plz` to 0.3.43, in the hopes that it maybe uses less disk\nspace. Some `df -h` commands are left in so that we can see if there is any improvement.",
+          "timestamp": "2024-02-09T06:30:40Z",
+          "tree_id": "13ff417043d7f2ba9f4bc210168299be5f5c6885",
+          "url": "https://github.com/maidsafe/safe_network/commit/0894052e7761c74d6fa320d0c6f1f763deb2f64d"
+        },
+        "date": 1707463404880,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6029,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35386,
             "unit": "ms"
           },
           {
