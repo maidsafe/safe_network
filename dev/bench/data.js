@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707489372128,
+  "lastUpdate": 1707489374323,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "5c24c1e058da8c023ddf8563a7251cbc19a24f85",
-          "message": "fix(sn_transfers): be sure we store CashNotes before writing the wallet file\n\nThis should prevent concurrency issues with referenced Notes not existing on disk yet",
-          "timestamp": "2023-10-05T11:07:38Z",
-          "tree_id": "f1d8b7190ff1fb4a658c6464af4821c6a2482a98",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c24c1e058da8c023ddf8563a7251cbc19a24f85"
-        },
-        "date": 1696507638041,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 164,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 39,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "539ec1f4b764ecdd314efbe110138073d234958d",
           "message": "feat!(cli): remove concurrency argument",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "dd05850e841efb7dd870828fb754b237a2fae731",
+          "message": "ci: re-add disk space debugging\n\nI would still like to monitor how much disk space `release-plz` is using just to see if upgrading to\nthe new version has likely solved the problem we were having.",
+          "timestamp": "2024-02-09T14:24:28Z",
+          "tree_id": "cc38ce26177b75d8fdda76ec8be802b328a49fa5",
+          "url": "https://github.com/maidsafe/safe_network/commit/dd05850e841efb7dd870828fb754b237a2fae731"
+        },
+        "date": 1707489373518,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
             "unit": "MB"
           },
           {
