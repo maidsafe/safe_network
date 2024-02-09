@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707474199244,
+  "lastUpdate": 1707474302386,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "df2cd42f1f0ca767f60730e530ef3316804e6cf1",
-          "message": "fix: use specific verify func for chunk stored verification",
-          "timestamp": "2023-10-05T09:56:12Z",
-          "tree_id": "29e2bac0086f3a9193b1720e52aff40fbabbae97",
-          "url": "https://github.com/maidsafe/safe_network/commit/df2cd42f1f0ca767f60730e530ef3316804e6cf1"
-        },
-        "date": 1696503095000,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bc5ee8eca0e8bc3c66c01454d895cc2f7f0b6909",
+          "message": "fix(node): store records even with max_records reached",
+          "timestamp": "2024-02-09T09:40:39Z",
+          "tree_id": "db29dc425b0ea5f7f3e22e2f1a671154deba22cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc5ee8eca0e8bc3c66c01454d895cc2f7f0b6909"
+        },
+        "date": 1707474301515,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
