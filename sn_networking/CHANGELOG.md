@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.10...sn_networking-v0.13.11) - 2024-02-09
+
+### Fixed
+- *(node)* store records even with max_records reached
+
 ## [0.13.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.9...sn_networking-v0.13.10) - 2024-02-09
 
 ### Other
