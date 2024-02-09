@@ -37,6 +37,7 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
         std::fs::OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true) // Do not append to the file if it already exists.
             .open(node_registry_path.clone())?;
         // Set the permissions of /var/safenode-manager/node_registry.json to rwxrwxrwx. The
         // `status` command updates the registry with the latest information it has on the
