@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707469588274,
+  "lastUpdate": 1707469589812,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4e745d483115528fe327171a352c0118f5dc9a96",
-          "message": "feat: use progress bars on `files upload`\n\nChange the user interface for the `files upload` command to use progress bars to indicate the status\nof the following operations:\n\n* Splitting the input files into chunks\n* Uploading the split chunks\n* Verifying the chunks that were uploaded\n* Re-uploading any chunks that failed verification\n\nIt uses a simple approach, which is to create a new `ProgressBar` for each of the operations, rather\nthan attempt to use a `MultiBar` or re-use the same progress bar. In this simple approach, the\n`finish_and_clear` function removes the bar from stderr, then a new bar is created for the next\noperation.\n\nThe `println!` output from the client was removed in favour of returning that information back to\nthe caller.\n\nThere is much less text in the output of the command now, but it hopefully communicates everything\nthat's important.",
-          "timestamp": "2023-10-05T07:49:30Z",
-          "tree_id": "d48a73f002d67f1651c2aaf0f646a82c8aeca1d4",
-          "url": "https://github.com/maidsafe/safe_network/commit/4e745d483115528fe327171a352c0118f5dc9a96"
-        },
-        "date": 1696496766252,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 149,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 32,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "208627891392384b2679c54328e4b4ea53262afe",
+          "message": "chore(node): disable metrics record",
+          "timestamp": "2024-02-09T09:49:16+01:00",
+          "tree_id": "5a1ca6d36f8ebc8bb8642c97d20be79406b63f2a",
+          "url": "https://github.com/maidsafe/safe_network/commit/208627891392384b2679c54328e4b4ea53262afe"
+        },
+        "date": 1707469589412,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 182,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
