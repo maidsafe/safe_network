@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.104.6"
+version = "0.104.7"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
