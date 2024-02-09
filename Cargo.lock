@@ -5031,6 +5031,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-core",
+ "url",
 ]
 
 [[package]]
