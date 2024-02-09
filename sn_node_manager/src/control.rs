@@ -19,6 +19,7 @@ use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use std::path::PathBuf;
 
 pub enum UpgradeResult {
+    Forced(String, String),
     NotRequired,
     Upgraded(String, String),
     Error(String),
@@ -77,10 +78,13 @@ pub async fn start(
 
 pub async fn stop(node: &mut Node, service_control: &dyn ServiceControl) -> Result<()> {
     match node.status {
-        NodeStatus::Added => Err(eyre!(
-            "Service {} has not been started since it was installed",
-            node.service_name
-        )),
+        NodeStatus::Added => {
+            println!(
+                "Service {} has not been started since it was installed",
+                node.service_name
+            );
+            Ok(())
+        }
         NodeStatus::Removed => Err(eyre!("Service {} has been removed", node.service_name)),
         NodeStatus::Running => {
             let pid = node.pid.unwrap();
@@ -278,46 +282,63 @@ pub async fn remove(
     Ok(())
 }
 
+pub struct UpgradeOptions {
+    pub bootstrap_peers: Vec<Multiaddr>,
+    pub env_variables: Option<Vec<(String, String)>>,
+    pub force: bool,
+    pub start_node: bool,
+    pub target_safenode_path: PathBuf,
+    pub target_version: Version,
+}
+
 pub async fn upgrade(
+    options: UpgradeOptions,
     node: &mut Node,
-    bootstrap_peers: &[Multiaddr],
-    env_variables: &Option<Vec<(String, String)>>,
-    upgraded_safenode_path: &PathBuf,
-    latest_version: &Version,
     service_control: &dyn ServiceControl,
     rpc_client: &dyn RpcActions,
 ) -> Result<UpgradeResult> {
     let current_version = Version::parse(&node.version)?;
-    if current_version == *latest_version {
+    if !options.force
+        && (current_version == options.target_version || options.target_version < current_version)
+    {
         return Ok(UpgradeResult::NotRequired);
     }
 
     stop(node, service_control).await?;
-    std::fs::copy(upgraded_safenode_path, &node.safenode_path)?;
+    std::fs::copy(options.target_safenode_path, &node.safenode_path)?;
 
     // Install the service again to make sure we re-use the same node port.
-    // Initially the node_port is generated on random. We obtain this port from the Node::listen_addr field to be re-used.
+    // Windows requires that the service be uninstalled first.
+    service_control.uninstall(&node.service_name.clone())?;
     service_control.install(ServiceConfig {
         local: node.local,
         data_dir_path: node.data_dir_path.clone(),
         genesis: node.genesis,
         name: node.service_name.clone(),
-        node_port: Some(node.get_safenode_port()?),
-        bootstrap_peers: bootstrap_peers.to_owned(),
+        node_port: node.get_safenode_port(),
+        bootstrap_peers: options.bootstrap_peers,
         rpc_socket_addr: node.rpc_socket_addr,
         log_dir_path: node.log_dir_path.clone(),
         safenode_path: node.safenode_path.clone(),
         service_user: node.user.clone(),
-        env_variables: env_variables.clone(),
+        env_variables: options.env_variables.clone(),
     })?;
 
-    start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
-    node.version = latest_version.to_string();
+    if options.start_node {
+        start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
+    }
+    node.version = options.target_version.to_string();
 
-    Ok(UpgradeResult::Upgraded(
-        current_version.to_string(),
-        latest_version.to_string(),
-    ))
+    match options.force {
+        true => Ok(UpgradeResult::Forced(
+            current_version.to_string(),
+            options.target_version.to_string(),
+        )),
+        false => Ok(UpgradeResult::Upgraded(
+            current_version.to_string(),
+            options.target_version.to_string(),
+        )),
+    }
 }
 
 fn format_status(status: &NodeStatus) -> String {
@@ -681,7 +702,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn stop_should_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
+    async fn stop_should_not_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
         let mock_service_control = MockServiceControl::new();
 
         let mut node = Node {
@@ -705,16 +726,15 @@ mod tests {
         let result = stop(&mut node, &mock_service_control).await;
 
         match result {
-            Ok(()) => panic!("This test should result in an error"),
-            Err(e) => {
-                assert_eq!(
-                    "Service safenode1 has not been started since it was installed",
-                    e.to_string()
+            Ok(()) => Ok(()),
+            Err(_) => {
+                panic!(
+                    "The stop command should be idempotent and do nothing for a stopped service"
                 );
             }
         }
 
-        Ok(())
+        // Ok(())
     }
 
     #[tokio::test]

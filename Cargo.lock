@@ -4885,6 +4885,7 @@ dependencies = [
  "mockall",
  "nix 0.27.1",
  "predicates 2.1.5",
+ "reqwest",
  "semver",
  "serde",
  "serde_json",

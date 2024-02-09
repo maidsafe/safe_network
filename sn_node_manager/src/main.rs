@@ -16,7 +16,7 @@ mod service;
 use crate::{
     add_service::{add, AddServiceOptions},
     config::*,
-    control::{remove, start, status, stop, upgrade, UpgradeResult},
+    control::{remove, start, status, stop, upgrade, UpgradeOptions, UpgradeResult},
     helpers::download_and_extract_release,
     local::{kill_network, run_faucet, run_network, LocalNetworkOptions},
     service::{NodeServiceManager, ServiceControl},
@@ -329,13 +329,28 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
     },
-    /// Upgrade a safenode service.
+    /// Upgrade safenode services.
+    ///
+    /// The running node will be stopped, its binary will be replaced, then it will be started
+    /// again.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "upgrade")]
     Upgrade {
+        /// Set this flag to upgrade the nodes without automatically starting them.
+        ///
+        /// Can be useful for testing scenarios.
+        #[clap(long)]
+        do_not_start: bool,
+        /// Set this flag to force the upgrade command to replace binaries without comparing any
+        /// version numbers.
+        ///
+        /// This may be required in a case where we want to 'downgrade' in case an upgrade caused a
+        /// problem, or for testing purposes.
+        #[clap(long)]
+        force: bool,
         /// The peer ID of the service to upgrade
         #[clap(long)]
         peer_id: Option<String>,
@@ -350,6 +365,16 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Provide a binary to upgrade to, using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This can be useful for testing scenarios.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Upgrade to a specific version rather than the latest version.
+        #[clap(long)]
+        version: Option<String>,
     },
 }
 
@@ -796,44 +821,71 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Upgrade {
+            do_not_start,
+            force,
             peer_id,
             service_name,
             env_variables: provided_env_variable,
+            url,
+            version,
         } => {
             if !is_running_as_root() {
                 return Err(eyre!("The upgrade command must run as the root user"));
             }
 
-            println!("=================================================");
-            println!("           Upgrade Safenode Services             ");
-            println!("=================================================");
-
-            println!("Retrieving latest version of safenode...");
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let latest_version = release_repo
-                .get_latest_version(&ReleaseType::Safenode)
-                .await
-                .map(|v| Version::parse(&v).unwrap())?;
-            println!("Latest version is {latest_version}");
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            let any_nodes_need_upgraded = node_registry.nodes.iter().any(|n| {
-                let current_version = Version::parse(&n.version).unwrap();
-                current_version < latest_version
-            });
-
-            if !any_nodes_need_upgraded {
-                println!("{} All nodes are at the latest version", "✓".green());
-                return Ok(());
+            if verbosity != VerbosityLevel::Minimal {
+                println!("=================================================");
+                println!("           Upgrade Safenode Services             ");
+                println!("=================================================");
             }
 
-            let (safenode_download_path, _) = download_and_extract_release(
-                ReleaseType::Safenode,
-                None,
-                Some(latest_version.to_string()),
-                &*release_repo,
-            )
-            .await?;
+            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+            let (upgrade_bin_path, target_version) = if let Some(version) = version {
+                let (upgrade_bin_path, version) = download_and_extract_release(
+                    ReleaseType::Safenode,
+                    None,
+                    Some(version),
+                    &*release_repo,
+                )
+                .await?;
+                (upgrade_bin_path, Version::parse(&version)?)
+            } else if let Some(url) = url {
+                let (upgrade_bin_path, version) = download_and_extract_release(
+                    ReleaseType::Safenode,
+                    Some(url),
+                    None,
+                    &*release_repo,
+                )
+                .await?;
+                (upgrade_bin_path, Version::parse(&version)?)
+            } else {
+                println!("Retrieving latest version of safenode...");
+                let latest_version = release_repo
+                    .get_latest_version(&ReleaseType::Safenode)
+                    .await
+                    .map(|v| Version::parse(&v).unwrap())?;
+                println!("Latest version is {latest_version}");
+                let (upgrade_bin_path, _) = download_and_extract_release(
+                    ReleaseType::Safenode,
+                    None,
+                    Some(latest_version.to_string()),
+                    &*release_repo,
+                )
+                .await?;
+                (upgrade_bin_path, latest_version)
+            };
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if !force {
+                let any_nodes_need_upgraded = node_registry.nodes.iter().any(|n| {
+                    let current_version = Version::parse(&n.version).unwrap();
+                    current_version < target_version
+                });
+                if !any_nodes_need_upgraded {
+                    println!("{} All nodes are at the latest version", "✓".green());
+                    return Ok(());
+                }
+            }
 
             let mut upgrade_summary = Vec::new();
 
@@ -852,11 +904,15 @@ async fn main() -> Result<()> {
                     &node_registry.environment_variables
                 };
                 let result = upgrade(
+                    UpgradeOptions {
+                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                        env_variables: env_variables.clone(),
+                        force,
+                        start_node: !do_not_start,
+                        target_safenode_path: upgrade_bin_path.clone(),
+                        target_version: target_version.clone(),
+                    },
                     node,
-                    &node_registry.bootstrap_peers,
-                    env_variables,
-                    &safenode_download_path,
-                    &latest_version,
                     &NodeServiceManager {},
                     &rpc_client,
                 )
@@ -894,11 +950,15 @@ async fn main() -> Result<()> {
                     &node_registry.environment_variables
                 };
                 let result = upgrade(
+                    UpgradeOptions {
+                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                        env_variables: env_variables.clone(),
+                        force,
+                        start_node: !do_not_start,
+                        target_safenode_path: upgrade_bin_path.clone(),
+                        target_version: target_version.clone(),
+                    },
                     node,
-                    &node_registry.bootstrap_peers,
-                    env_variables,
-                    &safenode_download_path,
-                    &latest_version,
                     &NodeServiceManager {},
                     &rpc_client,
                 )
@@ -925,11 +985,15 @@ async fn main() -> Result<()> {
                         &node_registry.environment_variables
                     };
                     let result = upgrade(
+                        UpgradeOptions {
+                            bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                            env_variables: env_variables.clone(),
+                            force,
+                            start_node: !do_not_start,
+                            target_safenode_path: upgrade_bin_path.clone(),
+                            target_version: target_version.clone(),
+                        },
                         node,
-                        &node_registry.bootstrap_peers,
-                        env_variables,
-                        &safenode_download_path,
-                        &latest_version,
                         &NodeServiceManager {},
                         &rpc_client,
                     )
@@ -955,11 +1019,17 @@ async fn main() -> Result<()> {
             for (service_name, upgrade_result) in upgrade_summary {
                 match upgrade_result {
                     UpgradeResult::NotRequired => {
-                        println!("- {service_name} was at the latest version");
+                        println!("- {service_name} did not require an upgrade");
                     }
                     UpgradeResult::Upgraded(previous_version, new_version) => {
                         println!(
                             "{} {service_name} upgraded from {previous_version} to {new_version}",
+                            "✓".green()
+                        );
+                    }
+                    UpgradeResult::Forced(previous_version, target_version) => {
+                        println!(
+                            "{} Forced {service_name} version change from {previous_version} to {target_version}.",
                             "✓".green()
                         );
                     }
