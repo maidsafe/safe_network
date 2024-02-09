@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707419003344,
+  "lastUpdate": 1707463305425,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "df2cd42f1f0ca767f60730e530ef3316804e6cf1",
-          "message": "fix: use specific verify func for chunk stored verification",
-          "timestamp": "2023-10-05T09:56:12Z",
-          "tree_id": "29e2bac0086f3a9193b1720e52aff40fbabbae97",
-          "url": "https://github.com/maidsafe/safe_network/commit/df2cd42f1f0ca767f60730e530ef3316804e6cf1"
-        },
-        "date": 1696502844618,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.12976731225662044,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7772090812724306,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 24.225385744656986,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.65106829206487,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0894052e7761c74d6fa320d0c6f1f763deb2f64d",
+          "message": "ci: use a different disk for the release process\n\nFor reasons not yet determined, the publishing process undertaken by `release-plz` is using up 20GB\nof disk space, which results in the root file system on the Github Actions build agent being filled\nup during the process, since the disk only has 20GB of free space.\n\nIt turns out there's another disk at `/mnt`, which has over 60GB of space, so we should be able to\nrun the release process from there, until we can resolve the problem with `release-plz`.\n\nI tested the manual checkout on the merge workflow just to make sure it worked ok.\n\nThis also upgrades the version of `release-plz` to 0.3.43, in the hopes that it maybe uses less disk\nspace. Some `df -h` commands are left in so that we can see if there is any improvement.",
+          "timestamp": "2024-02-09T06:30:40Z",
+          "tree_id": "13ff417043d7f2ba9f4bc210168299be5f5c6885",
+          "url": "https://github.com/maidsafe/safe_network/commit/0894052e7761c74d6fa320d0c6f1f763deb2f64d"
+        },
+        "date": 1707463302971,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.234494785918567,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8273636351037896,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.04852934785738,
             "unit": "MiB/s"
           }
         ]
