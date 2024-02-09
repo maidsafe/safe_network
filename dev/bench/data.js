@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707468653573,
+  "lastUpdate": 1707468656107,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "89ef8e2b6939a3b991e0980e5b58a4401c792645",
-          "message": "fix(wallet): remove expect statments",
-          "timestamp": "2023-10-04T17:53:04Z",
-          "tree_id": "28f601b6e349141e50dd3eb761218c6fb7dc5956",
-          "url": "https://github.com/maidsafe/safe_network/commit/89ef8e2b6939a3b991e0980e5b58a4401c792645"
-        },
-        "date": 1696445909595,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 172,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a3aceeeb82ef70c495b4ac5ccabaf619b08bc777",
+          "message": "ci: update to release-plz 0.3.43",
+          "timestamp": "2024-02-09T09:33:48+01:00",
+          "tree_id": "975f20e616c8a7c5226a31a2856d3ccd71bb218f",
+          "url": "https://github.com/maidsafe/safe_network/commit/a3aceeeb82ef70c495b4ac5ccabaf619b08bc777"
+        },
+        "date": 1707468655024,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
