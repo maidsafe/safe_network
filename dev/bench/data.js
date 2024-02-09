@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707474307019,
+  "lastUpdate": 1707489272258,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "c9f3f7784fb4503390622677c35592819c57c1c9",
-          "message": "chore: fix new clippy errors",
-          "timestamp": "2023-10-05T23:48:36Z",
-          "tree_id": "44d13dd70e9f805ec5aa9f539399ec22eac6adf4",
-          "url": "https://github.com/maidsafe/safe_network/commit/c9f3f7784fb4503390622677c35592819c57c1c9"
-        },
-        "date": 1696553621784,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1290012856381648,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9243574854950986,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 29.33974703012915,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.334328516136004,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "dd05850e841efb7dd870828fb754b237a2fae731",
+          "message": "ci: re-add disk space debugging\n\nI would still like to monitor how much disk space `release-plz` is using just to see if upgrading to\nthe new version has likely solved the problem we were having.",
+          "timestamp": "2024-02-09T14:24:28Z",
+          "tree_id": "cc38ce26177b75d8fdda76ec8be802b328a49fa5",
+          "url": "https://github.com/maidsafe/safe_network/commit/dd05850e841efb7dd870828fb754b237a2fae731"
+        },
+        "date": 1707489268945,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2757842671954553,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8392708061679939,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.95446040128207,
             "unit": "MiB/s"
           }
         ]
