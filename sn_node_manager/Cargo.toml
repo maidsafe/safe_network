@@ -55,4 +55,5 @@ assert_fs = "1.0.13"
 assert_matches = "1.5.0"
 async-trait = "0.1"
 mockall = "0.11.3"
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 predicates = "2.0"
