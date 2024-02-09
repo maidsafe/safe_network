@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707468656107,
+  "lastUpdate": 1707468658907,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36403,6 +36403,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35386,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a3aceeeb82ef70c495b4ac5ccabaf619b08bc777",
+          "message": "ci: update to release-plz 0.3.43",
+          "timestamp": "2024-02-09T09:33:48+01:00",
+          "tree_id": "975f20e616c8a7c5226a31a2856d3ccd71bb218f",
+          "url": "https://github.com/maidsafe/safe_network/commit/a3aceeeb82ef70c495b4ac5ccabaf619b08bc777"
+        },
+        "date": 1707468657784,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6472,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38009,
             "unit": "ms"
           },
           {
