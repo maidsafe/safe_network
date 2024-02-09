@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707463405212,
+  "lastUpdate": 1707468555150,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5c24c1e058da8c023ddf8563a7251cbc19a24f85",
-          "message": "fix(sn_transfers): be sure we store CashNotes before writing the wallet file\n\nThis should prevent concurrency issues with referenced Notes not existing on disk yet",
-          "timestamp": "2023-10-05T11:07:38Z",
-          "tree_id": "f1d8b7190ff1fb4a658c6464af4821c6a2482a98",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c24c1e058da8c023ddf8563a7251cbc19a24f85"
-        },
-        "date": 1696507382623,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1259729918041895,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7250304359941264,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 26.33743722462111,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.04852934785738,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a3aceeeb82ef70c495b4ac5ccabaf619b08bc777",
+          "message": "ci: update to release-plz 0.3.43",
+          "timestamp": "2024-02-09T09:33:48+01:00",
+          "tree_id": "975f20e616c8a7c5226a31a2856d3ccd71bb218f",
+          "url": "https://github.com/maidsafe/safe_network/commit/a3aceeeb82ef70c495b4ac5ccabaf619b08bc777"
+        },
+        "date": 1707468551523,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2751261091800257,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8095419541956368,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.75016743649024,
             "unit": "MiB/s"
           }
         ]
