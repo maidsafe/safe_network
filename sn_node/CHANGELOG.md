@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.11...sn_node-v0.104.12) - 2024-02-12
+
+### Other
+- *(node)* optimize Cmd::Replicate handling flow
+
 ## [0.104.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.10...sn_node-v0.104.11) - 2024-02-12
 
 ### Added
