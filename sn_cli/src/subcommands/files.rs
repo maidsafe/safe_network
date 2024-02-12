@@ -268,7 +268,9 @@ pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Pat
     for chunk in chunk_manager.get_chunks() {
         estimate += FilesApi::new(client.clone(), root_dir.to_path_buf())
             .wallet()?
-            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(chunk.0)))
+            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
+                chunk.0,
+            )))
             .await?
             .2
             .cost
