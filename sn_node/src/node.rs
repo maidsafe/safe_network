@@ -158,7 +158,7 @@ impl NodeBuilder {
         node.run(swarm_driver, network_event_receiver);
 
         // Feature guard ROYALTY_TRANSFER_NOTIF_TOPIC forwarder subscription
-        #[cfg(feature = "forwarder-subscription")]
+        #[cfg(feature = "royalties-by-gossip")]
         {
             // Having a portion of nodes (1/50) subscribe to the ROYALTY_TRANSFER_NOTIF_TOPIC
             // Such nodes become `forwarder` to ensure the actual beneficary won't miss.

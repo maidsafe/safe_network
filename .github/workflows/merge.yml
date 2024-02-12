@@ -406,7 +406,76 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test nodes_rewards --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+          build: true
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
+        
+      - name: execute the spend tests
+        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
+        env:
+          SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 25
+
+      - name: execute the storage payment tests
+        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+        env:
+          SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 25
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_spend
+          platform: ${{ matrix.os }}
+
+  royalty_reward_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    name: royalty_reward tests against network
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build binaries
+        run: cargo build --release --features=local-discovery,royalties-by-gossip --bin safenode --bin faucet
+        timeout-minutes: 30
+
+      - name: Build testing executable
+        run: cargo test --release -p sn_node --features=local-discovery,royalties-by-gossip --test nodes_rewards --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -435,21 +504,7 @@ jobs:
         
       # This should be first to avoid slow reward acceptance etc
       - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test nodes_rewards -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: execute the spend tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features=local-discovery,royalties-by-gossip --test nodes_rewards -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -460,7 +515,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_spend
+          log_file_prefix: safe_test_logs_royalty_reward
           platform: ${{ matrix.os }}
 
   churn:
