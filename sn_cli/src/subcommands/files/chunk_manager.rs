@@ -109,7 +109,7 @@ impl ChunkManager {
             .for_each(|entry| {
                 if entry.file_type().is_file() {
                     let path_xor = PathXorName::new(entry.path());
-                    info!(
+                    println!(
                         "Added file {:?} with path_xor: {path_xor:?} to be chunked/resumed",
                         entry.path()
                     );
@@ -170,10 +170,10 @@ impl ChunkManager {
 
         // Return early if no more files to chunk
         if self.files_to_chunk.is_empty() {
-            debug!(
+            println!(
                 "All files_to_chunk ({total_files:?}) were resumed. Returning the resumed chunks.",
             );
-            debug!("It took {:?} to resume all the files", now.elapsed());
+            println!("It took {:?} to resume all the files", now.elapsed());
             return Ok(());
         }
 
@@ -187,7 +187,7 @@ impl ChunkManager {
                 let file_chunks_dir = {
                     let file_chunks_dir = artifacts_dir.join(&path_xor.0);
                     fs::create_dir_all(&file_chunks_dir).map_err(|err| {
-                        error!("Failed to create folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
+                        println!("Failed to create folder {file_chunks_dir:?} for SE chunks with error {err:?}!");
                         eyre!("Failed to create dir {file_chunks_dir:?} for SE chunks with error {err:?}")
                     })?;
                     file_chunks_dir
@@ -196,7 +196,7 @@ impl ChunkManager {
                 match FilesApi::chunk_file(path, &file_chunks_dir, include_data_maps) {
                     Ok((head_chunk_address, data_map, size, chunks)) => {
                         progress_bar.clone().inc(1);
-                        debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {head_chunk_address:?} of size {size}, and chunks len: {}", chunks.len());
+                        println!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {head_chunk_address:?} of size {size}, and chunks len: {}", chunks.len());
 
                         let chunked_file = ChunkedFile {
                             head_chunk_address,
@@ -208,13 +208,13 @@ impl ChunkManager {
                     }
                     Err(err) => {
                         println!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
-                        error!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
+                        println!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
                         Err(eyre!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}"))
                     }
                 }
             })
             .collect::<Result<BTreeMap<_, _>>>()?;
-        debug!(
+        println!(
             "Out of total files_to_chunk {total_files}, we have resumed {} files and chunked {} files",
             self.resumed_files_count,
             chunked_files.len()
@@ -235,33 +235,33 @@ impl ChunkManager {
             .map(|(path_xor, chunked_file)| {
                 let metadata_path = artifacts_dir.join(&path_xor.0).join(METADATA_FILE);
 
-                info!("Metadata path is: {metadata_path:?}");
+                println!("Metadata path is: {metadata_path:?}");
                 let metadata = rmp_serde::to_vec(&(
                     chunked_file.head_chunk_address,
                     chunked_file.data_map.clone(),
                 ))
                 .map_err(|_| {
-                    error!("Failed to serialize file_xor_addr for writing metadata");
+                    println!("Failed to serialize file_xor_addr for writing metadata");
                     eyre!("Failed to serialize file_xor_addr for writing metadata")
                 })?;
 
                 let mut metadata_file = File::create(&metadata_path).map_err(|_| {
-                    error!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}");
+                    println!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}");
                     eyre!("Failed to create metadata_path {metadata_path:?} for {path_xor:?}")
                 })?;
 
                 metadata_file.write_all(&metadata).map_err(|_| {
-                    error!("Failed to write metadata to {metadata_path:?} for {path_xor:?}");
+                    println!("Failed to write metadata to {metadata_path:?} for {path_xor:?}");
                     eyre!("Failed to write metadata to {metadata_path:?} for {path_xor:?}")
                 })?;
 
-                debug!("Wrote metadata for {path_xor:?}");
+                println!("Wrote metadata for {path_xor:?}");
                 Ok(())
             })
             .collect::<Result<()>>()?;
 
         progress_bar.finish_and_clear();
-        debug!(
+        println!(
             "It took {:?} to chunk {} files",
             now.elapsed(),
             self.files_to_chunk.len()
@@ -325,7 +325,7 @@ impl ChunkManager {
     /// If the entire file is completed, keep the folder and metadata file
     pub(crate) fn mark_completed(&mut self, chunks: impl Iterator<Item = XorName>) -> Result<()> {
         let set_of_completed_chunks = chunks.collect::<BTreeSet<_>>();
-        trace!("marking as completed: {set_of_completed_chunks:?}");
+        println!("marking as completed: {set_of_completed_chunks:?}");
 
         // remove those files
         self.chunks
@@ -333,9 +333,11 @@ impl ChunkManager {
             .flat_map(|(_, chunked_file)| &chunked_file.chunks)
             .map(|(chunk_xor, chunk_path)| {
                 if set_of_completed_chunks.contains(chunk_xor) {
-                    debug!("removing {chunk_xor:?} at {chunk_path:?} as it is marked as completed");
+                    println!(
+                        "removing {chunk_xor:?} at {chunk_path:?} as it is marked as completed"
+                    );
                     fs::remove_file(chunk_path).map_err(|_err| {
-                        error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
+                        println!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
                         eyre!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}")
                     })?;
                 }
@@ -358,7 +360,7 @@ impl ChunkManager {
         for path_xor in &entire_file_is_done {
             // todo: should we remove the entry? ig so
             if let Some(chunked_file) = self.chunks.remove(path_xor) {
-                trace!("removed {path_xor:?} from chunks list");
+                println!("removed {path_xor:?} from chunks list");
                 self.completed_files.push((
                     chunked_file.file_name.clone(),
                     chunked_file.head_chunk_address,
@@ -390,7 +392,7 @@ impl ChunkManager {
         // for path_xor in &entire_file_is_done {
         //     // todo: should we remove the entry? ig so
         //     if let Some(chunked_file) = self.chunks.remove(path_xor) {
-        //         trace!("removed {path_xor:?} from chunks list");
+        //         println!("removed {path_xor:?} from chunks list");
         //         self.verified_files
         //             .push((chunked_file.file_name, chunked_file.head_chunk_address));
         //     }
@@ -434,7 +436,7 @@ impl ChunkManager {
     ) -> Option<(PathXorName, ChunkedFile)> {
         let mut file_chunk_address: Option<ChunkAddress> = None;
         let mut data_map: Option<Bytes> = None;
-        debug!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
+        println!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
 
         let chunks = WalkDir::new(file_chunks_dir.clone())
             .into_iter()
@@ -449,9 +451,9 @@ impl ChunkManager {
                     {
                         file_chunk_address = Some(address);
                         data_map = optional_data_map;
-                        debug!("Obtained metadata for {path_xor:?}");
+                        println!("Obtained metadata for {path_xor:?}");
                     } else {
-                        error!("Could not read metadata for {path_xor:?}");
+                        println!("Could not read metadata for {path_xor:?}");
                     }
                     // not a chunk, so don't return
                     return None;
@@ -462,7 +464,7 @@ impl ChunkManager {
                     Self::hex_decode_xorname(file_name)
                         .map(|chunk_xorname| (chunk_xorname, entry.into_path()))
                 } else {
-                    error!(
+                    println!(
                         "Failed to convert OsString to str for {:?}",
                         entry.file_name()
                     );
@@ -473,7 +475,7 @@ impl ChunkManager {
 
         match file_chunk_address {
             Some(head_chunk_address) => {
-                debug!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {head_chunk_address:?}/{path_xor:?}", chunks.len());
+                println!("Resuming {} chunks for file {original_file_name:?} and with file_xor_addr {head_chunk_address:?}/{path_xor:?}", chunks.len());
 
                 Some((
                     path_xor.clone(),
@@ -486,7 +488,7 @@ impl ChunkManager {
                 ))
             }
             _ => {
-                error!("Metadata file or data map was not present for {path_xor:?}");
+                println!("Metadata file or data map was not present for {path_xor:?}");
                 // metadata file or data map was not present/was not read
                 None
             }
@@ -497,11 +499,11 @@ impl ChunkManager {
     /// Returning (head_chunk_address, Option<datamap_bytes>)
     fn try_read_metadata(path: &Path) -> Option<(ChunkAddress, Option<Bytes>)> {
         let metadata = fs::read(path)
-            .map_err(|err| error!("Failed to read metadata with err {err:?}"))
+            .map_err(|err| println!("Failed to read metadata with err {err:?}"))
             .ok()?;
         // head chunk address and the final datamap contents if a datamap exists for this file
         let metadata: (ChunkAddress, Option<Bytes>) = rmp_serde::from_slice(&metadata)
-            .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
+            .map_err(|err| println!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
         Some(metadata)
     }
@@ -509,11 +511,11 @@ impl ChunkManager {
     // Decode the hex encoded xorname
     fn hex_decode_xorname(string: &str) -> Option<XorName> {
         let hex_decoded = hex::decode(string)
-            .map_err(|err| error!("Failed to decode {string} into bytes with err {err:?}"))
+            .map_err(|err| println!("Failed to decode {string} into bytes with err {err:?}"))
             .ok()?;
         let decoded_xorname: [u8; xor_name::XOR_NAME_LEN] = hex_decoded
             .try_into()
-            .map_err(|_| error!("Failed to convert hex_decoded xorname into an [u8; 32]"))
+            .map_err(|_| println!("Failed to convert hex_decoded xorname into an [u8; 32]"))
             .ok()?;
         Some(XorName(decoded_xorname))
     }
@@ -554,7 +556,7 @@ mod tests {
             .into_iter()
             .flatten()
             .filter(|entry| {
-                info!("direntry {entry:?}");
+                println!("direntry {entry:?}");
                 entry.file_type().is_file()
             })
             .count();
@@ -631,7 +633,7 @@ mod tests {
             .into_iter()
             .flatten()
             .filter(|entry| {
-                info!("direntry {entry:?}");
+                println!("direntry {entry:?}");
                 entry.file_type().is_file()
             })
             .count();
@@ -952,7 +954,7 @@ mod tests {
                 match generate_file(&path, mb_per_file) {
                     Ok(_) => Some(path),
                     Err(err) => {
-                        error!("Failed to generate random file with {err:?}");
+                        println!("Failed to generate random file with {err:?}");
                         None
                     }
                 }
