@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707747183566,
+  "lastUpdate": 1707750346634,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a4763310514cadbb7128dee70fe989db2f4be0a0",
-          "message": "fix(sn_networking): reduce kad query timeout\n\n5 mins was impractically long",
-          "timestamp": "2023-10-10T09:31:44+02:00",
-          "tree_id": "b2266ee9be42fdc7aadd440a4c8248b9dc9e1b9a",
-          "url": "https://github.com/maidsafe/safe_network/commit/a4763310514cadbb7128dee70fe989db2f4be0a0"
-        },
-        "date": 1696924351728,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09815583996035532,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6079895354137884,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 32.15844600038478,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.09634308146236,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "777e6cdc8b780f87ede384c7e7dbc5104b2a726d",
+          "message": "fix: avoid clippy error due to new feature guard",
+          "timestamp": "2024-02-12T15:55:27+01:00",
+          "tree_id": "f4f6b4c325e3557055f67b83872eb11d5b089dc9",
+          "url": "https://github.com/maidsafe/safe_network/commit/777e6cdc8b780f87ede384c7e7dbc5104b2a726d"
+        },
+        "date": 1707750343978,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2271591303903422,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.801740719658649,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.54187973674749,
             "unit": "MiB/s"
           }
         ]
