@@ -6,14 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(feature = "royalties-by-gossip")]
+use crate::node::ROYALTY_TRANSFER_NOTIF_TOPIC;
 use crate::{
     node::Node,
-    node::ROYALTY_TRANSFER_NOTIF_TOPIC,
     spends::{aggregate_spends, check_parent_spends},
     Error, Marker, Result,
 };
+#[cfg(feature = "royalties-by-gossip")]
 use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
+#[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
 use sn_networking::{get_singed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
