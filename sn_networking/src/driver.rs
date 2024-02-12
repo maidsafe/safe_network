@@ -796,17 +796,15 @@ impl SwarmDriver {
         if self.handled_times >= 100 {
             self.handled_times = 0;
 
-            let kinds: Vec<String> = self.handling_statistics.keys().cloned().collect();
-            let avg_times: Vec<Duration> = self
-                .handling_statistics
-                .values()
-                .map(|durations| {
-                    let sum: Duration = durations.iter().sum();
-                    sum / durations.len() as u32
-                })
-                .collect();
-            trace!("SwarmDriver Handling Statistics have kinds: {kinds:?}");
-            trace!("SwarmDriver Handling Statistics have ave_times: {avg_times:?}");
+            let mut stats: Vec<(String, usize, Duration)> = self.handling_statistics.iter().map(|(kind, durations)| {
+                let count = durations.len();
+                let avg_time = durations.iter().sum::<Duration>() / count as u32;
+                (kind.clone(), count, avg_time)
+            }).collect();
+
+            stats.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by count in descending order
+
+            trace!("SwarmDriver Handling Statistics: {:?}", stats);
         }
     }
 }
