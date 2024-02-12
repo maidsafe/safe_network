@@ -1,4 +1,4 @@
-// Copyright 2024 MaidSafe.net limited.
+// Copyright 2023 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -106,6 +106,7 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
     Ok(all_peers)
 }
 
+/// Also asserts that the node restarted with a new PeerId. This adds an inherent 5s delay to this function.
 pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
     let mut rpc_client = get_safenode_rpc_client(*addr).await?;
 
@@ -113,6 +114,7 @@ pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
         .node_info(Request::new(NodeInfoRequest {}))
         .await?;
     let root_dir = Path::new(&response.get_ref().data_dir);
+    let previous_peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
     debug!("Obtained root dir from node {root_dir:?}.");
 
     let record_store = root_dir.join("record_store");
@@ -140,6 +142,17 @@ pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
 
     println!("Node restart requested to RPC service at {addr}");
     info!("Node restart requested to RPC service at {addr}");
+
+    tokio::time::sleep(Duration::from_secs(5)).await;
+    println!("Verifying if the node restarted with a different PeerId");
+    info!("Verifying if the node restarted with a different PeerId");
+    let response = rpc_client
+        .node_info(Request::new(NodeInfoRequest {}))
+        .await?;
+    let current_peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
+    if current_peer_id == previous_peer_id {
+        bail!("The PeerIds are not the same after restart. previous: {previous_peer_id:?}, current: {current_peer_id:?}");
+    }
 
     Ok(())
 }
