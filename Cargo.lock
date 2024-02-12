@@ -5008,7 +5008,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.60"
+version = "0.3.61"
 dependencies = [
  "bitcoin",
  "blsttc",
