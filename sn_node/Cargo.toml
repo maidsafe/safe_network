@@ -21,7 +21,7 @@ metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 encrypt-records=["sn_networking/encrypt-records"]
-forwarder-subscription = []
+royalties-by-gossip = []
 
 [dependencies]
 assert_fs = "1.0.0"
