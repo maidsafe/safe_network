@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707750447076,
+  "lastUpdate": 1707750449590,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8844c9e9404b52ce52e93607d507232b8da339e3",
-          "message": "feat: ensure temp SE chunks got cleaned after uploading",
-          "timestamp": "2023-10-09T15:35:15+02:00",
-          "tree_id": "dba90b0f1f4db315de8dc0c92b1d8fa19556edbd",
-          "url": "https://github.com/maidsafe/safe_network/commit/8844c9e9404b52ce52e93607d507232b8da339e3"
-        },
-        "date": 1696860008654,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 170,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 39,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 184,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "777e6cdc8b780f87ede384c7e7dbc5104b2a726d",
+          "message": "fix: avoid clippy error due to new feature guard",
+          "timestamp": "2024-02-12T15:55:27+01:00",
+          "tree_id": "f4f6b4c325e3557055f67b83872eb11d5b089dc9",
+          "url": "https://github.com/maidsafe/safe_network/commit/777e6cdc8b780f87ede384c7e7dbc5104b2a726d"
+        },
+        "date": 1707750448164,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
             "unit": "MB"
           },
           {
