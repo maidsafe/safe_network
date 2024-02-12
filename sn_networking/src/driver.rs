@@ -780,11 +780,7 @@ impl SwarmDriver {
         match self.handling_statistics.entry(handle_string) {
             Entry::Occupied(mut entry) => {
                 let records = entry.get_mut();
-                if records.len() == 10 {
-                    let _ = records.pop();
-                } else {
-                    records.push(handle_time);
-                }
+                records.push(handle_time);
             }
             Entry::Vacant(entry) => {
                 entry.insert(vec![handle_time]);
@@ -796,15 +792,21 @@ impl SwarmDriver {
         if self.handled_times >= 100 {
             self.handled_times = 0;
 
-            let mut stats: Vec<(String, usize, Duration)> = self.handling_statistics.iter().map(|(kind, durations)| {
-                let count = durations.len();
-                let avg_time = durations.iter().sum::<Duration>() / count as u32;
-                (kind.clone(), count, avg_time)
-            }).collect();
+            let mut stats: Vec<(String, usize, Duration)> = self
+                .handling_statistics
+                .iter()
+                .map(|(kind, durations)| {
+                    let count = durations.len();
+                    let avg_time = durations.iter().sum::<Duration>() / count as u32;
+                    (kind.clone(), count, avg_time)
+                })
+                .collect();
 
             stats.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by count in descending order
 
             trace!("SwarmDriver Handling Statistics: {:?}", stats);
+            // now we've logged, lets clear the stats from the btreemap
+            self.handling_statistics.clear();
         }
     }
 }
