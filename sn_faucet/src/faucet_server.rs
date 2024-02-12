@@ -145,7 +145,7 @@ async fn startup_server(client: &Client) -> Result<()> {
             // if distribution feature not enabled then return an error
             #[cfg(not(feature = "distribution"))]
             {
-                let response = Response::from_string(format!("Distribution feature disabled"));
+                let response = Response::from_string("Distribution feature disabled".to_string());
                 let _ = request
                     .respond(response.with_status_code(500))
                     .map_err(|err| eprintln!("Failed to send response: {err}"));
