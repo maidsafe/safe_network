@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707753845929,
+  "lastUpdate": 1707753944108,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a2cfe092306dd320ad4610bd76907c6d40197e40",
-          "message": "chore(sn_transfers): improve transaction build mem perf",
-          "timestamp": "2023-10-10T09:09:32+02:00",
-          "tree_id": "c1f1c661cc76a1a7f6c79ae67d98cbc0930374be",
-          "url": "https://github.com/maidsafe/safe_network/commit/a2cfe092306dd320ad4610bd76907c6d40197e40"
-        },
-        "date": 1696923254701,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "a4763310514cadbb7128dee70fe989db2f4be0a0",
           "message": "fix(sn_networking): reduce kad query timeout\n\n5 mins was impractically long",
           "timestamp": "2023-10-10T09:31:44+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3a5fc3d86dd1639e4e6278127876f4c58f59994c",
+          "message": "ci(faucet): enable distribution builds by default",
+          "timestamp": "2024-02-12T15:06:58Z",
+          "tree_id": "086b346ff77de5ce28c26fe7e513525e20a4d139",
+          "url": "https://github.com/maidsafe/safe_network/commit/3a5fc3d86dd1639e4e6278127876f4c58f59994c"
+        },
+        "date": 1707753943796,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
