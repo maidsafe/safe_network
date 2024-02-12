@@ -110,7 +110,7 @@ impl Node {
                     Ok(record) => record,
                     Err(err) => {
                         error!(
-                            "Replicating fresg record {pretty_key:?} get_record_from_store errored: {err:?}"
+                            "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
                         );
                         return;
                     }

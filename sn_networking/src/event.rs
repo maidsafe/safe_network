@@ -569,8 +569,6 @@ impl SwarmDriver {
                     // as we send that regardless of how we handle the request as its unimportant to the sender.
                     match request {
                         Request::Cmd(sn_protocol::messages::Cmd::Replicate { holder, keys }) => {
-                            self.add_keys_to_replication_fetcher(holder, keys);
-
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
                             );
@@ -579,6 +577,8 @@ impl SwarmDriver {
                                 .request_response
                                 .send_response(channel, response)
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                            self.add_keys_to_replication_fetcher(holder, keys);
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {
