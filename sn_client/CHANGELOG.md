@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.5...sn_client-v0.104.6) - 2024-02-12
+
+### Added
+- *(cli)* single payment for all folders being synced
+- *(cli)* adding Folders download CLI cmd
+- *(client)* adding Folders sync API and CLI cmd
+
+### Other
+- *(cli)* improvements based on peer review
+
 ## [0.104.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.4...sn_client-v0.104.5) - 2024-02-09
 
 ### Other
