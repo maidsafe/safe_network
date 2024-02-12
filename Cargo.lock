@@ -5095,7 +5095,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.14"
+version = "0.104.15"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5147,7 +5147,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.47"
+version = "0.4.48"
 dependencies = [
  "assert_fs",
  "async-trait",
