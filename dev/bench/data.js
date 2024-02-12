@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707734077669,
+  "lastUpdate": 1707734080442,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36598,6 +36598,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34335,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "838407eae0cff44c13aacb7e280a5b1493a7b465",
+          "message": "feat(faucet): api endpoint to return distribution\n\nThe server sends 100 tokens for the endpoint:\nhttp://<ip>/<bls_hex_pubkey>\nThis adds a new (additional) endpoint to distribute to maid addresses:\nhttp://<ip>/distribution?address=<address>&pkhex=<pkhex>\nCalling the new endpoint will return an existing distribution for that\nmaidsafecoin address, or create a new distribution if needed.",
+          "timestamp": "2024-02-12T09:24:20Z",
+          "tree_id": "724feb688ec8d23f359955488db4bb66c289b0d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/838407eae0cff44c13aacb7e280a5b1493a7b465"
+        },
+        "date": 1707734079305,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6139,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34375,
             "unit": "ms"
           },
           {
