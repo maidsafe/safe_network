@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707729259667,
+  "lastUpdate": 1707729261171,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "539ec1f4b764ecdd314efbe110138073d234958d",
-          "message": "feat!(cli): remove concurrency argument",
-          "timestamp": "2023-10-05T16:14:19+02:00",
-          "tree_id": "5d291d917754ae8f890041f973525c06d4dde2a0",
-          "url": "https://github.com/maidsafe/safe_network/commit/539ec1f4b764ecdd314efbe110138073d234958d"
-        },
-        "date": 1696516546751,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 144,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 32,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7f6dcc5098302f2d90c55d60007b9bfc160291f4",
+          "message": "fix: apply suspicious_open_options from clippy",
+          "timestamp": "2024-02-12T09:57:29+01:00",
+          "tree_id": "db1469d544a2ac285844554698e51e4552dd93a9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7f6dcc5098302f2d90c55d60007b9bfc160291f4"
+        },
+        "date": 1707729260818,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
