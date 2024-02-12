@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707752194242,
+  "lastUpdate": 1707752195949,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36832,6 +36832,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35460,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "74afbbe1d3987118396a3da3d1def4d2ab7d614e",
+          "message": "Revert \"ci: re-add disk space debugging\"\n\nThis reverts commit dd05850e841efb7dd870828fb754b237a2fae731.\n\nWith the newer version of `release-plz` we have about 5GB to spare at the end of the publishing\nprocess:\n```\nFilesystem      Size  Used Avail Use% Mounted on\n/dev/root        73G   68G  5.0G  94% /\ntmpfs           7.9G  172K  7.9G   1% /dev/shm\ntmpfs           3.2G  1.1M  3.2G   1% /run\ntmpfs           5.0M     0  5.0M   0% /run/lock\n/dev/sda15      105M  6.1M   99M   6% /boot/efi\n/dev/sdb1        74G  4.1G   66G   6% /mnt\ntmpfs           1.6G   12K  1.6G   1% /run/user/1001\n```",
+          "timestamp": "2024-02-12T14:36:14Z",
+          "tree_id": "0a040ecc9e50f403f1412adce18306c33e5bca5c",
+          "url": "https://github.com/maidsafe/safe_network/commit/74afbbe1d3987118396a3da3d1def4d2ab7d614e"
+        },
+        "date": 1707752195622,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5956,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35060,
             "unit": "ms"
           },
           {
