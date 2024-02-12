@@ -6,25 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod chunk_manager;
-
-pub(crate) use chunk_manager::ChunkManager;
-
-use bytes::Bytes;
-use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Help, Result,
-};
-use indicatif::{ProgressBar, ProgressStyle};
-use rand::{seq::SliceRandom, thread_rng};
-use serde::Deserialize;
-use sn_client::{
-    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
-    FilesUpload, BATCH_SIZE,
-};
-use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
-use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
     ffi::OsString,
@@ -35,8 +16,29 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+use bytes::Bytes;
+use clap::Parser;
+use color_eyre::{
+    eyre::{bail, eyre},
+    Help, Result,
+};
+use indicatif::{ProgressBar, ProgressStyle};
+use rand::{seq::SliceRandom, thread_rng};
+use serde::Deserialize;
 use walkdir::WalkDir;
 use xor_name::XorName;
+
+pub(crate) use chunk_manager::ChunkManager;
+use sn_client::{
+    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
+    FilesUpload, BATCH_SIZE,
+};
+use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
+use sn_protocol::NetworkAddress;
+use sn_transfers::{Error as TransfersError, WalletError};
+
+mod chunk_manager;
 
 /// The default folder to download files to.
 const DOWNLOAD_FOLDER: &str = "safe_files";
@@ -46,15 +48,18 @@ pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
+    Estimate {
+        /// The location of the file(s) to upload. Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+    },
     Upload {
-        /// The location of the file(s) to upload.
-        ///
-        /// Can be a file or a directory.
+        /// The location of the file(s) to upload. Can be a file or a directory.
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
         /// The batch_size to split chunks into parallel handling batches
         /// during payment and upload processing.
-        #[clap(long, default_value_t = BATCH_SIZE, short='b')]
+        #[clap(long, default_value_t = BATCH_SIZE, short = 'b')]
         batch_size: usize,
         /// Should the file be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
@@ -63,7 +68,8 @@ pub enum FilesCmds {
         ///
         /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
         /// to 'persistent' (most effort).
-        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload \
+        failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
         retry_strategy: RetryStrategy,
     },
     Download {
@@ -86,7 +92,7 @@ pub enum FilesCmds {
         #[clap(long, name = "show_holders", default_value = "false")]
         show_holders: bool,
         /// The batch_size for parallel downloading
-        #[clap(long, default_value_t = BATCH_SIZE , short='b')]
+        #[clap(long, default_value_t = BATCH_SIZE, short = 'b')]
         batch_size: usize,
         /// Set the strategy to use on downloads failure.
         ///
@@ -159,9 +165,7 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        FilesCmds::Estimate { path, make_public } => {
-            estimate_cost(path, client, root_dir, make_public).await?
-        }
+        FilesCmds::Estimate { path } => estimate_cost(path, client, root_dir).await?,
         FilesCmds::Upload {
             path,
             batch_size,
@@ -297,6 +301,7 @@ pub(crate) async fn upload_files(
     }
 
     let files_api: FilesApi = FilesApi::new(client.clone(), root_dir.to_path_buf());
+
     if files_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
