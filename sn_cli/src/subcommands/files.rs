@@ -258,25 +258,23 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
+/// Estimate the upload cost of a chosen file
 pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, true, true)?;
+    chunk_manager.chunk_path(&path, true, false)?;
 
-    let files_api: FilesApi = FilesApi::new(client.clone(), root_dir.to_path_buf());
-    let mut total: u64 = 0;
+    let mut estimate: u64 = 0;
 
-    for chunk_detail in chunk_manager.get_chunks() {
-        let chunk_address = ChunkAddress::new(chunk_detail.0);
-        let address = NetworkAddress::from_chunk_address(chunk_address);
-        let estimate = files_api
+    for chunk in chunk_manager.get_chunks() {
+        estimate += FilesApi::new(client.clone(), root_dir.to_path_buf())
             .wallet()?
-            .get_store_cost_at_address(address)
+            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(chunk.0)))
             .await?
             .2
-            .cost;
-        total += estimate.as_nano();
+            .cost
+            .as_nano();
     }
-    println!("The total estimate is: {total}");
+    println!("Estimated cost in NanoTokens: {estimate} "); // TODO: balance after transfer.
     Ok(())
 }
 
