@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707750449590,
+  "lastUpdate": 1707750451299,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36793,6 +36793,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34175,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "777e6cdc8b780f87ede384c7e7dbc5104b2a726d",
+          "message": "fix: avoid clippy error due to new feature guard",
+          "timestamp": "2024-02-12T15:55:27+01:00",
+          "tree_id": "f4f6b4c325e3557055f67b83872eb11d5b089dc9",
+          "url": "https://github.com/maidsafe/safe_network/commit/777e6cdc8b780f87ede384c7e7dbc5104b2a726d"
+        },
+        "date": 1707750450880,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6066,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35460,
             "unit": "ms"
           },
           {
