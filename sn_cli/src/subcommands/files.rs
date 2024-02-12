@@ -259,23 +259,18 @@ pub(crate) async fn files_cmds(
 }
 
 /// Estimate the upload cost of a chosen file
-pub(crate) async fn estimate_cost(
-    path: PathBuf,
-    client: &Client,
-    root_dir: &Path,
-    make_public: bool,
-) -> Result<()> {
+pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, false, make_public)?;
+    chunk_manager.chunk_path(&path, true, false)?;
 
     let mut estimate: u64 = 0;
 
-    for (chunk, _) in chunk_manager.get_chunks() {
+    for chunk in chunk_manager.get_chunks() {
         estimate += FilesApi::new(client.clone(), root_dir.to_path_buf())
             .wallet()?
-            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(chunk)))
+            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(chunk.0)))
             .await?
-            .quote
+            .2
             .cost
             .as_nano();
     }
@@ -601,7 +596,7 @@ pub(crate) async fn download_file(
                     if let Some(progress_bar) = progress_bar {
                         progress_bar.finish_and_clear();
                     }
-                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
+                    progress_bar = get_progress_bar(count as u64).map_err(|err| {
                         println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
                         error!("Failed to obtain progress bar with err: {err:?}");
                         err
@@ -612,7 +607,7 @@ pub(crate) async fn download_file(
                     if let Some(progress_bar) = progress_bar {
                         progress_bar.finish_and_clear();
                     }
-                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
+                    progress_bar = get_progress_bar(count as u64).map_err(|err| {
                         println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
                         error!("Failed to obtain progress bar with err: {err:?}");
                         err
