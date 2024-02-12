@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707729261171,
+  "lastUpdate": 1707729263055,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36564,6 +36564,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7f6dcc5098302f2d90c55d60007b9bfc160291f4",
+          "message": "fix: apply suspicious_open_options from clippy",
+          "timestamp": "2024-02-12T09:57:29+01:00",
+          "tree_id": "db1469d544a2ac285844554698e51e4552dd93a9",
+          "url": "https://github.com/maidsafe/safe_network/commit/7f6dcc5098302f2d90c55d60007b9bfc160291f4"
+        },
+        "date": 1707729262480,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5820,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34335,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
