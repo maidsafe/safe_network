@@ -44,7 +44,7 @@ jobs:
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyE2E
           # if we were to run on a PR, use the below
@@ -110,7 +110,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
@@ -140,7 +140,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyE2E
           custom-node-bin-org-name: maidsafe
@@ -187,7 +187,7 @@ jobs:
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
@@ -217,7 +217,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
@@ -247,7 +247,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyGossipSubE2E
           custom-node-bin-org-name: maidsafe
@@ -287,7 +287,7 @@ jobs:
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
@@ -336,7 +336,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
@@ -366,7 +366,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlySpendTest
           custom-node-bin-org-name: maidsafe
@@ -426,7 +426,7 @@ jobs:
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
@@ -441,12 +441,8 @@ jobs:
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
         env:
-          # TEST_DURATION_MINS: 60
-          # TEST_CHURN_CYCLES: 6
-          # SN_LOG: "all"
-          # todo: lower time for testing
-          TEST_DURATION_MINS: 10
-          TEST_CHURN_CYCLES: 2
+          TEST_DURATION_MINS: 60
+          TEST_CHURN_CYCLES: 6
           SN_LOG: "all"
         timeout-minutes: 90
 
@@ -464,7 +460,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
@@ -494,7 +490,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
@@ -632,7 +628,7 @@ jobs:
           security-group-id: sg-0d47df5b3f0d01e2a
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
@@ -646,7 +642,9 @@ jobs:
 
       - name: Verify the Routing table of the nodes
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
-        timeout-minutes: 5
+        env:
+          SLEEP_BEFORE_VERIFICATION: 300
+        timeout-minutes: 10
 
       - name: Verify the location of the data on the network
         run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
@@ -672,7 +670,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
@@ -702,7 +700,7 @@ jobs:
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
           node-count: 20
-          vm-count: 1
+          vm-count: 2
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           custom-node-bin-org-name: maidsafe
