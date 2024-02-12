@@ -453,11 +453,11 @@ pub(crate) async fn upload_files(
     println!("Uploading {chunks_to_upload_len} chunks",);
     let now = Instant::now();
     let upload_result = match files_upload.upload_chunks(chunks_to_upload).await {
-        Ok(()) => { Ok(()) }
+        Ok(()) => {Ok(())}
         Err(ClientError::Transfers(WalletError::Transfer(TransfersError::NotEnoughBalance(
-                                                             available,
-                                                             required,
-                                                         )))) => {
+            available,
+            required,
+        )))) => {
             Err(eyre!("Not enough balance in wallet to pay for chunk. We have {available:?} but need {required:?} to pay for the chunk"))
         }
         Err(err) => {
