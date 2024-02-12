@@ -259,7 +259,7 @@ pub(crate) async fn files_cmds(
 }
 
 pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
-    let mut chunk_manager = ChunkManager::new(&root_dir);
+    let mut chunk_manager = ChunkManager::new(root_dir);
     chunk_manager.chunk_path(&path, true, true)?;
 
     let files_api: FilesApi = FilesApi::new(client.clone(), root_dir.to_path_buf());
@@ -271,13 +271,12 @@ pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Pat
         let estimate = files_api
             .wallet()?
             .get_store_cost_at_address(address)
-            .await
-            .unwrap()
+            .await?
             .2
             .cost;
-        total = total + estimate.as_nano();
+        total += estimate.as_nano();
     }
-    println!("The total estimate is: {}", total);
+    println!("The total estimate is: {total}");
     Ok(())
 }
 
