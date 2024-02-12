@@ -168,7 +168,7 @@ impl FilesUpload {
     /// Uploads the provided chunks to the network.
     /// If you want to track the upload progress, use the `get_upload_events` method.
     pub async fn upload_chunks(&mut self, mut chunks: Vec<(XorName, PathBuf)>) -> Result<()> {
-        trace!("Uploading chunks {:?}", chunks.len());
+        println!("Uploading chunks {:?}", chunks.len());
 
         // make sure we log that the event sender is absent atleast once
         self.logged_event_sender_absence = false;
@@ -188,7 +188,7 @@ impl FilesUpload {
             // Any error raised from `upload` function is un-recoverable
             // and shall terminate the overall upload immediately.
             if result.is_err() {
-                error!("Upload terminated due to un-recoverable error {result:?}");
+                println!("Upload terminated due to un-recoverable error {result:?}");
                 println!("Upload terminated due to un-recoverable error {result:?}");
                 // send an event indicating that the upload process completed with an error
                 self.send_event(FileUploadEvent::Error);
@@ -209,7 +209,7 @@ impl FilesUpload {
 
             for_failed_chunks = true;
             last_failed = chunks.len();
-            warn!("Retrying failed chunks {last_failed} ...");
+            println!("Retrying failed chunks {last_failed} ...");
             println!("Retrying failed chunks {last_failed} ...");
         }
 
@@ -314,10 +314,9 @@ impl FilesUpload {
             match task_result {
                 TaskResult::GetStoreCostOK((chunk_info, cost)) => {
                     let _ = on_going_get_cost.remove(&chunk_info.name);
-                    trace!(
+                    println!(
                         "Upload task got chunk {:?}'s store_cost {:?}",
-                        chunk_info.name,
-                        cost.2
+                        chunk_info.name, cost.2
                     );
                     if cost.2.cost != NanoTokens::zero() {
                         pending_to_pay.push((chunk_info, cost));
@@ -339,7 +338,7 @@ impl FilesUpload {
                     (storage_cost, royalty_fees, new_balance),
                     reply_list,
                 )) => {
-                    trace!("Paid {} chunks, with {storage_cost:?} store_cost and {royalty_fees:?} royalty_fees, and new_balance is {new_balance:?}",
+                    println!("Paid {} chunks, with {storage_cost:?} store_cost and {royalty_fees:?} royalty_fees, and new_balance is {new_balance:?}",
                         reply_list.len());
                     sequential_payment_fails = 0;
                     for (chunk_info, _) in reply_list.iter() {
@@ -363,7 +362,7 @@ impl FilesUpload {
                     });
                 }
                 TaskResult::UploadChunksOK(xor_name) => {
-                    trace!("Upload task uploaded chunk {xor_name:?}");
+                    println!("Upload task uploaded chunk {xor_name:?}");
                     let _ = on_going_uploadings.remove(&xor_name);
                     uploaded += 1;
                     self.send_event(FileUploadEvent::Uploaded(ChunkAddress::new(xor_name)));
@@ -411,7 +410,7 @@ impl FilesUpload {
         let bytes = match std::fs::read(chunk_info.path.clone()) {
             Ok(bytes) => Bytes::from(bytes),
             Err(error) => {
-                warn!("Chunk {chunk_address:?} could not be read from the system from {:?}. 
+                println!("Chunk {chunk_address:?} could not be read from the system from {:?}. 
             Normally this happens if it has been uploaded, but the cleanup process was interrupted. Ignoring error: {error}", chunk_info.path);
 
                 return (chunk_info, Ok(()));
@@ -440,7 +439,7 @@ impl FilesUpload {
                 let _ = sender_clone.send(event).await;
             });
         } else if !self.logged_event_sender_absence {
-            info!("FilesUpload upload event sender is not set. Use get_upload_events() if you need to keep track of the progress");
+            println!("FilesUpload upload event sender is not set. Use get_upload_events() if you need to keep track of the progress");
             self.logged_event_sender_absence = true;
         }
     }
@@ -450,7 +449,7 @@ impl FilesUpload {
         chunk_info: ChunkInfo,
         get_store_cost_sender: mpsc::Sender<TaskResult>,
     ) {
-        trace!("spawning a get_store_cost task");
+        println!("spawning a get_store_cost task");
         let client = self.api.client.clone();
         let _handle = tokio::spawn(async move {
             let cost = match client
@@ -461,11 +460,11 @@ impl FilesUpload {
                 .await
             {
                 Ok(cost) => {
-                    debug!("Storecosts retrieved for {:?} {cost:?}", chunk_info.name);
+                    println!("Storecosts retrieved for {:?} {cost:?}", chunk_info.name);
                     TaskResult::GetStoreCostOK((chunk_info, cost))
                 }
                 Err(err) => {
-                    error!(
+                    println!(
                         "Encountered error {err:?} when getting store_cost of {:?}",
                         chunk_info.name
                     );
@@ -486,11 +485,11 @@ impl FilesUpload {
         let files_api = self.api.clone();
         let verify_store = self.verify_store;
         let _handle = tokio::spawn(async move {
-            trace!("spawning paying thread");
+            println!("spawning paying thread");
             let mut wallet_client = match files_api.wallet() {
                 Ok(wallet) => wallet,
                 Err(err) => {
-                    error!("Failed to open wallet when handling {err:?}");
+                    println!("Failed to open wallet when handling {err:?}");
                     let _ = pay_for_chunk_sender
                         .send(TaskResult::ErrorEntries(vec![]))
                         .await;
@@ -514,7 +513,7 @@ impl FilesUpload {
                     let result = match wallet_client.pay_for_records(&cost_map, verify_store).await
                     {
                         Ok((storage_cost, royalty_fees)) => {
-                            trace!("Made payments for {} chunks", cost_map.len());
+                            println!("Made payments for {} chunks", cost_map.len());
                             let reply_list = std::mem::take(&mut chunk_info_map);
                             TaskResult::MakePaymentsOK((
                                 (storage_cost, royalty_fees, wallet_client.balance()),
@@ -526,7 +525,7 @@ impl FilesUpload {
                                 .into_iter()
                                 .map(|(chunk_info, _)| chunk_info)
                                 .collect();
-                            error!("When paying {} chunks, got error {err:?}", reply_list.len());
+                            println!("When paying {} chunks, got error {err:?}", reply_list.len());
                             TaskResult::ErrorEntries(reply_list)
                         }
                     };
@@ -538,7 +537,7 @@ impl FilesUpload {
                     cost_map = BTreeMap::new();
                 }
             }
-            trace!("Paying thread terminated");
+            println!("Paying thread terminated");
         });
     }
 
@@ -548,7 +547,7 @@ impl FilesUpload {
         payee: PeerId,
         upload_chunk_sender: mpsc::Sender<TaskResult>,
     ) {
-        trace!("spawning upload chunk task");
+        println!("spawning upload chunk task");
         let files_api = self.api.clone();
         let verify_store = self.verify_store;
         let retry_strategy = self.retry_strategy;
@@ -558,7 +557,7 @@ impl FilesUpload {
                 Self::upload_chunk(files_api, chunk_info, payee, verify_store, retry_strategy)
                     .await;
 
-            debug!(
+            println!(
                 "Chunk {:?} uploaded with result {:?}",
                 chunk_info.name, result
             );
