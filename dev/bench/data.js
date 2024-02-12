@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707733977258,
+  "lastUpdate": 1707734075113,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "d50637924aa2419f2bddaa1de3ebe190f54de104",
-          "message": "fix(metrics): do not bind to localhost as it causes issues with containers",
-          "timestamp": "2023-10-05T15:06:18Z",
-          "tree_id": "89fc718f096e964df736043b11f484d25b6dbd63",
-          "url": "https://github.com/maidsafe/safe_network/commit/d50637924aa2419f2bddaa1de3ebe190f54de104"
-        },
-        "date": 1696521916910,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ian@iancoleman.io",
+            "name": "Ian Coleman",
+            "username": "iancoleman"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "838407eae0cff44c13aacb7e280a5b1493a7b465",
+          "message": "feat(faucet): api endpoint to return distribution\n\nThe server sends 100 tokens for the endpoint:\nhttp://<ip>/<bls_hex_pubkey>\nThis adds a new (additional) endpoint to distribute to maid addresses:\nhttp://<ip>/distribution?address=<address>&pkhex=<pkhex>\nCalling the new endpoint will return an existing distribution for that\nmaidsafecoin address, or create a new distribution if needed.",
+          "timestamp": "2024-02-12T09:24:20Z",
+          "tree_id": "724feb688ec8d23f359955488db4bb66c289b0d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/838407eae0cff44c13aacb7e280a5b1493a7b465"
+        },
+        "date": 1707734074106,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
