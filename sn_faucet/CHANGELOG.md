@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.60](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.59...sn_faucet-v0.3.60) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.3.59](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.58...sn_faucet-v0.3.59) - 2024-02-09
 
 ### Other

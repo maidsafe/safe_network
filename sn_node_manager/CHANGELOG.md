@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.58](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.57...sn-node-manager-v0.1.58) - 2024-02-12
+
+### Fixed
+- apply suspicious_open_options from clippy
+
 ## [0.1.57](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.56...sn-node-manager-v0.1.57) - 2024-02-09
 
 ### Other
