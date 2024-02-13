@@ -6,6 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::subcommands::files::{get_progress_bar, UploadedFile};
+use bytes::Bytes;
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use sn_client::{FilesApi, StoragePaymentResult};
+use sn_protocol::storage::ChunkAddress;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -14,20 +23,9 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-
-use bytes::Bytes;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use walkdir::WalkDir;
 use xor_name::XorName;
-
-use sn_client::FilesApi;
-use sn_protocol::storage::ChunkAddress;
-
-use crate::subcommands::files::{get_progress_bar, UploadedFile};
+use sn_transfers::WalletResult;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
@@ -546,15 +544,13 @@ impl ChunkManager {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
-    use tempfile::TempDir;
-
     use sn_logging::LogBuilder;
     use sn_protocol::test_utils::assert_list_eq;
-
-    use super::*;
+    use tempfile::TempDir;
 
     #[test]
     fn chunked_files_should_be_written_to_artifacts_dir() -> Result<()> {
