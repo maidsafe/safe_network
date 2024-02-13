@@ -48,6 +48,7 @@ pub const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 
 /// Defines the percentage (ie 1/FORWARDER_CHOOSING_FACTOR th of all nodes) of nodes
 /// which will act as royalty_transfer_notify forwarder.
+#[cfg(feature = "royalties-by-gossip")]
 const FORWARDER_CHOOSING_FACTOR: usize = 10;
 
 /// Interval to trigger replication of all records to all peers.
