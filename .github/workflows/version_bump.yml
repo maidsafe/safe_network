@@ -5,9 +5,21 @@ concurrency:
   group: "version-bump"
 
 on:
+  # workflow dispatch allows us to generate a new version without having to push a commit
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'The release-channel branch to bump'
+        required: true
+        options:
+          - alpha
+          - beta
+          - rc
   push:
     branches:
+    # run for everything that gets into main
       - main
+    
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
