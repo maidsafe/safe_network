@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.12.7...sn_protocol-v0.13.0) - 2024-02-13
+
+### Added
+- *(protocol)* include local flag inside registry's Node struct
+- *(protocol)* obtain safenode's port from listen addr
+- *(sn_protocol)* [**breaking**] store the bootstrap peers inside the NodeRegistry
+
+### Other
+- *(protocol)* [**breaking**] make node dirs not optional
+
 ## [0.12.7](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.12.6...sn_protocol-v0.12.7) - 2024-02-13
 
 ### Other

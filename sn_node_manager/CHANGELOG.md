@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.62...sn-node-manager-v0.2.0) - 2024-02-13
+
+### Added
+- *(protocol)* include local flag inside registry's Node struct
+- *(sn_protocol)* [**breaking**] store the bootstrap peers inside the NodeRegistry
+
+### Fixed
+- *(manager)* restart nodes with the same safenode port
+
+### Other
+- *(manager)* move bootstrap_peers store step inside add fn
+- *(protocol)* [**breaking**] make node dirs not optional
+
 ## [0.1.62](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.61...sn-node-manager-v0.1.62) - 2024-02-13
 
 ### Other
