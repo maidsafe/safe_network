@@ -144,9 +144,9 @@ pub async fn add(
                     listen_addr: None,
                     pid: None,
                     peer_id: None,
-                    log_dir_path: Some(service_log_dir_path.clone()),
-                    data_dir_path: Some(service_data_dir_path.clone()),
-                    safenode_path: Some(service_safenode_path),
+                    log_dir_path: service_log_dir_path.clone(),
+                    data_dir_path: service_data_dir_path.clone(),
+                    safenode_path: service_safenode_path,
                     connected_peers: None,
                 });
                 // We save the node registry for each service because it's possible any number of
@@ -332,11 +332,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
+            node_logs_dir.to_path_buf().join("safenode1")
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
+            node_data_dir.to_path_buf().join("safenode1")
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
@@ -366,11 +366,9 @@ mod tests {
                 listen_addr: None,
                 pid: None,
                 peer_id: None,
-                log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-                data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-                safenode_path: Some(PathBuf::from(
-                    "/var/safenode-manager/services/safenode1/safenode",
-                )),
+                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
                 connected_peers: None,
             }],
             bootstrap_peers: vec![],
@@ -614,11 +612,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
+            node_logs_dir.to_path_buf().join("safenode1")
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
+            node_data_dir.to_path_buf().join("safenode1")
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[1].version, latest_version);
@@ -631,11 +629,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode2"))
+            node_logs_dir.to_path_buf().join("safenode2")
         );
         assert_eq!(
             node_registry.nodes[1].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode2"))
+            node_data_dir.to_path_buf().join("safenode2")
         );
         assert_matches!(node_registry.nodes[1].status, NodeStatus::Added);
         assert_eq!(node_registry.nodes[2].version, latest_version);
@@ -648,11 +646,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[2].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode3"))
+            node_logs_dir.to_path_buf().join("safenode3")
         );
         assert_eq!(
             node_registry.nodes[2].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode3"))
+            node_data_dir.to_path_buf().join("safenode3")
         );
         assert_matches!(node_registry.nodes[2].status, NodeStatus::Added);
 
@@ -681,11 +679,9 @@ mod tests {
                 pid: None,
                 peer_id: None,
                 listen_addr: None,
-                log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-                data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-                safenode_path: Some(PathBuf::from(
-                    "/var/safenode-manager/services/safenode1/safenode",
-                )),
+                log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
                 connected_peers: None,
             }],
             bootstrap_peers: vec![],
@@ -760,11 +756,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[1].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode2"))
+            node_logs_dir.to_path_buf().join("safenode2")
         );
         assert_eq!(
             node_registry.nodes[1].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode2"))
+            node_data_dir.to_path_buf().join("safenode2")
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
@@ -861,11 +857,11 @@ mod tests {
         );
         assert_eq!(
             node_registry.nodes[0].log_dir_path,
-            Some(node_logs_dir.to_path_buf().join("safenode1"))
+            node_logs_dir.to_path_buf().join("safenode1")
         );
         assert_eq!(
             node_registry.nodes[0].data_dir_path,
-            Some(node_data_dir.to_path_buf().join("safenode1"))
+            node_data_dir.to_path_buf().join("safenode1")
         );
         assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 

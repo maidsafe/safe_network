@@ -187,24 +187,9 @@ pub async fn status(
                 "PID: {}",
                 node.pid.map_or("-".to_string(), |p| p.to_string())
             );
-            println!(
-                "Data path: {}",
-                node.data_dir_path
-                    .as_ref()
-                    .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
-            );
-            println!(
-                "Log path: {}",
-                node.log_dir_path
-                    .as_ref()
-                    .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
-            );
-            println!(
-                "Bin path: {}",
-                node.safenode_path
-                    .as_ref()
-                    .map_or("-".to_string(), |p| p.to_string_lossy().to_string())
-            );
+            println!("Data path: {}", node.data_dir_path.to_string_lossy());
+            println!("Log path: {}", node.log_dir_path.to_string_lossy());
+            println!("Bin path: {}", node.safenode_path.to_string_lossy());
             println!(
                 "Connected peers: {}",
                 node.connected_peers
@@ -279,17 +264,8 @@ pub async fn remove(
     service_control.uninstall(&node.service_name)?;
 
     if !keep_directories {
-        std::fs::remove_dir_all(node.data_dir_path.as_ref().ok_or_else(|| {
-            eyre!("The data directory should be set before the node is removed")
-        })?)?;
-        std::fs::remove_dir_all(
-            node.log_dir_path.as_ref().ok_or_else(|| {
-                eyre!("The log directory should be set before the node is removed")
-            })?,
-        )?;
-        node.data_dir_path = None;
-        node.log_dir_path = None;
-        node.safenode_path = None;
+        std::fs::remove_dir_all(&node.data_dir_path)?;
+        std::fs::remove_dir_all(&node.log_dir_path)?;
     }
 
     node.status = NodeStatus::Removed;
@@ -312,12 +288,7 @@ pub async fn upgrade(
     }
 
     stop(node, service_control).await?;
-    std::fs::copy(
-        upgraded_safenode_path,
-        node.safenode_path
-            .as_ref()
-            .ok_or_else(|| eyre!("Unable to obtain safenode path for current node"))?,
-    )?;
+    std::fs::copy(upgraded_safenode_path, &node.safenode_path)?;
     start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
     node.version = latest_version.to_string();
 
@@ -421,11 +392,9 @@ mod tests {
             pid: None,
             listen_addr: None,
             peer_id: None,
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
         start(
@@ -497,11 +466,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWAAqZWsjhdZTX7tniJ7Dwye3nEbp1dx1wE96sbgL51obs",
             )?),
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
         start(
@@ -564,11 +531,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
         start(
@@ -622,11 +587,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
         start(
@@ -672,11 +635,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: Some(vec![PeerId::from_str(
                 "12D3KooWKbV9vUmZQdHmTwrQqHrqAQpM7GUWHJXeK1xLeh2LVpuc",
             )?]),
@@ -713,11 +674,9 @@ mod tests {
             pid: None,
             listen_addr: None,
             peer_id: None,
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
 
@@ -753,11 +712,9 @@ mod tests {
             pid: None,
             peer_id: None,
             listen_addr: None,
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
 
@@ -798,19 +755,15 @@ mod tests {
             pid: None,
             peer_id: None,
             listen_addr: None,
-            log_dir_path: Some(log_dir.to_path_buf()),
-            data_dir_path: Some(data_dir.to_path_buf()),
-            safenode_path: Some(safenode_bin.to_path_buf()),
+            log_dir_path: log_dir.to_path_buf(),
+            data_dir_path: data_dir.to_path_buf(),
+            safenode_path: safenode_bin.to_path_buf(),
             connected_peers: None,
         };
 
         remove(&mut node, &mock_service_control, false).await?;
 
-        assert_eq!(node.data_dir_path, None);
-        assert_eq!(node.log_dir_path, None);
-        assert_eq!(node.safenode_path, None);
         assert_matches!(node.status, NodeStatus::Removed);
-
         log_dir.assert(predicate::path::missing());
         data_dir.assert(predicate::path::missing());
 
@@ -840,11 +793,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
-            log_dir_path: Some(PathBuf::from("/var/log/safenode/safenode1")),
-            data_dir_path: Some(PathBuf::from("/var/safenode-manager/services/safenode1")),
-            safenode_path: Some(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
 
@@ -889,9 +840,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
-            log_dir_path: Some(log_dir.to_path_buf()),
-            data_dir_path: Some(data_dir.to_path_buf()),
-            safenode_path: Some(safenode_bin.to_path_buf()),
+            log_dir_path: log_dir.to_path_buf(),
+            data_dir_path: data_dir.to_path_buf(),
+            safenode_path: safenode_bin.to_path_buf(),
             connected_peers: None,
         };
 
@@ -939,16 +890,16 @@ mod tests {
             pid: None,
             peer_id: None,
             listen_addr: None,
-            log_dir_path: Some(log_dir.to_path_buf()),
-            data_dir_path: Some(data_dir.to_path_buf()),
-            safenode_path: Some(safenode_bin.to_path_buf()),
+            log_dir_path: log_dir.to_path_buf(),
+            data_dir_path: data_dir.to_path_buf(),
+            safenode_path: safenode_bin.to_path_buf(),
             connected_peers: None,
         };
 
         remove(&mut node, &mock_service_control, true).await?;
 
-        assert_eq!(node.data_dir_path, Some(data_dir.to_path_buf()));
-        assert_eq!(node.log_dir_path, Some(log_dir.to_path_buf()));
+        assert_eq!(node.data_dir_path, data_dir.to_path_buf());
+        assert_eq!(node.log_dir_path, log_dir.to_path_buf());
         assert_matches!(node.status, NodeStatus::Removed);
 
         log_dir.assert(predicate::path::is_dir());

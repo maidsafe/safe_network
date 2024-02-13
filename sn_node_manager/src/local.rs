@@ -139,15 +139,13 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         }
 
         if !keep_directories {
-            // The data directory must be set for a running node.
             // At this point we don't allow path overrides, so deleting the data directory will clear
             // the log directory also.
-            let data_dir_path = node.data_dir_path.as_ref().unwrap();
-            std::fs::remove_dir_all(data_dir_path)?;
+            std::fs::remove_dir_all(&node.data_dir_path)?;
             println!(
                 "  {} Removed {}",
                 "✓".green(),
-                data_dir_path.to_string_lossy()
+                node.data_dir_path.to_string_lossy()
             );
         }
     }
@@ -315,9 +313,9 @@ pub async fn run_node(
         pid: Some(node_info.pid),
         listen_addr: Some(listen_addrs),
         peer_id: Some(peer_id),
-        log_dir_path: Some(node_info.log_path),
-        data_dir_path: Some(node_info.data_path),
-        safenode_path: Some(launcher.get_safenode_path()),
+        log_dir_path: node_info.log_path,
+        data_dir_path: node_info.data_path,
+        safenode_path: launcher.get_safenode_path(),
     })
 }
 
@@ -470,20 +468,17 @@ mod tests {
         assert_eq!(node.service_name, "safenode-local1");
         assert_eq!(
             node.data_dir_path,
-            Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}")))
+            PathBuf::from(format!("~/.local/share/safe/{peer_id}"))
         );
         assert_eq!(
             node.log_dir_path,
-            Some(PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs")))
+            PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs"))
         );
         assert_eq!(node.number, 1);
         assert_eq!(node.pid, Some(1000));
         assert_eq!(node.rpc_socket_addr, rpc_socket_addr);
         assert_eq!(node.status, NodeStatus::Running);
-        assert_eq!(
-            node.safenode_path,
-            Some(PathBuf::from("/usr/local/bin/safenode"))
-        );
+        assert_eq!(node.safenode_path, PathBuf::from("/usr/local/bin/safenode"));
 
         Ok(())
     }
