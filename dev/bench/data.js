@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707861097195,
+  "lastUpdate": 1707861099537,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "974a18f47b5212e7738e44d96d2fb3ec2b12d0bf",
-          "message": "chore(log): log the running test's name",
-          "timestamp": "2023-10-11T07:20:11+02:00",
-          "tree_id": "adc9b3ebbfa3e39f3328caff03bc380bdc8966cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/974a18f47b5212e7738e44d96d2fb3ec2b12d0bf"
-        },
-        "date": 1697003199381,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 148,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 38,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "ebee6c5f52cd8146e29eae02044bed32ee8e0de7",
+          "message": "test(manager): move bootstrap_peers store step inside add fn",
+          "timestamp": "2024-02-13T21:39:38Z",
+          "tree_id": "6ff50b4f0356a0c1ab108d6c9b69c1663bce3ce2",
+          "url": "https://github.com/maidsafe/safe_network/commit/ebee6c5f52cd8146e29eae02044bed32ee8e0de7"
+        },
+        "date": 1707861098700,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
