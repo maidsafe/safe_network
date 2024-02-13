@@ -36,6 +36,7 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          ref: ${{ github.event.inputs.channel || 'main' }}
 
       - name: Get the SHA of the last release commit
         id: get-sha
@@ -52,11 +53,11 @@ jobs:
           repository-name: ${{ github.repository }}
           repository-owner: ${{ github.repository_owner }}
           head-sha: ${{ env.sha }}
-          base-branch: "main"
+          base-branch: ${{ github.event.inputs.channel || 'main' }}
           polling-interval: 60
 
-      - name: Fetch the latest code from main
-        run: git pull origin main
+      - name: Fetch the latest code from the specified branch
+        run: git pull origin ${{ github.event.inputs.channel || 'main' }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -77,12 +78,12 @@ jobs:
           rm release-plz-x86_64-unknown-linux-gnu.tar.gz
           sudo mv release-plz /usr/local/bin
       - shell: bash
-        run: ./resources/scripts/bump_version.sh
+        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.channel || 'main' }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-          branch: main
+          branch: ${{ github.event.inputs.channel || 'main' }}
           tags: true
       - name: post notification to slack on failure
         if: ${{ failure() }}
