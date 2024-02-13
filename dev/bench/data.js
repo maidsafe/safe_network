@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707827671787,
+  "lastUpdate": 1707827673740,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36954,6 +36954,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "de5784a04b0032d8b64ffc409c07952d1ac10128",
+          "message": "chore(node): move gossip const behind feature flag",
+          "timestamp": "2024-02-13T13:22:16+01:00",
+          "tree_id": "16d8ccf320466b3cd5e9470fc66ddfe493da56e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/de5784a04b0032d8b64ffc409c07952d1ac10128"
+        },
+        "date": 1707827673179,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6486,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38950,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
