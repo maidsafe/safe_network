@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - alpha
+      - beta
 
 jobs:
   release-plz:
@@ -20,6 +21,16 @@ jobs:
           fetch-depth: 0
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Set Branch Name
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_ENV
+
+      - name: Update release-plz Configuration for Non-Main Branches
+        if: env.BRANCH_NAME != 'main'
+        run: |
+          sed -i "s/package = \"{{package}}\"/package = \"${{ env.BRANCH_NAME }}-{{package}}\"/g" .release-plz.toml
+        shell: bash
+
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         env:

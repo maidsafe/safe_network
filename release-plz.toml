@@ -7,7 +7,8 @@ pr_labels = ["release"] # add the `release` label to the release Pull Request
 publish_allow_dirty = false
 semver_check = true
 pr_draft = true
-git_tag_name = "alpha-{{package}}-{{version}}"
+git_tag_name = "{{package}}-{{version}}"
+git_release_name = "{{package}}-{{version}}"
 
 [[package]]
 name = "sn_build_info"
@@ -34,7 +35,7 @@ name = "sn_cli"
 changelog_update = true
 git_release_enable = true
 publish = false
-changelog_include = ["sn_networking", "sn_protocol", "sn_registers", "sn_peers_acquisition", "sn_transfers"] # include commits from `sn_networking, sn_protocol` in the changelog
+changelog_include = ["sn_networking", "sn_protocol", "sn_registers", "sn_peers_acquisition", "sn_transfers", "sn_client"] # include commits from `sn_networking, sn_protocol` in the changelog
 
 [[package]]
 name = "sn_logging"
