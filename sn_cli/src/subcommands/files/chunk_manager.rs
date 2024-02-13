@@ -15,6 +15,7 @@ use color_eyre::{
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::{FilesApi, StoragePaymentResult};
 use sn_protocol::storage::ChunkAddress;
+use sn_transfers::WalletResult;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -25,7 +26,6 @@ use std::{
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
-use sn_transfers::WalletResult;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
