@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707827673740,
+  "lastUpdate": 1707844581397,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2de49182d7b81d949ed89c0e6d19cf694ae95cad",
-          "message": "fix: make client handle payment error",
-          "timestamp": "2023-10-11T08:59:30+02:00",
-          "tree_id": "27b9fec2ce5a3b328c51122be46a0e21366cd9b0",
-          "url": "https://github.com/maidsafe/safe_network/commit/2de49182d7b81d949ed89c0e6d19cf694ae95cad"
-        },
-        "date": 1697008805213,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09563174376645839,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5626749221301471,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 33.64531558286661,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.2361823011758,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602",
+          "message": "fix(CI): usng smaller target to avoid our_of_disk error",
+          "timestamp": "2024-02-13T16:24:31Z",
+          "tree_id": "440c4ae58b37326e470a06e0ebcc7620cff625d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602"
+        },
+        "date": 1707844578657,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.236675752533932,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8048978282019215,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.63977267177577,
             "unit": "MiB/s"
           }
         ]
