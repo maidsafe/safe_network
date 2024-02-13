@@ -28,7 +28,7 @@ jobs:
       - name: Update release-plz Configuration for Non-Main Branches
         if: env.BRANCH_NAME != 'main'
         run: |
-          sed -i "s/package = \"{{package}}\"/package = \"${{ env.BRANCH_NAME }}-{{package}}\"/g" .release-plz.toml
+          sed -i "s/package = \"{{package}}\"/package = \"${{ env.BRANCH_NAME }}-{{package}}\"/g" release-plz.toml
         shell: bash
 
       - name: Run release-plz
