@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{service::ServiceControl, VerbosityLevel};
+use crate::{
+    service::{ServiceConfig, ServiceControl},
+    VerbosityLevel,
+};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
-use libp2p::multiaddr::Protocol;
+use libp2p::{multiaddr::Protocol, Multiaddr};
 use semver::Version;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
@@ -277,6 +280,7 @@ pub async fn remove(
 
 pub async fn upgrade(
     node: &mut Node,
+    bootstrap_peers: Vec<Multiaddr>,
     upgraded_safenode_path: &PathBuf,
     latest_version: &Version,
     service_control: &dyn ServiceControl,
@@ -289,6 +293,22 @@ pub async fn upgrade(
 
     stop(node, service_control).await?;
     std::fs::copy(upgraded_safenode_path, &node.safenode_path)?;
+
+    // Install the service again to make sure we re-use the same node port.
+    // Initially the node_port is generated on random. We obtain this port from the Node::listen_addr field to be re-used.
+    service_control.install(ServiceConfig {
+        local: node.local,
+        data_dir_path: node.data_dir_path.clone(),
+        genesis: node.genesis,
+        name: node.service_name.clone(),
+        node_port: Some(node.get_safenode_port()?),
+        bootstrap_peers,
+        rpc_socket_addr: node.rpc_socket_addr,
+        log_dir_path: node.log_dir_path.clone(),
+        safenode_path: node.safenode_path.clone(),
+        service_user: node.user.clone(),
+    })?;
+
     start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
     node.version = latest_version.to_string();
 

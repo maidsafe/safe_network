@@ -845,6 +845,7 @@ async fn main() -> Result<()> {
                 let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 let result = upgrade(
                     node,
+                    node_registry.bootstrap_peers.clone(),
                     &safenode_download_path,
                     &latest_version,
                     &NodeServiceManager {},
@@ -879,6 +880,7 @@ async fn main() -> Result<()> {
                 let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                 let result = upgrade(
                     node,
+                    node_registry.bootstrap_peers.clone(),
                     &safenode_download_path,
                     &latest_version,
                     &NodeServiceManager {},
@@ -902,6 +904,7 @@ async fn main() -> Result<()> {
                     let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
                     let result = upgrade(
                         node,
+                        node_registry.bootstrap_peers.clone(),
                         &safenode_download_path,
                         &latest_version,
                         &NodeServiceManager {},
