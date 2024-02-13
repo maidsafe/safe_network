@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707827669943,
+  "lastUpdate": 1707827671787,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "eab9681ae02e7abb15ef8f979f2a1659056258d5",
-          "message": "chore: dep updates",
-          "timestamp": "2023-10-10T13:26:57+02:00",
-          "tree_id": "ecf7742b29dfb801f7fa041502fe7783675a73dc",
-          "url": "https://github.com/maidsafe/safe_network/commit/eab9681ae02e7abb15ef8f979f2a1659056258d5"
-        },
-        "date": 1696939129258,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 164,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "de5784a04b0032d8b64ffc409c07952d1ac10128",
+          "message": "chore(node): move gossip const behind feature flag",
+          "timestamp": "2024-02-13T13:22:16+01:00",
+          "tree_id": "16d8ccf320466b3cd5e9470fc66ddfe493da56e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/de5784a04b0032d8b64ffc409c07952d1ac10128"
+        },
+        "date": 1707827671195,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
