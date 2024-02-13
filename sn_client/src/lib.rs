@@ -46,6 +46,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 // This is like the `main` function, except for JavaScript.
+// this is an arbitrary change to test the release-plz
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(start)]
 pub async fn main_js() -> std::result::Result<(), JsValue> {
