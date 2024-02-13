@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.9](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.8...sn_client-v0.104.9) - 2024-02-13
+
+### Added
+- filtering dag errors
+- identify orphans and inconsistencies in the DAG
+
+### Fixed
+- manage the genesis spend case
+
 ## [0.104.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.7...sn_client-v0.104.8) - 2024-02-12
 
 ### Other
