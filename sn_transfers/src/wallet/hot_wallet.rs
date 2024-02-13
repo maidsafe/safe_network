@@ -183,15 +183,31 @@ impl HotWallet {
     }
 
     /// Moves all files for the current wallet, including keys and cashnotes
-    /// to directory root_dir/wallet_<short_address>
-    pub fn clear(root_dir: &Path) -> Result<PathBuf> {
+    /// to directory root_dir/wallet_ADDRESS
+    pub fn stash(root_dir: &Path) -> Result<PathBuf> {
         let wallet = HotWallet::load_from(root_dir)?;
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let addr_short = &format!("{:?}", wallet.address())[0..10];
-        let new_name = format!("{WALLET_DIR_NAME}_{addr_short}");
+        let addr_hex = &format!("{:?}", wallet.address());
+        let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let moved_dir = root_dir.join(new_name);
         let _ = std::fs::rename(wallet_dir, moved_dir.clone());
         Ok(moved_dir)
+    }
+
+    /// Moves a previously stashed wallet to the root wallet directory.
+    pub fn unstash(root_dir: &Path, addr_hex: &str) -> Result<()> {
+        let cleared_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
+        let cleared_dir = root_dir.join(cleared_name);
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        std::fs::rename(cleared_dir, wallet_dir.clone())?;
+        Ok(())
+    }
+
+    /// Removes all files for the current wallet, including keys and cashnotes
+    pub fn remove(root_dir: &Path) -> Result<()> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        std::fs::remove_dir_all(wallet_dir)?;
+        Ok(())
     }
 
     /// To remove a specific spend from the requests, if eg, we see one spend is _bad_

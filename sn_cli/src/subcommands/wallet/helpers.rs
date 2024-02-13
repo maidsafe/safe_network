@@ -6,13 +6,50 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(feature = "distribution")]
+use super::WalletApiHelper;
+#[cfg(feature = "distribution")]
+use base64::Engine;
 use color_eyre::Result;
 use sn_client::transfers::{HotWallet, SpendAddress, Transfer};
 use sn_client::Client;
 use std::{path::Path, str::FromStr};
 use url::Url;
 
-pub async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
+#[cfg(feature = "distribution")]
+pub async fn get_faucet(
+    root_dir: &Path,
+    client: &Client,
+    url: String,
+    address: Option<String>,
+    signature: Option<String>,
+) -> Result<()> {
+    if address.is_some() ^ signature.is_some() {
+        println!("Address and signature must both be specified.");
+        return Ok(());
+    }
+    if address.is_none() && signature.is_none() {
+        get_faucet_fixed_amount(root_dir, client, url).await?;
+    } else if let Some(addr) = address {
+        if let Some(sig) = signature {
+            get_faucet_distribution(root_dir, client, url, addr, sig).await?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "distribution"))]
+pub async fn get_faucet(
+    root_dir: &Path,
+    client: &Client,
+    url: String,
+    _address: Option<String>,
+    _signature: Option<String>,
+) -> Result<()> {
+    get_faucet_fixed_amount(root_dir, client, url).await
+}
+
+pub async fn get_faucet_fixed_amount(root_dir: &Path, client: &Client, url: String) -> Result<()> {
     let wallet = HotWallet::load_from(root_dir)?;
     let address_hex = wallet.address().to_hex();
     let url = if !url.contains("://") {
@@ -32,6 +69,44 @@ pub async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result
     } else {
         println!("Failed to get tokens from faucet, server responded with: {body:?}");
     }
+    Ok(())
+}
+
+#[cfg(feature = "distribution")]
+pub async fn get_faucet_distribution(
+    root_dir: &Path,
+    client: &Client,
+    url: String,
+    address: String,
+    signature: String,
+) -> Result<()> {
+    // submit the details to the faucet to get the distribution
+    let url = if !url.contains("://") {
+        format!("{}://{}", "http", url)
+    } else {
+        url
+    };
+    // receive to the current local wallet
+    let wallet = WalletApiHelper::load_from(root_dir)?.address().to_hex();
+    println!("Requesting distribution for maid address {address} to local wallet {wallet}");
+    // base64 uses + and / as the delimiters which doesn't go well in the query
+    // string, so the signature is encoded using url safe characters.
+    let sig_bytes = base64::engine::general_purpose::STANDARD.decode(signature)?;
+    let sig_url = base64::engine::general_purpose::URL_SAFE.encode(sig_bytes);
+    let req_url = Url::parse(&format!(
+        "{url}/distribution?address={address}&wallet={wallet}&signature={sig_url}"
+    ))?;
+    let response = reqwest::get(req_url).await?;
+    let is_ok = response.status().is_success();
+    let transfer_hex = response.text().await?;
+    if !is_ok {
+        println!(
+            "Failed to get distribution from faucet, server responded with:\n{transfer_hex:?}"
+        );
+        return Ok(());
+    }
+    println!("Receiving transfer for maid address {address}:\n{transfer_hex}");
+    receive(transfer_hex, false, client, root_dir).await?;
     Ok(())
 }
 
