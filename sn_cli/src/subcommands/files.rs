@@ -30,7 +30,10 @@ use walkdir::WalkDir;
 use xor_name::XorName;
 
 pub(crate) use chunk_manager::ChunkManager;
-use sn_client::{Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent, FilesUpload, BATCH_SIZE, StoragePaymentResult};
+use sn_client::{
+    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
+    FilesUpload, StoragePaymentResult, BATCH_SIZE,
+};
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{Error as TransfersError, WalletError, WalletResult};
