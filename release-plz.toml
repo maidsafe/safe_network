@@ -1,73 +1,93 @@
 [workspace]
 allow_dirty = false
 changelog_update = true
-dependencies_update = false
+dependencies_update = true
 git_release_enable = true
+pr_labels = ["release"] # add the `release` label to the release Pull Request
 publish_allow_dirty = false
-semver_check = false
+semver_check = true
+pr_draft = true
+git_tag_prefix = "alpha-"
 
 [[package]]
 name = "sn_build_info"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_client"
 changelog_update = true
-git_release_enable = false
-publish = true
+git_release_enable = true
+publish = false
+changelog_include = ["sn_networking", "sn_protocol", "sn_registers", "sn_peers_acquisition", "sn_transfers"] # include commits from `sn_networking, sn_protocol` in the changelog
+
+[[package]]
+name = "sn_node"
+changelog_update = true
+git_release_enable = true
+publish = false
+changelog_include = ["sn_networking", "sn_protocol", "sn_registers", "sn_peers_acquisition", "sn_transfers"] # include commits from `sn_networking, sn_protocol` in the changelog
+
+[[package]]
+name = "sn_cli"
+changelog_update = true
+git_release_enable = true
+publish = false
+changelog_include = ["sn_networking", "sn_protocol", "sn_registers", "sn_peers_acquisition", "sn_transfers"] # include commits from `sn_networking, sn_protocol` in the changelog
 
 [[package]]
 name = "sn_logging"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_networking"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
+changelog_include = ["sn_protocol"] # include commits from `sn_networking, sn_protocol` in the changelog
+
 
 [[package]]
 name = "sn_peers_acquisition"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_protocol"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_registers"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_transfers"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_faucet"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "sn_node_rpc_client"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false
 
 [[package]]
 name = "token_supplies"
 changelog_update = true
 git_release_enable = false
-publish = true
+publish = false

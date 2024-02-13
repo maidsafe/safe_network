@@ -46,6 +46,7 @@ use tokio::{
 /// serialised transfer info encrypted against the referenced public key.
 pub const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 
+#[cfg(feature = "royalties-by-gossip")]
 /// Defines the percentage (ie 1/FORWARDER_CHOOSING_FACTOR th of all nodes) of nodes
 /// which will act as royalty_transfer_notify forwarder.
 const FORWARDER_CHOOSING_FACTOR: usize = 10;
