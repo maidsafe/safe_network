@@ -13,7 +13,7 @@ use color_eyre::{
     Result,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::FilesApi;
+use sn_client::{FilesApi, StoragePaymentResult};
 use sn_protocol::storage::ChunkAddress;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -25,6 +25,7 @@ use std::{
 };
 use walkdir::WalkDir;
 use xor_name::XorName;
+use sn_transfers::WalletResult;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
@@ -88,6 +89,11 @@ impl ChunkManager {
     /// Chunk all the files in the provided `files_path`
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account
+    ///
+    /// # Arguments
+    /// * files_path - &[Path]
+    /// * read_cache - Boolean. Set to true to resume the chunks from the artifacts dir.
+    /// * include_data_maps - Boolean. If set to true, will append all the ChunkedFile.data_map chunks to the vector.
     pub(crate) fn chunk_path(
         &mut self,
         files_path: &Path,
@@ -95,6 +101,7 @@ impl ChunkManager {
         include_data_maps: bool,
     ) -> Result<()> {
         let now = Instant::now();
+
         // clean up
         self.files_to_chunk = Default::default();
         self.chunks = Default::default();
@@ -120,6 +127,7 @@ impl ChunkManager {
                     ));
                 }
             });
+
         let total_files = self.files_to_chunk.len();
         if total_files == 0 {
             if files_path.is_dir() {
@@ -142,6 +150,7 @@ impl ChunkManager {
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
             .count();
+
         // note the number of files that we've resumed
         self.resumed_files_count = self.chunks.keys().collect::<BTreeSet<_>>().len();
 

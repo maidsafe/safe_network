@@ -30,13 +30,10 @@ use walkdir::WalkDir;
 use xor_name::XorName;
 
 pub(crate) use chunk_manager::ChunkManager;
-use sn_client::{
-    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
-    FilesUpload, BATCH_SIZE,
-};
+use sn_client::{Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent, FilesUpload, BATCH_SIZE, StoragePaymentResult};
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_protocol::NetworkAddress;
-use sn_transfers::{Error as TransfersError, WalletError};
+use sn_transfers::{Error as TransfersError, WalletError, WalletResult};
 
 mod chunk_manager;
 
@@ -261,7 +258,7 @@ pub(crate) async fn files_cmds(
 /// Estimate the upload cost of a chosen file
 pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, true, false)?;
+    chunk_manager.chunk_path(&path, false, false)?;
 
     let mut estimate: u64 = 0;
 

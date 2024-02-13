@@ -84,7 +84,7 @@ impl FilesApi {
         debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
 
         debug!(
-            "Is there a datamap for chuink?? {:?}",
+            "Is there a datamap for chunk?? {:?}",
             data_map_chunk.is_some()
         );
         // only write out the data_map if one exists for this file
