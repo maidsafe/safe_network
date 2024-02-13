@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -6,14 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(feature = "royalties-by-gossip")]
+use crate::node::ROYALTY_TRANSFER_NOTIF_TOPIC;
 use crate::{
     node::Node,
-    node::ROYALTY_TRANSFER_NOTIF_TOPIC,
     spends::{aggregate_spends, check_parent_spends},
     Error, Marker, Result,
 };
+#[cfg(feature = "royalties-by-gossip")]
 use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
+#[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
 use sn_networking::{get_singed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
@@ -531,24 +534,28 @@ impl Node {
             return Err(Error::NoNetworkRoyaltiesPayment(pretty_key.into_owned()));
         }
 
-        // publish a notification over gossipsub topic ROYALTY_TRANSFER_NOTIF_TOPIC
-        // for the network royalties payment.
-        let royalties_pk = *NETWORK_ROYALTIES_PK;
-        trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
-        let royalties_pk_bytes = royalties_pk.to_bytes();
+        // Feature guard network_royalty payment publish
+        #[cfg(feature = "royalties-by-gossip")]
+        {
+            // publish a notification over gossipsub topic ROYALTY_TRANSFER_NOTIF_TOPIC
+            // for the network royalties payment.
+            let royalties_pk = *NETWORK_ROYALTIES_PK;
+            trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
+            let royalties_pk_bytes = royalties_pk.to_bytes();
 
-        let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len());
-        msg.extend_from_slice(&royalties_pk_bytes);
-        let mut msg = msg.writer();
-        let mut serialiser = rmp_serde::Serializer::new(&mut msg);
-        match royalties_cash_notes_r.serialize(&mut serialiser) {
-            Ok(()) => {
-                let msg = msg.into_inner().freeze();
-                if let Err(err) = self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg) {
-                    debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+            let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len());
+            msg.extend_from_slice(&royalties_pk_bytes);
+            let mut msg = msg.writer();
+            let mut serialiser = rmp_serde::Serializer::new(&mut msg);
+            match royalties_cash_notes_r.serialize(&mut serialiser) {
+                Ok(()) => {
+                    let msg = msg.into_inner().freeze();
+                    if let Err(err) = self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg) {
+                        debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
+                    }
                 }
+                Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
             }
-            Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
         }
 
         // check if the quote is valid

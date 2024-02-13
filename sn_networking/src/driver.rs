@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -43,7 +43,6 @@ use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig}
 #[cfg(target_arch = "wasm32")]
 use libp2p::websocket_websys::Transport as WebSocketTransport;
 use libp2p::{
-    autonat,
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
     multiaddr::Protocol,
@@ -59,6 +58,7 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
+    storage::RetryStrategy,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
@@ -125,8 +125,8 @@ pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
 pub struct GetRecordCfg {
     /// The query will result in an error if we get records less than the provided Quorum
     pub get_quorum: Quorum,
-    /// If set to true, we retry upto GET_RETRY_ATTEMPTS times
-    pub re_attempt: bool,
+    /// If enabled, the provided `RetryStrategy` is used to retry if a GET attempt fails.
+    pub retry_strategy: Option<RetryStrategy>,
     /// Only return if we fetch the provided record.
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.
@@ -143,7 +143,7 @@ impl Debug for GetRecordCfg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut f = f.debug_struct("GetRecordCfg");
         f.field("get_quorum", &self.get_quorum)
-            .field("re_attempt", &self.re_attempt);
+            .field("retry_strategy", &self.retry_strategy);
 
         match &self.target_record {
             Some(record) => {
@@ -166,8 +166,8 @@ pub struct PutRecordCfg {
     /// just makes sure that we get atleast `n` successful responses defined by the Quorum.
     /// Our nodes currently send `Ok()` response for every KAD PUT. Thus this field does not do anything atm.
     pub put_quorum: Quorum,
-    /// If set to true, we retry upto PUT_RETRY_ATTEMPTS times
-    pub re_attempt: bool,
+    /// If enabled, the provided `RetryStrategy` is used to retry if a PUT attempt fails.
+    pub retry_strategy: Option<RetryStrategy>,
     /// Use the `kad::put_record_to` to PUT the record only to the specified peers. If this option is set to None, we
     /// will be using `kad::put_record` which would PUT the record to all the closest members of the record.
     pub use_put_record_to: Option<Vec<PeerId>>,
@@ -196,7 +196,6 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) autonat: Toggle<autonat::Behaviour>,
     pub(super) gossipsub: Toggle<libp2p::gossipsub::Behaviour>,
 }
 
@@ -547,33 +546,12 @@ impl NetworkBuilder {
             main_transport
         };
 
-        // Disable AutoNAT if we are either running locally or a client.
-        let autonat = if !self.local && !is_client {
-            let cfg = libp2p::autonat::Config {
-                // Defaults to 15. But we want to be a little quicker on checking for our NAT status.
-                boot_delay: Duration::from_secs(3),
-                // The time to wait for an AutoNAT server to respond.
-                // This is increased due to the fact that a server might take a while before it determines we are unreachable.
-                // There likely is a bug in libp2p AutoNAT that causes us to use this workaround.
-                // E.g. a TCP connection might only time out after 2 minutes, thus taking the server 2 minutes to determine we are unreachable.
-                timeout: Duration::from_secs(301),
-                // Defaults to 90. If we get a timeout and only have one server, we want to try again with the same server.
-                throttle_server_period: Duration::from_secs(15),
-                ..Default::default()
-            };
-            Some(libp2p::autonat::Behaviour::new(peer_id, cfg))
-        } else {
-            None
-        };
-        let autonat = Toggle::from(autonat);
-
         let behaviour = NodeBehaviour {
             request_response,
             kademlia,
             identify,
             #[cfg(feature = "local-discovery")]
             mdns,
-            autonat,
             gossipsub,
         };
 
@@ -640,6 +618,7 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
+    #[allow(unused)]
     pub(crate) network_metrics: NetworkMetrics,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
@@ -801,11 +780,7 @@ impl SwarmDriver {
         match self.handling_statistics.entry(handle_string) {
             Entry::Occupied(mut entry) => {
                 let records = entry.get_mut();
-                if records.len() == 10 {
-                    let _ = records.pop();
-                } else {
-                    records.push(handle_time);
-                }
+                records.push(handle_time);
             }
             Entry::Vacant(entry) => {
                 entry.insert(vec![handle_time]);
@@ -817,17 +792,21 @@ impl SwarmDriver {
         if self.handled_times >= 100 {
             self.handled_times = 0;
 
-            let kinds: Vec<String> = self.handling_statistics.keys().cloned().collect();
-            let avg_times: Vec<Duration> = self
+            let mut stats: Vec<(String, usize, Duration)> = self
                 .handling_statistics
-                .values()
-                .map(|durations| {
-                    let sum: Duration = durations.iter().sum();
-                    sum / durations.len() as u32
+                .iter()
+                .map(|(kind, durations)| {
+                    let count = durations.len();
+                    let avg_time = durations.iter().sum::<Duration>() / count as u32;
+                    (kind.clone(), count, avg_time)
                 })
                 .collect();
-            trace!("SwarmDriver Handling Statistics have kinds: {kinds:?}");
-            trace!("SwarmDriver Handling Statistics have ave_times: {avg_times:?}");
+
+            stats.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by count in descending order
+
+            trace!("SwarmDriver Handling Statistics: {:?}", stats);
+            // now we've logged, lets clear the stats from the btreemap
+            self.handling_statistics.clear();
         }
     }
 }

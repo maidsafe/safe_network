@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
+use std::io::Read;
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::sync::Arc;
 
 /// Downloads and extracts a release binary to a temporary location.
@@ -31,13 +33,13 @@ pub async fn download_and_extract_release(
 
     let temp_dir_path = create_temp_dir()?;
 
-    let (archive_path, version) = if let Some(url) = url {
+    let archive_path = if let Some(url) = url {
         println!("Retrieving {release_type} from {url}");
         let archive_path = release_repo
             .download_release(&url, &temp_dir_path, &callback)
             .await?;
         pb.finish_with_message("Download complete");
-        (archive_path, "custom".to_string())
+        archive_path
     } else {
         let version = if let Some(version) = version {
             version
@@ -58,13 +60,38 @@ pub async fn download_and_extract_release(
             )
             .await?;
         pb.finish_with_message("Download complete");
-        (archive_path, version)
+        archive_path
     };
 
     let safenode_download_path =
         release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
+    // Finally, obtain the version number from the binary by running `--version`. This is useful
+    // when the `--url` argument is used, and in any case, ultimately the binary we obtained is the
+    // source of truth.
+    let bin_version = get_bin_version(&safenode_download_path)?;
 
-    Ok((safenode_download_path, version))
+    Ok((safenode_download_path, bin_version))
+}
+
+pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
+    let mut cmd = Command::new(bin_path)
+        .arg("--version")
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let mut output = String::new();
+    cmd.stdout
+        .as_mut()
+        .ok_or_else(|| eyre!("Failed to capture stdout"))?
+        .read_to_string(&mut output)?;
+
+    let version = output
+        .split_whitespace()
+        .nth(2)
+        .ok_or_else(|| eyre!("Failed to parse version"))?
+        .to_string();
+
+    Ok(version)
 }
 
 /// There is a `tempdir` crate that provides the same kind of functionality, but it was flagged for

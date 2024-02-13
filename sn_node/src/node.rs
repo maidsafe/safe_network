@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -16,7 +16,7 @@ use crate::metrics::NodeMetrics;
 use crate::RunningNode;
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
-use libp2p::{autonat::NatStatus, identity::Keypair, Multiaddr};
+use libp2p::{identity::Keypair, Multiaddr};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -157,16 +157,20 @@ impl NodeBuilder {
         // Run the node
         node.run(swarm_driver, network_event_receiver);
 
-        // Having a portion of nodes (1/50) subscribe to the ROYALTY_TRANSFER_NOTIF_TOPIC
-        // Such nodes become `forwarder` to ensure the actual beneficary won't miss.
-        let index: usize = StdRng::from_entropy().gen_range(0..FORWARDER_CHOOSING_FACTOR);
-        if index == FORWARDER_CHOOSING_FACTOR / 2 {
-            trace!("Picked as a forwarding node to subscribe to the {ROYALTY_TRANSFER_NOTIF_TOPIC} topic");
-            // Forwarder only needs to forward topic msgs on libp2p level,
-            // i.e. no need to handle topic msgs, hence not a `listener`.
-            running_node
-                .subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())
-                .map(|()| info!("Node has been subscribed to gossipsub topic '{ROYALTY_TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
+        // Feature guard ROYALTY_TRANSFER_NOTIF_TOPIC forwarder subscription
+        #[cfg(feature = "royalties-by-gossip")]
+        {
+            // Having a portion of nodes (1/50) subscribe to the ROYALTY_TRANSFER_NOTIF_TOPIC
+            // Such nodes become `forwarder` to ensure the actual beneficary won't miss.
+            let index: usize = StdRng::from_entropy().gen_range(0..FORWARDER_CHOOSING_FACTOR);
+            if index == FORWARDER_CHOOSING_FACTOR / 2 {
+                info!("Picked as a forwarding node to subscribe to the {ROYALTY_TRANSFER_NOTIF_TOPIC} topic");
+                // Forwarder only needs to forward topic msgs on libp2p level,
+                // i.e. no need to handle topic msgs, hence not a `listener`.
+                running_node
+                    .subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())
+                    .map(|()| info!("Node has been subscribed to gossipsub topic '{ROYALTY_TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
+            }
         }
 
         Ok(running_node)
@@ -337,13 +341,6 @@ impl Node {
                             };
                         }
                     });
-                }
-            }
-            NetworkEvent::NatStatusChanged(status) => {
-                event_header = "NatStatusChanged";
-                if matches!(status, NatStatus::Private) {
-                    tracing::warn!("NAT status is determined to be private!");
-                    self.events_channel.broadcast(NodeEvent::BehindNat);
                 }
             }
             NetworkEvent::ResponseReceived { res } => {

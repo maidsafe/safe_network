@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -48,6 +48,7 @@ impl PathXorName {
 /// Info about a file that has been chunked
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub(crate) struct ChunkedFile {
+    pub file_path: PathBuf,
     pub file_name: OsString,
     pub head_chunk_address: ChunkAddress,
     pub chunks: BTreeSet<(XorName, PathBuf)>,
@@ -93,7 +94,6 @@ impl ChunkManager {
         read_cache: bool,
         include_data_maps: bool,
     ) -> Result<()> {
-        println!("Starting to chunk {files_path:?} now.");
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -200,6 +200,7 @@ impl ChunkManager {
 
                         let chunked_file = ChunkedFile {
                             head_chunk_address,
+                            file_path: path.to_owned(),
                             file_name: original_file_name.clone(),
                             chunks: chunks.into_iter().collect(),
                             data_map
@@ -277,13 +278,18 @@ impl ChunkManager {
         let resumed = self
             .files_to_chunk
             .par_iter()
-            .filter_map(|(original_file_name, path_xor, _)| {
+            .filter_map(|(original_file_name, path_xor, original_file_path)| {
                 // if this folder exists, and if we find chunks under this, we upload them.
                 let file_chunks_dir = artifacts_dir.join(&path_xor.0);
                 if !file_chunks_dir.exists() {
                     return None;
                 }
-                Self::read_file_chunks_dir(file_chunks_dir, path_xor, original_file_name.clone())
+                Self::read_file_chunks_dir(
+                    file_chunks_dir,
+                    path_xor,
+                    original_file_path.clone(),
+                    original_file_name.clone(),
+                )
             })
             .collect::<BTreeMap<_, _>>();
 
@@ -422,6 +428,11 @@ impl ChunkManager {
         Ok(self.get_chunks())
     }
 
+    /// Returns an iterator over the list of chunked files
+    pub(crate) fn iter_chunked_files(&mut self) -> impl Iterator<Item = &ChunkedFile> {
+        self.chunks.values()
+    }
+
     // Try to read the chunks from `file_chunks_dir`
     // Returns the ChunkedFile if the metadata file exists
     // file_chunks_dir: artifacts_dir/path_xor
@@ -430,6 +441,7 @@ impl ChunkManager {
     fn read_file_chunks_dir(
         file_chunks_dir: PathBuf,
         path_xor: &PathXorName,
+        original_file_path: PathBuf,
         original_file_name: OsString,
     ) -> Option<(PathXorName, ChunkedFile)> {
         let mut file_chunk_address: Option<ChunkAddress> = None;
@@ -478,6 +490,7 @@ impl ChunkManager {
                 Some((
                     path_xor.clone(),
                     ChunkedFile {
+                        file_path: original_file_path,
                         file_name: original_file_name,
                         head_chunk_address,
                         chunks,
@@ -503,6 +516,7 @@ impl ChunkManager {
         let metadata: (ChunkAddress, Option<Bytes>) = rmp_serde::from_slice(&metadata)
             .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
+
         Some(metadata)
     }
 
@@ -714,9 +728,13 @@ mod tests {
 
         // 2. the folder should exists, but chunk removed
         let file_chunks_dir = manager.artifacts_dir.join(&path_xor.0);
-        let (path_xor_from_dir, chunked_file_from_dir) =
-            ChunkManager::read_file_chunks_dir(file_chunks_dir, &path_xor, chunked_file.file_name)
-                .expect("Folder and metadata should be present");
+        let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
+            file_chunks_dir,
+            &path_xor,
+            chunked_file.file_path,
+            chunked_file.file_name,
+        )
+        .expect("Folder and metadata should be present");
         assert_eq!(chunked_file_from_dir.chunks.len(), total_chunks - 1);
         assert_eq!(chunked_file_from_dir.head_chunk_address, file_xor_addr);
         assert_eq!(path_xor_from_dir, path_xor);
@@ -755,6 +773,7 @@ mod tests {
             let (path_xor_from_dir, chunked_file_from_dir) = ChunkManager::read_file_chunks_dir(
                 file_chunks_dir,
                 path_xor,
+                chunked_file.file_path.clone(),
                 chunked_file.file_name.to_owned(),
             )
             .expect("Folder and metadata should be present");

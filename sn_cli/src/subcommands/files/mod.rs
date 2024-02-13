@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -21,9 +21,9 @@ use rand::{seq::SliceRandom, thread_rng};
 use serde::Deserialize;
 use sn_client::{
     Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
-    FilesUpload, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    FilesUpload, BATCH_SIZE,
 };
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
@@ -42,7 +42,7 @@ use xor_name::XorName;
 const DOWNLOAD_FOLDER: &str = "safe_files";
 
 /// Subdir for storing uploaded file into
-const UPLOADED_FILES: &str = "uploaded_files";
+pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -59,10 +59,12 @@ pub enum FilesCmds {
         /// Should the file be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
         make_public: bool,
-        /// The retry_count for retrying failed chunks
-        /// during payment and upload processing.
-        #[clap(long, default_value_t = MAX_UPLOAD_RETRIES, short = 'r')]
-        max_retries: usize,
+        /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
+        ///
+        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
+        /// to 'persistent' (most effort).
+        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        retry_strategy: RetryStrategy,
     },
     Download {
         /// The name to apply to the downloaded file.
@@ -86,6 +88,12 @@ pub enum FilesCmds {
         /// The batch_size for parallel downloading
         #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
+        /// Set the strategy to use on downloads failure.
+        ///
+        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
+        /// to 'persistent' (most effort).
+        #[clap(long, default_value_t = RetryStrategy::Quick, short = 'r', help = "Sets the retry strategy on download failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        retry_strategy: RetryStrategy,
     },
 }
 
@@ -154,7 +162,7 @@ pub(crate) async fn files_cmds(
         FilesCmds::Upload {
             path,
             batch_size,
-            max_retries,
+            retry_strategy,
             make_public,
         } => {
             upload_files(
@@ -164,7 +172,7 @@ pub(crate) async fn files_cmds(
                 root_dir.to_path_buf(),
                 verify_store,
                 batch_size,
-                max_retries,
+                retry_strategy,
             )
             .await?
         }
@@ -173,6 +181,7 @@ pub(crate) async fn files_cmds(
             file_addr,
             show_holders,
             batch_size,
+            retry_strategy,
         } => {
             if (file_name.is_some() && file_addr.is_none())
                 || (file_addr.is_some() && file_name.is_none())
@@ -221,12 +230,20 @@ pub(crate) async fn files_cmds(
                         &download_dir,
                         show_holders,
                         batch_size,
+                        retry_strategy,
                     )
                     .await
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download_files(&files_api, root_dir, show_holders, batch_size).await?
+                    download_files(
+                        &files_api,
+                        root_dir,
+                        show_holders,
+                        batch_size,
+                        retry_strategy,
+                    )
+                    .await?
                 }
             }
         }
@@ -236,14 +253,14 @@ pub(crate) async fn files_cmds(
 
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
-async fn upload_files(
+pub(crate) async fn upload_files(
     files_path: PathBuf,
     make_data_public: bool,
     client: &Client,
     root_dir: PathBuf,
     verify_store: bool,
     batch_size: usize,
-    max_retries: usize,
+    retry_strategy: RetryStrategy,
 ) -> Result<()> {
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
     if make_data_public {
@@ -255,7 +272,9 @@ async fn upload_files(
     if files_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
+
     let mut chunk_manager = ChunkManager::new(&root_dir);
+    println!("Starting to chunk {files_path:?} now.");
     chunk_manager.chunk_path(&files_path, true, make_data_public)?;
 
     // Return early if we already uploaded them
@@ -322,7 +341,7 @@ async fn upload_files(
     let mut files_upload = FilesUpload::new(files_api)
         .set_batch_size(batch_size)
         .set_verify_store(verify_store)
-        .set_max_retries(max_retries);
+        .set_retry_strategy(retry_strategy);
     let mut upload_event_rx = files_upload.get_upload_events();
     // keep track of the progress in a separate task
     let progress_bar_clone = progress_bar.clone();
@@ -350,7 +369,7 @@ async fn upload_files(
                 }
                 FileUploadEvent::PayedForChunks { .. } => {}
                 // Do not increment the progress bar of a chunk upload failure as the event can be emitted multiple
-                // times for a single chunk if re-attempts is enabled.
+                // times for a single chunk if retries are enabled.
                 FileUploadEvent::FailedToUpload(_) => {}
                 FileUploadEvent::Error => {
                     upload_terminated_with_error = true;
@@ -449,6 +468,7 @@ async fn download_files(
     root_dir: &Path,
     show_holders: bool,
     batch_size: usize,
+    retry_strategy: RetryStrategy,
 ) -> Result<()> {
     info!("Downloading with batch size of {}", batch_size);
     let uploaded_files_path = root_dir.join(UPLOADED_FILES);
@@ -493,6 +513,7 @@ async fn download_files(
             &download_path,
             show_holders,
             batch_size,
+            retry_strategy,
         )
         .await;
     }
@@ -511,7 +532,7 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     }
 }
 
-async fn download_file(
+pub(crate) async fn download_file(
     files_api: FilesApi,
     xor_name: XorName,
     // original file name and optional datamap chunk
@@ -519,10 +540,12 @@ async fn download_file(
     download_path: &Path,
     show_holders: bool,
     batch_size: usize,
+    retry_strategy: RetryStrategy,
 ) {
     let mut files_download = FilesDownload::new(files_api.clone())
         .set_batch_size(batch_size)
-        .set_show_holders(show_holders);
+        .set_show_holders(show_holders)
+        .set_retry_strategy(retry_strategy);
 
     println!("Downloading {file_name:?} from {xor_name:64x} with batch-size {batch_size}");
     debug!("Downloading {file_name:?} from {:64x}", xor_name);

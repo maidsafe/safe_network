@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -23,31 +23,29 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
-use sn_networking::target_arch::{interval, spawn, timeout, Instant};
 use sn_networking::{
-    multiaddr_is_global, Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder,
-    NetworkEvent, PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
+    multiaddr_is_global,
+    target_arch::{interval, spawn, timeout, Instant},
+    Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder, NetworkEvent,
+    PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::ChunkProof,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
-        RecordKind, RegisterAddress, SpendAddress,
+        RecordKind, RegisterAddress, RetryStrategy, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
-
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
     path::PathBuf,
 };
-
 use tokio::time::Duration;
-
 use tracing::trace;
 use xor_name::XorName;
 
@@ -384,7 +382,7 @@ impl Client {
     ///
     /// # Arguments
     /// * 'address' - [RegisterAddress]
-    /// * 'is_verifying' - Boolean
+    /// * 'is_verifying' - Boolean: If true, we fetch at-least 2 copies from the network with more retry attempts.
     ///
     /// Return Type:
     ///
@@ -416,14 +414,19 @@ impl Client {
         is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
-        let quorum = if is_verifying {
+        let get_quorum = if is_verifying {
             Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
         } else {
             Quorum::One
         };
+        let retry_strategy = if is_verifying {
+            Some(RetryStrategy::Balanced)
+        } else {
+            Some(RetryStrategy::Quick)
+        };
         let get_cfg = GetRecordCfg {
-            get_quorum: quorum,
-            re_attempt: true,
+            get_quorum,
+            retry_strategy,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -590,6 +593,7 @@ impl Client {
     /// * 'payee' - [PeerId]
     /// * 'payment' - [Payment]
     /// * 'verify_store' - Boolean
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
     ///
     pub(super) async fn store_chunk(
         &self,
@@ -597,9 +601,11 @@ impl Client {
         payee: PeerId,
         payment: Payment,
         verify_store: bool,
+        retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
+        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Balanced));
 
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
@@ -614,7 +620,7 @@ impl Client {
                 get_quorum: Quorum::N(
                     NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
                 ),
-                re_attempt: true,
+                retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
             };
@@ -638,7 +644,7 @@ impl Client {
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            re_attempt: true,
+            retry_strategy,
             use_put_record_to: Some(vec![payee]),
             verification,
         };
@@ -650,6 +656,7 @@ impl Client {
     /// # Arguments
     /// * 'address' - [ChunkAddress]
     /// * 'show_holders' - Boolean
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Quick by default
     ///
     /// Return Type:
     ///
@@ -670,11 +677,16 @@ impl Client {
     /// let xorname = XorName::random(&mut rng);
     /// let chunk_address = ChunkAddress::new(xorname);
     /// // get chunk
-    /// let chunk = client.get_chunk(chunk_address,true).await?;
+    /// let chunk = client.get_chunk(chunk_address,true, None).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn get_chunk(&self, address: ChunkAddress, show_holders: bool) -> Result<Chunk> {
+    pub async fn get_chunk(
+        &self,
+        address: ChunkAddress,
+        show_holders: bool,
+        retry_strategy: Option<RetryStrategy>,
+    ) -> Result<Chunk> {
         info!("Getting chunk: {address:?}");
         let key = NetworkAddress::from_chunk_address(address).to_record_key();
 
@@ -693,7 +705,7 @@ impl Client {
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: true,
+            retry_strategy: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
             target_record: None,
             expected_holders,
         };
@@ -723,7 +735,7 @@ impl Client {
                 random_nonce,
                 expected_proof,
                 Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
-                false,
+                None,
             )
             .await
         {
@@ -808,13 +820,13 @@ impl Client {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: record_to_verify,
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
@@ -859,7 +871,7 @@ impl Client {
         );
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: None,
             expected_holders: Default::default(),
         };

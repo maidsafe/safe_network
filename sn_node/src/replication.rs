@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -67,7 +67,7 @@ impl Node {
                     );
                     let get_cfg = GetRecordCfg {
                         get_quorum: Quorum::One,
-                        re_attempt: false,
+                        retry_strategy: None,
                         target_record: None,
                         expected_holders: Default::default(),
                     };
@@ -110,7 +110,7 @@ impl Node {
                     Ok(record) => record,
                     Err(err) => {
                         error!(
-                            "Replicating fresg record {pretty_key:?} get_record_from_store errored: {err:?}"
+                            "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
                         );
                         return;
                     }

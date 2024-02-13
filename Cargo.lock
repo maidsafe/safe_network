@@ -343,19 +343,6 @@ dependencies = [
 
 [[package]]
 name = "asynchronous-codec"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4057f2c32adbb2fc158e22fb38433c8e9bbf76b75a4732c7c0cbaf695fb65568"
-dependencies = [
- "bytes",
- "futures-sink",
- "futures-util",
- "memchr",
- "pin-project-lite",
-]
-
-[[package]]
-name = "asynchronous-codec"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a860072022177f903e59730004fb5dc13db9275b79bb2aef7ba8ce831956c233"
@@ -1213,9 +1200,9 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e89b8c6a2e4b1f45971ad09761aafb85514a84744b67a95e32c3cc1352d1f65c"
+checksum = "0a677b8922c94e01bdbb12126b0bc852f00447528dee1782229af9c720c3f348"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -2517,7 +2504,6 @@ dependencies = [
  "getrandom",
  "instant",
  "libp2p-allow-block-list",
- "libp2p-autonat",
  "libp2p-connection-limits",
  "libp2p-core",
  "libp2p-dns",
@@ -2552,27 +2538,6 @@ dependencies = [
  "libp2p-identity",
  "libp2p-swarm",
  "void",
-]
-
-[[package]]
-name = "libp2p-autonat"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d95151726170e41b591735bf95c42b888fe4aa14f65216a9fbf0edcc04510586"
-dependencies = [
- "async-trait",
- "asynchronous-codec 0.6.2",
- "futures",
- "futures-timer",
- "instant",
- "libp2p-core",
- "libp2p-identity",
- "libp2p-request-response",
- "libp2p-swarm",
- "quick-protobuf",
- "quick-protobuf-codec 0.2.0",
- "rand",
- "tracing",
 ]
 
 [[package]]
@@ -2637,7 +2602,7 @@ version = "0.46.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d665144a616dadebdc5fff186b1233488cdcd8bfb1223218ff084b6d052c94f7"
 dependencies = [
- "asynchronous-codec 0.7.0",
+ "asynchronous-codec",
  "base64 0.21.7",
  "byteorder",
  "bytes",
@@ -2653,7 +2618,7 @@ dependencies = [
  "libp2p-swarm",
  "prometheus-client",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1",
+ "quick-protobuf-codec",
  "rand",
  "regex",
  "sha2",
@@ -2668,7 +2633,7 @@ version = "0.44.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20499a945d2f0221fdc6269b3848892c0f370d2ee3e19c7f65a29d8f860f6126"
 dependencies = [
- "asynchronous-codec 0.7.0",
+ "asynchronous-codec",
  "either",
  "futures",
  "futures-bounded",
@@ -2678,7 +2643,7 @@ dependencies = [
  "libp2p-swarm",
  "lru",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1",
+ "quick-protobuf-codec",
  "smallvec",
  "thiserror",
  "tracing",
@@ -2710,7 +2675,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5cc5767727d062c4eac74dd812c998f0e488008e82cce9c33b463d38423f9ad2"
 dependencies = [
  "arrayvec",
- "asynchronous-codec 0.7.0",
+ "asynchronous-codec",
  "bytes",
  "either",
  "fnv",
@@ -2722,7 +2687,7 @@ dependencies = [
  "libp2p-identity",
  "libp2p-swarm",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1",
+ "quick-protobuf-codec",
  "rand",
  "sha2",
  "smallvec",
@@ -2777,7 +2742,7 @@ version = "0.44.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecd0545ce077f6ea5434bcb76e8d0fe942693b4380aaad0d34a358c2bd05793"
 dependencies = [
- "asynchronous-codec 0.7.0",
+ "asynchronous-codec",
  "bytes",
  "curve25519-dalek",
  "futures",
@@ -4132,24 +4097,11 @@ dependencies = [
 
 [[package]]
 name = "quick-protobuf-codec"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8ededb1cd78531627244d51dd0c7139fbe736c7d57af0092a76f0ffb2f56e98"
-dependencies = [
- "asynchronous-codec 0.6.2",
- "bytes",
- "quick-protobuf",
- "thiserror",
- "unsigned-varint 0.7.2",
-]
-
-[[package]]
-name = "quick-protobuf-codec"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15a0580ab32b169745d7a39db2ba969226ca16738931be152a3209b409de2474"
 dependencies = [
- "asynchronous-codec 0.7.0",
+ "asynchronous-codec",
  "bytes",
  "quick-protobuf",
  "thiserror",
@@ -4917,7 +4869,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.1.52"
+version = "0.1.61"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -4968,14 +4920,14 @@ dependencies = [
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "vergen",
 ]
 
 [[package]]
 name = "sn_cli"
-version = "0.89.53"
+version = "0.89.63"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5014,7 +4966,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.0"
+version = "0.104.8"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5056,7 +5008,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.52"
+version = "0.3.63"
 dependencies = [
  "bitcoin",
  "blsttc",
@@ -5079,11 +5031,12 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-core",
+ "url",
 ]
 
 [[package]]
 name = "sn_logging"
-version = "0.2.20"
+version = "0.2.21"
 dependencies = [
  "chrono",
  "dirs-next",
@@ -5106,7 +5059,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.6"
+version = "0.13.13"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5142,7 +5095,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.2"
+version = "0.104.15"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5194,7 +5147,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.37"
+version = "0.4.48"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5220,7 +5173,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "clap 4.4.18",
  "libp2p",
@@ -5234,7 +5187,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.12.4"
+version = "0.12.6"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5261,7 +5214,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "blsttc",
  "crdts",
@@ -5278,7 +5231,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.15.2"
+version = "0.15.3"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -5680,7 +5633,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.37"
+version = "0.1.41"
 dependencies = [
  "dirs-next",
  "reqwest",
@@ -6165,10 +6118,6 @@ name = "unsigned-varint"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6889a77d49f1f013504cec6bf97a2c730394adedaeb1deb5ea08949a50541105"
-dependencies = [
- "asynchronous-codec 0.6.2",
- "bytes",
-]
 
 [[package]]
 name = "unsigned-varint"

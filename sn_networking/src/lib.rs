@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -53,7 +53,7 @@ use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    storage::RecordType,
+    storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
@@ -91,20 +91,10 @@ pub const fn close_group_majority() -> usize {
     CLOSE_GROUP_SIZE / 2 + 1
 }
 
-/// Max duration for all GET attempts
-const MAX_GET_RETRY_DURATION_MS: u64 = 60000;
-
-#[cfg(not(target_arch = "wasm32"))]
-const MAX_GET_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS);
-/// Max duration for all PUT attempts
-const MAX_PUT_RETRY_DURATION: Duration = Duration::from_millis(MAX_GET_RETRY_DURATION_MS * 3);
-
 /// Max duration to wait for verification.
 const MAX_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(750);
 /// Min duration to wait for verification
 const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
-/// Number of attempts to get a ChunkProof
-const GET_CHUNK_PROOF_RETRY_ATTEMPTS: usize = 3;
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
@@ -278,13 +268,13 @@ impl Network {
         nonce: Nonce,
         expected_proof: ChunkProof,
         quorum: Quorum,
-        re_attempt: bool,
+        retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
-        let total_attempts = if re_attempt {
-            GET_CHUNK_PROOF_RETRY_ATTEMPTS
-        } else {
-            1
-        };
+        let mut total_attempts = 1;
+        total_attempts += retry_strategy
+            .map(|strategy| strategy.get_count())
+            .unwrap_or(0);
+
         let pretty_key = PrettyPrintRecordKey::from(&chunk_address.to_record_key()).into_owned();
         let expected_n_verified = get_quorum_value(&quorum);
 
@@ -458,9 +448,12 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
+        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
-                max_elapsed_time: Some(MAX_GET_RETRY_DURATION),
+                // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
+                // be disabled.
+                max_elapsed_time: retry_duration,
                 ..Default::default()
             },
             || async {
@@ -506,8 +499,8 @@ impl Network {
                     }
                 };
 
-                // if we dont want to retry, throw permanent error
-                if !cfg.re_attempt {
+                // if we don't want to retry, throw permanent error
+                if cfg.retry_strategy.is_none() {
                     if let Err(e) = result {
                         return Err(BackoffError::Permanent(Error::from(e)));
                     }
@@ -559,8 +552,12 @@ impl Network {
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
-        backoff::future::retry(ExponentialBackoff{
-            max_elapsed_time: Some(MAX_PUT_RETRY_DURATION),
+        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
+        backoff::future::retry(
+            ExponentialBackoff {
+                // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
+                // be disabled.
+            max_elapsed_time: retry_duration,
             ..Default::default()
         }, || async {
 
@@ -571,7 +568,7 @@ impl Network {
             {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
-                if cfg.re_attempt {
+                if cfg.retry_strategy.is_some() {
                     BackoffError::Transient { err, retry_after: None }
                 } else {
                     BackoffError::Permanent(err)
@@ -629,12 +626,10 @@ impl Network {
                     *nonce,
                     expected_proof.clone(),
                     get_cfg.get_quorum,
-                    get_cfg.re_attempt,
+                    get_cfg.retry_strategy,
                 )
                 .await?;
             } else {
-                // The `verify_chunk_existence` will carry out three times of re-attempts
-                // However, `get_record_from_network` will only carry out once.
                 self.get_record_from_network(record.key.clone(), get_cfg)
                     .await?;
             }

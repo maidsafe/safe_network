@@ -74,7 +74,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip -r 0
+        run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
         env:
           SN_LOG: "all"
 
@@ -203,13 +203,13 @@ jobs:
 
       - name: Start a client to carry out download to output the logs
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir files download
+        run: target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
 
       - name: Start a client to simulate criterion upload
         shell: bash
         run: |
           ls -l target/release
-          target/release/safe --log-output-dest=data-dir files upload target/release/faucet -r 0
+          target/release/safe --log-output-dest=data-dir files upload target/release/faucet --retry-strategy quick
 
       #########################
       ### Stop Network      ###

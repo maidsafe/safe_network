@@ -6,6 +6,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.8](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.7...sn_client-v0.104.8) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.7](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.6...sn_client-v0.104.7) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.6](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.5...sn_client-v0.104.6) - 2024-02-12
+
+### Added
+- *(cli)* single payment for all folders being synced
+- *(cli)* adding Folders download CLI cmd
+- *(client)* adding Folders sync API and CLI cmd
+
+### Other
+- *(cli)* improvements based on peer review
+
+## [0.104.5](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.4...sn_client-v0.104.5) - 2024-02-09
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.4](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.3...sn_client-v0.104.4) - 2024-02-09
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.3](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.2...sn_client-v0.104.3) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.104.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.1...sn_client-v0.104.2) - 2024-02-08
+
+### Added
+- move the RetryStrategy into protocol and use that during cli upload/download
+- *(client)* perform more retries if we are verifying a register
+- *(network)* impl RetryStrategy to make the reattempts flexible
+
+### Fixed
+- *(ci)* update the reattempt flag to retry_strategy flag for the cli
+
+### Other
+- *(network)* rename re-attempts to retry strategy
+
+## [0.104.1](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.0...sn_client-v0.104.1) - 2024-02-08
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.104.0](https://github.com/maidsafe/safe_network/compare/sn_client-v0.103.7...sn_client-v0.104.0) - 2024-02-07
 
 ### Added

@@ -6,6 +6,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.63](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.62...sn_cli-v0.89.63) - 2024-02-12
+
+### Other
+- *(release)* sn_networking-v0.13.12/sn_node-v0.104.12/sn-node-manager-v0.1.59/sn_client-v0.104.7/sn_node_rpc_client-v0.4.46
+
+## [0.89.62](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.61...sn_cli-v0.89.62) - 2024-02-12
+
+### Added
+- *(cli)* single payment for all folders being synced
+- *(cli)* adding Folders download CLI cmd
+- *(client)* adding Folders sync API and CLI cmd
+
+### Other
+- *(cli)* improvements based on peer review
+- *(cli)* adding simple example doc for using Folders cmd
+- *(cli)* moving some Folder logic to a private helper function
+
+## [0.89.61](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.60...sn_cli-v0.89.61) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
+## [0.89.60](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.59...sn_cli-v0.89.60) - 2024-02-09
+
+### Other
+- *(release)* sn_networking-v0.13.10/sn_client-v0.104.4/sn_node-v0.104.8
+
+## [0.89.59](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.58...sn_cli-v0.89.59) - 2024-02-09
+
+### Other
+- update dependencies
+
+## [0.89.58](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.57...sn_cli-v0.89.58) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.89.57](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.56...sn_cli-v0.89.57) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.89.56](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.55...sn_cli-v0.89.56) - 2024-02-08
+
+### Added
+- move the RetryStrategy into protocol and use that during cli upload/download
+
+### Fixed
+- *(bench)* update retry strategy args
+
+### Other
+- *(network)* rename re-attempts to retry strategy
+
+## [0.89.55](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.54...sn_cli-v0.89.55) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.89.54](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.53...sn_cli-v0.89.54) - 2024-02-08
+
+### Other
+- update dependencies
+
 ## [0.89.53](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.52...sn_cli-v0.89.53) - 2024-02-08
 
 ### Other

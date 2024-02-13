@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -18,10 +18,7 @@ use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-#[cfg(feature = "open-metrics")]
-use libp2p::metrics::Recorder;
 use libp2p::{
-    autonat::{self, NatStatus},
     kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -58,8 +55,7 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
-    Autonat(autonat::Event),
-    Gossipsub(libp2p::gossipsub::Event),
+    Gossipsub(Box<libp2p::gossipsub::Event>),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -87,15 +83,9 @@ impl From<libp2p::identify::Event> for NodeEvent {
     }
 }
 
-impl From<autonat::Event> for NodeEvent {
-    fn from(event: autonat::Event) -> Self {
-        NodeEvent::Autonat(event)
-    }
-}
-
 impl From<libp2p::gossipsub::Event> for NodeEvent {
     fn from(event: libp2p::gossipsub::Event) -> Self {
-        NodeEvent::Gossipsub(event)
+        NodeEvent::Gossipsub(Box::new(event))
     }
 }
 
@@ -131,8 +121,6 @@ pub enum NetworkEvent {
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
     NewListenAddr(Multiaddr),
-    /// AutoNAT status changed
-    NatStatusChanged(NatStatus),
     /// Report unverified record
     UnverifiedRecord(Record),
     /// Gossipsub message received
@@ -177,9 +165,6 @@ impl Debug for NetworkEvent {
             NetworkEvent::NewListenAddr(addr) => {
                 write!(f, "NetworkEvent::NewListenAddr({addr:?})")
             }
-            NetworkEvent::NatStatusChanged(nat_status) => {
-                write!(f, "NetworkEvent::NatStatusChanged({nat_status:?})")
-            }
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
@@ -197,10 +182,6 @@ impl Debug for NetworkEvent {
 impl SwarmDriver {
     /// Handle `SwarmEvents`
     pub(super) fn handle_swarm_events(&mut self, event: SwarmEvent<NodeEvent>) -> Result<()> {
-        // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
-        // called individually on each behaviour.
-        #[cfg(feature = "open-metrics")]
-        self.network_metrics.record(&event);
         let start = Instant::now();
         let event_string;
         match event {
@@ -217,9 +198,7 @@ impl SwarmDriver {
             // Handle the Identify event from the libp2p swarm.
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
-                // Record the Identify event for metrics if the feature is enabled.
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&(*iden));
+
                 // Match on the Identify event.
                 match *iden {
                     // If the event is a Received event, handle the received peer information.
@@ -317,20 +296,6 @@ impl SwarmDriver {
                                     .kademlia
                                     .add_address(&peer_id, multiaddr.clone());
                             }
-
-                            // If the peer supports AutoNAT, add it as server
-                            if info.protocols.iter().any(|protocol| {
-                                protocol.to_string().starts_with("/libp2p/autonat/")
-                            }) {
-                                let a = &mut self.swarm.behaviour_mut().autonat;
-                                // It could be that we are on a local network and have AutoNAT disabled.
-                                if let Some(autonat) = a.as_mut() {
-                                    trace!(%peer_id, ?addrs, "identify: attempting to add peer as server");
-                                    for multiaddr in addrs {
-                                        autonat.add_server(peer_id, Some(multiaddr));
-                                    }
-                                }
-                            }
                         }
                     }
                     // Log the other Identify events.
@@ -362,38 +327,11 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmEvent::Behaviour(NodeEvent::Autonat(event)) => {
-                event_string = "autonat";
-                match event {
-                    autonat::Event::InboundProbe(e) => trace!("AutoNAT inbound probe: {e:?}"),
-                    autonat::Event::OutboundProbe(e) => trace!("AutoNAT outbound probe: {e:?}"),
-                    autonat::Event::StatusChanged { old, new } => {
-                        info!("AutoNAT status changed: {old:?} -> {new:?}");
-                        self.send_event(NetworkEvent::NatStatusChanged(new.clone()));
-
-                        match new {
-                            NatStatus::Public(_addr) => {
-                                // In theory, we could actively push our address to our peers now. But, which peers? All of them?
-                                // Or, should we just wait and let Identify do it on its own? But, what if we are not connected
-                                // to any peers anymore? (E.g., our connections timed out etc)
-                                // let all_peers: Vec<_> = self.swarm.connected_peers().cloned().collect();
-                                // self.swarm.behaviour_mut().identify.push(all_peers);
-                            }
-                            NatStatus::Private => {
-                                // We could just straight out error here. In the future we might try to activate a relay mechanism.
-                            }
-                            NatStatus::Unknown => {}
-                        };
-                    }
-                }
-            }
             SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
                 event_string = "gossip";
 
-                #[cfg(feature = "open-metrics")]
-                self.network_metrics.record(&event);
                 if self.is_gossip_handler {
-                    match event {
+                    match *event {
                         libp2p::gossipsub::Event::Message {
                             message,
                             message_id,
@@ -631,8 +569,6 @@ impl SwarmDriver {
                     // as we send that regardless of how we handle the request as its unimportant to the sender.
                     match request {
                         Request::Cmd(sn_protocol::messages::Cmd::Replicate { holder, keys }) => {
-                            self.add_keys_to_replication_fetcher(holder, keys);
-
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
                             );
@@ -641,6 +577,8 @@ impl SwarmDriver {
                                 .request_response
                                 .send_response(channel, response)
                                 .map_err(|_| Error::InternalMsgChannelDropped)?;
+
+                            self.add_keys_to_replication_fetcher(holder, keys);
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {
@@ -721,8 +659,6 @@ impl SwarmDriver {
     }
 
     fn handle_kad_event(&mut self, kad_event: kad::Event) -> Result<()> {
-        #[cfg(feature = "open-metrics")]
-        self.network_metrics.record(&kad_event);
         let start = Instant::now();
         let event_string;
 

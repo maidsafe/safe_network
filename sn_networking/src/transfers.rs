@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -9,7 +9,7 @@
 use crate::{close_group_majority, driver::GetRecordCfg, Error, GetRecordError, Network, Result};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
-    storage::{try_deserialize_record, RecordHeader, RecordKind, SpendAddress},
+    storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{
@@ -48,7 +48,7 @@ impl Network {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            re_attempt: false,
+            retry_strategy: None,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -67,12 +67,12 @@ impl Network {
     /// Gets a spend from the Network.
     /// We know it must be there, and has to be fetched from Quorum::All
     ///
-    /// If we get a quorum error, we enable re-try
+    /// If we get a quorum error, we increase the RetryStrategy
     pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -86,7 +86,7 @@ impl Network {
                 // if majority holds the spend, it might be worth it to try again.
                 if got >= close_group_majority() {
                     debug!("At least a majority nodes hold the spend {address:?}, so trying to get it again.");
-                    get_cfg.re_attempt = true;
+                    get_cfg.retry_strategy = Some(RetryStrategy::Persistent);
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
                     return Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {

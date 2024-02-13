@@ -6,6 +6,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.13](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.12...sn_networking-v0.13.13) - 2024-02-12
+
+### Other
+- *(networking)* clear all stats afgter we log them
+- *(networking)* improve swarm driver stats logging
+
+## [0.13.12](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.11...sn_networking-v0.13.12) - 2024-02-12
+
+### Other
+- *(node)* optimize Cmd::Replicate handling flow
+
+## [0.13.11](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.10...sn_networking-v0.13.11) - 2024-02-09
+
+### Fixed
+- *(node)* store records even with max_records reached
+
+## [0.13.10](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.9...sn_networking-v0.13.10) - 2024-02-09
+
+### Other
+- *(node)* disable metrics record
+
+## [0.13.9](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.8...sn_networking-v0.13.9) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.13.8](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.7...sn_networking-v0.13.8) - 2024-02-08
+
+### Added
+- move the RetryStrategy into protocol and use that during cli upload/download
+- *(network)* impl RetryStrategy to make the reattempts flexible
+
+### Other
+- *(network)* rename re-attempts to retry strategy
+
+## [0.13.7](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.6...sn_networking-v0.13.7) - 2024-02-08
+
+### Added
+- *(networking)* remove AutoNAT
+
+### Fixed
+- *(networking)* solve large_enum_variant warning
+
 ## [0.13.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.5...sn_networking-v0.13.6) - 2024-02-07
 
 ### Other

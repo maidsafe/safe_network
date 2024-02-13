@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -448,24 +448,27 @@ impl SwarmDriver {
                     }
                 };
 
-                match self
+                let result = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .put_verified(record, record_type.clone())
-                {
-                    Ok(_) => {
-                        let new_keys_to_fetch = self
-                            .replication_fetcher
-                            .notify_about_new_put(key, record_type);
-                        if !new_keys_to_fetch.is_empty() {
-                            self.send_event(NetworkEvent::KeysToFetchForReplication(
-                                new_keys_to_fetch,
-                            ));
-                        }
-                    }
-                    Err(err) => return Err(err.into()),
+                    .put_verified(record, record_type.clone());
+                // No matter storing the record succeeded or not,
+                // the entry shall be removed from the `replication_fetcher`.
+                // In case of local store error, re-attempt will be carried out
+                // within the next replication round.
+                let new_keys_to_fetch = self
+                    .replication_fetcher
+                    .notify_about_new_put(key.clone(), record_type);
+                if !new_keys_to_fetch.is_empty() {
+                    self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
+                }
+                if let Err(err) = result {
+                    error!("Cann't store verified record {record_key:?} locally: {err:?}");
+                    cmd_string = "PutLocalRecord error";
+                    self.log_handling(cmd_string.to_string(), start.elapsed());
+                    return Err(err.into());
                 };
             }
             SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
@@ -478,7 +481,7 @@ impl SwarmDriver {
                     .mark_as_stored(key, record_type);
             }
             SwarmCmd::RemoveFailedLocalRecord { key } => {
-                trace!("Removing Record locally, for {key:?}");
+                info!("Removing Record locally, for {key:?}");
                 cmd_string = "RemoveFailedLocalRecord";
                 self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
             }

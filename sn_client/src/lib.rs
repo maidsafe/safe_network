@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -16,6 +16,7 @@ mod error;
 mod event;
 mod faucet;
 mod files;
+mod folders;
 mod register;
 mod wallet;
 
@@ -27,8 +28,9 @@ pub use self::{
     files::{
         download::{FilesDownload, FilesDownloadEvent},
         upload::{FileUploadEvent, FilesUpload},
-        FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+        FilesApi, BATCH_SIZE,
     },
+    folders::{FolderEntry, FoldersApi},
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
@@ -91,7 +93,7 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
     console::log_1(&JsValue::from_str("Client started {chunk:?}"));
 
     let chunk = client
-        .get_chunk(ChunkAddress::new(xor_name), false)
+        .get_chunk(ChunkAddress::new(xor_name), false, None)
         .await
         .map_err(|e| JsError::new(&format!("Client get data failed: {e:?}")))?;
 

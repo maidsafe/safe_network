@@ -109,13 +109,13 @@ build-release-artifacts arch:
     cross build --release --features=network-contacts --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
     cross build --release --target $arch --bin safenode-manager
-    cross build --release --target $arch --bin faucet
+    cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin safenode_rpc_client
   else
     cargo build --release --features=network-contacts --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
     cargo build --release --target $arch --bin safenode-manager
-    cargo build --release --target $arch --bin faucet
+    cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin safenode_rpc_client
   fi
 

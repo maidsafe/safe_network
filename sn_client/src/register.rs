@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Client, Error, Result, WalletClient};
+use crate::{wallet::StoragePaymentResult, Client, Error, Result, WalletClient};
 
 use bls::PublicKey;
 use libp2p::{
@@ -17,7 +17,7 @@ use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::RegisterCmd,
-    storage::{try_serialize_record, RecordKind},
+    storage::{try_serialize_record, RecordKind, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
@@ -37,21 +37,19 @@ pub struct ClientRegister {
 
 impl ClientRegister {
     /// Central helper func to create a client register
-    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Result<Self> {
+    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Self {
         let public_key = client.signer_pk();
 
         let register = Register::new(public_key, meta, perms);
-        let reg = Self {
+        Self {
             client,
             register,
             ops: LinkedList::new(),
-        };
-
-        Ok(reg)
+        }
     }
 
     /// Create a new Register Locally.
-    pub fn create(client: Client, meta: XorName) -> Result<Self> {
+    pub fn create(client: Client, meta: XorName) -> Self {
         Self::create_register(client, meta, Permissions::new_owner_only())
     }
 
@@ -63,8 +61,8 @@ impl ClientRegister {
         verify_store: bool,
         perms: Permissions,
     ) -> Result<(Self, NanoTokens, NanoTokens)> {
-        let mut reg = Self::create_register(client, meta, perms)?;
-        let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store).await?;
+        let mut reg = Self::create_register(client, meta, perms);
+        let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store, None).await?;
         Ok((reg, storage_cost, royalties_fees))
     }
 
@@ -160,10 +158,12 @@ impl ClientRegister {
 
     /// Sync this Register with the replicas on the network.
     /// This will optionally verify the stored Register on the network is the same as the local one.
+    /// If payment info is provided it won't try to make the payment.
     pub async fn sync(
         &mut self,
         wallet_client: &mut WalletClient,
         verify_store: bool,
+        mut payment_info: Option<(Payment, PeerId)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
@@ -194,43 +194,24 @@ impl ClientRegister {
                 };
 
                 // Let's check if the user has already paid for this address first
-                let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
-                // Let's make the storage payment
-                let storage_payment_result = wallet_client
-                    .pay_for_storage(std::iter::once(net_addr.clone()))
-                    .await?;
-                storage_cost = storage_payment_result.storage_cost;
-                royalties_fees = storage_payment_result.royalty_fees;
-                let cost = storage_cost
-                    .checked_add(royalties_fees)
-                    .ok_or(Error::TotalPriceTooHigh)?;
+                if payment_info.is_none() {
+                    let net_addr = sn_protocol::NetworkAddress::RegisterAddress(addr);
+                    let payment_result = self.make_payment(wallet_client, &net_addr).await?;
+                    storage_cost = payment_result.storage_cost;
+                    royalties_fees = payment_result.royalty_fees;
 
-                println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
-                info!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+                    // Get payment proofs needed to publish the Register
+                    let payment = wallet_client.get_payment_for_addr(&net_addr)?;
+                    let payee = payment_result
+                        .payee_map
+                        .get(&net_addr)
+                        .ok_or(Error::PayeeNotFound(net_addr))?;
 
-                if let Err(err) = wallet_client.store_local_wallet() {
-                    warn!("Failed to store wallet with cached payment proofs: {err:?}");
-                    println!("Failed to store wallet with cached payment proofs: {err:?}");
-                } else {
-                    println!(
-                    "Successfully stored wallet with cached payment proofs, and new balance {}.",
-                    wallet_client.balance()
-                );
-                    info!(
-                    "Successfully stored wallet with cached payment proofs, and new balance {}.",
-                    wallet_client.balance()
-                );
+                    debug!("payments found: {payment:?}");
+                    payment_info = Some((payment, *payee));
                 }
 
-                // Get payment proofs needed to publish the Register
-                let payment = wallet_client.get_payment_for_addr(&net_addr)?;
-                let payee = storage_payment_result
-                    .payee_map
-                    .get(&net_addr)
-                    .ok_or(Error::PayeeNotFound(net_addr))?;
-
-                debug!("payments found: {payment:?}");
-                self.publish_register(cmd, Some((payment, *payee)), verify_store)
+                self.publish_register(cmd, payment_info, verify_store)
                     .await?;
                 self.register.clone()
             }
@@ -306,6 +287,41 @@ impl ClientRegister {
     }
 
     // ********* Private helpers  *********
+
+    // Make a storage payment for the provided network address
+    async fn make_payment(
+        &self,
+        wallet_client: &mut WalletClient,
+        net_addr: &NetworkAddress,
+    ) -> Result<StoragePaymentResult> {
+        // Let's make the storage payment
+        let payment_result = wallet_client
+            .pay_for_storage(std::iter::once(net_addr.clone()))
+            .await?;
+        let cost = payment_result
+            .storage_cost
+            .checked_add(payment_result.royalty_fees)
+            .ok_or(Error::TotalPriceTooHigh)?;
+
+        println!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+        info!("Successfully made payment of {cost} for a Register (At a cost per record of {cost:?}.)");
+
+        if let Err(err) = wallet_client.store_local_wallet() {
+            warn!("Failed to store wallet with cached payment proofs: {err:?}");
+            println!("Failed to store wallet with cached payment proofs: {err:?}");
+        } else {
+            println!(
+                "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                wallet_client.balance()
+            );
+            info!(
+                "Successfully stored wallet with cached payment proofs, and new balance {}.",
+                wallet_client.balance()
+            );
+        }
+
+        Ok(payment_result)
+    }
 
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
@@ -394,13 +410,13 @@ impl ClientRegister {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Balanced),
             target_record: record_to_verify,
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
-            re_attempt: true,
+            retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: payee,
             verification: Some((VerificationKind::Network, verification_cfg)),
         };

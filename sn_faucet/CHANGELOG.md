@@ -6,6 +6,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.63](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.62...sn_faucet-v0.3.63) - 2024-02-12
+
+### Other
+- *(faucet)* improve faucet server response for clippy
+- *(release)* sn_networking-v0.13.12/sn_node-v0.104.12/sn-node-manager-v0.1.59/sn_client-v0.104.7/sn_node_rpc_client-v0.4.46
+
+## [0.3.62](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.61...sn_faucet-v0.3.62) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_client
+
+## [0.3.61](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.60...sn_faucet-v0.3.61) - 2024-02-12
+
+### Added
+- *(faucet)* api endpoint to return distribution
+
+## [0.3.60](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.59...sn_faucet-v0.3.60) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
+## [0.3.59](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.58...sn_faucet-v0.3.59) - 2024-02-09
+
+### Other
+- *(release)* sn_networking-v0.13.10/sn_client-v0.104.4/sn_node-v0.104.8
+
+## [0.3.58](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.57...sn_faucet-v0.3.58) - 2024-02-09
+
+### Other
+- update dependencies
+
+## [0.3.57](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.56...sn_faucet-v0.3.57) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.3.56](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.55...sn_faucet-v0.3.56) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.3.55](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.54...sn_faucet-v0.3.55) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.3.54](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.53...sn_faucet-v0.3.54) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.3.53](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.52...sn_faucet-v0.3.53) - 2024-02-08
+
+### Other
+- update dependencies
+
 ## [0.3.52](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.51...sn_faucet-v0.3.52) - 2024-02-08
 
 ### Other

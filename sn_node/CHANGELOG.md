@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.14...sn_node-v0.104.15) - 2024-02-12
+
+### Fixed
+- avoid clippy error due to new feature guard
+
+## [0.104.14](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.13...sn_node-v0.104.14) - 2024-02-12
+
+### Other
+- *(node)* feature guard royalty_reward publish
+- *(node)* feature guard forwarder_subscription
+
+## [0.104.13](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.12...sn_node-v0.104.13) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.12](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.11...sn_node-v0.104.12) - 2024-02-12
+
+### Other
+- *(node)* optimize Cmd::Replicate handling flow
+
+## [0.104.11](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.10...sn_node-v0.104.11) - 2024-02-12
+
+### Added
+- *(cli)* single payment for all folders being synced
+
+## [0.104.10](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.9...sn_node-v0.104.10) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
+## [0.104.9](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.8...sn_node-v0.104.9) - 2024-02-09
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.8](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.7...sn_node-v0.104.8) - 2024-02-09
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.83.1](https://github.com/maidsafe/safe_network/compare/sn_node-v0.83.0...sn_node-v0.83.1) - 2023-06-07
 
 ### Added
@@ -3154,6 +3195,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 - Revert "chore: roll back to log more"
+
+## [0.104.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.2...sn_node-v0.104.3) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.104.4](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.3...sn_node-v0.104.4) - 2024-02-08
+
+### Added
+- *(networking)* remove AutoNAT
+
+## [0.104.5](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.4...sn_node-v0.104.5) - 2024-02-08
+
+### Added
+- *(network)* impl RetryStrategy to make the reattempts flexible
+
+### Other
+- *(network)* rename re-attempts to retry strategy
+
+## [0.104.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.5...sn_node-v0.104.6) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.104.7](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.6...sn_node-v0.104.7) - 2024-02-09
+
+### Other
+- update dependencies
 
 ## v0.1.0 (2023-05-04)
 

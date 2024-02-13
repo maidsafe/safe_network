@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -20,6 +20,8 @@ pub enum Error {
     // ---------- Misc errors
     #[error("Could not obtain user's data directory")]
     UserDataDirectoryNotObtainable,
+    #[error("Could not parse RetryStrategy")]
+    ParseRetryStrategyError,
 
     // ---------- Chunk Proof errors
     #[error("Chunk does not exist {0:?}")]

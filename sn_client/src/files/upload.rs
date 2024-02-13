@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -8,13 +8,13 @@
 
 use crate::{
     error::{Error as ClientError, Result},
-    FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    FilesApi, BATCH_SIZE,
 };
 use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
-    storage::{Chunk, ChunkAddress},
+    storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
 use sn_transfers::NanoTokens;
@@ -75,7 +75,7 @@ pub struct FilesUpload {
     batch_size: usize,
     verify_store: bool,
     show_holders: bool,
-    max_retries: usize,
+    retry_strategy: RetryStrategy,
     // API
     api: FilesApi,
     // Uploads
@@ -97,7 +97,7 @@ impl FilesUpload {
             batch_size: BATCH_SIZE,
             verify_store: true,
             show_holders: false,
-            max_retries: MAX_UPLOAD_RETRIES,
+            retry_strategy: RetryStrategy::Balanced,
             api: files_api,
             failed_chunks: Default::default(),
             upload_storage_cost: NanoTokens::zero(),
@@ -133,11 +133,11 @@ impl FilesUpload {
         self
     }
 
-    /// Sets the maximum number of retries to perform if a chunk fails to upload.
+    /// Sets the RetryStrategy to increase the re-try on failure attempts.
     ///
-    /// By default, this option is set to the constant `MAX_UPLOAD_RETRIES: usize = 3`.
-    pub fn set_max_retries(mut self, max_retries: usize) -> Self {
-        self.max_retries = max_retries;
+    /// By default, this option is set to RetryStrategy::Balanced
+    pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
+        self.retry_strategy = retry_strategy;
         self
     }
 
@@ -405,6 +405,7 @@ impl FilesUpload {
         chunk_info: ChunkInfo,
         payee: PeerId,
         verify_store: bool,
+        retry_strategy: RetryStrategy,
     ) -> (ChunkInfo, Result<()>) {
         let chunk_address = ChunkAddress::new(chunk_info.name);
         let bytes = match std::fs::read(chunk_info.path.clone()) {
@@ -418,7 +419,7 @@ impl FilesUpload {
         };
         let chunk = Chunk::new(bytes);
         match files_api
-            .get_local_payment_and_upload_chunk(chunk, payee, verify_store)
+            .get_local_payment_and_upload_chunk(chunk, payee, verify_store, Some(retry_strategy))
             .await
         {
             Ok(()) => (chunk_info, Ok(())),
@@ -550,10 +551,12 @@ impl FilesUpload {
         trace!("spawning upload chunk task");
         let files_api = self.api.clone();
         let verify_store = self.verify_store;
+        let retry_strategy = self.retry_strategy;
 
         let _handle = tokio::spawn(async move {
             let (chunk_info, result) =
-                Self::upload_chunk(files_api, chunk_info, payee, verify_store).await;
+                Self::upload_chunk(files_api, chunk_info, payee, verify_store, retry_strategy)
+                    .await;
 
             debug!(
                 "Chunk {:?} uploaded with result {:?}",

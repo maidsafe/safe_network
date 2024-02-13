@@ -6,6 +6,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.61](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.60...sn-node-manager-v0.1.61) - 2024-02-12
+
+### Other
+- *(release)* sn_node-v0.104.15/sn_node_rpc_client-v0.4.48
+
+## [0.1.60](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.59...sn-node-manager-v0.1.60) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
+## [0.1.59](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.58...sn-node-manager-v0.1.59) - 2024-02-12
+
+### Other
+- *(release)* sn_cli-v0.89.62/sn_client-v0.104.6/sn_node-v0.104.11/sn_faucet-v0.3.62/sn_node_rpc_client-v0.4.45
+
+## [0.1.58](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.57...sn-node-manager-v0.1.58) - 2024-02-12
+
+### Fixed
+- apply suspicious_open_options from clippy
+
+## [0.1.57](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.56...sn-node-manager-v0.1.57) - 2024-02-09
+
+### Other
+- updated the following local packages: sn_node_rpc_client
+
+## [0.1.56](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.55...sn-node-manager-v0.1.56) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.1.55](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.54...sn-node-manager-v0.1.55) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.1.54](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.53...sn-node-manager-v0.1.54) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.1.53](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.52...sn-node-manager-v0.1.53) - 2024-02-08
+
+### Other
+- update dependencies
+
 ## [0.1.52](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.1.51...sn-node-manager-v0.1.52) - 2024-02-08
 
 ### Other

@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -9,14 +9,14 @@
 use crate::{
     chunks::{DataMapLevel, Error as ChunksError},
     error::{Error as ClientError, Result},
-    Client, FilesApi, BATCH_SIZE, MAX_UPLOAD_RETRIES,
+    Client, FilesApi, BATCH_SIZE,
 };
 use bytes::Bytes;
 use futures::StreamExt;
 use itertools::Itertools;
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk, StreamSelfDecryptor};
 use sn_networking::target_arch::Instant;
-use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 
 use std::{collections::HashMap, fs, path::PathBuf};
 use tokio::sync::mpsc::{self};
@@ -51,8 +51,7 @@ pub struct FilesDownload {
     // Configurations
     batch_size: usize,
     show_holders: bool,
-    // todo: controlled by GetRecordCfg, need to expose things.
-    max_retries: usize,
+    retry_strategy: RetryStrategy,
     // API
     api: FilesApi,
     // Events
@@ -67,7 +66,7 @@ impl FilesDownload {
         Self {
             batch_size: BATCH_SIZE,
             show_holders: false,
-            max_retries: MAX_UPLOAD_RETRIES,
+            retry_strategy: RetryStrategy::Quick,
             api: files_api,
             event_sender: None,
             logged_event_sender_absence: false,
@@ -90,11 +89,11 @@ impl FilesDownload {
         self
     }
 
-    /// Sets the maximum number of retries to perform if a chunk fails to download.
+    /// Sets the RetryStrategy to increase the re-try on failure attempts.
     ///
-    /// By default, this option is set to the constant `MAX_UPLOAD_RETRIES: usize = 3`.
-    pub fn set_max_retries(mut self, max_retries: usize) -> Self {
-        self.max_retries = max_retries;
+    /// By default, this option is set to RetryStrategy::Balanced
+    pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
+        self.retry_strategy = retry_strategy;
         self
     }
 
@@ -146,7 +145,11 @@ impl FilesDownload {
         length: usize,
     ) -> Result<Bytes> {
         debug!("Reading {length} bytes at: {address:?}, starting from position: {position}");
-        let chunk = self.api.client.get_chunk(address, false).await?;
+        let chunk = self
+            .api
+            .client
+            .get_chunk(address, false, Some(self.retry_strategy))
+            .await?;
 
         // First try to deserialize a LargeFile, if it works, we go and seek it.
         // If an error occurs, we consider it to be a SmallFile.
@@ -267,7 +270,12 @@ impl FilesDownload {
             info!("Downloading via supplied local datamap");
             chunk
         } else {
-            match self.api.client.get_chunk(address, self.show_holders).await {
+            match self
+                .api
+                .client
+                .get_chunk(address, self.show_holders, Some(self.retry_strategy))
+                .await
+            {
                 Ok(chunk) => chunk,
                 Err(err) => {
                     error!("Failed to fetch head chunk {address:?}");
@@ -367,6 +375,7 @@ impl FilesDownload {
 
         let client_clone = self.api.client.clone();
         let show_holders = self.show_holders;
+        let retry_strategy = self.retry_strategy;
         // the initial index is not always 0 as we might seek a range of bytes. So fetch the first index
         let mut current_index = chunk_infos
             .first()
@@ -379,6 +388,7 @@ impl FilesDownload {
                     chunk_info.dst_hash,
                     chunk_info.index,
                     show_holders,
+                    retry_strategy,
                 )
             })
             .buffer_unordered(self.batch_size);
@@ -503,9 +513,14 @@ impl FilesDownload {
         address: XorName,
         index: usize,
         show_holders: bool,
+        retry_strategy: RetryStrategy,
     ) -> std::result::Result<(ChunkAddress, usize, EncryptedChunk), ChunksError> {
         let chunk = client
-            .get_chunk(ChunkAddress::new(address), show_holders)
+            .get_chunk(
+                ChunkAddress::new(address),
+                show_holders,
+                Some(retry_strategy),
+            )
             .await
             .map_err(|err| {
                 error!("Chunk missing {address:?} with {err:?}",);

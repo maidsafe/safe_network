@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -232,7 +232,7 @@ impl NodeRecordStore {
             if incoming_record_key.distance(&self.local_key)
                 < furthest_record_key.distance(&self.local_key)
             {
-                trace!(
+                info!(
                     "{:?} will be pruned to make space for new record: {:?}",
                     PrettyPrintRecordKey::from(&furthest_record),
                     PrettyPrintRecordKey::from(r)
@@ -248,8 +248,7 @@ impl NodeRecordStore {
                 }
             } else {
                 // we should not prune, but warn as we're at max capacity
-                warn!("Record not stored (key: {r:?}). Maximum number of records reached. Current num_records: {num_records}");
-                return Err(Error::MaxRecords);
+                warn!("Maximum number of records reached. Current num_records: {num_records}");
             }
         }
 
@@ -793,40 +792,43 @@ mod tests {
                 let furthest_key = stored_records.remove(stored_records.len() - 1);
                 let furthest_addr = NetworkAddress::from_record_key(&furthest_key);
                 let record_addr = NetworkAddress::from_record_key(&record_key);
+
+                // Will be stored anyway.
+                assert!(store.put_verified(record, RecordType::Chunk).is_ok());
+                // We must also mark the record as stored (which would be triggered
+                // after the async write in nodes via NetworkEvent::CompletedWrite)
+                store.mark_as_stored(record_key.clone(), RecordType::Chunk);
+
                 let (retained_key, pruned_key) = if self_address.distance(&furthest_addr)
                     > self_address.distance(&record_addr)
                 {
+                    info!("record {furthest_addr:?} shall be pruned.");
                     // The new entry is closer, it shall replace the existing one
-                    assert!(store.put_verified(record, RecordType::Chunk).is_ok());
-                    // We must also mark the record as stored (which would be triggered after the async write in nodes
-                    // via NetworkEvent::CompletedWrite)
-                    store.mark_as_stored(record_key.clone(), RecordType::Chunk);
-
-                    (record_key, furthest_key)
+                    (record_key, Some(furthest_key.clone()))
                 } else {
-                    // The new entry is farther away, it shall not replace the existing one
-                    assert!(store.put_verified(record, RecordType::Chunk).is_err());
-
-                    (furthest_key, record_key)
+                    stored_records.push(furthest_key);
+                    (record_key, None)
                 };
 
-                // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
-                let mut iteration = 0;
-                while iteration < max_iterations {
-                    if NodeRecordStore::read_from_disk(
-                        &store.encryption_details,
-                        &pruned_key,
-                        &store_config.storage_dir,
-                    )
-                    .is_none()
-                    {
-                        break;
+                if let Some(pruned_key) = pruned_key {
+                    // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
+                    let mut iteration = 0;
+                    while iteration < max_iterations {
+                        if NodeRecordStore::read_from_disk(
+                            &store.encryption_details,
+                            &pruned_key,
+                            &store_config.storage_dir,
+                        )
+                        .is_none()
+                        {
+                            break;
+                        }
+                        sleep(Duration::from_millis(100)).await;
+                        iteration += 1;
                     }
-                    sleep(Duration::from_millis(100)).await;
-                    iteration += 1;
-                }
-                if iteration == max_iterations {
-                    panic!("record_store prune test failed with pruned record still exists.");
+                    if iteration == max_iterations {
+                        panic!("record_store prune test failed with pruned record still exists.");
+                    }
                 }
 
                 retained_key

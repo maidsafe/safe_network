@@ -6,6 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.48](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.47...sn_node_rpc_client-v0.4.48) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_node
+
+## [0.4.47](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.46...sn_node_rpc_client-v0.4.47) - 2024-02-12
+
+### Other
+- *(release)* sn_cli-v0.89.63/sn_networking-v0.13.13/sn_faucet-v0.3.63/sn_client-v0.104.8/sn_node-v0.104.13
+
+## [0.4.46](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.45...sn_node_rpc_client-v0.4.46) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_node
+
+## [0.4.45](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.44...sn_node_rpc_client-v0.4.45) - 2024-02-12
+
+### Other
+- updated the following local packages: sn_client, sn_node
+
+## [0.4.44](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.43...sn_node_rpc_client-v0.4.44) - 2024-02-12
+
+### Other
+- update Cargo.lock dependencies
+
+## [0.4.43](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.42...sn_node_rpc_client-v0.4.43) - 2024-02-09
+
+### Other
+- *(release)* sn_networking-v0.13.10/sn_client-v0.104.4/sn_node-v0.104.8
+
+## [0.4.42](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.41...sn_node_rpc_client-v0.4.42) - 2024-02-09
+
+### Other
+- update dependencies
+
+## [0.4.41](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.40...sn_node_rpc_client-v0.4.41) - 2024-02-08
+
+### Other
+- copyright update to current year
+
+## [0.4.40](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.39...sn_node_rpc_client-v0.4.40) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.4.39](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.38...sn_node_rpc_client-v0.4.39) - 2024-02-08
+
+### Other
+- update dependencies
+
+## [0.4.38](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.37...sn_node_rpc_client-v0.4.38) - 2024-02-08
+
+### Other
+- update dependencies
+
 ## [0.4.37](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.36...sn_node_rpc_client-v0.4.37) - 2024-02-08
 
 ### Other

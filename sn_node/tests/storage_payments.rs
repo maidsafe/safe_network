@@ -1,4 +1,4 @@
-// Copyright 2023 MaidSafe.net limited.
+// Copyright 2024 MaidSafe.net limited.
 //
 // This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
 // Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
@@ -295,7 +295,7 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let random_entry = rng.gen::<[u8; 32]>().to_vec();
 
     register.write(&random_entry)?;
-    register.sync(&mut wallet_client, true).await?;
+    register.sync(&mut wallet_client, true, None).await?;
 
     let retrieved_reg = client.get_register(address).await?;
 
@@ -357,9 +357,9 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
 
     sleep(Duration::from_secs(5)).await;
     assert!(matches!(
-    register.sync(&mut wallet_client, false).await,
-            Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
-        ));
+        register.sync(&mut wallet_client, false, None).await,
+        Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+    ));
 
     Ok(())
 }
