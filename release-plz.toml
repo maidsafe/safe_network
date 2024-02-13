@@ -7,7 +7,7 @@ pr_labels = ["release"] # add the `release` label to the release Pull Request
 publish_allow_dirty = false
 semver_check = true
 pr_draft = true
-git_tag_prefix = "alpha-"
+git_tag_name = "alpha-{{package}}-{{version}}"
 
 [[package]]
 name = "sn_build_info"
