@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707753947087,
+  "lastUpdate": 1707824204776,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "974a18f47b5212e7738e44d96d2fb3ec2b12d0bf",
-          "message": "chore(log): log the running test's name",
-          "timestamp": "2023-10-11T07:20:11+02:00",
-          "tree_id": "adc9b3ebbfa3e39f3328caff03bc380bdc8966cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/974a18f47b5212e7738e44d96d2fb3ec2b12d0bf"
-        },
-        "date": 1697002941544,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09867395107282262,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6181474327721797,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 27.203276065878306,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.88938931507486,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ac1479b3f10a6689c1c79147fb85787e64432375",
+          "message": "fix: manage the genesis spend case",
+          "timestamp": "2024-02-13T10:47:41Z",
+          "tree_id": "62eab6edffb641dce09bea1a0d12f772d3ad4555",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac1479b3f10a6689c1c79147fb85787e64432375"
+        },
+        "date": 1707824202284,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.247943896371945,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8128603525668885,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 53.84635871511758,
             "unit": "MiB/s"
           }
         ]
