@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::service::ServiceControl;
-use crate::VerbosityLevel;
+use crate::{service::ServiceControl, VerbosityLevel};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p::multiaddr::Protocol;
@@ -412,6 +411,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -485,6 +485,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 2".to_string(),
             user: "safe".to_string(),
@@ -551,6 +552,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -608,6 +610,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -657,6 +660,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -699,6 +703,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -738,6 +743,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "Safenode service 1".to_string(),
             user: "safe".to_string(),
@@ -782,6 +788,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -821,6 +828,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -869,6 +877,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),
@@ -920,6 +929,7 @@ mod tests {
 
         let mut node = Node {
             genesis: false,
+            local: false,
             version: "0.98.1".to_string(),
             service_name: "safenode1".to_string(),
             user: "safe".to_string(),

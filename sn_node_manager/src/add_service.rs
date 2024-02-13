@@ -134,6 +134,7 @@ pub async fn add(
 
                 node_registry.nodes.push(Node {
                     genesis: install_options.genesis,
+                    local: install_options.local,
                     service_name,
                     user: install_options.user.clone(),
                     number: node_number,
@@ -355,6 +356,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![Node {
                 genesis: true,
+                local: false,
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
                 number: 1,
@@ -669,6 +671,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![Node {
                 genesis: true,
+                local: false,
                 service_name: "safenode1".to_string(),
                 user: "safe".to_string(),
                 number: 1,

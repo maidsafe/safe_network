@@ -89,6 +89,7 @@ where
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
     pub genesis: bool,
+    pub local: bool,
     pub version: String,
     pub service_name: String,
     pub user: String,
