@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707861099537,
+  "lastUpdate": 1707861102046,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37027,6 +37027,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36057,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "ebee6c5f52cd8146e29eae02044bed32ee8e0de7",
+          "message": "test(manager): move bootstrap_peers store step inside add fn",
+          "timestamp": "2024-02-13T21:39:38Z",
+          "tree_id": "6ff50b4f0356a0c1ab108d6c9b69c1663bce3ce2",
+          "url": "https://github.com/maidsafe/safe_network/commit/ebee6c5f52cd8146e29eae02044bed32ee8e0de7"
+        },
+        "date": 1707861101208,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6245,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35182,
             "unit": "ms"
           },
           {
