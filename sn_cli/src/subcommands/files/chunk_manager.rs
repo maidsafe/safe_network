@@ -547,7 +547,7 @@ impl ChunkManager {
 #[cfg(test)]
 mod tests {
     use color_eyre::{eyre::eyre, Result};
-    use rand::{Rng, thread_rng};
+    use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
     use tempfile::TempDir;
 
