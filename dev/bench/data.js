@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707824310138,
+  "lastUpdate": 1707824311786,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -36910,6 +36910,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33480,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ac1479b3f10a6689c1c79147fb85787e64432375",
+          "message": "fix: manage the genesis spend case",
+          "timestamp": "2024-02-13T10:47:41Z",
+          "tree_id": "62eab6edffb641dce09bea1a0d12f772d3ad4555",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac1479b3f10a6689c1c79147fb85787e64432375"
+        },
+        "date": 1707824311461,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6020,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34261,
             "unit": "ms"
           },
           {
