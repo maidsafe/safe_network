@@ -24,7 +24,7 @@ pub struct AddServiceOptions {
     pub count: Option<u16>,
     pub genesis: bool,
     pub local: bool,
-    pub peers: Vec<Multiaddr>,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub node_port: Option<u16>,
     pub rpc_address: Option<Ipv4Addr>,
     pub safenode_bin_path: PathBuf,
@@ -116,7 +116,7 @@ pub async fn add(
             log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
             node_port: install_options.node_port,
-            peers: install_options.peers.clone(),
+            bootstrap_peers: install_options.bootstrap_peers.clone(),
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
@@ -259,6 +259,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
 
@@ -286,7 +287,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -301,7 +302,7 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 node_port: None,
-                peers: vec![],
+                bootstrap_peers: vec![],
                 rpc_address: None,
                 url: None,
                 user: get_username(),
@@ -370,6 +371,7 @@ mod tests {
                 )),
                 connected_peers: None,
             }],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
 
@@ -393,7 +395,7 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 node_port: None,
-                peers: vec![],
+                bootstrap_peers: vec![],
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
@@ -423,6 +425,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
 
@@ -447,7 +450,7 @@ mod tests {
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
                 node_port: None,
-                peers: vec![],
+                bootstrap_peers: vec![],
                 rpc_address: Some(custom_rpc_address),
                 url: None,
                 user: get_username(),
@@ -477,6 +480,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
 
@@ -514,7 +518,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -542,7 +546,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -570,7 +574,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -580,7 +584,7 @@ mod tests {
                 local: false,
                 genesis: false,
                 count: Some(3),
-                peers: vec![],
+                bootstrap_peers: vec![],
                 node_port: None,
                 rpc_address: None,
                 safenode_bin_path: safenode_download_path.to_path_buf(),
@@ -681,6 +685,7 @@ mod tests {
                 )),
                 connected_peers: None,
             }],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -714,7 +719,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -724,7 +729,7 @@ mod tests {
                 local: false,
                 genesis: false,
                 count: None,
-                peers: vec![],
+                bootstrap_peers: vec![],
                 node_port: None,
                 rpc_address: None,
                 safenode_bin_path: safenode_download_path.to_path_buf(),
@@ -773,6 +778,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
         let latest_version = "0.96.4";
@@ -810,7 +816,7 @@ mod tests {
                 service_user: get_username(),
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                peers: vec![],
+                bootstrap_peers: vec![],
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -824,7 +830,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
+                bootstrap_peers: vec![],
                 node_port: Some(custom_port),
                 rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
                 url: None,
@@ -872,6 +878,7 @@ mod tests {
         let mut node_registry = NodeRegistry {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
+            bootstrap_peers: vec![],
             faucet_pid: None,
         };
         let latest_version = "0.96.4";
@@ -892,7 +899,7 @@ mod tests {
                 safenode_dir_path: temp_dir.to_path_buf(),
                 service_data_dir_path: node_data_dir.to_path_buf(),
                 service_log_dir_path: node_logs_dir.to_path_buf(),
-                peers: vec![],
+                bootstrap_peers: vec![],
                 node_port: Some(custom_port),
                 rpc_address: None,
                 url: None,

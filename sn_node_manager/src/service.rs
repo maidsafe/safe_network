@@ -29,7 +29,7 @@ pub struct ServiceConfig {
     pub log_dir_path: PathBuf,
     pub name: String,
     pub node_port: Option<u16>,
-    pub peers: Vec<Multiaddr>,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: String,
@@ -185,9 +185,9 @@ impl ServiceControl for NodeServiceManager {
             args.push(OsString::from(node_port.to_string()));
         }
 
-        if !config.peers.is_empty() {
+        if !config.bootstrap_peers.is_empty() {
             let peers_str = config
-                .peers
+                .bootstrap_peers
                 .iter()
                 .map(|peer| peer.to_string())
                 .collect::<Vec<_>>()
