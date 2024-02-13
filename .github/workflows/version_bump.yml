@@ -78,7 +78,8 @@ jobs:
           rm release-plz-x86_64-unknown-linux-gnu.tar.gz
           sudo mv release-plz /usr/local/bin
       - shell: bash
-        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.channel || 'main' }}
+        # if we're running a workflow for a release channel, pass that in here, otherwise the script assumes we're on main
+        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.channel }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
