@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707844686579,
+  "lastUpdate": 1707860993814,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9472d9a54c375135c5ac8bbcd536a311db01651f",
-          "message": "ci: prevent concurrent release and version bumping\n\nThis can lead to unreleased versions and some crates.io hassle",
-          "timestamp": "2023-10-11T09:26:09+02:00",
-          "tree_id": "f88f702f26d4acc337316a451c0f1a3a89de156c",
-          "url": "https://github.com/maidsafe/safe_network/commit/9472d9a54c375135c5ac8bbcd536a311db01651f"
-        },
-        "date": 1697010382514,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10382661471584993,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6383609484305668,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 30.002969147137858,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.63977267177577,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "ebee6c5f52cd8146e29eae02044bed32ee8e0de7",
+          "message": "test(manager): move bootstrap_peers store step inside add fn",
+          "timestamp": "2024-02-13T21:39:38Z",
+          "tree_id": "6ff50b4f0356a0c1ab108d6c9b69c1663bce3ce2",
+          "url": "https://github.com/maidsafe/safe_network/commit/ebee6c5f52cd8146e29eae02044bed32ee8e0de7"
+        },
+        "date": 1707860990207,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2198544470808208,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8245489933131958,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.90452592359662,
             "unit": "MiB/s"
           }
         ]
