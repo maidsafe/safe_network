@@ -103,9 +103,9 @@ pub struct Node {
     )]
     pub peer_id: Option<PeerId>,
     pub listen_addr: Option<Vec<Multiaddr>>,
-    pub data_dir_path: Option<PathBuf>,
-    pub log_dir_path: Option<PathBuf>,
-    pub safenode_path: Option<PathBuf>,
+    pub data_dir_path: PathBuf,
+    pub log_dir_path: PathBuf,
+    pub safenode_path: PathBuf,
     #[serde(
         serialize_with = "serialize_connected_peers",
         deserialize_with = "deserialize_connected_peers"
