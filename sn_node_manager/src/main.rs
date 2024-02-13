@@ -387,27 +387,12 @@ async fn main() -> Result<()> {
             )
             .await?;
 
-            let is_genesis = peers.first;
-            let bootstrap_peers = get_peers_from_args(peers).await?;
-            //  store the bootstrap peers
-            {
-                let new_bootstrap_peers: Vec<_> = bootstrap_peers
-                    .clone()
-                    .into_iter()
-                    .filter(|peer| !node_registry.bootstrap_peers.contains(peer))
-                    .collect();
-                if !new_bootstrap_peers.is_empty() {
-                    node_registry.bootstrap_peers.extend(new_bootstrap_peers);
-                    node_registry.save()?;
-                }
-            }
-
             add(
                 AddServiceOptions {
                     local,
-                    genesis: is_genesis,
+                    genesis: peers.first,
                     count,
-                    bootstrap_peers,
+                    bootstrap_peers: get_peers_from_args(peers).await?,
                     node_port: port,
                     rpc_address,
                     safenode_bin_path: safenode_download_path,

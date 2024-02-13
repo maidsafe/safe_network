@@ -77,6 +77,21 @@ pub async fn add(
         .to_string_lossy()
         .to_string();
 
+    //  store the bootstrap peers
+    {
+        let new_bootstrap_peers: Vec<_> = install_options
+            .bootstrap_peers
+            .iter()
+            .filter(|peer| !node_registry.bootstrap_peers.contains(peer))
+            .collect();
+        if !new_bootstrap_peers.is_empty() {
+            node_registry
+                .bootstrap_peers
+                .extend(new_bootstrap_peers.into_iter().cloned());
+            node_registry.save()?;
+        }
+    }
+
     let mut added_service_data = vec![];
     let mut failed_service_data = vec![];
 
@@ -202,7 +217,7 @@ mod tests {
         ArchiveType, Platform, ProgressCallback, ReleaseType, Result as SnReleaseResult,
         SafeReleaseRepositoryInterface,
     };
-    use std::path::Path;
+    use std::{path::Path, str::FromStr};
 
     #[cfg(not(target_os = "windows"))]
     const SAFENODE_FILE_NAME: &str = "safenode";
@@ -653,6 +668,111 @@ mod tests {
             node_data_dir.to_path_buf().join("safenode3")
         );
         assert_matches!(node_registry.nodes[2].status, NodeStatus::Added);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+        let mut mock_service_control = MockServiceControl::new();
+
+        let mut old_peers  = vec![Multiaddr::from_str("/ip4/64.227.35.186/udp/33188/quic-v1/p2p/12D3KooWDrx4zfUuJgz7jSusC28AZRDRbj7eo3WKZigPsw9tVKs3")?];
+        let new_peers = vec![Multiaddr::from_str("/ip4/178.62.78.116/udp/45442/quic-v1/p2p/12D3KooWLH4E68xFqoSKuF2JPQQhzaAg7GNvN1vpxoLMgJq6Zqz8")?];
+
+        let mut node_registry = NodeRegistry {
+            save_path: node_reg_path.to_path_buf(),
+            nodes: vec![],
+            bootstrap_peers: old_peers.clone(),
+            faucet_pid: None,
+        };
+        let latest_version = "0.96.4";
+        let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+        safenode_download_path.write_binary(b"fake safenode bin")?;
+
+        let mut seq = Sequence::new();
+
+        mock_service_control
+            .expect_get_available_port()
+            .times(1)
+            .returning(|| Ok(12001))
+            .in_sequence(&mut seq);
+
+        mock_service_control
+            .expect_install()
+            .times(1)
+            .with(eq(ServiceConfig {
+                local: false,
+                genesis: false,
+                name: "safenode1".to_string(),
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
+                node_port: None,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
+                service_user: get_username(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                bootstrap_peers: new_peers.clone(),
+            }))
+            .returning(|_| Ok(()))
+            .in_sequence(&mut seq);
+
+        add(
+            AddServiceOptions {
+                local: false,
+                genesis: false,
+                count: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                bootstrap_peers: new_peers.clone(),
+                node_port: None,
+                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+                url: None,
+                user: get_username(),
+                version: latest_version.to_string(),
+            },
+            &mut node_registry,
+            &mock_service_control,
+            VerbosityLevel::Normal,
+        )
+        .await?;
+
+        safenode_download_path.assert(predicate::path::missing());
+        node_data_dir.assert(predicate::path::is_dir());
+        node_logs_dir.assert(predicate::path::is_dir());
+
+        old_peers.extend(new_peers);
+        assert_eq!(node_registry.bootstrap_peers, old_peers);
+
+        assert_eq!(node_registry.nodes.len(), 1);
+        assert_eq!(node_registry.nodes[0].version, latest_version);
+        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+        assert_eq!(node_registry.nodes[0].user, get_username());
+        assert_eq!(node_registry.nodes[0].number, 1);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
+        );
+        assert_eq!(
+            node_registry.nodes[0].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode1")
+        );
+        assert_eq!(
+            node_registry.nodes[0].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode1")
+        );
+        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
 
         Ok(())
     }
