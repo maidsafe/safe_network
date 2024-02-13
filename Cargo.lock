@@ -4871,6 +4871,8 @@ dependencies = [
 name = "sn_cli"
 version = "0.89.81"
 dependencies = [
+ "base64 0.21.7",
+ "bitcoin",
  "blsttc",
  "bytes",
  "chrono",
@@ -4951,6 +4953,7 @@ name = "sn_faucet"
 version = "0.3.81"
 dependencies = [
  "assert_fs",
+ "base64 0.21.7",
  "bitcoin",
  "blsttc",
  "clap 4.5.1",
