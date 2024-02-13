@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707844581397,
+  "lastUpdate": 1707844683596,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "364dca4a459e1d07e2e1c881d81b3ce4a9c2110b",
-          "message": "chore: minor improvements to some log msgs",
-          "timestamp": "2023-10-10T19:09:05Z",
-          "tree_id": "4d51cd9268c5cdfbc1190e544c03d45fb799f029",
-          "url": "https://github.com/maidsafe/safe_network/commit/364dca4a459e1d07e2e1c881d81b3ce4a9c2110b"
-        },
-        "date": 1696968371638,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602",
+          "message": "fix(CI): usng smaller target to avoid our_of_disk error",
+          "timestamp": "2024-02-13T16:24:31Z",
+          "tree_id": "440c4ae58b37326e470a06e0ebcc7620cff625d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602"
+        },
+        "date": 1707844683249,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
