@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.16](https://github.com/joshuef/safe_network/compare/alpha-sn_node-0.104.15...alpha-sn_node-0.104.16) - 2024-02-13
+
+### Other
+- initiral release-plz for alpha attempt
+
 ## [0.104.15](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.14...sn_node-v0.104.15) - 2024-02-12
 
 ### Fixed

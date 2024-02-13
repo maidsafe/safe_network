@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_node_rpc_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.4.48"
+version = "0.4.49"
 
 [[bin]]
 path="src/main.rs"
@@ -23,9 +23,9 @@ color-eyre = "0.6.2"
 hex = "~0.4.3"
 libp2p = { version="0.53", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", version = "0.104.8" }
+sn_client = { path = "../sn_client", version = "0.104.9" }
 sn_logging = { path = "../sn_logging", version = "0.2.21" }
-sn_node = { path = "../sn_node", version = "0.104.15" }
+sn_node = { path = "../sn_node", version = "0.104.16" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.6" }
 sn_protocol = { path = "../sn_protocol", version = "0.12.6", features=["rpc"] }
 sn_transfers = { path = "../sn_transfers", version = "0.15.3" }

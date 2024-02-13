@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.3.63"
+version = "0.3.64"
 
 [features]
 default = []
@@ -32,7 +32,7 @@ rmp-serde = "1.1.2"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_bytes = { version = "0.11.12", optional = true }
 serde_json = "1.0.108"
-sn_client = { path = "../sn_client", version = "0.104.8" }
+sn_client = { path = "../sn_client", version = "0.104.9" }
 sn_logging = { path = "../sn_logging", version = "0.2.21" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.6" }
 sn_transfers = { path = "../sn_transfers", version = "0.15.3" }
