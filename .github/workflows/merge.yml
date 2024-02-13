@@ -786,10 +786,10 @@ jobs:
           echo "PWD subdirs:"
           du -sh */
 
-      - name: Download material, 2.34G
+      - name: Download material, 1.6G
         shell: bash
         run: |
-          wget https://releases.ubuntu.com/18.04.6/ubuntu-18.04.6-desktop-amd64.iso
+          wget https://releases.ubuntu.com/16.04/ubuntu-16.04.7-desktop-amd64.iso
           ls -l
 
       - name: Build binaries
@@ -846,7 +846,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Start a client to upload
-        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-18.04.6-desktop-amd64.iso" --retry-strategy quick
+        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-16.04.7-desktop-amd64.iso" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 30
