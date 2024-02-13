@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::Error;
+use crate::{error::Result as ProtocolResult, Error};
 use color_eyre::Result;
-use libp2p::{Multiaddr, PeerId};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     io::{Read, Write},
@@ -110,6 +110,23 @@ pub struct Node {
         deserialize_with = "deserialize_connected_peers"
     )]
     pub connected_peers: Option<Vec<PeerId>>,
+}
+
+impl Node {
+    /// Returns the UDP port from our node's listen address.
+    pub fn get_safenode_port(&self) -> ProtocolResult<u16> {
+        // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>
+        if let Some(multi_addrs) = &self.listen_addr {
+            for addr in multi_addrs {
+                for protocol in addr.iter() {
+                    if let Protocol::Udp(port) = protocol {
+                        return Ok(port);
+                    }
+                }
+            }
+        }
+        Err(Error::CouldNotObtainPortFromMultiAddr)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
