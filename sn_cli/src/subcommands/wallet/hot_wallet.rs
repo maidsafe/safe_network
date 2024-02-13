@@ -73,6 +73,12 @@ pub enum WalletCmds {
         /// The http url of the faucet to get tokens from.
         #[clap(name = "url")]
         url: String,
+        /// The maidsafecoin address to claim. Leave blank to receive a fixed
+        /// amount of tokens.
+        maid_address: Option<String>,
+        /// A signature of the safe wallet address, made by the maidsafecoin
+        /// address.
+        signature: Option<String>,
     },
     /// Send a transfer.
     ///
@@ -179,7 +185,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                     return Ok(());
                 }
                 // remove existing wallet
-                let new_location = HotWallet::clear(root_dir)?;
+                let new_location = HotWallet::stash(root_dir)?;
                 println!("Old wallet stored at {}", new_location.display());
             }
             // Create the new wallet with the new key
@@ -205,7 +211,11 @@ pub(crate) async fn wallet_cmds(
     match cmds {
         WalletCmds::Send { amount, to } => send(amount, to, client, root_dir, verify_store).await,
         WalletCmds::Receive { file, transfer } => receive(transfer, file, client, root_dir).await,
-        WalletCmds::GetFaucet { url } => get_faucet(root_dir, client, url.clone()).await,
+        WalletCmds::GetFaucet {
+            url,
+            maid_address,
+            signature,
+        } => get_faucet(root_dir, client, url.clone(), maid_address, signature).await,
         WalletCmds::Audit { dot, royalties } => audit(client, dot, royalties, root_dir).await,
         WalletCmds::Verify {
             spend_address,

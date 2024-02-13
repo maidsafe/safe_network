@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::send_tokens;
+#[cfg(feature = "distribution")]
+use base64::Engine;
 use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use sn_client::Client;
@@ -59,9 +61,7 @@ impl MaidClaim {
             wallet,
             signature,
         };
-        if !mc.is_valid() {
-            return Err(eyre!("Invalid claim"));
-        }
+        mc.is_valid()?;
         Ok(mc)
     }
 
@@ -77,9 +77,7 @@ impl MaidClaim {
             wallet: cells[2].to_string(),
             signature: cells[3].to_string(),
         };
-        if !mc.is_valid() {
-            return Err(eyre!("Invalid claim"));
-        }
+        mc.is_valid()?;
         Ok(mc)
     }
 
@@ -90,29 +88,25 @@ impl MaidClaim {
         )
     }
 
-    pub fn is_valid(&self) -> bool {
+    pub fn is_valid(&self) -> Result<()> {
+        // check signature is correct
+        check_signature(&self.address, &self.wallet, &self.signature)?;
         // check pk matches address
         if !maid_pk_matches_address(&self.address, &self.pubkey) {
-            return false;
-        }
-        // check signature is correct
-        if !check_signature(&self.address, &self.wallet, &self.signature) {
-            return false;
+            return Err(eyre!("Claim public key does not match address"));
         }
         // check wallet is a valid bls pubkey
         if MainPubkey::from_hex(&self.wallet).is_err() {
-            return false;
+            return Err(eyre!("Invalid bls public key"));
         };
         // if all the checks are ok, it's valid
-        true
+        Ok(())
     }
 
     pub fn save_to_file(&self) -> Result<()> {
         // check it's valid before we write it, can't know for sure it was
         // already validated
-        if !self.is_valid() {
-            return Err(eyre!("Invalid claim"));
-        }
+        self.is_valid()?;
         // if it already exists, overwrite it
         let addr_path = get_claims_data_dir_path()?.join(self.address.clone());
         let csv_line = self.to_csv_line();
@@ -278,7 +272,7 @@ pub fn load_maid_claims() -> Result<HashMap<MaidAddress, MaidClaim>> {
             }
         };
         // validate this claim info all matches correctly
-        if !claim.is_valid() {
+        if claim.is_valid().is_err() {
             continue;
         }
         // save this cliam to the file system
@@ -325,30 +319,30 @@ fn maid_pk_matches_address(address: &str, pk_hex: &str) -> bool {
     false
 }
 
-fn check_signature(address: &MaidAddress, msg: &str, signature: &str) -> bool {
+fn check_signature(address: &MaidAddress, msg: &str, signature: &str) -> Result<()> {
     let secp = bitcoin::secp256k1::Secp256k1::new(); // DevSkim: ignore DS440100
     let msg_hash = bitcoin::sign_message::signed_msg_hash(msg);
-    let sig = match bitcoin::sign_message::MessageSignature::from_str(signature) {
-        Ok(s) => s,
-        Err(_) => return false,
-    };
+    let sig = bitcoin::sign_message::MessageSignature::from_str(signature)?;
     // Signatures doesn't work with p2wpkh-p2sh so always use p2pkh addr.
     // This was double checked with electrum signature validation.
-    let pubkey = match pubkey_from_signature(msg, signature) {
-        Ok(pk) => pk,
-        Err(_) => return false,
-    };
-    let pubkey_hex = hex::encode(pubkey.to_bytes());
-    let addr = bitcoin::Address::p2pkh(&pubkey, bitcoin::Network::Bitcoin);
-    // Check the pubkey matches the address.
-    // This prevents someone submitting a valid signature from a pubkey that
-    // doesn't match the address for the snapshot.
-    if !maid_pk_matches_address(address, &pubkey_hex) {
-        return false;
+    let mut addr =
+        bitcoin::Address::from_str(address)?.require_network(bitcoin::Network::Bitcoin)?;
+    let pubkey = pubkey_from_signature(msg, signature)?;
+    if address.starts_with('3') {
+        addr = bitcoin::Address::p2pkh(&pubkey, bitcoin::Network::Bitcoin);
     }
     // check the signature is correct
-    sig.is_signed_by_address(&secp, &addr, msg_hash)
-        .unwrap_or(false)
+    if !sig.is_signed_by_address(&secp, &addr, msg_hash)? {
+        return Err(eyre!("Invalid signature"));
+    }
+    // Check the pubkey in the signature matches the address.
+    // This prevents someone submitting a valid signature from a pubkey that
+    // doesn't match the address for the snapshot.
+    let pubkey_hex = hex::encode(pubkey.to_bytes());
+    if !maid_pk_matches_address(address, &pubkey_hex) {
+        return Err(eyre!("Public key does not match address"));
+    }
+    Ok(())
 }
 
 fn pubkey_from_signature(msg: &str, signature: &str) -> Result<bitcoin::PublicKey> {
@@ -400,7 +394,7 @@ pub async fn handle_distribution_req(
         .to_string();
     let wallet = query
         .get("wallet")
-        .ok_or(eyre!("Missing signature in querystring"))?
+        .ok_or(eyre!("Missing wallet in querystring"))?
         .to_string();
     let signature = query
         .get("signature")
@@ -409,7 +403,11 @@ pub async fn handle_distribution_req(
     let amount = balances
         .get(&address)
         .ok_or(eyre!("Address not in snapshot"))?;
-    let claim = MaidClaim::new(address, wallet, signature)?;
+    // Bitcoin expects base64 standard encoding but the query string has
+    // base64 url encoding, so the sig is converted to standard encoding
+    let sig_bytes = base64::engine::general_purpose::URL_SAFE.decode(signature)?;
+    let sig = base64::engine::general_purpose::STANDARD.encode(sig_bytes);
+    let claim = MaidClaim::new(address, wallet, sig)?;
     create_distribution(client, &claim, amount).await
 }
 
@@ -419,7 +417,7 @@ async fn create_distribution(
     amount: &NanoTokens,
 ) -> Result<String> {
     // validate the claim
-    if !claim.is_valid() {
+    if claim.is_valid().is_err() {
         let claim_csv = claim.to_csv_line();
         let msg = format!("Not creating distribution for invalid claim: {claim_csv}");
         info!(msg);
@@ -615,7 +613,7 @@ mod tests {
             wallet: WALLET_A.to_string(),
             signature: SIG_A.to_string(),
         };
-        assert!(mc.is_valid());
+        assert!(mc.is_valid().is_ok());
 
         // pk not matching address
         let mc = MaidClaim {
@@ -624,7 +622,7 @@ mod tests {
             wallet: WALLET_A.to_string(),
             signature: SIG_A.to_string(),
         };
-        assert!(!mc.is_valid());
+        assert!(mc.is_valid().is_err());
 
         // signature not matching message
         let mc = MaidClaim {
@@ -633,7 +631,7 @@ mod tests {
             wallet: WALLET_A.to_string(),
             signature: SIG_B.to_string(),
         };
-        assert!(!mc.is_valid());
+        assert!(mc.is_valid().is_err());
 
         // signature matches message but not address
         let mc = MaidClaim {
@@ -642,7 +640,7 @@ mod tests {
             wallet: WALLET_B.to_string(),
             signature: SIG_B.to_string(),
         };
-        assert!(!mc.is_valid());
+        assert!(mc.is_valid().is_err());
 
         // wallet is not a valid bls key
         let mc = MaidClaim {
@@ -651,7 +649,7 @@ mod tests {
             wallet: WALLET_C.to_string(),
             signature: SIG_C.to_string(),
         };
-        assert!(!mc.is_valid());
+        assert!(mc.is_valid().is_err());
 
         Ok(())
     }
