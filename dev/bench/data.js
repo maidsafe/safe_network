@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707824308617,
+  "lastUpdate": 1707824310138,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a4763310514cadbb7128dee70fe989db2f4be0a0",
-          "message": "fix(sn_networking): reduce kad query timeout\n\n5 mins was impractically long",
-          "timestamp": "2023-10-10T09:31:44+02:00",
-          "tree_id": "b2266ee9be42fdc7aadd440a4c8248b9dc9e1b9a",
-          "url": "https://github.com/maidsafe/safe_network/commit/a4763310514cadbb7128dee70fe989db2f4be0a0"
-        },
-        "date": 1696924555853,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 146,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 35,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "eab9681ae02e7abb15ef8f979f2a1659056258d5",
           "message": "chore: dep updates",
           "timestamp": "2023-10-10T13:26:57+02:00",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ac1479b3f10a6689c1c79147fb85787e64432375",
+          "message": "fix: manage the genesis spend case",
+          "timestamp": "2024-02-13T10:47:41Z",
+          "tree_id": "62eab6edffb641dce09bea1a0d12f772d3ad4555",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac1479b3f10a6689c1c79147fb85787e64432375"
+        },
+        "date": 1707824309763,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 204,
             "unit": "MB"
           },
           {
