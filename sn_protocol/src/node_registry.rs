@@ -116,6 +116,7 @@ pub struct Node {
 pub struct NodeRegistry {
     pub save_path: PathBuf,
     pub nodes: Vec<Node>,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub faucet_pid: Option<u32>,
 }
 
@@ -137,6 +138,7 @@ impl NodeRegistry {
             return Ok(NodeRegistry {
                 save_path: path.to_path_buf(),
                 nodes: vec![],
+                bootstrap_peers: vec![],
                 faucet_pid: None,
             });
         }
@@ -151,6 +153,7 @@ impl NodeRegistry {
             return Ok(NodeRegistry {
                 save_path: path.to_path_buf(),
                 nodes: vec![],
+                bootstrap_peers: vec![],
                 faucet_pid: None,
             });
         }
