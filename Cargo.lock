@@ -4937,6 +4937,7 @@ dependencies = [
  "mockall",
  "nix 0.27.1",
  "predicates 2.1.5",
+ "prost 0.9.0",
  "reqwest",
  "semver",
  "serde",
@@ -4948,6 +4949,8 @@ dependencies = [
  "sn_protocol",
  "sysinfo",
  "tokio",
+ "tonic 0.6.2",
+ "tracing",
  "users",
  "uuid",
 ]

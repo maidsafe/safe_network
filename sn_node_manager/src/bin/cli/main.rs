@@ -6,26 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod add_service;
-mod config;
-mod control;
-mod helpers;
-mod local;
-mod service;
-
-use crate::{
+use clap::{Parser, Subcommand};
+use color_eyre::{eyre::eyre, Help, Result};
+use colored::Colorize;
+use libp2p_identity::PeerId;
+use semver::Version;
+use sn_node_manager::{
     add_service::{add, AddServiceOptions},
     config::*,
     control::{remove, start, status, stop, upgrade, UpgradeOptions, UpgradeResult},
     helpers::download_and_extract_release,
     local::{kill_network, run_faucet, run_network, LocalNetworkOptions},
     service::{NodeServiceManager, ServiceControl},
+    VerbosityLevel,
 };
-use clap::{Parser, Subcommand};
-use color_eyre::{eyre::eyre, Help, Result};
-use colored::Colorize;
-use libp2p_identity::PeerId;
-use semver::Version;
 use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
@@ -38,24 +32,6 @@ use std::{
 };
 
 const DEFAULT_NODE_COUNT: u16 = 25;
-
-#[derive(Clone, PartialEq)]
-pub enum VerbosityLevel {
-    Minimal,
-    Normal,
-    Full,
-}
-
-impl From<u8> for VerbosityLevel {
-    fn from(verbosity: u8) -> Self {
-        match verbosity {
-            1 => VerbosityLevel::Minimal,
-            2 => VerbosityLevel::Normal,
-            3 => VerbosityLevel::Full,
-            _ => VerbosityLevel::Normal,
-        }
-    }
-}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

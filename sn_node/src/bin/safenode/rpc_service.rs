@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bytes::Bytes;
-use sn_node::RunningNode;
-
 use bls::{PublicKey, PK_SIZE};
+use bytes::Bytes;
 use eyre::{ErrReport, Result};
+use sn_node::RunningNode;
 use sn_protocol::node_rpc::NodeCtrl;
 use sn_protocol::safenode_proto::{
     k_buckets_response,
@@ -22,8 +21,8 @@ use sn_protocol::safenode_proto::{
     RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
     TransferNotifsFilterRequest, TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
 };
-use std::collections::HashMap;
 use std::{
+    collections::HashMap,
     env,
     net::SocketAddr,
     process,
