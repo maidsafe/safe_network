@@ -153,7 +153,7 @@ impl Network {
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
             let signed_spend = result
-                .map_err(|_| Error::FailedToGetTransferParentSpend)?
+                .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
                 .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
             let _ = parent_spends.insert(signed_spend.clone());
         }
@@ -210,7 +210,7 @@ impl Network {
             }
             while let Some(result) = tasks.join_next().await {
                 let signed_spend = result
-                    .map_err(|_| Error::FailedToGetTransferParentSpend)?
+                    .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
                     .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
                 let _ = parent_spends.insert(signed_spend.clone());
             }
@@ -224,6 +224,39 @@ impl Network {
             tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
                 Error::InvalidTransfer(format!("Payment parent Tx {:?} invalid: {e}", tx.hash()))
             })?;
+        }
+
+        // check that the redeemed CashNotes are not already spent
+        trace!("Validating CashNotes are not already spent");
+        let mut tasks = JoinSet::new();
+        for cash_note in &our_output_cash_notes {
+            let pk = cash_note.unique_pubkey();
+            let addr = SpendAddress::from_unique_pubkey(&pk);
+            let self_clone = self.clone();
+            let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
+        }
+        while let Some(result) = tasks.join_next().await {
+            let res = result.map_err(|e| Error::FailedToGetSpend(format!("{e}")))?;
+            match res {
+                // if we get a RecordNotFound, it means the CashNote is not spent, which is good
+                Err(Error::GetRecordError(GetRecordError::RecordNotFound)) => (),
+                // if we get a spend, it means the CashNote is already spent
+                Ok(s) => {
+                    warn!(
+                        "CashNoteRedemption contains a CashNote that is already spent: {:?}",
+                        s.unique_pubkey()
+                    );
+                    our_output_cash_notes.retain(|c| &c.unique_pubkey() != s.unique_pubkey());
+                }
+                // report all other errors
+                Err(e) => return Err(Error::FailedToGetSpend(format!("{e}"))),
+            }
+        }
+
+        if our_output_cash_notes.is_empty() {
+            return Err(Error::InvalidTransfer(
+                "All the redeemed CashNotes are already spent".to_string(),
+            ));
         }
 
         Ok(our_output_cash_notes)
