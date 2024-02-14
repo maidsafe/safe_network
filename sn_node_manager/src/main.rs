@@ -341,6 +341,12 @@ pub enum SubCmd {
         /// The name of the service to upgrade
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
+        /// Provide the environmental variable that is set for the safenode service.
+        ///
+        /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
+        /// Example usage `--env SN_LOG=all,RUST_LOG=libp2p=debug`
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
     },
 }
 
@@ -789,6 +795,7 @@ async fn main() -> Result<()> {
         SubCmd::Upgrade {
             peer_id,
             service_name,
+            env_variables: provided_env_variable,
         } => {
             if !is_running_as_root() {
                 return Err(eyre!("The upgrade command must run as the root user"));
@@ -835,10 +842,16 @@ async fn main() -> Result<()> {
                     .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
                 let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+                // use the passed in env variable or re-use the one that we supplied during 'add()'
+                let env_variables = if provided_env_variable.is_some() {
+                    &provided_env_variable
+                } else {
+                    &node_registry.environment_variables
+                };
                 let result = upgrade(
                     node,
                     &node_registry.bootstrap_peers,
-                    &node_registry.environment_variables,
+                    env_variables,
                     &safenode_download_path,
                     &latest_version,
                     &NodeServiceManager {},
@@ -871,10 +884,16 @@ async fn main() -> Result<()> {
                     })?;
 
                 let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+                // use the passed in env variable or re-use the one that we supplied during 'add()'
+                let env_variables = if provided_env_variable.is_some() {
+                    &provided_env_variable
+                } else {
+                    &node_registry.environment_variables
+                };
                 let result = upgrade(
                     node,
                     &node_registry.bootstrap_peers,
-                    &node_registry.environment_variables,
+                    env_variables,
                     &safenode_download_path,
                     &latest_version,
                     &NodeServiceManager {},
@@ -896,10 +915,16 @@ async fn main() -> Result<()> {
             } else {
                 for node in node_registry.nodes.iter_mut() {
                     let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+                    // use the passed in env variable or re-use the one that we supplied during 'add()'
+                    let env_variables = if provided_env_variable.is_some() {
+                        &provided_env_variable
+                    } else {
+                        &node_registry.environment_variables
+                    };
                     let result = upgrade(
                         node,
                         &node_registry.bootstrap_peers,
-                        &node_registry.environment_variables,
+                        env_variables,
                         &safenode_download_path,
                         &latest_version,
                         &NodeServiceManager {},
