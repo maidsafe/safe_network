@@ -19,7 +19,6 @@ use sn_transfers::{
     CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
-use std::collections::HashMap;
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
@@ -40,7 +39,6 @@ pub struct WalletClient {
 pub struct StoragePaymentResult {
     pub storage_cost: NanoTokens,
     pub royalty_fees: NanoTokens,
-    pub payee_map: HashMap<NetworkAddress, PeerId>,
     pub skipped_chunks: Vec<XorName>,
 }
 
@@ -446,7 +444,6 @@ impl WalletClient {
         let mut cost_map = BTreeMap::default();
         let mut skipped_chunks = vec![];
         #[allow(clippy::mutable_key_type)]
-        let mut payee_map = HashMap::new();
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {
@@ -457,7 +454,6 @@ impl WalletClient {
                         } else {
                             debug!("Storecost inserted into payment map for {content_addr:?}");
                             let _ = cost_map.insert(xorname, (cost.1, cost.2, cost.0.to_bytes()));
-                            payee_map.insert(content_addr, cost.0);
                         }
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
@@ -481,7 +477,6 @@ impl WalletClient {
         let res = StoragePaymentResult {
             storage_cost,
             royalty_fees,
-            payee_map,
             skipped_chunks,
         };
         Ok(res)
