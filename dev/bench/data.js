@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707909146028,
+  "lastUpdate": 1707909148566,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "f5cfd0eb33b2cc6c95ec186954050c980cb270c2",
-          "message": "feat: showing expected holders to CLI when required",
-          "timestamp": "2023-10-11T08:51:36+02:00",
-          "tree_id": "642f4b2c83a1287089d89482a8933d9dd5ab32cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/f5cfd0eb33b2cc6c95ec186954050c980cb270c2"
-        },
-        "date": 1697008499487,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 165,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "2de49182d7b81d949ed89c0e6d19cf694ae95cad",
           "message": "fix: make client handle payment error",
           "timestamp": "2023-10-11T08:59:30+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1",
+          "message": "chore(refactor): move mod.rs files the modern way",
+          "timestamp": "2024-02-14T10:20:03Z",
+          "tree_id": "7081c2d2ffd9eb353633811c692a4a2fa529ea6a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1"
+        },
+        "date": 1707909147512,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
