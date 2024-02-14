@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.5](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.4...sn_transfers-v0.15.5) - 2024-02-14
+
+### Other
+- *(refactor)* move mod.rs files the modern way
+
 ## [0.15.4](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.3...sn_transfers-v0.15.4) - 2024-02-13
 
 ### Fixed

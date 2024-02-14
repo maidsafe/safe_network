@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.66](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.65...sn_cli-v0.89.66) - 2024-02-14
+
+### Other
+- *(refactor)* move mod.rs files the modern way
+
 ## [0.89.65](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.64...sn_cli-v0.89.65) - 2024-02-13
 
 ### Other

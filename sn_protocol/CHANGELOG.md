@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.13.0...sn_protocol-v0.13.1) - 2024-02-14
+
+### Other
+- *(refactor)* move mod.rs files the modern way
+
 ## [0.13.0](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.12.7...sn_protocol-v0.13.0) - 2024-02-13
 
 ### Added
