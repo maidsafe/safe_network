@@ -79,8 +79,9 @@ pub async fn add(
         .to_string_lossy()
         .to_string();
 
-    //  store the bootstrap peers
+    //  store the bootstrap peers and the provided env variable.
     {
+        let mut should_save = false;
         let new_bootstrap_peers: Vec<_> = install_options
             .bootstrap_peers
             .iter()
@@ -90,6 +91,15 @@ pub async fn add(
             node_registry
                 .bootstrap_peers
                 .extend(new_bootstrap_peers.into_iter().cloned());
+            should_save = true;
+        }
+
+        if install_options.env_variables.is_some() {
+            node_registry.environment_variables = install_options.env_variables.clone();
+            should_save = true;
+        }
+
+        if should_save {
             node_registry.save()?;
         }
     }
@@ -279,6 +289,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
 
@@ -307,10 +318,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 bootstrap_peers: vec![],
-                env_variables: Some(vec![
-                    ("SN_LOG".to_owned(), "all".to_owned()),
-                    ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
-                ]),
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -330,10 +338,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
-                env_variables: Some(vec![
-                    ("SN_LOG".to_owned(), "all".to_owned()),
-                    ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
-                ]),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -398,6 +403,7 @@ mod tests {
                 connected_peers: None,
             }],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
 
@@ -453,6 +459,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
 
@@ -509,6 +516,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
 
@@ -703,6 +711,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: old_peers.clone(),
+            environment_variables: None,
             faucet_pid: None,
         };
         let latest_version = "0.96.4";
@@ -797,6 +806,115 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn add_node_should_update_the_environment_variables_inside_node_registry() -> Result<()> {
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+        let mut mock_service_control = MockServiceControl::new();
+
+        let env_variables = Some(vec![
+            ("SN_LOG".to_owned(), "all".to_owned()),
+            ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
+        ]);
+
+        let mut node_registry = NodeRegistry {
+            save_path: node_reg_path.to_path_buf(),
+            nodes: vec![],
+            bootstrap_peers: vec![],
+            environment_variables: None,
+            faucet_pid: None,
+        };
+        let latest_version = "0.96.4";
+        let temp_dir = assert_fs::TempDir::new()?;
+        let node_data_dir = temp_dir.child("data");
+        node_data_dir.create_dir_all()?;
+        let node_logs_dir = temp_dir.child("logs");
+        node_logs_dir.create_dir_all()?;
+        let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+        safenode_download_path.write_binary(b"fake safenode bin")?;
+
+        let mut seq = Sequence::new();
+
+        mock_service_control
+            .expect_get_available_port()
+            .times(1)
+            .returning(|| Ok(12001))
+            .in_sequence(&mut seq);
+
+        mock_service_control
+            .expect_install()
+            .times(1)
+            .with(eq(ServiceConfig {
+                local: false,
+                genesis: false,
+                name: "safenode1".to_string(),
+                safenode_path: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
+                node_port: None,
+                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
+                service_user: get_username(),
+                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+                bootstrap_peers: vec![],
+                env_variables: env_variables.clone(),
+            }))
+            .returning(|_| Ok(()))
+            .in_sequence(&mut seq);
+
+        add(
+            AddServiceOptions {
+                local: false,
+                genesis: false,
+                count: None,
+                safenode_bin_path: safenode_download_path.to_path_buf(),
+                safenode_dir_path: temp_dir.to_path_buf(),
+                service_data_dir_path: node_data_dir.to_path_buf(),
+                service_log_dir_path: node_logs_dir.to_path_buf(),
+                bootstrap_peers: vec![],
+                node_port: None,
+                rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+                url: None,
+                user: get_username(),
+                version: latest_version.to_string(),
+                env_variables: env_variables.clone(),
+            },
+            &mut node_registry,
+            &mock_service_control,
+            VerbosityLevel::Normal,
+        )
+        .await?;
+
+        safenode_download_path.assert(predicate::path::missing());
+        node_data_dir.assert(predicate::path::is_dir());
+        node_logs_dir.assert(predicate::path::is_dir());
+
+        assert_eq!(node_registry.environment_variables, env_variables);
+
+        assert_eq!(node_registry.nodes.len(), 1);
+        assert_eq!(node_registry.nodes[0].version, latest_version);
+        assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+        assert_eq!(node_registry.nodes[0].user, get_username());
+        assert_eq!(node_registry.nodes[0].number, 1);
+        assert_eq!(
+            node_registry.nodes[0].rpc_socket_addr,
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
+        );
+        assert_eq!(
+            node_registry.nodes[0].log_dir_path,
+            node_logs_dir.to_path_buf().join("safenode1")
+        );
+        assert_eq!(
+            node_registry.nodes[0].data_dir_path,
+            node_data_dir.to_path_buf().join("safenode1")
+        );
+        assert_matches!(node_registry.nodes[0].status, NodeStatus::Added);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn add_new_node_should_add_another_service() -> Result<()> {
         let tmp_data_dir = assert_fs::TempDir::new()?;
         let node_reg_path = tmp_data_dir.child("node_reg.json");
@@ -824,6 +942,7 @@ mod tests {
                 connected_peers: None,
             }],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
         let temp_dir = assert_fs::TempDir::new()?;
@@ -919,6 +1038,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
         let latest_version = "0.96.4";
@@ -1021,6 +1141,7 @@ mod tests {
             save_path: node_reg_path.to_path_buf(),
             nodes: vec![],
             bootstrap_peers: vec![],
+            environment_variables: None,
             faucet_pid: None,
         };
         let latest_version = "0.96.4";
