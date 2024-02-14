@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707861102046,
+  "lastUpdate": 1707909041275,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "76dcdb889cad0a0f9547c54aa411e46159951705",
-          "message": "fix: handling GetClosestPeers query error branch",
-          "timestamp": "2023-10-11T09:33:41+02:00",
-          "tree_id": "a0233b099889d0a53baa4e1423f2ba6f1e3f3322",
-          "url": "https://github.com/maidsafe/safe_network/commit/76dcdb889cad0a0f9547c54aa411e46159951705"
-        },
-        "date": 1697010961778,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09446825776075962,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5780007805894473,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 28.536161496912413,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.90452592359662,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1",
+          "message": "chore(refactor): move mod.rs files the modern way",
+          "timestamp": "2024-02-14T10:20:03Z",
+          "tree_id": "7081c2d2ffd9eb353633811c692a4a2fa529ea6a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1"
+        },
+        "date": 1707909037575,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2468353265251593,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.808403162869221,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.103971940342774,
             "unit": "MiB/s"
           }
         ]
