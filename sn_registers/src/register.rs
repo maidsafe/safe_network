@@ -132,7 +132,7 @@ impl SignedRegister {
 
     /// Access the underlying MerkleReg (e.g. for access to history)
     pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
-        &self.base_register.merkle_reg()
+        self.base_register.merkle_reg()
     }
 }
 
@@ -262,7 +262,7 @@ impl Register {
 
     /// Access the underlying MerkleReg (e.g. for access to history)
     pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
-        &self.crdt.merkle_reg()
+        self.crdt.merkle_reg()
     }
 
     // Private helper to check the given Entry's size is within define limit,
