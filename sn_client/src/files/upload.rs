@@ -6,24 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    error::{Error as ClientError, Result},
-    FilesApi, BATCH_SIZE,
-};
-use bytes::Bytes;
-use libp2p::PeerId;
-use sn_networking::PayeeQuote;
-use sn_protocol::{
-    storage::{Chunk, ChunkAddress, RetryStrategy},
-    NetworkAddress,
-};
-use sn_transfers::NanoTokens;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     path::PathBuf,
 };
+
+use bytes::Bytes;
+use libp2p::PeerId;
 use tokio::sync::mpsc::{self};
 use xor_name::XorName;
+
+use sn_networking::PayeeQuote;
+use sn_protocol::{
+    NetworkAddress,
+    storage::{Chunk, ChunkAddress, RetryStrategy},
+};
+use sn_transfers::NanoTokens;
+
+use crate::{
+    BATCH_SIZE,
+    error::{Error as ClientError, Result}, FilesApi,
+};
 
 /// The maximum number of sequential payment failures before aborting the upload process.
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
@@ -317,9 +320,9 @@ impl FilesUpload {
                     trace!(
                         "Upload task got chunk {:?}'s store_cost {:?}",
                         chunk_info.name,
-                        cost.2
+                        cost.quote.cost
                     );
-                    if cost.2.cost != NanoTokens::zero() {
+                    if cost.quote.cost != NanoTokens::zero() {
                         pending_to_pay.push((chunk_info, cost));
                     } else if for_failed_chunks {
                         // the chunk was already paid for but might have not been verified on the first try.
@@ -461,7 +464,8 @@ impl FilesUpload {
                 .await
             {
                 Ok(cost) => {
-                    debug!("Storecosts retrieved for {:?} {cost:?}", chunk_info.name);
+                    let t = &cost.quote;
+                    debug!("Storecosts retrieved for {:?} {t:?}", chunk_info.name);
                     TaskResult::GetStoreCostOK((chunk_info, cost))
                 }
                 Err(err) => {
@@ -502,8 +506,8 @@ impl FilesUpload {
 
             while let Some(payment) = paying_work_receiver.recv().await {
                 let make_payments = if let Some((chunk_info, quote)) = payment {
-                    let _ = cost_map.insert(chunk_info.name, (quote.1, quote.2));
-                    chunk_info_map.push((chunk_info, quote.0));
+                    let _ = cost_map.insert(chunk_info.name, (quote.key, quote.quote));
+                    chunk_info_map.push((chunk_info, quote.peer));
                     cost_map.len() >= batch_size
                 } else {
                     // using None to indicate as all paid.

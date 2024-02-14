@@ -9,6 +9,48 @@
 #[macro_use]
 extern crate tracing;
 
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::PathBuf,
+};
+
+use backoff::{Error as BackoffError, ExponentialBackoff};
+use bytes::Bytes;
+use futures::future::select_all;
+use libp2p::{
+    identity::Keypair,
+    kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
+    Multiaddr,
+    multiaddr::Protocol, PeerId,
+};
+use rand::Rng;
+use tokio::sync::{
+    mpsc::{self, Sender},
+    oneshot,
+};
+use tokio::time::Duration;
+use tracing::trace;
+
+use sn_protocol::{
+    error::Error as ProtocolError,
+    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
+    NetworkAddress,
+    PrettyPrintKBucketKey, PrettyPrintRecordKey, storage::{RecordType, RetryStrategy},
+};
+use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
+// re-export arch dependent deps for use in the crate, or above
+pub use target_arch::{Instant, interval, Interval, sleep, spawn};
+
+pub use self::{
+    cmd::SwarmLocalState,
+    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
+    error::{Error, GetRecordError},
+    event::{MsgResponder, NetworkEvent},
+    record_store::NodeRecordStore,
+    transfers::get_singed_spends_from_record,
+};
+use self::{cmd::SwarmCmd, error::Result};
+
 mod bootstrap;
 mod circular_vec;
 mod cmd;
@@ -27,50 +69,12 @@ mod replication_fetcher;
 pub mod target_arch;
 mod transfers;
 
-// re-export arch dependent deps for use in the crate, or above
-pub use target_arch::{interval, sleep, spawn, Instant, Interval};
-
-pub use self::{
-    cmd::SwarmLocalState,
-    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
-    error::{Error, GetRecordError},
-    event::{MsgResponder, NetworkEvent},
-    record_store::NodeRecordStore,
-    transfers::get_singed_spends_from_record,
-};
-
-use self::{cmd::SwarmCmd, error::Result};
-use backoff::{Error as BackoffError, ExponentialBackoff};
-use bytes::Bytes;
-use futures::future::select_all;
-use libp2p::{
-    identity::Keypair,
-    kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
-    multiaddr::Protocol,
-    Multiaddr, PeerId,
-};
-use rand::Rng;
-use sn_protocol::{
-    error::Error as ProtocolError,
-    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordType, RetryStrategy},
-    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
-};
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::PathBuf,
-};
-use tokio::sync::{
-    mpsc::{self, Sender},
-    oneshot,
-};
-
-use tokio::time::Duration;
-use tracing::trace;
-
 /// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
+pub struct PayeeQuote {
+    pub peer: PeerId,
+    pub key: MainPubkey,
+    pub quote: PaymentQuote,
+}
 
 /// The maximum number of peers to return in a `GetClosestPeers` response.
 /// This is the group size used in safe network protocol to be responsible for
@@ -837,7 +841,11 @@ fn get_fees_from_store_cost_responses(
         error!("Can't get PeerId from payee {:?}", payee.0);
         return Err(Error::NoStoreCostResponses);
     };
-    Ok((payee_id, payee.1, payee.2))
+    Ok(PayeeQuote {
+        peer: payee_id,
+        key: payee.1,
+        quote: payee.2,
+    })
 }
 
 /// Get the value of the provided Quorum
@@ -909,8 +917,9 @@ pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) 
 mod tests {
     use eyre::bail;
 
-    use super::*;
     use sn_transfers::PaymentQuote;
+
+    use super::*;
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
@@ -926,10 +935,10 @@ mod tests {
             ));
         }
         let expected_price = costs[0].2.cost.as_nano();
-        let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
+        let payee_quote = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            price.cost.as_nano(),
+            payee_quote.quote.cost.as_nano(),
             expected_price,
             "price should be {expected_price}"
         );
@@ -957,13 +966,13 @@ mod tests {
         // this should be the lowest price
         let expected_price = costs[0].2.cost.as_nano();
 
-        let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
+        let price = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.quote.cost.as_nano(),
             expected_price,
             "price should be {expected_price}"
         );

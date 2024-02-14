@@ -11,8 +11,8 @@ use std::{
     ffi::OsString,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
@@ -31,11 +31,11 @@ use xor_name::XorName;
 
 pub(crate) use chunk_manager::ChunkManager;
 use sn_client::{
-    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
-    FilesUpload, BATCH_SIZE,
+    BATCH_SIZE, Client, Error as ClientError, FilesApi, FilesDownload, FilesDownloadEvent,
+    FilesUpload, FileUploadEvent,
 };
-use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_protocol::NetworkAddress;
+use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_transfers::{Error as TransfersError, WalletError};
 
 mod chunk_manager;
@@ -52,6 +52,9 @@ pub enum FilesCmds {
         /// The location of the file(s) to upload. Can be a file or a directory.
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
+        /// Should the file be made accessible to all. (This is irreversible)
+        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
+        make_public: bool,
     },
     Upload {
         /// The location of the file(s) to upload. Can be a file or a directory.
@@ -165,7 +168,9 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        FilesCmds::Estimate { path } => estimate_cost(path, client, root_dir).await?,
+        FilesCmds::Estimate { path, make_public } => {
+            estimate_cost(path, client, root_dir, make_public).await?
+        }
         FilesCmds::Upload {
             path,
             batch_size,
@@ -259,20 +264,23 @@ pub(crate) async fn files_cmds(
 }
 
 /// Estimate the upload cost of a chosen file
-pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn estimate_cost(
+    path: PathBuf,
+    client: &Client,
+    root_dir: &Path,
+    make_public: bool,
+) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, false, false)?;
+    chunk_manager.chunk_path(&path, false, make_public)?;
 
     let mut estimate: u64 = 0;
 
-    for chunk in chunk_manager.get_chunks() {
+    for (chunk, _) in chunk_manager.get_chunks() {
         estimate += FilesApi::new(client.clone(), root_dir.to_path_buf())
             .wallet()?
-            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
-                chunk.0,
-            )))
+            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(chunk)))
             .await?
-            .2
+            .quote
             .cost
             .as_nano();
     }

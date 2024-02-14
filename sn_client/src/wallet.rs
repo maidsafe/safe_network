@@ -6,29 +6,32 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::Error;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    iter::Iterator,
+};
+use std::collections::HashMap;
 
-use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
-use sn_networking::target_arch::Instant;
+use tokio::{
+    task::JoinSet,
+    time::{Duration, sleep},
+};
+use xor_name::XorName;
+
 use sn_networking::{GetRecordError, PayeeQuote};
+use sn_networking::target_arch::Instant;
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
-use std::collections::HashMap;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    iter::Iterator,
-};
-use tokio::{
-    task::JoinSet,
-    time::{sleep, Duration},
-};
-use xor_name::XorName;
+
+use crate::Error;
+
+use super::{Client, error::Result};
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {
@@ -364,7 +367,7 @@ impl WalletClient {
     /// let network_address = NetworkAddress::from_peer(PeerId::random());
     /// let mut wallet_client = WalletClient::new(client, wallet);
     /// // Use get_store_cost_at_address(network_address) to get a storecost from the network.
-    /// let cost = wallet_client.get_store_cost_at_address(network_address).await?.2.cost.as_nano();
+    /// let cost = wallet_client.get_store_cost_at_address(network_address).await?.quote.cost.as_nano();
     /// # Ok(())
     /// # }
     pub async fn get_store_cost_at_address(
@@ -459,7 +462,13 @@ impl WalletClient {
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 
-                debug!("Storecosts retrieved for {content_addr:?} {cost:?}");
+                let t = cost
+                    .as_ref()
+                    .expect("Pay for storage once: Cost not found")
+                    .quote
+                    .cost
+                    .as_nano();
+                debug!("Storecosts retrieved for {content_addr:?} {t:?}");
                 (content_addr, cost)
             });
         }
@@ -474,13 +483,13 @@ impl WalletClient {
             match res {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        if cost.2.cost == NanoTokens::zero() {
+                        if cost.quote.cost == NanoTokens::zero() {
                             skipped_chunks.push(xorname);
                             debug!("Skipped existing chunk {content_addr:?}");
                         } else {
                             debug!("Storecost inserted into payment map for {content_addr:?}");
-                            let _ = cost_map.insert(xorname, (cost.1, cost.2));
-                            payee_map.insert(content_addr, cost.0);
+                            let _ = cost_map.insert(xorname, (cost.key, cost.quote));
+                            payee_map.insert(content_addr, cost.peer);
                         }
                     } else {
                         warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
