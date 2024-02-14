@@ -41,6 +41,7 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 // re-export arch dependent deps for use in the crate, or above
 pub use target_arch::{Instant, interval, Interval, sleep, spawn};
 
+use self::{cmd::SwarmCmd, error::Result};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
@@ -49,7 +50,6 @@ pub use self::{
     record_store::NodeRecordStore,
     transfers::get_singed_spends_from_record,
 };
-use self::{cmd::SwarmCmd, error::Result};
 
 mod bootstrap;
 mod circular_vec;
