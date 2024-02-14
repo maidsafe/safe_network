@@ -285,7 +285,7 @@ impl ClientRegister {
 
     /// Access the underlying MerkleReg (e.g. for access to history)
     pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
-        &self.register.merkle_reg()
+        self.register.merkle_reg()
     }
 
     // ********* Private helpers  *********
