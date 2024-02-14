@@ -164,7 +164,10 @@ impl WalletClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<Payment> {
+    pub fn get_payment_for_addr(
+        &self,
+        address: &NetworkAddress,
+    ) -> WalletResult<(Payment, PeerId)> {
         match &address.as_xorname() {
             Some(xorname) => {
                 let payment_details = self
@@ -174,7 +177,10 @@ impl WalletClient {
                 let payment = payment_details.to_payment();
                 debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
                 info!("Payment retrieved for {xorname:?} from wallet");
-                Ok(payment)
+                let peer_id = PeerId::from_bytes(&payment_details.peer_id_bytes)
+                    .map_err(|_| WalletError::NoPaymentForAddress)?;
+
+                Ok((payment, peer_id))
             }
             None => Err(WalletError::InvalidAddressType),
         }
@@ -450,7 +456,7 @@ impl WalletClient {
                             debug!("Skipped existing chunk {content_addr:?}");
                         } else {
                             debug!("Storecost inserted into payment map for {content_addr:?}");
-                            let _ = cost_map.insert(xorname, (cost.1, cost.2));
+                            let _ = cost_map.insert(xorname, (cost.1, cost.2, cost.0.to_bytes()));
                             payee_map.insert(content_addr, cost.0);
                         }
                     } else {
@@ -509,13 +515,13 @@ impl WalletClient {
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let mut cost_map:BTreeMap<XorName,(MainPubkey,PaymentQuote)> = BTreeMap::new();
+    /// let mut cost_map:BTreeMap<XorName,(MainPubkey,PaymentQuote,Vec<u8>)> = BTreeMap::new();
     /// wallet_client.pay_for_records(&cost_map,true).await?;
     /// # Ok(())
     /// # }
     pub async fn pay_for_records(
         &mut self,
-        cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
+        cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         // Before wallet progress, there shall be no `unconfirmed_spend_requests`

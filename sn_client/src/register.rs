@@ -201,14 +201,9 @@ impl ClientRegister {
                     royalties_fees = payment_result.royalty_fees;
 
                     // Get payment proofs needed to publish the Register
-                    let payment = wallet_client.get_payment_for_addr(&net_addr)?;
-                    let payee = payment_result
-                        .payee_map
-                        .get(&net_addr)
-                        .ok_or(Error::PayeeNotFound(net_addr))?;
-
+                    let (payment, payee) = wallet_client.get_payment_for_addr(&net_addr)?;
                     debug!("payments found: {payment:?}");
-                    payment_info = Some((payment, *payee));
+                    payment_info = Some((payment, payee));
                 }
 
                 self.publish_register(cmd, payment_info, verify_store)

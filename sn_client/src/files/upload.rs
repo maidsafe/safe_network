@@ -11,7 +11,6 @@ use crate::{
     FilesApi, BATCH_SIZE,
 };
 use bytes::Bytes;
-use libp2p::PeerId;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
@@ -57,12 +56,7 @@ struct ChunkInfo {
 enum TaskResult {
     GetStoreCostOK((ChunkInfo, PayeeQuote)),
     // (store_cost, royalty_fee, new_wallet_balance)
-    MakePaymentsOK(
-        (
-            (NanoTokens, NanoTokens, NanoTokens),
-            Vec<(ChunkInfo, PeerId)>,
-        ),
-    ),
+    MakePaymentsOK(((NanoTokens, NanoTokens, NanoTokens), Vec<ChunkInfo>)),
     UploadChunksOK(XorName),
     ErrorEntries(Vec<ChunkInfo>),
 }
@@ -233,7 +227,7 @@ impl FilesUpload {
         for_failed_chunks: bool,
     ) -> Result<()> {
         let mut pending_to_pay: Vec<(ChunkInfo, PayeeQuote)> = vec![];
-        let mut pending_to_upload: Vec<(ChunkInfo, PeerId)> = vec![];
+        let mut pending_to_upload: Vec<ChunkInfo> = vec![];
         let mut uploaded = 0;
         let mut skipped = 0;
         let mut on_going_get_cost = BTreeSet::new();
@@ -285,9 +279,9 @@ impl FilesUpload {
             }
 
             while !pending_to_upload.is_empty() && on_going_uploadings.len() < batch_size {
-                if let Some((chunk_info, payee)) = pending_to_upload.pop() {
+                if let Some(chunk_info) = pending_to_upload.pop() {
                     let _ = on_going_uploadings.insert(chunk_info.name);
-                    self.spawn_upload_chunk_task(chunk_info, payee, upload_chunk_sender.clone());
+                    self.spawn_upload_chunk_task(chunk_info, upload_chunk_sender.clone());
                 }
             }
 
@@ -342,7 +336,7 @@ impl FilesUpload {
                     trace!("Paid {} chunks, with {storage_cost:?} store_cost and {royalty_fees:?} royalty_fees, and new_balance is {new_balance:?}",
                         reply_list.len());
                     sequential_payment_fails = 0;
-                    for (chunk_info, _) in reply_list.iter() {
+                    for chunk_info in reply_list.iter() {
                         let _ = on_going_pay_for_chunk.remove(&chunk_info.name);
                     }
                     pending_to_upload.extend(reply_list);
@@ -403,7 +397,6 @@ impl FilesUpload {
     async fn upload_chunk(
         files_api: FilesApi,
         chunk_info: ChunkInfo,
-        payee: PeerId,
         verify_store: bool,
         retry_strategy: RetryStrategy,
     ) -> (ChunkInfo, Result<()>) {
@@ -419,7 +412,7 @@ impl FilesUpload {
         };
         let chunk = Chunk::new(bytes);
         match files_api
-            .get_local_payment_and_upload_chunk(chunk, payee, verify_store, Some(retry_strategy))
+            .get_local_payment_and_upload_chunk(chunk, verify_store, Some(retry_strategy))
             .await
         {
             Ok(()) => (chunk_info, Ok(())),
@@ -502,8 +495,9 @@ impl FilesUpload {
 
             while let Some(payment) = paying_work_receiver.recv().await {
                 let make_payments = if let Some((chunk_info, quote)) = payment {
-                    let _ = cost_map.insert(chunk_info.name, (quote.1, quote.2));
-                    chunk_info_map.push((chunk_info, quote.0));
+                    let _ =
+                        cost_map.insert(chunk_info.name, (quote.1, quote.2, quote.0.to_bytes()));
+                    chunk_info_map.push(chunk_info);
                     cost_map.len() >= batch_size
                 } else {
                     // using None to indicate as all paid.
@@ -522,10 +516,8 @@ impl FilesUpload {
                             ))
                         }
                         Err(err) => {
-                            let reply_list: Vec<ChunkInfo> = std::mem::take(&mut chunk_info_map)
-                                .into_iter()
-                                .map(|(chunk_info, _)| chunk_info)
-                                .collect();
+                            let reply_list: Vec<ChunkInfo> =
+                                std::mem::take(&mut chunk_info_map).into_iter().collect();
                             error!("When paying {} chunks, got error {err:?}", reply_list.len());
                             TaskResult::ErrorEntries(reply_list)
                         }
@@ -545,7 +537,6 @@ impl FilesUpload {
     fn spawn_upload_chunk_task(
         &self,
         chunk_info: ChunkInfo,
-        payee: PeerId,
         upload_chunk_sender: mpsc::Sender<TaskResult>,
     ) {
         trace!("spawning upload chunk task");
@@ -555,8 +546,7 @@ impl FilesUpload {
 
         let _handle = tokio::spawn(async move {
             let (chunk_info, result) =
-                Self::upload_chunk(files_api, chunk_info, payee, verify_store, retry_strategy)
-                    .await;
+                Self::upload_chunk(files_api, chunk_info, verify_store, retry_strategy).await;
 
             debug!(
                 "Chunk {:?} uploaded with result {:?}",

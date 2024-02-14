@@ -11,6 +11,7 @@ mod common;
 use crate::common::{client::get_gossip_client_and_funded_wallet, random_content};
 use assert_fs::TempDir;
 use eyre::{eyre, Result};
+use libp2p::PeerId;
 use rand::Rng;
 use sn_client::{Error as ClientError, FilesDownload, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
@@ -230,6 +231,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
             (
                 MainPubkey::new(bls::SecretKey::random().public_key()),
                 PaymentQuote::test_dummy(*chunk_name, NanoTokens::from(0)),
+                PeerId::random().to_bytes(),
             ),
         );
     }
@@ -329,6 +331,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
         (
             MainPubkey::new(bls::SecretKey::random().public_key()),
             PaymentQuote::test_dummy(xor_name, NanoTokens::from(0)),
+            vec![],
         ),
     );
 

@@ -259,14 +259,10 @@ async fn pay_and_upload_folders(
     let mut tasks = JoinSet::new();
     for (path, mut folder) in folders {
         let net_addr = folder.as_net_addr();
-        let payment = wallet_client.get_payment_for_addr(&net_addr)?;
-        let payment_info = payment_result
-            .payee_map
-            .get(&net_addr)
-            .map(|payee| (payment, *payee));
+        let payment_info = wallet_client.get_payment_for_addr(&net_addr)?;
 
         tasks.spawn(async move {
-            match folder.sync(verify_store, payment_info).await {
+            match folder.sync(verify_store, Some(payment_info)).await {
                 Ok(addr) => println!(
                     "Folder (for {}) synced with the network at: {}",
                     path.display(),

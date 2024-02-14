@@ -13,7 +13,6 @@ use crate::{
     chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, WalletClient,
 };
 use bytes::Bytes;
-use libp2p::PeerId;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
@@ -116,18 +115,17 @@ impl FilesApi {
     pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,
-        payee: PeerId,
         verify_store: bool,
         retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
         let chunk_addr = chunk.network_address();
-        trace!("Client upload started for chunk: {chunk_addr:?} to {payee:?}");
+        trace!("Client upload started for chunk: {chunk_addr:?}");
 
         let wallet_client = self.wallet()?;
-        let payment = wallet_client.get_payment_for_addr(&chunk_addr)?;
+        let (payment, payee) = wallet_client.get_payment_for_addr(&chunk_addr)?;
 
         debug!(
-            "{:?} payments for chunk: {chunk_addr:?}:  {payment:?}",
+            "{:?} payments for chunk: {chunk_addr:?} to {payee:?}:  {payment:?}",
             payment
         );
 
@@ -178,7 +176,7 @@ impl FilesApi {
 
         for (_chunk_name, chunk_path) in chunks_paths {
             let chunk = Chunk::new(Bytes::from(fs::read(chunk_path)?));
-            self.get_local_payment_and_upload_chunk(chunk, PeerId::random(), verify, None)
+            self.get_local_payment_and_upload_chunk(chunk, verify, None)
                 .await?;
         }
 

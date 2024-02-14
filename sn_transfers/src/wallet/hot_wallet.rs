@@ -366,7 +366,7 @@ impl HotWallet {
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
-        price_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote)>,
+        price_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
         let mut rng = &mut rand::thread_rng();
         let mut storage_cost = NanoTokens::zero();
@@ -376,8 +376,13 @@ impl HotWallet {
 
         // create random derivation indexes for recipients
         let mut recipients_by_xor = BTreeMap::new();
-        for (xorname, (main_pubkey, quote)) in price_map.iter() {
-            let storage_payee = (quote.cost, *main_pubkey, DerivationIndex::random(&mut rng));
+        for (xorname, (main_pubkey, quote, peer_id_bytes)) in price_map.iter() {
+            let storage_payee = (
+                quote.cost,
+                *main_pubkey,
+                DerivationIndex::random(&mut rng),
+                peer_id_bytes.clone(),
+            );
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
@@ -398,8 +403,7 @@ impl HotWallet {
         // create offline transfers
         let recipients = recipients_by_xor
             .values()
-            .flat_map(|(node, roy)| vec![node, roy])
-            .cloned()
+            .flat_map(|(node, roy)| vec![(node.0, node.1, node.2), *roy])
             .collect();
 
         trace!(
@@ -438,8 +442,7 @@ impl HotWallet {
             .collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
-            let node_key = storage_payee.1;
-            let pay_amount = storage_payee.0;
+            let (pay_amount, node_key, _, peer_id_bytes) = storage_payee;
             let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
@@ -480,6 +483,7 @@ impl HotWallet {
                 .clone();
             let payment = PaymentDetails {
                 recipient: node_key,
+                peer_id_bytes,
                 transfer: (transfer_for_node, transfer_amount),
                 royalties: (royalties, royalties_amount),
                 quote,
@@ -973,15 +977,27 @@ mod tests {
         let key4a = MainSecretKey::random().main_pubkey();
 
         let map = BTreeMap::from([
-            (xor1, (key1a, PaymentQuote::test_dummy(xor1, 100.into()))),
-            (xor2, (key2a, PaymentQuote::test_dummy(xor2, 200.into()))),
-            (xor3, (key3a, PaymentQuote::test_dummy(xor3, 300.into()))),
-            (xor4, (key4a, PaymentQuote::test_dummy(xor4, 400.into()))),
+            (
+                xor1,
+                (key1a, PaymentQuote::test_dummy(xor1, 100.into()), vec![]),
+            ),
+            (
+                xor2,
+                (key2a, PaymentQuote::test_dummy(xor2, 200.into()), vec![]),
+            ),
+            (
+                xor3,
+                (key3a, PaymentQuote::test_dummy(xor3, 300.into()), vec![]),
+            ),
+            (
+                xor4,
+                (key4a, PaymentQuote::test_dummy(xor4, 400.into()), vec![]),
+            ),
         ]);
 
         let (price, _) = sender.local_send_storage_payment(&map)?;
 
-        let expected_price: u64 = map.values().map(|(_, quote)| quote.cost.as_nano()).sum();
+        let expected_price: u64 = map.values().map(|(_, quote, _)| quote.cost.as_nano()).sum();
         assert_eq!(price.as_nano(), expected_price);
 
         Ok(())
