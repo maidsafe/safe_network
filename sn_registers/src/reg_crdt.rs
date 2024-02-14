@@ -112,6 +112,11 @@ impl RegisterCrdt {
             .map(|(hash, node)| (EntryHash(hash), node.value.clone()))
             .collect()
     }
+
+    /// Access the underlying MerkleReg (e.g. for access to history)
+    pub(crate) fn merkle_reg(&self) -> &MerkleReg<Entry> {
+        &self.data
+    }
 }
 
 #[cfg(test)]
