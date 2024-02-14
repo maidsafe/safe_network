@@ -6,23 +6,23 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::HashMap;
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
 };
-use std::collections::HashMap;
 
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
 use tokio::{
     task::JoinSet,
-    time::{Duration, sleep},
+    time::{sleep, Duration},
 };
 use xor_name::XorName;
 
-use sn_networking::{GetRecordError, PayeeQuote};
 use sn_networking::target_arch::Instant;
+use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
@@ -31,7 +31,7 @@ use sn_transfers::{
 
 use crate::Error;
 
-use super::{Client, error::Result};
+use super::{error::Result, Client};
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {

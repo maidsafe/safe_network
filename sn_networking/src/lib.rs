@@ -20,8 +20,8 @@ use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
     kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
-    Multiaddr,
-    multiaddr::Protocol, PeerId,
+    multiaddr::Protocol,
+    Multiaddr, PeerId,
 };
 use rand::Rng;
 use tokio::sync::{
@@ -34,12 +34,12 @@ use tracing::trace;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
-    NetworkAddress,
-    PrettyPrintKBucketKey, PrettyPrintRecordKey, storage::{RecordType, RetryStrategy},
+    storage::{RecordType, RetryStrategy},
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 // re-export arch dependent deps for use in the crate, or above
-pub use target_arch::{Instant, interval, Interval, sleep, spawn};
+pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 use self::{cmd::SwarmCmd, error::Result};
 pub use self::{

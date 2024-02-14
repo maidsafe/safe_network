@@ -18,14 +18,14 @@ use xor_name::XorName;
 
 use sn_networking::PayeeQuote;
 use sn_protocol::{
-    NetworkAddress,
     storage::{Chunk, ChunkAddress, RetryStrategy},
+    NetworkAddress,
 };
 use sn_transfers::NanoTokens;
 
 use crate::{
-    BATCH_SIZE,
-    error::{Error as ClientError, Result}, FilesApi,
+    error::{Error as ClientError, Result},
+    FilesApi, BATCH_SIZE,
 };
 
 /// The maximum number of sequential payment failures before aborting the upload process.

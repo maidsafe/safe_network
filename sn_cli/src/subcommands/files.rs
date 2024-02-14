@@ -11,8 +11,8 @@ use std::{
     ffi::OsString,
     path::{Path, PathBuf},
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc,
     },
     time::{Duration, Instant},
 };
@@ -31,11 +31,11 @@ use xor_name::XorName;
 
 pub(crate) use chunk_manager::ChunkManager;
 use sn_client::{
-    BATCH_SIZE, Client, Error as ClientError, FilesApi, FilesDownload, FilesDownloadEvent,
-    FilesUpload, FileUploadEvent,
+    Client, Error as ClientError, FileUploadEvent, FilesApi, FilesDownload, FilesDownloadEvent,
+    FilesUpload, BATCH_SIZE,
 };
-use sn_protocol::NetworkAddress;
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
+use sn_protocol::NetworkAddress;
 use sn_transfers::{Error as TransfersError, WalletError};
 
 mod chunk_manager;
