@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.2.1...sn-node-manager-v0.3.0) - 2024-02-14
+
+### Added
+- *(manager)* provide an option to set new env variables during node upgrade
+- *(manager)* re-use the same env variables during the upgrade process
+- *(manager)* [**breaking**] store the env variables inside the NodeRegistry
+- *(manager)* provide enviroment variable to the service definition file during add
+
+### Other
+- *(docs)* update based on comments
+
 ## [0.2.1](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.2.0...sn-node-manager-v0.2.1) - 2024-02-14
 
 ### Other
