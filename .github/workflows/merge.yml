@@ -518,6 +518,28 @@ jobs:
           log_file_prefix: safe_test_logs_royalty_reward
           platform: ${{ matrix.os }}
 
+  token_distribution_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    name: token distribution test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: execute token_distribution tests
+        run: cargo test --release --features=local-discovery,distribution token_distribution -- --nocapture --test-threads=1
+        env:
+          SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 25
+
   churn:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Network churning tests

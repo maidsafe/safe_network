@@ -148,9 +148,8 @@ fn parse_snapshot(json_str: String) -> Result<Snapshot> {
     Ok(balances_map)
 }
 
-pub fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
-    info!("Loading public keys for distributions");
-    let mut pubkeys: HashMap<MaidAddress, MaidPubkey> = HashMap::new();
+fn load_maid_pubkeys_from_local() -> Result<HashMap<MaidAddress, MaidPubkey>> {
+    let mut pubkeys = HashMap::new();
     // load from existing files
     let pk_dir = get_pubkeys_data_dir_path()?;
     let file_list = std::fs::read_dir(pk_dir)?;
@@ -167,13 +166,26 @@ pub fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
         };
         pubkeys.insert(address, pk_hex);
     }
+    Ok(pubkeys)
+}
+
+pub fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
+    info!("Loading public keys for distributions");
+    let mut pubkeys = match load_maid_pubkeys_from_local() {
+        Ok(pubkeys) => pubkeys,
+        Err(err) => {
+            info!("Failed to load pubkeys from local, {err:?}");
+            HashMap::new()
+        }
+    };
     info!("{} pubkeys after reading existing files", pubkeys.len());
+
     // load from blockchain list on internet
     info!("Fetching pukeys from {PUBKEYS_URL}");
     let response = minreq::get(PUBKEYS_URL).send()?;
     // check the request is ok
     if response.status_code != 200 {
-        info!(
+        println!(
             "Pubkey request failed with http status {}",
             response.status_code
         );
@@ -386,4 +398,29 @@ async fn create_distribution(
         }
     };
     Ok(dist_hex)
+}
+
+#[cfg(all(test, feature = "distribution"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fetching_from_network() -> Result<()> {
+        let snapshot = load_maid_snapshot()?;
+        println!("Maid snapshot got {:?} entries", snapshot.len());
+        assert_eq!(snapshot.len(), 16214);
+
+        let pubkeys = load_maid_pubkeys()?;
+        println!("Got {:?} distribution keys", pubkeys.len());
+        assert_eq!(pubkeys.len(), 1227);
+
+        let candidates = snapshot
+            .iter()
+            .filter(|(addr, _amount)| pubkeys.contains_key(*addr))
+            .count();
+        println!("Got {candidates:?} distribution candidates");
+        assert_eq!(candidates, 1212);
+
+        Ok(())
+    }
 }
