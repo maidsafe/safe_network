@@ -11,8 +11,8 @@ use crate::{
     RegisterOp,
 };
 
-use crdts::merkle_reg::MerkleReg;
 use bls::{PublicKey, SecretKey, Signature};
+use crdts::merkle_reg::MerkleReg;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use xor_name::XorName;

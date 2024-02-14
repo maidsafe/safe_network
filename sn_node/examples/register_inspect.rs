@@ -6,12 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::io;
+use crdts::merkle_reg::{Hash, MerkleReg, Node};
 use std::collections::HashMap;
-use crdts::merkle_reg::{MerkleReg, Node, Hash};
+use std::io;
 
 use sn_client::{Client, WalletClient};
-use sn_registers::{Permissions, RegisterAddress, Entry};
+use sn_registers::{Entry, Permissions, RegisterAddress};
 use sn_transfers::HotWallet;
 use xor_name::XorName;
 
@@ -138,16 +138,16 @@ async fn main() -> Result<()> {
         // Note: it isn't related to the order of insertion
         // which is hard to determine.
         let mut index: usize = 0;
-        let mut node_ordering: HashMap<Hash,usize> = HashMap::new();
+        let mut node_ordering: HashMap<Hash, usize> = HashMap::new();
         for (_hash, node) in content.hashes_and_nodes() {
             index_node_and_descendants(&node, &mut index, &mut node_ordering, &merkle_reg);
-        };
+        }
 
         println!("======================");
         println!("Root (Latest) Node(s):");
         for node in content.nodes() {
             let _ = print_node(0, &node, &node_ordering);
-        };
+        }
 
         println!("======================");
         println!("Register Structure:");
@@ -155,14 +155,18 @@ async fn main() -> Result<()> {
         let mut indents = 0;
         for (_hash, node) in content.hashes_and_nodes() {
             print_node_and_descendants(&mut indents, &node, &mut node_ordering, &merkle_reg);
-        };
+        }
 
         println!("======================");
     }
 }
 
-
-fn index_node_and_descendants(node: &Node<Entry>, index: &mut usize, node_ordering: &mut HashMap<Hash,usize>, merkle_reg: &MerkleReg<Entry>) {
+fn index_node_and_descendants(
+    node: &Node<Entry>,
+    index: &mut usize,
+    node_ordering: &mut HashMap<Hash, usize>,
+    merkle_reg: &MerkleReg<Entry>,
+) {
     let node_hash = node.hash().clone();
     if node_ordering.get(&node_hash).is_none() {
         node_ordering.insert(node_hash.clone(), *index);
@@ -178,7 +182,12 @@ fn index_node_and_descendants(node: &Node<Entry>, index: &mut usize, node_orderi
     }
 }
 
-fn print_node_and_descendants(indents: &mut usize, node: &Node<Entry>, node_ordering: &HashMap<Hash,usize>, merkle_reg: &MerkleReg<Entry>) {
+fn print_node_and_descendants(
+    indents: &mut usize,
+    node: &Node<Entry>,
+    node_ordering: &HashMap<Hash, usize>,
+    merkle_reg: &MerkleReg<Entry>,
+) {
     let _ = print_node(*indents, &node, &node_ordering);
 
     *indents += 1;
@@ -190,13 +199,22 @@ fn print_node_and_descendants(indents: &mut usize, node: &Node<Entry>, node_orde
     *indents -= 1;
 }
 
-fn print_node(indents: usize, node: &Node<Entry>, node_ordering: &HashMap<Hash,usize>) -> Result<()> {
+fn print_node(
+    indents: usize,
+    node: &Node<Entry>,
+    node_ordering: &HashMap<Hash, usize>,
+) -> Result<()> {
     let order = match node_ordering.get(&node.hash()) {
         Some(order) => format!("{order}"),
-        None => String::new()
+        None => String::new(),
     };
     let indentation = "  ".repeat(indents);
-    println!("{indentation}[{:>2}] Node({:?}..) Entry({:?})", order, hex::encode(node.hash()[0..3].to_vec()), String::from_utf8(node.value.clone())?);
+    println!(
+        "{indentation}[{:>2}] Node({:?}..) Entry({:?})",
+        order,
+        hex::encode(node.hash()[0..3].to_vec()),
+        String::from_utf8(node.value.clone())?
+    );
     Ok(())
 }
 
@@ -210,5 +228,5 @@ fn prompt_user() -> bool {
 
     let string = input_text.trim().to_string();
 
-    return string.contains("Q") || string.contains("q")
+    return string.contains("Q") || string.contains("q");
 }
