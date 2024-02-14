@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707909148566,
+  "lastUpdate": 1707909151163,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37066,6 +37066,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35182,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1",
+          "message": "chore(refactor): move mod.rs files the modern way",
+          "timestamp": "2024-02-14T10:20:03Z",
+          "tree_id": "7081c2d2ffd9eb353633811c692a4a2fa529ea6a",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1"
+        },
+        "date": 1707909150122,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6280,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35039,
             "unit": "ms"
           },
           {
