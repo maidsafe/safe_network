@@ -247,6 +247,42 @@ hi Alice, this is Bob!
 ```
 Alice will see Bob's message when she either enters a blank line or writes another message herself.
 
+### Inspect a Register
+
+A second example, `register_inspect` allows you to view its structure and content. To use this with the above example you again provide the address of the register. For example:
+
+```
+cargo run --example register_inspect --features=local-discovery -- --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
+```
+After printing a summary of the register, this example will display
+the structure of the register each time you press Enter, including the following:
+
+```
+Enter a blank line to print the latest register structure (or 'Q' <Enter> to quit)
+
+Syncing with SAFE...
+synced!
+======================
+Root (Latest) Node(s):
+[ 0] Node("4eadd9"..) Entry("[alice]: this is alice 3")
+[ 3] Node("f05112"..) Entry("[bob]: this is bob 3")
+======================
+Register Structure:
+(In general, earlier nodes are more indented)
+[ 0] Node("4eadd9"..) Entry("[alice]: this is alice 3")
+  [ 1] Node("f5afb2"..) Entry("[alice]: this is alice 2")
+    [ 2] Node("7693eb"..) Entry("[alice]: hello this is alice")
+[ 3] Node("f05112"..) Entry("[bob]: this is bob 3")
+  [ 4] Node("8c3cce"..) Entry("[bob]: this is bob 2")
+    [ 5] Node("c7f9fc"..) Entry("[bob]: this is bob 1")
+    [ 1] Node("f5afb2"..) Entry("[alice]: this is alice 2")
+      [ 2] Node("7693eb"..) Entry("[alice]: hello this is alice")
+======================
+```
+Each increase in indentation shows the children of the node above.
+The numbers in square brackets are just to make it easier to see
+where a node occurs more than once.
+
 ### RPC
 
 The node manager launches each node process with a remote procedure call (RPC) service. The workspace has a client binary that can be used to run commands against these services.
