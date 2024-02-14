@@ -20,6 +20,8 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy},
     NetworkAddress,
 };
+
+use crdts::merkle_reg::MerkleReg;
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
 use sn_transfers::{NanoTokens, Payment};
 use std::collections::{BTreeSet, HashSet, LinkedList};
@@ -279,6 +281,11 @@ impl ClientRegister {
     ) -> Result<()> {
         self.write_atop(entry, children)?;
         self.push(verify_store).await
+    }
+
+    /// Access the underlying MerkleReg (e.g. for access to history)
+    pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
+        &self.register.merkle_reg()
     }
 
     // ********* Private helpers  *********
