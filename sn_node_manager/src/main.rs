@@ -108,18 +108,23 @@ pub enum SubCmd {
         log_dir_path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
-        /// Specify an Ipv4Addr for the node's RPC service to run on. The ports are assigned automatically.
-        ///
-        /// If not used, the localhost will be used with a random port.
-        /// Specify a port for the node to run on.
-        ///
-        /// If not used, a port will be selected at random.
+        /// Specify a port for the node to run on. If not used, a port will be selected at random.
         ///
         /// This option only applies when a single service is being added.
         #[clap(long)]
         port: Option<u16>,
         #[clap(long)]
+        /// Specify an Ipv4Addr for the node's RPC service to run on. This is useful if you want to expose the
+        /// RPC server outside. The ports are assigned automatically.
+        ///
+        /// If not set, the RPC server is run locally.
         rpc_address: Option<Ipv4Addr>,
+        /// Provide the environmental variable that is set for the safenode service.
+        ///
+        /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
+        /// Example usage `--env SN_LOG=all,RUST_LOG=libp2p=debug`
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -354,6 +359,7 @@ async fn main() -> Result<()> {
             peers,
             port,
             rpc_address,
+            env_variables,
             url,
             user,
             version,
@@ -402,6 +408,7 @@ async fn main() -> Result<()> {
                     url,
                     user: service_user,
                     version,
+                    env_variables,
                 },
                 &mut node_registry,
                 &service_manager,
@@ -1026,4 +1033,15 @@ fn kill_local_network(verbosity: VerbosityLevel, keep_directories: bool) -> Resu
         std::fs::remove_file(local_reg_path)?;
     }
     Ok(())
+}
+
+// Since delimiter is on, we get element of the csv and not the entire csv.
+fn parse_environment_variables(env_var: &str) -> Result<(String, String)> {
+    let parts: Vec<&str> = env_var.splitn(2, '=').collect();
+    if parts.len() != 2 {
+        return Err(eyre!(
+            "Environment variable must be in the format KEY=VALUE or KEY=INNER_KEY=VALUE.\nMultiple key-value pairs can be given with a comma between them."
+        ));
+    }
+    Ok((parts[0].to_string(), parts[1].to_string()))
 }

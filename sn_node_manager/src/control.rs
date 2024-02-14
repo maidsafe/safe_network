@@ -307,6 +307,7 @@ pub async fn upgrade(
         log_dir_path: node.log_dir_path.clone(),
         safenode_path: node.safenode_path.clone(),
         service_user: node.user.clone(),
+        env_variables: None,
     })?;
 
     start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;

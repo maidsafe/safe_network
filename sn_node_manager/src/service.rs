@@ -33,6 +33,7 @@ pub struct ServiceConfig {
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: String,
+    pub env_variables: Option<Vec<(String, String)>>,
 }
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
@@ -203,7 +204,7 @@ impl ServiceControl for NodeServiceManager {
             contents: None,
             username: Some(config.service_user.to_string()),
             working_directory: None,
-            environment: None,
+            environment: config.env_variables,
         };
         // Temporary fix to enable the restart cmd to properly restart a running service.
         // 'ServiceInstallCtx::content' will override the other passed in fields.
@@ -228,6 +229,11 @@ impl ServiceControl for NodeServiceManager {
                 .collect::<Vec<String>>()
                 .join(" ");
             let _ = writeln!(service, "ExecStart={program} {args}");
+            if let Some(env_vars) = &service_ctx.environment {
+                for (var, val) in env_vars {
+                    let _ = writeln!(service, "Environment=\"{}={}\"", var, val);
+                }
+            }
             let _ = writeln!(service, "Restart=on-failure");
             let _ = writeln!(service, "User={}", config.service_user);
             let _ = writeln!(service, "KillMode=process"); // fixes the restart issue

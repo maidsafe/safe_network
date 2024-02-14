@@ -20,6 +20,7 @@ use std::{
     path::PathBuf,
 };
 
+/// This is just a set of config parameters that is used inside the `add()` function.
 pub struct AddServiceOptions {
     pub count: Option<u16>,
     pub genesis: bool,
@@ -34,6 +35,7 @@ pub struct AddServiceOptions {
     pub url: Option<String>,
     pub user: String,
     pub version: String,
+    pub env_variables: Option<Vec<(String, String)>>,
 }
 
 /// Install safenode as a service.
@@ -135,6 +137,7 @@ pub async fn add(
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: install_options.user.clone(),
+            env_variables: install_options.env_variables.clone(),
         });
 
         match result {
@@ -304,6 +307,10 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 bootstrap_peers: vec![],
+                env_variables: Some(vec![
+                    ("SN_LOG".to_owned(), "all".to_owned()),
+                    ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
+                ]),
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -323,6 +330,10 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: Some(vec![
+                    ("SN_LOG".to_owned(), "all".to_owned()),
+                    ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
+                ]),
             },
             &mut node_registry,
             &mock_service_control,
@@ -415,6 +426,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -470,6 +482,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -534,6 +547,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 bootstrap_peers: vec![],
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -562,6 +576,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
                 bootstrap_peers: vec![],
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -590,6 +605,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
                 bootstrap_peers: vec![],
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -609,6 +625,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -722,6 +739,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 bootstrap_peers: new_peers.clone(),
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -741,6 +759,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -839,6 +858,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
                 bootstrap_peers: vec![],
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -858,6 +878,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -936,6 +957,7 @@ mod tests {
                 log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
                 data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
                 bootstrap_peers: vec![],
+                env_variables: None,
             }))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
@@ -955,6 +977,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &mock_service_control,
@@ -1024,6 +1047,7 @@ mod tests {
                 url: None,
                 user: get_username(),
                 version: latest_version.to_string(),
+                env_variables: None,
             },
             &mut node_registry,
             &MockServiceControl::new(),
