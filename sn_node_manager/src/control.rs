@@ -280,7 +280,8 @@ pub async fn remove(
 
 pub async fn upgrade(
     node: &mut Node,
-    bootstrap_peers: Vec<Multiaddr>,
+    bootstrap_peers: &[Multiaddr],
+    env_variables: &Option<Vec<(String, String)>>,
     upgraded_safenode_path: &PathBuf,
     latest_version: &Version,
     service_control: &dyn ServiceControl,
@@ -302,12 +303,12 @@ pub async fn upgrade(
         genesis: node.genesis,
         name: node.service_name.clone(),
         node_port: Some(node.get_safenode_port()?),
-        bootstrap_peers,
+        bootstrap_peers: bootstrap_peers.to_owned(),
         rpc_socket_addr: node.rpc_socket_addr,
         log_dir_path: node.log_dir_path.clone(),
         safenode_path: node.safenode_path.clone(),
         service_user: node.user.clone(),
-        env_variables: None,
+        env_variables: env_variables.clone(),
     })?;
 
     start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
