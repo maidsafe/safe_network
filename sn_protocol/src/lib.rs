@@ -29,6 +29,11 @@ pub mod test_utils;
 pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
+#[allow(clippy::unwrap_used)]
+#[cfg(feature = "rpc")]
+pub mod safenode_manager_proto {
+    tonic::include_proto!("safenode_manager_proto");
+}
 pub use error::Error;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
