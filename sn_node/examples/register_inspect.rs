@@ -140,13 +140,13 @@ async fn main() -> Result<()> {
         let mut index: usize = 0;
         let mut node_ordering: HashMap<Hash, usize> = HashMap::new();
         for (_hash, node) in content.hashes_and_nodes() {
-            index_node_and_descendants(&node, &mut index, &mut node_ordering, &merkle_reg);
+            index_node_and_descendants(node, &mut index, &mut node_ordering, merkle_reg);
         }
 
         println!("======================");
         println!("Root (Latest) Node(s):");
         for node in content.nodes() {
-            let _ = print_node(0, &node, &node_ordering);
+            let _ = print_node(0, node, &node_ordering);
         }
 
         println!("======================");
@@ -154,7 +154,7 @@ async fn main() -> Result<()> {
         println!("(In general, earlier nodes are more indented)");
         let mut indents = 0;
         for (_hash, node) in content.hashes_and_nodes() {
-            print_node_and_descendants(&mut indents, &node, &mut node_ordering, &merkle_reg);
+            print_node_and_descendants(&mut indents, node, &node_ordering, merkle_reg);
         }
 
         println!("======================");
@@ -167,15 +167,15 @@ fn index_node_and_descendants(
     node_ordering: &mut HashMap<Hash, usize>,
     merkle_reg: &MerkleReg<Entry>,
 ) {
-    let node_hash = node.hash().clone();
+    let node_hash = node.hash();
     if node_ordering.get(&node_hash).is_none() {
-        node_ordering.insert(node_hash.clone(), *index);
+        node_ordering.insert(node_hash, *index);
         *index += 1;
     }
 
     for child_hash in node.children.iter() {
         if let Some(child_node) = merkle_reg.node(*child_hash) {
-            index_node_and_descendants(&child_node, index, node_ordering, &merkle_reg);
+            index_node_and_descendants(child_node, index, node_ordering, merkle_reg);
         } else {
             println!("ERROR looking up hash of child");
         }
@@ -188,12 +188,12 @@ fn print_node_and_descendants(
     node_ordering: &HashMap<Hash, usize>,
     merkle_reg: &MerkleReg<Entry>,
 ) {
-    let _ = print_node(*indents, &node, &node_ordering);
+    let _ = print_node(*indents, node, node_ordering);
 
     *indents += 1;
     for child_hash in node.children.iter() {
         if let Some(child_node) = merkle_reg.node(*child_hash) {
-            print_node_and_descendants(indents, &child_node, node_ordering, &merkle_reg);
+            print_node_and_descendants(indents, child_node, node_ordering, merkle_reg);
         }
     }
     *indents -= 1;
@@ -212,7 +212,7 @@ fn print_node(
     println!(
         "{indentation}[{:>2}] Node({:?}..) Entry({:?})",
         order,
-        hex::encode(node.hash()[0..3].to_vec()),
+        hex::encode(&node.hash()[0..3]),
         String::from_utf8(node.value.clone())?
     );
     Ok(())
@@ -228,5 +228,5 @@ fn prompt_user() -> bool {
 
     let string = input_text.trim().to_string();
 
-    return string.contains("Q") || string.contains("q");
+    string.contains('Q') || string.contains('q')
 }
