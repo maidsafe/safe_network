@@ -26,6 +26,8 @@ pub struct Payment {
 pub struct PaymentDetails {
     /// The node we pay
     pub recipient: MainPubkey,
+    /// The PeerId (as bytes) of the node we pay
+    pub peer_id_bytes: Vec<u8>,
     /// The transfer we send to it and its amount as reference
     pub transfer: (Transfer, NanoTokens),
     /// The network Royalties
