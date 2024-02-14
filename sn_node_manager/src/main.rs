@@ -119,10 +119,11 @@ pub enum SubCmd {
         ///
         /// If not set, the RPC server is run locally.
         rpc_address: Option<Ipv4Addr>,
-        /// Provide the environmental variable that is set for the safenode service.
+        /// Provide environment variables for the safenode service.
         ///
         /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
-        /// Example usage `--env SN_LOG=all,RUST_LOG=libp2p=debug`
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Provide a safenode binary using a URL.
@@ -341,10 +342,12 @@ pub enum SubCmd {
         /// The name of the service to upgrade
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
-        /// Provide the environmental variable that is set for the safenode service.
+        /// Provide environment variables for the safenode service. This will override the values set during the Add
+        /// command.
         ///
         /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
-        /// Example usage `--env SN_LOG=all,RUST_LOG=libp2p=debug`
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
     },
