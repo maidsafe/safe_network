@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707987274371,
+  "lastUpdate": 1707987276247,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9472d9a54c375135c5ac8bbcd536a311db01651f",
-          "message": "ci: prevent concurrent release and version bumping\n\nThis can lead to unreleased versions and some crates.io hassle",
-          "timestamp": "2023-10-11T09:26:09+02:00",
-          "tree_id": "f88f702f26d4acc337316a451c0f1a3a89de156c",
-          "url": "https://github.com/maidsafe/safe_network/commit/9472d9a54c375135c5ac8bbcd536a311db01651f"
-        },
-        "date": 1697010593026,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 135,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4460baf9ea30b742b9874fdae310c1687f3a776b",
+          "message": "test: token_distribution",
+          "timestamp": "2024-02-15T08:07:32Z",
+          "tree_id": "dcac8eaaca9c0402ee5b0d94980d74670601774a",
+          "url": "https://github.com/maidsafe/safe_network/commit/4460baf9ea30b742b9874fdae310c1687f3a776b"
+        },
+        "date": 1707987275630,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 204,
             "unit": "MB"
           },
           {
