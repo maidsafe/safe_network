@@ -6,7 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::files::{download_file, upload_files, ChunkManager, UploadedFile, UPLOADED_FILES};
+use super::files::{
+    download_file, upload_files, ChunkManager, FilesUploadOptions, UploadedFile, UPLOADED_FILES,
+};
 
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, WalletClient, BATCH_SIZE};
 
@@ -41,7 +43,7 @@ pub enum FoldersCmds {
         batch_size: usize,
         /// Should the file be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
-        make_public: bool,
+        make_data_public: bool,
         /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
         ///
         /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
@@ -78,22 +80,24 @@ pub(crate) async fn folders_cmds(
         FoldersCmds::Upload {
             path,
             batch_size,
-            make_public,
+            make_data_public,
             retry_strategy,
         } => {
             upload_files(
                 path.clone(),
-                make_public,
                 client,
                 root_dir.to_path_buf(),
-                verify_store,
-                batch_size,
-                retry_strategy,
+                FilesUploadOptions {
+                    make_data_public,
+                    verify_store,
+                    batch_size,
+                    retry_strategy,
+                },
             )
             .await?;
 
             let mut chunk_manager = ChunkManager::new(root_dir);
-            chunk_manager.chunk_path(&path, true, make_public)?;
+            chunk_manager.chunk_path(&path, true, make_data_public)?;
 
             let mut folders = build_folders_hierarchy(&path, client, root_dir)?;
 
@@ -116,7 +120,6 @@ pub(crate) async fn folders_cmds(
                 .ok_or(eyre!("Failed to obtain main Folder network address"))?;
 
             pay_and_upload_folders(folders, verify_store, client, root_dir).await?;
-
             println!(
                 "\nFolder hierarchy from {path:?} uploaded successfully at {}",
                 root_dir_address.to_hex()
@@ -190,7 +193,7 @@ pub(crate) async fn folders_cmds(
                 .await;
             }
         }
-    };
+    }
     Ok(())
 }
 

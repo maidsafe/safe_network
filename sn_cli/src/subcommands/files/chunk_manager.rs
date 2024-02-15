@@ -23,7 +23,7 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
@@ -94,6 +94,22 @@ impl ChunkManager {
         read_cache: bool,
         include_data_maps: bool,
     ) -> Result<()> {
+        self.chunk_with_iter(
+            WalkDir::new(files_path).into_iter().flatten(),
+            read_cache,
+            include_data_maps,
+        )
+    }
+
+    /// Chunk all the files in the provided iterator
+    /// These are stored to the CHUNK_ARTIFACTS_DIR
+    /// if read_cache is true, will take cache from previous runs into account
+    pub(crate) fn chunk_with_iter(
+        &mut self,
+        entries_iter: impl Iterator<Item = DirEntry>,
+        read_cache: bool,
+        include_data_maps: bool,
+    ) -> Result<()> {
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -103,26 +119,29 @@ impl ChunkManager {
         self.resumed_files_count = 0;
 
         // collect the files to chunk
-        WalkDir::new(files_path)
-            .into_iter()
-            .flatten()
-            .for_each(|entry| {
-                if entry.file_type().is_file() {
-                    let path_xor = PathXorName::new(entry.path());
-                    info!(
-                        "Added file {:?} with path_xor: {path_xor:?} to be chunked/resumed",
-                        entry.path()
-                    );
-                    self.files_to_chunk.push((
-                        entry.file_name().to_owned(),
-                        path_xor,
-                        entry.into_path(),
-                    ));
-                }
-            });
+        let mut files_path_is_dir = false;
+        entries_iter.for_each(|entry| {
+            let is_file = entry.file_type().is_file();
+            if entry.depth() == 0 {
+                files_path_is_dir = !is_file;
+            }
+
+            if is_file {
+                let path_xor = PathXorName::new(entry.path());
+                info!(
+                    "Added file {:?} with path_xor: {path_xor:?} to be chunked/resumed",
+                    entry.path()
+                );
+                self.files_to_chunk.push((
+                    entry.file_name().to_owned(),
+                    path_xor,
+                    entry.into_path(),
+                ));
+            }
+        });
         let total_files = self.files_to_chunk.len();
         if total_files == 0 {
-            if files_path.is_dir() {
+            if files_path_is_dir {
                 bail!(
                     "The directory specified for upload is empty. Please verify the provided path."
                 );
