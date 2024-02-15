@@ -4869,7 +4869,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -4928,7 +4928,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.67"
+version = "0.89.68"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4967,7 +4967,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.12"
+version = "0.104.13"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5060,7 +5060,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.17"
+version = "0.13.18"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5096,7 +5096,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.20"
+version = "0.104.21"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5148,7 +5148,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.53"
+version = "0.4.54"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5188,7 +5188,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "blsttc",
  "bytes",
