@@ -533,7 +533,9 @@ impl SwarmDriver {
                 event_string = "Dialing";
                 trace!("Dialing {peer_id:?} on {connection_id:?}");
             }
-            SwarmEvent::NewExternalAddrCandidate { address } => {
+            SwarmEvent::NewExternalAddrCandidate { address }
+                if !self.swarm.external_addresses().any(|addr| addr == &address) =>
+            {
                 event_string = "NewExternalAddrCandidate";
                 info!(%address, "external address: new candidate");
 
