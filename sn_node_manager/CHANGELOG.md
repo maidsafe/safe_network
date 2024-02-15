@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.1...sn-node-manager-v0.3.2) - 2024-02-15
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.3.1](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.0...sn-node-manager-v0.3.1) - 2024-02-15
 
 ### Added

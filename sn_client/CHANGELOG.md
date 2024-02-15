@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.15](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.14...sn_client-v0.104.15) - 2024-02-15
+
+### Added
+- *(client)* keep payee as part of storage payment cache
+
+### Other
+- *(client)* remove the payee-map from StoragePaymentResult
+
 ## [0.104.14](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.13...sn_client-v0.104.14) - 2024-02-15
 
 ### Other

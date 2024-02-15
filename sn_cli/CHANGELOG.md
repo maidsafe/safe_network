@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.69](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.68...sn_cli-v0.89.69) - 2024-02-15
+
+### Added
+- *(client)* keep payee as part of storage payment cache
+
+### Other
+- *(release)* sn_networking-v0.13.19/sn_faucet-v0.3.67/sn_client-v0.104.14/sn_node-v0.104.22
+
 ## [0.89.68](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.67...sn_cli-v0.89.68) - 2024-02-15
 
 ### Other
