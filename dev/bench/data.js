@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707989095642,
+  "lastUpdate": 1707989096989,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "76dcdb889cad0a0f9547c54aa411e46159951705",
-          "message": "fix: handling GetClosestPeers query error branch",
-          "timestamp": "2023-10-11T09:33:41+02:00",
-          "tree_id": "a0233b099889d0a53baa4e1423f2ba6f1e3f3322",
-          "url": "https://github.com/maidsafe/safe_network/commit/76dcdb889cad0a0f9547c54aa411e46159951705"
-        },
-        "date": 1697011192928,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 147,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 35,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e846314159a8613d9ecb4f8b3ed45d34d0be53a9",
+          "message": "feat: force and upgrade by url or version\n\nThree new arguments are added to the `upgrade` command: `--force`, `--url` and `--version`.\n\nThe `--url` and `--version` arguments provide two different sources for the upgrade, as opposed to\njust upgrading to the latest version. With `--url`, a custom binary can be provided, which will be\nused for the backwards compatibility test. The `--version` flag enables upgrading to a specific\nversion rather than the latest. Both of these can be used with the `--force` flag to downgrade to an\narbitrary version or to accept an upgrade from a binary with the same version, the latter of which\nwill again be used in the backwards compatibility test.\n\nIntegration tests provide coverage of these new features. Each of the tests really needs to run on\nits own machine, otherwise they interfere with each other, and tests can't make assumptions about\nhow many services there are. So we add twelve additional jobs to the merge workflow here, which is\nfor four tests on three operating systems. However, these tests should run pretty quickly.\n\nThe `stop` command was modified such that it will no longer return an error if the service is in the\n`ADDED` state, i.e., it has not been started before. This enables us to test the upgrade process\nwithout initially starting the service, which could introduce complications. The `get_safenode_port`\nfunction was also changed to return an `Option` rather than a `Result` for the same reason.",
+          "timestamp": "2024-02-15T08:12:15Z",
+          "tree_id": "14d5adebf1d7a6f7c43ccbe573078438d693bdec",
+          "url": "https://github.com/maidsafe/safe_network/commit/e846314159a8613d9ecb4f8b3ed45d34d0be53a9"
+        },
+        "date": 1707989096687,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
