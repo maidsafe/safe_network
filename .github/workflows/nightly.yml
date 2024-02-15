@@ -331,6 +331,68 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Royalty Reward Test Run Failed"
 
+  token_distribution_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
+    name: token distribution test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build binaries
+        run: cargo build --release --features=local-discovery,distribution --bin safenode --bin faucet
+        timeout-minutes: 30
+
+      - name: Build testing executable
+        run: cargo test --release --features=local-discovery,distribution --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+          build: true
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
+
+      - name: execute token_distribution tests
+        run: cargo test --release --features=local-discovery,distribution token_distribution -- --nocapture --test-threads=1
+        env:
+          SN_LOG: "all"
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 25
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_token_distribution
+          platform: ${{ matrix.os }}
+
   churn:
     name: Network churning tests
     runs-on: ${{ matrix.os }}
