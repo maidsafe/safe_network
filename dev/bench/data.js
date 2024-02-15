@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707987278083,
+  "lastUpdate": 1707988995712,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "98cf8288b06efb60d7577e0747a4c21cf5fa7b23",
-          "message": "fix: remove uneeded hideous key Clone trait",
-          "timestamp": "2023-10-12T04:47:44Z",
-          "tree_id": "33ffa078e8d885dedfb04f28df6fe47ede1fbce7",
-          "url": "https://github.com/maidsafe/safe_network/commit/98cf8288b06efb60d7577e0747a4c21cf5fa7b23"
-        },
-        "date": 1697088739778,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09868608613069577,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5974073728977589,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 29.264105803189263,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.511466942473234,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e846314159a8613d9ecb4f8b3ed45d34d0be53a9",
+          "message": "feat: force and upgrade by url or version\n\nThree new arguments are added to the `upgrade` command: `--force`, `--url` and `--version`.\n\nThe `--url` and `--version` arguments provide two different sources for the upgrade, as opposed to\njust upgrading to the latest version. With `--url`, a custom binary can be provided, which will be\nused for the backwards compatibility test. The `--version` flag enables upgrading to a specific\nversion rather than the latest. Both of these can be used with the `--force` flag to downgrade to an\narbitrary version or to accept an upgrade from a binary with the same version, the latter of which\nwill again be used in the backwards compatibility test.\n\nIntegration tests provide coverage of these new features. Each of the tests really needs to run on\nits own machine, otherwise they interfere with each other, and tests can't make assumptions about\nhow many services there are. So we add twelve additional jobs to the merge workflow here, which is\nfor four tests on three operating systems. However, these tests should run pretty quickly.\n\nThe `stop` command was modified such that it will no longer return an error if the service is in the\n`ADDED` state, i.e., it has not been started before. This enables us to test the upgrade process\nwithout initially starting the service, which could introduce complications. The `get_safenode_port`\nfunction was also changed to return an `Option` rather than a `Result` for the same reason.",
+          "timestamp": "2024-02-15T08:12:15Z",
+          "tree_id": "14d5adebf1d7a6f7c43ccbe573078438d693bdec",
+          "url": "https://github.com/maidsafe/safe_network/commit/e846314159a8613d9ecb4f8b3ed45d34d0be53a9"
+        },
+        "date": 1707988993109,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2575699735808266,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8409592405914765,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.761329317749876,
             "unit": "MiB/s"
           }
         ]
