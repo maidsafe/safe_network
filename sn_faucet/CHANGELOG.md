@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.67](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.66...sn_faucet-v0.3.67) - 2024-02-15
+
+### Other
+- *(release)* sn_protocol-v0.14.1/sn-node-manager-v0.3.1/sn_cli-v0.89.68/sn_client-v0.104.13/sn_networking-v0.13.18/sn_node-v0.104.21/sn_node_rpc_client-v0.4.54
+
+## [0.3.66](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.65...sn_faucet-v0.3.66) - 2024-02-15
+
+### Other
+- token_distribution
+- *(release)* sn_protocol-v0.14.0/sn-node-manager-v0.3.0/sn_cli-v0.89.67/sn_client-v0.104.12/sn_networking-v0.13.17/sn_node-v0.104.20/sn_node_rpc_client-v0.4.53
+
 ## [0.3.65](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.64...sn_faucet-v0.3.65) - 2024-02-14
 
 ### Other

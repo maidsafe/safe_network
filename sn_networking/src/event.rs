@@ -533,6 +533,28 @@ impl SwarmDriver {
                 event_string = "Dialing";
                 trace!("Dialing {peer_id:?} on {connection_id:?}");
             }
+            SwarmEvent::NewExternalAddrCandidate { address } => {
+                event_string = "NewExternalAddrCandidate";
+
+                if !self.swarm.external_addresses().any(|addr| addr == &address) && !self.is_client
+                {
+                    info!(%address, "external address: new candidate");
+
+                    // Identify will let us know when we have a candidate. (Peers will tell us what address they see us as.)
+                    // We manually confirm this to be our externally reachable address, though in theory it's possible we
+                    // are not actually reachable. (Peers can lie to us.) This is a good enough heuristic for now.
+                    // Setting this will also switch kad to server mode if it's not already in it.
+                    self.swarm.add_external_address(address);
+                }
+            }
+            SwarmEvent::ExternalAddrConfirmed { address } => {
+                event_string = "ExternalAddrConfirmed";
+                info!(%address, "external address: confirmed");
+            }
+            SwarmEvent::ExternalAddrExpired { address } => {
+                event_string = "ExternalAddrExpired";
+                info!(%address, "external address: expired");
+            }
             other => {
                 event_string = "Other";
 

@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.19](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.18...sn_networking-v0.13.19) - 2024-02-15
+
+### Added
+- *(networking)* log only unconfirmed ext. addrs
+- *(networking)* add candidate addr as external
+
+### Fixed
+- *(networking)* no external addr if client
+
+## [0.13.18](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.17...sn_networking-v0.13.18) - 2024-02-15
+
+### Other
+- updated the following local packages: sn_protocol
+
+## [0.13.17](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.16...sn_networking-v0.13.17) - 2024-02-14
+
+### Other
+- updated the following local packages: sn_protocol
+
 ## [0.13.16](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.15...sn_networking-v0.13.16) - 2024-02-14
 
 ### Other
