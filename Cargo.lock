@@ -4642,6 +4642,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f622567e3b4b38154fb8190bcf6b160d7a4301d70595a49195b48c116007a27"
 dependencies = [
  "bitcoin_hashes",
+ "rand",
  "secp256k1-sys",
 ]
 
@@ -5011,6 +5012,7 @@ dependencies = [
 name = "sn_faucet"
 version = "0.3.68"
 dependencies = [
+ "assert_fs",
  "bitcoin",
  "blsttc",
  "clap 4.4.18",
