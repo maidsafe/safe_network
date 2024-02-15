@@ -26,7 +26,9 @@ pub struct Payment {
 pub struct PaymentDetails {
     /// The node we pay
     pub recipient: MainPubkey,
-    /// The PeerId (as bytes) of the node we pay
+    /// The PeerId (as bytes) of the node we pay.
+    /// The PeerId is not stored here to avoid direct dependency with libp2p,
+    /// plus it doesn't implement Serialize/Deserialize traits.
     pub peer_id_bytes: Vec<u8>,
     /// The transfer we send to it and its amount as reference
     pub transfer: (Transfer, NanoTokens),
