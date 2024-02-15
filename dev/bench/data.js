@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707996575952,
+  "lastUpdate": 1707996675649,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "c2bae8ab28013d0ecd1365dc2fa0047e490466fe",
-          "message": "chore(transfers): add somre more clarity around DoubleSpendAttemptedForCashNotes",
-          "timestamp": "2023-10-11T12:22:07+02:00",
-          "tree_id": "f2a818af70c4d9de27227bc90eccc2dca6f6af16",
-          "url": "https://github.com/maidsafe/safe_network/commit/c2bae8ab28013d0ecd1365dc2fa0047e490466fe"
-        },
-        "date": 1697021355817,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "115c9396bdd5e4c7af731699d97217e8e9c13f48",
           "message": "feat(networking): return valid result if one found during a timeout",
           "timestamp": "2023-10-11T15:46:31+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0a7c38798142fda015cea605e65cf7fb77e46dc7",
+          "message": "fix(networking): no external addr if client",
+          "timestamp": "2024-02-15T12:19:01+01:00",
+          "tree_id": "792be4155cca7583311593d443582120bf552c45",
+          "url": "https://github.com/maidsafe/safe_network/commit/0a7c38798142fda015cea605e65cf7fb77e46dc7"
+        },
+        "date": 1707996675052,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
