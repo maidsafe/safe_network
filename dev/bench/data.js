@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707996679379,
+  "lastUpdate": 1708011681883,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a0e374084c646318f7478ddcfcfad851492c6916",
-          "message": "feat(sn_transfers): dont load Cns from disk, store value along w/ pubkey in wallet\n\nBREAKING CHANGE: updates wallet file to also store value of CN in payment map",
-          "timestamp": "2023-10-12T10:24:45+02:00",
-          "tree_id": "1b9a3d13ad9fdbe8a98528488c05203e61ebd99c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a0e374084c646318f7478ddcfcfad851492c6916"
-        },
-        "date": 1697100424420,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10247798976853159,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5869608173509432,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 27.70412374829237,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.66699103041559,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "8d72df3ea99b8a6bee2953013929b667d3b155b4",
+          "message": "chore: minor doc change based on peer review",
+          "timestamp": "2024-02-15T14:52:40Z",
+          "tree_id": "adfe6a93bbffae5e8cbc539e115b3337bb0ea232",
+          "url": "https://github.com/maidsafe/safe_network/commit/8d72df3ea99b8a6bee2953013929b667d3b155b4"
+        },
+        "date": 1708011677412,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2305505532274108,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.853647125329309,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.77585104144504,
             "unit": "MiB/s"
           }
         ]
