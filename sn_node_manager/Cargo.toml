@@ -40,7 +40,7 @@ libp2p-identity = { version="0.2.7", features = ["rand"] }
 semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-service-manager = "0.5.1"
+service-manager = {git = "https://github.com/RolandSherwin/service-manager-rs", branch = "derive_traits"}
 sn_node_rpc_client =  { path = "../sn_node_rpc_client", version = "0.4.63" } 
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.6" }
 sn_protocol = { path = "../sn_protocol", version = "0.14.5", features = ["rpc"]}

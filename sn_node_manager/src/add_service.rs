@@ -8,7 +8,7 @@
 
 use crate::{
     config::create_owned_dir,
-    service::{ServiceConfig, ServiceControl},
+    service::{InstallNodeServiceConfig, ServiceControl},
     VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
@@ -131,8 +131,7 @@ pub async fn add(
             options.safenode_bin_path.clone(),
             service_safenode_path.clone(),
         )?;
-
-        let result = service_control.install(ServiceConfig {
+        let install_ctx = InstallNodeServiceConfig {
             local: options.local,
             data_dir_path: service_data_dir_path.clone(),
             genesis: options.genesis,
@@ -144,9 +143,10 @@ pub async fn add(
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
             env_variables: options.env_variables.clone(),
-        });
+        }
+        .build_service_install_ctx()?;
 
-        match result {
+        match service_control.install(install_ctx) {
             Ok(()) => {
                 added_service_data.push((
                     service_name.clone(),
@@ -297,25 +297,27 @@ mod tests {
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
+        let install_ctx = InstallNodeServiceConfig {
+            local: true,
+            genesis: true,
+            name: "safenode1".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: true,
-                genesis: true,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -534,25 +536,28 @@ mod tests {
             .returning(|| Ok(8081))
             .in_sequence(&mut seq);
 
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode1".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
+
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -562,26 +567,28 @@ mod tests {
             .times(1)
             .returning(|| Ok(8083))
             .in_sequence(&mut seq);
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode2".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode2")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
 
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode2".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode2")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -591,26 +598,28 @@ mod tests {
             .times(1)
             .returning(|| Ok(8085))
             .in_sequence(&mut seq);
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode3".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode3")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
 
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode3".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode3")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -727,25 +736,27 @@ mod tests {
             .returning(|| Ok(12001))
             .in_sequence(&mut seq);
 
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode1".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            bootstrap_peers: new_peers.clone(),
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                bootstrap_peers: new_peers.clone(),
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -836,26 +847,27 @@ mod tests {
             .times(1)
             .returning(|| Ok(12001))
             .in_sequence(&mut seq);
-
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode1".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            bootstrap_peers: vec![],
+            env_variables: env_variables.clone(),
+        }
+        .build_service_install_ctx()?;
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                bootstrap_peers: vec![],
-                env_variables: env_variables.clone(),
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -955,26 +967,28 @@ mod tests {
             .times(1)
             .returning(|| Ok(8083))
             .in_sequence(&mut seq);
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode2".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode2")
+                .join(SAFENODE_FILE_NAME),
+            node_port: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
 
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode2".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode2")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: None,
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
@@ -1055,26 +1069,28 @@ mod tests {
             .times(1)
             .returning(|| Ok(12001))
             .in_sequence(&mut seq);
+        let install_ctx = InstallNodeServiceConfig {
+            local: false,
+            genesis: false,
+            name: "safenode1".to_string(),
+            safenode_path: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            node_port: Some(custom_port),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
+            service_user: get_username(),
+            log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+            data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+            bootstrap_peers: vec![],
+            env_variables: None,
+        }
+        .build_service_install_ctx()?;
 
         mock_service_control
             .expect_install()
             .times(1)
-            .with(eq(ServiceConfig {
-                local: false,
-                genesis: false,
-                name: "safenode1".to_string(),
-                safenode_path: node_data_dir
-                    .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
-                node_port: Some(custom_port),
-                rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-                service_user: get_username(),
-                log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-                data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-                bootstrap_peers: vec![],
-                env_variables: None,
-            }))
+            .with(eq(install_ctx))
             .returning(|_| Ok(()))
             .in_sequence(&mut seq);
 
