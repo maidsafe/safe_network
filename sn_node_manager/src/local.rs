@@ -8,6 +8,7 @@
 
 use crate::helpers::get_bin_version;
 use crate::service::ServiceControl;
+use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use libp2p::multiaddr::Protocol;
@@ -221,7 +222,10 @@ pub async fn run_network(
         )
         .await?;
         node_registry.nodes.push(node.clone());
-        (node.listen_addr.unwrap(), 2)
+        let bootstrap_peers = node
+            .listen_addr
+            .ok_or_eyre("The listen address was not set")?;
+        (bootstrap_peers, 2)
     };
     node_registry.save()?;
 
@@ -337,8 +341,8 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
     let mut all_peers = node_registry
         .nodes
         .iter()
-        .map(|n| n.peer_id.unwrap())
-        .collect::<Vec<PeerId>>();
+        .map(|n| n.peer_id.ok_or_eyre("The PeerId was not set"))
+        .collect::<Result<Vec<PeerId>>>()?;
     // The additional peers are peers being managed outwith the node manager. This only applies
     // when we've joined a network not being managed by the node manager. Otherwise, this list will
     // be empty.
@@ -357,7 +361,8 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let net_info = rpc_client.network_info().await?;
         let peers = net_info.connected_peers;
-        println!("Node {} has {} peers", node.peer_id.unwrap(), peers.len());
+        let peer_id = node.peer_id.ok_or_eyre("The PeerId was not set")?;
+        println!("Node {peer_id} has {} peers", peers.len());
 
         // Look for peers that are not supposed to be present in the network. This can happen if
         // the node has connected to peers on other networks.
