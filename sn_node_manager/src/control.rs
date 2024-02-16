@@ -10,7 +10,10 @@ use crate::{
     service::{ServiceConfig, ServiceControl},
     VerbosityLevel,
 };
-use color_eyre::{eyre::eyre, Help, Result};
+use color_eyre::{
+    eyre::{eyre, OptionExt},
+    Help, Result,
+};
 use colored::Colorize;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use semver::Version;
@@ -39,7 +42,7 @@ pub async fn start(
         // running at this point in time. If it is running, we don't need to do anything. If it
         // stopped because of a fault, we will drop to the code below and attempt to start it
         // again.
-        if service_control.is_service_process_running(node.pid.unwrap()) {
+        if service_control.is_service_process_running(node.pid.ok_or_eyre("The PID was not set")?) {
             println!("The {} service is already running", node.service_name);
             return Ok(());
         }
@@ -87,7 +90,7 @@ pub async fn stop(node: &mut Node, service_control: &dyn ServiceControl) -> Resu
         }
         NodeStatus::Removed => Err(eyre!("Service {} has been removed", node.service_name)),
         NodeStatus::Running => {
-            let pid = node.pid.unwrap();
+            let pid = node.pid.ok_or_eyre("The PID was not set")?;
             if service_control.is_service_process_running(pid) {
                 println!("Attempting to stop {}...", node.service_name);
                 service_control.stop(&node.service_name)?;

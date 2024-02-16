@@ -92,9 +92,8 @@ impl ServiceControl for NodeServiceManager {
             .arg(".")
             .arg("-list")
             .arg("/Users")
-            .output()
-            .unwrap();
-        let output_str = str::from_utf8(&output.stdout).unwrap();
+            .output()?;
+        let output_str = str::from_utf8(&output.stdout)?;
         if output_str.lines().any(|line| line == username) {
             return Ok(());
         }
@@ -104,9 +103,8 @@ impl ServiceControl for NodeServiceManager {
             .arg("-list")
             .arg("/Users")
             .arg("UniqueID")
-            .output()
-            .unwrap();
-        let output_str = str::from_utf8(&output.stdout).unwrap();
+            .output()?;
+        let output_str = str::from_utf8(&output.stdout)?;
         let mut max_id = 0;
 
         for line in output_str.lines() {
@@ -154,7 +152,7 @@ impl ServiceControl for NodeServiceManager {
     }
 
     fn get_available_port(&self) -> Result<u16> {
-        let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+        let addr: SocketAddr = "127.0.0.1:0".parse()?;
 
         let socket = TcpListener::bind(addr)?;
         let port = socket.local_addr()?.port();

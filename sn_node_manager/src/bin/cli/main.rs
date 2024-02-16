@@ -833,8 +833,8 @@ async fn main() -> Result<()> {
                 println!("Retrieving latest version of safenode...");
                 let latest_version = release_repo
                     .get_latest_version(&ReleaseType::Safenode)
-                    .await
-                    .map(|v| Version::parse(&v).unwrap())?;
+                    .await?;
+                let latest_version = Version::parse(&latest_version)?;
                 println!("Latest version is {latest_version}");
                 let (upgrade_bin_path, _) = download_and_extract_release(
                     ReleaseType::Safenode,
@@ -848,10 +848,16 @@ async fn main() -> Result<()> {
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             if !force {
-                let any_nodes_need_upgraded = node_registry.nodes.iter().any(|n| {
-                    let current_version = Version::parse(&n.version).unwrap();
-                    current_version < target_version
-                });
+                let node_versions = node_registry
+                    .nodes
+                    .iter()
+                    .map(|n| {
+                        Version::parse(&n.version).map_err(|_| eyre!("Failed to parse Version"))
+                    })
+                    .collect::<Result<Vec<Version>>>()?;
+                let any_nodes_need_upgraded = node_versions
+                    .iter()
+                    .any(|current_version| current_version < &target_version);
                 if !any_nodes_need_upgraded {
                     println!("{} All nodes are at the latest version", "✓".green());
                     return Ok(());

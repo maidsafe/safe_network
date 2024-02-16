@@ -49,7 +49,7 @@ async fn upgrade_to_latest_version() -> Result<()> {
     let latest_version = release_repo
         .get_latest_version(&ReleaseType::Safenode)
         .await?;
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("safenode-manager")?;
     let output = cmd
         .arg("upgrade")
         .arg("--do-not-start")
@@ -102,7 +102,7 @@ async fn force_upgrade_when_two_binaries_have_the_same_version() -> Result<()> {
         "Services were not correctly initialised"
     );
 
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("safenode-manager")?;
     let output = cmd
         .arg("upgrade")
         .arg("--do-not-start")
@@ -166,7 +166,7 @@ async fn force_downgrade_to_a_previous_version() -> Result<()> {
         "Services were not correctly initialised"
     );
 
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("safenode-manager")?;
     let output = cmd
         .arg("upgrade")
         .arg("--do-not-start")
@@ -230,7 +230,7 @@ async fn upgrade_from_older_version_to_specific_version() -> Result<()> {
         "Services were not correctly initialised"
     );
 
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("safenode-manager")?;
     let output = cmd
         .arg("upgrade")
         .arg("--do-not-start")
