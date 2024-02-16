@@ -12,12 +12,14 @@ use crate::{Error, Result};
 use futures::future::join_all;
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::BTreeSet;
+use tokio::task::JoinSet;
 
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
     /// Once the DAG collected, verifies all the transactions
     pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
+        info!("Building spend DAG from {spend_addr:?}");
         let mut dag = SpendDag::new();
 
         // get first spend
@@ -25,7 +27,7 @@ impl Client {
             Ok(s) => s,
             Err(Error::MissingSpendRecord(_)) => {
                 // the cashnote was not spent yet, so it's an UTXO
-                trace!("UTXO at {spend_addr:?}");
+                info!("UTXO at {spend_addr:?}");
                 return Ok(dag);
             }
             Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
@@ -41,6 +43,9 @@ impl Client {
         while !txs_to_follow.is_empty() {
             let mut next_gen_tx = BTreeSet::new();
 
+            // gather all descendants in parallel
+            let mut tasks = vec![];
+            let mut addrs = vec![];
             for descendant_tx in txs_to_follow.iter() {
                 let descendant_tx_hash = descendant_tx.hash();
                 let descendant_keys = descendant_tx
@@ -48,28 +53,37 @@ impl Client {
                     .iter()
                     .map(|output| output.unique_pubkey);
                 let addrs_to_follow = descendant_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?}");
+                info!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?}");
 
-                // get all descendant spends in parallel
-                let tasks: Vec<_> = addrs_to_follow
+                let tasks_for_this_descendant: Vec<_> = addrs_to_follow
                     .clone()
                     .map(|a| self.get_spend_from_network(a))
                     .collect();
-                let spends_res = join_all(tasks).await.into_iter().collect::<Vec<_>>();
+                tasks.extend(tasks_for_this_descendant);
+                addrs.extend(addrs_to_follow);
+            }
 
-                // add spends to dag
-                for res in spends_res.iter().zip(addrs_to_follow) {
-                    match res {
-                        (Ok(spend), addr) => {
-                            dag.insert(addr, spend.clone());
-                            next_gen_tx.insert(spend.spend.spent_tx.clone());
-                        }
-                        (Err(Error::MissingSpendRecord(_)), addr) => {
-                            trace!("Reached UTXO at {addr:?}");
-                        }
-                        (Err(err), addr) => {
-                            error!("Could not verify transfer at {addr:?}: {err:?}");
-                        }
+            // wait for tasks to complete
+            info!(
+                "Gen {gen} - Getting {} spends from {} txs",
+                tasks.len(),
+                txs_to_follow.len()
+            );
+            let spends_res = join_all(tasks).await.into_iter().collect::<Vec<_>>();
+            info!("Gen {gen} - Got those {} spends", spends_res.len());
+
+            // insert spends in the dag
+            for res in spends_res.iter().zip(addrs) {
+                match res {
+                    (Ok(spend), addr) => {
+                        dag.insert(addr, spend.clone());
+                        next_gen_tx.insert(spend.spend.spent_tx.clone());
+                    }
+                    (Err(Error::MissingSpendRecord(_)), addr) => {
+                        info!("Reached UTXO at {addr:?}");
+                    }
+                    (Err(err), addr) => {
+                        error!("Could not verify transfer at {addr:?}: {err:?}");
                     }
                 }
             }
@@ -104,7 +118,7 @@ impl Client {
     /// ```text
     ///              ... --
     ///                     \
-    ///              ... ----                  ... --    
+    ///              ... ----                  ... --
     ///                       \                       \
     /// Spend0 -> Spend1 -----> Spend2 ---> Spend5 ---> Spend2 ---> Genesis
     ///                   \                           /
@@ -217,11 +231,21 @@ impl Client {
     /// Extends an existing SpendDag starting from the utxos in this DAG
     /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
     pub async fn spend_dag_continue_from_utxos(&self, dag: &mut SpendDag) -> WalletResult<()> {
+        info!("Gathering spend DAG from utxos...");
         let utxos = dag.get_utxos();
+        let mut tasks = JoinSet::new();
         for utxo in utxos {
-            let sub_dag = self.spend_dag_build_from(utxo).await?;
+            info!("Launching task to gather utxo: {:?}", utxo);
+            let self_clone = self.clone();
+            tasks.spawn(async move { self_clone.spend_dag_build_from(utxo).await });
+        }
+        while let Some(res) = tasks.join_next().await {
+            let sub_dag = res.map_err(|e| {
+                WalletError::FailedToGetSpend(format!("DAG gathering task failed: {e}"))
+            })??;
             dag.merge(sub_dag);
         }
+        info!("Done gathering spend DAG from utxos");
         Ok(())
     }
 }
