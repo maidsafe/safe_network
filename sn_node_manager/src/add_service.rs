@@ -45,13 +45,13 @@ pub struct AddServiceOptions {
 /// There are several arguments that probably seem like they could be handled within the function,
 /// but they enable more controlled unit testing.
 pub async fn add(
-    install_options: AddServiceOptions,
+    options: AddServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if install_options.genesis {
-        if let Some(count) = install_options.count {
+    if options.genesis {
+        if let Some(count) = options.count {
             if count > 1 {
                 return Err(eyre!("A genesis node can only be added as a single node"));
             }
@@ -63,8 +63,8 @@ pub async fn add(
         }
     }
 
-    if install_options.count.is_some() && install_options.node_port.is_some() {
-        let count = install_options.count.unwrap();
+    if options.count.is_some() && options.node_port.is_some() {
+        let count = options.count.unwrap();
         if count > 1 {
             return Err(eyre!(
                 "Custom node port can only be used when adding a single service"
@@ -72,7 +72,7 @@ pub async fn add(
         }
     }
 
-    let safenode_file_name = install_options
+    let safenode_file_name = options
         .safenode_bin_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
@@ -82,7 +82,7 @@ pub async fn add(
     //  store the bootstrap peers and the provided env variable.
     {
         let mut should_save = false;
-        let new_bootstrap_peers: Vec<_> = install_options
+        let new_bootstrap_peers: Vec<_> = options
             .bootstrap_peers
             .iter()
             .filter(|peer| !node_registry.bootstrap_peers.contains(peer))
@@ -94,8 +94,8 @@ pub async fn add(
             should_save = true;
         }
 
-        if install_options.env_variables.is_some() {
-            node_registry.environment_variables = install_options.env_variables.clone();
+        if options.env_variables.is_some() {
+            node_registry.environment_variables = options.env_variables.clone();
             should_save = true;
         }
 
@@ -108,46 +108,42 @@ pub async fn add(
     let mut failed_service_data = vec![];
 
     let current_node_count = node_registry.nodes.len() as u16;
-    let target_node_count = current_node_count + install_options.count.unwrap_or(1);
+    let target_node_count = current_node_count + options.count.unwrap_or(1);
 
     let mut node_number = current_node_count + 1;
     while node_number <= target_node_count {
         let rpc_free_port = service_control.get_available_port()?;
-        let rpc_socket_addr = if let Some(addr) = install_options.rpc_address {
+        let rpc_socket_addr = if let Some(addr) = options.rpc_address {
             SocketAddr::new(IpAddr::V4(addr), rpc_free_port)
         } else {
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_free_port)
         };
 
         let service_name = format!("safenode{node_number}");
-        let service_data_dir_path = install_options
-            .service_data_dir_path
-            .join(service_name.clone());
+        let service_data_dir_path = options.service_data_dir_path.join(service_name.clone());
         let service_safenode_path = service_data_dir_path.join(safenode_file_name.clone());
-        let service_log_dir_path = install_options
-            .service_log_dir_path
-            .join(service_name.clone());
+        let service_log_dir_path = options.service_log_dir_path.join(service_name.clone());
 
-        create_owned_dir(service_data_dir_path.clone(), &install_options.user)?;
-        create_owned_dir(service_log_dir_path.clone(), &install_options.user)?;
+        create_owned_dir(service_data_dir_path.clone(), &options.user)?;
+        create_owned_dir(service_log_dir_path.clone(), &options.user)?;
 
         std::fs::copy(
-            install_options.safenode_bin_path.clone(),
+            options.safenode_bin_path.clone(),
             service_safenode_path.clone(),
         )?;
 
         let result = service_control.install(ServiceConfig {
-            local: install_options.local,
+            local: options.local,
             data_dir_path: service_data_dir_path.clone(),
-            genesis: install_options.genesis,
+            genesis: options.genesis,
             log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
-            node_port: install_options.node_port,
-            bootstrap_peers: install_options.bootstrap_peers.clone(),
+            node_port: options.node_port,
+            bootstrap_peers: options.bootstrap_peers.clone(),
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
-            service_user: install_options.user.clone(),
-            env_variables: install_options.env_variables.clone(),
+            service_user: options.user.clone(),
+            env_variables: options.env_variables.clone(),
         });
 
         match result {
@@ -161,13 +157,13 @@ pub async fn add(
                 ));
 
                 node_registry.nodes.push(Node {
-                    genesis: install_options.genesis,
-                    local: install_options.local,
+                    genesis: options.genesis,
+                    local: options.local,
                     service_name,
-                    user: install_options.user.clone(),
+                    user: options.user.clone(),
                     number: node_number,
                     rpc_socket_addr,
-                    version: install_options.version.clone(),
+                    version: options.version.clone(),
                     status: NodeStatus::Added,
                     listen_addr: None,
                     pid: None,
@@ -189,7 +185,7 @@ pub async fn add(
         node_number += 1;
     }
 
-    std::fs::remove_file(install_options.safenode_bin_path)?;
+    std::fs::remove_file(options.safenode_bin_path)?;
 
     if !added_service_data.is_empty() {
         println!("Services Added:");

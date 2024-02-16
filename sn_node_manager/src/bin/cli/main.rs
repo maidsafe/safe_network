@@ -402,29 +402,24 @@ async fn main() -> Result<()> {
                 &*release_repo,
             )
             .await?;
+            let options = AddServiceOptions {
+                local,
+                genesis: peers.first,
+                count,
+                bootstrap_peers: get_peers_from_args(peers).await?,
+                node_port: port,
+                rpc_address,
+                safenode_bin_path: safenode_download_path,
+                safenode_dir_path: service_data_dir_path.clone(),
+                service_data_dir_path,
+                service_log_dir_path,
+                url,
+                user: service_user,
+                version,
+                env_variables,
+            };
 
-            add(
-                AddServiceOptions {
-                    local,
-                    genesis: peers.first,
-                    count,
-                    bootstrap_peers: get_peers_from_args(peers).await?,
-                    node_port: port,
-                    rpc_address,
-                    safenode_bin_path: safenode_download_path,
-                    safenode_dir_path: service_data_dir_path.clone(),
-                    service_data_dir_path,
-                    service_log_dir_path,
-                    url,
-                    user: service_user,
-                    version,
-                    env_variables,
-                },
-                &mut node_registry,
-                &service_manager,
-                verbosity,
-            )
-            .await?;
+            add(options, &mut node_registry, &service_manager, verbosity).await?;
 
             node_registry.save()?;
 
@@ -512,7 +507,7 @@ async fn main() -> Result<()> {
                 safenode_bin_path: node_path,
                 skip_validation: true,
             };
-            run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
+            run_network(options, &mut local_node_registry, &NodeServiceManager {}).await?;
             Ok(())
         }
         SubCmd::Kill { keep_directories } => kill_local_network(verbosity, keep_directories),
@@ -625,7 +620,7 @@ async fn main() -> Result<()> {
                 safenode_bin_path: node_path,
                 skip_validation: true,
             };
-            run_network(&mut local_node_registry, &NodeServiceManager {}, options).await?;
+            run_network(options, &mut local_node_registry, &NodeServiceManager {}).await?;
 
             local_node_registry.save()?;
 
@@ -879,22 +874,16 @@ async fn main() -> Result<()> {
                 } else {
                     &node_registry.environment_variables
                 };
-                let result = upgrade(
-                    UpgradeOptions {
-                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                        env_variables: env_variables.clone(),
-                        force,
-                        start_node: !do_not_start,
-                        target_safenode_path: upgrade_bin_path.clone(),
-                        target_version: target_version.clone(),
-                    },
-                    node,
-                    &NodeServiceManager {},
-                    &rpc_client,
-                )
-                .await;
+                let options = UpgradeOptions {
+                    bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                    env_variables: env_variables.clone(),
+                    force,
+                    start_node: !do_not_start,
+                    target_safenode_path: upgrade_bin_path.clone(),
+                    target_version: target_version.clone(),
+                };
 
-                match result {
+                match upgrade(options, node, &NodeServiceManager {}, &rpc_client).await {
                     Ok(upgrade_result) => {
                         upgrade_summary.push((node.service_name.clone(), upgrade_result));
                     }
@@ -925,22 +914,16 @@ async fn main() -> Result<()> {
                 } else {
                     &node_registry.environment_variables
                 };
-                let result = upgrade(
-                    UpgradeOptions {
-                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                        env_variables: env_variables.clone(),
-                        force,
-                        start_node: !do_not_start,
-                        target_safenode_path: upgrade_bin_path.clone(),
-                        target_version: target_version.clone(),
-                    },
-                    node,
-                    &NodeServiceManager {},
-                    &rpc_client,
-                )
-                .await;
+                let options = UpgradeOptions {
+                    bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                    env_variables: env_variables.clone(),
+                    force,
+                    start_node: !do_not_start,
+                    target_safenode_path: upgrade_bin_path.clone(),
+                    target_version: target_version.clone(),
+                };
 
-                match result {
+                match upgrade(options, node, &NodeServiceManager {}, &rpc_client).await {
                     Ok(upgrade_result) => {
                         upgrade_summary.push((node.service_name.clone(), upgrade_result));
                     }
@@ -960,22 +943,16 @@ async fn main() -> Result<()> {
                     } else {
                         &node_registry.environment_variables
                     };
-                    let result = upgrade(
-                        UpgradeOptions {
-                            bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                            env_variables: env_variables.clone(),
-                            force,
-                            start_node: !do_not_start,
-                            target_safenode_path: upgrade_bin_path.clone(),
-                            target_version: target_version.clone(),
-                        },
-                        node,
-                        &NodeServiceManager {},
-                        &rpc_client,
-                    )
-                    .await;
+                    let options = UpgradeOptions {
+                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
+                        env_variables: env_variables.clone(),
+                        force,
+                        start_node: !do_not_start,
+                        target_safenode_path: upgrade_bin_path.clone(),
+                        target_version: target_version.clone(),
+                    };
 
-                    match result {
+                    match upgrade(options, node, &NodeServiceManager {}, &rpc_client).await {
                         Ok(upgrade_result) => {
                             upgrade_summary.push((node.service_name.clone(), upgrade_result));
                         }
