@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    service::{ServiceConfig, ServiceControl},
+    service::{InstallNodeServiceConfig, ServiceControl},
     VerbosityLevel,
 };
 use color_eyre::{
@@ -313,7 +313,7 @@ pub async fn upgrade(
     // Install the service again to make sure we re-use the same node port.
     // Windows requires that the service be uninstalled first.
     service_control.uninstall(&node.service_name.clone())?;
-    service_control.install(ServiceConfig {
+    let install_ctx = InstallNodeServiceConfig {
         local: node.local,
         data_dir_path: node.data_dir_path.clone(),
         genesis: node.genesis,
@@ -325,7 +325,9 @@ pub async fn upgrade(
         safenode_path: node.safenode_path.clone(),
         service_user: node.user.clone(),
         env_variables: options.env_variables.clone(),
-    })?;
+    }
+    .build_service_install_ctx()?;
+    service_control.install(install_ctx)?;
 
     if options.start_node {
         start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;

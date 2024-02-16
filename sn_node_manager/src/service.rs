@@ -22,7 +22,7 @@ use std::{
 use sysinfo::{Pid, System, SystemExt};
 
 #[derive(Debug, PartialEq)]
-pub struct ServiceConfig {
+pub struct InstallNodeServiceConfig {
     pub data_dir_path: PathBuf,
     pub genesis: bool,
     pub local: bool,
@@ -36,6 +36,93 @@ pub struct ServiceConfig {
     pub env_variables: Option<Vec<(String, String)>>,
 }
 
+impl InstallNodeServiceConfig {
+    pub fn build_service_install_ctx(self) -> Result<ServiceInstallCtx> {
+        let label: ServiceLabel = self.name.parse()?;
+        let mut args = vec![
+            OsString::from("--rpc"),
+            OsString::from(self.rpc_socket_addr.to_string()),
+            OsString::from("--root-dir"),
+            OsString::from(self.data_dir_path.to_string_lossy().to_string()),
+            OsString::from("--log-output-dest"),
+            OsString::from(self.log_dir_path.to_string_lossy().to_string()),
+        ];
+
+        if self.genesis {
+            args.push(OsString::from("--first"));
+        }
+        if self.local {
+            args.push(OsString::from("--local"));
+        }
+        if let Some(node_port) = self.node_port {
+            args.push(OsString::from("--port"));
+            args.push(OsString::from(node_port.to_string()));
+        }
+
+        if !self.bootstrap_peers.is_empty() {
+            let peers_str = self
+                .bootstrap_peers
+                .iter()
+                .map(|peer| peer.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+            args.push(OsString::from("--peer"));
+            args.push(OsString::from(peers_str));
+        }
+
+        let mut service_ctx = ServiceInstallCtx {
+            label: label.clone(),
+            program: self.safenode_path.to_path_buf(),
+            args,
+            contents: None,
+            username: Some(self.service_user.to_string()),
+            working_directory: None,
+            environment: self.env_variables,
+        };
+        // Temporary fix to enable the restart cmd to properly restart a running service.
+        // 'ServiceInstallCtx::content' will override the other passed in fields.
+        #[cfg(target_os = "linux")]
+        {
+            use std::fmt::Write;
+            let mut service = String::new();
+
+            let _ = writeln!(service, "[Unit]");
+            let _ = writeln!(
+                service,
+                "Description={}",
+                service_ctx.label.to_script_name()
+            );
+            let _ = writeln!(service, "[Service]");
+            let program = service_ctx.program.to_string_lossy();
+            let args = service_ctx
+                .args
+                .clone()
+                .into_iter()
+                .map(|a| a.to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(" ");
+            let _ = writeln!(service, "ExecStart={program} {args}");
+            if let Some(env_vars) = &service_ctx.environment {
+                for (var, val) in env_vars {
+                    let _ = writeln!(service, "Environment=\"{}={}\"", var, val);
+                }
+            }
+            let _ = writeln!(service, "Restart=on-failure");
+            let _ = writeln!(service, "User={}", self.service_user);
+            let _ = writeln!(service, "KillMode=process"); // fixes the restart issue
+            let _ = writeln!(service, "[Install]");
+            let _ = writeln!(service, "WantedBy=multi-user.target");
+
+            service_ctx.contents = Some(service);
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            service_ctx.contents = None;
+        }
+        Ok(service_ctx)
+    }
+}
+
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
 /// easier.
 ///
@@ -47,7 +134,7 @@ pub struct ServiceConfig {
 pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
-    fn install(&self, config: ServiceConfig) -> Result<()>;
+    fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()>;
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
@@ -161,91 +248,9 @@ impl ServiceControl for NodeServiceManager {
         Ok(port)
     }
 
-    fn install(&self, config: ServiceConfig) -> Result<()> {
-        let label: ServiceLabel = config.name.parse()?;
+    fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {
         let manager = <dyn ServiceManager>::native()?;
-        let mut args = vec![
-            OsString::from("--rpc"),
-            OsString::from(config.rpc_socket_addr.to_string()),
-            OsString::from("--root-dir"),
-            OsString::from(config.data_dir_path.to_string_lossy().to_string()),
-            OsString::from("--log-output-dest"),
-            OsString::from(config.log_dir_path.to_string_lossy().to_string()),
-        ];
-
-        if config.genesis {
-            args.push(OsString::from("--first"));
-        }
-        if config.local {
-            args.push(OsString::from("--local"));
-        }
-        if let Some(node_port) = config.node_port {
-            args.push(OsString::from("--port"));
-            args.push(OsString::from(node_port.to_string()));
-        }
-
-        if !config.bootstrap_peers.is_empty() {
-            let peers_str = config
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
-        }
-
-        let mut service_ctx = ServiceInstallCtx {
-            label: label.clone(),
-            program: config.safenode_path.to_path_buf(),
-            args,
-            contents: None,
-            username: Some(config.service_user.to_string()),
-            working_directory: None,
-            environment: config.env_variables,
-        };
-        // Temporary fix to enable the restart cmd to properly restart a running service.
-        // 'ServiceInstallCtx::content' will override the other passed in fields.
-        #[cfg(target_os = "linux")]
-        {
-            use std::fmt::Write;
-            let mut service = String::new();
-
-            let _ = writeln!(service, "[Unit]");
-            let _ = writeln!(
-                service,
-                "Description={}",
-                service_ctx.label.to_script_name()
-            );
-            let _ = writeln!(service, "[Service]");
-            let program = service_ctx.program.to_string_lossy();
-            let args = service_ctx
-                .args
-                .clone()
-                .into_iter()
-                .map(|a| a.to_string_lossy().to_string())
-                .collect::<Vec<String>>()
-                .join(" ");
-            let _ = writeln!(service, "ExecStart={program} {args}");
-            if let Some(env_vars) = &service_ctx.environment {
-                for (var, val) in env_vars {
-                    let _ = writeln!(service, "Environment=\"{}={}\"", var, val);
-                }
-            }
-            let _ = writeln!(service, "Restart=on-failure");
-            let _ = writeln!(service, "User={}", config.service_user);
-            let _ = writeln!(service, "KillMode=process"); // fixes the restart issue
-            let _ = writeln!(service, "[Install]");
-            let _ = writeln!(service, "WantedBy=multi-user.target");
-
-            service_ctx.contents = Some(service);
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            service_ctx.contents = None;
-        }
-
-        manager.install(service_ctx)?;
+        manager.install(install_ctx)?;
         Ok(())
     }
 
