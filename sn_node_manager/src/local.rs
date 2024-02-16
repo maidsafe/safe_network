@@ -181,17 +181,17 @@ pub async fn run_faucet(
 }
 
 pub async fn run_network(
+    options: LocalNetworkOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
-    network_options: LocalNetworkOptions,
 ) -> Result<()> {
     let launcher = LocalSafeLauncher {
-        safenode_bin_path: network_options.safenode_bin_path.to_path_buf(),
-        faucet_bin_path: network_options.faucet_bin_path.to_path_buf(),
+        safenode_bin_path: options.safenode_bin_path.to_path_buf(),
+        faucet_bin_path: options.faucet_bin_path.to_path_buf(),
     };
 
-    let (bootstrap_peers, start) = if network_options.join {
-        if let Some(peers) = network_options.peers {
+    let (bootstrap_peers, start) = if options.join {
+        if let Some(peers) = options.peers {
             (peers, 1)
         } else {
             let peer = node_registry
@@ -212,7 +212,7 @@ pub async fn run_network(
                 version: get_bin_version(&launcher.get_safenode_path())?,
                 number,
                 genesis: true,
-                interval: network_options.interval,
+                interval: options.interval,
                 rpc_socket_addr,
                 bootstrap_peers: vec![],
             },
@@ -225,7 +225,7 @@ pub async fn run_network(
     };
     node_registry.save()?;
 
-    for _ in start..=network_options.node_count {
+    for _ in start..=options.node_count {
         let rpc_port = service_control.get_available_port()?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
@@ -236,7 +236,7 @@ pub async fn run_network(
                 version: get_bin_version(&launcher.get_safenode_path())?,
                 number,
                 genesis: false,
-                interval: network_options.interval,
+                interval: options.interval,
                 rpc_socket_addr,
                 bootstrap_peers: bootstrap_peers.clone(),
             },
@@ -253,13 +253,13 @@ pub async fn run_network(
         node_registry.save()?;
     }
 
-    if !network_options.skip_validation {
+    if !options.skip_validation {
         println!("Waiting for 10 seconds before validating the network...");
         std::thread::sleep(std::time::Duration::from_secs(10));
         validate_network(node_registry, bootstrap_peers.clone()).await?;
     }
 
-    if !network_options.join {
+    if !options.join {
         println!("Launching the faucet server...");
         let faucet_pid = launcher.launch_faucet(&bootstrap_peers[0])?;
         node_registry.faucet_pid = Some(faucet_pid);
