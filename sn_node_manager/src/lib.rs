@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod add_service;
 pub mod config;
-pub mod control;
 pub mod helpers;
 pub mod local;
+pub mod node_control;
 pub mod service;
 
 #[derive(Clone, PartialEq)]
