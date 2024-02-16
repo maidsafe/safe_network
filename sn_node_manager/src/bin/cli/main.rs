@@ -12,11 +12,12 @@ use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
-    add_service::{add, AddServiceOptions},
     config::*,
-    control::{remove, start, status, stop, upgrade, UpgradeOptions, UpgradeResult},
     helpers::download_and_extract_release,
     local::{kill_network, run_faucet, run_network, LocalNetworkOptions},
+    node_control::{
+        add, remove, start, status, stop, upgrade, AddServiceOptions, UpgradeOptions, UpgradeResult,
+    },
     service::{NodeServiceManager, ServiceControl},
     VerbosityLevel,
 };
