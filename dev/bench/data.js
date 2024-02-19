@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708357182892,
+  "lastUpdate": 1708357185861,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37456,6 +37456,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36397,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ca146acd19d38f2bf7a6f18f4ccb89ac582efe86",
+          "message": "docs: rename readme example directories",
+          "timestamp": "2024-02-19T14:50:12Z",
+          "tree_id": "9de05321dd3f479ab8e314b99fa6fbabaf0a281b",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca146acd19d38f2bf7a6f18f4ccb89ac582efe86"
+        },
+        "date": 1708357184699,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6492,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36142,
             "unit": "ms"
           },
           {
