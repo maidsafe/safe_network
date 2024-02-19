@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708342436546,
+  "lastUpdate": 1708344861190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3e1032b3d6bd00dede8cb5c1e6661c92baaa0829",
-          "message": "fix(node): println->debug statement",
-          "timestamp": "2023-10-12T15:27:22+02:00",
-          "tree_id": "45cd00deb647128c77225dabc2b98400096f2867",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e1032b3d6bd00dede8cb5c1e6661c92baaa0829"
-        },
-        "date": 1697118574709,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10224373102647766,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5799423636770338,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 28.151443658649587,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.55752460700373,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5dd7bb310cdcbfa24b3c4174c19a9f098a02c116",
+          "message": "refactor(cli): allow to pass files iterator to chunk-mgr and files-upload tools\n\nAlso allow to use different paths for local wallet dir and chunk-mgr artifacts/cache.",
+          "timestamp": "2024-02-19T13:04:06+01:00",
+          "tree_id": "9ed2329f44ebf61000f6b6d90616653bcc189ff7",
+          "url": "https://github.com/maidsafe/safe_network/commit/5dd7bb310cdcbfa24b3c4174c19a9f098a02c116"
+        },
+        "date": 1708344858205,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2399269834501028,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8136786630467192,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.520621485608864,
             "unit": "MiB/s"
           }
         ]
