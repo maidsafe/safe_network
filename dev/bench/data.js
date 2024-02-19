@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708344861190,
+  "lastUpdate": 1708344965660,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a75d15343a836765fbfab9c260f43e838c6b8933",
-          "message": "chore: more detailed logging when client creating store cash_note",
-          "timestamp": "2023-10-12T09:06:42+02:00",
-          "tree_id": "c5b233bec62c293587fced83553d1d06093aa398",
-          "url": "https://github.com/maidsafe/safe_network/commit/a75d15343a836765fbfab9c260f43e838c6b8933"
-        },
-        "date": 1697095834402,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5dd7bb310cdcbfa24b3c4174c19a9f098a02c116",
+          "message": "refactor(cli): allow to pass files iterator to chunk-mgr and files-upload tools\n\nAlso allow to use different paths for local wallet dir and chunk-mgr artifacts/cache.",
+          "timestamp": "2024-02-19T13:04:06+01:00",
+          "tree_id": "9ed2329f44ebf61000f6b6d90616653bcc189ff7",
+          "url": "https://github.com/maidsafe/safe_network/commit/5dd7bb310cdcbfa24b3c4174c19a9f098a02c116"
+        },
+        "date": 1708344964980,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
