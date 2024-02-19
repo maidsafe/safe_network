@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708344969468,
+  "lastUpdate": 1708348269427,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6b77943f32b2ce910398dfc13dfa757229ea2d37",
-          "message": "chore(client): dont println for sn_networking",
-          "timestamp": "2023-10-12T16:14:22+02:00",
-          "tree_id": "5649aee4f48aec01dc9255655799675ce2d35552",
-          "url": "https://github.com/maidsafe/safe_network/commit/6b77943f32b2ce910398dfc13dfa757229ea2d37"
-        },
-        "date": 1697121371741,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.10092687623747323,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6265218474467161,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 28.371550407260916,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.520621485608864,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fe7c7b442b0779bdb3ac378baa9101144a0cc019",
+          "message": "test(networking): update the replication fetcher tests, now we cleanup failed nodes",
+          "timestamp": "2024-02-19T13:56:09+01:00",
+          "tree_id": "27727eb77e8fd2ff875f70e4085414884fde8ba7",
+          "url": "https://github.com/maidsafe/safe_network/commit/fe7c7b442b0779bdb3ac378baa9101144a0cc019"
+        },
+        "date": 1708348266513,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2561685462880765,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8071330395854717,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.077079778031546,
             "unit": "MiB/s"
           }
         ]
