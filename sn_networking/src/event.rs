@@ -833,6 +833,54 @@ impl SwarmDriver {
                 }
                 self.handle_get_record_error(id, get_record_err, stats, step)?;
             }
+            kad::Event::OutboundQueryProgressed {
+                id,
+                result: QueryResult::PutRecord(Err(put_record_err)),
+                stats,
+                step,
+            } => {
+                // Currently, only `client` calls `put_record_to` to upload data.
+                // The result of such operation is not critical to client in general.
+                // However, if client keeps receiving error responses, it may indicating:
+                //   1, Client itself is with slow connection
+                //   OR
+                //   2, The payee node selected could be in trouble
+                //
+                // TODO: Figure out which payee node the error response is related to,
+                //       and may exclude that node from later on payee selection.
+                let (key, success, quorum) = match &put_record_err {
+                    kad::PutRecordError::QuorumFailed {
+                        key,
+                        success,
+                        quorum,
+                    } => {
+                        event_string = "kad_event::PutRecordError::QuorumFailed";
+                        (key, success, quorum)
+                    }
+                    kad::PutRecordError::Timeout {
+                        key,
+                        success,
+                        quorum,
+                    } => {
+                        event_string = "kad_event::PutRecordError::Timeout";
+                        (key, success, quorum)
+                    }
+                };
+                error!("Query task {id:?} failed put record {:?} {:?}, required quorum {quorum}, stored on {success:?}, {stats:?} - {step:?}",
+                       PrettyPrintRecordKey::from(key), event_string);
+            }
+            kad::Event::OutboundQueryProgressed {
+                id,
+                result: QueryResult::PutRecord(Ok(put_record_ok)),
+                stats,
+                step,
+            } => {
+                event_string = "kad_event::PutRecordOk";
+                trace!(
+                    "Query task {id:?} put record {:?} ok, {stats:?} - {step:?}",
+                    PrettyPrintRecordKey::from(&put_record_ok.key)
+                );
+            }
             // Shall no longer receive this event
             kad::Event::OutboundQueryProgressed {
                 id,

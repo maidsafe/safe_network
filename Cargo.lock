@@ -4870,7 +4870,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -4929,7 +4929,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.70"
+version = "0.89.71"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4968,7 +4968,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.16"
+version = "0.104.17"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5010,7 +5010,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.69"
+version = "0.3.70"
 dependencies = [
  "assert_fs",
  "bitcoin",
@@ -5062,7 +5062,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.21"
+version = "0.13.22"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5098,7 +5098,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.24"
+version = "0.104.25"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5150,7 +5150,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.55"
+version = "0.4.56"
 dependencies = [
  "assert_fs",
  "async-trait",
