@@ -257,9 +257,11 @@ mod tests {
 
         sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
 
-        // all the previous fetches should have failed and fetching next batch
+        // all the previous fetches should have failed and fetching next batch...
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
-        assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
+        // but as we've marked the previous fetches as failed, that node should be entirely removed from the list
+        // leaving us with just _one_ peer left
+        assert_eq!(keys_to_fetch.len(), 1);
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
         assert!(keys_to_fetch.is_empty());
 
