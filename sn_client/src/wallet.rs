@@ -341,7 +341,36 @@ impl WalletClient {
 
     /// Get storecost from the network
     /// Returns the MainPubkey of the node to pay and the price in NanoTokens
-    // TODO: Unused (No usages found in all places)
+    ///
+    /// # Arguments
+    /// - content_addrs - [Iterator]<Items = [`NetworkAddress`]>
+    ///
+    /// # Returns:
+    /// * [WalletResult]<[StoragePaymentResult]>
+    ///
+    /// # Example
+    ///```no_run
+    /// # use sn_client::{Client, WalletClient, Error};
+    /// # use tempfile::TempDir;
+    /// # use bls::SecretKey;
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # use xor_name::XorName;
+    /// use sn_protocol::NetworkAddress;
+    /// use libp2p_identity::PeerId;
+    /// use sn_registers::{Permissions, RegisterAddress};
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let tmp_path = TempDir::new()?.path().to_owned();
+    /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
+    /// # let mut rng = rand::thread_rng();
+    /// # let xor_name = XorName::random(&mut rng);
+    /// let network_address = NetworkAddress::from_peer(PeerId::random());
+    /// let mut wallet_client = WalletClient::new(client, wallet);
+    /// // Use get_store_cost_at_address(network_address) to get a storecost from the network.
+    /// let cost = wallet_client.get_store_cost_at_address(network_address).await?.2.cost.as_nano();
+    /// # Ok(())
+    /// # }
     pub async fn get_store_cost_at_address(
         &self,
         address: NetworkAddress,

@@ -37,6 +37,7 @@ use std::{
 };
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
+use sn_protocol::NetworkAddress;
 
 /// The default folder to download files to.
 const DOWNLOAD_FOLDER: &str = "safe_files";
@@ -55,6 +56,11 @@ pub struct FilesUploadOptions {
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
+    Estimate {
+        /// The location of the file(s) to upload. Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+    },
     Upload {
         /// The location of the file(s) to upload.
         ///
@@ -168,6 +174,7 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
+        FilesCmds::Estimate { path } => estimate_cost(path, client, root_dir).await?,
         FilesCmds::Upload {
             path,
             batch_size,
@@ -259,6 +266,39 @@ pub(crate) async fn files_cmds(
             }
         }
     };
+    Ok(())
+}
+
+/// Estimate the upload cost of a chosen file
+pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
+    let mut chunk_manager = ChunkManager::new(root_dir);
+    chunk_manager.chunk_path(&path, false, false)?;
+
+    let mut estimate: u64 = 0;
+
+    let balance = FilesApi::new(client.clone(), root_dir.to_path_buf()).wallet()?.balance().as_nano();
+
+    for (chunk_address, _location) in chunk_manager.get_chunks() {
+        let (_peer,_cost, quote) = FilesApi::new(client.clone(), root_dir.to_path_buf())
+            .wallet()?
+            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
+                chunk_address,
+            )))
+            .await?;
+
+        let cost_as_nano = quote.cost.as_nano();
+
+        estimate += cost_as_nano;
+    }
+
+    let total = balance - estimate;
+
+    println!("**************************************");
+    println!("Your current balance: {balance}");
+    println!("Transfer cost estimate: {estimate}");
+    println!("Your balance estimate after transfer: {total}");
+    println!("**************************************");
+
     Ok(())
 }
 

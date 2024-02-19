@@ -88,6 +88,11 @@ impl ChunkManager {
     /// Chunk all the files in the provided `files_path`
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account
+    ///
+    /// # Arguments
+    /// * files_path - &[Path]
+    /// * read_cache - Boolean. Set to true to resume the chunks from the artifacts dir.
+    /// * include_data_maps - Boolean. If set to true, will append all the ChunkedFile.data_map chunks
     pub(crate) fn chunk_path(
         &mut self,
         files_path: &Path,
