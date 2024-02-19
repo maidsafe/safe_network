@@ -107,12 +107,14 @@ impl NodeRecordStore {
     ) -> HashMap<Key, (NetworkAddress, RecordType)> {
         let mut records = HashMap::default();
 
+        info!("Attempting to repopulate records from existing store...");
         for entry in WalkDir::new(&config.storage_dir)
             .into_iter()
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
             if path.is_file() {
+                info!("Existing record found: {path:?}");
                 // if we've got a file, lets try and read it
                 if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
                     // get the record key from the filename
@@ -145,6 +147,7 @@ impl NodeRecordStore {
 
                             let address = NetworkAddress::from_record_key(&key);
                             records.insert(key, (address, record_type));
+                            info!("Existing record loaded: {path:?}");
                         }
                     };
                 } else {
