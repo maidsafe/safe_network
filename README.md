@@ -367,21 +367,6 @@ Feel free to clone and modify this project. Pull requests are welcome.<br>You ca
 
 We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
 
-### TroubleShooting
-
-If you get this error message:
-```
-Error: 0: missing field `local` at line 1 column 829
-Location: sn_protocol\src\node_registry.rs:182
-```
-Remove the following file from your safe directory:
-C:\Users\<<<user_directory>>\AppData\Roaming\safe\node_registry.json
-
-And run a clean build with this command:
-```
-cargo run --bin safenode-manager --features local-discovery -- run --build
-```
-
 ## License
 
 This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](http://www.gnu.org/licenses/gpl-3.0.en.html)).
