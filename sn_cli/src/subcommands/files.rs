@@ -264,7 +264,7 @@ pub(crate) async fn files_cmds(
 
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
-pub(crate) async fn upload_files(
+async fn upload_files(
     files_path: PathBuf,
     client: &Client,
     root_dir: PathBuf,

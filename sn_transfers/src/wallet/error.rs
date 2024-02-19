@@ -8,6 +8,7 @@
 
 use std::collections::BTreeSet;
 use thiserror::Error;
+use xor_name::XorName;
 
 use crate::UniquePubkey;
 
@@ -64,8 +65,8 @@ pub enum Error {
     #[error("Failed to decypher transfer with our key, maybe it was not for us")]
     FailedToDecypherTransfer,
     /// No cached payment found for address
-    #[error("No ongoing payment found for address")]
-    NoPaymentForAddress,
+    #[error("No ongoing payment found for address {0:?}")]
+    NoPaymentForAddress(XorName),
 
     /// Transfer error
     #[error("Transfer error: {0}")]

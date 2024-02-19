@@ -171,12 +171,12 @@ impl WalletClient {
                 let payment_details = self
                     .wallet
                     .get_cached_payment_for_xorname(xorname)
-                    .ok_or(WalletError::NoPaymentForAddress)?;
+                    .ok_or(WalletError::NoPaymentForAddress(*xorname))?;
                 let payment = payment_details.to_payment();
                 debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
                 info!("Payment retrieved for {xorname:?} from wallet");
                 let peer_id = PeerId::from_bytes(&payment_details.peer_id_bytes)
-                    .map_err(|_| WalletError::NoPaymentForAddress)?;
+                    .map_err(|_| WalletError::NoPaymentForAddress(*xorname))?;
 
                 Ok((payment, peer_id))
             }

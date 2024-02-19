@@ -30,7 +30,7 @@ pub use self::{
         upload::{FileUploadEvent, FilesUpload},
         FilesApi, BATCH_SIZE,
     },
-    folders::{FolderEntry, FoldersApi},
+    folders::{FolderEntry, FoldersApi, Metadata},
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
