@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.21...sn_networking-v0.13.22) - 2024-02-19
+
+### Other
+- *(client)* handle kad event put_record result
+
 ## [0.13.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.20...sn_networking-v0.13.21) - 2024-02-19
 
 ### Added
