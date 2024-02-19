@@ -18,7 +18,6 @@ pub fn run(
     address: Ipv4Addr,
     port: u16,
     daemon_path: PathBuf,
-    service_user: String,
     service_control: &dyn ServiceControl,
     _verbosity: VerbosityLevel,
 ) -> Result<()> {
@@ -34,7 +33,7 @@ pub fn run(
             OsString::from(address.to_string()),
         ],
         contents: None,
-        username: Some(service_user),
+        username: None,
         working_directory: None,
         environment: None,
     };

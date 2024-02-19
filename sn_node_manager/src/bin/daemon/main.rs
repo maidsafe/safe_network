@@ -120,7 +120,7 @@ mod tests {
     #[tokio::test]
     async fn restart() -> Result<()> {
         let mut rpc_client = get_safenode_manager_rpc_client(SocketAddr::new(
-            std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            std::net::IpAddr::V4(Ipv4Addr::new(178, 62, 82, 4)),
             PORT,
         ))
         .await?;
