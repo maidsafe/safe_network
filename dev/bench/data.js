@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708352647213,
+  "lastUpdate": 1708357076098,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "871b69e9e0972743e0eaea26355c7e6e93ff3b56",
-          "message": "fix(network): check `RecordHeader` during chunk early completion\n- this would prevent deserializing the whole Record every time we\n  encounter a `GetRecord::FoundRecord`",
-          "timestamp": "2023-10-13T20:58:46Z",
-          "tree_id": "89610f3e5c3349df8ad3087c9e4065b730be737e",
-          "url": "https://github.com/maidsafe/safe_network/commit/871b69e9e0972743e0eaea26355c7e6e93ff3b56"
-        },
-        "date": 1697234423807,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.0967534191862072,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5658321609784127,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 17.057573784985827,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.28829762431005,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ca146acd19d38f2bf7a6f18f4ccb89ac582efe86",
+          "message": "docs: rename readme example directories",
+          "timestamp": "2024-02-19T14:50:12Z",
+          "tree_id": "9de05321dd3f479ab8e314b99fa6fbabaf0a281b",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca146acd19d38f2bf7a6f18f4ccb89ac582efe86"
+        },
+        "date": 1708357072530,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.24681765091498,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8279362743717589,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.61244695297191,
             "unit": "MiB/s"
           }
         ]
