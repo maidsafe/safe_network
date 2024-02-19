@@ -404,22 +404,89 @@ async fn create_distribution(
 mod tests {
     use super::*;
 
+    use assert_fs::TempDir;
+    use bitcoin::{
+        secp256k1::{rand, Secp256k1},
+        Address, Network, PublicKey,
+    };
+    use sn_logging::LogBuilder;
+    use sn_transfers::{HotWallet, MainSecretKey, Transfer};
+
+    // This test is to confirm fetching 'MAID snapshop` and `Maid pubkeys` list from website
+    // is working properly and giving consistent and expected result.
+    //
+    // Note: the current list is still growing. The number used is collected on 15th Feb 2024
     #[test]
     fn fetching_from_network() -> Result<()> {
         let snapshot = load_maid_snapshot()?;
         println!("Maid snapshot got {:?} entries", snapshot.len());
-        assert_eq!(snapshot.len(), 16214);
+        assert!(snapshot.len() >= 16214);
 
         let pubkeys = load_maid_pubkeys()?;
         println!("Got {:?} distribution keys", pubkeys.len());
-        assert_eq!(pubkeys.len(), 1227);
+        assert!(pubkeys.len() >= 1227);
 
         let candidates = snapshot
             .iter()
             .filter(|(addr, _amount)| pubkeys.contains_key(*addr))
             .count();
         println!("Got {candidates:?} distribution candidates");
-        assert_eq!(candidates, 1212);
+        assert!(candidates >= 1212);
+
+        Ok(())
+    }
+
+    // This test will simulate a token distribution.
+    #[tokio::test]
+    async fn token_distribute_to_user() -> Result<()> {
+        let _log_guards =
+            LogBuilder::init_single_threaded_tokio_test("token_distribute_to_user test");
+
+        let amount = NanoTokens::from(10);
+
+        let secp = Secp256k1::new();
+        let (secret_key, public_key) = secp.generate_keypair(&mut rand::thread_rng());
+        let bitcoin_address = Address::p2pkh(&PublicKey::new(public_key), Network::Bitcoin);
+
+        let client_token_issuer = Client::quick_start(None).await?;
+
+        let distribution_hex_str = create_distribution(
+            &client_token_issuer,
+            &bitcoin_address.to_string(),
+            &public_key.to_string(),
+            &amount,
+        )
+        .await?;
+
+        let distribution_bytes = hex::decode(distribution_hex_str)?;
+        let distribution: Distribution = rmp_serde::from_slice(&distribution_bytes)?;
+
+        let decrypted: [u8; 32] = ecies::decrypt(
+            &secret_key.secret_bytes(),
+            &distribution.encrypted_secret_key,
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        let dist_sk = bls::SecretKey::from_bytes(decrypted)?;
+
+        let transfer = Transfer::from_hex(&hex::encode(distribution.transfer))?;
+
+        assert!(transfer
+            .cashnote_redemptions(&MainSecretKey::new(dist_sk.clone()))
+            .is_ok());
+
+        let receiver_client =
+            Client::new(bls::SecretKey::random(), None, false, None, None).await?;
+        let tmp_path = TempDir::new()?.path().to_owned();
+        let receiver_wallet =
+            HotWallet::load_from_path(&tmp_path, Some(MainSecretKey::new(dist_sk)))?;
+
+        let mut cash_notes = receiver_client.receive(&transfer, &receiver_wallet).await?;
+        assert_eq!(cash_notes.len(), 1);
+        let cash_note = cash_notes.pop().unwrap();
+
+        assert_eq!(cash_note.value()?, amount);
 
         Ok(())
     }
