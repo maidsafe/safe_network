@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708348373846,
+  "lastUpdate": 1708348375820,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37378,6 +37378,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34911,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fe7c7b442b0779bdb3ac378baa9101144a0cc019",
+          "message": "test(networking): update the replication fetcher tests, now we cleanup failed nodes",
+          "timestamp": "2024-02-19T13:56:09+01:00",
+          "tree_id": "27727eb77e8fd2ff875f70e4085414884fde8ba7",
+          "url": "https://github.com/maidsafe/safe_network/commit/fe7c7b442b0779bdb3ac378baa9101144a0cc019"
+        },
+        "date": 1708348375210,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5992,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35592,
             "unit": "ms"
           },
           {
