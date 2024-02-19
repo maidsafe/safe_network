@@ -6,22 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::helpers::get_bin_version;
-use crate::service::ServiceControl;
-use color_eyre::eyre::OptionExt;
-use color_eyre::{eyre::eyre, Result};
+use crate::{helpers::get_bin_version, service::ServiceControl};
+use color_eyre::{
+    eyre::{eyre, OptionExt},
+    Result,
+};
 use colored::Colorize;
-use libp2p::multiaddr::Protocol;
-use libp2p::{Multiaddr, PeerId};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
 use sn_protocol::node_registry::{Faucet, Node, NodeRegistry, NodeStatus};
 use sn_transfers::get_faucet_data_dir;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::str::FromStr;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    process::{Command, Stdio},
+    str::FromStr,
+};
 use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
 #[cfg_attr(test, automock)]
