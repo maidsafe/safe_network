@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708342433693,
+  "lastUpdate": 1708342435050,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "98cf8288b06efb60d7577e0747a4c21cf5fa7b23",
-          "message": "fix: remove uneeded hideous key Clone trait",
-          "timestamp": "2023-10-12T04:47:44Z",
-          "tree_id": "33ffa078e8d885dedfb04f28df6fe47ede1fbce7",
-          "url": "https://github.com/maidsafe/safe_network/commit/98cf8288b06efb60d7577e0747a4c21cf5fa7b23"
-        },
-        "date": 1697088970768,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 163,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 36,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9de1b840b4dacc1440d933b0c9767f6752c130d5",
+          "message": "test: token_distribution against network",
+          "timestamp": "2024-02-19T12:17:04+01:00",
+          "tree_id": "371767604e4c2b5c8a1f7fe04b29b284c0b3b297",
+          "url": "https://github.com/maidsafe/safe_network/commit/9de1b840b4dacc1440d933b0c9767f6752c130d5"
+        },
+        "date": 1708342434740,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 204,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
