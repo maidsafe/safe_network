@@ -592,6 +592,7 @@ impl NetworkBuilder {
             live_connected_peers: Default::default(),
             handling_statistics: Default::default(),
             handled_times: 0,
+            hard_disk_write_error: 0,
         };
 
         Ok((
@@ -645,6 +646,7 @@ pub struct SwarmDriver {
     // Record the handling time of the recent 10 for each handling kind.
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
+    pub(crate) hard_disk_write_error: usize,
 }
 
 impl SwarmDriver {

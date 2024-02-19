@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.23](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.22...sn_networking-v0.13.23) - 2024-02-19
+
+### Added
+- *(node)* terminate node on too many HDD write errors
+
 ## [0.13.22](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.21...sn_networking-v0.13.22) - 2024-02-19
 
 ### Other

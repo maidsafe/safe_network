@@ -137,6 +137,8 @@ pub enum NetworkEvent {
         /// The raw bytes of the sent message
         msg: Bytes,
     },
+    /// Terminate Node on HDD write erros
+    TerminateNode,
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -174,6 +176,9 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::GossipsubMsgPublished { topic, .. } => {
                 write!(f, "NetworkEvent::GossipsubMsgPublished({topic})")
+            }
+            NetworkEvent::TerminateNode => {
+                write!(f, "NetworkEvent::TerminateNode")
             }
         }
     }

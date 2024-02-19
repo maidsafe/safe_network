@@ -421,6 +421,11 @@ impl Node {
                     events_channel.broadcast(NodeEvent::GossipsubMsg { topic, msg });
                 }
             }
+            NetworkEvent::TerminateNode => {
+                event_header = "TerminateNode";
+                error!("Received termination from swarm_driver due to too many HDD write errors.");
+                self.events_channel.broadcast(NodeEvent::TerminateNode);
+            }
         }
 
         trace!(
