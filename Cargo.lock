@@ -4968,7 +4968,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.15"
+version = "0.104.16"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5062,7 +5062,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.20"
+version = "0.13.21"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5098,7 +5098,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.23"
+version = "0.104.24"
 dependencies = [
  "assert_fs",
  "async-trait",
