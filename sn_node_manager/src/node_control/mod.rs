@@ -10,9 +10,8 @@ mod config;
 #[cfg(test)]
 mod tests;
 
-pub use config::{AddServiceOptions, UpgradeOptions};
+pub use config::{AddServiceOptions, InstallNodeServiceCtxBuilder, UpgradeOptions};
 
-use self::config::InstallNodeServiceCtxBuilder;
 use crate::{config::create_owned_dir, service::ServiceControl, VerbosityLevel};
 use color_eyre::{
     eyre::{eyre, OptionExt},
