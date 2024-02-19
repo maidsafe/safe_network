@@ -493,7 +493,7 @@ async fn main() -> Result<()> {
             }
 
             let service_manager = NodeServiceManager {};
-            daemon_control::run(address, port, path, &service_manager, verbosity)?;
+            daemon_control::run_daemon(address, port, path, &service_manager, verbosity)?;
 
             Ok(())
         }

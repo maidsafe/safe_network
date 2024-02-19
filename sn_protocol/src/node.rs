@@ -6,26 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// Version of protocol buffer used
-syntax = "proto3";
+use crate::error::{Error, Result};
+use libp2p::PeerId;
+use std::path::PathBuf;
 
-// Package name
-package safenode_manager_proto;
+/// Get the default safenode root dir for the provided PeerId
+pub fn get_safenode_root_dir(peer_id: PeerId) -> Result<PathBuf> {
+    let dir = dirs_next::data_dir()
+        .ok_or_else(|| Error::CouldNotObtainDataDir)?
+        .join("safe")
+        .join("node")
+        .join(peer_id.to_string());
 
-message NodeProcessRestartRequest {
-    bytes peer_id = 1;
-    bool preserve_peer_id = 2;
-    uint64 delay_millis = 3;
-    string local_node_registry_path = 4;
+    Ok(dir)
 }
-  
-message NodeProcessRestartResponse {}
-
-message NodeServiceRestartRequest {
-    bytes peer_id = 1;
-    bool preserve_peer_id = 2;
-    uint64 delay_millis = 3;
-}
-  
-message NodeServiceRestartResponse {}
-  
