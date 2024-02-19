@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708357076098,
+  "lastUpdate": 1708357180029,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "3e1032b3d6bd00dede8cb5c1e6661c92baaa0829",
-          "message": "fix(node): println->debug statement",
-          "timestamp": "2023-10-12T15:27:22+02:00",
-          "tree_id": "45cd00deb647128c77225dabc2b98400096f2867",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e1032b3d6bd00dede8cb5c1e6661c92baaa0829"
-        },
-        "date": 1697118826626,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "6b77943f32b2ce910398dfc13dfa757229ea2d37",
           "message": "chore(client): dont println for sn_networking",
           "timestamp": "2023-10-12T16:14:22+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ca146acd19d38f2bf7a6f18f4ccb89ac582efe86",
+          "message": "docs: rename readme example directories",
+          "timestamp": "2024-02-19T14:50:12Z",
+          "tree_id": "9de05321dd3f479ab8e314b99fa6fbabaf0a281b",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca146acd19d38f2bf7a6f18f4ccb89ac582efe86"
+        },
+        "date": 1708357178644,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
