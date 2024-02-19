@@ -4968,7 +4968,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.17"
+version = "0.104.18"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5062,7 +5062,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.22"
+version = "0.13.23"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5098,7 +5098,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.25"
+version = "0.104.26"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5150,7 +5150,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.56"
+version = "0.4.57"
 dependencies = [
  "assert_fs",
  "async-trait",
