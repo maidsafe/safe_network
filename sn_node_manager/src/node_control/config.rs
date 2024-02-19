@@ -17,7 +17,7 @@ use std::{
 };
 
 #[derive(Debug, PartialEq)]
-pub(super) struct InstallNodeServiceCtxBuilder {
+pub struct InstallNodeServiceCtxBuilder {
     pub data_dir_path: PathBuf,
     pub genesis: bool,
     pub local: bool,

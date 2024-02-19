@@ -11,12 +11,19 @@ extern crate tracing;
 
 use clap::Parser;
 use color_eyre::{self, eyre::Result};
-use sn_protocol::safenode_manager_proto::{
-    safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
-    RestartRequest, RestartResponse,
+use sn_node_manager::{
+    config::get_node_registry_path, daemon_control, service::NodeServiceManager,
+};
+use sn_node_rpc_client::RpcClient;
+use sn_protocol::{
+    node_registry::NodeRegistry,
+    safenode_manager_proto::{
+        safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
+        RestartRequest, RestartResponse,
+    },
 };
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{transport::Server, Code, Request, Response, Status};
 
 const PORT: u16 = 12500;
 
@@ -43,20 +50,41 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
         request: Request<RestartRequest>,
     ) -> Result<Response<RestartResponse>, Status> {
         println!("RPC request received {:?}", request.get_ref());
+        info!("RPC request received {:?}", request.get_ref());
 
-        // let delay = Duration::from_millis(request.get_ref().delay_millis);
-        // match self.ctrl_tx.send(NodeCtrl::Restart(delay)).await {
-        //     Ok(()) => Ok(Response::new(RestartResponse {})),
-        //     Err(err) => Err(Status::new(
-        //         Code::Internal,
-        //         format!("Failed to restart the node: {err}"),
-        //     )),
-        // }
+        Self::restart_handler().await.map_err(|err| {
+            Status::new(Code::Internal, format!("Failed to restart the node: {err}"))
+        })?;
+
         Ok(Response::new(RestartResponse {}))
     }
 }
 
-#[tokio::main]
+impl SafeNodeManagerDaemon {
+    async fn restart_handler() -> Result<()> {
+        let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+
+        let node = &mut node_registry.nodes[0];
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+
+        daemon_control::restart_safenode(
+            node,
+            &rpc_client,
+            node_registry.bootstrap_peers,
+            node_registry.environment_variables,
+            &NodeServiceManager {},
+        )
+        .await?;
+
+        Ok(())
+    }
+}
+
+// The SafeNodeManager trait returns `Status` as its error. So the actual logic is here and we can easily map the errors
+// into Status inside the trait fns.
+impl SafeNodeManagerDaemon {}
+
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     println!("Starting safenode-manager-daemon");
     let args = Args::parse();
