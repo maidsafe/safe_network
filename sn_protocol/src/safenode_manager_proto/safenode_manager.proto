@@ -18,7 +18,9 @@ package safenode_manager_proto;
 import "req_resp_types.proto";
 
 service SafeNodeManager {
-  // Restart the node
-  rpc Restart (RestartRequest) returns (RestartResponse);
+  // Restart a running safenode process
+  rpc RestartNodeProcess (NodeProcessRestartRequest) returns (NodeProcessRestartResponse);
 
+  // Restart a running safenode service
+  rpc RestartNodeService (NodeServiceRestartRequest) returns (NodeServiceRestartResponse);
 }
