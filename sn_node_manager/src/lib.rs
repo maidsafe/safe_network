@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub mod config;
+pub mod daemon_control;
 pub mod faucet_control;
 pub mod helpers;
 pub mod local;

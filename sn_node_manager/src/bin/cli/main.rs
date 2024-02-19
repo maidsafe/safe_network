@@ -13,6 +13,7 @@ use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
     config::*,
+    daemon_control,
     faucet_control::{add_faucet, start_faucet, stop_faucet, AddFaucetServiceOptions},
     helpers::download_and_extract_release,
     local::{kill_network, run_network, LocalNetworkOptions},
@@ -124,6 +125,29 @@ pub enum SubCmd {
         /// The version of safenode
         #[clap(long)]
         version: Option<String>,
+    },
+    /// Start the safenode manager as a long running daemon
+    ///
+    /// This allows you to interact with the safenode manager through a RPC
+    Daemon {
+        /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
+        ///
+        /// If not set, the daemon listens locally for commands.
+        #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
+        address: Ipv4Addr,
+        /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+        #[clap(long, default_value_t = 12500)]
+        port: u16,
+        /// The user the service should run as.
+        ///
+        /// If the account does not exist, it will be created.
+        ///
+        /// On Windows this argument will have no effect.
+        #[clap(long)]
+        user: Option<String>,
+        /// temp path
+        #[clap(long)]
+        path: PathBuf,
     },
     #[clap(subcommand)]
     Faucet(FaucetSubCmd),
@@ -457,6 +481,37 @@ async fn main() -> Result<()> {
             add(options, &mut node_registry, &service_manager, verbosity).await?;
 
             node_registry.save()?;
+
+            Ok(())
+        }
+        SubCmd::Daemon {
+            address,
+            port,
+            user,
+            path,
+        } => {
+            if !is_running_as_root() {
+                return Err(eyre!("The add command must run as the root user"));
+            }
+
+            if verbosity != VerbosityLevel::Minimal {
+                println!("=================================================");
+                println!("              Running Daemon                     ");
+                println!("=================================================");
+            }
+
+            let service_user = user.unwrap_or("safe".to_string());
+            let service_manager = NodeServiceManager {};
+            service_manager.create_service_user(&service_user)?;
+
+            daemon_control::run(
+                address,
+                port,
+                path,
+                service_user,
+                &service_manager,
+                verbosity,
+            )?;
 
             Ok(())
         }
