@@ -114,6 +114,7 @@ impl RegisterCrdt {
     }
 
     /// Access the underlying MerkleReg (e.g. for access to history)
+    /// NOTE: This API is unstable and may be removed in the future
     pub(crate) fn merkle_reg(&self) -> &MerkleReg<Entry> {
         &self.data
     }
