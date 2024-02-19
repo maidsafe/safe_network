@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708348269427,
+  "lastUpdate": 1708348372103,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a0e374084c646318f7478ddcfcfad851492c6916",
-          "message": "feat(sn_transfers): dont load Cns from disk, store value along w/ pubkey in wallet\n\nBREAKING CHANGE: updates wallet file to also store value of CN in payment map",
-          "timestamp": "2023-10-12T10:24:45+02:00",
-          "tree_id": "1b9a3d13ad9fdbe8a98528488c05203e61ebd99c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a0e374084c646318f7478ddcfcfad851492c6916"
-        },
-        "date": 1697100656931,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fe7c7b442b0779bdb3ac378baa9101144a0cc019",
+          "message": "test(networking): update the replication fetcher tests, now we cleanup failed nodes",
+          "timestamp": "2024-02-19T13:56:09+01:00",
+          "tree_id": "27727eb77e8fd2ff875f70e4085414884fde8ba7",
+          "url": "https://github.com/maidsafe/safe_network/commit/fe7c7b442b0779bdb3ac378baa9101144a0cc019"
+        },
+        "date": 1708348371559,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
