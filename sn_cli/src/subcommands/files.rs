@@ -24,6 +24,7 @@ use sn_client::{
     FilesUpload, BATCH_SIZE,
 };
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
+use sn_protocol::NetworkAddress;
 use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
@@ -37,7 +38,6 @@ use std::{
 };
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
-use sn_protocol::NetworkAddress;
 
 /// The default folder to download files to.
 const DOWNLOAD_FOLDER: &str = "safe_files";
@@ -276,10 +276,13 @@ pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Pat
 
     let mut estimate: u64 = 0;
 
-    let balance = FilesApi::new(client.clone(), root_dir.to_path_buf()).wallet()?.balance().as_nano();
+    let balance = FilesApi::new(client.clone(), root_dir.to_path_buf())
+        .wallet()?
+        .balance()
+        .as_nano();
 
     for (chunk_address, _location) in chunk_manager.get_chunks() {
-        let (_peer,_cost, quote) = FilesApi::new(client.clone(), root_dir.to_path_buf())
+        let (_peer, _cost, quote) = FilesApi::new(client.clone(), root_dir.to_path_buf())
             .wallet()?
             .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
                 chunk_address,
