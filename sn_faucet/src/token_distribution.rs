@@ -408,7 +408,7 @@ mod tests {
     fn fetching_from_network() -> Result<()> {
         let snapshot = load_maid_snapshot()?;
         println!("Maid snapshot got {:?} entries", snapshot.len());
-        assert_eq!(snapshot.len(), 16214);
+        assert_eq!(snapshot.len(), 16215);
 
         let pubkeys = load_maid_pubkeys()?;
         println!("Got {:?} distribution keys", pubkeys.len());
