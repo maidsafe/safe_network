@@ -82,6 +82,8 @@ pub enum NodeEvent {
         /// The cashnote redemptions of the transfers
         cashnote_redemptions: Vec<CashNoteRedemption>,
     },
+    /// Terminates the node
+    TerminateNode,
 }
 
 impl NodeEvent {

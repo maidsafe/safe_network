@@ -33,6 +33,8 @@ use xor_name::XorName;
 
 use crate::target_arch::Instant;
 
+const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
+
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
 pub enum SwarmCmd {
@@ -479,11 +481,19 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .mark_as_stored(key, record_type);
+                // Reset counter on any success HDD write.
+                self.hard_disk_write_error = 0;
             }
             SwarmCmd::RemoveFailedLocalRecord { key } => {
                 info!("Removing Record locally, for {key:?}");
                 cmd_string = "RemoveFailedLocalRecord";
-                self.swarm.behaviour_mut().kademlia.store_mut().remove(&key)
+                self.swarm.behaviour_mut().kademlia.store_mut().remove(&key);
+                self.hard_disk_write_error = self.hard_disk_write_error.saturating_add(1);
+                // When there is certain amount of continuous HDD write error,
+                // the hard disk is considered as full, and the node shall be terminated.
+                if self.hard_disk_write_error > MAX_CONTINUOUS_HDD_WRITE_ERROR {
+                    self.send_event(NetworkEvent::TerminateNode);
+                }
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
                 cmd_string = "RecordStoreHasKey";

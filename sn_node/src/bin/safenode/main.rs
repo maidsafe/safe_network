@@ -321,6 +321,20 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         break;
                     }
                 }
+                Ok(NodeEvent::TerminateNode) => {
+                    if let Err(err) = ctrl_tx
+                        .send(NodeCtrl::Stop {
+                            delay: Duration::from_secs(1),
+                            cause: eyre!("Node terminated due to termination command !"),
+                        })
+                        .await
+                    {
+                        error!(
+                            "Failed to send node control msg to safenode bin main thread: {err}"
+                        );
+                        break;
+                    }
+                }
                 Ok(event) => {
                     /* we ignore other events */
                     trace!("Currently ignored node event {event:?}");
