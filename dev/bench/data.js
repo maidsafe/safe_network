@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708352543076,
+  "lastUpdate": 1708352642650,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c71050f56c4fb6320e78a21ccf10e0782405d5f6",
-          "message": "chore: remove some low level println",
-          "timestamp": "2023-10-12T14:36:57+02:00",
-          "tree_id": "96d966dba76c688dc771b1b260d1ea927a3fc9a0",
-          "url": "https://github.com/maidsafe/safe_network/commit/c71050f56c4fb6320e78a21ccf10e0782405d5f6"
-        },
-        "date": 1697115675451,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "96c25f5c8eaf929d6b3189e0054b1b4ddaff702e",
+          "message": "chore(client): handle kad event put_record result",
+          "timestamp": "2024-02-19T13:14:26Z",
+          "tree_id": "f4553b276ea98aa5d1e7c8aebb5503365b76f2f9",
+          "url": "https://github.com/maidsafe/safe_network/commit/96c25f5c8eaf929d6b3189e0054b1b4ddaff702e"
+        },
+        "date": 1708352641773,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
