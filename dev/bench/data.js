@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708344967508,
+  "lastUpdate": 1708344969468,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37339,6 +37339,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33383,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5dd7bb310cdcbfa24b3c4174c19a9f098a02c116",
+          "message": "refactor(cli): allow to pass files iterator to chunk-mgr and files-upload tools\n\nAlso allow to use different paths for local wallet dir and chunk-mgr artifacts/cache.",
+          "timestamp": "2024-02-19T13:04:06+01:00",
+          "tree_id": "9ed2329f44ebf61000f6b6d90616653bcc189ff7",
+          "url": "https://github.com/maidsafe/safe_network/commit/5dd7bb310cdcbfa24b3c4174c19a9f098a02c116"
+        },
+        "date": 1708344968906,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5869,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34911,
             "unit": "ms"
           },
           {
