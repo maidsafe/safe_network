@@ -6,9 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{service::ServiceControl, VerbosityLevel};
+use crate::{node_control, service::ServiceControl, VerbosityLevel};
 use color_eyre::Result;
+use libp2p::Multiaddr;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
+use sn_node_rpc_client::RpcActions;
+use sn_protocol::node_registry::Node;
 use std::{ffi::OsString, net::Ipv4Addr, path::PathBuf};
 
 pub fn run(
@@ -38,5 +41,35 @@ pub fn run(
     service_control.install(install_ctx)?;
     service_control.start(&service_name.to_string())?;
 
+    Ok(())
+}
+
+pub async fn restart_safenode(
+    node: &mut Node,
+    rpc_client: &dyn RpcActions,
+    bootstrap_peers: Vec<Multiaddr>,
+    env_variables: Option<Vec<(String, String)>>,
+    service_control: &dyn ServiceControl,
+) -> Result<()> {
+    node_control::stop(node, service_control).await?;
+
+    service_control.uninstall(&node.service_name.clone())?;
+    let install_ctx = node_control::InstallNodeServiceCtxBuilder {
+        local: node.local,
+        data_dir_path: node.data_dir_path.clone(),
+        genesis: node.genesis,
+        name: node.service_name.clone(),
+        node_port: node.get_safenode_port(),
+        bootstrap_peers,
+        rpc_socket_addr: node.rpc_socket_addr,
+        log_dir_path: node.log_dir_path.clone(),
+        safenode_path: node.safenode_path.clone(),
+        service_user: node.user.clone(),
+        env_variables,
+    }
+    .build()?;
+    service_control.install(install_ctx)?;
+
+    node_control::start(node, service_control, rpc_client, VerbosityLevel::Normal).await?;
     Ok(())
 }
