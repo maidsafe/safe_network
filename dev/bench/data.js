@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708359285143,
+  "lastUpdate": 1708359286938,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6b77943f32b2ce910398dfc13dfa757229ea2d37",
-          "message": "chore(client): dont println for sn_networking",
-          "timestamp": "2023-10-12T16:14:22+02:00",
-          "tree_id": "5649aee4f48aec01dc9255655799675ce2d35552",
-          "url": "https://github.com/maidsafe/safe_network/commit/6b77943f32b2ce910398dfc13dfa757229ea2d37"
-        },
-        "date": 1697121623332,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 162,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6b73b44311271a295d7bd12b5952d49839082ffb",
+          "message": "feat(node): terminate node on too many HDD write errors",
+          "timestamp": "2024-02-19T15:17:00Z",
+          "tree_id": "2fed9c6e254c18262ab13ab9e79d26bc0817753a",
+          "url": "https://github.com/maidsafe/safe_network/commit/6b73b44311271a295d7bd12b5952d49839082ffb"
+        },
+        "date": 1708359286344,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
