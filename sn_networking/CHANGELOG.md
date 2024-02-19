@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.21](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.20...sn_networking-v0.13.21) - 2024-02-19
+
+### Added
+- *(networking)* remove all pending replication from failed nodes
+
+### Other
+- *(networking)* update the replication fetcher tests, now we cleanup failed nodes
+
 ## [0.13.20](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.19...sn_networking-v0.13.20) - 2024-02-15
 
 ### Other

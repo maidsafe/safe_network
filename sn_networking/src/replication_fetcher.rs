@@ -13,7 +13,7 @@ use libp2p::{
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use tokio::time::Duration;
 
 // Max parallel fetches that can be undertaken at the same time.
@@ -21,7 +21,7 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(30);
+const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
 // The time at which the key was sent to be fetched from the peer.
 type ReplicationRequestSentTime = Instant;
@@ -85,12 +85,12 @@ impl ReplicationFetcher {
     // Target must not be under-fetching
     // and no more than MAX_PARALLEL_FETCH fetches to be undertaken at the same time.
     pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<(PeerId, RecordKey)> {
-        self.prune_expired_keys();
+        self.prune_expired_keys_and_slow_nodes();
 
         info!("Next to fetch....");
 
         if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
-            warn!("Replication Fetcher doesn't have free capacity. Currently has {} entries in queue.",
+            warn!("Replication Fetcher doesn't have free fetch capacity. Currently has {} entries in queue.",
                 self.to_be_fetched.len());
             return vec![];
         }
@@ -155,7 +155,10 @@ impl ReplicationFetcher {
 
     // Just remove outdated entries, which indicates a failure to fetch from network.
     // Leave it to to the next round of replication if triggered again.
-    fn prune_expired_keys(&mut self) {
+    // Also remove the corresponding node from to_be_fetched.
+    // And triggers the upper layers to potentially remove that failing node from the routing table.
+    fn prune_expired_keys_and_slow_nodes(&mut self) {
+        let mut failed_holders = BTreeSet::default();
         self.to_be_fetched.retain(|(key, t, holder), is_fetching| {
             let is_expired = if let Some(requested_time) = is_fetching {
                 if Instant::now() > *requested_time + FETCH_TIMEOUT {
@@ -164,6 +167,7 @@ impl ReplicationFetcher {
                         "Prune record {:?} at {holder:?} from the replication_fetcher due to timeout.",
                         PrettyPrintRecordKey::from(key)
                     );
+                    failed_holders.insert(*holder);
                     true
                 } else {
                     false
@@ -171,8 +175,16 @@ impl ReplicationFetcher {
             } else {
                 false
             };
-            is_fetching.is_none() || !is_expired
+
+            // if  the fetching is not expired we keep the entry
+             is_fetching.is_none() || !is_expired
         });
+
+        // now we ensure we clear our any/all failed nodes from our lists.
+        self.to_be_fetched
+            .retain(|(_, _, holder), _| !failed_holders.contains(holder))
+
+        // now we remove all failed holders
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
@@ -245,9 +257,11 @@ mod tests {
 
         sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
 
-        // all the previous fetches should have failed and fetching next batch
+        // all the previous fetches should have failed and fetching next batch...
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
-        assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
+        // but as we've marked the previous fetches as failed, that node should be entirely removed from the list
+        // leaving us with just _one_ peer left
+        assert_eq!(keys_to_fetch.len(), 1);
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
         assert!(keys_to_fetch.is_empty());
 

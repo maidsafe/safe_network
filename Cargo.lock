@@ -4642,6 +4642,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f622567e3b4b38154fb8190bcf6b160d7a4301d70595a49195b48c116007a27"
 dependencies = [
  "bitcoin_hashes",
+ "rand",
  "secp256k1-sys",
 ]
 
@@ -4928,7 +4929,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.69"
+version = "0.89.70"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4967,7 +4968,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.15"
+version = "0.104.16"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5009,8 +5010,9 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.68"
+version = "0.3.69"
 dependencies = [
+ "assert_fs",
  "bitcoin",
  "blsttc",
  "clap 4.4.18",
@@ -5060,7 +5062,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.20"
+version = "0.13.21"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5096,7 +5098,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.23"
+version = "0.104.24"
 dependencies = [
  "assert_fs",
  "async-trait",

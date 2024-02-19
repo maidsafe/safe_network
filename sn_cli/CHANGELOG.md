@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.70](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.69...sn_cli-v0.89.70) - 2024-02-19
+
+### Other
+- *(cli)* allow to pass files iterator to chunk-mgr and files-upload tools
+
 ## [0.89.69](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.68...sn_cli-v0.89.69) - 2024-02-15
 
 ### Added

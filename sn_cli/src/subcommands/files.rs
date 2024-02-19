@@ -35,7 +35,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 /// The default folder to download files to.
@@ -43,6 +43,15 @@ const DOWNLOAD_FOLDER: &str = "safe_files";
 
 /// Subdir for storing uploaded file into
 pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
+
+/// Options to configure different aspects of the logic to upload files
+#[derive(Clone)]
+pub struct FilesUploadOptions {
+    pub make_data_public: bool,
+    pub verify_store: bool,
+    pub batch_size: usize,
+    pub retry_strategy: RetryStrategy,
+}
 
 #[derive(Parser, Debug)]
 pub enum FilesCmds {
@@ -58,7 +67,7 @@ pub enum FilesCmds {
         batch_size: usize,
         /// Should the file be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
-        make_public: bool,
+        make_data_public: bool,
         /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
         ///
         /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
@@ -163,16 +172,18 @@ pub(crate) async fn files_cmds(
             path,
             batch_size,
             retry_strategy,
-            make_public,
+            make_data_public,
         } => {
             upload_files(
                 path,
-                make_public,
                 client,
                 root_dir.to_path_buf(),
-                verify_store,
-                batch_size,
-                retry_strategy,
+                FilesUploadOptions {
+                    make_data_public,
+                    verify_store,
+                    batch_size,
+                    retry_strategy,
+                },
             )
             .await?
         }
@@ -255,27 +266,51 @@ pub(crate) async fn files_cmds(
 /// verify if the data was stored successfully.
 pub(crate) async fn upload_files(
     files_path: PathBuf,
-    make_data_public: bool,
     client: &Client,
     root_dir: PathBuf,
-    verify_store: bool,
-    batch_size: usize,
-    retry_strategy: RetryStrategy,
+    options: FilesUploadOptions,
 ) -> Result<()> {
+    upload_files_with_iter(
+        WalkDir::new(&files_path).into_iter().flatten(),
+        files_path,
+        client,
+        root_dir.clone(),
+        root_dir,
+        options,
+    )
+    .await
+}
+
+/// Given an iterator over files, upload them. Optionally
+/// verify if the data was stored successfully.
+pub(crate) async fn upload_files_with_iter(
+    entries_iter: impl Iterator<Item = DirEntry>,
+    files_path: PathBuf,
+    client: &Client,
+    wallet_dir: PathBuf,
+    root_dir: PathBuf,
+    options: FilesUploadOptions,
+) -> Result<()> {
+    let FilesUploadOptions {
+        make_data_public,
+        verify_store,
+        batch_size,
+        retry_strategy,
+    } = options;
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
     if make_data_public {
         info!("{files_path:?} will be made public and linkable");
         println!("{files_path:?} will be made public and linkable");
     }
 
-    let files_api: FilesApi = FilesApi::new(client.clone(), root_dir.to_path_buf());
+    let files_api: FilesApi = FilesApi::new(client.clone(), wallet_dir);
     if files_api.wallet()?.balance().is_zero() {
         bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
     }
 
     let mut chunk_manager = ChunkManager::new(&root_dir);
     println!("Starting to chunk {files_path:?} now.");
-    chunk_manager.chunk_path(&files_path, true, make_data_public)?;
+    chunk_manager.chunk_with_iter(entries_iter, true, make_data_public)?;
 
     // Return early if we already uploaded them
     let mut chunks_to_upload = if chunk_manager.is_chunks_empty() {
