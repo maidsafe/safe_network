@@ -24,7 +24,7 @@ use sysinfo::{Pid, ProcessExt, System, SystemExt};
 /// would result in real services on the machines we are testing on; that can leave a bit of a mess
 /// to clean up, especially if the tests fail.
 #[cfg_attr(test, automock)]
-pub trait ServiceControl {
+pub trait ServiceControl: Sync {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()>;

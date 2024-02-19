@@ -36,7 +36,7 @@ pub struct RecordAddress {
 }
 
 #[async_trait]
-pub trait RpcActions {
+pub trait RpcActions: Sync {
     async fn node_info(&self) -> Result<NodeInfo>;
     async fn network_info(&self) -> Result<NetworkInfo>;
     async fn record_addresses(&self) -> Result<Vec<RecordAddress>>;
