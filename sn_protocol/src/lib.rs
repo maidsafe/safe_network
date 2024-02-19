@@ -13,6 +13,8 @@ extern crate tracing;
 pub mod error;
 /// Messages types
 pub mod messages;
+/// Helpers for safenode
+pub mod node;
 /// Data structures for node management.
 pub mod node_registry;
 /// RPC commands to node

@@ -24,6 +24,8 @@ pub enum Error {
     CouldNotObtainPortFromMultiAddr,
     #[error("Could not parse RetryStrategy")]
     ParseRetryStrategyError,
+    #[error("Could not obtain data dir")]
+    CouldNotObtainDataDir,
 
     // ---------- Chunk Proof errors
     #[error("Chunk does not exist {0:?}")]
