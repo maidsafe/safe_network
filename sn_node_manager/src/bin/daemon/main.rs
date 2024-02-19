@@ -9,13 +9,29 @@
 #[macro_use]
 extern crate tracing;
 
+use clap::Parser;
 use color_eyre::{self, eyre::Result};
 use sn_protocol::safenode_manager_proto::{
     safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
     RestartRequest, RestartResponse,
 };
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Request, Response, Status};
+
+const PORT: u16 = 12500;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+    #[clap(long, default_value_t = PORT)]
+    port: u16,
+    /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
+    ///
+    /// If not set, the daemon listens locally for commands.
+    #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
+    address: Ipv4Addr,
+}
 
 struct SafeNodeManagerDaemon {}
 
@@ -42,15 +58,14 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    println!("Starting safenode-manager-daemon");
+    let args = Args::parse();
     let service = SafeNodeManagerDaemon {};
 
     // adding our service to our server.
     if let Err(err) = Server::builder()
         .add_service(SafeNodeManagerServer::new(service))
-        .serve(SocketAddr::new(
-            std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-            12989,
-        ))
+        .serve(SocketAddr::new(IpAddr::V4(args.address), args.port))
         .await
     {
         error!("Safenode Manager Daemon failed to start: {err:?}");
@@ -63,6 +78,7 @@ async fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use crate::PORT;
     use color_eyre::eyre::{bail, Result};
     use sn_protocol::safenode_manager_proto::{
         safe_node_manager_client::SafeNodeManagerClient, RestartRequest,
@@ -77,7 +93,7 @@ mod tests {
     async fn restart() -> Result<()> {
         let mut rpc_client = get_safenode_manager_rpc_client(SocketAddr::new(
             std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-            12989,
+            PORT,
         ))
         .await?;
 
