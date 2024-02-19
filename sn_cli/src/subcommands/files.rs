@@ -60,6 +60,9 @@ pub enum FilesCmds {
         /// The location of the file(s) to upload. Can be a file or a directory.
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
+        /// Should the file be made accessible to all. (This is irreversible)
+        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
+        make_data_public: bool,
     },
     Upload {
         /// The location of the file(s) to upload.
@@ -174,7 +177,10 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
-        FilesCmds::Estimate { path } => estimate_cost(path, client, root_dir).await?,
+        FilesCmds::Estimate {
+            path,
+            make_data_public,
+        } => estimate_cost(path, make_data_public, client, root_dir).await?,
         FilesCmds::Upload {
             path,
             batch_size,
@@ -270,9 +276,15 @@ pub(crate) async fn files_cmds(
 }
 
 /// Estimate the upload cost of a chosen file
-pub(crate) async fn estimate_cost(path: PathBuf, client: &Client, root_dir: &Path) -> Result<()> {
+pub(crate) async fn estimate_cost(
+    path: PathBuf,
+    make_data_public: bool,
+    client: &Client,
+    root_dir: &Path,
+) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, false, false)?;
+
+    chunk_manager.chunk_path(&path, false, make_data_public)?;
 
     let mut estimate: u64 = 0;
 
