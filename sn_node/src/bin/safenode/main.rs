@@ -19,7 +19,7 @@ use sn_logging::metrics::init_metrics;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_protocol::node_rpc::NodeCtrl;
+use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
 use std::{
     env,
     io::Write,
@@ -364,7 +364,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
     let output_dest = match &opt.log_output_dest {
         LogOutputDestArg::Stdout => LogOutputDest::Stdout,
         LogOutputDestArg::DataDir => {
-            let path = get_root_dir(peer_id)?.join("logs");
+            let path = get_safenode_root_dir(peer_id)?.join("logs");
             LogOutputDest::Path(path)
         }
         LogOutputDestArg::Path(path) => LogOutputDest::Path(path.clone()),
@@ -451,16 +451,6 @@ fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
     Ok(keypair)
 }
 
-fn get_root_dir(peer_id: PeerId) -> Result<PathBuf> {
-    let dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain root directory path".to_string()))?
-        .join("safe")
-        .join("node")
-        .join(peer_id.to_string());
-
-    Ok(dir)
-}
-
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,
 /// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
 fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
@@ -477,7 +467,7 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
                 libp2p::identity::ed25519::Keypair::from(secret_key.clone()).into();
             let peer_id = keypair.public().to_peer_id();
 
-            let dir = get_root_dir(peer_id)?;
+            let dir = get_safenode_root_dir(peer_id)?;
             std::fs::create_dir_all(&dir)?;
 
             let secret_key_path = dir.join("secret-key");
