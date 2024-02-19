@@ -58,6 +58,12 @@ impl FoldersApi {
         Self::create(client, wallet_dir, register)
     }
 
+    /// Create FoldersApi instance with a provided XorName.
+    pub fn with_xorname(client: Client, wallet_dir: &Path, xorname: XorName) -> Result<Self> {
+        let register = ClientRegister::create(client.clone(), xorname);
+        Self::create(client, wallet_dir, register)
+    }
+
     /// Return the address of the Folder (Register address) on the network
     pub fn address(&self) -> &RegisterAddress {
         self.register.address()

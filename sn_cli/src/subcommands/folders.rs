@@ -59,6 +59,12 @@ pub enum FoldersCmds {
         #[clap(long, default_value_t = RetryStrategy::Quick, short = 'r', help = "Sets the retry strategy on download failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
         retry_strategy: RetryStrategy,
     },
+    /// Report any differences found in local files/folders in comparison with their versions stored on the network.
+    Status {
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+    },
 }
 
 pub(crate) async fn folders_cmds(
@@ -118,6 +124,11 @@ pub(crate) async fn folders_cmds(
                     retry_strategy,
                 )
                 .await?;
+        }
+        FoldersCmds::Status { path } => {
+            let mut acc_packet = AccountPacket::new(client.clone(), root_dir, &path)?;
+
+            acc_packet.status()?;
         }
     }
     Ok(())
