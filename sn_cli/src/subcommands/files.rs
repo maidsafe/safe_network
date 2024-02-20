@@ -25,7 +25,7 @@ use sn_client::{
 };
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_protocol::NetworkAddress;
-use sn_transfers::{Error as TransfersError, WalletError};
+use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::{
     collections::BTreeSet,
     ffi::OsString,
@@ -315,9 +315,9 @@ pub(crate) async fn estimate_cost(
     let total = balance - estimate;
 
     println!("**************************************");
-    println!("Your current balance: {balance}");
-    println!("Transfer cost estimate: {estimate}");
-    println!("Your balance estimate after transfer: {total}");
+    println!("Your current balance: {}", NanoTokens::from(balance));
+    println!("Transfer cost estimate: {}", NanoTokens::from(estimate));
+    println!("Your balance estimate after transfer: {}", NanoTokens::from(total));
     println!("**************************************");
 
     Ok(())
