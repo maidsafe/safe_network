@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_node_rpc_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.4.61"
+version = "0.4.62"
 
 [[bin]]
 path="src/main.rs"
