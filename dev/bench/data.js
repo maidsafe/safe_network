@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708424327046,
+  "lastUpdate": 1708424329573,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "aacb62f0ecb6c23ae3341a1589109cf430555784",
-          "message": "fix(network): perfrom bootstrapping continuously to make it well connected",
-          "timestamp": "2023-10-16T08:50:45Z",
-          "tree_id": "0369b4eb1c4ed8b4cac383b3fa709c4d37c47b08",
-          "url": "https://github.com/maidsafe/safe_network/commit/aacb62f0ecb6c23ae3341a1589109cf430555784"
-        },
-        "date": 1697450169115,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 152,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 204,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "90990b74fbbe7ec5315929624c11a09c4b8fe1d6",
+          "message": "feat(folders): move folders/files metadata out of Folders entries",
+          "timestamp": "2024-02-20T08:49:28Z",
+          "tree_id": "ec17c519ed61eab8bd9ea169bddee09d9ba76ff2",
+          "url": "https://github.com/maidsafe/safe_network/commit/90990b74fbbe7ec5315929624c11a09c4b8fe1d6"
+        },
+        "date": 1708424328545,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 182,
             "unit": "MB"
           },
           {
