@@ -40,7 +40,7 @@ pub struct WatchOnlyWallet {
     main_pubkey: MainPubkey,
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: PathBuf,
-    /// The wallet containing all data, cash notes & transactions data that gets serialised and stored on disk.
+    /// The wallet containing all chunks, cash notes & transactions chunks that gets serialised and stored on disk.
     keyless_wallet: KeyLessWallet,
 }
 
@@ -205,7 +205,7 @@ impl WatchOnlyWallet {
     }
 
     /// Reloads the wallet from disk.
-    /// FIXME: this will drop any data held in memory and completely replaced with what's read fom disk.
+    /// FIXME: this will drop any chunks held in memory and completely replaced with what's read fom disk.
     pub fn reload(&mut self) -> Result<()> {
         *self = Self::load_from(&self.wallet_dir, self.main_pubkey)?;
         Ok(())

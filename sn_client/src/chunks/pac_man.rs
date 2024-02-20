@@ -21,11 +21,11 @@ use xor_name::XorName;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) enum DataMapLevel {
-    // Holds the data map to the source data.
+    // Holds the chunks map to the source chunks.
     First(DataMap),
-    // Holds the data map of an _additional_ level of chunks
-    // resulting from chunking up a previous level data map.
-    // This happens when that previous level data map was too big to fit in a chunk itself.
+    // Holds the chunks map of an _additional_ level of chunks
+    // resulting from chunking up a previous level chunks map.
+    // This happens when that previous level chunks map was too big to fit in a chunk itself.
     Additional(DataMap),
 }
 

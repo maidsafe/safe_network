@@ -35,7 +35,7 @@ jobs:
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
-        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-chunks.zip
 
       # As normal user won't care much about initial client startup,
       # but be more alerted on communication speed during transmission.
@@ -68,13 +68,13 @@ jobs:
 
       - name: Fund cli wallet
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir wallet get-faucet 127.0.0.1:8000
+        run: target/release/safe --log-output-dest=chunks-dir wallet get-faucet 127.0.0.1:8000
         env:
           SN_LOG: "all"
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
+        run: target/release/safe --log-output-dest=chunks-dir files upload the-test-chunks.zip --retry-strategy quick
         env:
           SN_LOG: "all"
 
@@ -146,7 +146,7 @@ jobs:
           name: 'Memory Usage of Client during uploading large file'
           tool: 'customSmallerIsBetter'
           output-file-path: client_memory_usage.json
-          # Where the previous data file is stored
+          # Where the previous chunks file is stored
           external-data-json-path: ./cache/client-mem-usage.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
@@ -188,8 +188,8 @@ jobs:
           # What benchmark tool the output.txt came from
           tool: 'customBiggerIsBetter'
           output-file-path: files-benchmark.json
-          # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
+          # Where the previous chunks file is stored
+          external-data-json-path: ./cache/benchmark-chunks.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
@@ -203,7 +203,7 @@ jobs:
 
       - name: Start a client to carry out download to output the logs
         shell: bash
-        run: target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
+        run: target/release/safe --log-output-dest=chunks-dir files download --retry-strategy quick
 
       - name: Start a client to simulate criterion upload
         shell: bash
@@ -271,7 +271,7 @@ jobs:
         with:
           tool: 'customSmallerIsBetter'
           output-file-path: node_memory_usage.json
-          # Where the previous data file is stored
+          # Where the previous chunks file is stored
           external-data-json-path: ./cache/node-mem-usage.json
           # Workflow will fail when an alert happens
           fail-on-alert: true
@@ -371,7 +371,7 @@ jobs:
         with:
           tool: 'customSmallerIsBetter'
           output-file-path: swarm_driver_long_handlings.json
-          # Where the previous data file is stored
+          # Where the previous chunks file is stored
           external-data-json-path: ./cache/swarm_driver_long_handlings.json
           # Workflow will fail when an alert happens
           fail-on-alert: true

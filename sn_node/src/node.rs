@@ -93,7 +93,7 @@ impl NodeBuilder {
     }
 
     /// Asynchronously runs a new node instance, setting up the swarm driver,
-    /// creating a data storage, and handling network events. Returns the
+    /// creating a chunks storage, and handling network events. Returns the
     /// created `RunningNode` which contains a `NodeEventsChannel` for listening
     /// to node-related events.
     ///
@@ -186,7 +186,7 @@ pub enum NodeCmd {
 }
 
 /// `Node` represents a single node in the distributed network. It handles
-/// network events, processes incoming requests, interacts with the data
+/// network events, processes incoming requests, interacts with the chunks
 /// storage, and broadcasts node-related events.
 #[derive(Clone)]
 pub(crate) struct Node {
@@ -357,7 +357,7 @@ impl Node {
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
-                    error!("Error while trying to fetch replicated data {err:?}");
+                    error!("Error while trying to fetch replicated chunks {err:?}");
                 }
             }
             NetworkEvent::QueryRequestReceived { query, channel } => {

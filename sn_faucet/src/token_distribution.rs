@@ -46,7 +46,7 @@ struct Distribution {
 // removed when --clean flag is specified.
 fn get_snapshot_data_dir_path() -> Result<PathBuf> {
     let dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
         .join("safe_snapshot");
     std::fs::create_dir_all(dir.clone())?;
     Ok(dir.to_path_buf())
@@ -54,7 +54,7 @@ fn get_snapshot_data_dir_path() -> Result<PathBuf> {
 
 fn get_pubkeys_data_dir_path() -> Result<PathBuf> {
     let dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
         .join("safe_snapshot")
         .join("pubkeys");
     std::fs::create_dir_all(dir.clone())?;
@@ -63,7 +63,7 @@ fn get_pubkeys_data_dir_path() -> Result<PathBuf> {
 
 fn get_distributions_data_dir_path() -> Result<PathBuf> {
     let dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
         .join("safe_snapshot")
         .join("distributions");
     std::fs::create_dir_all(dir.clone())?;
@@ -189,7 +189,7 @@ pub fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
             "Pubkey request failed with http status {}",
             response.status_code
         );
-        // The existing data is ok, no need to fail to start the server here
+        // The existing chunks is ok, no need to fail to start the server here
         return Ok(pubkeys);
     }
     // parse the response as csv, each row has format:

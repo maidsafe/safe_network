@@ -188,7 +188,7 @@ impl FilesApi {
 /// Correspondent encrypted chunks are written in the specified output folder.
 /// Does not store anything to the network.
 ///
-/// Returns data map as a chunk, and the resulting chunks
+/// Returns chunks map as a chunk, and the resulting chunks
 fn encrypt_large(file_path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<(XorName, PathBuf)>)> {
     Ok(crate::chunks::encrypt_large(file_path, output_dir)?)
 }

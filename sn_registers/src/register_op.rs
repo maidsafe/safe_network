@@ -20,7 +20,7 @@ use std::hash::{Hash, Hasher};
 pub struct RegisterOp {
     /// Address of a Register object on the network.
     pub(crate) address: RegisterAddress,
-    /// The data operation to apply.
+    /// The chunks operation to apply.
     pub(crate) crdt_op: MerkleDagEntry<Entry>,
     /// The PublicKey of the entity that generated the operation
     pub(crate) source: PublicKey,

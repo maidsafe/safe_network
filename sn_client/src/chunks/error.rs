@@ -66,7 +66,7 @@ pub enum Error {
     #[error("Chunk could not be retrieved from the network: {0:?}")]
     ChunkMissing(XorName),
 
-    #[error("Not all data was chunked, expected {expected}, but we have {chunked}.)")]
+    #[error("Not all chunks was chunked, expected {expected}, but we have {chunked}.)")]
     NotAllDataWasChunked {
         /// Number of Chunks expected to be generated
         expected: usize,

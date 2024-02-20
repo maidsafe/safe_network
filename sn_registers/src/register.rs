@@ -26,16 +26,16 @@ const MAX_REG_NUM_ENTRIES: u16 = 1024;
 /// A Register on the SAFE Network
 #[derive(Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize, Debug)]
 pub struct Register {
-    /// CRDT data of the Register
+    /// CRDT chunks of the Register
     crdt: RegisterCrdt,
     /// Permissions of the Register
     /// Depending on the permissions, the owner can allow other users to write to the register
-    /// Everyone can always read the Register because all data is public
+    /// Everyone can always read the Register because all chunks is public
     permissions: Permissions,
 }
 
 /// A Signed Register on the SAFE Network
-/// This cryptographically secure version of the Register is used to make sure that the data cannot be tampered with
+/// This cryptographically secure version of the Register is used to make sure that the chunks cannot be tampered with
 #[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, PartialEq, Eq, Hash)]
 pub struct SignedRegister {
     /// the base register we had at creation
@@ -118,7 +118,7 @@ impl SignedRegister {
         self.base_register.address()
     }
 
-    /// Return the owner of the data.
+    /// Return the owner of the chunks.
     pub fn owner(&self) -> PublicKey {
         self.base_register.owner()
     }
@@ -181,7 +181,7 @@ impl Register {
         self.crdt.address()
     }
 
-    /// Return the owner of the data.
+    /// Return the owner of the chunks.
     pub fn owner(&self) -> PublicKey {
         self.address().owner()
     }
@@ -226,7 +226,7 @@ impl Register {
         Ok((hash, op))
     }
 
-    /// Apply a signed data CRDT operation.
+    /// Apply a signed chunks CRDT operation.
     pub fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         self.check_entry_and_reg_sizes(&op.crdt_op.value)?;
         self.check_register_op(&op)?;
@@ -382,7 +382,7 @@ mod tests {
         replica1.apply_op(op2)?;
         replica2.apply_op(op1)?;
 
-        // Let's assert data convergence on both replicas
+        // Let's assert chunks convergence on both replicas
         verify_data_convergence(&[replica1, replica2], 2)?;
 
         Ok(())
@@ -547,7 +547,7 @@ mod tests {
         replicas[0].1.clone()
     }
 
-    // verify data convergence on a set of replicas and with the expected length
+    // verify chunks convergence on a set of replicas and with the expected length
     fn verify_data_convergence(replicas: &[Register], expected_size: u64) -> Result<()> {
         // verify all replicas have the same and expected size
         for r in replicas {
@@ -648,7 +648,7 @@ mod tests {
 
             let dataset_length = dataset.len() as u64;
 
-            // insert our data at replicas
+            // insert our chunks at replicas
             let mut children = BTreeSet::new();
             for _data in dataset {
                 // Write an item on replica1
@@ -681,7 +681,7 @@ mod tests {
 
             let dataset_length = dataset.len() as u64;
 
-            // insert our data at replicas
+            // insert our chunks at replicas
             let mut list_of_hashes = Vec::new();
             let mut rng = thread_rng();
             for _data in dataset {
@@ -708,7 +708,7 @@ mod tests {
             let (mut replicas, owner_sk) = res?;
             let dataset_length = dataset.len() as u64;
 
-            // insert our data at replicas
+            // insert our chunks at replicas
             let mut children = BTreeSet::new();
             for _data in dataset {
                 // first generate an op from one replica...
@@ -764,7 +764,7 @@ mod tests {
             let (mut replicas, owner_sk) = res?;
             let dataset_length = dataset.len() as u64;
 
-            // generate an ops set using random replica for each data
+            // generate an ops set using random replica for each chunks
             let mut ops = vec![];
             let mut children = BTreeSet::new();
             for _data in dataset {
@@ -849,7 +849,7 @@ mod tests {
             let (mut replicas, owner_sk) = res?;
             let dataset_length = dataset.len() as u64;
 
-            // generate an ops set using random replica for each data
+            // generate an ops set using random replica for each chunks
             let mut ops = vec![];
             let mut children = BTreeSet::new();
             for (_data, delivery_chance) in dataset {
@@ -897,7 +897,7 @@ mod tests {
             let bogus_dataset_length = bogus_dataset.len();
             let number_replicas = replicas.len();
 
-            // generate the real ops set using random replica for each data
+            // generate the real ops set using random replica for each chunks
             let mut ops = vec![];
             let mut children = BTreeSet::new();
             for _data in dataset {
@@ -914,7 +914,7 @@ mod tests {
             let random_owner_sk = SecretKey::random();
             let mut bogus_replica = Register::new_owned(random_owner_sk.public_key(), xorname);
 
-            // add bogus ops from bogus replica + bogus data
+            // add bogus ops from bogus replica + bogus chunks
             let mut children = BTreeSet::new();
             for _data in bogus_dataset {
                 let (hash, bogus_op) = bogus_replica.write(random_register_entry(), &children, &random_owner_sk)?;
@@ -935,7 +935,7 @@ mod tests {
                 for op in ops {
                     match replica.apply_op(op) {
                         Ok(_) => {},
-                        // record all errors to check this matches bogus data
+                        // record all errors to check this matches bogus chunks
                         Err(error) => {err_count.push(error)},
                     }
                 }

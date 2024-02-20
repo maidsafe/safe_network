@@ -284,7 +284,7 @@ impl NetworkBuilder {
             .set_publication_interval(None)
             // 1mb packet size
             .set_max_packet_size(MAX_PACKET_SIZE)
-            // How many nodes _should_ store data.
+            // How many nodes _should_ store chunks.
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             )
@@ -361,7 +361,7 @@ impl NetworkBuilder {
             .set_max_packet_size(MAX_PACKET_SIZE)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
-            // How many nodes _should_ store data.
+            // How many nodes _should_ store chunks.
             .set_replication_factor(
                 NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
             );

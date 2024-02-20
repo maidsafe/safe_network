@@ -844,7 +844,7 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
-                // Currently, only `client` calls `put_record_to` to upload data.
+                // Currently, only `client` calls `put_record_to` to upload chunks.
                 // The result of such operation is not critical to client in general.
                 // However, if client keeps receiving error responses, it may indicating:
                 //   1, Client itself is with slow connection

@@ -277,7 +277,7 @@ impl SpendDag {
                 .map(|i| &self.dag[i])
                 .collect();
 
-            // get descendants via Tx data
+            // get descendants via Tx chunks
             let descendants_via_tx: BTreeSet<SpendAddress> = self
                 .spends
                 .get(current_addr)

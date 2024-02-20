@@ -69,7 +69,7 @@ impl FoldersApi {
     }
 
     /// Return the list of metadata chunks addresses that need to be payed for in order to be
-    /// able to then store all data on the network upon calling `sync` method.
+    /// able to then store all chunks on the network upon calling `sync` method.
     pub fn meta_addrs_to_pay(&self) -> Vec<NetworkAddress> {
         self.metadata
             .iter()

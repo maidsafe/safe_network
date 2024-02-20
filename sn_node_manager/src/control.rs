@@ -773,7 +773,7 @@ mod tests {
         let temp_dir = assert_fs::TempDir::new()?;
         let log_dir = temp_dir.child("safenode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("safenode1-chunks");
         data_dir.create_dir_all()?;
         let safenode_bin = data_dir.child("safenode");
         safenode_bin.write_binary(b"fake safenode binary")?;
@@ -856,7 +856,7 @@ mod tests {
         let temp_dir = assert_fs::TempDir::new()?;
         let log_dir = temp_dir.child("safenode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("safenode1-chunks");
         data_dir.create_dir_all()?;
         let safenode_bin = data_dir.child("safenode");
         safenode_bin.write_binary(b"fake safenode binary")?;
@@ -908,7 +908,7 @@ mod tests {
         let temp_dir = assert_fs::TempDir::new()?;
         let log_dir = temp_dir.child("safenode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("safenode1-chunks");
         data_dir.create_dir_all()?;
         let safenode_bin = data_dir.child("safenode");
         safenode_bin.write_binary(b"fake safenode binary")?;

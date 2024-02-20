@@ -105,7 +105,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // Create a cross thread usize for tracking churned nodes
     let churn_count = Arc::new(RwLock::new(0_usize));
 
-    // Allow to disable Registers data creation/checks, storing and querying only Chunks during churn.
+    // Allow to disable Registers chunks creation/checks, storing and querying only Chunks during churn.
     // Default to be not carry out chunks only during churn.
     let chunks_only = std::env::var("CHUNKS_ONLY").is_ok();
 
@@ -238,7 +238,7 @@ async fn data_availability_during_churn() -> Result<()> {
     // which will have a high chance that newly stored chunk got queried BEFORE
     // the original holders churned out.
     // i.e. the test may pass even without any replication
-    // Hence, we carry out a final round of query all data to confirm storage.
+    // Hence, we carry out a final round of query all chunks to confirm storage.
     println!("Final querying confirmation of content");
     info!("Final querying confirmation of content");
 

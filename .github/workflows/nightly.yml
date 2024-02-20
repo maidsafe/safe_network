@@ -52,25 +52,25 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir files upload "./resources" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register get -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register edit -n baobao wood
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -439,7 +439,7 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Chunks data integrity during nodes churn (during 10min) (in theory)
+      - name: Chunks chunks integrity during nodes churn (during 10min) (in theory)
         run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 60
@@ -474,7 +474,7 @@ jobs:
         #   exit 1
         # fi
 
-      - name: Verify data replication using rg
+      - name: Verify chunks replication using rg
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
@@ -507,7 +507,7 @@ jobs:
           SLACK_TITLE: "Nightly Churn Test Run Failed"
 
       # Only error out after uploading the logs
-      - name: Don't log raw data
+      - name: Don't log raw chunks
         if: matrix.os != 'windows-latest' # causes error
         shell: bash
         timeout-minutes: 10
@@ -519,7 +519,7 @@ jobs:
           fi
 
   verify_data_location_routing_table:
-      name: Verify data location and Routing Table
+      name: Verify chunks location and Routing Table
       runs-on: ${{ matrix.os }}
       strategy:
         matrix:
@@ -546,7 +546,7 @@ jobs:
           run: cargo build --release --features local-discovery --bin safenode --bin faucet
           timeout-minutes: 30
 
-        - name: Build data location and routing table tests
+        - name: Build chunks location and routing table tests
           run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
           env:
             # only set the target dir for windows to bypass the linker issue.
@@ -570,7 +570,7 @@ jobs:
             CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           timeout-minutes: 5
 
-        - name: Verify the location of the data on the network
+        - name: Verify the location of the chunks on the network
           run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
           env:
             SN_LOG: "all"
@@ -620,7 +620,7 @@ jobs:
             SLACK_TITLE: "Nightly Data Location Test Run Failed"
 
         # Only error out after uploading the logs
-        - name: Don't log raw data
+        - name: Don't log raw chunks
           if: matrix.os != 'windows-latest' # causes error
           shell: bash
           timeout-minutes: 10

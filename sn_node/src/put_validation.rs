@@ -56,7 +56,7 @@ impl Node {
                     .await;
 
                 // Now that we've taken any money passed to us, regardless of the payment's validity,
-                // if we already have the data we can return early
+                // if we already have the chunks we can return early
                 if already_exists {
                     // if we're receiving this chunk PUT again, and we have been paid,
                     // we eagery retry replicaiton as it seems like other nodes are having trouble
@@ -231,8 +231,8 @@ impl Node {
         }
     }
 
-    /// Check key is valid compared to the network name, and if we already have this data or not.
-    /// returns true if data already exists locally
+    /// Check key is valid compared to the network name, and if we already have this chunks or not.
+    /// returns true if chunks already exists locally
     async fn validate_key_and_existence(
         &self,
         address: &NetworkAddress,
@@ -379,7 +379,7 @@ impl Node {
         {
             Some(spends) => spends,
             None => {
-                // we trust the replicated data
+                // we trust the replicated chunks
                 debug!("Trust replicated spend for {pretty_key:?}",);
                 // TODO: may need to tweak the `signed_spend_validation` function,
                 //       instead of trusting replicated spend directly
@@ -554,7 +554,7 @@ impl Node {
                         debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
                     }
                 }
-                Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
+                Err(err) => warn!("Failed to serialise network royalties payment chunks to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
             }
         }
 

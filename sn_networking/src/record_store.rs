@@ -49,7 +49,7 @@ pub struct NodeRecordStore {
     local_key: KBucketKey<PeerId>,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
-    /// A set of keys, each corresponding to a data `Record` stored on disk.
+    /// A set of keys, each corresponding to a chunks `Record` stored on disk.
     records: HashMap<Key, (NetworkAddress, RecordType)>,
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
@@ -220,7 +220,7 @@ impl NodeRecordStore {
         }
     }
 
-    /// Upon read perform any data transformations required to return a `Record`.
+    /// Upon read perform any chunks transformations required to return a `Record`.
     fn get_record_from_bytes<'a>(
         bytes: Vec<u8>,
         key: &Key,
@@ -396,7 +396,7 @@ impl NodeRecordStore {
     /// Should be used in context where the `Record` is trusted
     ///
     /// The record is marked as written to disk once `mark_as_stored` is called,
-    /// this avoids us returning half-written data or registering it as stored before it is.
+    /// this avoids us returning half-written chunks or registering it as stored before it is.
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
@@ -438,7 +438,7 @@ impl NodeRecordStore {
         Ok(())
     }
 
-    /// Calculate the cost to store data for our current store state
+    /// Calculate the cost to store chunks for our current store state
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self) -> NanoTokens {
         let stored_records = self.records.len();

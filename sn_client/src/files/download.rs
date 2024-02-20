@@ -29,7 +29,7 @@ pub enum FilesDownloadEvent {
     /// The total number of chunks we are about to download.
     /// Note: This count currently is not accurate. It does not take into account how we fetch the initial head chunk.
     ChunksCount(usize),
-    /// The total number of data map chunks that we are about to download. This happens if the datamap file is.
+    /// The total number of chunks map chunks that we are about to download. This happens if the datamap file is.
     /// very large.
     /// Note: This count currently is not accurate. It does not take into account how we fetch the initial head chunk.
     DatamapCount(usize),
@@ -109,11 +109,11 @@ impl FilesDownload {
 
     /// Download bytes from the network. The contents are spread across
     /// multiple chunks in the network. This function invokes the self-encryptor and returns
-    /// the data that was initially stored.
+    /// the chunks that was initially stored.
     ///
     /// Takes `position` and `length` arguments which specify the start position
     /// and the length of bytes to be read.
-    /// Passing `0` to position reads the data from the beginning,
+    /// Passing `0` to position reads the chunks from the beginning,
     /// and the `length` is just an upper limit.
     pub async fn download_from(
         &mut self,

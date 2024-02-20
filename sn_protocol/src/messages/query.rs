@@ -9,7 +9,7 @@
 use crate::{messages::Nonce, NetworkAddress};
 use serde::{Deserialize, Serialize};
 
-/// Data queries - retrieving data and inspecting their structure.
+/// Data queries - retrieving chunks and inspecting their structure.
 ///
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.

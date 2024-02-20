@@ -131,7 +131,7 @@ impl std::hash::Hash for SignedSpend {
     }
 }
 
-/// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
+/// Represents the chunks to be signed by the DerivedSecretKey of the CashNote being spent.
 #[derive(custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.

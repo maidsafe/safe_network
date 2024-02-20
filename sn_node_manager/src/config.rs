@@ -68,7 +68,7 @@ pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, owner: &str) -> R
 pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
-        None => PathBuf::from("C:\\ProgramData\\safenode\\data"),
+        None => PathBuf::from("C:\\ProgramData\\safenode\\chunks"),
     };
     std::fs::create_dir_all(&path)?;
     Ok(path)

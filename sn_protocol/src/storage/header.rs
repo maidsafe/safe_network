@@ -132,7 +132,7 @@ pub fn try_deserialize_record<T: serde::de::DeserializeOwned>(record: &Record) -
     })
 }
 
-/// Utility to serialize the provided data along with the RecordKind to be stored as Record::value
+/// Utility to serialize the provided chunks along with the RecordKind to be stored as Record::value
 /// Returns Bytes to avoid accidental clone allocations
 pub fn try_serialize_record<T: serde::Serialize>(
     data: &T,

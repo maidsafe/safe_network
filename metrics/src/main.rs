@@ -54,7 +54,7 @@ struct Labels {
 
 fn main() -> Result<()> {
     let default_log_dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
         .join("safe")
         .join("node");
 

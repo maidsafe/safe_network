@@ -55,8 +55,8 @@ impl std::fmt::Debug for Transfer {
 impl Transfer {
     /// This function is used to create a Transfer from a CashNote, can be done offline, and sent to the recipient.
     /// Creates a Transfer from the given cash_note
-    /// This Transfer can be sent safely to the recipients as all data in it is encrypted
-    /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
+    /// This Transfer can be sent safely to the recipients as all chunks in it is encrypted
+    /// The recipients can then decrypt the chunks and use it to verify and reconstruct the CashNote
     pub fn transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
         let recipient = cash_note.main_pubkey;
         let u = CashNoteRedemption::from_cash_note(cash_note)?;
@@ -135,7 +135,7 @@ pub struct CashNoteRedemption {
     /// the secret key from their main key needed to spend this CashNoteRedemption
     pub derivation_index: DerivationIndex,
     /// spentbook entry of one of one of the inputs (parent spends)
-    /// using data found at this address the owner can check that the output is valid money
+    /// using chunks found at this address the owner can check that the output is valid money
     pub parent_spend: SpendAddress,
 }
 

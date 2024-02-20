@@ -11,7 +11,7 @@ fn data_file_path() -> PathBuf {
     let mut path = home_dir().expect("Could not get home directory");
     path.push(".safe_token_supplies");
     fs::create_dir_all(&path).expect("Failed to create directory");
-    path.push("data.json");
+    path.push("chunks.json");
     path
 }
 
@@ -49,7 +49,7 @@ async fn scheduled_fetch() {
                     Err(e) => eprintln!("Failed to write to file: {}", e),
                 }
             }
-            Err(e) => eprintln!("Failed to fetch API data: {}", e),
+            Err(e) => eprintln!("Failed to fetch API chunks: {}", e),
         }
 
         sleep(Duration::from_secs(43200)).await; // Sleep for 12 hours
@@ -78,12 +78,12 @@ async fn main() {
 
     let maid_supply = warp::path!("maid").map(|| match read_from_file() {
         Ok(data) => format!("{}", data.maid_supply),
-        Err(e) => format!("Error reading data: {e}"),
+        Err(e) => format!("Error reading chunks: {e}"),
     });
 
     let emaid_supply = warp::path!("emaid").map(|| match read_from_file() {
         Ok(data) => format!("{}", data.emaid_supply),
-        Err(e) => format!("Error reading data: {e}"),
+        Err(e) => format!("Error reading chunks: {e}"),
     });
 
     warp::serve(maid_supply.or(emaid_supply))

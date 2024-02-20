@@ -17,12 +17,12 @@ use std::{
     hash::Hash,
 };
 
-/// Register data type as a CRDT with Access Control
+/// Register chunks type as a CRDT with Access Control
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
 pub(crate) struct RegisterCrdt {
-    /// Address on the network of this piece of data
+    /// Address on the network of this piece of chunks
     address: RegisterAddress,
-    /// CRDT to store the actual data, i.e. the items of the Register.
+    /// CRDT to store the actual chunks, i.e. the items of the Register.
     data: MerkleReg<Entry>,
 }
 
@@ -80,7 +80,7 @@ impl RegisterCrdt {
         Ok((EntryHash(hash), address, crdt_op))
     }
 
-    /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
+    /// Apply a remote chunks CRDT operation to this replica of the `RegisterCrdtImpl`.
     pub(crate) fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.

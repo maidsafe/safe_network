@@ -112,7 +112,7 @@ impl Client {
 
     /// Extends an existing SpendDag with a new SignedSpend,
     /// tracing back the ancestors of that Spend all the way to a known Spend in the DAG or else back to Genesis
-    /// Verifies all transactions on the way, making sure only valid data is inserted in the DAG
+    /// Verifies all transactions on the way, making sure only valid chunks is inserted in the DAG
     /// This is useful to keep a partial SpendDag to be able to verify that new spends come from Genesis
     ///
     /// ```text

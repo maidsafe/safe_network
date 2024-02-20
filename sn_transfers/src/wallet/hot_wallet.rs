@@ -44,7 +44,7 @@ pub struct HotWallet {
     /// The secret key with which we can access
     /// all the tokens in the available_cash_notes.
     key: MainSecretKey,
-    /// The wallet containing all data.
+    /// The wallet containing all chunks.
     watchonly_wallet: WatchOnlyWallet,
     /// These have not yet been successfully sent to the network
     /// and need to be, to reach network validity.

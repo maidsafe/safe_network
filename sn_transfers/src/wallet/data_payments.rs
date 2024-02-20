@@ -21,7 +21,7 @@ pub struct Payment {
     pub quote: PaymentQuote,
 }
 
-/// Information relating to a data payment for one address
+/// Information relating to a chunks payment for one address
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PaymentDetails {
     /// The node we pay
@@ -51,7 +51,7 @@ impl PaymentDetails {
 /// A generic type for signatures
 pub type QuoteSignature = Vec<u8>;
 
-/// A payment quote to store data given by a node to a client
+/// A payment quote to store chunks given by a node to a client
 /// Note that the PaymentQuote is a contract between the node and itself to make sure the clients aren’t mispaying.
 /// It is NOT a contract between the client and the node.
 #[derive(

@@ -382,7 +382,7 @@ impl WalletClient {
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
 
-    /// Send tokens to nodes closest to the data we want to make storage payment for. Runs mandatory verification.
+    /// Send tokens to nodes closest to the chunks we want to make storage payment for. Runs mandatory verification.
     ///
     /// # Arguments
     /// - content_addrs - [Iterator]<Items = [`NetworkAddress`]>
@@ -433,7 +433,7 @@ impl WalletClient {
             {
                 Ok(payment_result) => return Ok(payment_result),
                 Err(WalletError::CouldNotSendMoney(err)) => {
-                    warn!("Attempt to pay for data failed: {err:?}");
+                    warn!("Attempt to pay for chunks failed: {err:?}");
                     last_err = err;
                     sleep(delay).await;
                 }
@@ -485,7 +485,7 @@ impl WalletClient {
                             let _ = cost_map.insert(xorname, (cost.1, cost.2, cost.0.to_bytes()));
                         }
                     } else {
-                        warn!("Cannot get store cost for a content that is not a data type: {content_addr:?}");
+                        warn!("Cannot get store cost for a content that is not a chunks type: {content_addr:?}");
                     }
                 }
                 Ok((content_addr, Err(err))) => {
@@ -511,7 +511,7 @@ impl WalletClient {
         Ok(res)
     }
 
-    /// Send tokens to nodes closest to the data that we want to make storage payments for.
+    /// Send tokens to nodes closest to the chunks that we want to make storage payments for.
     /// # Returns:
     ///
     /// * [WalletResult]<([NanoTokens], [NanoTokens])>

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, hash::Hash};
 
 /// Register permissions
-/// Everyone can read a Register, all data is public on safe network.
+/// Everyone can read a Register, all chunks is public on safe network.
 /// The Default value is nobody can write.
 #[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug, Default)]
 pub struct Permissions {

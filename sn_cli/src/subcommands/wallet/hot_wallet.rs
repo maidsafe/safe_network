@@ -21,8 +21,8 @@ use color_eyre::{
 use dialoguer::Confirm;
 use sn_client::{Client, Error as ClientError};
 use sn_transfers::{
-    Error as TransferError, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
-    UnsignedTransfer, WalletError,
+    Error, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, UnsignedTransfer,
+    WalletError,
 };
 use std::{path::Path, str::FromStr};
 
@@ -140,7 +140,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 println!("{}", wallet.balance());
             } else {
                 let default_node_dir_path = dirs_next::data_dir()
-                    .ok_or_else(|| eyre!("Failed to obtain data directory path"))?
+                    .ok_or_else(|| eyre!("Failed to obtain chunks directory path"))?
                     .join("safe")
                     .join("node");
 
@@ -249,7 +249,7 @@ async fn send(
                 ClientError::AmountIsZero => {
                     println!("Zero amount passed in. Nothing sent.");
                 }
-                ClientError::Transfers(WalletError::Transfer(TransferError::NotEnoughBalance(
+                ClientError::Transfers(WalletError::Transfer(Error::NotEnoughBalance(
                     available,
                     required,
                 ))) => {

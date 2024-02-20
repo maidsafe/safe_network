@@ -16,13 +16,13 @@ use std::{path::PathBuf, time::Duration};
 pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
         "stdout" => Ok(LogOutputDest::Stdout),
-        "data-dir" => {
+        "chunks-dir" => {
             // Get the current timestamp and format it to be human readable
             let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
-            // Get the data directory path and append the timestamp to the log file name
+            // Get the chunks directory path and append the timestamp to the log file name
             let dir = dirs_next::data_dir()
-                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+                .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
                 .join("safe")
                 .join("client")
                 .join("logs")
@@ -42,16 +42,16 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
 pub(crate) struct Opt {
     /// Specify the logging output destination.
     ///
-    /// Valid values are "stdout", "data-dir", or a custom path.
+    /// Valid values are "stdout", "chunks-dir", or a custom path.
     ///
-    /// `data-dir` is the default value.
+    /// `chunks-dir` is the default value.
     ///
-    /// The data directory location is platform specific:
+    /// The chunks directory location is platform specific:
     ///  - Linux: $HOME/.local/share/safe/client/logs
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "data-dir")]
+    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "chunks-dir")]
     pub log_output_dest: Option<LogOutputDest>,
 
     /// Specify the logging format.
@@ -73,7 +73,7 @@ pub(crate) struct Opt {
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
     pub connection_timeout: Option<Duration>,
 
-    /// Prevent verification of data storage on the network.
+    /// Prevent verification of chunks storage on the network.
     ///
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, long = "no-verify", short = 'x')]

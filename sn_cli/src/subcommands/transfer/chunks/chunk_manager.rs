@@ -6,15 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::subcommands::files::{get_progress_bar, UploadedFile};
+use crate::subcommands::transfer::application::upload::UploadedFile;
 use bytes::Bytes;
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::FilesApi;
 use sn_protocol::storage::ChunkAddress;
+use std::time::Duration;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -523,8 +525,8 @@ impl ChunkManager {
                 ))
             }
             _ => {
-                error!("Metadata file or data map was not present for {path_xor:?}");
-                // metadata file or data map was not present/was not read
+                error!("Metadata file or chunks map was not present for {path_xor:?}");
+                // metadata file or chunks map was not present/was not read
                 None
             }
         }
@@ -1022,4 +1024,15 @@ mod tests {
 
         Ok(())
     }
+}
+
+pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
+    let progress_bar = ProgressBar::new(length);
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len}")?
+            .progress_chars("#>-"),
+    );
+    progress_bar.enable_steady_tick(Duration::from_millis(100));
+    Ok(progress_bar)
 }

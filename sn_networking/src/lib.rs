@@ -158,12 +158,12 @@ pub struct Network {
 }
 
 impl Network {
-    /// Signs the given data with the node's keypair.
+    /// Signs the given chunks with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(Error::from)
     }
 
-    /// Verifies a signature for the given data and the node's public key.
+    /// Verifies a signature for the given chunks and the node's public key.
     pub fn verify(&self, msg: &[u8], sig: &[u8]) -> bool {
         self.keypair.public().verify(msg, sig)
     }

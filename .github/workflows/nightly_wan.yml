@@ -73,25 +73,25 @@ jobs:
         timeout-minutes: 2
 
       - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir files upload "./resources" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register get -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir register edit -n baobao wood
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -431,7 +431,7 @@ jobs:
           echo "Peer is $SAFE_PEERS"
           echo "Deployment inventory is $SN_INVENTORY"
 
-      - name: Chunks data integrity during nodes churn
+      - name: Chunks chunks integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
         env:
           # TEST_DURATION_MINS: 60
@@ -523,7 +523,7 @@ jobs:
       #   #   exit 1
       #   # fi
 
-      # - name: Verify data replication using rg
+      # - name: Verify chunks replication using rg
       #   shell: bash
       #   timeout-minutes: 1
       #   # get the counts, then the specific line, and then the digit count only
@@ -540,7 +540,7 @@ jobs:
       #     fi
 
       # Only error out after uploading the logs
-      - name: Don't log raw data
+      - name: Don't log raw chunks
         if: always() && matrix.os != 'windows-latest' # causes error
         shell: bash
         timeout-minutes: 10
@@ -580,7 +580,7 @@ jobs:
 
 
   verify_data_location_routing_table:
-    name: Verify data location and Routing Table
+    name: Verify chunks location and Routing Table
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -606,7 +606,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build data location and routing table tests
+      - name: Build chunks location and routing table tests
         run: cargo test --release -p sn_node --test verify_data_location --test verify_routing_table --no-run
         timeout-minutes: 30
 
@@ -641,7 +641,7 @@ jobs:
         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
         timeout-minutes: 5
 
-      - name: Verify the location of the data on the network
+      - name: Verify the location of the chunks on the network
         run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
         env:
           SN_LOG: "all"
@@ -732,7 +732,7 @@ jobs:
       #   # fi
 
       # Only error out after uploading the logs
-      - name: Don't log raw data
+      - name: Don't log raw chunks
         if: always() && matrix.os != 'windows-latest' # causes error
         shell: bash
         timeout-minutes: 10

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::Hash;
 
-/// Data and CashNote cmds - recording spends or creating, updating, and removing data.
+/// Data and CashNote cmds - recording spends or creating, updating, and removing chunks.
 ///
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.

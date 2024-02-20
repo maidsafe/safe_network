@@ -19,7 +19,7 @@ use tokio::time::Duration;
 // Max parallel fetches that can be undertaken at the same time.
 const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
-// The duration after which a peer will be considered failed to fetch data from,
+// The duration after which a peer will be considered failed to fetch chunks from,
 // if no response got from that peer.
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -57,7 +57,7 @@ impl ReplicationFetcher {
         self.remove_stored_keys(locally_stored_keys);
 
         let is_new_data = if incoming_keys.len() == 1 {
-            // The incoming list is for a new data to be replicated out.
+            // The incoming list is for a new chunks to be replicated out.
             let (record_address, record_type) = incoming_keys[0].clone();
             Some((record_address.to_record_key(), record_type))
         } else {
@@ -71,7 +71,7 @@ impl ReplicationFetcher {
 
         let mut keys_to_fetch = self.next_keys_to_fetch();
 
-        // For new data, it will be replicated out in a special replication_list of length 1.
+        // For new chunks, it will be replicated out in a special replication_list of length 1.
         // And we shall `fetch` that copy immediately, if it's not being fetched.
         if let Some(new_data_key) = is_new_data {
             if let Entry::Vacant(entry) = self.on_going_fetches.entry(new_data_key.clone()) {
@@ -283,7 +283,7 @@ mod tests {
         );
         assert!(keys_to_fetch.is_empty());
 
-        // List with length of 1 will be considered as `new data` and to be fetched immediately
+        // List with length of 1 will be considered as `new chunks` and to be fetched immediately
         let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
         let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
         let keys_to_fetch = replication_fetcher.add_keys(

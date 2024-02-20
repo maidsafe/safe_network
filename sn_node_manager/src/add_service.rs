@@ -278,7 +278,7 @@ mod tests {
 
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
@@ -522,7 +522,7 @@ mod tests {
 
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
@@ -716,7 +716,7 @@ mod tests {
         };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
@@ -826,7 +826,7 @@ mod tests {
         };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
@@ -1043,7 +1043,7 @@ mod tests {
         };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;
@@ -1146,7 +1146,7 @@ mod tests {
         };
         let latest_version = "0.96.4";
         let temp_dir = assert_fs::TempDir::new()?;
-        let node_data_dir = temp_dir.child("data");
+        let node_data_dir = temp_dir.child("chunks");
         node_data_dir.create_dir_all()?;
         let node_logs_dir = temp_dir.child("logs");
         node_logs_dir.create_dir_all()?;

@@ -81,7 +81,7 @@ pub enum SubCmd {
         /// mutually exclusive.
         #[clap(long, conflicts_with = "first")]
         count: Option<u16>,
-        /// Provide the path for the data directory for the installed node.
+        /// Provide the path for the chunks directory for the installed node.
         ///
         /// This path is a prefix. Each installed node will have its own directory underneath it.
         ///
@@ -170,7 +170,7 @@ pub enum SubCmd {
     /// Kill the running local network.
     #[clap(name = "kill")]
     Kill {
-        /// Set this flag to keep the node's data and log directories.
+        /// Set this flag to keep the node's chunks and log directories.
         #[clap(long)]
         keep_directories: bool,
     },
@@ -235,7 +235,7 @@ pub enum SubCmd {
         /// The name of the service to remove.
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
-        /// Set this flag to keep the node's data and log directories.
+        /// Set this flag to keep the node's chunks and log directories.
         #[clap(long)]
         keep_directories: bool,
     },
@@ -253,7 +253,7 @@ pub enum SubCmd {
         /// This assumes the command is being run from the root of the safe_network repository.
         #[clap(long)]
         build: bool,
-        /// Set to remove the client data directory and kill any existing local network.
+        /// Set to remove the client chunks directory and kill any existing local network.
         #[clap(long)]
         clean: bool,
         /// The number of nodes to run.
@@ -599,7 +599,7 @@ async fn main() -> Result<()> {
             let local_node_reg_path = &get_local_node_registry_path()?;
             let mut local_node_registry = if clean {
                 let client_data_path = dirs_next::data_dir()
-                    .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+                    .ok_or_else(|| eyre!("Could not obtain user's chunks directory"))?
                     .join("safe")
                     .join("client");
                 if client_data_path.is_dir() {

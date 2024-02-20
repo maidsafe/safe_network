@@ -110,14 +110,14 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
     }
 
     let faucet_data_path = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+        .ok_or_else(|| eyre!("Could not obtain user's chunks directory"))?
         .join("safe")
         .join("test_faucet");
     if faucet_data_path.is_dir() {
         std::fs::remove_dir_all(faucet_data_path)?;
     }
     let genesis_data_path = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
+        .ok_or_else(|| eyre!("Could not obtain user's chunks directory"))?
         .join("safe")
         .join("test_genesis");
     if genesis_data_path.is_dir() {
@@ -139,7 +139,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         }
 
         if !keep_directories {
-            // At this point we don't allow path overrides, so deleting the data directory will clear
+            // At this point we don't allow path overrides, so deleting the chunks directory will clear
             // the log directory also.
             std::fs::remove_dir_all(&node.data_dir_path)?;
             println!(

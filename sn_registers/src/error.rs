@@ -39,7 +39,7 @@ pub enum Error {
     /// Cannot add another entry since the register entry cap has been reached.
     #[error("Cannot add another entry since the register entry cap has been reached: {0}")]
     TooManyEntries(usize),
-    /// Entry could not be found on the data
+    /// Entry could not be found on the chunks
     #[error("Requested entry not found {0}")]
     NoSuchEntry(EntryHash),
     /// Serialisation Failed

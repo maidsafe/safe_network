@@ -292,10 +292,10 @@ impl Client {
         self.events_broadcaster.subscribe()
     }
 
-    /// Sign the given data.
+    /// Sign the given chunks.
     ///
     /// # Arguments
-    /// * 'data' - bytes; i.e bytes of an sn_registers::Register instance
+    /// * 'chunks' - bytes; i.e bytes of an sn_registers::Register instance
     ///
     /// Return Type:
     ///
@@ -357,7 +357,7 @@ impl Client {
         &self.signer
     }
 
-    /// Return the public key of the data signing key.
+    /// Return the public key of the chunks signing key.
     ///
     /// Return Type:
     ///

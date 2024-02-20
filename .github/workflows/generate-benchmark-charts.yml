@@ -43,7 +43,7 @@ jobs:
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
-        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-chunks.zip
      
       - name: Build node and client
         run: cargo build --release --features local-discovery --bin safenode --bin safe --bin faucet
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: cat files-benchmark.json
         
-      # gh-pages branch is updated and pushed automatically with extracted benchmark data
+      # gh-pages branch is updated and pushed automatically with extracted benchmark chunks
       - name: Store cli files benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -105,7 +105,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
+        run: cargo run --bin safe --release -- --log-output-dest=chunks-dir files upload the-test-chunks.zip --retry-strategy quick
         env:
           SN_LOG: "all"
       

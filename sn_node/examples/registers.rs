@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
     // Loading a local wallet. It needs to have a non-zero balance for
     // this example to be able to pay for the Register's storage.
     let root_dir = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
+        .ok_or_else(|| eyre!("could not obtain chunks directory path".to_string()))?
         .join("safe")
         .join("client");
 

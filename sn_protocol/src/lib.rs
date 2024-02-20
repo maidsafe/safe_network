@@ -45,13 +45,13 @@ use std::{
 use xor_name::XorName;
 
 /// This is the address in the network by which proximity/distance
-/// to other items (whether nodes or data chunks) are calculated.
+/// to other items (whether nodes or chunks chunks) are calculated.
 ///
 /// This is the mapping from the XOR name used
 /// by for example self encryption, or the libp2p `PeerId`,
 /// to the key used in the Kademlia DHT.
 /// All our xorname calculations shall be replaced with the `KBucketKey` calculations,
-/// for getting proximity/distance to other items (whether nodes or data).
+/// for getting proximity/distance to other items (whether nodes or chunks).
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum NetworkAddress {
     /// The NetworkAddress is representing a PeerId.
@@ -152,7 +152,7 @@ impl NetworkAddress {
 
     /// Return the `KBucketKey` representation of this `NetworkAddress`.
     ///
-    /// The `KBucketKey` is used for calculating proximity/distance to other items (whether nodes or data).
+    /// The `KBucketKey` is used for calculating proximity/distance to other items (whether nodes or chunks).
     /// Important to note is that it will always SHA256 hash any bytes it receives.
     /// Therefore, the canonical use of distance/proximity calculations in the network
     /// is via the `KBucketKey`, or the convenience methods of `NetworkAddress`.

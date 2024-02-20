@@ -153,7 +153,7 @@ pub(super) fn load_cash_notes_from_disk(wallet_dir: &Path) -> Result<Vec<CashNot
                 Ok(cash_note) => cash_note,
                 Err(_) => {
                     println!(
-                        "This file does not appear to have valid hex-encoded CashNote data. \
+                        "This file does not appear to have valid hex-encoded CashNote chunks. \
                         Skipping it."
                     );
                     continue;
@@ -180,14 +180,14 @@ pub fn load_created_cash_note(unique_pubkey: &UniquePubkey, wallet_dir: &Path) -
     // Construct the path to the cash_note file
     let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
 
-    // Read the cash_note data from the file
+    // Read the cash_note chunks from the file
     match fs::read_to_string(cash_note_file_path.clone()) {
         Ok(cash_note_data) => {
-            // Convert the cash_note data from hex to CashNote
+            // Convert the cash_note chunks from hex to CashNote
             match CashNote::from_hex(cash_note_data.trim()) {
                 Ok(cash_note) => Some(cash_note),
                 Err(error) => {
-                    warn!("Failed to convert cash_note data from hex: {}", error);
+                    warn!("Failed to convert cash_note chunks from hex: {}", error);
                     None
                 }
             }

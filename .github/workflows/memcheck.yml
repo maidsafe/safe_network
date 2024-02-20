@@ -107,7 +107,7 @@ jobs:
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
-        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-chunks.zip
 
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
@@ -159,7 +159,7 @@ jobs:
       - name: Assert we've reloaded some chunks
         run: rg "Existing record loaded" $RESTART_TEST_NODE_DATA_PATH
 
-      - name: Chunks data integrity during nodes churn
+      - name: Chunks chunks integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 5
@@ -212,7 +212,7 @@ jobs:
         #   exit 1
         # fi
 
-      - name: Verify data replication using rg
+      - name: Verify chunks replication using rg
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only

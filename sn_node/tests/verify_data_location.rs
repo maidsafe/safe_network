@@ -46,19 +46,19 @@ const CHUNK_SIZE: usize = 1024;
 // VERIFICATION_DELAY is set based on the dead peer detection interval
 // Once a node has been restarted, it takes VERIFICATION_DELAY time
 // for the old peer to be removed from the routing table.
-// Replication is then kicked off to distribute the data to the new closest
+// Replication is then kicked off to distribute the chunks to the new closest
 // nodes, hence verification has to be performed after this.
 const VERIFICATION_DELAY: Duration = Duration::from_secs(60);
 
 /// Number of times to retry verification if it fails
 const VERIFICATION_ATTEMPTS: usize = 5;
 
-/// Length of time to wait before re-verifying the data location
+/// Length of time to wait before re-verifying the chunks location
 const REVERIFICATION_DELAY: Duration =
     Duration::from_secs(sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S);
 
 // Default number of churns that should be performed. After each churn, we
-// wait for VERIFICATION_DELAY time before verifying the data location.
+// wait for VERIFICATION_DELAY time before verifying the chunks location.
 // It can be overridden by setting the 'CHURN_COUNT' env var.
 const CHURN_COUNT: u8 = 20;
 
@@ -92,11 +92,11 @@ async fn verify_data_location() -> Result<()> {
         REGISTER_COUNT
     };
     println!(
-        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
+        "Performing chunks location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
     info!(
-        "Performing data location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
+        "Performing chunks location verification with a churn count of {churn_count} and n_chunks {chunk_count}, n_registers {register_count}\nIt will take approx {:?}",
         VERIFICATION_DELAY*churn_count as u32
     );
     let node_rpc_address = get_all_rpc_addresses(true)?;
@@ -114,10 +114,10 @@ async fn verify_data_location() -> Result<()> {
     store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
     store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;
 
-    // Verify data location initially
+    // Verify chunks location initially
     verify_location(&all_peers, &node_rpc_address).await?;
 
-    // Churn nodes and verify the location of the data after VERIFICATION_DELAY
+    // Churn nodes and verify the location of the chunks after VERIFICATION_DELAY
     let mut current_churn_count = 0;
 
     'main: loop {
@@ -198,9 +198,9 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
     let mut failed = HashMap::new();
 
     println!("*********************************************");
-    println!("Verifying data across all peers {all_peers:?}");
+    println!("Verifying chunks across all peers {all_peers:?}");
     info!("*********************************************");
-    info!("Verifying data across all peers {all_peers:?}");
+    info!("Verifying chunks across all peers {all_peers:?}");
 
     let mut verification_attempts = 0;
     while verification_attempts < VERIFICATION_ATTEMPTS {

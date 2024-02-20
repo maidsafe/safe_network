@@ -18,7 +18,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[non_exhaustive]
 pub enum Error {
     // ---------- Misc errors
-    #[error("Could not obtain user's data directory")]
+    #[error("Could not obtain user's chunks directory")]
     UserDataDirectoryNotObtainable,
     #[error("Could not obtain port from MultiAddr")]
     CouldNotObtainPortFromMultiAddr,

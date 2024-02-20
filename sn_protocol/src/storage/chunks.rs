@@ -13,13 +13,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use xor_name::XorName;
 
-/// Chunk, an immutable chunk of data
+/// Chunk, an immutable chunk of chunks
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, custom_debug::Debug)]
 pub struct Chunk {
     /// Network address. Omitted when serialising and
     /// calculated from the `value` when deserialising.
     pub address: ChunkAddress,
-    /// Contained data.
+    /// Contained chunks.
     #[debug(skip)]
     pub value: Bytes,
 }

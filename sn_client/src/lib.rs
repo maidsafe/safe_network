@@ -85,7 +85,7 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
     )));
 
     // TODO: We need to tidy this up, the client loops forever in the browser, and eventually crashes
-    // it does _do things_ but errors surface, and even after getting data, it continues...
+    // it does _do things_ but errors surface, and even after getting chunks, it continues...
     let client = Client::quick_start(Some(vec![the_peer]))
         .await
         .map_err(|e| JsError::new(&format!("Client could not start: {e:?}")))?;
@@ -95,14 +95,14 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
     let chunk = client
         .get_chunk(ChunkAddress::new(xor_name), false, None)
         .await
-        .map_err(|e| JsError::new(&format!("Client get data failed: {e:?}")))?;
+        .map_err(|e| JsError::new(&format!("Client get chunks failed: {e:?}")))?;
 
     console::log_1(&JsValue::from_str(&format!("Data found {chunk:?}")));
 
     Ok(())
 }
 
-/// Client API implementation to store and get data.
+/// Client API implementation to store and get chunks.
 #[derive(Clone)]
 pub struct Client {
     network: Network,
