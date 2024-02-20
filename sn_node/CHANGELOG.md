@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.31](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.30...sn_node-v0.104.31) - 2024-02-20
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.30](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.29...sn_node-v0.104.30) - 2024-02-20
+
+### Other
+- updated the following local packages: sn_client, sn_networking, sn_transfers
+
+## [0.104.29](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.28...sn_node-v0.104.29) - 2024-02-20
+
+### Other
+- updated the following local packages: sn_client, sn_networking, sn_transfers
+
+## [0.104.28](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.27...sn_node-v0.104.28) - 2024-02-20
+
+### Added
+- *(examples)* add register_inspect example to show contents of a register
+
+### Fixed
+- clippy warnings
+- cargo fmt changes
+
+## [0.104.27](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.26...sn_node-v0.104.27) - 2024-02-20
+
+### Other
+- updated the following local packages: sn_client
+
 ## [0.104.26](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.25...sn_node-v0.104.26) - 2024-02-19
 
 ### Added

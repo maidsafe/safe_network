@@ -21,7 +21,7 @@ mod register;
 mod wallet;
 
 pub use self::{
-    audit::{DagError, SpendDag},
+    audit::{DagError, SpendDag, SpendDagGet},
     error::Error,
     event::{ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
@@ -30,7 +30,7 @@ pub use self::{
         upload::{FileUploadEvent, FilesUpload},
         FilesApi, BATCH_SIZE,
     },
-    folders::{FolderEntry, FoldersApi},
+    folders::{FolderEntry, FoldersApi, Metadata},
     register::ClientRegister,
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };

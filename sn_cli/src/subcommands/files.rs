@@ -325,7 +325,7 @@ pub(crate) async fn estimate_cost(
 
 /// Given a file or directory, upload either the file or all the files in the directory. Optionally
 /// verify if the data was stored successfully.
-pub(crate) async fn upload_files(
+async fn upload_files(
     files_path: PathBuf,
     client: &Client,
     root_dir: PathBuf,

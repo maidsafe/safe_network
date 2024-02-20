@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 use sn_client::Client;
-use sn_transfers::{HotWallet, SpendAddress, Transfer, UniquePubkey};
-use std::path::Path;
+use sn_transfers::{HotWallet, SpendAddress, Transfer};
+use std::{path::Path, str::FromStr};
 use url::Url;
 
 pub async fn get_faucet(root_dir: &Path, client: &Client, url: String) -> Result<()> {
@@ -88,22 +88,11 @@ pub async fn verify_spend(spend_address: String, genesis: bool, client: &Client)
         println!("Verifying spend...");
     }
 
-    let addr = parse_pubkey_address(&spend_address)?;
+    let addr = SpendAddress::from_str(&spend_address)?;
     match client.verify_spend(addr, genesis).await {
         Ok(()) => println!("Spend verified to be stored and unique at {addr:?}"),
         Err(e) => println!("Failed to verify spend at {addr:?}: {e}"),
     }
 
     Ok(())
-}
-
-pub fn parse_pubkey_address(str_addr: &str) -> Result<SpendAddress> {
-    let pk_res = UniquePubkey::from_hex(str_addr);
-    let addr_res = SpendAddress::from_hex(str_addr);
-
-    match (pk_res, addr_res) {
-        (Ok(pk), _) => Ok(SpendAddress::from_unique_pubkey(&pk)),
-        (_, Ok(addr)) => Ok(addr),
-        _ => Err(eyre!("Failed to parse address: {str_addr}")),
-    }
 }

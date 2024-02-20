@@ -31,7 +31,7 @@ pub(crate) enum DataMapLevel {
 
 #[allow(unused)]
 pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<XorName>)> {
-    let (data_map, mut encrypted_chunks) = encrypt_file(path, output_dir)?;
+    let (data_map, mut encrypted_chunks) = self_encryption::encrypt_from_file(path, output_dir)?;
 
     let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
 
@@ -133,9 +133,4 @@ fn wrap_data_map(data_map: &DataMapLevel) -> Result<Bytes> {
     let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
     data_map.serialize(&mut serialiser)?;
     Ok(bytes.into_inner().freeze())
-}
-
-fn encrypt_file(file: &Path, output_dir: &Path) -> Result<(DataMap, Vec<XorName>)> {
-    let encrypted_chunks = self_encryption::encrypt_from_file(file, output_dir)?;
-    Ok(encrypted_chunks)
 }

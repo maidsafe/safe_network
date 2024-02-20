@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.22...sn_client-v0.104.23) - 2024-02-20
+
+### Other
+- updated the following local packages: sn_networking
+
+## [0.104.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.21...sn_client-v0.104.22) - 2024-02-20
+
+### Added
+- spend and DAG utilities
+
+### Other
+- improve SpendDagGet names
+
+## [0.104.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.20...sn_client-v0.104.21) - 2024-02-20
+
+### Added
+- *(folders)* move folders/files metadata out of Folders entries
+
+## [0.104.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.19...sn_client-v0.104.20) - 2024-02-20
+
+### Added
+- *(registers)* expose MerkleReg of RegisterCrdt in all Register types
+
+### Fixed
+- clippy warnings
+
+### Other
+- marke merkle_reg() accessors as unstable (in comment) on Register types
+
+## [0.104.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.18...sn_client-v0.104.19) - 2024-02-20
+
+### Other
+- improve DAG crawling performance with better parallelisation
+
 ## [0.104.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.17...sn_client-v0.104.18) - 2024-02-19
 
 ### Other

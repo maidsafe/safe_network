@@ -13,7 +13,7 @@ use libp2p::{
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{hash_map::Entry, BTreeSet, HashMap};
 use tokio::time::Duration;
 
 // Max parallel fetches that can be undertaken at the same time.
@@ -56,12 +56,38 @@ impl ReplicationFetcher {
     ) -> Vec<(PeerId, RecordKey)> {
         self.remove_stored_keys(locally_stored_keys);
 
+        let is_new_data = if incoming_keys.len() == 1 {
+            // The incoming list is for a new data to be replicated out.
+            let (record_address, record_type) = incoming_keys[0].clone();
+            Some((record_address.to_record_key(), record_type))
+        } else {
+            None
+        };
+
         // add non existing keys to the fetcher
         incoming_keys
             .into_iter()
             .for_each(|(key, record_type)| self.add_key(holder, key.to_record_key(), record_type));
 
-        self.next_keys_to_fetch()
+        let mut keys_to_fetch = self.next_keys_to_fetch();
+
+        // For new data, it will be replicated out in a special replication_list of length 1.
+        // And we shall `fetch` that copy immediately, if it's not being fetched.
+        if let Some(new_data_key) = is_new_data {
+            if let Entry::Vacant(entry) = self.on_going_fetches.entry(new_data_key.clone()) {
+                let (record_key, record_type) = new_data_key;
+
+                let new_data_key_holder = (record_key.clone(), record_type, holder);
+                let _ = self
+                    .to_be_fetched
+                    .insert(new_data_key_holder, Some(Instant::now()));
+
+                keys_to_fetch.push((holder, record_key));
+
+                let _ = entry.insert(holder);
+            }
+        }
+        keys_to_fetch
     }
 
     // Notify the replication fetcher about a newly added Record to the node.
@@ -247,21 +273,33 @@ mod tests {
 
         // we should not fetch anymore keys
         let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+        let key_1 = NetworkAddress::from_record_key(&RecordKey::from(random_data));
+        let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+        let key_2 = NetworkAddress::from_record_key(&RecordKey::from(random_data));
+        let keys_to_fetch = replication_fetcher.add_keys(
+            PeerId::random(),
+            vec![(key_1, RecordType::Chunk), (key_2, RecordType::Chunk)],
+            &locally_stored_keys,
+        );
+        assert!(keys_to_fetch.is_empty());
+
+        // List with length of 1 will be considered as `new data` and to be fetched immediately
+        let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
         let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
         let keys_to_fetch = replication_fetcher.add_keys(
             PeerId::random(),
             vec![(key, RecordType::Chunk)],
             &locally_stored_keys,
         );
-        assert!(keys_to_fetch.is_empty());
+        assert!(!keys_to_fetch.is_empty());
 
         sleep(FETCH_TIMEOUT + Duration::from_secs(1)).await;
 
         // all the previous fetches should have failed and fetching next batch...
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
         // but as we've marked the previous fetches as failed, that node should be entirely removed from the list
-        // leaving us with just _one_ peer left
-        assert_eq!(keys_to_fetch.len(), 1);
+        // leaving us with just _one_ peer left (but with two entries)
+        assert_eq!(keys_to_fetch.len(), 2);
         let keys_to_fetch = replication_fetcher.next_keys_to_fetch();
         assert!(keys_to_fetch.is_empty());
 

@@ -14,6 +14,7 @@ env:
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
+  RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
 
 jobs:
   memory-check:
@@ -59,6 +60,15 @@ jobs:
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
+      - name: Start a node instance to be restarted
+        run: |
+          mkdir -p $RESTART_TEST_NODE_DATA_PATH
+          ./target/release/safenode \
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local &
+          sleep 10
+        env:
+          SN_LOG: "all"
+
       - name: Start a local network
         env:
           SN_LOG: "all"
@@ -102,7 +112,7 @@ jobs:
       # The resources file we upload may change, and with it mem consumption.
       # Be aware!
       - name: Start a client to upload files
-      # -p makes files public
+        # -p makes files public
         run: |
           ls -l
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data.zip" --retry-strategy quick -p
@@ -135,6 +145,20 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 25
 
+      - name: Stop the restart node
+        run: kill $( cat $RESTART_TEST_NODE_DATA_PATH/safenode.pid )
+
+      - name: Start the restart node again
+        run: |
+          ./target/release/safenode \
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local &
+          sleep 10
+        env:
+          SN_LOG: "all"
+
+      - name: Assert we've reloaded some chunks
+        run: rg "Existing record loaded" $RESTART_TEST_NODE_DATA_PATH
+
       - name: Chunks data integrity during nodes churn
         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
         env:
@@ -147,7 +171,7 @@ jobs:
         run: ls -la
       - name: Check safenode file
         run: ls /home/runner/work/safe_network/safe_network/target/release
-        
+
       - name: Check there was no restart issues
         run: |
           if rg 'Failed to execute hard-restart command' $NODE_DATA_PATH; then
@@ -157,9 +181,8 @@ jobs:
             echo "No restart issues detected"
           fi
 
-
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
+        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
         env:
           SLEEP_BEFORE_VERIFICATION: 300
         timeout-minutes: 10
@@ -170,7 +193,7 @@ jobs:
         # get the counts, then the specific line, and then the digit count only
         # then check we have an expected level of restarts
         # TODO: make this use an env var, or relate to testnet size
-        run : |
+        run: |
           restart_count=$(rg "Node is restarting in" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
@@ -197,7 +220,7 @@ jobs:
         # TODO: make this use an env var, or relate to testnet size
         # As the bootstrap_node using separate folder for logging,
         # hence the folder input to rg needs to cover that as well.
-        run : |
+        run: |
           sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $sending_list_count replication lists"
@@ -291,7 +314,7 @@ jobs:
         run: |
           client_peak_mem_limit_mb="1024" # mb
           client_avg_mem_limit_mb="512" # mb
-          
+
           peak_mem_usage=$(
             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/{print $2}' |

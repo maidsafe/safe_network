@@ -335,25 +335,3 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sn_transfers::{SpendAddress, UniquePubkey};
-
-    #[test]
-    fn test_parse_pubkey_address() -> eyre::Result<()> {
-        let public_key = SecretKey::random().public_key();
-        let unique_pk = UniquePubkey::new(public_key);
-        let spend_address = SpendAddress::from_unique_pubkey(&unique_pk);
-        let addr_hex = spend_address.to_hex();
-        let unique_pk_hex = unique_pk.to_hex();
-
-        let addr = super::super::helpers::parse_pubkey_address(&addr_hex)?;
-        assert_eq!(addr, spend_address);
-
-        let addr2 = super::super::helpers::parse_pubkey_address(&unique_pk_hex)?;
-        assert_eq!(addr2, spend_address);
-        Ok(())
-    }
-}

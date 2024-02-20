@@ -13,6 +13,7 @@ use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
 };
+
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -36,6 +37,7 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
+use walkdir::WalkDir;
 use xor_name::XorName;
 
 /// Max number of records a node can store
@@ -98,6 +100,75 @@ fn generate_nonce_for_record(nonce_starter: &[u8; 4], key: &Key) -> Nonce {
 }
 
 impl NodeRecordStore {
+    /// If a directory for our node already exists, repopulate the records from the files in the dir
+    pub fn update_records_from_an_existing_store(
+        config: &NodeRecordStoreConfig,
+        encryption_details: &(Aes256GcmSiv, [u8; 4]),
+    ) -> HashMap<Key, (NetworkAddress, RecordType)> {
+        let mut records = HashMap::default();
+
+        info!("Attempting to repopulate records from existing store...");
+        for entry in WalkDir::new(&config.storage_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let path = entry.path();
+            if path.is_file() {
+                info!("Existing record found: {path:?}");
+                // if we've got a file, lets try and read it
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    // get the record key from the filename
+                    if let Some(key) = Self::get_data_from_filename(filename) {
+                        let record = match fs::read(path) {
+                            Ok(bytes) => {
+                                // and the stored record
+                                Self::get_record_from_bytes(bytes, &key, encryption_details)
+                            }
+                            Err(err) => {
+                                error!(
+                                    "Error while reading file. filename: {filename}, error: {err:?}"
+                                );
+                                None
+                            }
+                        };
+
+                        if let Some(record) = record {
+                            let record_type = match RecordHeader::is_record_of_type_chunk(&record) {
+                                Ok(true) => RecordType::Chunk,
+                                Ok(false) => {
+                                    let xorname_hash = XorName::from_content(&record.value);
+                                    RecordType::NonChunk(xorname_hash)
+                                }
+                                Err(error) => {
+                                    warn!("Failed to parse record type from record: {:?}", error);
+                                    continue;
+                                }
+                            };
+
+                            let address = NetworkAddress::from_record_key(&key);
+                            records.insert(key, (address, record_type));
+                            info!("Existing record loaded: {path:?}");
+                        }
+                    };
+                } else {
+                    // warn and remove this file as it's not a valid record
+                    warn!(
+                        "Found a file in the storage dir that is not a valid record: {:?}",
+                        path
+                    );
+                    if let Err(e) = fs::remove_file(path) {
+                        warn!(
+                            "Failed to remove invalid record file from storage dir: {:?}",
+                            e
+                        );
+                    }
+                }
+            }
+        }
+
+        records
+    }
+
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub fn with_config(
         local_id: PeerId,
@@ -109,17 +180,20 @@ impl NodeRecordStore {
         let cipher = Aes256GcmSiv::new(&key);
         let mut nonce_starter = [0u8; 4];
         OsRng.fill_bytes(&mut nonce_starter);
+
+        let encryption_details = (cipher, nonce_starter);
+        let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
         NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             config,
-            records: Default::default(),
+            records,
             network_event_sender,
             swarm_cmd_sender,
             distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
             received_payment_count: 0,
-            encryption_details: (cipher, nonce_starter),
+            encryption_details,
         }
     }
 
@@ -131,13 +205,19 @@ impl NodeRecordStore {
     }
 
     // Converts a Key into a Hex string.
-    fn key_to_hex(key: &Key) -> String {
-        let key_bytes = key.as_ref();
-        let mut hex_string = String::with_capacity(key_bytes.len() * 2);
-        for byte in key_bytes {
-            hex_string.push_str(&format!("{byte:02x}"));
+    fn generate_filename(key: &Key) -> String {
+        hex::encode(key.as_ref())
+    }
+
+    // Converts a Hex string back into a Key.
+    fn get_data_from_filename(hex_str: &str) -> Option<Key> {
+        match hex::decode(hex_str) {
+            Ok(bytes) => Some(Key::from(bytes)),
+            Err(error) => {
+                error!("Error decoding hex string: {:?}", error);
+                None
+            }
         }
-        hex_string
     }
 
     /// Upon read perform any data transformations required to return a `Record`.
@@ -179,7 +259,7 @@ impl NodeRecordStore {
         storage_dir: &Path,
     ) -> Option<Cow<'a, Record>> {
         let start = Instant::now();
-        let filename = Self::key_to_hex(key);
+        let filename = Self::generate_filename(key);
         let file_path = storage_dir.join(&filename);
 
         // we should only be reading if we know the record is written to disk properly
@@ -323,7 +403,7 @@ impl NodeRecordStore {
 
         self.prune_storage_if_needed_for_record(&r.key)?;
 
-        let filename = Self::key_to_hex(&r.key);
+        let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
 
         #[cfg(feature = "open-metrics")]
@@ -493,7 +573,7 @@ impl RecordStore for NodeRecordStore {
             let _ = metric.set(self.records.len() as i64);
         }
 
-        let filename = Self::key_to_hex(k);
+        let filename = Self::generate_filename(k);
         let file_path = self.config.storage_dir.join(&filename);
 
         let _handle = spawn(async move {

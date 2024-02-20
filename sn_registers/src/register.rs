@@ -12,6 +12,7 @@ use crate::{
 };
 
 use bls::{PublicKey, SecretKey, Signature};
+use crdts::merkle_reg::MerkleReg;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use xor_name::XorName;
@@ -127,6 +128,12 @@ impl SignedRegister {
         self.base_register.check_register_op(&op)?;
         self.ops.insert(op);
         Ok(())
+    }
+
+    /// Access the underlying MerkleReg (e.g. for access to history)
+    /// NOTE: This API is unstable and may be removed in the future
+    pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
+        self.base_register.merkle_reg()
     }
 }
 
@@ -252,6 +259,12 @@ impl Register {
         } else {
             Err(Error::AccessDenied(requester))
         }
+    }
+
+    /// Access the underlying MerkleReg (e.g. for access to history)
+    /// NOTE: This API is unstable and may be removed in the future
+    pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
+        self.crdt.merkle_reg()
     }
 
     // Private helper to check the given Entry's size is within define limit,

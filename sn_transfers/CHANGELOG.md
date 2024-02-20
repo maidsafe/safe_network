@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.7...sn_transfers-v0.15.8) - 2024-02-20
+
+### Added
+- spend and DAG utilities
+
+## [0.15.7](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.6...sn_transfers-v0.15.7) - 2024-02-20
+
+### Added
+- *(folders)* move folders/files metadata out of Folders entries
+
 ## [0.15.6](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.5...sn_transfers-v0.15.6) - 2024-02-15
 
 ### Added

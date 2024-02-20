@@ -857,7 +857,7 @@ impl Client {
     /// let spend_address = SpendAddress::new(xorname);
     /// // Here we get the spend address
     /// let spend = client.get_spend_from_network(spend_address).await?;
-    /// // Example: We can use the spend address to get its unique public key:
+    /// // Example: We can use the spend to get its unique public key:
     /// let unique_pubkey = spend.unique_pubkey();
     /// # Ok(())
     /// # }
@@ -865,7 +865,7 @@ impl Client {
     pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
 
-        trace!(
+        info!(
             "Getting spend at {address:?} with record_key {:?}",
             PrettyPrintRecordKey::from(&key)
         );
@@ -887,7 +887,7 @@ impl Client {
                     "failed to get spend at {address:?}: {err:?}"
                 )),
             })?;
-        debug!(
+        info!(
             "For spend at {address:?} got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );

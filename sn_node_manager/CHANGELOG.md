@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.5...sn-node-manager-v0.3.6) - 2024-02-20
+
+### Other
+- *(release)* sn_cli-v0.89.75/sn_client-v0.104.22/sn_networking-v0.13.25/sn_transfers-v0.15.8/sn_protocol-v0.14.5/sn_faucet-v0.3.74/sn_node-v0.104.30/sn_node_rpc_client-v0.4.61
+
+## [0.3.5](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.4...sn-node-manager-v0.3.5) - 2024-02-20
+
+### Other
+- *(release)* sn_client-v0.104.20/sn_registers-v0.3.10/sn_node-v0.104.28/sn_cli-v0.89.73/sn_protocol-v0.14.3/sn_faucet-v0.3.72/sn_node_rpc_client-v0.4.59
+
+## [0.3.4](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.3...sn-node-manager-v0.3.4) - 2024-02-20
+
+### Other
+- *(release)* sn_networking-v0.13.23/sn_node-v0.104.26/sn_client-v0.104.18/sn_node_rpc_client-v0.4.57
+
 ## [0.3.3](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.2...sn-node-manager-v0.3.3) - 2024-02-19
 
 ### Other

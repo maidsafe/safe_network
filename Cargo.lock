@@ -1072,6 +1072,8 @@ version = "7.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "387808c885b79055facbd4b2e806a683fe1bc37abc7dfa5fea1974ad2d4137b0"
 dependencies = [
+ "num",
+ "quickcheck",
  "serde",
  "tiny-keccak",
 ]
@@ -3403,6 +3405,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "num"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b05180d69e3da0e530ba2a1dae5110317e49e3b7f3d41be227dc5f92e49ee7af"
+dependencies = [
+ "num-bigint",
+ "num-complex",
+ "num-integer",
+ "num-iter",
+ "num-rational",
+ "num-traits",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3411,6 +3427,17 @@ dependencies = [
  "autocfg",
  "num-integer",
  "num-traits",
+ "serde",
+]
+
+[[package]]
+name = "num-complex"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ba157ca0885411de85d6ca030ba7e2a83a28636056c7c699b07c8b6f7383214"
+dependencies = [
+ "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -3431,6 +3458,30 @@ checksum = "225d3389fb3509a24c93f5c29eb6bde2586b98d9f016636dff58d7c6f7569cd9"
 dependencies = [
  "autocfg",
  "num-traits",
+]
+
+[[package]]
+name = "num-iter"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d03e6c028c5dc5cac6e2dec0efda81fc887605bb3d884578bb6d6bf7514e252"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0638a1c9d0a3c0914158145bc76cff373a75a627e6ecbfb71cbe6f453a5a19b0"
+dependencies = [
+ "autocfg",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "serde",
 ]
 
 [[package]]
@@ -4870,7 +4921,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.3.3"
+version = "0.3.6"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -4929,7 +4980,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.71"
+version = "0.89.75"
 dependencies = [
  "blsttc",
  "bytes",
@@ -4968,13 +5019,14 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.18"
+version = "0.104.23"
 dependencies = [
  "async-trait",
  "backoff",
  "blsttc",
  "bytes",
  "console_error_panic_hook",
+ "crdts",
  "custom_debug",
  "eyre",
  "futures",
@@ -5010,7 +5062,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.70"
+version = "0.3.74"
 dependencies = [
  "assert_fs",
  "bitcoin",
@@ -5062,7 +5114,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.23"
+version = "0.13.26"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5085,12 +5137,14 @@ dependencies = [
  "rmp-serde",
  "serde",
  "sn_protocol",
+ "sn_registers",
  "sn_transfers",
  "sysinfo",
  "thiserror",
  "tiny-keccak",
  "tokio",
  "tracing",
+ "walkdir",
  "wasm-bindgen-futures",
  "wasmtimer",
  "xor_name",
@@ -5098,7 +5152,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.26"
+version = "0.104.31"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5150,7 +5204,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.4.57"
+version = "0.4.61"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5190,7 +5244,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.14.2"
+version = "0.14.5"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5217,7 +5271,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "blsttc",
  "crdts",
@@ -5234,7 +5288,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.15.6"
+version = "0.15.8"
 dependencies = [
  "assert_fs",
  "blsttc",
