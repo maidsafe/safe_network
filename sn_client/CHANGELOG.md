@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.18...sn_client-v0.104.19) - 2024-02-20
+
+### Other
+- improve DAG crawling performance with better parallelisation
+
 ## [0.104.18](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.17...sn_client-v0.104.18) - 2024-02-19
 
 ### Other
