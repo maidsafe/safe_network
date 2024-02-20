@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708418273201,
+  "lastUpdate": 1708422114726,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1594851a125dbe727f5037535f93004b78a2f832",
-          "message": "chore: remove needless quorum reassignment",
-          "timestamp": "2023-10-17T08:19:42Z",
-          "tree_id": "c8dc4a108e05b1f9f99f612876ca908521c31fe0",
-          "url": "https://github.com/maidsafe/safe_network/commit/1594851a125dbe727f5037535f93004b78a2f832"
-        },
-        "date": 1697534222316,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11419843277071087,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6814057618202082,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 17.355674139768137,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.26668300941532,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "a7bc7fae053869e23fee8a1bb25e4d8683c7d676",
+          "message": "docs: marke merkle_reg() accessors as unstable (in comment) on Register types",
+          "timestamp": "2024-02-20T08:47:59Z",
+          "tree_id": "5ac976e35e1f62c0a97c41fc12793328f8a072e8",
+          "url": "https://github.com/maidsafe/safe_network/commit/a7bc7fae053869e23fee8a1bb25e4d8683c7d676"
+        },
+        "date": 1708422110993,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.248514466610662,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7995997015881675,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.660677294361314,
             "unit": "MiB/s"
           }
         ]
