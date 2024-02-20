@@ -14,7 +14,10 @@ use libp2p::kad::{
 };
 use sn_protocol::{storage::RecordType, NetworkAddress};
 use sn_transfers::NanoTokens;
-use std::{borrow::Cow, collections::HashMap};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+};
 
 pub enum UnifiedRecordStore {
     Client(ClientRecordStore),
@@ -102,6 +105,17 @@ impl UnifiedRecordStore {
         match self {
             Self::Client(store) => store.record_addresses_ref(),
             Self::Node(store) => store.record_addresses_ref(),
+        }
+    }
+
+    #[allow(clippy::mutable_key_type)]
+    pub(crate) fn pruned_chunks(&self) -> HashSet<RecordKey> {
+        match self {
+            Self::Client(_) => {
+                warn!("Calling pruned_chunks at Client. This should not happen");
+                HashSet::new()
+            }
+            Self::Node(store) => store.pruned_chunks(),
         }
     }
 

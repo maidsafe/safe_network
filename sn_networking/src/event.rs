@@ -1165,6 +1165,14 @@ impl SwarmDriver {
         closest_k_peers: &Vec<PeerId>,
     ) -> Vec<(NetworkAddress, RecordType)> {
         #[allow(clippy::mutable_key_type)]
+        let pruned_chunks = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .pruned_chunks();
+
+        #[allow(clippy::mutable_key_type)]
         let locally_stored_keys = self
             .swarm
             .behaviour_mut()
@@ -1178,11 +1186,22 @@ impl SwarmDriver {
                 let local = locally_stored_keys.get(&key);
 
                 // if we have a local value of matching record_type, we don't need to fetch it
-                if let Some((_, local_record_type)) = local {
+                let not_present_local = if let Some((_, local_record_type)) = local {
                     local_record_type != record_type
                 } else {
                     true
+                };
+
+                let was_pruned = pruned_chunks.contains(&key);
+
+                if was_pruned {
+                    info!(
+                        "Chunk {:?} was pruned previously, hence no longer fetching it again",
+                        PrettyPrintRecordKey::from(&key)
+                    );
                 }
+
+                not_present_local && !was_pruned
             })
             .collect();
 
