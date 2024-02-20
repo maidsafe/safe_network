@@ -17,6 +17,7 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use std::{
     ffi::OsString,
+    fs::create_dir_all,
     path::{Path, PathBuf},
 };
 
@@ -80,7 +81,7 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            let mut acc_packet = AccountPacket::new(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
@@ -88,10 +89,10 @@ pub(crate) async fn folders_cmds(
                 batch_size,
                 retry_strategy,
             };
-            let root_dir_address = acc_packet.add_all_files(options).await?;
+            let root_dir_xorname = acc_packet.add_all_files(options).await?;
             println!(
                 "\nFolder hierarchy from {path:?} uploaded successfully at {}",
-                root_dir_address.to_hex()
+                root_dir_xorname.to_hex()
             );
         }
         FoldersCmds::Download {
@@ -105,6 +106,7 @@ pub(crate) async fn folders_cmds(
 
             let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
             let download_folder_path = download_dir.join(folder_name.clone());
+            create_dir_all(&download_folder_path)?;
             println!(
                 "Downloading onto {download_folder_path:?} from {} with batch-size {batch_size}",
                 address.to_hex()
@@ -114,7 +116,8 @@ pub(crate) async fn folders_cmds(
                 address.to_hex()
             );
 
-            let acc_packet = AccountPacket::new(client.clone(), root_dir, &download_folder_path)?;
+            let acc_packet =
+                AccountPacket::from_path(client.clone(), root_dir, &download_folder_path)?;
             acc_packet
                 .download_folders(
                     address,
@@ -126,9 +129,9 @@ pub(crate) async fn folders_cmds(
                 .await?;
         }
         FoldersCmds::Status { path } => {
-            let mut acc_packet = AccountPacket::new(client.clone(), root_dir, &path)?;
+            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
-            acc_packet.status()?;
+            acc_packet.status().await?;
         }
     }
     Ok(())
