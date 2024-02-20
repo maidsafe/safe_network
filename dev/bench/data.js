@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708446104230,
+  "lastUpdate": 1708446661709,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6d4e07557132ddcc0ca650011e58f0b2d2e6c130",
-          "message": "ci: prevent concurrent version bumps, and await on release before we complete the bump\n\nThe git commit is pushed earlier, and should trigger a release run which we then check for",
-          "timestamp": "2023-10-19T15:50:40+02:00",
-          "tree_id": "44fc05f382e590734e6846f3c9536aa4cf53411d",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d4e07557132ddcc0ca650011e58f0b2d2e6c130"
-        },
-        "date": 1697724680467,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11570323827396248,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6772567786031497,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.265251446031616,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.67920728100362,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "8721209501d8de6f01dbd8190addf0d39ec42846",
+          "message": "chore(deps): update service manager to the latest version",
+          "timestamp": "2024-02-20T16:20:50Z",
+          "tree_id": "6cc588d40d7dbac7d391fbaaeb04b4e34685ff47",
+          "url": "https://github.com/maidsafe/safe_network/commit/8721209501d8de6f01dbd8190addf0d39ec42846"
+        },
+        "date": 1708446658877,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2575745629008825,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8405932983744353,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.14756139853077,
             "unit": "MiB/s"
           }
         ]
