@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708418166203,
+  "lastUpdate": 1708418267683,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d86c575212a4dffa39fc1c2f4542cbbac66933bf",
-          "message": "fix: batch download process",
-          "timestamp": "2023-10-13T18:25:43Z",
-          "tree_id": "6e8482f5966b993acf0fd5977baae0861357f134",
-          "url": "https://github.com/maidsafe/safe_network/commit/d86c575212a4dffa39fc1c2f4542cbbac66933bf"
-        },
-        "date": 1697224863671,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "72412bd554c2ae3bffd8c196c999b702b1f02327",
+          "message": "perf: improve DAG crawling performance with better parallelisation",
+          "timestamp": "2024-02-20T07:48:14Z",
+          "tree_id": "d8f8b2942dbe2be7c11f2a2dbdddb48f5766401c",
+          "url": "https://github.com/maidsafe/safe_network/commit/72412bd554c2ae3bffd8c196c999b702b1f02327"
+        },
+        "date": 1708418266607,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
