@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708427368571,
+  "lastUpdate": 1708427370135,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37690,6 +37690,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36253,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8492a315a250ef1a18e691558398d62b00318452",
+          "message": "chore: improve SpendDagGet names",
+          "timestamp": "2024-02-20T09:51:00Z",
+          "tree_id": "0bf2eed85a77bf03f86b2aa8adc7f26c16d6a33b",
+          "url": "https://github.com/maidsafe/safe_network/commit/8492a315a250ef1a18e691558398d62b00318452"
+        },
+        "date": 1708427369816,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6083,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34781,
             "unit": "ms"
           },
           {
