@@ -2,7 +2,7 @@ name: release
 
 # prevent concurrent version bumps + releases from running at the same time
 concurrency:
-  group: "version-bump-release"
+  group: "version-bump-release-${{ github.ref }}"
 
 on:
   push:
