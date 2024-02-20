@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708446765531,
+  "lastUpdate": 1708446767105,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "e050c49847d189cab94af558ff4e4a0978479b6a",
-          "message": "fix(test): enable logging for gossip tests",
-          "timestamp": "2023-10-19T10:33:37+02:00",
-          "tree_id": "7759e1ffbf43895ace2180a4f539cc37ce6d9a80",
-          "url": "https://github.com/maidsafe/safe_network/commit/e050c49847d189cab94af558ff4e4a0978479b6a"
-        },
-        "date": 1697707066894,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 171,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 73,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "0a4c7ef39d357631d2db5c3393ffa99342aae3ce",
           "message": "fix(network): emit NetworkEvent when we publish a gossipsub msg\n- should fix the reward test failures\n- they were cuased because the `genesis_node` that we used to monitor\n  the gossipsub messages from was the one who published the message\n- Hence it would not emit and `NodeEvent` that we were listening for",
           "timestamp": "2023-10-19T13:53:16+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "8721209501d8de6f01dbd8190addf0d39ec42846",
+          "message": "chore(deps): update service manager to the latest version",
+          "timestamp": "2024-02-20T16:20:50Z",
+          "tree_id": "6cc588d40d7dbac7d391fbaaeb04b4e34685ff47",
+          "url": "https://github.com/maidsafe/safe_network/commit/8721209501d8de6f01dbd8190addf0d39ec42846"
+        },
+        "date": 1708446766710,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
