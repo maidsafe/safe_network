@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708427267059,
+  "lastUpdate": 1708427367219,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "1594851a125dbe727f5037535f93004b78a2f832",
-          "message": "chore: remove needless quorum reassignment",
-          "timestamp": "2023-10-17T08:19:42Z",
-          "tree_id": "c8dc4a108e05b1f9f99f612876ca908521c31fe0",
-          "url": "https://github.com/maidsafe/safe_network/commit/1594851a125dbe727f5037535f93004b78a2f832"
-        },
-        "date": 1697534543307,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8492a315a250ef1a18e691558398d62b00318452",
+          "message": "chore: improve SpendDagGet names",
+          "timestamp": "2024-02-20T09:51:00Z",
+          "tree_id": "0bf2eed85a77bf03f86b2aa8adc7f26c16d6a33b",
+          "url": "https://github.com/maidsafe/safe_network/commit/8492a315a250ef1a18e691558398d62b00318452"
+        },
+        "date": 1708427366906,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
