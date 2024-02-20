@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::subcommands::files::{get_progress_bar, UploadedFile};
+use crate::subcommands::transfer::application::upload::get_progress_bar;
+use crate::subcommands::transfer::application::upload::UploadedFile;
 use bytes::Bytes;
 use color_eyre::{
     eyre::{bail, eyre},

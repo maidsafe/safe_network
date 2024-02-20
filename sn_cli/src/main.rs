@@ -15,10 +15,9 @@ mod subcommands;
 use crate::{
     cli::Opt,
     subcommands::{
-        files::files_cmds,
-        folders::folders_cmds,
         gossipsub::gossipsub_cmds,
         register::register_cmds,
+        transfer::directory::folder::folders_cmds,
         wallet::{
             hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
             wo_wallet::{wo_wallet_cmds, wo_wallet_cmds_without_client, WatchOnlyWalletCmds},
@@ -36,6 +35,7 @@ use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_transfers::bls_secret_from_hex;
 use std::{io, path::PathBuf, time::Duration};
+use subcommands::transfer::directory::file::files_cmds;
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::Level;
 

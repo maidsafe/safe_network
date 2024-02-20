@@ -7,13 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod acc_packet;
-pub(crate) mod files;
-pub(crate) mod folders;
 pub(crate) mod gossipsub;
 pub(crate) mod register;
+pub(crate) mod transfer;
 pub(crate) mod wallet;
 
 use clap::Subcommand;
+use transfer::directory::file;
 
 #[derive(Subcommand, Debug)]
 pub(super) enum SubCmd {
@@ -28,10 +28,10 @@ pub(super) enum SubCmd {
     WatchOnlyWallet(wallet::wo_wallet::WatchOnlyWalletCmds),
     #[clap(name = "files", subcommand)]
     /// Commands for file management
-    Files(files::FilesCmds),
+    Files(file::FilesCmds),
     #[clap(name = "folders", subcommand)]
     /// Commands for folders management
-    Folders(folders::FoldersCmds),
+    Folders(transfer::directory::folder::FoldersCmds),
     #[clap(name = "register", subcommand)]
     /// Commands for register management
     Register(register::RegisterCmds),
