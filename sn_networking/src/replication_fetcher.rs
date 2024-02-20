@@ -23,15 +23,20 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 // if no response got from that peer.
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
-// The time at which the key was sent to be fetched from the peer.
-type ReplicationRequestSentTime = Instant;
+// The duration after which a pending entry shall be cleared from the `to_be_fetch` list.
+// This is to avoid holding too many outdated entries when the fetching speed is slow.
+const PENDING_TIMEOUT: Duration = Duration::from_secs(900);
+
+// The time the entry will be considered as `time out` and to be cleared.
+type ReplicationTimeout = Instant;
 
 #[derive(Debug)]
 pub(crate) struct ReplicationFetcher {
     self_peer_id: PeerId,
-    to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), Option<ReplicationRequestSentTime>>,
+    // Pending entries that to be fetched from the target peer.
+    to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), ReplicationTimeout>,
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
-    on_going_fetches: HashMap<(RecordKey, RecordType), PeerId>,
+    on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
 }
 
 impl ReplicationFetcher {
@@ -63,6 +68,9 @@ impl ReplicationFetcher {
         } else {
             None
         };
+
+        self.to_be_fetched
+            .retain(|_, time_out| *time_out > Instant::now());
 
         // add non existing keys to the fetcher
         incoming_keys
@@ -140,21 +148,20 @@ impl ReplicationFetcher {
             self_address.distance(&a).cmp(&self_address.distance(&b))
         });
 
-        for ((key, t, holder), is_fetching) in to_be_fetched_sorted {
+        for ((key, t, holder), _) in to_be_fetched_sorted {
             // Already carried out expiration pruning above.
             // Hence here only need to check whether is ongoing fetching.
             // Also avoid fetching same record from different nodes.
-            if is_fetching.is_none()
-                && self.on_going_fetches.len() < MAX_PARALLEL_FETCH
+            if self.on_going_fetches.len() < MAX_PARALLEL_FETCH
                 && !self
                     .on_going_fetches
                     .contains_key(&(key.clone(), t.clone()))
             {
-                data_to_fetch.push((*holder, key.clone()));
-                *is_fetching = Some(Instant::now());
-                let _ = self
-                    .on_going_fetches
-                    .insert((key.clone(), t.clone()), *holder);
+                data_to_fetch.push((*holder, key.clone(), t.clone()));
+                let _ = self.on_going_fetches.insert(
+                    (key.clone(), t.clone()),
+                    (*holder, Instant::now() + FETCH_TIMEOUT),
+                );
             }
 
             // break out the loop early if we can do no more now
@@ -165,7 +172,7 @@ impl ReplicationFetcher {
 
         let pretty_keys: Vec<_> = data_to_fetch
             .iter()
-            .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
+            .map(|(holder, key, t)| (*holder, PrettyPrintRecordKey::from(key), t.clone()))
             .collect();
 
         if !data_to_fetch.is_empty() {
@@ -177,40 +184,37 @@ impl ReplicationFetcher {
         }
 
         data_to_fetch
+            .iter()
+            .map(|(holder, key, t)| {
+                let entry_key = (key.clone(), t.clone(), *holder);
+                let _ = self.to_be_fetched.remove(&entry_key);
+                (*holder, key.clone())
+            })
+            .collect()
     }
 
-    // Just remove outdated entries, which indicates a failure to fetch from network.
-    // Leave it to to the next round of replication if triggered again.
-    // Also remove the corresponding node from to_be_fetched.
-    // And triggers the upper layers to potentially remove that failing node from the routing table.
+    // Just remove outdated entries in `on_going_fetch`, indicates a failure to fetch from network.
+    // The node then considered to be in trouble and:
+    //   1, the pending_entries from that node shall be removed from `to_be_fetched` list
+    //   2, the future incoming_keys from that node shall be rejected for a while
+    // TODO: triggers the upper layers to potentially remove that failing node from the routing table.
     fn prune_expired_keys_and_slow_nodes(&mut self) {
         let mut failed_holders = BTreeSet::default();
-        self.to_be_fetched.retain(|(key, t, holder), is_fetching| {
-            let is_expired = if let Some(requested_time) = is_fetching {
-                if Instant::now() > *requested_time + FETCH_TIMEOUT {
-                    self.on_going_fetches.retain(|(data, record_type), node| data != key || node != holder || record_type != t);
-                    debug!(
-                        "Prune record {:?} at {holder:?} from the replication_fetcher due to timeout.",
-                        PrettyPrintRecordKey::from(key)
-                    );
-                    failed_holders.insert(*holder);
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
 
-            // if  the fetching is not expired we keep the entry
-             is_fetching.is_none() || !is_expired
+        self.on_going_fetches.retain(|_, (peer_id, time_out)| {
+            if *time_out < Instant::now() {
+                failed_holders.insert(*peer_id);
+                false
+            } else {
+                true
+            }
         });
 
         // now we ensure we clear our any/all failed nodes from our lists.
         self.to_be_fetched
-            .retain(|(_, _, holder), _| !failed_holders.contains(holder))
+            .retain(|(_, _, holder), _| !failed_holders.contains(holder));
 
-        // now we remove all failed holders
+        // TODO: Such failed_hodlers shall be reported back and be excluded from RT.
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
@@ -241,7 +245,7 @@ impl ReplicationFetcher {
         let _ = self
             .to_be_fetched
             .entry((key, record_type, holder))
-            .or_insert(None);
+            .or_insert(Instant::now() + PENDING_TIMEOUT);
     }
 }
 
