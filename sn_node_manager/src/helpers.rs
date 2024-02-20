@@ -6,13 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
-use std::io::Read;
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::sync::Arc;
+use std::{
+    io::Read,
+    path::PathBuf,
+    process::{Command, Stdio},
+    sync::Arc,
+};
+
+const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
 /// Downloads and extracts a release binary to a temporary location.
 pub async fn download_and_extract_release(
@@ -33,35 +40,56 @@ pub async fn download_and_extract_release(
 
     let temp_dir_path = create_temp_dir()?;
 
-    let archive_path = if let Some(url) = url {
-        println!("Retrieving {release_type} from {url}");
-        let archive_path = release_repo
-            .download_release(&url, &temp_dir_path, &callback)
-            .await?;
-        pb.finish_with_message("Download complete");
-        archive_path
-    } else {
-        let version = if let Some(version) = version {
-            version
-        } else {
-            println!("Retrieving latest version for {release_type}...");
-            release_repo.get_latest_version(&release_type).await?
-        };
+    let mut download_attempts = 1;
+    let archive_path = loop {
+        if download_attempts > MAX_DOWNLOAD_RETRIES {
+            bail!("Failed to download release after {MAX_DOWNLOAD_RETRIES} tries.");
+        }
 
-        println!("Downloading {release_type} version {version}...");
-        let archive_path = release_repo
-            .download_release_from_s3(
-                &release_type,
-                &version,
-                &get_running_platform()?,
-                &ArchiveType::TarGz,
-                &temp_dir_path,
-                &callback,
-            )
-            .await?;
-        pb.finish_with_message("Download complete");
-        archive_path
+        if let Some(url) = &url {
+            println!("Retrieving {release_type} from {url}");
+            match release_repo
+                .download_release(url, &temp_dir_path, &callback)
+                .await
+            {
+                Ok(archive_path) => break archive_path,
+                Err(err) => {
+                    println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    download_attempts += 1;
+                    pb.finish_and_clear();
+                }
+            }
+        } else {
+            let version = if let Some(version) = version.clone() {
+                version
+            } else {
+                println!("Retrieving latest version for {release_type}...");
+                release_repo.get_latest_version(&release_type).await?
+            };
+
+            println!("Downloading {release_type} version {version}...");
+            match release_repo
+                .download_release_from_s3(
+                    &release_type,
+                    &version,
+                    &get_running_platform()?,
+                    &ArchiveType::TarGz,
+                    &temp_dir_path,
+                    &callback,
+                )
+                .await
+            {
+                Ok(archive_path) => break archive_path,
+                Err(err) => {
+                    println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    download_attempts += 1;
+                    pb.finish_and_clear();
+                }
+            }
+        };
     };
+    pb.finish_and_clear();
+    println!("Download completed");
 
     let safenode_download_path =
         release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
