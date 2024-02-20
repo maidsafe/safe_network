@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708446768778,
+  "lastUpdate": 1708465286190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "aa93ce92962cd1516bec69dc5f03291665991f81",
-          "message": "ci: wait on the specific last bumped version to release, not this commit",
-          "timestamp": "2023-10-19T16:02:13+02:00",
-          "tree_id": "0bac2a42295738033d6e0a1a21f8e062825b67a3",
-          "url": "https://github.com/maidsafe/safe_network/commit/aa93ce92962cd1516bec69dc5f03291665991f81"
-        },
-        "date": 1697725381565,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11552992118163902,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6899138944444981,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.521340302225372,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.14756139853077,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "244a182c16b848d5042aeaa1b7c70afa3a4269dc",
+          "message": "ci: upload binaries to s3 before publish\n\nWe found CI node manager upgrade tests did not work correctly when a release was running at the same\ntime, which is a common scenario. The reason is because the node manager uses `crates.io` to get the\nlatest version of the node and then attempts to download binaries from S3 based on that version\nnumber, but those binaries were not yet available on S3.\n\nWe now change the process to upload the binaries to S3 before the publishing phase.",
+          "timestamp": "2024-02-20T20:55:50Z",
+          "tree_id": "0c00c85f000bd7ef360b947224d54861fb1a31e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/244a182c16b848d5042aeaa1b7c70afa3a4269dc"
+        },
+        "date": 1708465283473,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.248528881049046,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8525556920837547,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.97091098462011,
             "unit": "MiB/s"
           }
         ]
