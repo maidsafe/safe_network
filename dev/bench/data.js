@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708422222652,
+  "lastUpdate": 1708422225398,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37573,6 +37573,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34630,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "a7bc7fae053869e23fee8a1bb25e4d8683c7d676",
+          "message": "docs: marke merkle_reg() accessors as unstable (in comment) on Register types",
+          "timestamp": "2024-02-20T08:47:59Z",
+          "tree_id": "5ac976e35e1f62c0a97c41fc12793328f8a072e8",
+          "url": "https://github.com/maidsafe/safe_network/commit/a7bc7fae053869e23fee8a1bb25e4d8683c7d676"
+        },
+        "date": 1708422224326,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6660,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37404,
             "unit": "ms"
           },
           {
