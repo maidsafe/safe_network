@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.74](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.73...sn_cli-v0.89.74) - 2024-02-20
+
+### Added
+- *(folders)* move folders/files metadata out of Folders entries
+
 ## [0.89.73](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.72...sn_cli-v0.89.73) - 2024-02-20
 
 ### Other
