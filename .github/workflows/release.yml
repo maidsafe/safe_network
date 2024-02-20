@@ -127,16 +127,36 @@ jobs:
       - name: publish and release
         shell: bash
         run: |
-          cargo login ${{ secrets.CRATES_IO_TOKEN }}
-          release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          # Package versioned assets as tar.gz and zip archives, and upload them to S3.
+          #
+          # This is done before publishing because the node manager relies on these binaries
+          # existing after the new version of the `sn_node` crate is published. If these binaries
+          # were uploaded after the publishing process, there could be a significant gap between the
+          # new version of `sn_node` being published and the new binaries being available for
+          # download. This could cause errors if node manager users ran the `upgrade` command,
+          # because the process gets the latest version from `crates.io` then downloads the binaries
+          # from S3, using that version number. Uploading the binaries to S3 before publishing
+          # ensures that they will exist after the new crate has been published.
           just package-release-assets "safe"
           just package-release-assets "safenode"
           just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
           just package-release-assets "safenode-manager"
-          # The versioned assets are uploaded to both the release and S3 in this target.
-          just upload-release-assets
-          # Now repackage and upload the artifacts to S3 using 'latest' for the version.
+          just upload-release-assets-to-s3 "safe"
+          just upload-release-assets-to-s3 "safenode"
+          just upload-release-assets-to-s3 "safenode-manager"
+          just upload-release-assets-to-s3 "faucet"
+          just upload-release-assets-to-s3 "safenode_rpc_client"
+
+          # The `release-plz` command publishes crates which had their versions bumped, and also
+          # creates Github releases. The binaries are then attached to the releases in the
+          # `upload-github-release-assets` target.
+          cargo login ${{ secrets.CRATES_IO_TOKEN }}
+          release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          just upload-github-release-assets
+
+          # Now upload the 'latest' versions to S3. This can be done later because the node manager
+          # does not depend on these existing.
           just package-release-assets "safe" "latest"
           just package-release-assets "safenode" "latest"
           just package-release-assets "faucet" "latest"
