@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.22](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.21...sn_client-v0.104.22) - 2024-02-20
+
+### Added
+- spend and DAG utilities
+
+### Other
+- improve SpendDagGet names
+
 ## [0.104.21](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.20...sn_client-v0.104.21) - 2024-02-20
 
 ### Added

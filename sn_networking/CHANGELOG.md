@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.25](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.24...sn_networking-v0.13.25) - 2024-02-20
+
+### Added
+- *(networking)* on start, record_store repopulates from existing
+
+### Other
+- *(networking)* add logs for preexisting record loading
+
 ## [0.13.24](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.23...sn_networking-v0.13.24) - 2024-02-20
 
 ### Other
