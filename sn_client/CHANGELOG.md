@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.20](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.19...sn_client-v0.104.20) - 2024-02-20
+
+### Added
+- *(registers)* expose MerkleReg of RegisterCrdt in all Register types
+
+### Fixed
+- clippy warnings
+
+### Other
+- marke merkle_reg() accessors as unstable (in comment) on Register types
+
 ## [0.104.19](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.18...sn_client-v0.104.19) - 2024-02-20
 
 ### Other
