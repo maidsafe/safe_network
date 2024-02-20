@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708424332274,
+  "lastUpdate": 1708424351792,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "72a41ea645b6edb624eb69a3a3f3488a1f283281",
-          "message": "Revert \"feat: keep transfers in mem instead of mem and i/o heavy cashnotes\"\n\nThis reverts commit 9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c.",
-          "timestamp": "2023-10-18T13:37:13+02:00",
-          "tree_id": "597b189ae9de00f6afecc1b805ffcfea420e41aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/72a41ea645b6edb624eb69a3a3f3488a1f283281"
-        },
-        "date": 1697630426670,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11537030383243202,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6185248773948196,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.234459138883583,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.61683569461169,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "89bcce569cce14aefdd9b74f0ba7ce59882f42cd",
+          "message": "ci: add test to memcheck to restart a node and check for reloaded chunks",
+          "timestamp": "2024-02-20T11:08:45+01:00",
+          "tree_id": "6d2ed08ca5d5fd54f1797f477404e189d673191f",
+          "url": "https://github.com/maidsafe/safe_network/commit/89bcce569cce14aefdd9b74f0ba7ce59882f42cd"
+        },
+        "date": 1708424348980,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2444433986805825,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8036678286019572,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.602229249307,
             "unit": "MiB/s"
           }
         ]
