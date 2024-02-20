@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708424351792,
+  "lastUpdate": 1708424454357,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "1f9829a45d6350c34455a0a72e45f2a26963f4b5",
-          "message": "chore: use proper logging funcs",
-          "timestamp": "2023-10-16T12:08:27Z",
-          "tree_id": "1786faf866272b03ae7ad1f47ded771e863cb6aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/1f9829a45d6350c34455a0a72e45f2a26963f4b5"
-        },
-        "date": 1697461605973,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "89bcce569cce14aefdd9b74f0ba7ce59882f42cd",
+          "message": "ci: add test to memcheck to restart a node and check for reloaded chunks",
+          "timestamp": "2024-02-20T11:08:45+01:00",
+          "tree_id": "6d2ed08ca5d5fd54f1797f477404e189d673191f",
+          "url": "https://github.com/maidsafe/safe_network/commit/89bcce569cce14aefdd9b74f0ba7ce59882f42cd"
+        },
+        "date": 1708424454062,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
