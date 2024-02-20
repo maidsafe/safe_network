@@ -299,17 +299,17 @@ pub(crate) async fn estimate_cost(
         tokio::spawn(async move {
             let (_peer, _cost, quote) = FilesApi::new(client_clone, root_dir_path_buf)
                 .wallet()
-                .expect("TODO: panic message")
+                .expect("estimate_cost: Wallet error.")
                 .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
                     chunk_address,
                 )))
                 .await
-                .expect("TODO: panic message");
-            return quote.cost.as_nano();
+                .expect("estimate_cost: Error with file.");
+            quote.cost.as_nano()
         })
         .await
         .map(|nanos| estimate += nanos)
-        .expect("TODO: panic message");
+        .expect("estimate_cost: Concurrency error.");
     }
 
     let total = balance - estimate;
@@ -317,7 +317,10 @@ pub(crate) async fn estimate_cost(
     println!("**************************************");
     println!("Your current balance: {}", NanoTokens::from(balance));
     println!("Transfer cost estimate: {}", NanoTokens::from(estimate));
-    println!("Your balance estimate after transfer: {}", NanoTokens::from(total));
+    println!(
+        "Your balance estimate after transfer: {}",
+        NanoTokens::from(total)
+    );
     println!("**************************************");
 
     Ok(())
