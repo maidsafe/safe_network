@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708444600332,
+  "lastUpdate": 1708444709450,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d7124b366003c7a043b1d63b2ddf10fb51a1ecbe",
-          "message": "feat: forced replication after fixed interval",
-          "timestamp": "2023-10-18T13:47:06Z",
-          "tree_id": "668197e34ccc0995eb22f8fc201c0cafa1986385",
-          "url": "https://github.com/maidsafe/safe_network/commit/d7124b366003c7a043b1d63b2ddf10fb51a1ecbe"
-        },
-        "date": 1697643929422,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 70,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "96377f1080ce94e898bae9eb5ef26a3989ed184c",
+          "message": "ci: allow releases on alpha/betea/rc branches",
+          "timestamp": "2024-02-20T16:45:58+01:00",
+          "tree_id": "0d3e6f41cf57e00600120c42fa6bd33fc267a947",
+          "url": "https://github.com/maidsafe/safe_network/commit/96377f1080ce94e898bae9eb5ef26a3989ed184c"
+        },
+        "date": 1708444708600,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
