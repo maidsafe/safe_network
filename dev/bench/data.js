@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708439591900,
+  "lastUpdate": 1708439695972,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "72a41ea645b6edb624eb69a3a3f3488a1f283281",
-          "message": "Revert \"feat: keep transfers in mem instead of mem and i/o heavy cashnotes\"\n\nThis reverts commit 9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c.",
-          "timestamp": "2023-10-18T13:37:13+02:00",
-          "tree_id": "597b189ae9de00f6afecc1b805ffcfea420e41aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/72a41ea645b6edb624eb69a3a3f3488a1f283281"
-        },
-        "date": 1697631450675,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 72,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "1188fba93877f61405bac9ad736c15e77b323b13",
           "message": "test: retry and verify reg upload during reward test",
           "timestamp": "2023-10-18T15:44:49+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "077367d40ad331d46ffd1c67e1dcf648d18c5449",
+          "message": "fix(manager): retry release downloads on failure",
+          "timestamp": "2024-02-20T14:23:03Z",
+          "tree_id": "c24d64f78818ae0699ca61afbbf729865ffd1930",
+          "url": "https://github.com/maidsafe/safe_network/commit/077367d40ad331d46ffd1c67e1dcf648d18c5449"
+        },
+        "date": 1708439695389,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
