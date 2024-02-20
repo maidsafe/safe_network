@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708424457478,
+  "lastUpdate": 1708427267059,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1188fba93877f61405bac9ad736c15e77b323b13",
-          "message": "test: retry and verify reg upload during reward test",
-          "timestamp": "2023-10-18T15:44:49+02:00",
-          "tree_id": "ecbaad4545da41cfb2129deb376f41fd4bec0542",
-          "url": "https://github.com/maidsafe/safe_network/commit/1188fba93877f61405bac9ad736c15e77b323b13"
-        },
-        "date": 1697638146895,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11501388905021344,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.61645064550215,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.93531376522122,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.602229249307,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8492a315a250ef1a18e691558398d62b00318452",
+          "message": "chore: improve SpendDagGet names",
+          "timestamp": "2024-02-20T09:51:00Z",
+          "tree_id": "0bf2eed85a77bf03f86b2aa8adc7f26c16d6a33b",
+          "url": "https://github.com/maidsafe/safe_network/commit/8492a315a250ef1a18e691558398d62b00318452"
+        },
+        "date": 1708427264271,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2391470020015818,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8492434623227576,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.702690300482914,
             "unit": "MiB/s"
           }
         ]
