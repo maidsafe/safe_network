@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708422225398,
+  "lastUpdate": 1708424224450,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c",
-          "message": "feat: keep transfers in mem instead of mem and i/o heavy cashnotes",
-          "timestamp": "2023-10-18T07:11:03Z",
-          "tree_id": "b214a8318fafb5108671a887f51d7388545922de",
-          "url": "https://github.com/maidsafe/safe_network/commit/9eb32bbf632b32233ad9d7e17126f5e2bbea1d5c"
-        },
-        "date": 1697616707842,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11558742785607337,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7057774167351069,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 17.417302371516488,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.660677294361314,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "90990b74fbbe7ec5315929624c11a09c4b8fe1d6",
+          "message": "feat(folders): move folders/files metadata out of Folders entries",
+          "timestamp": "2024-02-20T08:49:28Z",
+          "tree_id": "ec17c519ed61eab8bd9ea169bddee09d9ba76ff2",
+          "url": "https://github.com/maidsafe/safe_network/commit/90990b74fbbe7ec5315929624c11a09c4b8fe1d6"
+        },
+        "date": 1708424220775,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2399073512287724,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8686581162187166,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.61683569461169,
             "unit": "MiB/s"
           }
         ]
