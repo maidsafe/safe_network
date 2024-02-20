@@ -64,7 +64,7 @@ crate-type = ["cdylib", "rlib"]
 getrandom = { version = "0.2.12", features = ["js"] }
 wasm-bindgen = "0.2.90"
 wasm-bindgen-futures = "0.4.40"
-sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6" }
+sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.7" }
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2.1"
 wasmtimer = "0.2.0"
