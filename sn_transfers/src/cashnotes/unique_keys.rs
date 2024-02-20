@@ -38,7 +38,7 @@ impl DerivationIndex {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UniquePubkey(PublicKey);
 
 impl UniquePubkey {
@@ -66,6 +66,25 @@ impl UniquePubkey {
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
         let public_key = bls_public_from_hex(hex)?;
         Ok(Self::new(public_key))
+    }
+}
+
+/// Custom implementation of Serialize and Deserialize for UniquePubkey to make it an actionable
+/// hex string that can be copy pasted in apps, instead of a useless array of numbers
+/// Caveat: this is slower than the default implementation
+impl Serialize for UniquePubkey {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.to_hex())
+    }
+}
+
+impl<'de> Deserialize<'de> for UniquePubkey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let hex = String::deserialize(deserializer)?;
+        UniquePubkey::from_hex(hex).map_err(serde::de::Error::custom)
     }
 }
 
