@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.24](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.23...sn_client-v0.104.24) - 2024-02-20
+
+### Added
+- estimate feature with ci and balance after with fn docs
+
 ## [0.104.23](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.22...sn_client-v0.104.23) - 2024-02-20
 
 ### Other

@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.77](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.76...sn_cli-v0.89.77) - 2024-02-20
+
+### Added
+- dependency reconfiguration
+- nano to snt
+- concurrent estimate without error messages
+- make data public bool
+- removal of the retry strategy
+- estimate feature with ci and balance after with fn docs
+
 ## [0.89.76](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.75...sn_cli-v0.89.76) - 2024-02-20
 
 ### Other
