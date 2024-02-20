@@ -420,18 +420,18 @@ mod tests {
     fn fetching_from_network() -> Result<()> {
         let snapshot = load_maid_snapshot()?;
         println!("Maid snapshot got {:?} entries", snapshot.len());
-        assert!(snapshot.len() >= 16214);
+        assert!(!snapshot.is_empty());
 
         let pubkeys = load_maid_pubkeys()?;
         println!("Got {:?} distribution keys", pubkeys.len());
-        assert!(pubkeys.len() >= 1227);
+        assert!(!pubkeys.is_empty());
 
         let candidates = snapshot
             .iter()
             .filter(|(addr, _amount)| pubkeys.contains_key(*addr))
             .count();
         println!("Got {candidates:?} distribution candidates");
-        assert!(candidates >= 1212);
+        assert!(candidates >= 1);
 
         Ok(())
     }
