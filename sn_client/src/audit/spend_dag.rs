@@ -39,6 +39,19 @@ pub struct SpendDag {
     spends: BTreeMap<SpendAddress, Vec<(Option<SignedSpend>, usize)>>,
 }
 
+/// The result of a get operation on the DAG
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub enum SpendDagGet {
+    /// Spend does not exist in the DAG
+    NotFound,
+    /// Spend is an UTXO, meaning it was not spent yet but its ancestors exist
+    Utxo,
+    /// Spend is a double spend
+    DoubleSpend,
+    /// Spend is in the DAG
+    Spend(Box<SignedSpend>),
+}
+
 impl SpendDag {
     pub fn new() -> Self {
         Self {
@@ -189,6 +202,18 @@ impl SpendDag {
                     self.insert(addr, spend);
                 }
             }
+        }
+    }
+
+    /// Get the spend at a given address
+    pub fn get_spend(&self, addr: &SpendAddress) -> SpendDagGet {
+        match self.spends.get(addr) {
+            None => SpendDagGet::NotFound,
+            Some(spends) => match spends.as_slice() {
+                [(Some(spend), _)] => SpendDagGet::Spend(Box::new(spend.clone())),
+                [(None, _)] => SpendDagGet::Utxo,
+                _ => SpendDagGet::DoubleSpend,
+            },
         }
     }
 
