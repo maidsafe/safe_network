@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708424329573,
+  "lastUpdate": 1708424332274,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37612,6 +37612,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37404,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "90990b74fbbe7ec5315929624c11a09c4b8fe1d6",
+          "message": "feat(folders): move folders/files metadata out of Folders entries",
+          "timestamp": "2024-02-20T08:49:28Z",
+          "tree_id": "ec17c519ed61eab8bd9ea169bddee09d9ba76ff2",
+          "url": "https://github.com/maidsafe/safe_network/commit/90990b74fbbe7ec5315929624c11a09c4b8fe1d6"
+        },
+        "date": 1708424331243,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5731,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32107,
             "unit": "ms"
           },
           {
