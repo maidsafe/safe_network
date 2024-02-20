@@ -283,7 +283,6 @@ pub(crate) async fn estimate_cost(
     root_dir: &Path,
 ) -> Result<()> {
     let mut chunk_manager = ChunkManager::new(root_dir);
-
     chunk_manager.chunk_path(&path, false, make_data_public)?;
 
     let mut estimate: u64 = 0;
@@ -294,16 +293,23 @@ pub(crate) async fn estimate_cost(
         .as_nano();
 
     for (chunk_address, _location) in chunk_manager.get_chunks() {
-        let (_peer, _cost, quote) = FilesApi::new(client.clone(), root_dir.to_path_buf())
-            .wallet()?
-            .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
-                chunk_address,
-            )))
-            .await?;
+        let client_clone = client.clone();
+        let root_dir_path_buf = root_dir.to_path_buf();
 
-        let cost_as_nano = quote.cost.as_nano();
-
-        estimate += cost_as_nano;
+        tokio::spawn(async move {
+            let (_peer, _cost, quote) = FilesApi::new(client_clone, root_dir_path_buf)
+                .wallet()
+                .expect("TODO: panic message")
+                .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
+                    chunk_address,
+                )))
+                .await
+                .expect("TODO: panic message");
+            return quote.cost.as_nano();
+        })
+        .await
+        .map(|nanos| estimate += nanos)
+        .expect("TODO: panic message");
     }
 
     let total = balance - estimate;
