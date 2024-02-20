@@ -204,7 +204,7 @@ package-release-assets bin version="":
   mv *.tar.gz deploy/$bin
   mv *.zip deploy/$bin
 
-upload-release-assets:
+upload-github-release-assets:
   #!/usr/bin/env bash
   set -e
 
@@ -262,11 +262,6 @@ upload-release-assets:
           if [[ $crate_with_version == $crate-v* ]]; then
             (
               cd deploy/$bin_name
-              echo "Uploading $bin_name assets to S3 bucket..."
-              for file in *.zip *.tar.gz; do
-                aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
-              done
-
               if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
                 echo "Uploading $bin_name assets to $crate_with_version release..."
                 ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
