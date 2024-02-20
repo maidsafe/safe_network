@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.8...sn-node-manager-v0.3.9) - 2024-02-20
+
+### Added
+- *(manager)* setup initial bin for safenode mangaer daemon
+
+### Other
+- *(deps)* update service manager to the latest version
+- *(manager)* move node controls into its own module
+- *(manager)* make ServiceControl more generic
+- *(manager)* remove panics from the codebase and instead propagate errors
+- *(manager)* rename options to be coherent across the lib
+- remove unused install file
+
 ## [0.3.8](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.7...sn-node-manager-v0.3.8) - 2024-02-20
 
 ### Other

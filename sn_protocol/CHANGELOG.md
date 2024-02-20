@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.6](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.14.5...sn_protocol-v0.14.6) - 2024-02-20
+
+### Added
+- *(manager)* setup initial bin for safenode mangaer daemon
+
 ## [0.14.5](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.14.4...sn_protocol-v0.14.5) - 2024-02-20
 
 ### Other
