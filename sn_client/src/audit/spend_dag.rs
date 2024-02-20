@@ -43,9 +43,9 @@ pub struct SpendDag {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum SpendDagGet {
     /// Spend does not exist in the DAG
-    NotFound,
+    SpendNotFound,
     /// Spend is an UTXO, meaning it was not spent yet but its ancestors exist
-    Utxo,
+    SpendIsAnUtxo,
     /// Spend is a double spend
     DoubleSpend,
     /// Spend is in the DAG
@@ -208,10 +208,10 @@ impl SpendDag {
     /// Get the spend at a given address
     pub fn get_spend(&self, addr: &SpendAddress) -> SpendDagGet {
         match self.spends.get(addr) {
-            None => SpendDagGet::NotFound,
+            None => SpendDagGet::SpendNotFound,
             Some(spends) => match spends.as_slice() {
                 [(Some(spend), _)] => SpendDagGet::Spend(Box::new(spend.clone())),
-                [(None, _)] => SpendDagGet::Utxo,
+                [(None, _)] => SpendDagGet::SpendIsAnUtxo,
                 _ => SpendDagGet::DoubleSpend,
             },
         }
