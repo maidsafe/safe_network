@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708359288774,
+  "lastUpdate": 1708418166203,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "1f9829a45d6350c34455a0a72e45f2a26963f4b5",
-          "message": "chore: use proper logging funcs",
-          "timestamp": "2023-10-16T12:08:27Z",
-          "tree_id": "1786faf866272b03ae7ad1f47ded771e863cb6aa",
-          "url": "https://github.com/maidsafe/safe_network/commit/1f9829a45d6350c34455a0a72e45f2a26963f4b5"
-        },
-        "date": 1697461365058,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11794074728466503,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7303935562035483,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.07372456654815,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.189911052009556,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "72412bd554c2ae3bffd8c196c999b702b1f02327",
+          "message": "perf: improve DAG crawling performance with better parallelisation",
+          "timestamp": "2024-02-20T07:48:14Z",
+          "tree_id": "d8f8b2942dbe2be7c11f2a2dbdddb48f5766401c",
+          "url": "https://github.com/maidsafe/safe_network/commit/72412bd554c2ae3bffd8c196c999b702b1f02327"
+        },
+        "date": 1708418162294,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3148347540902876,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8579788711684353,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.26668300941532,
             "unit": "MiB/s"
           }
         ]
