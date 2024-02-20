@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708465286190,
+  "lastUpdate": 1708465386572,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0a4c7ef39d357631d2db5c3393ffa99342aae3ce",
-          "message": "fix(network): emit NetworkEvent when we publish a gossipsub msg\n- should fix the reward test failures\n- they were cuased because the `genesis_node` that we used to monitor\n  the gossipsub messages from was the one who published the message\n- Hence it would not emit and `NodeEvent` that we were listening for",
-          "timestamp": "2023-10-19T13:53:16+02:00",
-          "tree_id": "76a89d181f7f0f8947500a629d65a47f406e069e",
-          "url": "https://github.com/maidsafe/safe_network/commit/0a4c7ef39d357631d2db5c3393ffa99342aae3ce"
-        },
-        "date": 1697718886476,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 75,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "244a182c16b848d5042aeaa1b7c70afa3a4269dc",
+          "message": "ci: upload binaries to s3 before publish\n\nWe found CI node manager upgrade tests did not work correctly when a release was running at the same\ntime, which is a common scenario. The reason is because the node manager uses `crates.io` to get the\nlatest version of the node and then attempts to download binaries from S3 based on that version\nnumber, but those binaries were not yet available on S3.\n\nWe now change the process to upload the binaries to S3 before the publishing phase.",
+          "timestamp": "2024-02-20T20:55:50Z",
+          "tree_id": "0c00c85f000bd7ef360b947224d54861fb1a31e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/244a182c16b848d5042aeaa1b7c70afa3a4269dc"
+        },
+        "date": 1708465386269,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
