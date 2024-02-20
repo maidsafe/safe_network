@@ -11,7 +11,7 @@ mod spend_dag;
 mod spend_dag_building;
 
 pub use dag_error::DagError;
-pub use spend_dag::SpendDag;
+pub use spend_dag::{SpendDag, SpendDagGet};
 
 use super::{
     error::{Error, Result},
