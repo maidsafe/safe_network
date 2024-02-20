@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708418270445,
+  "lastUpdate": 1708418273201,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -37534,6 +37534,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 39414,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "72412bd554c2ae3bffd8c196c999b702b1f02327",
+          "message": "perf: improve DAG crawling performance with better parallelisation",
+          "timestamp": "2024-02-20T07:48:14Z",
+          "tree_id": "d8f8b2942dbe2be7c11f2a2dbdddb48f5766401c",
+          "url": "https://github.com/maidsafe/safe_network/commit/72412bd554c2ae3bffd8c196c999b702b1f02327"
+        },
+        "date": 1708418272165,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6231,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34630,
             "unit": "ms"
           },
           {
