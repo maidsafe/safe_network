@@ -5,6 +5,7 @@ dependencies_update = false
 git_release_enable = true
 publish_allow_dirty = false
 semver_check = false
+git_release_type = "auto"
 
 [[package]]
 name = "sn_build_info"
