@@ -13,11 +13,11 @@ use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
     config::*,
+    faucet_control::{add_faucet, start_faucet, AddFaucetServiceOptions},
     helpers::download_and_extract_release,
     local::{kill_network, run_network, LocalNetworkOptions},
     node_control::{
-        add, add_faucet, remove, start, start_faucet, status, stop, upgrade, AddFaucetServiceOptions,
-        AddServiceOptions, UpgradeOptions, UpgradeResult,
+        add, remove, start, status, stop, upgrade, AddServiceOptions, UpgradeOptions, UpgradeResult,
     },
     service::{NodeServiceManager, ServiceControl},
     VerbosityLevel,
