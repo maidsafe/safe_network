@@ -29,7 +29,7 @@ use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use sn_transfers::get_faucet_data_dir;
 use std::{
-    net::Ipv4Addr,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
     process::{Command, Stdio},
     str::FromStr,
@@ -494,6 +494,10 @@ async fn main() -> Result<()> {
 
             let service_manager = NodeServiceManager {};
             daemon_control::run_daemon(address, port, path, &service_manager, verbosity)?;
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            node_registry.daemon_socket_addr = Some(SocketAddr::new(IpAddr::V4(address), port));
+            node_registry.save()?;
 
             Ok(())
         }
