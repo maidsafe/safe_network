@@ -7,12 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod config;
-mod faucet;
 #[cfg(test)]
 mod tests;
 
-pub use config::{AddFaucetServiceOptions, AddServiceOptions, UpgradeOptions};
-pub use faucet::{add_faucet, start_faucet};
+pub use config::{AddServiceOptions, UpgradeOptions};
 
 use self::config::InstallNodeServiceCtxBuilder;
 use crate::{config::create_owned_dir, service::ServiceControl, VerbosityLevel};
@@ -143,7 +141,7 @@ pub async fn add(
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
         }
-        .execute()?;
+        .build()?;
 
         match service_control.install(install_ctx) {
             Ok(()) => {
@@ -498,7 +496,7 @@ pub async fn upgrade(
         service_user: node.user.clone(),
         env_variables: options.env_variables.clone(),
     }
-    .execute()?;
+    .build()?;
     service_control.install(install_ctx)?;
 
     if options.start_node {
