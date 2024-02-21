@@ -120,7 +120,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -359,7 +359,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -390,7 +390,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -421,7 +421,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -559,7 +559,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         bootstrap_peers: new_peers.clone(),
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -670,7 +670,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         bootstrap_peers: vec![],
         env_variables: env_variables.clone(),
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -790,7 +790,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -892,7 +892,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
