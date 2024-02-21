@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708465389367,
+  "lastUpdate": 1708511265581,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "95ab36554707cfe7bb00c3b04efc699e898f7c48",
-          "message": "ci: find the sha before the wait step",
-          "timestamp": "2023-10-19T16:04:33+02:00",
-          "tree_id": "7c5b55da24b4f6e23a9d95e6c831c24878403b28",
-          "url": "https://github.com/maidsafe/safe_network/commit/95ab36554707cfe7bb00c3b04efc699e898f7c48"
-        },
-        "date": 1697725549467,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11572894414053637,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.647947954091378,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.023284043415476,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.97091098462011,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "23d1122f64520a08e149da81ae8d47683564e3ea",
+          "message": "chore: update readme for default branch for PRs",
+          "timestamp": "2024-02-21T11:12:18+01:00",
+          "tree_id": "e84b3ff01cf651662c716ae7049068c3bebffa6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/23d1122f64520a08e149da81ae8d47683564e3ea"
+        },
+        "date": 1708511262692,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2590637657853365,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8443265027939995,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.44135005379856,
             "unit": "MiB/s"
           }
         ]
