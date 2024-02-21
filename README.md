@@ -399,9 +399,11 @@ The metrics can then be collected using a collector (for e.g. Prometheus) and th
 
 Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit **[The MaidSafe Forum](https://safenetforum.org/)** for discussion or if you would like to join our online community.
 
-### Conventional Commits
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for all commits. Please make sure your commit messages adhere to this standard.
+### Pull Request Process
+
+1. Please direct all pull requests to the `alpha` branch instead of the `main` branch.
+1. Ensure that your commit messages clearly describe the changes you have made and use the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
 ## License
 
