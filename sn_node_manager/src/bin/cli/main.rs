@@ -16,7 +16,7 @@ use sn_node_manager::{
     helpers::download_and_extract_release,
     local::{kill_network, run_network, LocalNetworkOptions},
     node_control::{
-        add, add_faucet, remove, start, status, stop, upgrade, AddFaucetServiceOptions,
+        add, add_faucet, remove, start, start_faucet, status, stop, upgrade, AddFaucetServiceOptions,
         AddServiceOptions, UpgradeOptions, UpgradeResult,
     },
     service::{NodeServiceManager, ServiceControl},
@@ -375,6 +375,11 @@ pub enum FaucetSubCmd {
         #[clap(long)]
         version: Option<String>,
     },
+    /// Start the faucet service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "start")]
+    Start {},
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -505,6 +510,28 @@ async fn main() -> Result<()> {
                 .await?;
 
                 Ok(())
+            }
+            FaucetSubCmd::Start {} => {
+                if !is_running_as_root() {
+                    return Err(eyre!("The start command must run as the root user"));
+                }
+
+                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                if let Some(faucet) = node_registry.faucet.clone() {
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("=================================================");
+                        println!("             Start Faucet Service                ");
+                        println!("=================================================");
+                    }
+
+                    let mut faucet = faucet;
+                    start_faucet(&mut faucet, &NodeServiceManager {}, verbosity.clone()).await?;
+                    node_registry.faucet = Some(faucet);
+                    node_registry.save()?;
+                    return Ok(());
+                }
+
+                Err(eyre!("The faucet service has not been added yet"))
             }
         },
         SubCmd::Join {
