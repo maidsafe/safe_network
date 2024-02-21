@@ -87,6 +87,18 @@ where
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Faucet {
+    pub faucet_path: PathBuf,
+    pub local: bool,
+    pub log_dir_path: PathBuf,
+    pub pid: Option<u32>,
+    pub service_name: String,
+    pub status: NodeStatus,
+    pub user: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node {
     pub genesis: bool,
     pub local: bool,
@@ -132,11 +144,12 @@ impl Node {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
-    pub save_path: PathBuf,
-    pub nodes: Vec<Node>,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub environment_variables: Option<Vec<(String, String)>>,
+    pub faucet: Option<Faucet>,
     pub faucet_pid: Option<u32>,
+    pub nodes: Vec<Node>,
+    pub save_path: PathBuf,
 }
 
 impl NodeRegistry {
@@ -155,11 +168,12 @@ impl NodeRegistry {
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
             return Ok(NodeRegistry {
-                save_path: path.to_path_buf(),
-                nodes: vec![],
                 bootstrap_peers: vec![],
                 environment_variables: None,
+                faucet: None,
                 faucet_pid: None,
+                nodes: vec![],
+                save_path: path.to_path_buf(),
             });
         }
 
@@ -171,11 +185,12 @@ impl NodeRegistry {
         // services were added.
         if contents.is_empty() {
             return Ok(NodeRegistry {
-                save_path: path.to_path_buf(),
-                nodes: vec![],
                 bootstrap_peers: vec![],
                 environment_variables: None,
+                faucet: None,
                 faucet_pid: None,
+                nodes: vec![],
+                save_path: path.to_path_buf(),
             });
         }
 
