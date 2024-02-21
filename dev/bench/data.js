@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708511368229,
+  "lastUpdate": 1708511369851,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38002,6 +38002,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35679,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "23d1122f64520a08e149da81ae8d47683564e3ea",
+          "message": "chore: update readme for default branch for PRs",
+          "timestamp": "2024-02-21T11:12:18+01:00",
+          "tree_id": "e84b3ff01cf651662c716ae7049068c3bebffa6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/23d1122f64520a08e149da81ae8d47683564e3ea"
+        },
+        "date": 1708511369469,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5995,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34775,
             "unit": "ms"
           },
           {
