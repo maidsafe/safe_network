@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use color_eyre::Result;
+use sn_releases::ReleaseType;
 use std::path::{Path, PathBuf};
 
 #[cfg(unix)]
@@ -75,20 +76,30 @@ pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> 
 }
 
 #[cfg(unix)]
-pub fn get_service_log_dir_path(custom_path: Option<PathBuf>, owner: &str) -> Result<PathBuf> {
+pub fn get_service_log_dir_path(
+    bin_type: ReleaseType,
+    custom_path: Option<PathBuf>,
+    owner: &str,
+) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
-        None => PathBuf::from("/var/log/safenode"),
+        None => PathBuf::from("/var/log").join(bin_type.to_string()),
     };
     create_owned_dir(path.clone(), owner)?;
     Ok(path)
 }
 
 #[cfg(windows)]
-pub fn get_service_log_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> Result<PathBuf> {
+pub fn get_service_log_dir_path(
+    bin_type: ReleaseType,
+    custom_path: Option<PathBuf>,
+    _owner: &str,
+) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
-        None => PathBuf::from("C:\\ProgramData\\safenode\\logs"),
+        None => PathBuf::from("C:\\ProgramData")
+            .join(bin_type.to_string())
+            .join("logs"),
     };
     std::fs::create_dir_all(&path)?;
     Ok(path)

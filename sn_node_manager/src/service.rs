@@ -14,7 +14,7 @@ use service_manager::{
     ServiceUninstallCtx,
 };
 use std::net::{SocketAddr, TcpListener};
-use sysinfo::{Pid, System, SystemExt};
+use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
 /// easier.
@@ -28,6 +28,7 @@ pub trait ServiceControl {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()>;
+    fn get_process_pid(&self, name: &str) -> Result<u32>;
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
@@ -139,6 +140,21 @@ impl ServiceControl for NodeServiceManager {
         drop(socket);
 
         Ok(port)
+    }
+
+    fn get_process_pid(&self, name: &str) -> Result<u32> {
+        use color_eyre::eyre::eyre;
+
+        let mut system = System::new_all();
+        system.refresh_all();
+        for (pid, process) in system.processes() {
+            if process.name() == name {
+                // There does not seem to be any easy way to get the process ID from the `Pid`
+                // type. Probably something to do with representing it in a cross-platform way.
+                return Ok(pid.to_string().parse::<u32>()?);
+            }
+        }
+        Err(eyre!("Could not find process named {name}"))
     }
 
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {
