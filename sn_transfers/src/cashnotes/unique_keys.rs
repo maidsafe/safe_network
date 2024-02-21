@@ -114,6 +114,7 @@ impl<'de> Deserialize<'de> for UniquePubkey {
             })
         // the old serialisation format is an array
         } else if deserialized.is_array() {
+            warn!("Detected old serialisation format for UniquePubkey, please update to the new format!");
             let key: UniquePubkeyRep =
                 serde::Deserialize::deserialize(deserialized).map_err(|e| {
                     serde::de::Error::custom(format!(
