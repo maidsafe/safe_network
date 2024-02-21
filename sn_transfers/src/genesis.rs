@@ -187,10 +187,21 @@ pub fn create_first_cash_note_from_key(
 }
 
 pub fn create_faucet_wallet() -> HotWallet {
-    let root_dir = get_faucet_dir();
+    let root_dir = get_faucet_data_dir();
 
     println!("Loading faucet wallet... {root_dir:#?}");
     HotWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
+}
+
+// We need deterministic and fix path for the faucet wallet.
+// Otherwise the test instances will not be able to find the same faucet instance.
+pub fn get_faucet_data_dir() -> PathBuf {
+    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
+    data_dirs.push("safe");
+    data_dirs.push("test_faucet");
+    std::fs::create_dir_all(data_dirs.as_path())
+        .expect("Faucet test path to be successfully created.");
+    data_dirs
 }
 
 // We need deterministic and fix path for the genesis wallet.
@@ -201,16 +212,5 @@ fn get_genesis_dir() -> PathBuf {
     data_dirs.push("test_genesis");
     std::fs::create_dir_all(data_dirs.as_path())
         .expect("Genesis test path to be successfully created.");
-    data_dirs
-}
-
-// We need deterministic and fix path for the faucet wallet.
-// Otherwise the test instances will not be able to find the same faucet instance.
-fn get_faucet_dir() -> PathBuf {
-    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
-    data_dirs.push("safe");
-    data_dirs.push("test_faucet");
-    std::fs::create_dir_all(data_dirs.as_path())
-        .expect("Faucet test path to be successfully created.");
     data_dirs
 }
