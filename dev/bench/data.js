@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708511366731,
+  "lastUpdate": 1708511368229,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "613d55a4a0922188b795bc76c2fdb985bcedd197",
-          "message": "fix: upload bootstrap node log as well",
-          "timestamp": "2023-10-19T14:53:32+02:00",
-          "tree_id": "84c48fc7a11a0f813cf155d2ecde23e36d7c97dc",
-          "url": "https://github.com/maidsafe/safe_network/commit/613d55a4a0922188b795bc76c2fdb985bcedd197"
-        },
-        "date": 1697722208336,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 167,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 70,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "f645d9efce153a56936462c557b8f213c1bb6bd3",
           "message": "fix: RegisterAddress logging with correct network addressing",
           "timestamp": "2023-10-20T09:38:42+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "23d1122f64520a08e149da81ae8d47683564e3ea",
+          "message": "chore: update readme for default branch for PRs",
+          "timestamp": "2024-02-21T11:12:18+01:00",
+          "tree_id": "e84b3ff01cf651662c716ae7049068c3bebffa6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/23d1122f64520a08e149da81ae8d47683564e3ea"
+        },
+        "date": 1708511367844,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
