@@ -71,3 +71,10 @@ name = "token_supplies"
 changelog_update = true
 git_release_enable = false
 publish = true
+
+
+[[package]]
+name = "metrics"
+changelog_update = true
+git_release_enable = false
+publish = false
