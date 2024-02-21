@@ -65,7 +65,7 @@ async fn startup_server(client: &Client) -> Result<()> {
     #[cfg(feature = "distribution")]
     {
         balances = token_distribution::load_maid_snapshot()?;
-        let keys = token_distribution::load_maid_pubkeys()?;
+        let keys = token_distribution::load_maid_claims()?;
         // Each distribution takes about 500ms to create, so for thousands of
         // initial distributions this takes many minutes. This is run in the
         // background instead of blocking the server from starting.
