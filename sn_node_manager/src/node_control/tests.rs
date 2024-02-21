@@ -94,7 +94,6 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let mut mock_service_control = MockServiceControl::new();
@@ -211,7 +210,6 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let temp_dir = assert_fs::TempDir::new()?;
@@ -268,7 +266,6 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let latest_version = "0.96.4";
@@ -326,7 +323,6 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let latest_version = "0.96.4";
@@ -529,7 +525,6 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         nodes: vec![],
         bootstrap_peers: old_peers.clone(),
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -642,7 +637,6 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -765,7 +759,6 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let temp_dir = assert_fs::TempDir::new()?;
     let node_data_dir = temp_dir.child("safenode1");
@@ -864,7 +857,6 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -970,7 +962,6 @@ async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_s
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
