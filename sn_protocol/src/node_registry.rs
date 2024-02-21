@@ -147,7 +147,6 @@ pub struct NodeRegistry {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub environment_variables: Option<Vec<(String, String)>>,
     pub faucet: Option<Faucet>,
-    pub faucet_pid: Option<u32>,
     pub nodes: Vec<Node>,
     pub save_path: PathBuf,
 }
@@ -171,7 +170,6 @@ impl NodeRegistry {
                 bootstrap_peers: vec![],
                 environment_variables: None,
                 faucet: None,
-                faucet_pid: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
             });
@@ -188,7 +186,6 @@ impl NodeRegistry {
                 bootstrap_peers: vec![],
                 environment_variables: None,
                 faucet: None,
-                faucet_pid: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
             });
