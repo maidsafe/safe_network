@@ -12,7 +12,7 @@ mod faucet;
 mod tests;
 
 pub use config::{AddFaucetServiceOptions, AddServiceOptions, UpgradeOptions};
-pub use faucet::add_faucet;
+pub use faucet::{add_faucet, start_faucet};
 
 use self::config::InstallNodeServiceCtxBuilder;
 use crate::{config::create_owned_dir, service::ServiceControl, VerbosityLevel};
