@@ -11,9 +11,9 @@ use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::{eyre, Result};
 use sn_client::Client;
-use sn_transfers::{HotWallet, NanoTokens};
+use sn_transfers::{get_faucet_data_dir, HotWallet, NanoTokens};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tiny_http::{Response, Server};
 use tracing::{debug, error, trace};
 use url::Url;
@@ -47,7 +47,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
 }
 
 pub async fn restart_faucet_server(client: &Client) -> Result<()> {
-    let root_dir = get_test_faucet_data_dir_path()?;
+    let root_dir = get_faucet_data_dir();
     println!("Loading the previous wallet at {root_dir:?}");
     debug!("Loading the previous wallet at {root_dir:?}");
 
@@ -175,15 +175,6 @@ async fn startup_server(client: &Client) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn get_test_faucet_data_dir_path() -> Result<PathBuf> {
-    let home_dirs = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-        .join("safe")
-        .join("test_faucet");
-    std::fs::create_dir_all(home_dirs.clone())?;
-    Ok(home_dirs.to_path_buf())
 }
 
 fn deposit(root_dir: &Path) -> Result<()> {

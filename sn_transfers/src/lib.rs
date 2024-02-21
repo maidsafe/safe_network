@@ -28,8 +28,8 @@ pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 /// Utilities exposed
 pub use genesis::{
     calculate_royalties_fee, create_faucet_wallet, create_first_cash_note_from_key,
-    is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
-    GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK,
+    get_faucet_data_dir, is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet,
+    Error as GenesisError, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK,
 };
 pub use wallet::bls_secret_from_hex;
 pub use wallet::{
