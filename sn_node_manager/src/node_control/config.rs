@@ -17,7 +17,6 @@ use std::{
 };
 
 #[derive(Debug, PartialEq)]
-/// Intermediate struct to generate the proper `ServiceInstallCtx` that is used to install safenode services.
 pub(super) struct InstallNodeServiceCtxBuilder {
     pub data_dir_path: PathBuf,
     pub genesis: bool,
@@ -33,7 +32,7 @@ pub(super) struct InstallNodeServiceCtxBuilder {
 }
 
 impl InstallNodeServiceCtxBuilder {
-    pub fn execute(self) -> Result<ServiceInstallCtx> {
+    pub fn build(self) -> Result<ServiceInstallCtx> {
         let label: ServiceLabel = self.name.parse()?;
         let mut args = vec![
             OsString::from("--rpc"),
@@ -119,70 +118,16 @@ impl InstallNodeServiceCtxBuilder {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct InstallFaucetServiceCtxBuilder {
-    pub bootstrap_peers: Vec<Multiaddr>,
-    pub env_variables: Option<Vec<(String, String)>>,
-    pub faucet_path: PathBuf,
-    pub local: bool,
-    pub log_dir_path: PathBuf,
-    pub name: String,
-    pub service_user: String,
-}
-
-impl InstallFaucetServiceCtxBuilder {
-    pub fn execute(self) -> Result<ServiceInstallCtx> {
-        let mut args = vec![
-            OsString::from("--log-output-dest"),
-            OsString::from(self.log_dir_path.to_string_lossy().to_string()),
-        ];
-
-        if !self.bootstrap_peers.is_empty() {
-            let peers_str = self
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
-        }
-
-        Ok(ServiceInstallCtx {
-            label: self.name.parse()?,
-            program: self.faucet_path.to_path_buf(),
-            args,
-            contents: None,
-            username: Some(self.service_user.to_string()),
-            working_directory: None,
-            environment: self.env_variables,
-        })
-    }
-}
-
 pub struct AddServiceOptions {
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
+    pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub local: bool,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub node_port: Option<u16>,
     pub rpc_address: Option<Ipv4Addr>,
     pub safenode_bin_path: PathBuf,
     pub safenode_dir_path: PathBuf,
-    pub service_data_dir_path: PathBuf,
-    pub service_log_dir_path: PathBuf,
-    pub url: Option<String>,
-    pub user: String,
-    pub version: String,
-    pub env_variables: Option<Vec<(String, String)>>,
-}
-
-pub struct AddFaucetServiceOptions {
-    pub bootstrap_peers: Vec<Multiaddr>,
-    pub env_variables: Option<Vec<(String, String)>>,
-    pub faucet_download_bin_path: PathBuf,
-    pub faucet_install_bin_path: PathBuf,
-    pub local: bool,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
     pub url: Option<String>,
