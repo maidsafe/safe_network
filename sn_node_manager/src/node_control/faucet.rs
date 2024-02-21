@@ -87,15 +87,47 @@ pub async fn add_faucet(
     }
 }
 
+pub async fn start_faucet(
+    faucet: &mut Faucet,
+    service_control: &dyn ServiceControl,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
+    if let NodeStatus::Running = faucet.status {
+        if service_control.is_service_process_running(faucet.pid.unwrap()) {
+            println!("The {} service is already running", faucet.service_name);
+            return Ok(());
+        }
+    }
+
+    if verbosity != VerbosityLevel::Minimal {
+        println!("Attempting to start {}...", faucet.service_name);
+    }
+    service_control.start(&faucet.service_name)?;
+
+    let pid = service_control.get_process_pid(&faucet.service_name)?;
+    faucet.pid = Some(pid);
+    faucet.status = NodeStatus::Running;
+
+    println!("{} Started faucet service", "✓".green());
+    if verbosity != VerbosityLevel::Minimal {
+        println!("  - PID: {}", pid);
+        println!("  - Logs: {}", faucet.log_dir_path.to_string_lossy());
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::service::MockServiceControl;
     use assert_fs::prelude::*;
+    use assert_matches::assert_matches;
     use mockall::predicate::*;
     use predicates::prelude::*;
     use service_manager::ServiceInstallCtx;
     use std::ffi::OsString;
+    use std::path::PathBuf;
 
     #[cfg(not(target_os = "windows"))]
     const FAUCET_FILE_NAME: &str = "faucet";
@@ -132,7 +164,6 @@ mod tests {
         let mut node_registry = NodeRegistry {
             bootstrap_peers: vec![],
             faucet: None,
-            faucet_pid: None,
             environment_variables: None,
             nodes: vec![],
             save_path: node_reg_path.to_path_buf(),
@@ -191,6 +222,40 @@ mod tests {
         assert_eq!(saved_faucet.status, NodeStatus::Added);
         assert_eq!(saved_faucet.user, get_username());
         assert_eq!(saved_faucet.version, latest_version);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn start_faucet_should_start_the_added_faucet_service() -> Result<()> {
+        let mut mock_service_control = MockServiceControl::new();
+
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq("faucet"))
+            .times(1)
+            .returning(|_| Ok(100));
+        mock_service_control
+            .expect_start()
+            .with(eq("faucet"))
+            .times(1)
+            .returning(|_| Ok(()));
+
+        let mut faucet = Faucet {
+            faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/faucet"),
+            pid: None,
+            service_name: "faucet".to_string(),
+            status: NodeStatus::Added,
+            user: "safe".to_string(),
+            version: "0.98.1".to_string(),
+        };
+
+        start_faucet(&mut faucet, &mock_service_control, VerbosityLevel::Normal).await?;
+
+        assert_eq!(faucet.pid, Some(100));
+        assert_matches!(faucet.status, NodeStatus::Running);
 
         Ok(())
     }
