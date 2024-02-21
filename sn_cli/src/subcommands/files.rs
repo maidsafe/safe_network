@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod chunk_manager;
+mod estimate;
 
 pub(crate) use chunk_manager::ChunkManager;
 
@@ -24,8 +25,7 @@ use sn_client::{
     FilesUpload, BATCH_SIZE,
 };
 use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
-use sn_protocol::NetworkAddress;
-use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
+use sn_transfers::{Error as TransfersError, WalletError};
 use std::{
     collections::BTreeSet,
     ffi::OsString,
@@ -180,7 +180,7 @@ pub(crate) async fn files_cmds(
         FilesCmds::Estimate {
             path,
             make_data_public,
-        } => estimate_cost(path, make_data_public, client, root_dir).await?,
+        } => estimate::estimate_cost(path, make_data_public, client, root_dir).await?,
         FilesCmds::Upload {
             path,
             batch_size,
@@ -272,57 +272,6 @@ pub(crate) async fn files_cmds(
             }
         }
     };
-    Ok(())
-}
-
-/// Estimate the upload cost of a chosen file
-pub(crate) async fn estimate_cost(
-    path: PathBuf,
-    make_data_public: bool,
-    client: &Client,
-    root_dir: &Path,
-) -> Result<()> {
-    let mut chunk_manager = ChunkManager::new(root_dir);
-    chunk_manager.chunk_path(&path, false, make_data_public)?;
-
-    let mut estimate: u64 = 0;
-
-    let balance = FilesApi::new(client.clone(), root_dir.to_path_buf())
-        .wallet()?
-        .balance()
-        .as_nano();
-
-    for (chunk_address, _location) in chunk_manager.get_chunks() {
-        let client_clone = client.clone();
-        let root_dir_path_buf = root_dir.to_path_buf();
-
-        tokio::spawn(async move {
-            let (_peer, _cost, quote) = FilesApi::new(client_clone, root_dir_path_buf)
-                .wallet()
-                .expect("estimate_cost: Wallet error.")
-                .get_store_cost_at_address(NetworkAddress::from_chunk_address(ChunkAddress::new(
-                    chunk_address,
-                )))
-                .await
-                .expect("estimate_cost: Error with file.");
-            quote.cost.as_nano()
-        })
-        .await
-        .map(|nanos| estimate += nanos)
-        .expect("estimate_cost: Concurrency error.");
-    }
-
-    let total = balance - estimate;
-
-    println!("**************************************");
-    println!("Your current balance: {}", NanoTokens::from(balance));
-    println!("Transfer cost estimate: {}", NanoTokens::from(estimate));
-    println!(
-        "Your balance estimate after transfer: {}",
-        NanoTokens::from(total)
-    );
-    println!("**************************************");
-
     Ok(())
 }
 
