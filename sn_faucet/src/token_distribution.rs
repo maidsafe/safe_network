@@ -18,12 +18,11 @@ use url::Url;
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
-const PUBKEYS_URL: &str =
-    "https://github.com/maidsafe/safe_network/raw/main/sn_faucet/maid_address_pubkeys.csv";
+const CLAIMS_URL: &str =
+    "https://github.com/maidsafe/safe_network/raw/main/sn_faucet/maid_address_claims.csv";
 const HTTP_STATUS_OK: i32 = 200;
 
 type MaidAddress = String; // base58 encoded
-type MaidPubkey = String; // hex encoded
 type Snapshot = HashMap<MaidAddress, NanoTokens>;
 
 // Parsed from json in SNAPSHOT_URL
@@ -34,12 +33,92 @@ struct MaidBalance {
     reserved: String,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Distribution {
-    #[serde(with = "serde_bytes")]
-    transfer: Vec<u8>,
-    #[serde(with = "serde_bytes")]
-    encrypted_secret_key: Vec<u8>,
+// Maid owners supply info that allows the faucet to distribute their funds.
+// They sign a safe wallet address using their maid key to prove ownership of
+// the maid.
+// The faucet will distribute SNT directly to that safe wallet address.
+pub struct MaidClaim {
+    address: String,   // base58 encoded bitcoin address owning omni maid
+    pubkey: String,    // hex encoded bitcoin public key
+    wallet: String,    // hex encoded safe wallet address
+    signature: String, // base64 encoded bitcoin signature of the wallet hex
+}
+
+impl MaidClaim {
+    pub fn new(address: MaidAddress, wallet: String, signature: String) -> Result<MaidClaim> {
+        let pubkey = match pubkey_from_signature(&wallet, &signature) {
+            Ok(pk) => pk,
+            Err(err) => {
+                return Err(eyre!("Invalid signature: {err}"));
+            }
+        };
+        let pubkey_hex = hex::encode(pubkey.to_bytes());
+        let mc = MaidClaim {
+            address,
+            pubkey: pubkey_hex,
+            wallet,
+            signature,
+        };
+        if !mc.is_valid() {
+            return Err(eyre!("Invalid claim"));
+        }
+        Ok(mc)
+    }
+
+    pub fn from_csv_line(line: &str) -> Result<MaidClaim> {
+        let cells = line.trim().split(',').collect::<Vec<&str>>();
+        if cells.len() != 4 {
+            let msg = format!("Invalid claim csv: {line}");
+            return Err(eyre!(msg.to_string()));
+        }
+        let mc = MaidClaim {
+            address: cells[0].to_string(),
+            pubkey: cells[1].to_string(),
+            wallet: cells[2].to_string(),
+            signature: cells[3].to_string(),
+        };
+        if !mc.is_valid() {
+            return Err(eyre!("Invalid claim"));
+        }
+        Ok(mc)
+    }
+
+    pub fn to_csv_line(&self) -> String {
+        format!(
+            "{},{},{},{}",
+            self.address, self.pubkey, self.wallet, self.signature
+        )
+    }
+
+    pub fn is_valid(&self) -> bool {
+        // check pk matches address
+        if !maid_pk_matches_address(&self.address, &self.pubkey) {
+            return false;
+        }
+        // check signature is correct
+        if !check_signature(&self.address, &self.wallet, &self.signature) {
+            return false;
+        }
+        // check wallet is a valid bls pubkey
+        if MainPubkey::from_hex(&self.wallet).is_err() {
+            return false;
+        };
+        // if all the checks are ok, it's valid
+        true
+    }
+
+    pub fn save_to_file(&self) -> Result<()> {
+        // check it's valid before we write it, can't know for sure it was
+        // already validated
+        if !self.is_valid() {
+            return Err(eyre!("Invalid claim"));
+        }
+        // if it already exists, overwrite it
+        let addr_path = get_claims_data_dir_path()?.join(self.address.clone());
+        let csv_line = self.to_csv_line();
+        std::fs::write(addr_path, csv_line)?;
+        Ok(())
+    }
 }
 
 // This is different to test_faucet_data_dir because it should *not* be
@@ -52,11 +131,11 @@ fn get_snapshot_data_dir_path() -> Result<PathBuf> {
     Ok(dir.to_path_buf())
 }
 
-fn get_pubkeys_data_dir_path() -> Result<PathBuf> {
+fn get_claims_data_dir_path() -> Result<PathBuf> {
     let dir = dirs_next::data_dir()
         .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
         .join("safe_snapshot")
-        .join("pubkeys");
+        .join("claims");
     std::fs::create_dir_all(dir.clone())?;
     Ok(dir.to_path_buf())
 }
@@ -148,76 +227,70 @@ fn parse_snapshot(json_str: String) -> Result<Snapshot> {
     Ok(balances_map)
 }
 
-fn load_maid_pubkeys_from_local() -> Result<HashMap<MaidAddress, MaidPubkey>> {
-    let mut pubkeys = HashMap::new();
+fn load_maid_claims_from_local() -> Result<HashMap<MaidAddress, MaidClaim>> {
+    let mut claims = HashMap::new();
     // load from existing files
-    let pk_dir = get_pubkeys_data_dir_path()?;
-    let file_list = std::fs::read_dir(pk_dir)?;
+    let claims_dir = get_claims_data_dir_path()?;
+    let file_list = std::fs::read_dir(claims_dir)?;
     for file in file_list {
         // add to hashmap
         let file = file?;
-        let pk_hex = std::fs::read_to_string(file.path())?;
-        let address = match file.file_name().into_string() {
-            Ok(s) => s,
-            Err(s) => {
-                let msg = format!("Error reading filename {s:?}");
-                return Err(eyre!(msg));
-            }
-        };
-        pubkeys.insert(address, pk_hex);
+        let claim_csv = std::fs::read_to_string(file.path())?;
+        let claim = MaidClaim::from_csv_line(&claim_csv)?;
+        claims.insert(claim.address.clone(), claim);
     }
-    Ok(pubkeys)
+    Ok(claims)
 }
 
-pub fn load_maid_pubkeys() -> Result<HashMap<MaidAddress, MaidPubkey>> {
-    info!("Loading public keys for distributions");
-    let mut pubkeys = match load_maid_pubkeys_from_local() {
-        Ok(pubkeys) => pubkeys,
+pub fn load_maid_claims() -> Result<HashMap<MaidAddress, MaidClaim>> {
+    info!("Loading claims for distributions");
+    let mut claims = match load_maid_claims_from_local() {
+        Ok(claims) => claims,
         Err(err) => {
-            info!("Failed to load pubkeys from local, {err:?}");
+            info!("Failed to load claims from local, {err:?}");
             HashMap::new()
         }
     };
-    info!("{} pubkeys after reading existing files", pubkeys.len());
+    info!("{} claims after reading existing files", claims.len());
 
-    // load from blockchain list on internet
-    info!("Fetching pukeys from {PUBKEYS_URL}");
-    let response = minreq::get(PUBKEYS_URL).send()?;
+    // load from list on internet
+    info!("Fetching claims from {CLAIMS_URL}");
+    let response = minreq::get(CLAIMS_URL).send()?;
     // check the request is ok
     if response.status_code != 200 {
         println!(
-            "Pubkey request failed with http status {}",
+            "Claims request failed with http status {}",
             response.status_code
         );
         // The existing data is ok, no need to fail to start the server here
-        return Ok(pubkeys);
+        return Ok(claims);
     }
     // parse the response as csv, each row has format:
-    // address,pkhex
+    // address,pkhex,wallet,signature
     let body = response.as_str()?;
     let lines: Vec<&str> = body.trim().split('\n').collect();
-    info!("{} pubkey rows from {PUBKEYS_URL}", lines.len());
+    info!("{} claims rows from {CLAIMS_URL}", lines.len());
     for line in lines {
-        let cells: Vec<&str> = line.split(',').collect();
-        if cells.len() != 2 {
+        let claim = match MaidClaim::from_csv_line(line) {
+            Ok(c) => c,
+            Err(_) => {
+                continue;
+            }
+        };
+        // validate this claim info all matches correctly
+        if !claim.is_valid() {
             continue;
         }
-        let address = cells[0].trim().to_string();
-        let pk_hex = cells[1].trim().to_string();
-        // validate this pk corresponds to the address
-        if !maid_pk_matches_address(&address, &pk_hex) {
+        // save this cliam to the file system
+        if claim.save_to_file().is_err() {
+            println!("Error saving claim to file");
             continue;
         }
-        // save this pair to pk_dir
-        save_address_pk(&address, &pk_hex)?;
-        // add this pair to the hashmap
-        pubkeys.insert(address, pk_hex);
+        // add this claim to the hashmap
+        claims.insert(claim.address.clone(), claim);
     }
-    info!(
-        "{} pubkeys after reading from blockchain list",
-        pubkeys.len()
-    );
-    Ok(pubkeys)
+    info!("{} claims after reading from online list", claims.len());
+    Ok(claims)
 }
 
 fn maid_pk_matches_address(address: &str, pk_hex: &str) -> bool {
@@ -252,24 +325,66 @@ fn maid_pk_matches_address(address: &str, pk_hex: &str) -> bool {
     false
 }
 
-fn save_address_pk(address: &str, pk_hex: &str) -> Result<()> {
-    let addr_path = get_pubkeys_data_dir_path()?.join(address);
-    std::fs::write(addr_path, pk_hex)?;
-    Ok(())
+fn check_signature(address: &MaidAddress, msg: &str, signature: &str) -> bool {
+    let secp = bitcoin::secp256k1::Secp256k1::new(); // DevSkim: ignore DS440100
+    let msg_hash = bitcoin::sign_message::signed_msg_hash(msg);
+    let sig = match bitcoin::sign_message::MessageSignature::from_str(signature) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    // Signatures doesn't work with p2wpkh-p2sh so always use p2pkh addr.
+    // This was double checked with electrum signature validation.
+    let pubkey = match pubkey_from_signature(msg, signature) {
+        Ok(pk) => pk,
+        Err(_) => return false,
+    };
+    let pubkey_hex = hex::encode(pubkey.to_bytes());
+    let addr = bitcoin::Address::p2pkh(&pubkey, bitcoin::Network::Bitcoin);
+    // Check the pubkey matches the address.
+    // This prevents someone submitting a valid signature from a pubkey that
+    // doesn't match the address for the snapshot.
+    if !maid_pk_matches_address(address, &pubkey_hex) {
+        return false;
+    }
+    // check the signature is correct
+    sig.is_signed_by_address(&secp, &addr, msg_hash)
+        .unwrap_or(false)
+}
+
+fn pubkey_from_signature(msg: &str, signature: &str) -> Result<bitcoin::PublicKey> {
+    let secp = bitcoin::secp256k1::Secp256k1::new(); // DevSkim: ignore DS440100
+    let msg_hash = bitcoin::sign_message::signed_msg_hash(msg);
+    let sig = match bitcoin::sign_message::MessageSignature::from_base64(signature) {
+        Ok(s) => s,
+        Err(err) => {
+            let msg = format!("Error parsing signature: {err}");
+            return Err(eyre!(msg));
+        }
+    };
+    let pubkey = sig.recover_pubkey(&secp, msg_hash)?;
+    Ok(pubkey)
 }
 
 pub async fn distribute_from_maid_to_tokens(
     client: Client,
     snapshot: Snapshot,
-    pubkeys: HashMap<MaidAddress, MaidPubkey>,
+    claims: HashMap<MaidAddress, MaidClaim>,
 ) {
     for (addr, amount) in snapshot {
         // check if this snapshot address has a pubkey
-        if !pubkeys.contains_key(&addr) {
+        if !claims.contains_key(&addr) {
             continue;
         }
-        let maid_pk = &pubkeys[&addr];
-        let _ = create_distribution(&client, &addr, maid_pk, &amount).await;
+        let claim = &claims[&addr];
+        match create_distribution(&client, claim, &amount).await {
+            Ok(_) => {}
+            Err(err) => {
+                info!(
+                    "Error creating distribution: {0} {err}",
+                    claim.to_csv_line()
+                );
+            }
+        }
     }
 }
 
@@ -281,35 +396,40 @@ pub async fn handle_distribution_req(
     let query: HashMap<String, String> = url.query_pairs().into_owned().collect();
     let address = query
         .get("address")
-        .ok_or(eyre!("Missing address in querystring"))?;
-    let pkhex = query
-        .get("pkhex")
-        .ok_or(eyre!("Missing pkhex in querystring"))?;
+        .ok_or(eyre!("Missing address in querystring"))?
+        .to_string();
+    let wallet = query
+        .get("wallet")
+        .ok_or(eyre!("Missing signature in querystring"))?
+        .to_string();
+    let signature = query
+        .get("signature")
+        .ok_or(eyre!("Missing signature in querystring"))?
+        .to_string();
     let amount = balances
-        .get(address)
+        .get(&address)
         .ok_or(eyre!("Address not in snapshot"))?;
-    create_distribution(client, address, pkhex, amount).await
+    let claim = MaidClaim::new(address, wallet, signature)?;
+    create_distribution(client, &claim, amount).await
 }
 
 async fn create_distribution(
     client: &Client,
-    addr: &MaidAddress,
-    maid_pk: &MaidPubkey,
+    claim: &MaidClaim,
     amount: &NanoTokens,
 ) -> Result<String> {
-    // validate the pk and the address match
-    // because we can't be sure if this addr:pk pair has been pre-verified
-    // and we don't want to encrypt using the wrong pubkey for the address
-    if !maid_pk_matches_address(addr, maid_pk) {
-        let msg = format!("Not creating distribution for mismatched addr/pk {addr} {maid_pk}");
+    // validate the claim
+    if !claim.is_valid() {
+        let claim_csv = claim.to_csv_line();
+        let msg = format!("Not creating distribution for invalid claim: {claim_csv}");
         info!(msg);
         return Err(eyre!(msg));
     }
-    // save this address and public key pair
-    save_address_pk(addr, maid_pk)?;
+    // save this claim to file
+    claim.save_to_file()?;
     // check if this distribution has already been created
     let root = get_distributions_data_dir_path()?;
-    let dist_path = root.join(addr);
+    let dist_path = root.join(&claim.address);
     if dist_path.exists() {
         let dist_hex = match std::fs::read_to_string(dist_path.clone()) {
             Ok(content) => content,
@@ -326,78 +446,42 @@ async fn create_distribution(
         return Ok(dist_hex);
     }
     info!(
-        "Distributing {} to {} using pubkey {}",
-        amount, addr, maid_pk
+        "Distributing {} for {} to {}",
+        amount, claim.address, claim.wallet
     );
-    // create a new random secret key to transfer this distribution to
-    let dist_sk = bls::SecretKey::random();
-    let dist_pk = MainPubkey(dist_sk.public_key()).to_hex();
-    // create a transfer to this new distribution key
-    let transfer_hex = match send_tokens(client, &amount.to_string(), &dist_pk).await {
+    // create a transfer to the claim wallet
+    let transfer_hex = match send_tokens(client, &amount.to_string(), &claim.wallet).await {
         Ok(t) => t,
         Err(err) => {
-            let msg = format!("Failed send for {addr}: {err}");
+            let msg = format!("Failed send for {0}: {err}", claim.address);
             info!(msg);
             return Err(eyre!(msg));
         }
     };
-    let transfer = match hex::decode(transfer_hex) {
+    let _ = match hex::decode(transfer_hex.clone()) {
         Ok(t) => t,
         Err(err) => {
-            let msg = format!("Failed to decode transfer to {addr}: {err}");
+            let msg = format!("Failed to decode transfer for {0}: {err}", claim.address);
             info!(msg);
             return Err(eyre!(msg));
         }
     };
-    // encrypt the secret key using the maid pubkey
-    let dist_sk_bytes = dist_sk.to_bytes();
-    let maid_pk_bytes = match hex::decode(maid_pk) {
-        Ok(b) => b,
-        Err(err) => {
-            let msg = format!("Failed to decode maid pk {maid_pk}: {err}");
-            info!(msg);
-            return Err(eyre!(msg));
-        }
-    };
-    let enc_dist_sk = match ecies::encrypt(&maid_pk_bytes, &dist_sk_bytes) {
-        Ok(ct) => ct,
-        Err(err) => {
-            let msg = format!("Failed to encrypt secret key for {addr}: {err}");
-            info!(msg);
-            return Err(eyre!(msg));
-        }
-    };
-    // create the distribution
-    let dist = Distribution {
-        transfer,
-        encrypted_secret_key: enc_dist_sk,
-    };
-    // serialize the distribution using message pack
-    let dist_bytes = match rmp_serde::to_vec_named(&dist) {
-        Ok(b) => b,
-        Err(err) => {
-            let msg = format!("Failed to encode distribution for {addr}: {err}");
-            info!(msg);
-            return Err(eyre!(msg));
-        }
-    };
-    let dist_hex = hex::encode(dist_bytes);
-    // save the distribution
-    match std::fs::write(dist_path.clone(), dist_hex.clone()) {
+    // save the transfer
+    match std::fs::write(dist_path.clone(), transfer_hex.clone()) {
         Ok(_) => {}
         Err(err) => {
             let msg = format!(
-                "Failed to write distribution to file {}: {}",
+                "Failed to write transfer to file {}: {}",
                 dist_path.display(),
                 err
             );
             info!(msg);
-            info!("The distribution hex that failed to write to file:");
-            info!(dist_hex);
+            info!("The transfer hex that failed to write to file:");
+            info!(transfer_hex);
             return Err(eyre!(msg));
         }
     };
-    Ok(dist_hex)
+    Ok(transfer_hex)
 }
 
 #[cfg(all(test, feature = "distribution"))]
@@ -406,32 +490,25 @@ mod tests {
 
     use assert_fs::TempDir;
     use bitcoin::{
+        hashes::Hash,
         secp256k1::{rand, Secp256k1},
         Address, Network, PublicKey,
     };
     use sn_logging::LogBuilder;
     use sn_transfers::{HotWallet, MainSecretKey, Transfer};
 
-    // This test is to confirm fetching 'MAID snapshop` and `Maid pubkeys` list from website
+    // This test is to confirm fetching 'MAID snapshop` and `Maid claims` list from website
     // is working properly and giving consistent and expected result.
     //
-    // Note: the current list is still growing. The number used is collected on 15th Feb 2024
+    // Note: the current list will grow as testnets collect more claims
     #[test]
     fn fetching_from_network() -> Result<()> {
         let snapshot = load_maid_snapshot()?;
         println!("Maid snapshot got {:?} entries", snapshot.len());
         assert!(!snapshot.is_empty());
 
-        let pubkeys = load_maid_pubkeys()?;
-        println!("Got {:?} distribution keys", pubkeys.len());
-        assert!(!pubkeys.is_empty());
-
-        let candidates = snapshot
-            .iter()
-            .filter(|(addr, _amount)| pubkeys.contains_key(*addr))
-            .count();
-        println!("Got {candidates:?} distribution candidates");
-        assert!(candidates >= 1);
+        let claims = load_maid_claims()?;
+        println!("Got {:?} distribution claims", claims.len());
 
         Ok(())
     }
@@ -444,49 +521,213 @@ mod tests {
 
         let amount = NanoTokens::from(10);
 
-        let secp = Secp256k1::new();
-        let (secret_key, public_key) = secp.generate_keypair(&mut rand::thread_rng());
-        let bitcoin_address = Address::p2pkh(&PublicKey::new(public_key), Network::Bitcoin);
+        let secp = Secp256k1::new(); // DevSkim: ignore DS440100
+        let (maid_secret_key, maid_public_key) = secp.generate_keypair(&mut rand::thread_rng());
+        let maid_address = Address::p2pkh(&PublicKey::new(maid_public_key), Network::Bitcoin);
 
         let client_token_issuer = Client::quick_start(None).await?;
 
-        let distribution_hex_str = create_distribution(
-            &client_token_issuer,
-            &bitcoin_address.to_string(),
-            &public_key.to_string(),
-            &amount,
-        )
-        .await?;
+        // wallet comes from `safe wallet address`
+        let wallet_sk = bls::SecretKey::random();
+        let wallet_pk_hex = wallet_sk.public_key().to_hex();
+        // signature comes from bitcoin signing like electrum or trezor
+        let msg_hash = bitcoin::sign_message::signed_msg_hash(&wallet_pk_hex);
+        let msg = bitcoin::secp256k1::Message::from_digest(msg_hash.to_byte_array()); // DevSkim: ignore DS440100
+        let secp_sig = secp.sign_ecdsa_recoverable(&msg, &maid_secret_key);
+        let signature = bitcoin::sign_message::MessageSignature {
+            signature: secp_sig,
+            compressed: true,
+        };
+        let claim = MaidClaim::new(
+            maid_address.to_string(),
+            wallet_pk_hex,
+            signature.to_string(),
+        )?;
 
-        let distribution_bytes = hex::decode(distribution_hex_str)?;
-        let distribution: Distribution = rmp_serde::from_slice(&distribution_bytes)?;
+        let transfer_hex = create_distribution(&client_token_issuer, &claim, &amount).await?;
 
-        let decrypted: [u8; 32] = ecies::decrypt(
-            &secret_key.secret_bytes(),
-            &distribution.encrypted_secret_key,
-        )
-        .unwrap()
-        .try_into()
-        .unwrap();
-        let dist_sk = bls::SecretKey::from_bytes(decrypted)?;
-
-        let transfer = Transfer::from_hex(&hex::encode(distribution.transfer))?;
+        let transfer = Transfer::from_hex(&transfer_hex)?;
 
         assert!(transfer
-            .cashnote_redemptions(&MainSecretKey::new(dist_sk.clone()))
+            .cashnote_redemptions(&MainSecretKey::new(wallet_sk.clone()))
             .is_ok());
 
         let receiver_client =
             Client::new(bls::SecretKey::random(), None, false, None, None).await?;
         let tmp_path = TempDir::new()?.path().to_owned();
         let receiver_wallet =
-            HotWallet::load_from_path(&tmp_path, Some(MainSecretKey::new(dist_sk)))?;
+            HotWallet::load_from_path(&tmp_path, Some(MainSecretKey::new(wallet_sk)))?;
 
         let mut cash_notes = receiver_client.receive(&transfer, &receiver_wallet).await?;
         assert_eq!(cash_notes.len(), 1);
         let cash_note = cash_notes.pop().unwrap();
 
         assert_eq!(cash_note.value()?, amount);
+
+        Ok(())
+    }
+
+    #[test]
+    fn maidclaim_isvalid() -> Result<()> {
+        // Signatures generated using electrum to ensure interoperability.
+
+        // prvkey for addr 17ig7... is L4DDUabuAU9AxVepwNkLBDmvrG4TXLJFDHoKPtkJdyDAPM3zHQhu
+        // sig is valid for wallet_a signed by addr_a
+        const MAID_ADDR_A: &str = "17ig7FYbSDaZZqVEjFmrGv7GSXBNLeJPNG";
+        const MAID_PUBKEY_A: &str =
+            "0383f4c6f1a3624140ba587e4ea5c6264a94d4077c1cf4ca7714bb93c67b3262bc"; // DevSkim: ignore DS173237
+        const WALLET_A: &str = "ac1e81dd3ccb28d4e7d8e551e953279d8af1ede5bbdbbb71aefb78a43206ca7827a3279160da4ee8c7296dfac72f8c8a"; // DevSkim: ignore DS173237
+        const SIG_A: &str = "HxaGOcmLu1BrSwzBi+KazC6XHbX/6B1Eyf9CnJrxB/OeKdJP9Jp38s+eqfBZ73wLG1OJW0mURhAmZkCsvBJayPM=";
+
+        // prvkey for addr 1EbjF... is L2gzGZUqifkBG3jwwkyyfos8A67VvFhyrtqKU5cWkfEpySkFbaBR
+        // sig is valid for wallet_b signed by addr_b
+        const MAID_PUBKEY_B: &str =
+            "031bc89b9279ae36795910c0d173002504f2c22dd45368263a5f30ce68e8696e0f"; // DevSkim: ignore DS173237
+        const WALLET_B: &str = "915d803d302bc1270e20de34413c270bdc4be632880e577719c2bf7d22e2c7b44388feef17fe5ac86b5d561697f2b3bf"; // DevSkim: ignore DS173237
+        const SIG_B: &str = "Hy3zUK3YiEidzE+HpdgeoRoH3lkCrOoTh59TvoOiUdfJVKKLAVUuAydgIJkOTVU8JKdvbYPGiQhf7KCiNtLRIVU=";
+
+        // not a valid bls wallet (starting with 0)
+        // sig is valid for wallet_c signed by addr_a
+        const WALLET_C: &str = "015d803d302bc1270e20de34413c270bdc4be632880e577719c2bf7d22e2c7b44388feef17fe5ac86b5d561697f2b3bf"; // DevSkim: ignore DS173237
+        const SIG_C: &str = "IE8y8KSRKw3hz/rd9dzrJLOu24sAspuJgYr6VVGCga3FQQhzOEFDKZoDdrJORRI4Rvv7vFqRARQVaBKCobYh9sc=";
+
+        // MaidClaim::new calls is_valid
+        let mc = MaidClaim::new(
+            MAID_ADDR_A.to_string(),
+            WALLET_A.to_string(),
+            SIG_A.to_string(),
+        );
+        assert!(mc.is_ok());
+
+        // MaidClaim::new will fail if inputs are incorrect
+        // because new calls is_valid
+        let mc = MaidClaim::new(
+            MAID_ADDR_A.to_string(),
+            WALLET_A.to_string(),
+            SIG_B.to_string(),
+        );
+        assert!(mc.is_err());
+
+        // valid
+        let mc = MaidClaim {
+            address: MAID_ADDR_A.to_string(),
+            pubkey: MAID_PUBKEY_A.to_string(),
+            wallet: WALLET_A.to_string(),
+            signature: SIG_A.to_string(),
+        };
+        assert!(mc.is_valid());
+
+        // pk not matching address
+        let mc = MaidClaim {
+            address: MAID_ADDR_A.to_string(),
+            pubkey: MAID_PUBKEY_B.to_string(),
+            wallet: WALLET_A.to_string(),
+            signature: SIG_A.to_string(),
+        };
+        assert!(!mc.is_valid());
+
+        // signature not matching message
+        let mc = MaidClaim {
+            address: MAID_ADDR_A.to_string(),
+            pubkey: MAID_PUBKEY_A.to_string(),
+            wallet: WALLET_A.to_string(),
+            signature: SIG_B.to_string(),
+        };
+        assert!(!mc.is_valid());
+
+        // signature matches message but not address
+        let mc = MaidClaim {
+            address: MAID_ADDR_A.to_string(),
+            pubkey: MAID_PUBKEY_B.to_string(),
+            wallet: WALLET_B.to_string(),
+            signature: SIG_B.to_string(),
+        };
+        assert!(!mc.is_valid());
+
+        // wallet is not a valid bls key
+        let mc = MaidClaim {
+            address: MAID_ADDR_A.to_string(),
+            pubkey: MAID_PUBKEY_A.to_string(),
+            wallet: WALLET_C.to_string(),
+            signature: SIG_C.to_string(),
+        };
+        assert!(!mc.is_valid());
+
+        Ok(())
+    }
+
+    #[test]
+    fn pk_matches_addr() -> Result<()> {
+        // p2pkh compressed
+        assert!(maid_pk_matches_address(
+            "17ig7FYbSDaZZqVEjFmrGv7GSXBNLeJPNG",
+            "0383f4c6f1a3624140ba587e4ea5c6264a94d4077c1cf4ca7714bb93c67b3262bc", // DevSkim: ignore DS173237
+        ));
+
+        // p2pkh uncompressed
+        assert!(maid_pk_matches_address(
+            "1QK8WWMcDEFUVV2zKU8GSCwwuvAFWEs2QW",
+            "0483f4c6f1a3624140ba587e4ea5c6264a94d4077c1cf4ca7714bb93c67b3262bc4327efb5ba23543c8a6e63ddc09618e11b5d0d184bb69f964712d0894c005655", // DevSkim: ignore DS173237
+        ));
+
+        // p2wpkh-p2sh
+        assert!(maid_pk_matches_address(
+            "3GErA71Kz6Tn4QCLqoaDvMxD5cLgqQLykv",
+            "03952005f63e148735d244dc52253586c6ed89d1692599452e7daaa2a63a88619a", // DevSkim: ignore DS173237
+        ));
+
+        // mismatched returns false
+        assert!(!maid_pk_matches_address(
+            "17ig7FYbSDaZZqVEjFmrGv7GSXBNLeJPNG",
+            "031bc89b9279ae36795910c0d173002504f2c22dd45368263a5f30ce68e8696e0f", // DevSkim: ignore DS173237
+        ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn pubkey_from_sig() -> Result<()> {
+        // Valid message and signature produces the corresponding public key.
+        // Signatures generated using electrum to ensure interoperability
+
+        // p2pkh compressed
+        // electrum import key
+        // L4DDUabuAU9AxVepwNkLBDmvrG4TXLJFDHoKPtkJdyDAPM3zHQhu
+        let pubkey = pubkey_from_signature(
+            "ac1e81dd3ccb28d4e7d8e551e953279d8af1ede5bbdbbb71aefb78a43206ca7827a3279160da4ee8c7296dfac72f8c8a", // DevSkim: ignore DS173237
+            "HxaGOcmLu1BrSwzBi+KazC6XHbX/6B1Eyf9CnJrxB/OeKdJP9Jp38s+eqfBZ73wLG1OJW0mURhAmZkCsvBJayPM=",
+        )?;
+        let pubkey_hex = hex::encode(pubkey.to_bytes());
+        assert_eq!(
+            pubkey_hex,
+            "0383f4c6f1a3624140ba587e4ea5c6264a94d4077c1cf4ca7714bb93c67b3262bc" // DevSkim: ignore DS173237
+        );
+
+        // p2pkh uncompressed
+        // electrum import key
+        // 5Jz2acAoqLr57YXzQuoiNS8sQtZQ3TBcVcaKsX5ybp9HtJiUSXq
+        let pubkey = pubkey_from_signature(
+            "ac1e81dd3ccb28d4e7d8e551e953279d8af1ede5bbdbbb71aefb78a43206ca7827a3279160da4ee8c7296dfac72f8c8a", // DevSkim: ignore DS173237
+            "Gw2YmGq5cbXVOCZKd1Uwku/kn9UWJ8QYGlho+FTXokfeNbQzINKli73rvoi39ssVN825kn5LgSdNu800e3w+eXE=",
+        )?;
+        let pubkey_hex = hex::encode(pubkey.to_bytes());
+        assert_eq!(
+            pubkey_hex,
+            "04952005f63e148735d244dc52253586c6ed89d1692599452e7daaa2a63a88619a0418114ad86aeda109dd924629bbf929e82c6ce5be948e4d21a95575a53e1f73" // DevSkim: ignore DS173237
+        );
+
+        // p2wpkh-p2sh uncompressed
+        // electrum import key
+        // p2wpkh-p2sh:L2NhyLEHiNbb9tBnQY5BbbwjWSZzhpZqfJ26Hynxpf5bXL9sUm73
+        let pubkey = pubkey_from_signature(
+            "ac1e81dd3ccb28d4e7d8e551e953279d8af1ede5bbdbbb71aefb78a43206ca7827a3279160da4ee8c7296dfac72f8c8a", // DevSkim: ignore DS173237
+            "Hw2YmGq5cbXVOCZKd1Uwku/kn9UWJ8QYGlho+FTXokfeNbQzINKli73rvoi39ssVN825kn5LgSdNu800e3w+eXE=",
+        )?;
+        let pubkey_hex = hex::encode(pubkey.to_bytes());
+        assert_eq!(
+            pubkey_hex,
+            "03952005f63e148735d244dc52253586c6ed89d1692599452e7daaa2a63a88619a" // DevSkim: ignore DS173237
+        );
 
         Ok(())
     }

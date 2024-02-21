@@ -12,7 +12,7 @@ version = "0.3.79"
 
 [features]
 default = []
-distribution = ["bitcoin", "minreq", "ecies", "serde_bytes"]
+distribution = ["bitcoin", "minreq"]
 
 [[bin]]
 path="src/main.rs"
@@ -20,18 +20,15 @@ name="faucet"
 
 [dependencies]
 assert_fs = "1.0.0"
-bitcoin = { version = "0.31.0", features = ["rand-std"], optional = true }
+bitcoin = { version = "0.31.0", features = ["rand-std", "base64"], optional = true }
 bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
-ecies = { version="0.2.6", default-features = false, features = ["pure"], optional = true }
 hex = "0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
-rmp-serde = "1.1.2"
 serde = { version = "1.0.193", features = ["derive"] }
-serde_bytes = { version = "0.11.12", optional = true }
 serde_json = "1.0.108"
 sn_client = { path = "../sn_client", version = "0.104.26" }
 sn_logging = { path = "../sn_logging", version = "0.2.21" }
