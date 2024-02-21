@@ -12,15 +12,6 @@ syntax = "proto3";
 // Package name
 package safenode_manager_proto;
 
-message NodeProcessRestartRequest {
-    bytes peer_id = 1;
-    bool preserve_peer_id = 2;
-    uint64 delay_millis = 3;
-    string local_node_registry_path = 4;
-}
-  
-message NodeProcessRestartResponse {}
-
 message NodeServiceRestartRequest {
     bytes peer_id = 1;
     bool preserve_peer_id = 2;
