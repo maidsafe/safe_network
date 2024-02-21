@@ -21,7 +21,16 @@ pub fn run_daemon(
     service_control: &dyn ServiceControl,
     _verbosity: VerbosityLevel,
 ) -> Result<()> {
-    let service_name: ServiceLabel = "safenode-manager-daemon".parse()?;
+    let service_name_str = "safenode-manager-daemon";
+    let service_name: ServiceLabel = service_name_str.parse()?;
+
+    // try to stop and uninstall if already installed
+    if let Err(err) = service_control.stop(&service_name_str) {
+        println!("Error while stopping manager daemon. Ignoring the error. {err:?}");
+    }
+    if let Err(err) = service_control.uninstall(&service_name_str) {
+        println!("Error while uninstalling manager daemon. Ignoring the error. {err:?}");
+    }
 
     let install_ctx = ServiceInstallCtx {
         label: service_name.clone(),
