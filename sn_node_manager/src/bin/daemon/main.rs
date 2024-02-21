@@ -23,14 +23,10 @@ use sn_protocol::{
     node_registry::NodeRegistry,
     safenode_manager_proto::{
         safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
-        NodeProcessRestartRequest, NodeProcessRestartResponse, NodeServiceRestartRequest,
-        NodeServiceRestartResponse,
+        NodeServiceRestartRequest, NodeServiceRestartResponse,
     },
 };
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
-};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Code, Request, Response, Status};
 
 const PORT: u16 = 12500;
@@ -53,36 +49,6 @@ struct SafeNodeManagerDaemon {}
 // Implementing RPC interface for service defined in .proto
 #[tonic::async_trait]
 impl SafeNodeManager for SafeNodeManagerDaemon {
-    async fn restart_node_process(
-        &self,
-        request: Request<NodeProcessRestartRequest>,
-    ) -> Result<Response<NodeProcessRestartResponse>, Status> {
-        println!("RPC request received {:?}", request.get_ref());
-        info!("RPC request received {:?}", request.get_ref());
-
-        let local_node_registry_path: String = request.get_ref().local_node_registry_path.clone();
-        let local_node_registry_path = PathBuf::from(local_node_registry_path);
-        let node_registry = NodeRegistry::load(&local_node_registry_path).map_err(|err| {
-            Status::new(
-                Code::Internal,
-                format!("Could not open local node registry with {err}"),
-            )
-        })?;
-        let peer_id = PeerId::from_bytes(&request.get_ref().peer_id)
-            .map_err(|err| Status::new(Code::Internal, format!("Failed to parse PeerId: {err}")))?;
-
-        Self::restart_handler(
-            node_registry,
-            peer_id,
-            request.get_ref().preserve_peer_id,
-            true,
-        )
-        .await
-        .map_err(|err| Status::new(Code::Internal, format!("Failed to restart the node: {err}")))?;
-
-        Ok(Response::new(NodeProcessRestartResponse {}))
-    }
-
     async fn restart_node_service(
         &self,
         request: Request<NodeServiceRestartRequest>,
@@ -106,14 +72,11 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
         let peer_id = PeerId::from_bytes(&request.get_ref().peer_id)
             .map_err(|err| Status::new(Code::Internal, format!("Failed to parse PeerId: {err}")))?;
 
-        Self::restart_handler(
-            node_registry,
-            peer_id,
-            request.get_ref().preserve_peer_id,
-            false,
-        )
-        .await
-        .map_err(|err| Status::new(Code::Internal, format!("Failed to restart the node: {err}")))?;
+        Self::restart_handler(node_registry, peer_id, request.get_ref().preserve_peer_id)
+            .await
+            .map_err(|err| {
+                Status::new(Code::Internal, format!("Failed to restart the node: {err}"))
+            })?;
 
         Ok(Response::new(NodeServiceRestartResponse {}))
     }
@@ -124,7 +87,6 @@ impl SafeNodeManagerDaemon {
         mut node_registry: NodeRegistry,
         peer_id: PeerId,
         preserve_peer_id: bool,
-        process: bool,
     ) -> Result<()> {
         let node = node_registry
             .nodes
@@ -133,25 +95,15 @@ impl SafeNodeManagerDaemon {
             .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
 
-        if process {
-            daemon_control::restart_node_process(
-                node,
-                &rpc_client,
-                preserve_peer_id,
-                node_registry.bootstrap_peers.clone(),
-            )
-            .await?;
-        } else {
-            daemon_control::restart_node_service(
-                node,
-                &rpc_client,
-                &NodeServiceManager {},
-                preserve_peer_id,
-                node_registry.bootstrap_peers.clone(),
-                node_registry.environment_variables.clone(),
-            )
-            .await?;
-        }
+        daemon_control::restart_node_service(
+            node,
+            &rpc_client,
+            &NodeServiceManager {},
+            preserve_peer_id,
+            node_registry.bootstrap_peers.clone(),
+            node_registry.environment_variables.clone(),
+        )
+        .await?;
 
         node_registry.save()?;
 
@@ -199,7 +151,7 @@ mod tests {
     use tonic::Request;
 
     #[tokio::test]
-    async fn restart_process() -> Result<()> {
+    async fn restart() -> Result<()> {
         let mut rpc_client = get_safenode_manager_rpc_client(SocketAddr::new(
             std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
             PORT,
@@ -211,13 +163,9 @@ mod tests {
             .unwrap();
 
         let response = rpc_client
-            .restart_node_process(Request::new(NodeProcessRestartRequest {
+            .restart_node_service(Request::new(NodeServiceRestartRequest {
                 peer_id: peer_id.to_bytes(),
                 delay_millis: 0,
-                local_node_registry_path: get_local_node_registry_path()?
-                    .to_str()
-                    .unwrap()
-                    .to_owned(),
                 preserve_peer_id: true,
             }))
             .await?;

@@ -7,20 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node_control, service::ServiceControl, VerbosityLevel};
-use color_eyre::{eyre::OptionExt, Result};
-use libp2p::{multiaddr::Protocol, Multiaddr};
+use color_eyre::Result;
+use libp2p::Multiaddr;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_node_rpc_client::RpcActions;
 use sn_protocol::node_registry::Node;
-use std::{
-    ffi::OsString,
-    net::Ipv4Addr,
-    os::unix::process::CommandExt,
-    path::PathBuf,
-    process::{Command, Stdio},
-    time::Duration,
-};
-use sysinfo::{Pid, PidExt, ProcessExt, SystemExt};
+use std::{ffi::OsString, net::Ipv4Addr, path::PathBuf};
 
 pub fn run_daemon(
     address: Ipv4Addr,
@@ -47,83 +39,6 @@ pub fn run_daemon(
     };
     service_control.install(install_ctx)?;
     service_control.start(&service_name.to_string())?;
-
-    Ok(())
-}
-
-pub async fn restart_node_process(
-    node: &mut Node,
-    rpc_client: &dyn RpcActions,
-    preserve_peer_id: bool,
-    bootstrap_peers: Vec<Multiaddr>,
-) -> Result<()> {
-    // stop the process
-    let pid = node.pid.ok_or_eyre("Could not find node's PeerId")?;
-    if let Some(process) = sysinfo::System::new_all().process(Pid::from_u32(pid)) {
-        process.kill();
-        println!("Process with PID {} has been killed.", pid);
-    }
-
-    // start the process
-    let node_port = node
-        .get_safenode_port()
-        .ok_or_eyre("Could not obtain node port")?;
-    // todo: deduplicate code inside local.rs
-    let mut args = Vec::new();
-    for peer in bootstrap_peers {
-        args.push("--peer".to_string());
-        args.push(peer.to_string());
-    }
-
-    args.push("--local".to_string());
-    args.push("--rpc".to_string());
-    args.push(node.rpc_socket_addr.to_string());
-    // resuse the same root dir + ports to preserve the peer id
-    if preserve_peer_id {
-        args.push("--root-dir".to_string());
-        args.push(format!("{:?}", node.data_dir_path));
-        args.push("--port".to_string());
-        args.push(node_port.to_string());
-    }
-
-    let user = users::get_user_by_name(&node.user).ok_or_eyre("Could not obtain UID")?;
-    let uid = user.uid();
-    println!("Starting node process with args: {args:?} for uid: {uid:?}");
-
-    Command::new(&node.safenode_path)
-        .args(args)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .uid(uid)
-        .spawn()?;
-
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    // update the node registry
-    let node_info = rpc_client.node_info().await?;
-    let peer_id = node_info.peer_id;
-    let network_info = rpc_client.network_info().await?;
-    let connected_peers = Some(network_info.connected_peers);
-    let listen_addrs = network_info
-        .listeners
-        .into_iter()
-        .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
-        .collect();
-
-    if preserve_peer_id {
-        if peer_id
-            != node
-                .peer_id
-                .ok_or_eyre("Previous peer_id should be present")?
-        {
-            println!("The peer ID has changed even though it should have been preserved.");
-        }
-    }
-
-    node.connected_peers = connected_peers;
-    node.pid = Some(node_info.pid);
-    node.listen_addr = Some(listen_addrs);
-    node.peer_id = Some(peer_id);
 
     Ok(())
 }
