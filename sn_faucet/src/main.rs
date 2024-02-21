@@ -21,7 +21,7 @@ use sn_client::{
 };
 use sn_logging::{LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_transfers::{MainPubkey, NanoTokens, Transfer};
+use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{error, info};
@@ -232,11 +232,7 @@ fn parse_log_output(val: &str) -> Result<LogOutputDest> {
     match val {
         "stdout" => Ok(LogOutputDest::Stdout),
         "data-dir" => {
-            let dir = dirs_next::data_dir()
-                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-                .join("safe")
-                .join("test_faucet")
-                .join("logs");
+            let dir = get_faucet_data_dir().join("logs");
             Ok(LogOutputDest::Path(dir))
         }
         // The path should be a directory, but we can't use something like `is_dir` to check
