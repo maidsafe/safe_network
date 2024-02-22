@@ -430,10 +430,27 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # use std::collections::BTreeSet;
+    /// # use tempfile::TempDir;
+    /// # use sn_client::WalletClient;
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # let mut rng = rand::thread_rng();
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// # let temporary_path = TempDir::new()?.path().to_owned();
+    /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
+    /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// // Run sync of a Client Register instance
+    /// let mut register =
+    ///             ClientRegister::create(client, address).sync(&mut wallet_client, true, None).await?;
+    /// # Ok(())
     /// # }
     /// ```
     pub async fn sync(
