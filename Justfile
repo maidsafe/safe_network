@@ -109,12 +109,14 @@ build-release-artifacts arch:
     cross build --release --features=network-contacts --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
     cross build --release --target $arch --bin safenode-manager
+    cross build --release --target $arch --bin safenode-manager-daemon
     cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin safenode_rpc_client
   else
     cargo build --release --features=network-contacts --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
     cargo build --release --target $arch --bin safenode-manager
+    cargo build --release --target $arch --bin safenode-manager-daemon
     cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin safenode_rpc_client
   fi
@@ -159,7 +161,7 @@ package-release-assets bin version="":
   )
 
   bin="{{bin}}"
-  supported_bins=("safe" "safenode" "safenode-manager" "faucet" "safenode_rpc_client")
+  supported_bins=("safe" "safenode" "safenode-manager" "safenode-manager-daemon" "faucet" "safenode_rpc_client")
   crate=""
 
   bin="{{bin}}"
@@ -171,6 +173,9 @@ package-release-assets bin version="":
       crate="sn_node"
       ;;
     safenode-manager)
+      crate="sn_node_manager"
+      ;;
+    safenode-manager-daemon)
       crate="sn_node_manager"
       ;;
     faucet)
