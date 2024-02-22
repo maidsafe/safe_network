@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708592469957,
+  "lastUpdate": 1708592574480,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "859aed4b0cda5dab2cbf939aed319e20a1f915a7",
-          "message": "chore(ci): upload gossipsub e2e logs separately",
-          "timestamp": "2023-10-20T09:39:47+02:00",
-          "tree_id": "a050e5579913e0efc6aed22047d8028ee371f4a8",
-          "url": "https://github.com/maidsafe/safe_network/commit/859aed4b0cda5dab2cbf939aed319e20a1f915a7"
-        },
-        "date": 1697790219890,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 94,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "8bb2c13834d577a70f0ac434d94ee0a1bcaa500d",
           "message": "chore: print the PeerId along with the raw bytes",
           "timestamp": "2023-10-20T09:41:19+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4e77d03b69ce36c023392f97930ad550f0109187",
+          "message": "feat: use the old serialisation as default, add some docs",
+          "timestamp": "2024-02-22T08:15:31Z",
+          "tree_id": "81c2d2ec319136d12adede68054e98bbd13c3fa4",
+          "url": "https://github.com/maidsafe/safe_network/commit/4e77d03b69ce36c023392f97930ad550f0109187"
+        },
+        "date": 1708592574157,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
