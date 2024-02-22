@@ -51,7 +51,7 @@ use bls::PublicKey;
 use bytes::Bytes;
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
-use sn_protocol::NetworkAddress;
+use sn_protocol::{get_port_from_multiaddr, NetworkAddress};
 use sn_transfers::{HotWallet, NanoTokens};
 use std::{
     collections::{BTreeMap, HashSet},
@@ -96,6 +96,17 @@ impl RunningNode {
     pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
         let state = self.network.get_swarm_local_state().await?;
         Ok(state)
+    }
+
+    /// Return the node's listening port
+    pub async fn get_node_listening_port(&self) -> Result<u16> {
+        let listen_addrs = self.network.get_swarm_local_state().await?.listeners;
+        for addr in listen_addrs {
+            if let Some(port) = get_port_from_multiaddr(&addr) {
+                return Ok(port);
+            }
+        }
+        Err(Error::FailedToGetNodePort)
     }
 
     /// Returns the node events channel where to subscribe to receive `NodeEvent`s

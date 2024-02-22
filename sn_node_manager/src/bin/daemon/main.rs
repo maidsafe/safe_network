@@ -72,7 +72,7 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
         let peer_id = PeerId::from_bytes(&request.get_ref().peer_id)
             .map_err(|err| Status::new(Code::Internal, format!("Failed to parse PeerId: {err}")))?;
 
-        Self::restart_handler(node_registry, peer_id, request.get_ref().preserve_peer_id)
+        Self::restart_handler(node_registry, peer_id, request.get_ref().retain_peer_id)
             .await
             .map_err(|err| {
                 Status::new(Code::Internal, format!("Failed to restart the node: {err}"))
@@ -86,7 +86,7 @@ impl SafeNodeManagerDaemon {
     async fn restart_handler(
         mut node_registry: NodeRegistry,
         peer_id: PeerId,
-        preserve_peer_id: bool,
+        retain_peer_id: bool,
     ) -> Result<()> {
         let node = node_registry
             .nodes
@@ -99,7 +99,7 @@ impl SafeNodeManagerDaemon {
             node,
             &rpc_client,
             &NodeServiceManager {},
-            preserve_peer_id,
+            retain_peer_id,
             node_registry.bootstrap_peers.clone(),
             node_registry.environment_variables.clone(),
         )
@@ -166,7 +166,7 @@ mod tests {
             .restart_node_service(Request::new(NodeServiceRestartRequest {
                 peer_id: peer_id.to_bytes(),
                 delay_millis: 0,
-                preserve_peer_id: true,
+                retain_peer_id: true,
             }))
             .await?;
         println!("response: {response:?}");
