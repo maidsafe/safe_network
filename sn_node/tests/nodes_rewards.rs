@@ -206,6 +206,7 @@ mod tests {
             false,
         )
         .await;
+
         // this other node shall *not* receive any notification since we set the wrong pk as filter
         let random_pk = SecretKey::random().public_key();
         let handle_2 =
