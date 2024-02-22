@@ -8,17 +8,27 @@
 
 use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
+use libp2p::PeerId;
 use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
-use sn_protocol::test_utils::DeploymentInventory;
+use sn_protocol::{
+    node_registry::{get_local_node_registry_path, NodeRegistry},
+    safenode_manager_proto::NodeServiceRestartRequest,
+    safenode_proto::{NodeInfoRequest, RestartRequest},
+    test_utils::DeploymentInventory,
+};
 use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
 use tokio::{
     sync::Mutex,
     time::{Duration, Instant},
 };
-use tracing::{error, info, warn};
+use tonic::Request;
+use tracing::{debug, error, info, warn};
+
+use crate::common::get_safenode_rpc_client;
+
+use super::get_safenode_manager_rpc_client;
 
 /// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.
 /// This is limited to 10 requests to the faucet, where each request yields 100 SNT
@@ -63,7 +73,7 @@ pub fn get_all_rpc_addresses(skip_genesis_for_droplet: bool) -> Result<Vec<Socke
     match DeploymentInventory::load() {
         Ok(inventory) => {
             if !skip_genesis_for_droplet {
-                return Ok(inventory.rpc_endpoints.clone());
+                return Ok(inventory.rpc_endpoints.values().cloned().collect());
             }
             // else filter out genesis
             let genesis_ip = inventory
@@ -78,22 +88,23 @@ pub fn get_all_rpc_addresses(skip_genesis_for_droplet: bool) -> Result<Vec<Socke
                 })
                 .ok_or_eyre("Could not get the genesis VM's addr")?;
 
-            let addrs = inventory
+            let rpc_endpoints = inventory
                 .rpc_endpoints
                 .into_iter()
-                .filter(|addr| addr.ip() != genesis_ip)
+                .filter(|(_, addr)| addr.ip() != genesis_ip)
+                .map(|(_, addr)| addr)
                 .collect();
-            Ok(addrs)
+            Ok(rpc_endpoints)
         }
         Err(_) => {
             let local_node_reg_path = &get_local_node_registry_path()?;
             let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
-            let addresses = local_node_registry
+            let rpc_endpoints = local_node_registry
                 .nodes
                 .iter()
                 .map(|n| n.rpc_socket_addr)
                 .collect::<Vec<SocketAddr>>();
-            Ok(addresses)
+            Ok(rpc_endpoints)
         }
     }
 }
@@ -224,9 +235,47 @@ impl NonDroplet {
         }
         bail!("The faucet wallet is empty even after {LOAD_FAUCET_WALLET_RETRIES} retries. Bailing after {:?}. Check the faucet_server logs.", now.elapsed());
     }
+
+    // Restart a local node by sending in the SafenodeRpcCmd::Restart to the node's RPC endpoint.
+    pub async fn restart_node(rpc_endpoint: SocketAddr, _preserve_peer_id: bool) -> Result<()> {
+        let mut rpc_client = get_safenode_rpc_client(rpc_endpoint).await?;
+
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let root_dir = Path::new(&response.get_ref().data_dir);
+        debug!("Obtained root dir from node {root_dir:?}.");
+
+        let record_store = root_dir.join("record_store");
+        if record_store.exists() {
+            println!("Removing content from the record store {record_store:?}");
+            info!("Removing content from the record store {record_store:?}");
+            std::fs::remove_dir_all(record_store)?;
+        }
+        let secret_key_file = root_dir.join("secret-key");
+        if secret_key_file.exists() {
+            println!("Removing secret-key file {secret_key_file:?}");
+            info!("Removing secret-key file {secret_key_file:?}");
+            std::fs::remove_file(secret_key_file)?;
+        }
+        let wallet_dir = root_dir.join("wallet");
+        if wallet_dir.exists() {
+            println!("Removing wallet dir {wallet_dir:?}");
+            info!("Removing wallet dir {wallet_dir:?}");
+            std::fs::remove_dir_all(wallet_dir)?;
+        }
+
+        let _response = rpc_client
+            .restart(Request::new(RestartRequest { delay_millis: 0 }))
+            .await?;
+
+        println!("Node restart requested to RPC service at {rpc_endpoint}");
+        info!("Node restart requested to RPC service at {rpc_endpoint}");
+        Ok(())
+    }
 }
 
-struct Droplet;
+pub struct Droplet;
 impl Droplet {
     /// Create a new client and bootstrap from the provided safe_peers
     pub async fn get_gossip_client(inventory: &DeploymentInventory) -> Client {
@@ -326,5 +375,25 @@ impl Droplet {
         );
 
         Ok(local_wallet)
+    }
+
+    // Restart a remote safenode service by sending a RPC to the safenode manager daemon.
+    pub async fn restart_node(
+        peer_id: &PeerId,
+        daemon_endpoint: SocketAddr,
+        preserve_peer_id: bool,
+    ) -> Result<()> {
+        let mut rpc_client = get_safenode_manager_rpc_client(daemon_endpoint).await?;
+
+        let _response = rpc_client.restart_node_service(Request::new(NodeServiceRestartRequest {
+            peer_id: peer_id.to_bytes(),
+            delay_millis: 0,
+            preserve_peer_id,
+        }));
+
+        println!("Node restart requested to RPC service at {daemon_endpoint}");
+        info!("Node restart requested to RPC service at {daemon_endpoint}");
+
+        Ok(())
     }
 }
