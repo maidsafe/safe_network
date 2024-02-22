@@ -28,7 +28,7 @@ use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
 /// Cached operations made to an offline Register instance are applied locally only,
-/// and accumulated till the user explicitly calls 'sync'. The user can
+/// and accumulated until the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
 #[derive(Clone)]
 pub struct ClientRegister {
@@ -277,18 +277,7 @@ impl ClientRegister {
     }
 
     /// Return a value corresponding to the provided 'hash', if present.
-    ///
-    /// # Arguments
-    /// * 'hash' - [EntryHash]
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use sn_client::Error;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
-    /// # }
-    /// ```
+    // No usages found in All Places
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
         let entry = self.register.get(hash)?;
         Ok(entry)
@@ -300,10 +289,16 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let register = ClientRegister::create(client.clone(), address).read();
+    /// # Ok(())
     /// # }
     /// ```
     pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
@@ -319,10 +314,18 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let entry = "entry_input_here";
+    /// // Write as bytes into the ClientRegister instance
+    /// let mut register = ClientRegister::create(client.clone(), address).write(entry.as_bytes());
+    /// # Ok(())
     /// # }
     /// ```
     pub fn write(&mut self, entry: &[u8]) -> Result<()> {
