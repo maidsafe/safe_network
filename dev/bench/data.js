@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708599784948,
+  "lastUpdate": 1708599888213,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e8acd17d03bf817dd9c7afa8a375a54421ec518d",
-          "message": "ci: ensure we're on latest main before v bump\n\nAfter we wait, more commits could have gone in, so we proceed with\nlatest main only",
-          "timestamp": "2023-10-20T10:41:07+02:00",
-          "tree_id": "09de3195dedd9353b2303790c5fea551c192910f",
-          "url": "https://github.com/maidsafe/safe_network/commit/e8acd17d03bf817dd9c7afa8a375a54421ec518d"
-        },
-        "date": 1697793547343,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 92,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
+          "message": "ci: tweaks to auto branch switcher",
+          "timestamp": "2024-02-22T11:53:02+01:00",
+          "tree_id": "75ba6effad704b18412ab531413534bc1d4b7f50",
+          "url": "https://github.com/maidsafe/safe_network/commit/f63c3b22b9259e5785314301fa4a66eb996bcc55"
+        },
+        "date": 1708599887844,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
