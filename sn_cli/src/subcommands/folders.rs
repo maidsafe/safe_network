@@ -17,7 +17,6 @@ use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use std::{
     ffi::OsString,
-    fs::create_dir_all,
     path::{Path, PathBuf},
 };
 
@@ -106,7 +105,6 @@ pub(crate) async fn folders_cmds(
 
             let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
             let download_folder_path = download_dir.join(folder_name.clone());
-            create_dir_all(&download_folder_path)?;
             println!(
                 "Downloading onto {download_folder_path:?} from {} with batch-size {batch_size}",
                 address.to_hex()
@@ -116,20 +114,18 @@ pub(crate) async fn folders_cmds(
                 address.to_hex()
             );
 
-            let acc_packet =
-                AccountPacket::from_path(client.clone(), root_dir, &download_folder_path)?;
-            acc_packet
-                .download_folders(
-                    address,
-                    folder_name,
-                    &download_folder_path,
-                    batch_size,
-                    retry_strategy,
-                )
-                .await?;
+            let _acc_packet = AccountPacket::retrieve_folders(
+                client,
+                root_dir,
+                address,
+                &download_folder_path,
+                batch_size,
+                retry_strategy,
+            )
+            .await?;
         }
         FoldersCmds::Status { path } => {
-            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             acc_packet.status().await?;
         }
