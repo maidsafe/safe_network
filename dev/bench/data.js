@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708593304206,
+  "lastUpdate": 1708599784948,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f645d9efce153a56936462c557b8f213c1bb6bd3",
-          "message": "fix: RegisterAddress logging with correct network addressing",
-          "timestamp": "2023-10-20T09:38:42+02:00",
-          "tree_id": "c42c497a3574c511e5eb16fea2d6cb5e29901e3a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f645d9efce153a56936462c557b8f213c1bb6bd3"
-        },
-        "date": 1697788874263,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.11395496322694326,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5845972403596721,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.274586124124355,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.33230453278552,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
+          "message": "ci: tweaks to auto branch switcher",
+          "timestamp": "2024-02-22T11:53:02+01:00",
+          "tree_id": "75ba6effad704b18412ab531413534bc1d4b7f50",
+          "url": "https://github.com/maidsafe/safe_network/commit/f63c3b22b9259e5785314301fa4a66eb996bcc55"
+        },
+        "date": 1708599782024,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2354093144205123,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8372748841371345,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.77446195063047,
             "unit": "MiB/s"
           }
         ]
