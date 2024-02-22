@@ -75,7 +75,7 @@ publish = true
 
 
 [[package]]
-name = "metrics"
+name = "sn_metrics"
 changelog_update = true
 git_release_enable = false
 publish = false
