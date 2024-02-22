@@ -7,14 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
-use crate::target_arch::Instant;
+use crate::target_arch::spawn;
+use crate::{event::NetworkEvent, target_arch::Instant};
 use libp2p::{
     kad::{RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
 use std::collections::{hash_map::Entry, BTreeSet, HashMap};
-use tokio::time::Duration;
+use tokio::{sync::mpsc, time::Duration};
 
 // Max parallel fetches that can be undertaken at the same time.
 const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
@@ -37,15 +38,17 @@ pub(crate) struct ReplicationFetcher {
     to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), ReplicationTimeout>,
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
+    event_sender: mpsc::Sender<NetworkEvent>,
 }
 
 impl ReplicationFetcher {
     /// Instantiate a new replication fetcher with passed PeerId.
-    pub(crate) fn new(self_peer_id: PeerId) -> Self {
+    pub(crate) fn new(self_peer_id: PeerId, event_sender: mpsc::Sender<NetworkEvent>) -> Self {
         Self {
             self_peer_id,
             to_be_fetched: HashMap::new(),
             on_going_fetches: HashMap::new(),
+            event_sender,
         }
     }
 
@@ -83,16 +86,9 @@ impl ReplicationFetcher {
         // And we shall `fetch` that copy immediately, if it's not being fetched.
         if let Some(new_data_key) = is_new_data {
             if let Entry::Vacant(entry) = self.on_going_fetches.entry(new_data_key.clone()) {
-                let (record_key, record_type) = new_data_key;
-
-                let new_data_key_holder = (record_key.clone(), record_type, holder);
-                let _ = self
-                    .to_be_fetched
-                    .insert(new_data_key_holder, Some(Instant::now()));
-
+                let (record_key, _record_type) = new_data_key;
                 keys_to_fetch.push((holder, record_key));
-
-                let _ = entry.insert(holder);
+                let _ = entry.insert((holder, Instant::now()));
             }
         }
         keys_to_fetch
@@ -195,9 +191,8 @@ impl ReplicationFetcher {
 
     // Just remove outdated entries in `on_going_fetch`, indicates a failure to fetch from network.
     // The node then considered to be in trouble and:
-    //   1, the pending_entries from that node shall be removed from `to_be_fetched` list
-    //   2, the future incoming_keys from that node shall be rejected for a while
-    // TODO: triggers the upper layers to potentially remove that failing node from the routing table.
+    //   1, the pending_entries from that node shall be removed from `to_be_fetched` list.
+    //   2, firing event up to notify bad_nodes, hence trigger them to be removed from RT.
     fn prune_expired_keys_and_slow_nodes(&mut self) {
         let mut failed_holders = BTreeSet::default();
 
@@ -214,7 +209,8 @@ impl ReplicationFetcher {
         self.to_be_fetched
             .retain(|(_, _, holder), _| !failed_holders.contains(holder));
 
-        // TODO: Such failed_hodlers shall be reported back and be excluded from RT.
+        // Such failed_hodlers shall be reported back and be excluded from RT.
+        self.send_event(NetworkEvent::FailedToFetchHolders(failed_holders));
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
@@ -247,6 +243,26 @@ impl ReplicationFetcher {
             .entry((key, record_type, holder))
             .or_insert(Instant::now() + PENDING_TIMEOUT);
     }
+
+    /// Sends an event after pushing it off thread so as to be non-blocking
+    /// this is a wrapper around the `mpsc::Sender::send` call
+    fn send_event(&self, event: NetworkEvent) {
+        let event_sender = self.event_sender.clone();
+        let capacity = event_sender.capacity();
+
+        // push the event off thread so as to be non-blocking
+        let _handle = spawn(async move {
+            if capacity == 0 {
+                warn!(
+                    "NetworkEvent channel is full. Await capacity to send: {:?}",
+                    event
+                );
+            }
+            if let Err(error) = event_sender.send(event).await {
+                error!("ReplicationFetcher failed to send event: {}", error);
+            }
+        });
+    }
 }
 
 #[cfg(test)]
@@ -256,12 +272,14 @@ mod tests {
     use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::{storage::RecordType, NetworkAddress};
     use std::{collections::HashMap, time::Duration};
-    use tokio::time::sleep;
+    use tokio::{sync::mpsc, time::sleep};
+
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {
         //random peer_id
         let peer_id = PeerId::random();
-        let mut replication_fetcher = ReplicationFetcher::new(peer_id);
+        let (event_sender, _event_receiver) = mpsc::channel(4);
+        let mut replication_fetcher = ReplicationFetcher::new(peer_id, event_sender);
         let locally_stored_keys = HashMap::new();
 
         let mut incoming_keys = Vec::new();
