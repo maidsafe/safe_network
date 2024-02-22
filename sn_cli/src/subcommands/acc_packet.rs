@@ -6,15 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::files::{
-    download_file, upload_files_with_iter, ChunkManager, FilesUploadOptions, UploadedFile,
-    UPLOADED_FILES,
-};
+use super::files::{download_file, ChunkManager};
 
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
 use sn_protocol::storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
+use crate::subcommands::files::upload::{
+    upload_files_with_iter, FilesUploadOptions, UploadedFile, UPLOADED_FILES,
+};
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
