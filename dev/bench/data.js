@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708599889746,
+  "lastUpdate": 1708599891394,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38158,6 +38158,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 39330,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
+          "message": "ci: tweaks to auto branch switcher",
+          "timestamp": "2024-02-22T11:53:02+01:00",
+          "tree_id": "75ba6effad704b18412ab531413534bc1d4b7f50",
+          "url": "https://github.com/maidsafe/safe_network/commit/f63c3b22b9259e5785314301fa4a66eb996bcc55"
+        },
+        "date": 1708599891000,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6123,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35117,
             "unit": "ms"
           },
           {
