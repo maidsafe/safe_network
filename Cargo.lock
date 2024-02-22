@@ -3081,20 +3081,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "metrics"
-version = "0.1.1"
-dependencies = [
- "clap 4.5.1",
- "color-eyre",
- "dirs-next",
- "regex",
- "serde",
- "serde_yaml",
- "url",
- "walkdir",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5110,6 +5096,20 @@ dependencies = [
  "tracing-core",
  "tracing-opentelemetry",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "sn_metrics"
+version = "0.1.1"
+dependencies = [
+ "clap 4.5.1",
+ "color-eyre",
+ "dirs-next",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "url",
+ "walkdir",
 ]
 
 [[package]]
