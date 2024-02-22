@@ -426,10 +426,6 @@ impl Node {
                 error!("Received termination from swarm_driver due to too many HDD write errors.");
                 self.events_channel.broadcast(NodeEvent::TerminateNode);
             }
-            NetworkEvent::FailedToFetchHolders(bad_nodes) => {
-                event_header = "FailedToFetchHolders";
-                error!("Received notification from replication_fetcher, notifying {bad_nodes:?} failed to fetch replication copies from.");
-            }
         }
 
         trace!(
