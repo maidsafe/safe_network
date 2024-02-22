@@ -38,7 +38,12 @@ impl DerivationIndex {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
+// NB TODO remove Serialize impl when enough nodes have updated to support the new serialisation format!
+// cf below for the new Serialize impl
+/// A Unique Public Key is the unique identifier of a CashNote and its SignedSpend on the Network when it is spent.
+/// It is the mechanism that makes transactions untraceable to the real owner (MainPubkey).
+/// It is the equivalent to using a different key for each transaction in bitcoin.
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize)]
 pub struct UniquePubkey(PublicKey);
 
 impl UniquePubkey {
@@ -66,6 +71,69 @@ impl UniquePubkey {
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self> {
         let public_key = bls_public_from_hex(hex)?;
         Ok(Self::new(public_key))
+    }
+}
+
+// NB TODO enable this when enough nodes have updated to support the new serialisation format!
+// cf above (remove the derived Serialize impl and enable this one)
+// /// Custom implementation of Serialize and Deserialize for UniquePubkey to make it an actionable
+// /// hex string that can be copy pasted in apps, instead of a useless array of numbers
+// /// Caveat: this is slower than the default implementation
+// impl Serialize for UniquePubkey {
+//     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+//         serializer.serialize_str(&self.to_hex())
+//     }
+// }
+
+impl<'de> Deserialize<'de> for UniquePubkey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // Backwards compatible deserialize
+        // this was implemented to support the old serialisation format as well
+        #[derive(Deserialize)]
+        #[serde(remote = "UniquePubkey")]
+        struct UniquePubkeyRep(PublicKey);
+        impl<'de> Deserialize<'de> for UniquePubkeyRep {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                let key = <PublicKey>::deserialize(deserializer)?;
+                Ok(UniquePubkeyRep(key))
+            }
+        }
+
+        let deserialized = serde_json::Value::deserialize(deserializer)?;
+
+        // the new serialisation format is a string
+        if deserialized.is_string() {
+            let hex: String = serde::Deserialize::deserialize(deserialized).map_err(|e| {
+                serde::de::Error::custom(format!(
+                    "Failed to deserialize UniquePubkey string representation: {e}",
+                ))
+            })?;
+            UniquePubkey::from_hex(hex).map_err(|e| {
+                serde::de::Error::custom(format!(
+                    "Failed to deserialize UniquePubkey from hex: {e}",
+                ))
+            })
+        // the old serialisation format is an array
+        } else if deserialized.is_array() {
+            warn!("Detected old serialisation format for UniquePubkey, please update to the new format!");
+            let key: UniquePubkeyRep =
+                serde::Deserialize::deserialize(deserialized).map_err(|e| {
+                    serde::de::Error::custom(format!(
+                        "Failed to deserialize UniquePubkey array representation: {e}",
+                    ))
+                })?;
+            Ok(UniquePubkey(key.0))
+        } else {
+            Err(serde::de::Error::custom(
+                "Failed to deserialize UniquePubkey: unknown serialisation format",
+            ))
+        }
     }
 }
 
@@ -271,6 +339,28 @@ mod tests {
 
         assert_eq!(main_pubkey, main_pubkey_from_hex);
         assert_eq!(unique_pubkey, unique_pubkey_from_hex);
+        Ok(())
+    }
+
+    #[test]
+    fn test_backwards_compatibility_deserialisation() -> eyre::Result<()> {
+        let pk = bls::SecretKey::random().public_key();
+        let main_pubkey = MainPubkey::new(pk);
+        let unique_pk =
+            main_pubkey.new_unique_pubkey(&DerivationIndex::random(&mut rand::thread_rng()));
+
+        // make sure str deserialisation works
+        let str_serialised = serde_json::to_string(&unique_pk)?;
+        println!("str_serialised: {str_serialised}");
+        let str_deserialised: UniquePubkey = serde_json::from_str(&str_serialised)?;
+        assert_eq!(str_deserialised, unique_pk);
+
+        // make sure array deserialisation works
+        let array_serialised = serde_json::to_string(&unique_pk.0)?;
+        println!("array_serialised: {array_serialised}");
+        let array_deserialised: UniquePubkey = serde_json::from_str(&array_serialised)?;
+        assert_eq!(array_deserialised, unique_pk);
+
         Ok(())
     }
 }
