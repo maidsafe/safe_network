@@ -297,6 +297,7 @@ impl ClientRegister {
     /// # let mut rng = rand::thread_rng();
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// let address = XorName::random(&mut rng);
+    /// // Read as bytes into the ClientRegister instance
     /// let register = ClientRegister::create(client.clone(), address).read();
     /// # Ok(())
     /// # }
@@ -322,7 +323,7 @@ impl ClientRegister {
     /// # let mut rng = rand::thread_rng();
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// let entry = "entry_input_here";
+    /// let entry = "Register entry";
     /// // Write as bytes into the ClientRegister instance
     /// let mut register = ClientRegister::create(client.clone(), address).write(entry.as_bytes());
     /// # Ok(())
@@ -337,10 +338,10 @@ impl ClientRegister {
         self.write_atop(entry, &children.into_iter().map(|(hash, _)| hash).collect())
     }
 
-    /// Write a new value onto the Register atop latest value.
-    /// If there are branches of content/entries, it automatically merges them
-    /// all leaving the new value as a single latest value of the Register.
-    /// Note you can use `write` API instead if you need to handle
+    /// Write a new value onto the Register atop of the latest value.
+    /// If there are any branches of content or entries, it automatically merges them.
+    /// Leaving the new value as a single latest value on the Register.
+    /// Note you can use the `write` API if you need to handle
     /// content/entries branches in a different way.
     ///
     /// # Arguments
@@ -348,10 +349,19 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let entry = "entry_input_here";
+    /// let mut mutable_register = ClientRegister::create(client.clone(), address);
+    /// let message = "Register entry";
+    /// let register = mutable_register.write_merging_branches(message.as_bytes());
+    /// # Ok(())
     /// # }
     /// ```
     pub fn write_merging_branches(&mut self, entry: &[u8]) -> Result<()> {
@@ -376,10 +386,19 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # use std::collections::BTreeSet;
+    /// let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let mut mutable_register = ClientRegister::create(client.clone(), address);
+    /// let meta = "Register entry".as_bytes();
+    /// let register = mutable_register.write_atop(meta, &BTreeSet::default());
+    /// # Ok(())
     /// # }
     /// ```
     pub fn write_atop(&mut self, entry: &[u8], children: &BTreeSet<EntryHash>) -> Result<()> {
@@ -536,7 +555,7 @@ impl ClientRegister {
         self.push(verify_store).await
     }
 
-    /// Write a new value onto the Register atop latest value.
+    /// Write a new value onto the Register atop the latest value.
     /// If there are branches of content/entries, it automatically merges them
     /// all leaving the new value as a single latest value of the Register.
     /// Note you can use `write` API instead if you need to handle
