@@ -17,6 +17,8 @@ use sn_node_rpc_client::RpcActions;
 use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use std::{ffi::OsString, net::Ipv4Addr, path::PathBuf};
 
+pub const DAEMON_DEFAULT_PORT: u16 = 12500;
+
 pub fn run_daemon(
     address: Ipv4Addr,
     port: u16,
