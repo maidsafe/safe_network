@@ -56,14 +56,14 @@ pub async fn restart_node_service(
     node: &mut Node,
     rpc_client: &dyn RpcActions,
     service_control: &dyn ServiceControl,
-    preserve_peer_id: bool,
+    retain_peer_id: bool,
     bootstrap_peers: Vec<Multiaddr>,
     env_variables: Option<Vec<(String, String)>>,
 ) -> Result<()> {
     node_control::stop(node, service_control).await?;
 
-    // reuse the same port and root dir to preserve peer id.
-    if preserve_peer_id {
+    // reuse the same port and root dir to retain peer id.
+    if retain_peer_id {
         service_control.uninstall(&node.service_name.clone())?;
         let install_ctx = node_control::InstallNodeServiceCtxBuilder {
             local: node.local,

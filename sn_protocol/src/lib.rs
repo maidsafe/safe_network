@@ -42,7 +42,8 @@ use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
-    PeerId,
+    multiaddr::Protocol,
+    Multiaddr, PeerId,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -50,6 +51,17 @@ use std::{
     fmt::{self, Debug, Display, Formatter, Write},
 };
 use xor_name::XorName;
+
+/// Returns the UDP port from the provided MultiAddr.
+pub fn get_port_from_multiaddr(multi_addr: &Multiaddr) -> Option<u16> {
+    // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>
+    for protocol in multi_addr.iter() {
+        if let Protocol::Udp(port) = protocol {
+            return Some(port);
+        }
+    }
+    None
+}
 
 /// This is the address in the network by which proximity/distance
 /// to other items (whether nodes or data chunks) are calculated.

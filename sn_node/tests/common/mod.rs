@@ -138,16 +138,15 @@ pub struct NodeRestart {
     inventory_file: Either<DeploymentInventory, NodeRegistry>,
     next_to_restart_idx: usize,
     skip_genesis_for_droplet: bool,
-    preserve_peer_id: bool,
+    retain_peer_id: bool,
 }
 
 impl NodeRestart {
     /// The genesis address is skipped for droplets as we don't want to restart the Genesis node there.
     /// The restarted node relies on the genesis multiaddr to bootstrap after restart.
     ///
-    /// Setting preserve_peer_id will soft restart the node by keeping the old PeerId, ports, records etc.
-    /// Todo: preserve_peer_id does not work for NonDroplet nodes for now.
-    pub fn new(skip_genesis_for_droplet: bool, preserve_peer_id: bool) -> Result<Self> {
+    /// Setting retain_peer_id will soft restart the node by keeping the old PeerId, ports, records etc.
+    pub fn new(skip_genesis_for_droplet: bool, retain_peer_id: bool) -> Result<Self> {
         let inventory_file = match DeploymentInventory::load() {
             Ok(inv) => Either::Left(inv),
             Err(_) => {
@@ -160,7 +159,7 @@ impl NodeRestart {
             inventory_file,
             next_to_restart_idx: 0,
             skip_genesis_for_droplet,
-            preserve_peer_id,
+            retain_peer_id,
         })
     }
 
@@ -189,7 +188,7 @@ impl NodeRestart {
                     .iter()
                     .nth(self.next_to_restart_idx)
                 {
-                    self.restart(peer_id.clone(), *daemon_endpoint, progress_on_error)
+                    self.restart(*peer_id, *daemon_endpoint, progress_on_error)
                         .await?;
 
                     let safenode_rpc_endpoint = inv
@@ -236,7 +235,7 @@ impl NodeRestart {
     ) -> Result<()> {
         match &self.inventory_file {
             Either::Left(_inv) =>  {
-                match Droplet::restart_node(&peer_id, endpoint, self.preserve_peer_id)
+                match Droplet::restart_node(&peer_id, endpoint, self.retain_peer_id)
                         .await
                         .map_err(|err| eyre!("Failed to restart peer {peer_id:} on daemon endpoint: {endpoint:?} with err {err:?}")) {
                             Ok(_) => {
@@ -251,7 +250,7 @@ impl NodeRestart {
                         }
             },
             Either::Right(_reg) => {
-                match NonDroplet::restart_node(endpoint, self.preserve_peer_id).await
+                match NonDroplet::restart_node(endpoint, self.retain_peer_id).await
                 .map_err(|err| eyre!("Failed to restart peer {peer_id:?} on safenode RPC endpoint: {endpoint:?} with err {err:?}")) {
                     Ok(_) => {
                         self.next_to_restart_idx += 1;

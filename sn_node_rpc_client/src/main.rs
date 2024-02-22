@@ -94,6 +94,8 @@ enum Cmd {
         /// Delay in milliseconds before restartng the node
         #[clap(default_value = "0")]
         delay_millis: u64,
+        /// Retain the node's PeerId by reusing the same root dir.
+        retain_peer_id: bool,
     },
     /// Stop the node after the specified delay
     #[clap(name = "stop")]
@@ -147,7 +149,10 @@ async fn main() -> Result<()> {
         Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
         Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
         Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
-        Cmd::Restart { delay_millis } => node_restart(addr, delay_millis).await,
+        Cmd::Restart {
+            delay_millis,
+            retain_peer_id,
+        } => node_restart(addr, delay_millis, retain_peer_id).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
         Cmd::Update { delay_millis } => node_update(addr, delay_millis).await,
     }
@@ -359,10 +364,10 @@ pub async fn gossipsub_publish(addr: SocketAddr, topic: String, msg: String) -> 
     Ok(())
 }
 
-pub async fn node_restart(addr: SocketAddr, delay_millis: u64) -> Result<()> {
+pub async fn node_restart(addr: SocketAddr, delay_millis: u64, retain_peer_id: bool) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let client = RpcClient::new(&endpoint);
-    client.node_restart(delay_millis).await?;
+    client.node_restart(delay_millis, retain_peer_id).await?;
     println!(
         "Node successfully received the request to restart in {:?}",
         Duration::from_millis(delay_millis)
