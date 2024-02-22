@@ -98,16 +98,19 @@ pub async fn restart_node_service(
         let new_service_name = format!("safenode{new_node_number}");
 
         // modify the paths & copy safenode binary
+        // example path "log_dir_path":"/var/log/safenode/safenode18"
         let log_dir_path = {
             let mut log_dir_path = current_node.log_dir_path.clone();
             log_dir_path.pop();
             log_dir_path.join(&new_service_name)
         };
+        // example path "data_dir_path":"/var/safenode-manager/services/safenode18"
         let data_dir_path = {
             let mut data_dir_path = current_node.data_dir_path.clone();
             data_dir_path.pop();
             data_dir_path.join(&new_service_name)
         };
+        // example path "safenode_path":"/var/safenode-manager/services/safenode18/safenode"
         let safenode_path = {
             let mut safenode_path = current_node.safenode_path.clone();
             let safenode_file_name = safenode_path
@@ -116,7 +119,11 @@ pub async fn restart_node_service(
                 .to_string_lossy()
                 .to_string();
             safenode_path.pop();
-            let safenode_path = safenode_path.join(safenode_file_name);
+            safenode_path.pop();
+
+            let safenode_path = safenode_path
+                .join(&new_service_name)
+                .join(safenode_file_name);
 
             std::fs::copy(&current_node.safenode_path, &safenode_path)?;
             safenode_path
