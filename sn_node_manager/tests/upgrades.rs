@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod utils;
+
 use assert_cmd::Command;
-use color_eyre::{eyre::eyre, Result};
-use serde_json::Value;
+use color_eyre::Result;
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use utils::get_service_status;
 
 const CI_USER: &str = "runner";
 
@@ -265,26 +267,4 @@ async fn upgrade_from_older_version_to_specific_version() -> Result<()> {
     );
 
     Ok(())
-}
-
-async fn get_service_status() -> Result<Vec<Value>> {
-    let mut cmd = Command::cargo_bin("safenode-manager")?;
-    let output = cmd
-        .arg("status")
-        .arg("--json")
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    let output = std::str::from_utf8(&output)?;
-    println!("status command output:");
-    println!("{output}");
-
-    let services: Vec<Value> = match serde_json::from_str(output) {
-        Ok(json) => json,
-        Err(e) => return Err(eyre!("Failed to parse JSON output: {:?}", e)),
-    };
-    Ok(services)
 }
