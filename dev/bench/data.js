@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708601088098,
+  "lastUpdate": 1708601236669,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8bb2c13834d577a70f0ac434d94ee0a1bcaa500d",
-          "message": "chore: print the PeerId along with the raw bytes",
-          "timestamp": "2023-10-20T09:41:19+02:00",
-          "tree_id": "cd2e2ebeda994b3f911b787be0f5944ed7d8fa45",
-          "url": "https://github.com/maidsafe/safe_network/commit/8bb2c13834d577a70f0ac434d94ee0a1bcaa500d"
-        },
-        "date": 1697789180900,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.08574761930383722,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.4745591790509054,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 21.37830769813899,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.482489946740415,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a94a53226f86e29ccec87e19076222e01efdf3f8",
+          "message": "ci: use another PAT token for base branch switch",
+          "timestamp": "2024-02-22T12:16:44+01:00",
+          "tree_id": "4479f6c6ec671c3b5092ce57ab23043e1ece1307",
+          "url": "https://github.com/maidsafe/safe_network/commit/a94a53226f86e29ccec87e19076222e01efdf3f8"
+        },
+        "date": 1708601233145,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2277276227713643,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8058902278830815,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.14413258239312,
             "unit": "MiB/s"
           }
         ]
