@@ -512,17 +512,33 @@ impl ClientRegister {
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
-    /// This optionally verifies that the stored Register is the same as our local register
+    /// This optionally verifies that the stored Register is the same as our local register.
     ///
     /// # Arguments
     /// * 'verify_store' - Boolean
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # use std::collections::BTreeSet;
+    /// # use tempfile::TempDir;
+    /// # use sn_client::WalletClient;
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # let mut rng = rand::thread_rng();
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// # let temporary_path = TempDir::new()?.path().to_owned();
+    /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
+    /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// // Pass the boolean value to the Client Register instance via .Push()
+    /// let mut register = ClientRegister::create(client, address).push(false);
+    /// # Ok(())
     /// # }
     /// ```
     pub async fn push(&mut self, verify_store: bool) -> Result<()> {
