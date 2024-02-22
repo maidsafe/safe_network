@@ -228,7 +228,7 @@ impl ChunkManager {
                             file_path: path.to_owned(),
                             file_name: original_file_name.clone(),
                             chunks: chunks.into_iter().collect(),
-                            data_map
+                            data_map: Some(data_map.value)
                         };
                         Ok((path_xor.clone(), chunked_file))
                     }
@@ -390,6 +390,7 @@ impl ChunkManager {
             // todo: should we remove the entry? ig so
             if let Some(chunked_file) = self.chunks.remove(path_xor) {
                 trace!("removed {path_xor:?} from chunks list");
+
                 self.completed_files.push((
                     chunked_file.file_name.clone(),
                     chunked_file.head_chunk_address,
