@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708601341635,
+  "lastUpdate": 1708601344002,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7ed5a9440c69243d658414f4c603c6959e5223ed",
-          "message": "feat: log network address with KBucketKey",
-          "timestamp": "2023-10-20T16:43:52+02:00",
-          "tree_id": "2c899e24d2d2a5ad0d1d9a101524ba60beee64cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/7ed5a9440c69243d658414f4c603c6959e5223ed"
-        },
-        "date": 1697815627020,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 192,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a94a53226f86e29ccec87e19076222e01efdf3f8",
+          "message": "ci: use another PAT token for base branch switch",
+          "timestamp": "2024-02-22T12:16:44+01:00",
+          "tree_id": "4479f6c6ec671c3b5092ce57ab23043e1ece1307",
+          "url": "https://github.com/maidsafe/safe_network/commit/a94a53226f86e29ccec87e19076222e01efdf3f8"
+        },
+        "date": 1708601343126,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
