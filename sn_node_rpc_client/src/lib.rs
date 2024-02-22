@@ -43,7 +43,7 @@ pub trait RpcActions: Sync {
     async fn gossipsub_subscribe(&self, topic: &str) -> Result<()>;
     async fn gossipsub_unsubscribe(&self, topic: &str) -> Result<()>;
     async fn gossipsub_publish(&self, topic: &str, message: &str) -> Result<()>;
-    async fn node_restart(&self, delay_millis: u64) -> Result<()>;
+    async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
 }
@@ -203,10 +203,13 @@ impl RpcActions for RpcClient {
         Ok(())
     }
 
-    async fn node_restart(&self, delay_millis: u64) -> Result<()> {
+    async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()> {
         let mut client = self.connect_with_retry().await?;
         let _response = client
-            .restart(Request::new(RestartRequest { delay_millis }))
+            .restart(Request::new(RestartRequest {
+                delay_millis,
+                retain_peer_id,
+            }))
             .await
             .map_err(|err| {
                 error!("Could not restart node through RPC: {err:?}");
