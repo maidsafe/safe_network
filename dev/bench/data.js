@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708600977560,
+  "lastUpdate": 1708601084810,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "421ddb3a6782cb85e4c66cb810257345d1fcc006",
-          "message": "refactor(node)!: use `NodeBuilder` to construct and run node\n- also only expose `RunningNode` to the public API",
-          "timestamp": "2023-10-20T10:40:36+02:00",
-          "tree_id": "a34d25e305a6118c314651c2048056a6a8232832",
-          "url": "https://github.com/maidsafe/safe_network/commit/421ddb3a6782cb85e4c66cb810257345d1fcc006"
-        },
-        "date": 1697793883101,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1aaba27c24304615b58776f56e6aa7f551c42b8d",
+          "message": "ci: run memcheck on other merge queues too",
+          "timestamp": "2024-02-22T12:12:40+01:00",
+          "tree_id": "51804a7bfbe9ed95bb1519566cd7a4a06085c978",
+          "url": "https://github.com/maidsafe/safe_network/commit/1aaba27c24304615b58776f56e6aa7f551c42b8d"
+        },
+        "date": 1708601084432,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
