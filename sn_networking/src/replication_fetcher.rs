@@ -7,14 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)]
 
-use crate::target_arch::Instant;
+use crate::target_arch::spawn;
+use crate::{event::NetworkEvent, target_arch::Instant};
 use libp2p::{
     kad::{RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
 use std::collections::{hash_map::Entry, BTreeSet, HashMap};
-use tokio::time::Duration;
+use tokio::{sync::mpsc, time::Duration};
 
 // Max parallel fetches that can be undertaken at the same time.
 const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
@@ -23,24 +24,31 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 // if no response got from that peer.
 const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
-// The time at which the key was sent to be fetched from the peer.
-type ReplicationRequestSentTime = Instant;
+// The duration after which a pending entry shall be cleared from the `to_be_fetch` list.
+// This is to avoid holding too many outdated entries when the fetching speed is slow.
+const PENDING_TIMEOUT: Duration = Duration::from_secs(900);
+
+// The time the entry will be considered as `time out` and to be cleared.
+type ReplicationTimeout = Instant;
 
 #[derive(Debug)]
 pub(crate) struct ReplicationFetcher {
     self_peer_id: PeerId,
-    to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), Option<ReplicationRequestSentTime>>,
+    // Pending entries that to be fetched from the target peer.
+    to_be_fetched: HashMap<(RecordKey, RecordType, PeerId), ReplicationTimeout>,
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
-    on_going_fetches: HashMap<(RecordKey, RecordType), PeerId>,
+    on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
+    event_sender: mpsc::Sender<NetworkEvent>,
 }
 
 impl ReplicationFetcher {
     /// Instantiate a new replication fetcher with passed PeerId.
-    pub(crate) fn new(self_peer_id: PeerId) -> Self {
+    pub(crate) fn new(self_peer_id: PeerId, event_sender: mpsc::Sender<NetworkEvent>) -> Self {
         Self {
             self_peer_id,
             to_be_fetched: HashMap::new(),
             on_going_fetches: HashMap::new(),
+            event_sender,
         }
     }
 
@@ -64,6 +72,9 @@ impl ReplicationFetcher {
             None
         };
 
+        self.to_be_fetched
+            .retain(|_, time_out| *time_out > Instant::now());
+
         // add non existing keys to the fetcher
         incoming_keys
             .into_iter()
@@ -75,16 +86,9 @@ impl ReplicationFetcher {
         // And we shall `fetch` that copy immediately, if it's not being fetched.
         if let Some(new_data_key) = is_new_data {
             if let Entry::Vacant(entry) = self.on_going_fetches.entry(new_data_key.clone()) {
-                let (record_key, record_type) = new_data_key;
-
-                let new_data_key_holder = (record_key.clone(), record_type, holder);
-                let _ = self
-                    .to_be_fetched
-                    .insert(new_data_key_holder, Some(Instant::now()));
-
+                let (record_key, _record_type) = new_data_key;
                 keys_to_fetch.push((holder, record_key));
-
-                let _ = entry.insert(holder);
+                let _ = entry.insert((holder, Instant::now()));
             }
         }
         keys_to_fetch
@@ -140,21 +144,20 @@ impl ReplicationFetcher {
             self_address.distance(&a).cmp(&self_address.distance(&b))
         });
 
-        for ((key, t, holder), is_fetching) in to_be_fetched_sorted {
+        for ((key, t, holder), _) in to_be_fetched_sorted {
             // Already carried out expiration pruning above.
             // Hence here only need to check whether is ongoing fetching.
             // Also avoid fetching same record from different nodes.
-            if is_fetching.is_none()
-                && self.on_going_fetches.len() < MAX_PARALLEL_FETCH
+            if self.on_going_fetches.len() < MAX_PARALLEL_FETCH
                 && !self
                     .on_going_fetches
                     .contains_key(&(key.clone(), t.clone()))
             {
-                data_to_fetch.push((*holder, key.clone()));
-                *is_fetching = Some(Instant::now());
-                let _ = self
-                    .on_going_fetches
-                    .insert((key.clone(), t.clone()), *holder);
+                data_to_fetch.push((*holder, key.clone(), t.clone()));
+                let _ = self.on_going_fetches.insert(
+                    (key.clone(), t.clone()),
+                    (*holder, Instant::now() + FETCH_TIMEOUT),
+                );
             }
 
             // break out the loop early if we can do no more now
@@ -165,7 +168,7 @@ impl ReplicationFetcher {
 
         let pretty_keys: Vec<_> = data_to_fetch
             .iter()
-            .map(|(holder, key)| (*holder, PrettyPrintRecordKey::from(key)))
+            .map(|(holder, key, t)| (*holder, PrettyPrintRecordKey::from(key), t.clone()))
             .collect();
 
         if !data_to_fetch.is_empty() {
@@ -177,40 +180,37 @@ impl ReplicationFetcher {
         }
 
         data_to_fetch
+            .iter()
+            .map(|(holder, key, t)| {
+                let entry_key = (key.clone(), t.clone(), *holder);
+                let _ = self.to_be_fetched.remove(&entry_key);
+                (*holder, key.clone())
+            })
+            .collect()
     }
 
-    // Just remove outdated entries, which indicates a failure to fetch from network.
-    // Leave it to to the next round of replication if triggered again.
-    // Also remove the corresponding node from to_be_fetched.
-    // And triggers the upper layers to potentially remove that failing node from the routing table.
+    // Just remove outdated entries in `on_going_fetch`, indicates a failure to fetch from network.
+    // The node then considered to be in trouble and:
+    //   1, the pending_entries from that node shall be removed from `to_be_fetched` list.
+    //   2, firing event up to notify bad_nodes, hence trigger them to be removed from RT.
     fn prune_expired_keys_and_slow_nodes(&mut self) {
         let mut failed_holders = BTreeSet::default();
-        self.to_be_fetched.retain(|(key, t, holder), is_fetching| {
-            let is_expired = if let Some(requested_time) = is_fetching {
-                if Instant::now() > *requested_time + FETCH_TIMEOUT {
-                    self.on_going_fetches.retain(|(data, record_type), node| data != key || node != holder || record_type != t);
-                    debug!(
-                        "Prune record {:?} at {holder:?} from the replication_fetcher due to timeout.",
-                        PrettyPrintRecordKey::from(key)
-                    );
-                    failed_holders.insert(*holder);
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
 
-            // if  the fetching is not expired we keep the entry
-             is_fetching.is_none() || !is_expired
+        self.on_going_fetches.retain(|_, (peer_id, time_out)| {
+            if *time_out < Instant::now() {
+                failed_holders.insert(*peer_id);
+                false
+            } else {
+                true
+            }
         });
 
         // now we ensure we clear our any/all failed nodes from our lists.
         self.to_be_fetched
-            .retain(|(_, _, holder), _| !failed_holders.contains(holder))
+            .retain(|(_, _, holder), _| !failed_holders.contains(holder));
 
-        // now we remove all failed holders
+        // Such failed_hodlers shall be reported back and be excluded from RT.
+        self.send_event(NetworkEvent::FailedToFetchHolders(failed_holders));
     }
 
     /// Remove keys that we hold already and no longer need to be replicated.
@@ -241,7 +241,27 @@ impl ReplicationFetcher {
         let _ = self
             .to_be_fetched
             .entry((key, record_type, holder))
-            .or_insert(None);
+            .or_insert(Instant::now() + PENDING_TIMEOUT);
+    }
+
+    /// Sends an event after pushing it off thread so as to be non-blocking
+    /// this is a wrapper around the `mpsc::Sender::send` call
+    fn send_event(&self, event: NetworkEvent) {
+        let event_sender = self.event_sender.clone();
+        let capacity = event_sender.capacity();
+
+        // push the event off thread so as to be non-blocking
+        let _handle = spawn(async move {
+            if capacity == 0 {
+                warn!(
+                    "NetworkEvent channel is full. Await capacity to send: {:?}",
+                    event
+                );
+            }
+            if let Err(error) = event_sender.send(event).await {
+                error!("ReplicationFetcher failed to send event: {}", error);
+            }
+        });
     }
 }
 
@@ -252,12 +272,14 @@ mod tests {
     use libp2p::{kad::RecordKey, PeerId};
     use sn_protocol::{storage::RecordType, NetworkAddress};
     use std::{collections::HashMap, time::Duration};
-    use tokio::time::sleep;
+    use tokio::{sync::mpsc, time::sleep};
+
     #[tokio::test]
     async fn verify_max_parallel_fetches() -> Result<()> {
         //random peer_id
         let peer_id = PeerId::random();
-        let mut replication_fetcher = ReplicationFetcher::new(peer_id);
+        let (event_sender, _event_receiver) = mpsc::channel(4);
+        let mut replication_fetcher = ReplicationFetcher::new(peer_id, event_sender);
         let locally_stored_keys = HashMap::new();
 
         let mut incoming_keys = Vec::new();
