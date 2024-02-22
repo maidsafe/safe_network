@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708602438712,
+  "lastUpdate": 1708602542917,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "40cfd449acb74c5e745adde008710c1f53df1cb1",
-          "message": "fix(network): return references when sorting peers",
-          "timestamp": "2023-10-21T15:45:05+02:00",
-          "tree_id": "e54f33759cfbbad8adeb0a265bb85bf80cfd8d02",
-          "url": "https://github.com/maidsafe/safe_network/commit/40cfd449acb74c5e745adde008710c1f53df1cb1"
-        },
-        "date": 1697898788766,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 95,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d34eaa4dcc72e4f1150e594b0379f6bed29de07b",
+          "message": "ci: dont pass token to action for branch switch",
+          "timestamp": "2024-02-22T12:36:55+01:00",
+          "tree_id": "4f31f4722a663c89cef8854278789fde23aadf35",
+          "url": "https://github.com/maidsafe/safe_network/commit/d34eaa4dcc72e4f1150e594b0379f6bed29de07b"
+        },
+        "date": 1708602542082,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
