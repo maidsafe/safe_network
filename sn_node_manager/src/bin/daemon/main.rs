@@ -88,26 +88,28 @@ impl SafeNodeManagerDaemon {
         peer_id: PeerId,
         retain_peer_id: bool,
     ) -> Result<()> {
-        let node = node_registry
+        let rpc_socket_addr = node_registry
             .nodes
-            .iter_mut()
+            .iter()
             .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
-            .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
-        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+            .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?
+            .rpc_socket_addr;
 
-        daemon_control::restart_node_service(
-            node,
+        let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
+
+        let res = daemon_control::restart_node_service(
+            &mut node_registry,
+            peer_id,
+            retain_peer_id,
             &rpc_client,
             &NodeServiceManager {},
-            retain_peer_id,
-            node_registry.bootstrap_peers.clone(),
-            node_registry.environment_variables.clone(),
         )
-        .await?;
+        .await;
 
+        // make sure to save the state even if the above fn fails.
         node_registry.save()?;
 
-        Ok(())
+        res
     }
 }
 
