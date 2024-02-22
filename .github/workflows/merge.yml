@@ -862,7 +862,7 @@ jobs:
       - name: Verify the location of the data on the network
         run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
         env:
-          CHURN_COUNT: 3
+          CHURN_COUNT: 6
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
