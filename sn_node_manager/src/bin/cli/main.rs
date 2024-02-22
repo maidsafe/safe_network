@@ -13,7 +13,7 @@ use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
     config::*,
-    faucet_control::{add_faucet, start_faucet, AddFaucetServiceOptions},
+    faucet_control::{add_faucet, start_faucet, stop_faucet, AddFaucetServiceOptions},
     helpers::download_and_extract_release,
     local::{kill_network, run_network, LocalNetworkOptions},
     node_control::{
@@ -339,6 +339,7 @@ pub enum SubCmd {
 }
 
 /// Manage faucet services.
+#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 pub enum FaucetSubCmd {
     /// Add a faucet service.
@@ -380,6 +381,11 @@ pub enum FaucetSubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {},
+    /// Stop the faucet service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "stop")]
+    Stop {},
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -506,8 +512,7 @@ async fn main() -> Result<()> {
                     &mut node_registry,
                     &service_manager,
                     verbosity,
-                )
-                .await?;
+                )?;
 
                 Ok(())
             }
@@ -517,15 +522,36 @@ async fn main() -> Result<()> {
                 }
 
                 let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-                if let Some(faucet) = node_registry.faucet.clone() {
+                if let Some(mut faucet) = node_registry.faucet.clone() {
                     if verbosity != VerbosityLevel::Minimal {
                         println!("=================================================");
                         println!("             Start Faucet Service                ");
                         println!("=================================================");
                     }
 
-                    let mut faucet = faucet;
                     start_faucet(&mut faucet, &NodeServiceManager {}, verbosity.clone()).await?;
+                    node_registry.faucet = Some(faucet);
+                    node_registry.save()?;
+                    return Ok(());
+                }
+
+                Err(eyre!("The faucet service has not been added yet"))
+            }
+            FaucetSubCmd::Stop {} => {
+                if !is_running_as_root() {
+                    return Err(eyre!("The stop command must run as the root user"));
+                }
+
+                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                if let Some(faucet) = node_registry.faucet.clone() {
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("=================================================");
+                        println!("             Stop Faucet Service                 ");
+                        println!("=================================================");
+                    }
+
+                    let mut faucet = faucet;
+                    stop_faucet(&mut faucet, &NodeServiceManager {}).await?;
                     node_registry.faucet = Some(faucet);
                     node_registry.save()?;
                     return Ok(());
