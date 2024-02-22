@@ -10,12 +10,12 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.3.10"
 
 [[bin]]
-name="safenode-manager"
-path="src/bin/cli/main.rs"
+name = "safenode-manager"
+path = "src/bin/cli/main.rs"
 
 [[bin]]
-name="safenode-manager-daemon"
-path="src/bin/daemon/main.rs"
+name = "safenode-manager-daemon"
+path = "src/bin/daemon/main.rs"
 
 [features]
 chaos = []
@@ -30,20 +30,22 @@ tcp = []
 websockets = []
 
 [dependencies]
-clap = { version = "4.4.6", features = ["derive", "env"]}
+clap = { version = "4.4.6", features = ["derive", "env"] }
 colored = "2.0.4"
 color-eyre = "~0.6"
 dirs-next = "2.0.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
-libp2p = { version="0.53", features = [] }
-libp2p-identity = { version="0.2.7", features = ["rand"] }
+libp2p = { version = "0.53", features = [] }
+libp2p-identity = { version = "0.2.7", features = ["rand"] }
 semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.6.0"
-sn_node_rpc_client =  { path = "../sn_node_rpc_client", version = "0.4.65" } 
+sn_node_rpc_client = { path = "../sn_node_rpc_client", version = "0.4.66" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.6" }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7", features = ["rpc"]}
+sn_protocol = { path = "../sn_protocol", version = "0.14.8", features = [
+    "rpc",
+] }
 sn-releases = "0.1.7"
 sysinfo = "0.29.10"
 tokio = { version = "1.26", features = ["full"] }
@@ -64,5 +66,8 @@ assert_fs = "1.0.13"
 assert_matches = "1.5.0"
 async-trait = "0.1"
 mockall = "0.11.3"
-reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.11", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
 predicates = "2.0"

@@ -1,0 +1,25 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "The Safe Network Metrics"
+documentation = "https://docs.rs/sn_node"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_metrics"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.1"
+
+[[bin]]
+path = "src/main.rs"
+name = "metrics"
+
+[dependencies]
+clap = { version = "4.2.1", features = ["cargo", "string"] }
+color-eyre = "~0.6.2"
+dirs-next = "~2.0.0"
+regex = "1.10"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_yaml = "0.9.25"
+url = "2.4.1"
+walkdir = "~2.4.0"
