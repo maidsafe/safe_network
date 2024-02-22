@@ -1,20 +1,25 @@
-name: Update or Allow PR Base Branch
+name: Check and Update PR Base Branch
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: write
 
 jobs:
   check-and-update-base:
     runs-on: ubuntu-latest
     steps:
       - name: Check and Update Base Branch
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const { issue: { number: prNumber }, repository: { owner: { login: owner }, name: repo } } = context.payload;
+            const prNumber = context.payload.pull_request.number; // Correct way to access PR number
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             const currentBase = context.payload.pull_request.base.ref;
             const sourceBranch = context.payload.pull_request.head.ref;
             const newBase = 'alpha';
@@ -22,13 +27,16 @@ jobs:
 
             if (currentBase === 'main' && !allowedSources.includes(sourceBranch)) {
               console.log(`Updating the base of PR #${prNumber} from '${currentBase}' to '${newBase}' because the source branch is '${sourceBranch}'`);
-              const response = await github.rest.pulls.update({
+              await github.rest.pulls.update({
                 owner,
                 repo,
                 pull_number: prNumber,
                 base: newBase,
+              }).then(response => {
+                console.log(`Base branch updated to '${newBase}': ${response.data.html_url}`);
+              }).catch(error => {
+                console.error(`Failed to update base branch: ${error}`);
               });
-              console.log(`Base branch updated to '${newBase}': ${response.data.url}`);
             } else {
               console.log(`No update needed for PR #${prNumber} (source: '${sourceBranch}', base: '${currentBase}')`);
             }
