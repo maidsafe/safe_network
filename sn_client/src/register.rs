@@ -27,7 +27,7 @@ use sn_transfers::{NanoTokens, Payment};
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
-/// Ops made to an offline Register instance are applied locally only,
+/// Cached operations made to an offline Register instance are applied locally only,
 /// and accumulated till the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
 #[derive(Clone)]
@@ -50,6 +50,25 @@ impl ClientRegister {
     }
 
     /// Create a new Register Locally.
+    /// # Arguments
+    /// * 'client' - [Client]
+    /// * 'meta' - [XorName]
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// // Here we create a ClientRegister
+    /// let register = ClientRegister::create(client.clone(), address);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn create(client: Client, meta: XorName) -> Self {
         Self::create_register(client, meta, Permissions::new_owner_only())
     }
