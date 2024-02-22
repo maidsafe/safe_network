@@ -128,7 +128,6 @@ impl ClientRegister {
     }
 
     /// Retrieve a Register from the network to work on it offline.
-    /// Function marked private.
     pub(super) async fn retrieve(client: Client, address: RegisterAddress) -> Result<Self> {
         let register = Self::get_register_from_network(&client, address).await?;
 
@@ -138,6 +137,7 @@ impl ClientRegister {
             ops: LinkedList::new(),
         })
     }
+
     /// Return type: [RegisterAddress]
     ///
     /// # Example
@@ -194,7 +194,7 @@ impl ClientRegister {
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
-    /// // Instantiate a ClientRegister (i.e with create_online)
+    /// // Instantiate a ClientRegister (i.e. with create_online)
     /// let (client_register, mut cost, mut royalties) = ClientRegister::create_online//(...)
     /// # (client,address,&mut wallet_client,false,permissions,).await?;
     /// // From there we can use the owner. In this example, we print it out:
@@ -227,13 +227,14 @@ impl ClientRegister {
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
     /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// # let address = XorName::random(&mut rng);
-    /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
-    /// # let permissions = Permissions::default();
-    /// // Instantiate a ClientRegister (i.e with create_online)
+    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
+    /// let permissions = Permissions::default();
+    /// // Instantiate a ClientRegister (i.e. with create_online)
     /// let (client_register, mut cost, mut royalties) = ClientRegister::create_online//(...)
     /// # (client,address,&mut wallet_client,false,permissions,).await?;
     /// // From there we can use the permissions. In this example, we print it out:
-    /// println!("REGISTER_PERMS={}", client_register.permissions().to_hex());
+    /// let permissions = client_register.permissions();
+    /// println!("REGISTER_PERMS={:?}",permissions);
     /// # Ok(())
     /// # }
     /// ```
@@ -264,7 +265,7 @@ impl ClientRegister {
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
-    /// // Instantiate a ClientRegister (i.e with create_online)
+    /// // Instantiate a ClientRegister (i.e. with create_online)
     /// let (client_register, mut cost, mut royalties) = ClientRegister::create_online//(...)
     /// # (client,address,&mut wallet_client,false,permissions,).await?;
     /// // From there we can see the size. In this example, we print it out:
@@ -466,7 +467,7 @@ impl ClientRegister {
         let reg_result = if verify_store {
             debug!("VERIFYING REGISTER STORED {:?}", self.address());
             let res = self.client.verify_register_stored(*self.address()).await;
-            // we need to keep the error here if verifying so we can retry and pay for storage
+            // we need to keep the error here if verifying, so we can retry and pay for storage
             // once more below
             match res {
                 Ok(r) => Ok(r.register()?),
@@ -524,20 +525,12 @@ impl ClientRegister {
     /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # use std::collections::BTreeSet;
-    /// # use tempfile::TempDir;
-    /// # use sn_client::WalletClient;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// # let temporary_path = TempDir::new()?.path().to_owned();
-    /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
-    /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// // Pass the boolean value to the Client Register instance via .Push()
-    /// let mut register = ClientRegister::create(client, address).push(false);
+    /// let mut binding = ClientRegister::create(client, address);
+    /// let register = binding.push(false);
     /// # Ok(())
     /// # }
     /// ```
@@ -567,9 +560,9 @@ impl ClientRegister {
         Ok(())
     }
 
-    /// Write a new value onto the Register atop latest value.
-    /// It returns an error if it finds branches in the content/entries; if it is
-    /// required to merge/resolve the branches, invoke the `write_merging_branches` API.
+    /// Write a new value onto the Register atop of the latest value.
+    /// It returns an error if it finds branches in the content / entries. If so, then it's
+    /// required to merge or resolve the branches. In that case, invoke the `write_merging_branches` API.
     ///
     /// # Arguments
     /// * 'entry' - u8 (i.e .as_bytes)
@@ -577,10 +570,20 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # let mut rng = rand::thread_rng();
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let meta = "Register entry".as_bytes();
+    /// // Use of the 'write_online' example:
+    /// let mut binding = ClientRegister::create(client, address);
+    /// let register = binding.write_online(meta,false);
+    /// # Ok(())
     /// # }
     /// ```
     pub async fn write_online(&mut self, entry: &[u8], verify_store: bool) -> Result<()> {
@@ -588,11 +591,10 @@ impl ClientRegister {
         self.push(verify_store).await
     }
 
-    /// Write a new value onto the Register atop the latest value.
-    /// If there are branches of content/entries, it automatically merges them
-    /// all leaving the new value as a single latest value of the Register.
-    /// Note you can use `write` API instead if you need to handle
-    /// content/entries branches in a different way.
+    /// Write a new value onto the Register atop of the latest value.
+    /// If there are branches of content/entries, it will automatically merge them.
+    /// This will leave a single new value as the latest entry into the Register.
+    /// Note that you can use the `write` API if you need to handle content/entries branches in a different way.
     ///
     /// # Arguments
     /// * 'entry' - u8 (i.e .as_bytes)
@@ -600,10 +602,20 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # let mut rng = rand::thread_rng();
+    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = XorName::random(&mut rng);
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let meta = "Entry".as_bytes();
+    /// // Use of the 'write_merging_branches_online':
+    /// let mut binding = ClientRegister::create(client, address);
+    /// let register = binding.write_merging_branches_online(meta,false);
+    /// # Ok(())
     /// # }
     /// ```
     pub async fn write_merging_branches_online(
@@ -616,9 +628,9 @@ impl ClientRegister {
     }
 
     /// Write a new value onto the Register atop the set of branches/entries
-    /// referenced by the provided list of their corresponding entry hash.
-    /// Note you can use `write_merging_branches` API instead if you
-    /// want to write atop all exiting branches/entries.
+    /// referenced by the provided list to their corresponding entry hash.
+    /// Note you can use `write_merging_branches` API if you
+    /// want to write atop of all exiting branches/entries instead.
     ///
     /// # Arguments
     /// * 'entry' - u8 (i.e .as_bytes)
@@ -629,10 +641,21 @@ impl ClientRegister {
     ///
     /// # Example
     /// ```no_run
-    /// # use sn_client::Error;
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use xor_name::XorName;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// Ok(())
+    /// # use std::collections::BTreeSet;
+    /// let mut rng = rand::thread_rng();
+    /// let address = XorName::random(&mut rng);
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let entry = "Entry".as_bytes();
+    /// let tree_set = BTreeSet::new();
+    /// // Use of the 'write_atop_online':
+    /// let mut binding = ClientRegister::create(client, address);
+    /// let mut register = binding.write_atop_online(entry,&tree_set,false);
+    /// # Ok(())
     /// # }
     /// ```
     pub async fn write_atop_online(
@@ -786,7 +809,7 @@ impl ClientRegister {
             verification: Some((VerificationKind::Network, verification_cfg)),
         };
 
-        // Register edits might exist so we cannot be sure that just because we get a record back that this should fail
+        // Register edits might exist, so we cannot be sure that just because we get a record back that this should fail
         Ok(self.client.network.put_record(record, &put_cfg).await?)
     }
 
