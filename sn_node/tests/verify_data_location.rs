@@ -11,7 +11,7 @@ mod common;
 
 use crate::common::{
     client::{get_all_rpc_addresses, get_gossip_client_and_funded_wallet},
-    get_all_peer_ids, get_safenode_rpc_client, node_restart,
+    get_all_peer_ids, get_safenode_rpc_client, NodeRestart,
 };
 use assert_fs::TempDir;
 use common::client::get_wallet;
@@ -120,34 +120,45 @@ async fn verify_data_location() -> Result<()> {
     // Churn nodes and verify the location of the data after VERIFICATION_DELAY
     let mut current_churn_count = 0;
 
+    let mut node_restart = NodeRestart::new(true, false)?;
+    let mut node_index = 0;
     'main: loop {
-        for (node_index, rpc_address) in node_rpc_address.iter().enumerate() {
-            if current_churn_count >= churn_count {
+        if current_churn_count >= churn_count {
+            break 'main Ok(());
+        }
+        current_churn_count += 1;
+
+        let safenode_rpc_endpoint = match node_restart.restart_next(false, false).await? {
+            None => {
+                // we have reached the end.
                 break 'main Ok(());
             }
-            current_churn_count += 1;
+            Some(safenode_rpc_endpoint) => safenode_rpc_endpoint,
+        };
 
-            // restart a node
-            node_restart(rpc_address).await?;
+        // wait for the dead peer to be removed from the RT and the replication flow to finish
+        println!(
+            "\nNode has been restarted, waiting for {VERIFICATION_DELAY:?} before verification"
+        );
+        info!("\nNode has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
+        tokio::time::sleep(VERIFICATION_DELAY).await;
 
-            // wait for the dead peer to be removed from the RT and the replication flow to finish
-            println!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
-            info!("\nNode {node_index} has been restarted, waiting for {VERIFICATION_DELAY:?} before verification");
-            tokio::time::sleep(VERIFICATION_DELAY).await;
+        // get the new PeerId for the current NodeIndex
+        let mut rpc_client = get_safenode_rpc_client(safenode_rpc_endpoint).await?;
 
-            // get the new PeerId for the current NodeIndex
-            let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
+        let response = rpc_client
+            .node_info(Request::new(NodeInfoRequest {}))
+            .await?;
+        let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
+        // The below indexing assumes that, the way we do iteration to retrieve all_peers inside get_all_rpc_addresses
+        // and get_all_peer_ids is the same as how we do the iteration inside NodeRestart.
+        // todo: make this more cleaner.
+        all_peers[node_index] = peer_id;
+        node_index += 1;
 
-            let response = rpc_client
-                .node_info(Request::new(NodeInfoRequest {}))
-                .await?;
-            let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
-            all_peers[node_index] = peer_id;
+        print_node_close_groups(&all_peers);
 
-            print_node_close_groups(&all_peers);
-
-            verify_location(&all_peers, &node_rpc_address).await?;
-        }
+        verify_location(&all_peers, &node_rpc_address).await?;
     }
 }
 

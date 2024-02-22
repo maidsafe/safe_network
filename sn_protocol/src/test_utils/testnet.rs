@@ -7,21 +7,46 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use color_eyre::eyre::{eyre, Result};
-use serde::{Deserialize, Serialize};
+use libp2p::PeerId;
+use serde::{de, Deserialize, Deserializer};
 use std::{
+    collections::BTreeMap,
     env,
     net::{IpAddr, SocketAddr},
     path::PathBuf,
+    str::FromStr,
 };
 
+fn deserialize_peer_socket_map<'de, D>(
+    deserializer: D,
+) -> std::result::Result<BTreeMap<PeerId, SocketAddr>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: BTreeMap<String, SocketAddr> = BTreeMap::deserialize(deserializer)?;
+    let s = s
+        .into_iter()
+        .map(|(peer_id, socket_addr)| {
+            PeerId::from_str(&peer_id)
+                .map_err(de::Error::custom)
+                .map(|peer_id| (peer_id, socket_addr))
+        })
+        .collect::<std::result::Result<Vec<_>, D::Error>>()?;
+    Ok(s.into_iter().collect())
+}
+
 // The contents of the file stored by sn-testnet-deploy.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct DeploymentInventory {
     pub name: String,
     pub version_info: Option<(String, String)>,
     pub branch_info: Option<(String, String)>,
     pub vm_list: Vec<(String, IpAddr)>,
-    pub rpc_endpoints: Vec<SocketAddr>,
+    // The PeerIds are stored as strings in the inventory file. We convert that directly into PeerId for convenience.
+    #[serde(deserialize_with = "deserialize_peer_socket_map")]
+    pub rpc_endpoints: BTreeMap<PeerId, SocketAddr>,
+    #[serde(deserialize_with = "deserialize_peer_socket_map")]
+    pub manager_daemon_endpoints: BTreeMap<PeerId, SocketAddr>,
     pub node_count: u16,
     pub ssh_user: String,
     pub genesis_multiaddr: String,
