@@ -37,7 +37,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{hash_map::Entry, HashSet},
+    collections::{hash_map::Entry, BTreeSet, HashSet},
     fmt::{Debug, Formatter},
 };
 use tokio::sync::oneshot;
@@ -139,6 +139,8 @@ pub enum NetworkEvent {
     },
     /// Terminate Node on HDD write erros
     TerminateNode,
+    /// List of peer nodes that failed to fetch replication copy from.
+    FailedToFetchHolders(BTreeSet<PeerId>),
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -179,6 +181,9 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::TerminateNode => {
                 write!(f, "NetworkEvent::TerminateNode")
+            }
+            NetworkEvent::FailedToFetchHolders(bad_nodes) => {
+                write!(f, "NetworkEvent::FailedToFetchHolders({bad_nodes:?})")
             }
         }
     }
