@@ -142,9 +142,11 @@ jobs:
           just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
           just package-release-assets "safenode-manager"
+          just package-release-assets "safenode-manager-daemon"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
+          just upload-release-assets-to-s3 "safenode-manager-daemon"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
 
@@ -162,9 +164,11 @@ jobs:
           just package-release-assets "faucet" "latest"
           just package-release-assets "safenode_rpc_client" "latest"
           just package-release-assets "safenode-manager" "latest"
+          just package-release-assets "safenode-manager-daemon" "latest"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
+          just upload-release-assets-to-s3 "safenode-manager-daemon"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
       - name: post notification to slack on failure
