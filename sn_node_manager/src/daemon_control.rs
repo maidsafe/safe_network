@@ -7,7 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node_control, service::ServiceControl, VerbosityLevel};
-use color_eyre::{eyre::OptionExt, Result};
+use color_eyre::{
+    eyre::{eyre, OptionExt},
+    Result,
+};
 use libp2p::PeerId;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_node_rpc_client::RpcActions;
@@ -65,11 +68,25 @@ pub async fn restart_node_service(
         .iter_mut()
         .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
         .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
-    node_control::stop(current_node, service_control).await?;
+    node_control::stop(current_node, service_control)
+        .await
+        .map_err(|err| {
+            eyre!(
+                "Error while stopping node {:?} with: {err:?}",
+                current_node.service_name
+            )
+        })?;
 
     if retain_peer_id {
         // reuse the same port and root dir to retain peer id.
-        service_control.uninstall(&current_node.service_name.clone())?;
+        service_control
+            .uninstall(&current_node.service_name.clone())
+            .map_err(|err| {
+                eyre!(
+                    "Error while uninstalling node {:?} with: {err:?}",
+                    current_node.service_name
+                )
+            })?;
         let install_ctx = node_control::InstallNodeServiceCtxBuilder {
             local: current_node.local,
             data_dir_path: current_node.data_dir_path.clone(),
@@ -84,14 +101,25 @@ pub async fn restart_node_service(
             env_variables: node_registry.environment_variables.clone(),
         }
         .build()?;
-        service_control.install(install_ctx)?;
+        service_control.install(install_ctx).map_err(|err| {
+            eyre!(
+                "Error while installing node {:?} with: {err:?}",
+                current_node.service_name
+            )
+        })?;
         node_control::start(
             current_node,
             service_control,
             rpc_client,
             VerbosityLevel::Normal,
         )
-        .await?;
+        .await
+        .map_err(|err| {
+            eyre!(
+                "Error while starting node {:?} with: {err:?}",
+                current_node.service_name
+            )
+        })?;
     } else {
         // else start a new node instance.
         let new_node_number = nodes_len + 1;
@@ -125,7 +153,12 @@ pub async fn restart_node_service(
                 .join(&new_service_name)
                 .join(safenode_file_name);
 
-            std::fs::copy(&current_node.safenode_path, &safenode_path)?;
+            std::fs::copy(&current_node.safenode_path, &safenode_path).map_err(|err| {
+                eyre!(
+                    "Failed to copy safenode bin from {:?} to {safenode_path:?} with err: {err}",
+                    current_node.safenode_path
+                )
+            })?;
             safenode_path
         };
 
@@ -144,13 +177,15 @@ pub async fn restart_node_service(
             service_user: current_node.user.clone(),
             env_variables: node_registry.environment_variables.clone(),
         }
-        .execute()?;
-        service_control.install(install_ctx)?;
+        .build()?;
+        service_control.install(install_ctx).map_err(|err| {
+            eyre!("Error while installing node {new_service_name:?} with: {err:?}",)
+        })?;
 
         let mut node = Node {
             genesis: current_node.genesis,
             local: current_node.local,
-            service_name: new_service_name,
+            service_name: new_service_name.clone(),
             user: current_node.user.clone(),
             number: new_node_number as u16,
             rpc_socket_addr: current_node.rpc_socket_addr,
@@ -170,11 +205,14 @@ pub async fn restart_node_service(
             rpc_client,
             VerbosityLevel::Normal,
         )
-        .await?;
+        .await
+        .map_err(|err| eyre!("Error while starting node {new_service_name:?} with: {err:?}",))?;
         node_registry.nodes.push(node);
     };
 
-    node_registry.save()?;
+    node_registry
+        .save()
+        .map_err(|err| eyre!("Error while saving node registry with: {err:?}"))?;
 
     Ok(())
 }
