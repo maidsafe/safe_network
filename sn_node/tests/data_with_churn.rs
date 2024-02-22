@@ -11,8 +11,8 @@ mod common;
 use crate::common::client::{add_funds_to_wallet, get_gossip_client_and_funded_wallet};
 use assert_fs::TempDir;
 use common::{
-    client::{get_all_rpc_addresses, get_node_count, get_wallet},
-    node_restart,
+    client::{get_node_count, get_wallet},
+    NodeRestart,
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
@@ -503,31 +503,27 @@ fn churn_nodes_task(
     churn_period: Duration,
 ) {
     let start = Instant::now();
-    let _handle = tokio::spawn(async move {
-        let node_rpc_addresses =
-            get_all_rpc_addresses(true).expect("Failed to obtain rpc addresses");
-        'main: loop {
-            for rpc_address in node_rpc_addresses.iter() {
-                sleep(churn_period).await;
+    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+        let mut node_restart = NodeRestart::new(true, false)?;
 
-                // break out if we've run the duration of churn
-                if start.elapsed() > test_duration {
-                    debug!("Test duration reached, stopping churn nodes task");
-                    break 'main;
-                }
+        loop {
+            sleep(churn_period).await;
 
-                println!("Restarting node through its RPC service at {rpc_address}");
-                info!("Restarting node through its RPC service at {rpc_address}");
-
-                if let Err(err) = node_restart(rpc_address).await {
-                    println!("Failed to restart node with RPC endpoint {rpc_address}: {err}");
-                    info!("Failed to restart node with RPC endpoint {rpc_address}: {err}");
-                    continue;
-                }
-
-                *churn_count.write().await += 1;
+            // break out if we've run the duration of churn
+            if start.elapsed() > test_duration {
+                debug!("Test duration reached, stopping churn nodes task");
+                break;
             }
+
+            if let Err(err) = node_restart.restart_next(true, true).await {
+                println!("Failed to restart node {err}");
+                info!("Failed to restart node {err}");
+                continue;
+            }
+
+            *churn_count.write().await += 1;
         }
+        Ok(())
     });
 }
 

@@ -9,8 +9,10 @@
 
 pub mod client;
 
+use self::client::{Droplet, NonDroplet};
 use bytes::Bytes;
-use eyre::{bail, Result};
+use eyre::{bail, eyre, OptionExt, Result};
+use itertools::Either;
 use libp2p::PeerId;
 use rand::{
     distributions::{Distribution, Standard},
@@ -18,10 +20,13 @@ use rand::{
 };
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
 use sn_client::{Client, FilesApi};
-use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, NodeInfoRequest, RestartRequest,
+use sn_protocol::{
+    node_registry::{get_local_node_registry_path, NodeRegistry},
+    safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient,
+    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest},
+    storage::ChunkAddress,
+    test_utils::DeploymentInventory,
 };
-use sn_protocol::storage::ChunkAddress;
 use std::{
     fs::File,
     io::Write,
@@ -30,7 +35,7 @@ use std::{
     time::Duration,
 };
 use tonic::Request;
-use tracing::{debug, error, info};
+use tracing::{debug, error, warn};
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
@@ -85,6 +90,27 @@ pub async fn get_safenode_rpc_client(
     }
 }
 
+// Connect to a RPC socket addr with retry
+pub async fn get_safenode_manager_rpc_client(
+    socket_addr: SocketAddr,
+) -> Result<SafeNodeManagerClient<tonic::transport::Channel>> {
+    // get the new PeerId for the current NodeIndex
+    let endpoint = format!("https://{socket_addr}");
+    let mut attempts = 0;
+    loop {
+        if let Ok(rpc_client) = SafeNodeManagerClient::connect(endpoint.clone()).await {
+            break Ok(rpc_client);
+        }
+        attempts += 1;
+        println!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
+        error!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        if attempts >= 10 {
+            bail!("Failed to connect to {endpoint:?} even after 10 retries");
+        }
+    }
+}
+
 // Returns all the PeerId for all the running nodes
 pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Vec<PeerId>> {
     let mut all_peers = Vec::new();
@@ -106,40 +132,143 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
     Ok(all_peers)
 }
 
-pub async fn node_restart(addr: &SocketAddr) -> Result<()> {
-    let mut rpc_client = get_safenode_rpc_client(*addr).await?;
+/// A struct to facilitate restart of droplet/local nodes
+pub struct NodeRestart {
+    // Deployment inventory is used incase of Droplet nodes and NodeRegistry incase of NonDroplet nodes.
+    inventory_file: Either<DeploymentInventory, NodeRegistry>,
+    next_to_restart_idx: usize,
+    skip_genesis_for_droplet: bool,
+    preserve_peer_id: bool,
+}
 
-    let response = rpc_client
-        .node_info(Request::new(NodeInfoRequest {}))
-        .await?;
-    let root_dir = Path::new(&response.get_ref().data_dir);
-    debug!("Obtained root dir from node {root_dir:?}.");
+impl NodeRestart {
+    /// The genesis address is skipped for droplets as we don't want to restart the Genesis node there.
+    /// The restarted node relies on the genesis multiaddr to bootstrap after restart.
+    ///
+    /// Setting preserve_peer_id will soft restart the node by keeping the old PeerId, ports, records etc.
+    /// Todo: preserve_peer_id does not work for NonDroplet nodes for now.
+    pub fn new(skip_genesis_for_droplet: bool, preserve_peer_id: bool) -> Result<Self> {
+        let inventory_file = match DeploymentInventory::load() {
+            Ok(inv) => Either::Left(inv),
+            Err(_) => {
+                let reg = NodeRegistry::load(&get_local_node_registry_path()?)?;
+                Either::Right(reg)
+            }
+        };
 
-    let record_store = root_dir.join("record_store");
-    if record_store.exists() {
-        println!("Removing content from the record store {record_store:?}");
-        info!("Removing content from the record store {record_store:?}");
-        std::fs::remove_dir_all(record_store)?;
+        Ok(Self {
+            inventory_file,
+            next_to_restart_idx: 0,
+            skip_genesis_for_droplet,
+            preserve_peer_id,
+        })
     }
-    let secret_key_file = root_dir.join("secret-key");
-    if secret_key_file.exists() {
-        println!("Removing secret-key file {secret_key_file:?}");
-        info!("Removing secret-key file {secret_key_file:?}");
-        std::fs::remove_file(secret_key_file)?;
+
+    /// Restart the next node in the list.
+    /// Set `loop_over` to `true` if we want to start over the restart process if we have already restarted all
+    /// the nodes.
+    /// Set `progress_on_error` to `true` if we want to restart the next node if you call this function again.
+    /// Else we'll be retrying the same node on the next call.
+    ///
+    /// Returns the `safenode's RPC addr` if we have restarted a node successfully.
+    /// Returns `None` if `loop_over` is `false` and we have not restarted any nodes.
+    pub async fn restart_next(
+        &mut self,
+        loop_over: bool,
+        progress_on_error: bool,
+    ) -> Result<Option<SocketAddr>> {
+        let safenode_rpc_endpoint = match self.inventory_file.clone() {
+            Either::Left(inv) => {
+                // check if we've reached the end
+                if loop_over && self.next_to_restart_idx > inv.manager_daemon_endpoints.len() {
+                    self.next_to_restart_idx = 0;
+                }
+
+                if let Some((peer_id, daemon_endpoint)) = inv
+                    .manager_daemon_endpoints
+                    .iter()
+                    .nth(self.next_to_restart_idx)
+                {
+                    self.restart(peer_id.clone(), *daemon_endpoint, progress_on_error)
+                        .await?;
+
+                    let safenode_rpc_endpoint = inv
+                        .rpc_endpoints
+                        .get(peer_id)
+                        .ok_or_eyre("Failed to obtain safenode rpc endpoint from inventory file")?;
+                    Some(*safenode_rpc_endpoint)
+                } else {
+                    warn!("We have restarted all the nodes in the list. Since loop_over is false, we are not restarting any nodes now.");
+                    None
+                }
+            }
+            Either::Right(reg) => {
+                // check if we've reached the end
+                if loop_over && self.next_to_restart_idx > reg.nodes.len() {
+                    self.next_to_restart_idx = 0;
+                }
+
+                if let Some((peer_id, safenode_rpc_endpoint)) = reg
+                    .nodes
+                    .get(self.next_to_restart_idx)
+                    .map(|node| (node.peer_id, node.rpc_socket_addr))
+                {
+                    let peer_id =
+                        peer_id.ok_or_eyre("PeerId should be present for a local node")?;
+                    self.restart(peer_id, safenode_rpc_endpoint, progress_on_error)
+                        .await?;
+                    Some(safenode_rpc_endpoint)
+                } else {
+                    warn!("We have restarted all the nodes in the list. Since loop_over is false, we are not restarting any nodes now.");
+                    None
+                }
+            }
+        };
+
+        Ok(safenode_rpc_endpoint)
     }
-    let wallet_dir = root_dir.join("wallet");
-    if wallet_dir.exists() {
-        println!("Removing wallet dir {wallet_dir:?}");
-        info!("Removing wallet dir {wallet_dir:?}");
-        std::fs::remove_dir_all(wallet_dir)?;
+
+    async fn restart(
+        &mut self,
+        peer_id: PeerId,
+        endpoint: SocketAddr,
+        progress_on_error: bool,
+    ) -> Result<()> {
+        match &self.inventory_file {
+            Either::Left(_inv) =>  {
+                match Droplet::restart_node(&peer_id, endpoint, self.preserve_peer_id)
+                        .await
+                        .map_err(|err| eyre!("Failed to restart peer {peer_id:} on daemon endpoint: {endpoint:?} with err {err:?}")) {
+                            Ok(_) => {
+                                self.next_to_restart_idx += 1;
+                            },
+                            Err(err) => {
+                                if progress_on_error {
+                                    self.next_to_restart_idx += 1;
+                                }
+                                return Err(err);
+                            },
+                        }
+            },
+            Either::Right(_reg) => {
+                match NonDroplet::restart_node(endpoint, self.preserve_peer_id).await
+                .map_err(|err| eyre!("Failed to restart peer {peer_id:?} on safenode RPC endpoint: {endpoint:?} with err {err:?}")) {
+                    Ok(_) => {
+                        self.next_to_restart_idx += 1;
+                    },
+                    Err(err) => {
+                        if progress_on_error {
+                            self.next_to_restart_idx += 1;
+                        }
+                        return Err(err);
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
-    let _response = rpc_client
-        .restart(Request::new(RestartRequest { delay_millis: 0 }))
-        .await?;
-
-    println!("Node restart requested to RPC service at {addr}");
-    info!("Node restart requested to RPC service at {addr}");
-
-    Ok(())
+    pub fn reset_index(&mut self) {
+        self.next_to_restart_idx = 0;
+    }
 }
