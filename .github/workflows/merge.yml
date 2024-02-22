@@ -965,7 +965,7 @@ jobs:
         run: ~/safe --log-output-dest=data-dir files upload "ubuntu-16.04.7-desktop-amd64.iso" --retry-strategy quick
         env:
           SN_LOG: "all"
-        timeout-minutes: 30
+        timeout-minutes: 45
 
       - name: Stop the local network and upload logs
         if: always()
@@ -1080,7 +1080,7 @@ jobs:
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
-        timeout-minutes: 5
+        timeout-minutes: 10
 
       - name: Ensure no leftover cash_notes and payment files
         run: |

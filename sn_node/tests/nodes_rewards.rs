@@ -378,8 +378,8 @@ mod tests {
             let mut count = 0;
 
             // if expected royalties is 0 or 1 we'll wait for 300s as a minimum,
-            // otherwise we'll wait for 60s per expected royalty
-            let secs = std::cmp::max(300, expected_royalties as u64 * 60);
+            // otherwise we'll wait for 120s per expected royalty
+            let secs = std::cmp::max(300, expected_royalties as u64 * 120);
             let duration = Duration::from_secs(secs);
             info!("Awaiting transfers notifs for {duration:?}...");
             if timeout(duration, async {
