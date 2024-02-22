@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{node_control, service::ServiceControl, VerbosityLevel};
+use crate::{config::create_owned_dir, node_control, service::ServiceControl, VerbosityLevel};
 use color_eyre::{
     eyre::{eyre, OptionExt},
     Result,
@@ -138,6 +138,18 @@ pub async fn restart_node_service(
             data_dir_path.pop();
             data_dir_path.join(&new_service_name)
         };
+        create_owned_dir(log_dir_path.clone(), &current_node.user).map_err(|err| {
+            eyre!(
+                "Error while creating owned dir for {:?}: {err:?}",
+                current_node.user
+            )
+        })?;
+        create_owned_dir(data_dir_path.clone(), &current_node.user).map_err(|err| {
+            eyre!(
+                "Error while creating owned dir for {:?}: {err:?}",
+                current_node.user
+            )
+        })?;
         // example path "safenode_path":"/var/safenode-manager/services/safenode18/safenode"
         let safenode_path = {
             let mut safenode_path = current_node.safenode_path.clone();
@@ -149,9 +161,14 @@ pub async fn restart_node_service(
             safenode_path.pop();
             safenode_path.pop();
 
-            let safenode_path = safenode_path
-                .join(&new_service_name)
-                .join(safenode_file_name);
+            let safenode_path = safenode_path.join(&new_service_name);
+            create_owned_dir(data_dir_path.clone(), &current_node.user).map_err(|err| {
+                eyre!(
+                    "Error while creating owned dir for {:?}: {err:?}",
+                    current_node.user
+                )
+            })?;
+            let safenode_path = safenode_path.join(safenode_file_name);
 
             std::fs::copy(&current_node.safenode_path, &safenode_path).map_err(|err| {
                 eyre!(
