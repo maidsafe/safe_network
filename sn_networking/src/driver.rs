@@ -565,7 +565,7 @@ impl NetworkBuilder {
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
         let bootstrap = ContinuousBootstrap::new();
-        let replication_fetcher = ReplicationFetcher::new(peer_id);
+        let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
 
         let swarm_driver = SwarmDriver {
             swarm,
