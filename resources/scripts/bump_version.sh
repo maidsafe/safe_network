@@ -2,7 +2,30 @@
 
 set -e
 
+
+# Suffix to append to the version. Passed as an argument to this script.
+SUFFIX="$1"
+
+# if there's _any_ suffix, ensure cargo set-version is installed
+if [ -n "$SUFFIX" ]; then
+    # Check if the 'cargo set-version' command is available
+  if ! cargo set-version --help > /dev/null 2>&1; then
+      echo "cargo set-version command not found."
+      echo "Please install cargo-edit with the command: cargo install cargo-edit --features vendored-openssl"
+      exit 1
+  fi
+fi
+
+# Ensure the suffix is either alpha or beta
+if [ -n "$SUFFIX" ]; then
+    if [[ "$SUFFIX" != "alpha" ]] && [[ "$SUFFIX" != "beta" ]]; then
+        echo "Invalid suffix. Suffix must be either 'alpha' or 'beta'."
+        exit 1
+    fi
+fi
+
 release-plz update 2>&1 | tee bump_version_output
+
 
 crates_bumped=()
 while IFS= read -r line; do
@@ -19,7 +42,26 @@ fi
 
 commit_message="chore(release): "
 for crate in "${crates_bumped[@]}"; do
-  commit_message="${commit_message}${crate}/"
+
+    version=$(echo "$crate" | cut -d'v' -f2)
+
+    # if we're changing the release channel...
+    if [ -n "$SUFFIX" ]; then
+        #if we're already in a realse channel, reapplying the suffix will reset things.
+        if [[ "$version" == *"-alpha."* || "$version" == *"-beta."* ]]; then
+          #remove any existing channel + version
+            base_version=$(echo "$version" | sed -E 's/(-alpha\.[0-9]+|-beta\.[0-9]+)$//')
+            new_version="${base_version}-${SUFFIX}.0"
+        else
+            new_version="${version}-${SUFFIX}.0"
+        fi
+
+        # set the version
+        crate=$new_version
+        cargo set-version "$new_version" --allow-dirty
+    fi
+    # update the commit msg
+    commit_message="${commit_message}${crate}/"
 done
 commit_message=${commit_message%/} # strip off trailing '/' character
 
