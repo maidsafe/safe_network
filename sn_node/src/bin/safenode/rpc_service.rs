@@ -333,7 +333,14 @@ impl SafeNode for SafeNodeRpcService {
         );
 
         let delay = Duration::from_millis(request.get_ref().delay_millis);
-        match self.ctrl_tx.send(NodeCtrl::Restart(delay)).await {
+        match self
+            .ctrl_tx
+            .send(NodeCtrl::Restart {
+                delay,
+                retain_peer_id: request.get_ref().retain_peer_id,
+            })
+            .await
+        {
             Ok(()) => Ok(Response::new(RestartResponse {})),
             Err(err) => Err(Status::new(
                 Code::Internal,

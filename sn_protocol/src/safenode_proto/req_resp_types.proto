@@ -96,6 +96,7 @@ message StopResponse {}
 // Restart the safenode app
 message RestartRequest {
   uint64 delay_millis = 1;
+  bool retain_peer_id = 2;
 }
 
 message RestartResponse {}
