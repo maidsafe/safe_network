@@ -7,14 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    faucet_control::{add_faucet, config::AddFaucetServiceOptions, start_faucet},
+    faucet_control::{add_faucet, config::AddFaucetServiceOptions, start_faucet, stop_faucet},
     service::MockServiceControl,
     VerbosityLevel,
 };
 use assert_fs::prelude::*;
 use assert_matches::assert_matches;
 use color_eyre::Result;
-use mockall::predicate::*;
+use mockall::{predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
 use sn_protocol::node_registry::{Faucet, NodeRegistry, NodeStatus};
@@ -96,8 +96,7 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
         &mut node_registry,
         &mock_service_control,
         VerbosityLevel::Normal,
-    )
-    .await?;
+    )?;
 
     faucet_download_path.assert(predicate::path::missing());
     faucet_install_path.assert(predicate::path::is_file());
@@ -150,4 +149,147 @@ async fn start_faucet_should_start_the_added_faucet_service() -> Result<()> {
     assert_matches!(faucet.status, NodeStatus::Running);
 
     Ok(())
+}
+
+#[tokio::test]
+async fn stop_faucet_should_stop_a_running_service() -> Result<()> {
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut seq = Sequence::new();
+    mock_service_control
+        .expect_is_service_process_running()
+        .with(eq(1000))
+        .times(1)
+        .returning(|_| true)
+        .in_sequence(&mut seq);
+    mock_service_control
+        .expect_stop()
+        .with(eq("faucet"))
+        .times(1)
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    let mut faucet = Faucet {
+        faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+        local: false,
+        log_dir_path: PathBuf::from("/var/log/faucet"),
+        pid: Some(1000),
+        service_name: "faucet".to_string(),
+        status: NodeStatus::Running,
+        user: "safe".to_string(),
+        version: "0.98.1".to_string(),
+    };
+    stop_faucet(&mut faucet, &mock_service_control).await?;
+
+    assert_eq!(faucet.pid, None);
+    assert_matches!(faucet.status, NodeStatus::Stopped);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn stop_faucet_should_stop_a_service_marked_as_running() -> Result<()> {
+    let mut mock_service_control = MockServiceControl::new();
+
+    mock_service_control
+        .expect_is_service_process_running()
+        .with(eq(1000))
+        .times(1)
+        .returning(|_| false);
+    mock_service_control
+        .expect_stop()
+        .with(eq("faucet"))
+        .times(0)
+        .returning(|_| Ok(()));
+
+    let mut faucet = Faucet {
+        faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+        local: false,
+        log_dir_path: PathBuf::from("/var/log/faucet"),
+        pid: Some(1000),
+        service_name: "faucet".to_string(),
+        status: NodeStatus::Running,
+        user: "safe".to_string(),
+        version: "0.98.1".to_string(),
+    };
+    stop_faucet(&mut faucet, &mock_service_control).await?;
+
+    assert_eq!(faucet.pid, None);
+    assert_matches!(faucet.status, NodeStatus::Stopped);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn stop_faucet_should_not_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
+    let mock_service_control = MockServiceControl::new();
+
+    let mut faucet = Faucet {
+        faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+        local: false,
+        log_dir_path: PathBuf::from("/var/log/faucet"),
+        pid: Some(1000),
+        service_name: "faucet".to_string(),
+        status: NodeStatus::Added,
+        user: "safe".to_string(),
+        version: "0.98.1".to_string(),
+    };
+
+    let result = stop_faucet(&mut faucet, &mock_service_control).await;
+
+    match result {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            panic!("The stop command should be idempotent and do nothing for a stopped service");
+        }
+    }
+}
+
+#[tokio::test]
+async fn stop_faucet_should_return_ok_when_attempting_to_stop_service_that_was_already_stopped(
+) -> Result<()> {
+    let mock_service_control = MockServiceControl::new();
+
+    let mut faucet = Faucet {
+        faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+        local: false,
+        log_dir_path: PathBuf::from("/var/log/faucet"),
+        pid: None,
+        service_name: "faucet".to_string(),
+        status: NodeStatus::Stopped,
+        user: "safe".to_string(),
+        version: "0.98.1".to_string(),
+    };
+
+    stop_faucet(&mut faucet, &mock_service_control).await?;
+
+    assert_eq!(faucet.pid, None);
+    assert_matches!(faucet.status, NodeStatus::Stopped);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn stop_faucet_should_not_return_error_for_attempt_to_stop_removed_service() -> Result<()> {
+    let mock_service_control = MockServiceControl::new();
+
+    let mut faucet = Faucet {
+        faucet_path: PathBuf::from("/usr/local/bin/faucet"),
+        local: false,
+        log_dir_path: PathBuf::from("/var/log/faucet"),
+        pid: Some(1000),
+        service_name: "faucet".to_string(),
+        status: NodeStatus::Removed,
+        user: "safe".to_string(),
+        version: "0.98.1".to_string(),
+    };
+
+    let result = stop_faucet(&mut faucet, &mock_service_control).await;
+
+    match result {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            panic!("The stop command should be idempotent and do nothing for a removed service");
+        }
+    }
 }

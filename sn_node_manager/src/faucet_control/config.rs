@@ -40,6 +40,8 @@ impl InstallFaucetServiceCtxBuilder {
             args.push(OsString::from(peers_str));
         }
 
+        args.push(OsString::from("server"));
+
         Ok(ServiceInstallCtx {
             label: self.name.parse()?,
             program: self.faucet_path.to_path_buf(),

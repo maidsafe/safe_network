@@ -1367,8 +1367,6 @@ async fn stop_should_not_return_error_for_attempt_to_stop_installed_service() ->
             panic!("The stop command should be idempotent and do nothing for a stopped service");
         }
     }
-
-    // Ok(())
 }
 
 #[tokio::test]
