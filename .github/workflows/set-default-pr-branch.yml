@@ -15,7 +15,7 @@ jobs:
       - name: Check and Update Base Branch
         uses: actions/github-script@v7
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{secrets.QA_DO_PAT}}
           script: |
             const prNumber = context.payload.pull_request.number; // Correct way to access PR number
             const owner = context.repo.owner;
