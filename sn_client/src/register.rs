@@ -427,7 +427,8 @@ impl ClientRegister {
     /// * 'wallet_client' - WalletClient
     /// * 'verify_store' - Boolean
     ///
-    /// Return type: [Result]<([NanoTokens], [NanoTokens])>
+    /// Return type:
+    /// Result<([NanoTokens], [NanoTokens])>
     ///
     /// # Example
     /// ```no_run
