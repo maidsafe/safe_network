@@ -165,6 +165,9 @@ impl AccountPacket {
     pub async fn status(&mut self) -> Result<()> {
         let mut folders = self.read_files_and_folders_from_disk(false, false)?;
 
+        let mut num_of_diffs = 0;
+        println!("Looking for local changes made to files/folders...");
+
         // let's first compare from current files/folders read from disk, with the previous versions of them
         for (folder_path, folder) in folders.iter_mut() {
             for (meta_xorname, metadata) in folder.entries().await? {
@@ -176,23 +179,32 @@ impl AccountPacket {
                         match (&tracking_info.metadata.content, metadata.content) {
                             (FolderEntry::File(_), FolderEntry::File(_)) => {
                                 if tracking_info.meta_xorname != meta_xorname {
-                                    println!("== File changed: {file_path:?}",);
+                                    num_of_diffs += 1;
+                                    println!("- File content changed: {file_path:?}",);
                                 }
                             }
                             (FolderEntry::Folder(_), FolderEntry::Folder(_)) => {}
                             (FolderEntry::Folder(_), FolderEntry::File(_)) => {
+                                num_of_diffs += 1;
                                 println!(
-                                    "== New file found where there used to be a folder: {file_path:?}"
+                                    "- New file found where there used to be a folder: {file_path:?}"
                                 );
                             }
                             (FolderEntry::File(_), FolderEntry::Folder(_)) => {
+                                num_of_diffs += 1;
                                 println!(
-                                    "== New folder found where there used to be a file: {file_path:?}"
+                                    "- New folder found where there used to be a file: {file_path:?}"
                                 );
                             }
                         }
                     }
-                    Ok(None) | Err(_) => println!("== Folder/file is new: {file_path:?}"),
+                    Ok(None) | Err(_) => {
+                        num_of_diffs += 1;
+                        match metadata.content {
+                            FolderEntry::File(_) => println!("- New file: {file_path:?}"),
+                            FolderEntry::Folder(_) => println!("- New folder: {file_path:?}"),
+                        }
+                    }
                 }
             }
         }
@@ -203,7 +215,10 @@ impl AccountPacket {
             match tracking_info.metadata.content {
                 FolderEntry::Folder(_) => match folders.get(&abs_path) {
                     Some(_) => {}
-                    None => println!("== Folder removed at {item_path:?}"),
+                    None => {
+                        num_of_diffs += 1;
+                        println!("- Folder removed: {abs_path:?}");
+                    }
                 },
                 FolderEntry::File(_) => {
                     match abs_path.parent().and_then(|parent| folders.get_mut(parent)) {
@@ -212,17 +227,22 @@ impl AccountPacket {
                                 .entries()
                                 .await?
                                 .iter()
-                                .all(|(xorname, _)| xorname != &tracking_info.meta_xorname)
+                                .all(|(_, metadata)| metadata.name != tracking_info.metadata.name)
                             {
-                                println!("== File removed at {item_path:?}");
+                                num_of_diffs += 1;
+                                println!("- File removed: {abs_path:?}");
                             }
                         }
-                        None => println!("== File removed along with its folder at {item_path:?}"),
+                        None => {
+                            num_of_diffs += 1;
+                            println!("- File removed along with its folder: {abs_path:?}");
+                        }
                     }
                 }
             }
         }
 
+        println!("Changes found to local files/folders: {num_of_diffs}");
         Ok(())
     }
 
