@@ -16,7 +16,9 @@ use color_eyre::{
 };
 use libp2p_identity::PeerId;
 use sn_node_manager::{
-    config::get_node_registry_path, daemon_control, service::NodeServiceManager,
+    config::get_node_registry_path,
+    daemon_control::{self, DAEMON_DEFAULT_PORT},
+    service::NodeServiceManager,
 };
 use sn_node_rpc_client::RpcClient;
 use sn_protocol::{
@@ -29,13 +31,11 @@ use sn_protocol::{
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Code, Request, Response, Status};
 
-const PORT: u16 = 12500;
-
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
-    #[clap(long, default_value_t = PORT)]
+    #[clap(long, default_value_t = DAEMON_DEFAULT_PORT)]
     port: u16,
     /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
     ///
