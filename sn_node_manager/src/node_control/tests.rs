@@ -1027,7 +1027,7 @@ mock! {
         async fn gossipsub_subscribe(&self, topic: &str) -> RpcResult<()>;
         async fn gossipsub_unsubscribe(&self, topic: &str) -> RpcResult<()>;
         async fn gossipsub_publish(&self, topic: &str, message: &str) -> RpcResult<()>;
-        async fn node_restart(&self, delay_millis: u64) -> RpcResult<()>;
+        async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> RpcResult<()>;
         async fn node_stop(&self, delay_millis: u64) -> RpcResult<()>;
         async fn node_update(&self, delay_millis: u64) -> RpcResult<()>;
     }

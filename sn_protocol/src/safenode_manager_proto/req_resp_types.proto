@@ -14,7 +14,7 @@ package safenode_manager_proto;
 
 message NodeServiceRestartRequest {
     bytes peer_id = 1;
-    bool preserve_peer_id = 2;
+    bool retain_peer_id = 2;
     uint64 delay_millis = 3;
 }
   

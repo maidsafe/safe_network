@@ -237,7 +237,7 @@ impl NonDroplet {
     }
 
     // Restart a local node by sending in the SafenodeRpcCmd::Restart to the node's RPC endpoint.
-    pub async fn restart_node(rpc_endpoint: SocketAddr, _preserve_peer_id: bool) -> Result<()> {
+    pub async fn restart_node(rpc_endpoint: SocketAddr, retain_peer_id: bool) -> Result<()> {
         let mut rpc_client = get_safenode_rpc_client(rpc_endpoint).await?;
 
         let response = rpc_client
@@ -266,7 +266,10 @@ impl NonDroplet {
         }
 
         let _response = rpc_client
-            .restart(Request::new(RestartRequest { delay_millis: 0 }))
+            .restart(Request::new(RestartRequest {
+                delay_millis: 0,
+                retain_peer_id,
+            }))
             .await?;
 
         println!("Node restart requested to RPC service at {rpc_endpoint}");
@@ -381,14 +384,14 @@ impl Droplet {
     pub async fn restart_node(
         peer_id: &PeerId,
         daemon_endpoint: SocketAddr,
-        preserve_peer_id: bool,
+        retain_peer_id: bool,
     ) -> Result<()> {
         let mut rpc_client = get_safenode_manager_rpc_client(daemon_endpoint).await?;
 
         let _response = rpc_client.restart_node_service(Request::new(NodeServiceRestartRequest {
             peer_id: peer_id.to_bytes(),
             delay_millis: 0,
-            preserve_peer_id,
+            retain_peer_id,
         }));
 
         println!("Node restart requested to RPC service at {daemon_endpoint}");
