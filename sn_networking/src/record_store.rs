@@ -282,9 +282,7 @@ impl NodeRecordStore {
 
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
-    ///
-    /// An error is returned if we are full and the new record is not closer than
-    /// the furthest record
+    #[allow(dead_code)]
     fn prune_storage_if_needed_for_record(&mut self, r: &Key) -> Result<()> {
         let num_records = self.records.len();
 
@@ -401,7 +399,14 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        self.prune_storage_if_needed_for_record(&r.key)?;
+        // Pruning is currently disabled, before having a clear solution on preventing pruned
+        // record got stored back via the replication procedure.
+        // self.prune_storage_if_needed_for_record(&r.key)?;
+        let stored_records = self.records.len();
+        if stored_records > self.config.max_records {
+            warn!("Currently having {stored_records} records stored, exceeded the recommended limit of {}",
+                self.config.max_records);
+        }
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -821,6 +826,7 @@ mod tests {
         assert!(store.get(&r.key).is_none());
     }
 
+    #[ignore = "Currently we do not prune records once reached max_records cap"]
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {
         let max_iterations = 10;
