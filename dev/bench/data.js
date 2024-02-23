@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708697695257,
+  "lastUpdate": 1708697697855,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5c29160451714cf8e81336fce826193faec861bc",
-          "message": "fix(node): use tokio::Interval to trigger forced replication",
-          "timestamp": "2023-10-23T08:55:44+02:00",
-          "tree_id": "00efeadbb628189cf5895d25ce58167ab131fa7f",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c29160451714cf8e81336fce826193faec861bc"
-        },
-        "date": 1698046721783,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 179,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c31c006adf30f3ef927f31686ab265faebe11e3d",
+          "message": "ci: allow  as suffix for bumper and treat as non-suffixed",
+          "timestamp": "2024-02-23T15:02:46+01:00",
+          "tree_id": "93247a350892bf2cf1b069621123077476c5645b",
+          "url": "https://github.com/maidsafe/safe_network/commit/c31c006adf30f3ef927f31686ab265faebe11e3d"
+        },
+        "date": 1708697696806,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
