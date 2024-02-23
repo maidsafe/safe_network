@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.104.34"
+version = "0.104.35"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -52,12 +52,12 @@ self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 sn_build_info = { path="../sn_build_info", version = "0.1.5" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6" }
-sn_client = { path = "../sn_client", version = "0.104.26" }
+sn_client = { path = "../sn_client", version = "0.104.27" }
 sn_logging = { path = "../sn_logging", version = "0.2.21" }
-sn_networking = { path = "../sn_networking", version = "0.13.28" }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7", features = ["rpc"]}
+sn_networking = { path = "../sn_networking", version = "0.13.29" }
+sn_protocol = { path = "../sn_protocol", version = "0.14.8", features = ["rpc"]}
 sn_registers = { path = "../sn_registers", version = "0.3.10" }
-sn_transfers = { path = "../sn_transfers", version = "0.15.8" }
+sn_transfers = { path = "../sn_transfers", version = "0.16.0" }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time", "signal"] }
 tokio-stream = { version = "~0.1.12" }
@@ -74,7 +74,7 @@ color-eyre = "0.6.2"
 [dev-dependencies]
 tempfile = "3.6.0"
 reqwest = { version="0.11.18", default-features=false, features = ["rustls"] }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7", features = ["test-utils", "rpc"]}
+sn_protocol = { path = "../sn_protocol", version = "0.14.8", features = ["test-utils", "rpc"]}
 
 [lints]
 workspace = true

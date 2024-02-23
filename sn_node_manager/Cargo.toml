@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn-node-manager"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.3.10"
+version = "0.3.11"
 
 [[bin]]
 name = "safenode-manager"
@@ -41,9 +41,9 @@ semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.6.0"
-sn_node_rpc_client = { path = "../sn_node_rpc_client", version = "0.4.65" }
+sn_node_rpc_client = { path = "../sn_node_rpc_client", version = "0.4.66" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.6" }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7", features = [
+sn_protocol = { path = "../sn_protocol", version = "0.14.8", features = [
     "rpc",
 ] }
 sn-releases = "0.1.7"

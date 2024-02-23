@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.29](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.28...sn_networking-v0.13.29) - 2024-02-23
+
+### Added
+- *(node)* error out bad_nodes to node via event channel
+- *(node)* refactor replication_fetcher to black list bad nodes
+
 ## [0.13.28](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.27...sn_networking-v0.13.28) - 2024-02-21
 
 ### Other

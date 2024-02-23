@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.9...sn_transfers-v0.16.0) - 2024-02-23
+
+### Added
+- use the old serialisation as default, add some docs
+- warn about old format when detected
+- implement backwards compatible deserialisation
+- [**breaking**] custom serde for unique keys
+
 ## [0.15.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.7...sn_transfers-v0.15.8) - 2024-02-20
 
 ### Added
