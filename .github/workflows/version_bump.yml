@@ -64,6 +64,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+
+      # install cargo-edit for bump script, this makes it simpler to bump into workspaces
+      - name: Install cargo-edit with vendored-openssl
+        run: cargo install cargo-edit --features vendored-openssl
+
       - shell: bash
         run: |
           git config --local user.email "action@github.com"
