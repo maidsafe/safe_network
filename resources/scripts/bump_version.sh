@@ -8,6 +8,11 @@ SUFFIX="$1"
 
 # if there's _any_ suffix, ensure cargo set-version is installed
 if [ -n "$SUFFIX" ]; then
+    # If 'main' is passed as a suffix, treat it as if no suffix was provided
+    if [ "$SUFFIX" == "main" ]; then
+        SUFFIX=""
+    fi
+
     # Check if the 'cargo set-version' command is available
   if ! cargo set-version --help > /dev/null 2>&1; then
       echo "cargo set-version command not found."
@@ -54,6 +59,7 @@ for crate in "${crates_bumped[@]}"; do
 
     echo "the crate is: $crate_name"
     version=$(echo "$crate" | cut -d'v' -f2)
+    new_version=$version
 
     # if we're changing the release channel...
     if [ -n "$SUFFIX" ]; then
@@ -70,9 +76,9 @@ for crate in "${crates_bumped[@]}"; do
         crate=$new_version
         # echo "new v for $crate_name: $new_version"
         cargo set-version -p $crate_name $new_version
+    fi
     # update the commit msg
     commit_message="${commit_message}${crate_name}-v$new_version/"
-    fi
 done
 commit_message=${commit_message%/} # strip off trailing '/' character
 
