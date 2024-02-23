@@ -1,15 +1,20 @@
+# Automatically run the versino bump script.
+# We do this only on main/beta branches, and only if the commit message doesn't start with 'chore(release):'
 name: Version Bump
 
 # prevent concurrent version bumps
 concurrency:
-  group: "version-bump"
+  group: "version-bump-${{ github.ref_name }}"
 
 on:
   push:
     branches:
+      # run for everything that gets into main
       - main
-      - beta*
-      - rc*
+      - beta
+  schedule:
+    # Schedule for midnight UTC. Adjust according to your timezone
+    - cron: "0 0 * * *" # Runs at 00:00 UTC every day
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
@@ -17,7 +22,11 @@ env:
 
 jobs:
   bump_version:
-    if: |
+    # for pushes, we dont run on alpha
+    # for schedules, we only run on alpha
+    # and if its maidsafe and not already a release commit.
+    if: >
+      (github.event_name == 'schedule' && github.ref_name == 'alpha') ||
       github.repository_owner == 'maidsafe' &&
       !startsWith(github.event.head_commit.message, 'chore(release):')
     runs-on: ubuntu-22.04
@@ -26,6 +35,8 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          # For scheduled runs, explicitly set ref to 'alpha'. Otherwise, use the triggering ref.
+          ref: ${{ github.event_name == 'schedule' && 'alpha' || github.ref_name }}
 
       - name: Get the SHA of the last release commit
         id: get-sha
@@ -42,11 +53,11 @@ jobs:
           repository-name: ${{ github.repository }}
           repository-owner: ${{ github.repository_owner }}
           head-sha: ${{ env.sha }}
-          base-branch: "main"
+          base-branch: ${{ github.ref_name }}
           polling-interval: 60
 
-      - name: Fetch the latest code from main
-        run: git pull origin main
+      - name: Fetch the latest code from the specified branch
+        run: git pull origin ${{ github.ref_name }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -67,12 +78,12 @@ jobs:
           rm release-plz-x86_64-unknown-linux-gnu.tar.gz
           sudo mv release-plz /usr/local/bin
       - shell: bash
-        run: ./resources/scripts/bump_version.sh
+        run: ./resources/scripts/bump_version.sh ${{ github.ref_name }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-          branch: main
+          branch: ${{ github.ref_name }}
           tags: true
       - name: post notification to slack on failure
         if: ${{ failure() }}

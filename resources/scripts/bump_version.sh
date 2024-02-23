@@ -40,9 +40,19 @@ if [[ $len -eq 0 ]]; then
   exit 0
 fi
 
+# remove any performed changes if we're applying a suffix
+if [ -n "$SUFFIX" ]; then
+    git checkout -- .
+fi
+
 commit_message="chore(release): "
 for crate in "${crates_bumped[@]}"; do
+    # split the crate name and version
+    crate_name=$(echo "$crate" | cut -d'v' -f1)
+    # remove trailing hyphen
+    crate_name=${crate_name%-}
 
+    echo "the crate is: $crate_name"
     version=$(echo "$crate" | cut -d'v' -f2)
 
     # if we're changing the release channel...
@@ -58,10 +68,11 @@ for crate in "${crates_bumped[@]}"; do
 
         # set the version
         crate=$new_version
-        cargo set-version "$new_version" --allow-dirty
-    fi
+        # echo "new v for $crate_name: $new_version"
+        cargo set-version -p $crate_name $new_version
     # update the commit msg
-    commit_message="${commit_message}${crate}/"
+    commit_message="${commit_message}${crate_name}-v$new_version/"
+    fi
 done
 commit_message=${commit_message%/} # strip off trailing '/' character
 
