@@ -204,6 +204,11 @@ impl NodeRecordStore {
         self
     }
 
+    /// Returns the current distance range
+    pub fn get_distance_range(&self) -> Option<Distance> {
+        self.distance_range
+    }
+
     // Converts a Key into a Hex string.
     fn generate_filename(key: &Key) -> String {
         hex::encode(key.as_ref())
@@ -282,57 +287,35 @@ impl NodeRecordStore {
 
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
-    ///
-    /// An error is returned if we are full and the new record is not closer than
-    /// the furthest record
-    fn prune_storage_if_needed_for_record(&mut self, r: &Key) -> Result<()> {
+    fn prune_storage_if_needed_for_record(&mut self) {
         let num_records = self.records.len();
 
         // we're not full, so we don't need to prune
         if num_records < self.config.max_records {
-            return Ok(());
+            return;
         }
 
         // sort records by distance to our local key
-        let furthest = self
-            .records
-            .keys()
-            .max_by_key(|k| {
-                let kbucket_key = KBucketKey::from(k.to_vec());
-                self.local_key.distance(&kbucket_key)
-            })
-            .cloned();
+        let mut sorted_records: Vec<_> = self.records.keys().cloned().collect();
+        let self_address = NetworkAddress::from_peer(self.local_key.clone().into_preimage());
+        sorted_records.sort_by(|key_a, key_b| {
+            let a = NetworkAddress::from_record_key(key_a);
+            let b = NetworkAddress::from_record_key(key_b);
+            self_address.distance(&a).cmp(&self_address.distance(&b))
+        });
 
-        // now check if the incoming record is closer than our furthest
-        // if it is, we can prune
-        if let Some(furthest_record) = furthest {
-            let furthest_record_key = KBucketKey::from(furthest_record.to_vec());
-            let incoming_record_key = KBucketKey::from(r.to_vec());
-
-            if incoming_record_key.distance(&self.local_key)
-                < furthest_record_key.distance(&self.local_key)
-            {
-                info!(
-                    "{:?} will be pruned to make space for new record: {:?}",
-                    PrettyPrintRecordKey::from(&furthest_record),
-                    PrettyPrintRecordKey::from(r)
-                );
-                // we should prune and make space
-                self.remove(&furthest_record);
-
-                // Warn if the furthest record was within our distance range
-                if let Some(distance_range) = self.distance_range {
-                    if furthest_record_key.distance(&self.local_key) < distance_range {
-                        warn!("Pruned record would also be within our distance range.");
-                    }
-                }
-            } else {
-                // we should not prune, but warn as we're at max capacity
-                warn!("Maximum number of records reached. Current num_records: {num_records}");
-            }
-        }
-
-        Ok(())
+        let distance_range = self_address.distance(&NetworkAddress::from_record_key(
+            &sorted_records[sorted_records.len() - 10],
+        ));
+        self.distance_range = Some(distance_range);
+        // sorting will be costive, hence pruning in a batch of 10
+        (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
+            info!(
+                "Record {i} {:?} will be pruned to free up space for new records",
+                PrettyPrintRecordKey::from(&sorted_records[i])
+            );
+            self.remove(&sorted_records[i]);
+        });
     }
 }
 
@@ -401,7 +384,7 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        self.prune_storage_if_needed_for_record(&r.key)?;
+        self.prune_storage_if_needed_for_record();
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -845,7 +828,7 @@ mod tests {
         );
         let mut stored_records: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
-        for i in 0..100 {
+        for _ in 0..100 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
             let value = match try_serialize_record(
                 &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
@@ -860,37 +843,30 @@ mod tests {
                 publisher: None,
                 expires: None,
             };
-            let retained_key = if i < max_records {
-                assert!(store.put_verified(record, RecordType::Chunk).is_ok());
-                // We must also mark the record as stored (which would be triggered after the async write in nodes
-                // via NetworkEvent::CompletedWrite)
-                store.mark_as_stored(record_key.clone(), RecordType::Chunk);
 
-                record_key
-            } else {
-                // The list is already sorted by distance, hence always shall only prune the last one
-                let furthest_key = stored_records.remove(stored_records.len() - 1);
-                let furthest_addr = NetworkAddress::from_record_key(&furthest_key);
-                let record_addr = NetworkAddress::from_record_key(&record_key);
+            // Will be stored anyway.
+            assert!(store.put_verified(record, RecordType::Chunk).is_ok());
+            // We must also mark the record as stored (which would be triggered
+            // after the async write in nodes via NetworkEvent::CompletedWrite)
+            store.mark_as_stored(record_key.clone(), RecordType::Chunk);
 
-                // Will be stored anyway.
-                assert!(store.put_verified(record, RecordType::Chunk).is_ok());
-                // We must also mark the record as stored (which would be triggered
-                // after the async write in nodes via NetworkEvent::CompletedWrite)
-                store.mark_as_stored(record_key.clone(), RecordType::Chunk);
+            if stored_records.len() >= max_records {
+                // The list is already sorted by distance, hence always shall only prune the last 10.
+                let mut pruned_keys = vec![];
+                (0..10).for_each(|i| {
+                    let furthest_key = stored_records.remove(stored_records.len() - 1);
+                    println!(
+                        "chunk {i} {:?} shall be removed",
+                        PrettyPrintRecordKey::from(&furthest_key)
+                    );
+                    pruned_keys.push(furthest_key);
+                });
 
-                let (retained_key, pruned_key) = if self_address.distance(&furthest_addr)
-                    > self_address.distance(&record_addr)
-                {
-                    info!("record {furthest_addr:?} shall be pruned.");
-                    // The new entry is closer, it shall replace the existing one
-                    (record_key, Some(furthest_key.clone()))
-                } else {
-                    stored_records.push(furthest_key);
-                    (record_key, None)
-                };
-
-                if let Some(pruned_key) = pruned_key {
+                for pruned_key in pruned_keys {
+                    println!(
+                        "record {:?} shall be pruned.",
+                        PrettyPrintRecordKey::from(&pruned_key)
+                    );
                     // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
                     let mut iteration = 0;
                     while iteration < max_iterations {
@@ -910,14 +886,12 @@ mod tests {
                         panic!("record_store prune test failed with pruned record still exists.");
                     }
                 }
-
-                retained_key
-            };
+            }
 
             // loop over max_iterations times to ensure async disk write had time to complete.
             let mut iteration = 0;
             while iteration < max_iterations {
-                if store.get(&retained_key).is_some() {
+                if store.get(&record_key).is_some() {
                     break;
                 }
                 sleep(Duration::from_millis(100)).await;
@@ -927,7 +901,7 @@ mod tests {
                 panic!("record_store prune test failed with stored record cann't be read back");
             }
 
-            stored_records.push(retained_key);
+            stored_records.push(record_key);
             stored_records.sort_by(|a, b| {
                 let a = NetworkAddress::from_record_key(a);
                 let b = NetworkAddress::from_record_key(b);
