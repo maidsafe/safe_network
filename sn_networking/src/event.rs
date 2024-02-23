@@ -43,7 +43,6 @@ use std::{
 use tokio::sync::oneshot;
 use tokio::time::Duration;
 use tracing::{info, warn};
-use xor_name::XorName;
 
 /// Our agent string has as a prefix that we can match against.
 const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
@@ -316,13 +315,10 @@ impl SwarmDriver {
                         }
 
                         // Simulate half of the nodes blocking the first node in the list
-                        if self.routable_peers.len() == 24 {
-                            let picker: XorName = xor_name::rand::random();
-                            if picker.bit(0) && self.blocked_peer.is_none() {
-                                self.blocked_peer = self.routable_peers.first().cloned();
-                                let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
-                                info!("Choose to block peer {:?}", self.blocked_peer);
-                            }
+                        if self.routable_peers.len() == 24 && self.blocked_peer.is_none() {
+                            self.blocked_peer = self.routable_peers.first().cloned();
+                            let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
+                            info!("Choose to block peer {:?}", self.blocked_peer);
                         }
                     }
                     // Log the other Identify events.
