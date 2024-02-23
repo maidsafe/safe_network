@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708687474545,
+  "lastUpdate": 1708687578966,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "96b944d5e7a576b3c7740af39a1d18aa4df1398d",
-          "message": "chore(node): increase replication frequency",
-          "timestamp": "2023-10-22T14:29:41+02:00",
-          "tree_id": "c44b68130100a65cd50b363fdfcb32f56fbba752",
-          "url": "https://github.com/maidsafe/safe_network/commit/96b944d5e7a576b3c7740af39a1d18aa4df1398d"
-        },
-        "date": 1697980655656,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 94,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "931ef5d26282ee25a1a95cbdb5e99cf44a30bd21",
+          "message": "chore: cleanup version in node_manager after experimentation",
+          "timestamp": "2024-02-23T12:08:59+01:00",
+          "tree_id": "6d018051a2b1518bd40847caee6049c087645306",
+          "url": "https://github.com/maidsafe/safe_network/commit/931ef5d26282ee25a1a95cbdb5e99cf44a30bd21"
+        },
+        "date": 1708687578620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
