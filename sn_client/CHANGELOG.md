@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.27](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.26...sn_client-v0.104.27) - 2024-02-23
+
+### Other
+- test docs test
+- write online documentation
+- push documentation
+- sync documentation
+- write atop write merg branches
+- red and write register docs
+- create register docs
+- register docs
+
 ## [0.104.26](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.25...sn_client-v0.104.26) - 2024-02-21
 
 ### Other

@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.104.26"
+version = "0.104.27"
 
 [features]
 default=[]
@@ -35,10 +35,10 @@ rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
-sn_networking = { path = "../sn_networking", version = "0.13.28" }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7" }
+sn_networking = { path = "../sn_networking", version = "0.13.29" }
+sn_protocol = { path = "../sn_protocol", version = "0.14.8" }
 sn_registers = { path = "../sn_registers", version = "0.3.10" }
-sn_transfers = { path = "../sn_transfers", version = "0.15.8" }
+sn_transfers = { path = "../sn_transfers", version = "0.16.0" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"

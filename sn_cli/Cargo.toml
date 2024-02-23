@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_cli"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.89.79"
+version = "0.89.80"
 
 [[bin]]
 path="src/main.rs"
@@ -44,12 +44,12 @@ reqwest = { version="0.11.18", default-features=false, features = ["rustls"] }
 rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive"]}
 sn_build_info = { path="../sn_build_info", version = "0.1.5" }
-sn_client = { path = "../sn_client", version = "0.104.26" }
-sn_transfers = { path = "../sn_transfers", version = "0.15.8" }
+sn_client = { path = "../sn_client", version = "0.104.27" }
+sn_transfers = { path = "../sn_transfers", version = "0.16.0" }
 sn_registers = { path = "../sn_registers", version = "0.3.10" }
 sn_logging = { path = "../sn_logging", version = "0.2.21" }
 sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6" }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7" }
+sn_protocol = { path = "../sn_protocol", version = "0.14.8" }
 tempfile = "3.6.0"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time", "fs"] }
 tracing = { version = "~0.1.26" }
@@ -63,7 +63,7 @@ eyre = "0.6.8"
 criterion = "0.5.1"
 tempfile = "3.6.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
-sn_protocol = { path = "../sn_protocol", version = "0.14.7", features = ["test-utils"]}
+sn_protocol = { path = "../sn_protocol", version = "0.14.8", features = ["test-utils"]}
 
 [lints]
 workspace = true
