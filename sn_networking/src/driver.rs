@@ -62,7 +62,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use std::{
-    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -593,6 +593,8 @@ impl NetworkBuilder {
             handling_statistics: Default::default(),
             handled_times: 0,
             hard_disk_write_error: 0,
+            routable_peers: Default::default(),
+            blocked_peer: None,
         };
 
         Ok((
@@ -647,6 +649,8 @@ pub struct SwarmDriver {
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
+    pub(crate) routable_peers: BTreeSet<PeerId>,
+    pub(crate) blocked_peer: Option<PeerId>,
 }
 
 impl SwarmDriver {

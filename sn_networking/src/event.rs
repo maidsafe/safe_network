@@ -43,6 +43,7 @@ use std::{
 use tokio::sync::oneshot;
 use tokio::time::Duration;
 use tracing::{info, warn};
+use xor_name::XorName;
 
 /// Our agent string has as a prefix that we can match against.
 const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
@@ -296,15 +297,31 @@ impl SwarmDriver {
                         if self.local || has_dialed && peer_is_agent {
                             self.remove_bootstrap_from_full(peer_id);
 
-                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+                            if self.blocked_peer == Some(peer_id) {
+                                info!("Do not add peer {peer_id:?} into RT, as it is blocked");
+                            } else {
+                                trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
-                            // Attempt to add the addresses to the routing table.
-                            for multiaddr in &addrs {
-                                let _routing_update = self
-                                    .swarm
-                                    .behaviour_mut()
-                                    .kademlia
-                                    .add_address(&peer_id, multiaddr.clone());
+                                // Attempt to add the addresses to the routing table.
+                                for multiaddr in &addrs {
+                                    let _routing_update = self
+                                        .swarm
+                                        .behaviour_mut()
+                                        .kademlia
+                                        .add_address(&peer_id, multiaddr.clone());
+                                }
+
+                                let _ = self.routable_peers.insert(peer_id);
+                            }
+                        }
+
+                        // Simulate half of the nodes blocking the first node in the list
+                        if self.routable_peers.len() == 24 {
+                            let picker: XorName = xor_name::rand::random();
+                            if picker.bit(0) && self.blocked_peer.is_none() {
+                                self.blocked_peer = self.routable_peers.first().cloned();
+                                let _ = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id);
+                                info!("Choose to block peer {:?}", self.blocked_peer);
                             }
                         }
                     }
