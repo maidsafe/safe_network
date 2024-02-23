@@ -10,7 +10,7 @@
 use crate::target_arch::spawn;
 use crate::{event::NetworkEvent, target_arch::Instant};
 use libp2p::{
-    kad::{RecordKey, K_VALUE},
+    kad::{KBucketDistance as Distance, RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
@@ -39,6 +39,8 @@ pub(crate) struct ReplicationFetcher {
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
     event_sender: mpsc::Sender<NetworkEvent>,
+    // Distance range that the incoming key shall be fetched
+    distance_range: Option<Distance>,
 }
 
 impl ReplicationFetcher {
@@ -49,7 +51,13 @@ impl ReplicationFetcher {
             to_be_fetched: HashMap::new(),
             on_going_fetches: HashMap::new(),
             event_sender,
+            distance_range: None,
         }
+    }
+
+    /// Set the distance range.
+    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
+        self.distance_range = Some(distance_range);
     }
 
     // Adds the non existing incoming keys from the peer to the fetcher.
@@ -238,6 +246,17 @@ impl ReplicationFetcher {
 
     /// Add the key if not present yet.
     fn add_key(&mut self, holder: PeerId, key: RecordKey, record_type: RecordType) {
+        // Do nothing if the incoming key is out_of_range
+        if let Some(ref distance_range) = self.distance_range {
+            let self_address = NetworkAddress::from_peer(self.self_peer_id);
+            let in_address = NetworkAddress::from_record_key(&key);
+
+            if self_address.distance(&in_address) >= *distance_range {
+                info!("The incoming record_key {in_address:?} is out of range, do not fetch it from {holder:?}");
+                return;
+            }
+        }
+
         let _ = self
             .to_be_fetched
             .entry((key, record_type, holder))
