@@ -73,6 +73,36 @@ impl ClientRegister {
         Self::create_register(client, meta, Permissions::new_owner_only())
     }
 
+    /// Create a new Register locally with a specific address.
+    /// # Arguments
+    /// * 'client' - [Client]
+    /// * 'addr' - [RegisterAddress]
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use sn_client::{Client, ClientRegister, Error};
+    /// # use bls::SecretKey;
+    /// # use sn_protocol::storage::RegisterAddress;
+    /// # use xor_name::XorName;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// # let mut rng = rand::thread_rng();
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let address = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
+    /// // Here we create a ClientRegister
+    /// let register = ClientRegister::create_with_addr(client.clone(), address);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn create_with_addr(client: Client, addr: RegisterAddress) -> Self {
+        let register = Register::new(addr.owner(), addr.meta(), Permissions::new_owner_only());
+        Self {
+            client,
+            register,
+            ops: LinkedList::new(),
+        }
+    }
+
     /// Create a new Register and send it to the Network.
     ///
     /// # Arguments
