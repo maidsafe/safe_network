@@ -10,13 +10,11 @@ use super::files::ChunkManager;
 
 use serde::{Deserialize, Serialize};
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
-use sn_protocol::storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy};
+use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
 use crate::subcommands::files::download::download_file;
-use crate::subcommands::files::upload::{
-    upload_files_with_iter, FilesUploadOptions, UploadedFile, UPLOADED_FILES,
-};
+use crate::subcommands::files::upload::{upload_files_with_iter, FilesUploadOptions};
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
@@ -103,7 +101,7 @@ impl AccountPacket {
     ) -> Result<Self> {
         create_dir_all(download_path)?;
         let folder_name: OsString = download_path.file_name().unwrap_or_default().into();
-        let (_, tracking_info_dir, meta_dir) = build_tracking_info_paths(download_path)?;
+        let (_, _, meta_dir) = build_tracking_info_paths(download_path)?;
 
         store_root_folder_tracking_info(&meta_dir, address)?;
 
@@ -128,23 +126,11 @@ impl AccountPacket {
         }
 
         let files_api: FilesApi = FilesApi::new(client.clone(), download_path.to_path_buf());
-        let uploaded_files_path = tracking_info_dir.join(UPLOADED_FILES);
-        for (file_name, addr, path) in files_to_download {
-            // try to read the data_map if it exists locally.
-            let expected_data_map_location = uploaded_files_path.join(addr.to_hex());
-            let local_data_map = UploadedFile::read(&expected_data_map_location)
-                .map(|uploaded_file_metadata| {
-                    uploaded_file_metadata.data_map.map(|bytes| Chunk {
-                        address: ChunkAddress::new(*addr.xorname()),
-                        value: bytes,
-                    })
-                })
-                .unwrap_or(None);
-
+        for (file_name, data_map_chunk, path) in files_to_download {
             download_file(
                 files_api.clone(),
-                *addr.xorname(),
-                (file_name, local_data_map),
+                *data_map_chunk.name(),
+                (file_name, Some(data_map_chunk)),
                 &path,
                 false,
                 batch_size,
@@ -285,13 +271,9 @@ impl AccountPacket {
         _make_data_public: bool,
         store_tracking_info: bool,
     ) -> Result<BTreeMap<PathBuf, FoldersApi>> {
-        // TODO: we need to encrypt the head data-map and metadata if make_data_public is false,
-        // as well as store both of them all within the metadata chunk, rather than as a separate chunk.
-        let include_data_map = true;
-
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir);
         // we never used the local cache so we can realise of any changes made to files content.
-        chunk_manager.chunk_with_iter(self.iter_only_files(), false, include_data_map)?;
+        chunk_manager.chunk_with_iter(self.iter_only_files(), false, false)?;
 
         let mut folders = self.read_folders_hierarchy_from_disk(store_tracking_info)?;
 
@@ -304,9 +286,10 @@ impl AccountPacket {
                         self.root_dir_xorname = *entry.get().address();
                     }
 
+                    // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                     let (metadata, meta_xorname) = entry.get_mut().add_file(
                         chunked_file.file_name.clone(),
-                        chunked_file.head_chunk_address,
+                        chunked_file.data_map.clone(),
                     )?;
 
                     if store_tracking_info {
@@ -476,16 +459,18 @@ async fn download_folder_from_network(
     wallet_dir: &Path,
     target_path: &Path,
     folder_addr: RegisterAddress,
-    files_to_download: &mut Vec<(OsString, ChunkAddress, PathBuf)>,
+    files_to_download: &mut Vec<(OsString, Chunk, PathBuf)>,
     folders_to_download: &mut Vec<(OsString, RegisterAddress, PathBuf)>,
 ) -> Result<()> {
     create_dir_all(target_path)?;
     let mut folders_api = FoldersApi::retrieve(client.clone(), wallet_dir, folder_addr).await?;
     for (_, Metadata { name, content }) in folders_api.entries().await?.into_iter() {
         match content {
-            FolderEntry::File(file_addr) => {
-                files_to_download.push((name.clone().into(), file_addr, target_path.to_path_buf()))
-            }
+            FolderEntry::File(data_map_chunk) => files_to_download.push((
+                name.clone().into(),
+                data_map_chunk,
+                target_path.to_path_buf(),
+            )),
             FolderEntry::Folder(subfolder_addr) => {
                 folders_to_download.push((
                     name.clone().into(),

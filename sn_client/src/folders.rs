@@ -29,7 +29,7 @@ use std::{
 /// Folder Entry representing either a file or subfolder.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum FolderEntry {
-    File(ChunkAddress),
+    File(Chunk),
     Folder(RegisterAddress),
 }
 
@@ -96,9 +96,15 @@ impl FoldersApi {
     pub fn add_file(
         &mut self,
         file_name: OsString,
-        address: ChunkAddress,
+        data_map_chunk: Chunk,
     ) -> Result<(Metadata, XorName)> {
-        self.add_entry(file_name, FolderEntry::File(address))
+        // create metadata Chunk for this entry
+        let metadata = Metadata {
+            name: file_name.to_str().unwrap_or("unknown").to_string(),
+            content: FolderEntry::File(data_map_chunk),
+        };
+
+        self.add_entry(metadata)
     }
 
     /// Add subfolder as entry of this Folder (locally).
@@ -107,7 +113,13 @@ impl FoldersApi {
         folder_name: OsString,
         address: RegisterAddress,
     ) -> Result<(Metadata, XorName)> {
-        self.add_entry(folder_name, FolderEntry::Folder(address))
+        // create metadata Chunk for this entry
+        let metadata = Metadata {
+            name: folder_name.to_str().unwrap_or("unknown").to_string(),
+            content: FolderEntry::Folder(address),
+        };
+
+        self.add_entry(metadata)
     }
 
     /// Sync local Folder with the network.
@@ -187,12 +199,7 @@ impl FoldersApi {
     }
 
     // Add the given entry to the underlying Register as well as creating the metadata Chunk
-    fn add_entry(&mut self, name: OsString, content: FolderEntry) -> Result<(Metadata, XorName)> {
-        // create metadata Chunk for this entry
-        let metadata = Metadata {
-            name: name.to_str().unwrap_or("unknown").to_string(),
-            content,
-        };
+    fn add_entry(&mut self, metadata: Metadata) -> Result<(Metadata, XorName)> {
         let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE);
         bytes.put(rmp_serde::to_vec(&metadata)?.as_slice());
         let meta_chunk = Chunk::new(bytes.freeze());
