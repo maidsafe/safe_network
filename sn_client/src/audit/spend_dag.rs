@@ -9,7 +9,7 @@
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use serde::{Deserialize, Serialize};
-use sn_transfers::{is_genesis_spend, NanoTokens, SignedSpend, SpendAddress};
+use sn_transfers::{is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -215,6 +215,32 @@ impl SpendDag {
                 _ => SpendDagGet::DoubleSpend,
             },
         }
+    }
+
+    /// Get all spends from the DAG
+    pub fn all_spends(&self) -> Vec<&SignedSpend> {
+        self.spends
+            .values()
+            .flat_map(|spends| {
+                spends
+                    .iter()
+                    .filter_map(|(s, _)| s.as_ref())
+                    .collect::<Vec<&SignedSpend>>()
+            })
+            .collect()
+    }
+
+    /// Get all royalties from the DAG
+    pub fn all_royalties(&self) -> Result<Vec<CashNoteRedemption>> {
+        let spends = self.all_spends();
+        let mut royalties = Vec::new();
+        for s in spends {
+            for derivation_idx in s.spend.network_royalties.iter() {
+                let spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
+                royalties.push(CashNoteRedemption::new(*derivation_idx, spend_addr));
+            }
+        }
+        Ok(royalties)
     }
 
     /// helper that returns the spend at a given address if it is unique (not double spend) and not an UTXO
