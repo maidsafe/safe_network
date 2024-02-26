@@ -27,14 +27,14 @@ use std::{
 };
 
 /// Folder Entry representing either a file or subfolder.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum FolderEntry {
     File(ChunkAddress),
     Folder(RegisterAddress),
 }
 
 /// Metadata to be stored on a Chunk, linked from and belonging to Registers' entries.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Metadata {
     pub name: String,
     pub content: FolderEntry,
@@ -52,9 +52,12 @@ pub struct FoldersApi {
 
 impl FoldersApi {
     /// Create FoldersApi instance.
-    pub fn new(client: Client, wallet_dir: &Path) -> Result<Self> {
+    pub fn new(client: Client, wallet_dir: &Path, xorname: Option<XorName>) -> Result<Self> {
         let mut rng = rand::thread_rng();
-        let register = ClientRegister::create(client.clone(), XorName::random(&mut rng));
+        let register = ClientRegister::create(
+            client.clone(),
+            xorname.unwrap_or_else(|| XorName::random(&mut rng)),
+        );
         Self::create(client, wallet_dir, register)
     }
 
@@ -144,27 +147,26 @@ impl FoldersApi {
     }
 
     /// Returns the list of entries of this Folder
-    pub async fn entries(&mut self) -> Result<Vec<Metadata>> {
+    pub async fn entries(&mut self) -> Result<Vec<(XorName, Metadata)>> {
         let mut entries = vec![];
         for (_, entry) in self.register.read() {
             let mut xorname = [0; XOR_NAME_LEN];
             xorname.copy_from_slice(&entry);
-            let metadata_addr = XorName(xorname);
-            let metadata = match self.metadata.get(&metadata_addr) {
+            let meta_xorname = XorName(xorname);
+            let metadata = match self.metadata.get(&meta_xorname) {
                 Some((metadata, _)) => metadata.clone(),
                 None => {
                     // retrieve metadata Chunk from network
                     let chunk = self
                         .client
-                        .get_chunk(ChunkAddress::new(metadata_addr), false, None)
+                        .get_chunk(ChunkAddress::new(meta_xorname), false, None)
                         .await?;
                     let metadata: Metadata = rmp_serde::from_slice(chunk.value())?;
-                    self.metadata
-                        .insert(metadata_addr, (metadata.clone(), None));
+                    self.metadata.insert(meta_xorname, (metadata.clone(), None));
                     metadata
                 }
             };
-            entries.push(metadata);
+            entries.push((meta_xorname, metadata));
         }
         Ok(entries)
     }

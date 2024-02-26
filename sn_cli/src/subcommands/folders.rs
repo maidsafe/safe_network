@@ -59,6 +59,12 @@ pub enum FoldersCmds {
         #[clap(long, default_value_t = RetryStrategy::Quick, short = 'r', help = "Sets the retry strategy on download failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
         retry_strategy: RetryStrategy,
     },
+    /// Report any differences found in local files/folders in comparison with their versions stored on the network.
+    Status {
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+    },
 }
 
 pub(crate) async fn folders_cmds(
@@ -74,7 +80,7 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            let mut acc_packet = AccountPacket::new(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
@@ -82,10 +88,10 @@ pub(crate) async fn folders_cmds(
                 batch_size,
                 retry_strategy,
             };
-            let root_dir_address = acc_packet.add_all_files(options).await?;
+            let root_dir_xorname = acc_packet.add_all_files(options).await?;
             println!(
                 "\nFolder hierarchy from {path:?} uploaded successfully at {}",
-                root_dir_address.to_hex()
+                root_dir_xorname.to_hex()
             );
         }
         FoldersCmds::Download {
@@ -108,16 +114,20 @@ pub(crate) async fn folders_cmds(
                 address.to_hex()
             );
 
-            let acc_packet = AccountPacket::new(client.clone(), root_dir, &download_folder_path)?;
-            acc_packet
-                .download_folders(
-                    address,
-                    folder_name,
-                    &download_folder_path,
-                    batch_size,
-                    retry_strategy,
-                )
-                .await?;
+            let _acc_packet = AccountPacket::retrieve_folders(
+                client,
+                root_dir,
+                address,
+                &download_folder_path,
+                batch_size,
+                retry_strategy,
+            )
+            .await?;
+        }
+        FoldersCmds::Status { path } => {
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+
+            acc_packet.status().await?;
         }
     }
     Ok(())

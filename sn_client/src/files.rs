@@ -40,7 +40,7 @@ pub struct FilesApi {
 
 /// This is the (file xorname, datamap_data, filesize, and chunks)
 /// If the DataMapChunk exists and is not stored on the network, then it will not be accessible at this address of ChunkAddress(XorName) .
-type ChunkFileResult = Result<(ChunkAddress, Option<Bytes>, u64, Vec<(XorName, PathBuf)>)>;
+type ChunkFileResult = Result<(ChunkAddress, Chunk, u64, Vec<(XorName, PathBuf)>)>;
 
 impl FilesApi {
     /// Create file apis instance.
@@ -77,32 +77,25 @@ impl FilesApi {
                 Err(ChunksError::FileTooSmall)?
             } else {
                 let (data_map_chunk, chunks) = encrypt_large(file_path, chunk_dir)?;
-                (*data_map_chunk.name(), Some(data_map_chunk), chunks)
+                (*data_map_chunk.name(), data_map_chunk, chunks)
             };
 
         debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
 
-        debug!(
-            "Is there a datamap for chunk?? {:?}",
-            data_map_chunk.is_some()
-        );
-        // only write out the data_map if one exists for this file
-        if let Some(data_map_chunk) = &data_map_chunk {
-            if include_data_map_in_chunks {
-                info!("Data_map_chunk to be written!");
-                let data_map_path = chunk_dir.join(hex::encode(*data_map_chunk.name()));
+        if include_data_map_in_chunks {
+            info!("Data_map_chunk to be written!");
+            let data_map_path = chunk_dir.join(hex::encode(*data_map_chunk.name()));
 
-                trace!("Data_map_chunk being written to {data_map_path:?}");
-                let mut output_file = File::create(data_map_path.clone())?;
-                output_file.write_all(&data_map_chunk.value)?;
+            trace!("Data_map_chunk being written to {data_map_path:?}");
+            let mut output_file = File::create(data_map_path.clone())?;
+            output_file.write_all(&data_map_chunk.value)?;
 
-                chunks_paths.push((*data_map_chunk.name(), data_map_path))
-            }
+            chunks_paths.push((*data_map_chunk.name(), data_map_path))
         }
 
         Ok((
             ChunkAddress::new(head_address),
-            data_map_chunk.map(|c| c.value),
+            data_map_chunk,
             file_size,
             chunks_paths,
         ))

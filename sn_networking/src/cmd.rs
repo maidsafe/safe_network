@@ -466,6 +466,19 @@ impl SwarmDriver {
                 if !new_keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
+
+                // The record_store will prune far records and setup a `distance range`,
+                // once reached the `max_records` cap.
+                if let Some(distance) = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .get_distance_range()
+                {
+                    self.replication_fetcher.set_distance_range(distance);
+                }
+
                 if let Err(err) = result {
                     error!("Cann't store verified record {record_key:?} locally: {err:?}");
                     cmd_string = "PutLocalRecord error";

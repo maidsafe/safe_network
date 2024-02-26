@@ -138,6 +138,16 @@ impl UnifiedRecordStore {
         }
     }
 
+    pub(crate) fn get_distance_range(&self) -> Option<Distance> {
+        match self {
+            Self::Client(_store) => {
+                warn!("Calling get_distance_range at Client. This should not happen");
+                None
+            }
+            Self::Node(store) => store.get_distance_range(),
+        }
+    }
+
     /// Mark the record as stored in the store.
     /// This adds it to records set, so it can now be retrieved
     /// (to be done after writes are finalised)
