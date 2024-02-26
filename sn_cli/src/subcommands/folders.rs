@@ -80,7 +80,7 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
@@ -125,7 +125,7 @@ pub(crate) async fn folders_cmds(
             .await?;
         }
         FoldersCmds::Status { path } => {
-            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             acc_packet.status().await?;
         }
