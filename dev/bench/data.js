@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1708954873384,
+  "lastUpdate": 1708954875667,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "59239d904d7f98aac714ed1750560859b6f8ecbb",
-          "message": "chore: more custom debug and debug skips\n\nThis should help to avoid logging large types",
-          "timestamp": "2023-10-23T10:44:14+02:00",
-          "tree_id": "cba7b4d18bf72d9872155bd185b66d04ee597c70",
-          "url": "https://github.com/maidsafe/safe_network/commit/59239d904d7f98aac714ed1750560859b6f8ecbb"
-        },
-        "date": 1698053049428,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 168,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 71,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "1f22221e561047247c87f7adde5692cc7868423d",
           "message": "fix(cli): don't bail if a payment was not found during verify/repayment",
           "timestamp": "2023-10-23T13:48:52+02:00",
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4875a0126d4a2c72053616e2f06e1dae146a2e1f",
+          "message": "ci: fix scheduled alpha release checkout etc",
+          "timestamp": "2024-02-26T14:23:51+01:00",
+          "tree_id": "362a00748d6026309650d198816bdd8ed1e88f46",
+          "url": "https://github.com/maidsafe/safe_network/commit/4875a0126d4a2c72053616e2f06e1dae146a2e1f"
+        },
+        "date": 1708954874793,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
