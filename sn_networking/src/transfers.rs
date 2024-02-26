@@ -175,7 +175,7 @@ impl Network {
                 .iter()
                 .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
                 .ok_or(Error::InvalidTransfer(
-                    "None of the CashNoteRedemptions are refered to in upstream Txs".to_string(),
+                    "None of the CashNoteRedemptions are destined to our key".to_string(),
                 ))?
                 .clone();
             let signed_spends: BTreeSet<SignedSpend> = parent_spends
