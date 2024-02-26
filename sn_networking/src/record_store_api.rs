@@ -131,13 +131,6 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
-        match self {
-            Self::Client(store) => store.set_distance_range(distance_range),
-            Self::Node(store) => store.set_distance_range(distance_range),
-        }
-    }
-
     pub(crate) fn get_distance_range(&self) -> Option<Distance> {
         match self {
             Self::Client(_store) => {

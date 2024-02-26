@@ -463,6 +463,7 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
+    #[cfg(test)]
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
@@ -621,8 +622,6 @@ impl ClientRecordStore {
     }
 
     pub(crate) fn mark_as_stored(&mut self, _r: Key, _t: RecordType) {}
-
-    pub(crate) fn set_distance_range(&mut self, _distance_range: Distance) {}
 }
 
 impl RecordStore for ClientRecordStore {
