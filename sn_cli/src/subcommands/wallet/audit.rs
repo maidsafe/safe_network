@@ -10,7 +10,7 @@ use std::path::Path;
 
 use color_eyre::Result;
 use sn_client::{Client, SpendDag};
-use sn_transfers::{SpendAddress, GENESIS_CASHNOTE};
+use sn_transfers::{CashNoteRedemption, HotWallet, SpendAddress, Transfer, GENESIS_CASHNOTE};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
 
@@ -36,15 +36,44 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
     Ok(dag)
 }
 
-pub async fn audit(client: &Client, to_dot: bool, root_dir: &Path) -> Result<()> {
+pub async fn audit(client: &Client, to_dot: bool, royalties: bool, root_dir: &Path) -> Result<()> {
     if to_dot {
         let dag = gather_spend_dag(client, root_dir).await?;
         println!("{}", dag.dump_dot_format());
+    } else if royalties {
+        let dag = gather_spend_dag(client, root_dir).await?;
+        let royalties = dag.all_royalties()?;
+        redeem_royalties(royalties, client, root_dir).await?;
     } else {
         //NB TODO use the above DAG to audit too
         println!("Auditing the Currency, note that this might take a very long time...");
         let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
         client.follow_spend(genesis_addr).await?;
     }
+    Ok(())
+}
+
+/// Redeem royalties from the Network and deposit them into the wallet
+/// Only works if the wallet has the private key for the royalties
+async fn redeem_royalties(
+    royalties: Vec<CashNoteRedemption>,
+    client: &Client,
+    root_dir: &Path,
+) -> Result<()> {
+    if royalties.is_empty() {
+        println!("No royalties found to redeem.");
+        return Ok(());
+    } else {
+        println!("Found {} royalties.", royalties.len());
+    }
+
+    let mut wallet = HotWallet::load_from(root_dir)?;
+    let transfer = Transfer::NetworkRoyalties(royalties);
+    println!("Attempting to redeem royalties from the Network...");
+    println!("Current balance: {}", wallet.balance());
+    let cashnotes = client.receive(&transfer, &wallet).await?;
+    wallet.deposit_and_store_to_disk(&cashnotes)?;
+    println!("Successfully redeemed royalties from the Network.");
+    println!("Current balance: {}", wallet.balance());
     Ok(())
 }
