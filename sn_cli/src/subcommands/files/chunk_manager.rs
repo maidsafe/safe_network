@@ -15,7 +15,7 @@ use color_eyre::{
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::FilesApi;
-use sn_protocol::storage::ChunkAddress;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -53,7 +53,7 @@ pub(crate) struct ChunkedFile {
     pub file_name: OsString,
     pub head_chunk_address: ChunkAddress,
     pub chunks: BTreeSet<(XorName, PathBuf)>,
-    pub data_map: Option<Bytes>,
+    pub data_map: Chunk,
 }
 
 /// Manages the chunking process by resuming pre-chunked files and chunking any
@@ -228,7 +228,7 @@ impl ChunkManager {
                             file_path: path.to_owned(),
                             file_name: original_file_name.clone(),
                             chunks: chunks.into_iter().collect(),
-                            data_map: Some(data_map.value)
+                            data_map
                         };
                         Ok((path_xor.clone(), chunked_file))
                     }
@@ -398,7 +398,7 @@ impl ChunkManager {
 
                 let uploaded_file_metadata = UploadedFile {
                     filename: chunked_file.file_name,
-                    data_map: chunked_file.data_map,
+                    data_map: Some(chunked_file.data_map.value),
                 };
                 // errors are logged by write()
                 let _result =
@@ -471,7 +471,7 @@ impl ChunkManager {
         original_file_name: OsString,
     ) -> Option<(PathXorName, ChunkedFile)> {
         let mut file_chunk_address: Option<ChunkAddress> = None;
-        let mut data_map: Option<Bytes> = None;
+        let mut data_map = Chunk::new(Bytes::new());
         debug!("Trying to resume {path_xor:?} as the file_chunks_dir exists");
 
         let chunks = WalkDir::new(file_chunks_dir.clone())
@@ -533,13 +533,13 @@ impl ChunkManager {
     }
 
     /// Try to read the metadata file
-    /// Returning (head_chunk_address, Option<datamap_bytes>)
-    fn try_read_metadata(path: &Path) -> Option<(ChunkAddress, Option<Bytes>)> {
+    /// Returning (head_chunk_address, datamap Chunk)
+    fn try_read_metadata(path: &Path) -> Option<(ChunkAddress, Chunk)> {
         let metadata = fs::read(path)
             .map_err(|err| error!("Failed to read metadata with err {err:?}"))
             .ok()?;
         // head chunk address and the final datamap contents if a datamap exists for this file
-        let metadata: (ChunkAddress, Option<Bytes>) = rmp_serde::from_slice(&metadata)
+        let metadata: (ChunkAddress, Chunk) = rmp_serde::from_slice(&metadata)
             .map_err(|err| error!("Failed to deserialize metadata with err {err:?}"))
             .ok()?;
 
