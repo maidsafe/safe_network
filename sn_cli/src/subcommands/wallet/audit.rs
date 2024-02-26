@@ -68,12 +68,24 @@ async fn redeem_royalties(
     }
 
     let mut wallet = HotWallet::load_from(root_dir)?;
-    let transfer = Transfer::NetworkRoyalties(royalties);
-    println!("Attempting to redeem royalties from the Network...");
-    println!("Current balance: {}", wallet.balance());
-    let cashnotes = client.receive(&transfer, &wallet).await?;
-    wallet.deposit_and_store_to_disk(&cashnotes)?;
-    println!("Successfully redeemed royalties from the Network.");
-    println!("Current balance: {}", wallet.balance());
+
+    // batch royalties per 100
+    let mut batch = Vec::new();
+    for (i, royalty) in royalties.iter().enumerate() {
+        batch.push(royalty.clone());
+        if i % 100 == 0 {
+            println!(
+                "Attempting to redeem {} royalties from the Network...",
+                batch.len()
+            );
+            let transfer = Transfer::NetworkRoyalties(batch.clone());
+            batch.clear();
+            println!("Current balance: {}", wallet.balance());
+            let cashnotes = client.receive(&transfer, &wallet).await?;
+            wallet.deposit_and_store_to_disk(&cashnotes)?;
+            println!("Successfully redeemed royalties from the Network.");
+            println!("Current balance: {}", wallet.balance());
+        }
+    }
     Ok(())
 }
