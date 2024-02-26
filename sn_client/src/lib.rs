@@ -20,6 +20,14 @@ mod folders;
 mod register;
 mod wallet;
 
+// re-export used crates to make them available to app builders
+// this ensures the version of the crates used by the app builders are the same as the ones used by the client
+// so they don't run into issues with incompatible types due to different versions of the same crate
+pub use sn_networking;
+pub use sn_protocol;
+pub use sn_registers;
+pub use sn_transfers;
+
 pub use self::{
     audit::{DagError, SpendDag, SpendDagGet},
     error::Error,
