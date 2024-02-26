@@ -37,7 +37,7 @@ const SAFE_TRACKING_CHANGES_DIR: &str = ".safe";
 const METADATA_CACHE_DIR: &str = "metadata";
 
 // Name of the file where metadata about root folder is locally kept.
-const ROOT_FOLDER_METADATA_FILENAME: &str = "root_folder.xorname";
+const ROOT_FOLDER_METADATA_FILENAME: &str = "root_folder.addr";
 
 // Information stored locally to keep track of local changes to files/folders.
 // TODO: to make file changes discovery more efficient, add more info like file size and last modified timestamp.
@@ -55,7 +55,7 @@ pub struct AccountPacket {
     meta_dir: PathBuf,
     tracking_info_dir: PathBuf,
     curr_metadata: BTreeMap<PathBuf, MetadataTrackingInfo>,
-    root_dir_xorname: RegisterAddress,
+    root_folder_addr: RegisterAddress,
 }
 
 impl AccountPacket {
@@ -63,7 +63,7 @@ impl AccountPacket {
     pub fn from_path(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
-        let (curr_metadata, root_dir_xorname) = read_tracking_info_from_disk(&client, &meta_dir)?;
+        let (curr_metadata, root_folder_addr) = read_tracking_info_from_disk(&client, &meta_dir)?;
 
         Ok(Self {
             client,
@@ -72,20 +72,18 @@ impl AccountPacket {
             meta_dir,
             tracking_info_dir,
             curr_metadata,
-            root_dir_xorname,
+            root_folder_addr,
         })
     }
 
     /// Add all files found in the set path, uploading them to the network, and start keeping track of them.
-    pub async fn add_all_files(&mut self, options: FilesUploadOptions) -> Result<RegisterAddress> {
+    pub async fn add_all_files(&self, options: FilesUploadOptions) -> Result<RegisterAddress> {
         let folders = self.read_files_and_folders_from_disk(options.make_data_public, true)?;
-
-        store_root_folder_tracking_info(&self.meta_dir, self.root_dir_xorname)?;
 
         println!("Paying for folders hierarchy and uploading...");
         self.pay_and_upload_folders(folders, options).await?;
 
-        Ok(self.root_dir_xorname)
+        Ok(self.root_folder_addr)
     }
 
     /// Retrieve and store entire Folders hierarchy from the network, generating tracking info.
@@ -100,7 +98,7 @@ impl AccountPacket {
         create_dir_all(download_path)?;
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(download_path)?;
 
-        if let Ok(addr) = read_root_folder_xorname(&meta_dir) {
+        if let Ok(addr) = read_root_folder_addr(&meta_dir) {
             // bail out if there is already a root folder address different from the passed in
             if addr != address {
                 bail!(
@@ -121,7 +119,7 @@ impl AccountPacket {
             meta_dir,
             tracking_info_dir,
             curr_metadata: BTreeMap::default(),
-            root_dir_xorname: address,
+            root_folder_addr: address,
         };
 
         let mut files_to_download = vec![];
@@ -165,8 +163,7 @@ impl AccountPacket {
     }
 
     /// Generate a report with differences found in local files/folders in comparison with their versions stored on the network.
-    /// TODO: make it receive &self immutable
-    pub async fn status(&mut self) -> Result<()> {
+    pub async fn status(&self) -> Result<()> {
         let mut folders = self.read_files_and_folders_from_disk(false, false)?;
 
         let mut num_of_diffs = 0;
@@ -284,7 +281,7 @@ impl AccountPacket {
     }
 
     fn read_files_and_folders_from_disk(
-        &mut self, // TODO: make it immutable
+        &self,
         _make_data_public: bool,
         store_tracking_info: bool,
     ) -> Result<BTreeMap<PathBuf, FoldersApi>> {
@@ -293,6 +290,9 @@ impl AccountPacket {
         chunk_manager.chunk_with_iter(self.iter_only_files(), false, false)?;
 
         let mut folders = self.read_folders_hierarchy_from_disk(store_tracking_info)?;
+        if store_tracking_info {
+            store_root_folder_tracking_info(&self.meta_dir, self.root_folder_addr)?;
+        }
 
         // add chunked files to the corresponding Folders
         for chunked_file in chunk_manager.iter_chunked_files() {
@@ -301,11 +301,6 @@ impl AccountPacket {
                 .parent()
                 .map(|parent| folders.entry(parent.to_path_buf()))
             {
-                let folder_path = entry.key().clone();
-                if folder_path == self.files_dir {
-                    self.root_dir_xorname = *entry.get().address();
-                }
-
                 // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                 let (metadata, meta_xorname) = entry.get_mut().add_file(
                     chunked_file.file_name.clone(),
@@ -313,7 +308,7 @@ impl AccountPacket {
                 )?;
 
                 if store_tracking_info {
-                    let file_path = folder_path.join(&metadata.name);
+                    let file_path = entry.key().join(&metadata.name);
                     self.store_tracking_info(&file_path, metadata, meta_xorname)?;
                 }
             }
@@ -367,15 +362,19 @@ impl AccountPacket {
 
     // Instantiate a FolderApi based on local tracking info for given folder item
     fn find_folder_in_tracking_info(&self, path: &Path) -> Result<FoldersApi> {
-        let address = self.get_tracking_info(path)?.and_then(|tracking_info| {
-            match tracking_info.metadata.content {
-                FolderEntry::Folder(addr) => Some(addr.xorname()),
-                FolderEntry::File(_) => None,
-            }
-        });
+        let mut address =
+            self.get_tracking_info(path)?.and_then(|tracking_info| {
+                match tracking_info.metadata.content {
+                    FolderEntry::Folder(addr) => Some(addr),
+                    FolderEntry::File(_) => None,
+                }
+            });
 
-        let folder_api = FoldersApi::new(self.client.clone(), &self.wallet_dir, address)?;
-        Ok(folder_api)
+        if address.is_none() && path == self.files_dir {
+            address = Some(self.root_folder_addr);
+        }
+        let folders_api = FoldersApi::new(self.client.clone(), &self.wallet_dir, address)?;
+        Ok(folders_api)
     }
 
     // Creates an iterator over the user's dirs names, excluding the '.safe' tracking dir
@@ -519,7 +518,7 @@ fn read_tracking_info_from_disk(
     client: &Client,
     meta_dir: &Path,
 ) -> Result<(BTreeMap<PathBuf, MetadataTrackingInfo>, RegisterAddress)> {
-    let root_folder_xorname = read_root_folder_xorname(meta_dir).unwrap_or_else(|_| {
+    let root_folder_addr = read_root_folder_addr(meta_dir).unwrap_or_else(|_| {
         let mut rng = rand::thread_rng();
         RegisterAddress::new(XorName::random(&mut rng), client.signer_pk())
     });
@@ -539,23 +538,23 @@ fn read_tracking_info_from_disk(
         curr_metadata.insert(tracking_info.file_path.clone(), tracking_info);
     }
 
-    Ok((curr_metadata, root_folder_xorname))
+    Ok((curr_metadata, root_folder_addr))
 }
 
 // Store tracking info about the root folder in a file to keep track of any changes made
 fn store_root_folder_tracking_info(
     meta_dir: &Path,
-    root_folder_xorname: RegisterAddress,
+    root_folder_addr: RegisterAddress,
 ) -> Result<()> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let mut meta_file = File::create(path)?;
-    meta_file.write_all(root_folder_xorname.to_hex().as_bytes())?;
+    meta_file.write_all(root_folder_addr.to_hex().as_bytes())?;
 
     Ok(())
 }
 
 // Read the tracking info about the root folder
-fn read_root_folder_xorname(meta_dir: &Path) -> Result<RegisterAddress> {
+fn read_root_folder_addr(meta_dir: &Path) -> Result<RegisterAddress> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let bytes = std::fs::read(&path)
         .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err}"))?;

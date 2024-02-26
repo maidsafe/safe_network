@@ -52,12 +52,18 @@ pub struct FoldersApi {
 
 impl FoldersApi {
     /// Create FoldersApi instance.
-    pub fn new(client: Client, wallet_dir: &Path, xorname: Option<XorName>) -> Result<Self> {
-        let mut rng = rand::thread_rng();
-        let register = ClientRegister::create(
-            client.clone(),
-            xorname.unwrap_or_else(|| XorName::random(&mut rng)),
-        );
+    pub fn new(
+        client: Client,
+        wallet_dir: &Path,
+        address: Option<RegisterAddress>,
+    ) -> Result<Self> {
+        let register = if let Some(addr) = address {
+            ClientRegister::create_with_addr(client.clone(), addr)
+        } else {
+            let mut rng = rand::thread_rng();
+            ClientRegister::create(client.clone(), XorName::random(&mut rng))
+        };
+
         Self::create(client, wallet_dir, register)
     }
 
