@@ -14,8 +14,8 @@ name = "safenode-manager"
 path = "src/bin/cli/main.rs"
 
 [[bin]]
-name = "safenode-manager-daemon"
-path = "src/bin/daemon/main.rs"
+name="safenodemand"
+path="src/bin/daemon/main.rs"
 
 [features]
 chaos = []

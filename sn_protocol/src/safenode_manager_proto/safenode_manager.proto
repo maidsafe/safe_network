@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// Protocol buffer for the safenode-manager-daemon. This is used to control 
+// Protocol buffer for the safenodemand. This is used to control 
 // the safeodes started by the safenode-manager.
 
 // Version of protocol buffer used
