@@ -14,7 +14,8 @@ use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
 use crate::subcommands::files::download::download_file;
-use crate::subcommands::files::upload::{upload_files_with_iter, FilesUploadOptions};
+use crate::subcommands::files::upload::FilesUploadOptions;
+use crate::subcommands::files::upload_with_iter::upload_files_with_iter;
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
