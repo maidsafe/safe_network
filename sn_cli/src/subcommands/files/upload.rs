@@ -17,7 +17,7 @@ use walkdir::{DirEntry, WalkDir};
 use crate::subcommands::files;
 use sn_client::{Client, Error as ClientError, FileUploadEvent, FilesApi, FilesUpload};
 use sn_protocol::storage::{ChunkAddress, RetryStrategy};
-use sn_transfers::{Error as TransfersError, WalletError};
+use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 
 use crate::subcommands::files::ChunkManager;
 
@@ -158,31 +158,15 @@ pub(crate) async fn upload_files_with_iter(
 
         // if none are failed, we can return early
         if failed_chunks.is_empty() {
-            println!("All files were already uploaded and verified");
-            println!("**************************************");
-            println!("*          Uploaded Files            *");
-
+            msg_files_already_uploaded_verified();
             if !make_data_public {
-                println!("*                                    *");
-                println!("*  These are not public by default.  *");
-                println!("*     Reupload with `-p` option      *");
-                println!("*      to publish the datamaps.      *");
+                msg_not_public_by_default();
             }
-            println!("**************************************");
-
+            msg_star_line();
             if chunk_manager.completed_files().is_empty() {
-                println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+                msg_chk_mgr_no_verified_file_nor_re_upload();
             }
-            for (file_name, addr) in chunk_manager.completed_files() {
-                let hex_addr = addr.to_hex();
-                if let Some(file_name) = file_name.to_str() {
-                    println!("\"{file_name}\" {hex_addr}");
-                    info!("Uploaded {file_name} to {hex_addr}");
-                } else {
-                    println!("\"{file_name:?}\" {hex_addr}");
-                    info!("Uploaded {file_name:?} to {hex_addr}");
-                }
-            }
+            file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager);
             return Ok(());
         }
         println!("{:?} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...", failed_chunks.len());
@@ -263,16 +247,7 @@ pub(crate) async fn upload_files_with_iter(
                 println!("*      to publish the datamaps.      *");
             }
             println!("**************************************");
-            for (file_name, addr) in chunk_manager.completed_files() {
-                let hex_addr = addr.to_hex();
-                if let Some(file_name) = file_name.to_str() {
-                    println!("\"{file_name}\" {hex_addr}");
-                    info!("Uploaded {file_name} to {hex_addr}");
-                } else {
-                    println!("\"{file_name:?}\" {hex_addr}");
-                    info!("Uploaded {file_name:?} to {hex_addr}");
-                }
-            }
+            file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager);
         } else {
             error!("Got FileUploadEvent::Error inside upload event loop");
         }
@@ -309,17 +284,26 @@ pub(crate) async fn upload_files_with_iter(
     let final_balance = files_upload.get_upload_final_balance();
 
     let uploaded_chunks = chunks_to_upload_len - total_existing_chunks as usize;
-    println!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
-    info!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
 
-    println!("**************************************");
-    println!("*          Payment Details           *");
-    println!("**************************************");
-    println!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
-    println!("Made payment of {total_royalty_fees} for royalties fees");
-    println!("New wallet balance: {final_balance}");
-    info!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
-    info!("New wallet balance: {final_balance}");
+    msg_chunks_found_existed(
+        chunks_to_upload_len,
+        &elapsed,
+        total_existing_chunks,
+        uploaded_chunks,
+    );
+    msg_chunks_found_existed_info(
+        chunks_to_upload_len,
+        elapsed,
+        total_existing_chunks,
+        uploaded_chunks,
+    );
+    msg_payment_details(
+        total_storage_cost,
+        total_royalty_fees,
+        final_balance,
+        uploaded_chunks,
+    );
+    msg_made_payment_info(total_storage_cost, uploaded_chunks);
 
     Ok(())
 }
@@ -333,4 +317,78 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     } else {
         format!("{elapsed_seconds} seconds")
     }
+}
+
+fn file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager: ChunkManager) {
+    for (file_name, addr) in chunk_manager.completed_files() {
+        let hex_addr = addr.to_hex();
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {hex_addr}");
+            info!("Uploaded {file_name} to {hex_addr}");
+        } else {
+            println!("\"{file_name:?}\" {hex_addr}");
+            info!("Uploaded {file_name:?} to {hex_addr}");
+        }
+    }
+}
+
+/////////////////  Messages  /////////////////
+
+fn msg_made_payment_info(total_storage_cost: NanoTokens, uploaded_chunks: usize) {
+    info!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
+}
+
+fn msg_chunks_found_existed_info(
+    chunks_to_upload_len: usize,
+    elapsed: String,
+    total_existing_chunks: u64,
+    uploaded_chunks: usize,
+) {
+    info!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, \
+    uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
+}
+
+fn msg_chunks_found_existed(
+    chunks_to_upload_len: usize,
+    elapsed: &String,
+    total_existing_chunks: u64,
+    uploaded_chunks: usize,
+) {
+    println!("Among {chunks_to_upload_len} chunks, found {total_existing_chunks} already existed in network, \
+    uploaded the leftover {uploaded_chunks} chunks in {elapsed}");
+}
+
+fn msg_payment_details(
+    total_storage_cost: NanoTokens,
+    total_royalty_fees: NanoTokens,
+    final_balance: NanoTokens,
+    uploaded_chunks: usize,
+) {
+    println!("**************************************");
+    println!("*          Payment Details           *");
+    println!("**************************************");
+    println!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
+    println!("Made payment of {total_royalty_fees} for royalties fees");
+    println!("New wallet balance: {final_balance}");
+}
+
+fn msg_chk_mgr_no_verified_file_nor_re_upload() {
+    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+}
+
+fn msg_star_line() {
+    println!("**************************************");
+}
+
+fn msg_not_public_by_default() {
+    println!("*                                    *");
+    println!("*  These are not public by default.  *");
+    println!("*     Reupload with `-p` option      *");
+    println!("*      to publish the datamaps.      *");
+}
+
+fn msg_files_already_uploaded_verified() {
+    println!("All files were already uploaded and verified");
+    println!("**************************************");
+    println!("*          Uploaded Files            *");
 }
