@@ -13,7 +13,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use walkdir::DirEntry;
-use xor_name::XorName;
 
 /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
 pub(crate) async fn upload_files_with_iter(
@@ -48,11 +47,13 @@ pub(crate) async fn upload_files_with_iter(
     // Return early if we already uploaded them
     let mut chunks_to_upload = if chunk_manager.is_chunks_empty() {
         // make sure we don't have any failed chunks in those
+
         let chunks = chunk_manager.already_put_chunks(&files_path, make_data_public)?;
         println!(
             "Files upload attempted previously, verifying {} chunks",
             chunks.len()
         );
+
         let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
 
         // mark the non-failed ones as completed
@@ -76,7 +77,7 @@ pub(crate) async fn upload_files_with_iter(
             file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager);
             return Ok(());
         }
-        msg_unverified_chunks_reattempted(&failed_chunks);
+        msg_unverified_chunks_reattempted(&failed_chunks.len());
         failed_chunks
     } else {
         chunk_manager.get_chunks()
@@ -315,10 +316,8 @@ fn msg_uploaded_files_banner() {
     println!("**************************************");
     println!("*          Uploaded Files            *");
 }
-fn msg_unverified_chunks_reattempted(failed_chunks: &Vec<(XorName, PathBuf)>) {
+fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
     println!(
-        "{:?} chunks were uploaded in the past but failed to verify. \
-    Will attempt to upload them again...",
-        failed_chunks.len()
+        "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
     );
 }
