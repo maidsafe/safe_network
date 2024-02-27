@@ -30,4 +30,3 @@ metrics/prometheus/prometheus.yml
 *.svg
 
 sn_node_manager/.vagrant
-/.vscode/
