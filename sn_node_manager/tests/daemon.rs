@@ -67,10 +67,13 @@ async fn restart_node() -> Result<()> {
     // start daemon
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("daemon")
+        .arg("add")
         .arg("--path")
         .arg("./target/release/safenodemand")
         .assert()
         .success();
+    let mut cmd = Command::cargo_bin("safenode-manager")?;
+    cmd.arg("daemon").arg("start").assert().success();
 
     // restart a node
     let mut rpc_client = get_safenode_manager_rpc_client(SocketAddr::new(
