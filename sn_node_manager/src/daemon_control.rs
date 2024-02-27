@@ -11,35 +11,43 @@ use color_eyre::{
     eyre::{eyre, OptionExt},
     Result,
 };
+use colored::Colorize;
 use libp2p::PeerId;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_node_rpc_client::RpcActions;
-use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
-use std::{ffi::OsString, net::Ipv4Addr, path::PathBuf};
+use sn_protocol::node_registry::{Daemon, Node, NodeRegistry, NodeStatus};
+use std::{
+    ffi::OsString,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
+const DAEMON_SERVICE_NAME: &str = "safenodemand";
 
-pub fn run_daemon(
+/// Install the daemon as a service.
+///
+/// This only defines the service; it does not start it.
+pub fn add_daemon(
     address: Ipv4Addr,
     port: u16,
     daemon_path: PathBuf,
+    node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
-    _verbosity: VerbosityLevel,
 ) -> Result<()> {
-    let service_name_str = "safenodemand";
-    let service_name: ServiceLabel = service_name_str.parse()?;
+    let service_name: ServiceLabel = DAEMON_SERVICE_NAME.parse()?;
 
     // try to stop and uninstall if already installed
-    if let Err(err) = service_control.stop(service_name_str) {
+    if let Err(err) = service_control.stop(DAEMON_SERVICE_NAME) {
         println!("Error while stopping manager daemon. Ignoring the error. {err:?}");
     }
-    if let Err(err) = service_control.uninstall(service_name_str) {
+    if let Err(err) = service_control.uninstall(DAEMON_SERVICE_NAME) {
         println!("Error while uninstalling manager daemon. Ignoring the error. {err:?}");
     }
 
     let install_ctx = ServiceInstallCtx {
         label: service_name.clone(),
-        program: daemon_path,
+        program: daemon_path.clone(),
         args: vec![
             OsString::from("--port"),
             OsString::from(port.to_string()),
@@ -51,10 +59,97 @@ pub fn run_daemon(
         working_directory: None,
         environment: None,
     };
-    service_control.install(install_ctx)?;
-    service_control.start(&service_name.to_string())?;
+
+    match service_control.install(install_ctx) {
+        Ok(()) => {
+            let daemon = Daemon {
+                daemon_path,
+                endpoint: Some(SocketAddr::new(IpAddr::V4(address), port)),
+                pid: None,
+                service_name: DAEMON_SERVICE_NAME.to_string(),
+                status: NodeStatus::Added,
+            };
+            node_registry.daemon = Some(daemon);
+
+            println!("Daemon service added {}", "✓".green());
+            println!("[!] Note: the service has not been started");
+            node_registry.save()?;
+            Ok(())
+        }
+        Err(e) => {
+            println!("Failed to add daemon service: {e}");
+            Err(e)
+        }
+    }
+}
+
+pub fn start_daemon(
+    daemon: &mut Daemon,
+    service_control: &dyn ServiceControl,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
+    if let NodeStatus::Running = daemon.status {
+        if service_control.is_service_process_running(daemon.pid.unwrap()) {
+            println!("The {} service is already running", daemon.service_name);
+            return Ok(());
+        }
+    }
+
+    if verbosity != VerbosityLevel::Minimal {
+        println!("Attempting to start {}...", daemon.service_name);
+    }
+    service_control.start(&daemon.service_name)?;
+
+    let pid = service_control.get_process_pid(&daemon.service_name)?;
+    daemon.pid = Some(pid);
+    daemon.status = NodeStatus::Running;
+
+    println!("{} Started faucet service", "✓".green());
+    if verbosity != VerbosityLevel::Minimal {
+        println!("  - PID: {}", pid);
+        println!("  - Endpoint: {:?}", daemon.endpoint);
+    }
 
     Ok(())
+}
+
+pub fn stop_daemon(daemon: &mut Daemon, service_control: &dyn ServiceControl) -> Result<()> {
+    match daemon.status {
+        NodeStatus::Added => {
+            println!("The daemon has not been started since it was installed");
+            Ok(())
+        }
+        NodeStatus::Removed => {
+            println!("The daemon service was removed");
+            Ok(())
+        }
+        NodeStatus::Running => {
+            let pid = daemon.pid.ok_or_eyre("The PID was not set")?;
+            if service_control.is_service_process_running(pid) {
+                println!("Attempting to stop {}...", daemon.service_name);
+                service_control.stop(&daemon.service_name)?;
+                println!(
+                    "{} Service {} with PID {} was stopped",
+                    "✓".green(),
+                    daemon.service_name,
+                    pid
+                );
+            } else {
+                println!(
+                    "{} Service {} was already stopped",
+                    "✓".green(),
+                    daemon.service_name
+                );
+            }
+            daemon.pid = None;
+            daemon.status = NodeStatus::Stopped;
+            Ok(())
+        }
+        NodeStatus::Stopped => {
+            println!("{} The faucet was already stopped", "✓".green(),);
+            Ok(())
+        }
+    }
 }
 
 pub async fn restart_node_service(

@@ -29,7 +29,7 @@ use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
 use sn_transfers::get_faucet_data_dir;
 use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::Ipv4Addr,
     path::PathBuf,
     process::{Command, Stdio},
     str::FromStr,
@@ -126,22 +126,8 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
-    /// Start the safenode manager as a long running daemon
-    ///
-    /// This allows you to interact with the safenode manager through a RPC
-    Daemon {
-        /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
-        ///
-        /// If not set, the daemon listens locally for commands.
-        #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
-        address: Ipv4Addr,
-        /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
-        #[clap(long, default_value_t = 12500)]
-        port: u16,
-        /// temp path
-        #[clap(long)]
-        path: PathBuf,
-    },
+    #[clap(subcommand)]
+    Daemon(DaemonSubCmd),
     #[clap(subcommand)]
     Faucet(FaucetSubCmd),
     /// Kill the running local network.
@@ -477,29 +463,73 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
-        SubCmd::Daemon {
+        SubCmd::Daemon(DaemonSubCmd::Add {
             address,
             port,
             path,
-        } => {
+        }) => {
             if !is_running_as_root() {
                 return Err(eyre!("The add command must run as the root user"));
             }
 
             if verbosity != VerbosityLevel::Minimal {
                 println!("=================================================");
-                println!("              Running Daemon                     ");
+                println!("              Add Daemon Service                 ");
                 println!("=================================================");
             }
 
-            let service_manager = NodeServiceManager {};
-            daemon_control::run_daemon(address, port, path, &service_manager, verbosity)?;
-
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            node_registry.safenodemand_endpoint = Some(SocketAddr::new(IpAddr::V4(address), port));
-            node_registry.save()?;
+
+            let service_manager = NodeServiceManager {};
+            daemon_control::add_daemon(address, port, path, &mut node_registry, &service_manager)?;
 
             Ok(())
+        }
+        SubCmd::Daemon(DaemonSubCmd::Start {}) => {
+            if !is_running_as_root() {
+                return Err(eyre!("The start command must run as the root user"));
+            }
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if let Some(mut daemon) = node_registry.daemon.clone() {
+                if verbosity != VerbosityLevel::Minimal {
+                    println!("=================================================");
+                    println!("             Start Daemon Service                ");
+                    println!("=================================================");
+                }
+
+                daemon_control::start_daemon(
+                    &mut daemon,
+                    &NodeServiceManager {},
+                    verbosity.clone(),
+                )?;
+                node_registry.daemon = Some(daemon);
+                node_registry.save()?;
+                return Ok(());
+            }
+
+            Err(eyre!("The daemon service has not been added yet"))
+        }
+        SubCmd::Daemon(DaemonSubCmd::Stop {}) => {
+            if !is_running_as_root() {
+                return Err(eyre!("The stop command must run as the root user"));
+            }
+
+            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+            if let Some(mut daemon) = node_registry.daemon.clone() {
+                if verbosity != VerbosityLevel::Minimal {
+                    println!("=================================================");
+                    println!("             Stop Daemon Service                 ");
+                    println!("=================================================");
+                }
+
+                daemon_control::stop_daemon(&mut daemon, &NodeServiceManager {})?;
+                node_registry.daemon = Some(daemon);
+                node_registry.save()?;
+                return Ok(());
+            }
+
+            Err(eyre!("The daemon service has not been added yet"))
         }
         SubCmd::Faucet(faucet_command) => match faucet_command {
             FaucetSubCmd::Add {
@@ -1149,6 +1179,39 @@ async fn main() -> Result<()> {
             Ok(())
         }
     }
+}
+
+/// Manage Daemon service.
+#[derive(Subcommand, Debug)]
+pub enum DaemonSubCmd {
+    /// Add a daemon service. This allows you to interact with the safenode manager through a RPC.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "add")]
+    Add {
+        /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
+        ///
+        /// If not set, the daemon listens locally for commands.
+        #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
+        address: Ipv4Addr,
+        /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+        #[clap(long, default_value_t = 12500)]
+        port: u16,
+        /// Daemon Path
+        // todo: provide url/version.
+        #[clap(long)]
+        path: PathBuf,
+    },
+    /// Start the daemon service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "start")]
+    Start {},
+    /// Stop the daemon service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "stop")]
+    Stop {},
 }
 
 async fn get_bin_path(

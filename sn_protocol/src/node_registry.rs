@@ -141,12 +141,21 @@ impl Node {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Daemon {
+    pub daemon_path: PathBuf,
+    pub endpoint: Option<SocketAddr>,
+    pub pid: Option<u32>,
+    pub service_name: String,
+    pub status: NodeStatus,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
     pub bootstrap_peers: Vec<Multiaddr>,
+    pub daemon: Option<Daemon>,
     pub environment_variables: Option<Vec<(String, String)>>,
     pub faucet: Option<Faucet>,
     pub nodes: Vec<Node>,
-    pub safenodemand_endpoint: Option<SocketAddr>,
     pub save_path: PathBuf,
 }
 
@@ -167,10 +176,10 @@ impl NodeRegistry {
         if !path.exists() {
             return Ok(NodeRegistry {
                 bootstrap_peers: vec![],
+                daemon: None,
                 environment_variables: None,
                 faucet: None,
                 nodes: vec![],
-                safenodemand_endpoint: None,
                 save_path: path.to_path_buf(),
             });
         }
@@ -184,10 +193,10 @@ impl NodeRegistry {
         if contents.is_empty() {
             return Ok(NodeRegistry {
                 bootstrap_peers: vec![],
+                daemon: None,
                 environment_variables: None,
                 faucet: None,
                 nodes: vec![],
-                safenodemand_endpoint: None,
                 save_path: path.to_path_buf(),
             });
         }
