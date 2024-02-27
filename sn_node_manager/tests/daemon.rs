@@ -41,7 +41,7 @@ async fn restart_node() -> Result<()> {
     cmd.arg("build")
         .arg("--release")
         .arg("--bin")
-        .arg("safenode-manager-daemon");
+        .arg("safenodemand");
 
     // 1. Preserve the PeerId
     let node_index_to_restart = 0;
@@ -68,7 +68,7 @@ async fn restart_node() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("daemon")
         .arg("--path")
-        .arg("./target/release/safenode-manager-daemon")
+        .arg("./target/release/safenodemand")
         .assert()
         .success();
 

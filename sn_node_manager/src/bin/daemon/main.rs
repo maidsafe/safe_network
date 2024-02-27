@@ -119,7 +119,7 @@ impl SafeNodeManagerDaemon {}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
-    println!("Starting safenode-manager-daemon");
+    println!("Starting safenodemand");
     let args = Args::parse();
     let service = SafeNodeManagerDaemon {};
 

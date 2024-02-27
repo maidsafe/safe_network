@@ -46,7 +46,7 @@ pub struct DeploymentInventory {
     #[serde(deserialize_with = "deserialize_peer_socket_map")]
     pub rpc_endpoints: BTreeMap<PeerId, SocketAddr>,
     #[serde(deserialize_with = "deserialize_peer_socket_map")]
-    pub manager_daemon_endpoints: BTreeMap<PeerId, SocketAddr>,
+    pub safenodemand_endpoints: BTreeMap<PeerId, SocketAddr>,
     pub node_count: u16,
     pub ssh_user: String,
     pub genesis_multiaddr: String,
