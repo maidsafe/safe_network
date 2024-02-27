@@ -16,6 +16,7 @@ use sn_protocol::safenode_manager_proto::{
     safe_node_manager_client::SafeNodeManagerClient, NodeServiceRestartRequest,
 };
 use std::{
+    env,
     net::{Ipv4Addr, SocketAddr},
     str::FromStr,
     time::Duration,
@@ -65,11 +66,14 @@ async fn restart_node() -> Result<()> {
     assert_eq!(services.len(), 3);
 
     // start daemon
+    let mut cwd = env::current_dir()?;
+    cwd.pop();
+    let safenodemand_path = cwd.join("target").join("release").join("safenodemand");
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("daemon")
         .arg("add")
         .arg("--path")
-        .arg("./target/release/safenodemand")
+        .arg(format!("{safenodemand_path:?}").as_str())
         .assert()
         .success();
     let mut cmd = Command::cargo_bin("safenode-manager")?;
