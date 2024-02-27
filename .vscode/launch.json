@@ -1,0 +1,829 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Spaced Upload",
+            "type": "lldb",
+            "request": "launch",
+            "args": [
+                "files",
+                "upload",
+                "c:/derp/freebird - song lyrics from mp3.txt"
+            ],
+            "cargo": {
+                "args": [
+                    "build",
+                    "--features=local-discovery",
+                    "--bin=safe",
+                ],
+            }
+        },
+        {
+            "name": "Launch Spaced Download",
+            "type": "lldb",
+            "request": "launch",
+            "args": [
+                "files",
+                "download",
+            ],
+            "cargo": {
+                "args": [
+                    "build",
+                    "--features=local-discovery",
+                    "--bin=safe",
+                ],
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'metrics'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=metrics",
+                    "--package=sn_metrics"
+                ],
+                "filter": {
+                    "name": "metrics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'metrics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=metrics",
+                    "--package=sn_metrics"
+                ],
+                "filter": {
+                    "name": "metrics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_build_info'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_build_info"
+                ],
+                "filter": {
+                    "name": "sn_build_info",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'safe'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=safe",
+                    "--package=sn_cli"
+                ],
+                "filter": {
+                    "name": "safe",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'safe'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=safe",
+                    "--package=sn_cli"
+                ],
+                "filter": {
+                    "name": "safe",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'files'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=files",
+                    "--package=sn_cli"
+                ],
+                "filter": {
+                    "name": "files",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_client'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_client"
+                ],
+                "filter": {
+                    "name": "sn_client",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_networking'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_networking"
+                ],
+                "filter": {
+                    "name": "sn_networking",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_protocol'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_protocol"
+                ],
+                "filter": {
+                    "name": "sn_protocol",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_registers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_registers"
+                ],
+                "filter": {
+                    "name": "sn_registers",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_transfers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_transfers"
+                ],
+                "filter": {
+                    "name": "sn_transfers",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'reissue'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=reissue",
+                    "--package=sn_transfers"
+                ],
+                "filter": {
+                    "name": "reissue",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_peers_acquisition'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_peers_acquisition"
+                ],
+                "filter": {
+                    "name": "sn_peers_acquisition",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_logging'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_logging"
+                ],
+                "filter": {
+                    "name": "sn_logging",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'faucet'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=faucet",
+                    "--package=sn_faucet"
+                ],
+                "filter": {
+                    "name": "faucet",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'faucet'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=faucet",
+                    "--package=sn_faucet"
+                ],
+                "filter": {
+                    "name": "faucet",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_node'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "sn_node",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'safenode'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=safenode",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "safenode",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'safenode'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=safenode",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "safenode",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'registers'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=registers",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "registers",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'registers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=registers",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "registers",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'register_inspect'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=register_inspect",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "register_inspect",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'register_inspect'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=register_inspect",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "register_inspect",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'data_with_churn'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=data_with_churn",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "data_with_churn",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'msgs_over_gossipsub'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=msgs_over_gossipsub",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "msgs_over_gossipsub",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'nodes_rewards'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=nodes_rewards",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "nodes_rewards",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'sequential_transfers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=sequential_transfers",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "sequential_transfers",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'storage_payments'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=storage_payments",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "storage_payments",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'verify_data_location'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=verify_data_location",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "verify_data_location",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'verify_routing_table'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=verify_routing_table",
+                    "--package=sn_node"
+                ],
+                "filter": {
+                    "name": "verify_routing_table",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn-node-manager'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "sn-node-manager",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'safenode-manager'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=safenode-manager",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "safenode-manager",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'safenode-manager'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=safenode-manager",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "safenode-manager",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'safenode-manager-daemon'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=safenode-manager-daemon",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "safenode-manager-daemon",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'safenode-manager-daemon'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=safenode-manager-daemon",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "safenode-manager-daemon",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'e2e'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=e2e",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "e2e",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'upgrades'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=upgrades",
+                    "--package=sn-node-manager"
+                ],
+                "filter": {
+                    "name": "upgrades",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sn_node_rpc_client'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sn_node_rpc_client"
+                ],
+                "filter": {
+                    "name": "sn_node_rpc_client",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'safenode_rpc_client'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=safenode_rpc_client",
+                    "--package=sn_node_rpc_client"
+                ],
+                "filter": {
+                    "name": "safenode_rpc_client",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'safenode_rpc_client'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=safenode_rpc_client",
+                    "--package=sn_node_rpc_client"
+                ],
+                "filter": {
+                    "name": "safenode_rpc_client",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'token_supplies'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=token_supplies",
+                    "--package=token_supplies"
+                ],
+                "filter": {
+                    "name": "token_supplies",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'token_supplies'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=token_supplies",
+                    "--package=token_supplies"
+                ],
+                "filter": {
+                    "name": "token_supplies",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
