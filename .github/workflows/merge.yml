@@ -281,15 +281,16 @@ jobs:
               elevated: sudo env PATH="$PATH",
               test: restart_node,
             }
-          - {
-              os: macos-latest,
-              elevated: sudo,
-              test: restart_node,
-            }
-          - {
-              os: windows-latest,
-              test: restart_node,
-            }
+          # todo: enable once url/version has been implemented for Daemon subcmd. 
+          # - {
+          #     os: macos-latest,
+          #     elevated: sudo,
+          #     test: restart_node,
+          #   }
+          # - {
+          #     os: windows-latest,
+          #     test: restart_node,
+          #   }
     steps:
       - uses: actions/checkout@v4
 
@@ -297,7 +298,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      - shell: bash
+      - name: run integration test
+        shell: bash
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           ${{ matrix.elevated }} rustup default stable
