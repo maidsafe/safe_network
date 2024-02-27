@@ -33,7 +33,7 @@ use sn_transfers::{
     NanoTokens, Payment, SignedSpend, Transfer, UniquePubkey, WalletError, GENESIS_CASHNOTE,
     NETWORK_ROYALTIES_PK,
 };
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 use xor_name::XorName;
 
 impl Node {
@@ -373,22 +373,12 @@ impl Node {
         let present_locally = self.network.is_record_key_present_locally(&key).await?;
 
         // validate the signed spends against the network and the local copy
-        let validated_spends = match self
+        let validated_spends = self
             .signed_spend_validation(signed_spends.clone(), unique_pubkey, present_locally)
-            .await?
-        {
-            Some(spends) => spends,
-            None => {
-                // we trust the replicated data
-                debug!("Trust replicated spend for {pretty_key:?}",);
-                // TODO: may need to tweak the `signed_spend_validation` function,
-                //       instead of trusting replicated spend directly
-                signed_spends
-            }
-        };
+            .await?;
 
         debug!(
-            "Got {} validated spends for {pretty_key:?}",
+            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len(),
         );
 
@@ -642,7 +632,7 @@ impl Node {
         mut signed_spends: Vec<SignedSpend>,
         unique_pubkey: UniquePubkey,
         present_locally: bool,
-    ) -> Result<Option<Vec<SignedSpend>>> {
+    ) -> Result<Vec<SignedSpend>> {
         // get the UniquePubkey; used for validation
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
         let record_key = NetworkAddress::from_spend_address(cash_note_addr).to_record_key();
@@ -673,27 +663,23 @@ impl Node {
 
             let local_signed_spends: Vec<SignedSpend> = try_deserialize_record(&local_record)?;
 
-            // spends that are not present locally
-            let newly_seen_spends = signed_spends
+            // aggregate the local spends with the incoming spends
+            let spends_not_present_locally = signed_spends
                 .iter()
                 .filter(|s| !local_signed_spends.contains(s))
-                .cloned()
-                .collect::<HashSet<_>>();
+                .collect::<BTreeSet<_>>();
+            debug!("Got {} local spends and {} spends received with {} that we don't know of at {unique_pubkey:?}", local_signed_spends.len(), signed_spends.len(), spends_not_present_locally.len());
+            let all_spends: BTreeSet<_> = local_signed_spends
+                .into_iter()
+                .chain(signed_spends)
+                .collect();
 
-            // return early if the PUT is for the same local copy
-            if newly_seen_spends.is_empty() {
-                debug!("Vec<SignedSpend> with addr {cash_note_addr:?} already exists, not overwriting!",);
-                return Ok(None);
-            } else {
-                debug!(
-                    "Seen new spends that are not part of the local copy. Mostly a double spend, checking for it"
-                );
-                // continue with local_spends + new_ones
-                signed_spends = local_signed_spends
-                    .into_iter()
-                    .chain(newly_seen_spends)
-                    .collect();
-            }
+            // update signed_spends to contain all the spends (local and incoming)
+            debug!(
+                "We have {} unique spends in total for {unique_pubkey:?}",
+                all_spends.len()
+            );
+            signed_spends = all_spends.into_iter().collect();
         }
 
         // Check the parent spends and check the closest(unique_pubkey) for any double spend
@@ -829,7 +815,7 @@ impl Node {
             }
         };
 
-        Ok(Some(signed_spends))
+        Ok(signed_spends)
     }
 }
 
