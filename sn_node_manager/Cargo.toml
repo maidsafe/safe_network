@@ -14,7 +14,7 @@ name="safenode-manager"
 path="src/bin/cli/main.rs"
 
 [[bin]]
-name="safenode-manager-daemon"
+name="safenodemand"
 path="src/bin/daemon/main.rs"
 
 [features]

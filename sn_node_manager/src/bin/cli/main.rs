@@ -496,7 +496,7 @@ async fn main() -> Result<()> {
             daemon_control::run_daemon(address, port, path, &service_manager, verbosity)?;
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            node_registry.daemon_socket_addr = Some(SocketAddr::new(IpAddr::V4(address), port));
+            node_registry.safenodemand_endpoint = Some(SocketAddr::new(IpAddr::V4(address), port));
             node_registry.save()?;
 
             Ok(())

@@ -179,12 +179,12 @@ impl NodeRestart {
         let safenode_rpc_endpoint = match self.inventory_file.clone() {
             Either::Left(inv) => {
                 // check if we've reached the end
-                if loop_over && self.next_to_restart_idx > inv.manager_daemon_endpoints.len() {
+                if loop_over && self.next_to_restart_idx > inv.safenodemand_endpoints.len() {
                     self.next_to_restart_idx = 0;
                 }
 
                 if let Some((peer_id, daemon_endpoint)) = inv
-                    .manager_daemon_endpoints
+                    .safenodemand_endpoints
                     .iter()
                     .nth(self.next_to_restart_idx)
                 {
