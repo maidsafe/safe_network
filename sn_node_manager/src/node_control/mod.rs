@@ -129,19 +129,19 @@ pub async fn add(
             service_safenode_path.clone(),
         )?;
         let install_ctx = InstallNodeServiceCtxBuilder {
-            local: options.local,
+            bootstrap_peers: options.bootstrap_peers.clone(),
             data_dir_path: service_data_dir_path.clone(),
+            env_variables: options.env_variables.clone(),
             genesis: options.genesis,
+            local: options.local,
             log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
             node_port: options.node_port,
-            bootstrap_peers: options.bootstrap_peers.clone(),
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
-            env_variables: options.env_variables.clone(),
         }
-        .execute()?;
+        .build()?;
 
         match service_control.install(install_ctx) {
             Ok(()) => {
@@ -496,7 +496,7 @@ pub async fn upgrade(
         service_user: node.user.clone(),
         env_variables: options.env_variables.clone(),
     }
-    .execute()?;
+    .build()?;
     service_control.install(install_ctx)?;
 
     if options.start_node {

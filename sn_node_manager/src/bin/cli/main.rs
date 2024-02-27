@@ -13,8 +13,9 @@ use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
     config::*,
+    faucet_control::{add_faucet, start_faucet, stop_faucet, AddFaucetServiceOptions},
     helpers::download_and_extract_release,
-    local::{kill_network, run_faucet, run_network, LocalNetworkOptions},
+    local::{kill_network, run_network, LocalNetworkOptions},
     node_control::{
         add, remove, start, status, stop, upgrade, AddServiceOptions, UpgradeOptions, UpgradeResult,
     },
@@ -25,6 +26,7 @@ use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_transfers::get_faucet_data_dir;
 use std::{
     net::Ipv4Addr,
     path::PathBuf,
@@ -123,27 +125,8 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
-    /// Run a faucet server for use with a local network.
-    #[clap(name = "faucet")]
-    Faucet {
-        /// Set to build the safenode and faucet binaries.
-        ///
-        /// This assumes the command is being run from the root of the safe_network repository.
-        #[clap(long)]
-        build: bool,
-        /// Path to a faucet binary
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "version")]
-        path: Option<PathBuf>,
-        #[command(flatten)]
-        peers: PeersArgs,
-        /// The version of the faucet to use.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
-        version: Option<String>,
-    },
+    #[clap(subcommand)]
+    Faucet(FaucetSubCmd),
     /// Kill the running local network.
     #[clap(name = "kill")]
     Kill {
@@ -355,6 +338,56 @@ pub enum SubCmd {
     },
 }
 
+/// Manage faucet services.
+#[allow(clippy::large_enum_variant)]
+#[derive(Subcommand, Debug)]
+pub enum FaucetSubCmd {
+    /// Add a faucet service.
+    ///
+    /// This command must run as the root/administrative user.
+    ///
+    /// Windows is not supported for running a faucet.
+    #[clap(name = "add")]
+    Add {
+        /// Provide environment variables for the faucet service.
+        ///
+        /// Useful for setting log levels. Each variable should be comma separated without any space.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
+        /// Provide the path for the log directory for the faucet.
+        ///
+        /// If not provided, the default location /var/log/faucet.
+        #[clap(long, verbatim_doc_comment)]
+        log_dir_path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Provide a faucet binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a faucet binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// The version of the faucet
+        #[clap(long)]
+        version: Option<String>,
+    },
+    /// Start the faucet service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "start")]
+    Start {},
+    /// Stop the faucet service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "stop")]
+    Stop {},
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     color_eyre::install()?;
@@ -391,7 +424,8 @@ async fn main() -> Result<()> {
             service_manager.create_service_user(&service_user)?;
 
             let service_data_dir_path = get_service_data_dir_path(data_dir_path, &service_user)?;
-            let service_log_dir_path = get_service_log_dir_path(log_dir_path, &service_user)?;
+            let service_log_dir_path =
+                get_service_log_dir_path(ReleaseType::Safenode, log_dir_path, &service_user)?;
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
             let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
@@ -426,34 +460,106 @@ async fn main() -> Result<()> {
 
             Ok(())
         }
-        SubCmd::Faucet {
-            build,
-            path,
-            peers,
-            version,
-        } => {
-            println!("=================================================");
-            println!("                 Running Faucet                  ");
-            println!("=================================================");
+        SubCmd::Faucet(faucet_command) => match faucet_command {
+            FaucetSubCmd::Add {
+                env_variables,
+                log_dir_path,
+                peers,
+                url,
+                version,
+            } => {
+                if !is_running_as_root() {
+                    return Err(eyre!("The add command must run as the root user"));
+                }
 
-            let local_node_reg_path = &get_local_node_registry_path()?;
-            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
-            if !local_node_registry.nodes.is_empty() {
-                return Err(eyre!("A local network is already running")
-                    .suggestion("Use the kill command to destroy the network then try again"));
+                if verbosity != VerbosityLevel::Minimal {
+                    println!("=================================================");
+                    println!("              Add Faucet Service                 ");
+                    println!("=================================================");
+                }
+
+                let service_user = "safe";
+                let service_manager = NodeServiceManager {};
+                service_manager.create_service_user(service_user)?;
+
+                let service_log_dir_path =
+                    get_service_log_dir_path(ReleaseType::Faucet, log_dir_path, service_user)?;
+
+                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+
+                let (faucet_download_path, version) = download_and_extract_release(
+                    ReleaseType::Faucet,
+                    url.clone(),
+                    version,
+                    &*release_repo,
+                )
+                .await?;
+
+                add_faucet(
+                    AddFaucetServiceOptions {
+                        bootstrap_peers: get_peers_from_args(peers).await?,
+                        env_variables,
+                        faucet_download_bin_path: faucet_download_path,
+                        faucet_install_bin_path: PathBuf::from("/usr/local/bin/faucet"),
+                        local: false,
+                        service_data_dir_path: get_faucet_data_dir(),
+                        service_log_dir_path,
+                        url,
+                        user: service_user.to_string(),
+                        version,
+                    },
+                    &mut node_registry,
+                    &service_manager,
+                    verbosity,
+                )?;
+
+                Ok(())
             }
+            FaucetSubCmd::Start {} => {
+                if !is_running_as_root() {
+                    return Err(eyre!("The start command must run as the root user"));
+                }
 
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let faucet_path =
-                get_bin_path(build, path, ReleaseType::Faucet, version, &*release_repo).await?;
+                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                if let Some(mut faucet) = node_registry.faucet.clone() {
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("=================================================");
+                        println!("             Start Faucet Service                ");
+                        println!("=================================================");
+                    }
 
-            let peers = get_peers_from_args(peers).await?;
-            run_faucet(&mut local_node_registry, faucet_path, peers[0].clone()).await?;
+                    start_faucet(&mut faucet, &NodeServiceManager {}, verbosity.clone()).await?;
+                    node_registry.faucet = Some(faucet);
+                    node_registry.save()?;
+                    return Ok(());
+                }
 
-            local_node_registry.save()?;
+                Err(eyre!("The faucet service has not been added yet"))
+            }
+            FaucetSubCmd::Stop {} => {
+                if !is_running_as_root() {
+                    return Err(eyre!("The stop command must run as the root user"));
+                }
 
-            Ok(())
-        }
+                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                if let Some(faucet) = node_registry.faucet.clone() {
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("=================================================");
+                        println!("             Stop Faucet Service                 ");
+                        println!("=================================================");
+                    }
+
+                    let mut faucet = faucet;
+                    stop_faucet(&mut faucet, &NodeServiceManager {}).await?;
+                    node_registry.faucet = Some(faucet);
+                    node_registry.save()?;
+                    return Ok(());
+                }
+
+                Err(eyre!("The faucet service has not been added yet"))
+            }
+        },
         SubCmd::Join {
             build,
             count,

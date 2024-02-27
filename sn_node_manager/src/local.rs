@@ -16,7 +16,8 @@ use libp2p::{Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
-use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
+use sn_protocol::node_registry::{Faucet, Node, NodeRegistry, NodeStatus};
+use sn_transfers::get_faucet_data_dir;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -101,10 +102,12 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 
     // It's possible that the faucet was not spun up because the network failed the validation
     // process. If it wasn't running, we obviously don't need to do anything.
-    if let Some(pid) = node_registry.faucet_pid {
+    if let Some(faucet) = &node_registry.faucet {
         // If we're here, the faucet was spun up. However, it's possible for the process to have
         // died since then. In that case, we don't need to do anything.
-        if let Some(process) = system.process(Pid::from(pid as usize)) {
+        // I think the use of `unwrap` is justified here, because for a local network, if the
+        // faucet is not `None`, the pid also must have a value.
+        if let Some(process) = system.process(Pid::from(faucet.pid.unwrap() as usize)) {
             process.kill();
             println!("{} Killed faucet", "✓".green());
         }
@@ -162,23 +165,6 @@ pub struct LocalNetworkOptions {
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
-}
-
-pub async fn run_faucet(
-    node_registry: &mut NodeRegistry,
-    path: PathBuf,
-    peer: Multiaddr,
-) -> Result<()> {
-    let launcher = LocalSafeLauncher {
-        safenode_bin_path: PathBuf::new(),
-        faucet_bin_path: path,
-    };
-
-    println!("Launching the faucet server...");
-    let faucet_pid = launcher.launch_faucet(&peer)?;
-    node_registry.faucet_pid = Some(faucet_pid);
-
-    Ok(())
 }
 
 pub async fn run_network(
@@ -265,8 +251,19 @@ pub async fn run_network(
 
     if !options.join {
         println!("Launching the faucet server...");
-        let faucet_pid = launcher.launch_faucet(&bootstrap_peers[0])?;
-        node_registry.faucet_pid = Some(faucet_pid);
+        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
+        let version = get_bin_version(&options.faucet_bin_path)?;
+        let faucet = Faucet {
+            faucet_path: options.faucet_bin_path,
+            local: true,
+            log_dir_path: get_faucet_data_dir(),
+            pid: Some(pid),
+            service_name: "faucet".to_string(),
+            status: NodeStatus::Running,
+            user: get_username()?,
+            version,
+        };
+        node_registry.faucet = Some(faucet);
     }
 
     Ok(())

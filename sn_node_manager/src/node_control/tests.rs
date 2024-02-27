@@ -89,11 +89,11 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     safenode_download_path.write_binary(b"fake safenode bin")?;
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let mut mock_service_control = MockServiceControl::new();
@@ -120,7 +120,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -189,6 +189,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
 
     let latest_version = "0.96.4";
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![Node {
             genesis: true,
@@ -209,7 +210,6 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let temp_dir = assert_fs::TempDir::new()?;
@@ -261,11 +261,11 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
     let mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let latest_version = "0.96.4";
@@ -318,11 +318,11 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
 
     let latest_version = "0.96.4";
@@ -359,7 +359,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -390,7 +390,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -421,7 +421,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -520,11 +520,11 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     let new_peers = vec![Multiaddr::from_str("/ip4/178.62.78.116/udp/45442/quic-v1/p2p/12D3KooWLH4E68xFqoSKuF2JPQQhzaAg7GNvN1vpxoLMgJq6Zqz8")?];
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: old_peers.clone(),
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -559,7 +559,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         bootstrap_peers: new_peers.clone(),
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -632,11 +632,11 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     ]);
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -670,7 +670,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         bootstrap_peers: vec![],
         env_variables: env_variables.clone(),
     }
-    .execute()?;
+    .build()?;
     mock_service_control
         .expect_install()
         .times(1)
@@ -738,6 +738,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
 
     let latest_version = "0.96.4";
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![Node {
             genesis: true,
@@ -758,7 +759,6 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let temp_dir = assert_fs::TempDir::new()?;
     let node_data_dir = temp_dir.child("safenode1");
@@ -790,7 +790,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -852,11 +852,11 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -892,7 +892,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         bootstrap_peers: vec![],
         env_variables: None,
     }
-    .execute()?;
+    .build()?;
 
     mock_service_control
         .expect_install()
@@ -957,11 +957,11 @@ async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_s
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
         bootstrap_peers: vec![],
         environment_variables: None,
-        faucet_pid: None,
     };
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
@@ -1367,8 +1367,6 @@ async fn stop_should_not_return_error_for_attempt_to_stop_installed_service() ->
             panic!("The stop command should be idempotent and do nothing for a stopped service");
         }
     }
-
-    // Ok(())
 }
 
 #[tokio::test]
