@@ -55,10 +55,10 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
 
     let mut node_registry = NodeRegistry {
         bootstrap_peers: vec![],
-        daemon_socket_addr: None,
         faucet: None,
         environment_variables: None,
         nodes: vec![],
+        safenodemand_endpoint: None,
         save_path: node_reg_path.to_path_buf(),
     };
 

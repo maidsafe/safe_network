@@ -26,7 +26,7 @@ pub fn run_daemon(
     service_control: &dyn ServiceControl,
     _verbosity: VerbosityLevel,
 ) -> Result<()> {
-    let service_name_str = "safenode-manager-daemon";
+    let service_name_str = "safenodemand";
     let service_name: ServiceLabel = service_name_str.parse()?;
 
     // try to stop and uninstall if already installed
