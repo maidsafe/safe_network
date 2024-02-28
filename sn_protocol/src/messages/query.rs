@@ -38,13 +38,15 @@ pub enum Query {
         /// The random nonce that the node uses to produce the Proof (i.e., hash(record+nonce))
         nonce: Nonce,
     },
+    /// Queries close_group peers whether the target peer is a bad_node
+    CheckNodeInProblem(NetworkAddress),
 }
 
 impl Query {
     /// Used to send a query to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Query::GetStoreCost(address) => address.clone(),
+            Query::GetStoreCost(address) | Query::CheckNodeInProblem(address) => address.clone(),
             // Shall not be called for this, as this is a `one-to-one` message,
             // and the destination shall be decided by the requester already.
             Query::GetReplicatedRecord { key, .. } => key.clone(),
@@ -64,6 +66,9 @@ impl std::fmt::Display for Query {
             }
             Query::GetChunkExistenceProof { key, nonce } => {
                 write!(f, "Query::GetChunkExistenceProof({key:?} {nonce:?})")
+            }
+            Query::CheckNodeInProblem(address) => {
+                write!(f, "Query::CheckNodeInProblem({address:?})")
             }
         }
     }
