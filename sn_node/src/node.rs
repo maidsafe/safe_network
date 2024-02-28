@@ -16,14 +16,16 @@ use crate::metrics::NodeMetrics;
 use crate::RunningNode;
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
-use libp2p::{identity::Keypair, Multiaddr};
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use sn_networking::{Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE};
+use sn_networking::{
+    close_group_majority, Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Response},
+    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{CashNoteRedemption, HotWallet, MainPubkey, MainSecretKey, NanoTokens};
@@ -38,7 +40,7 @@ use std::{
 };
 use tokio::{
     sync::{broadcast, mpsc::Receiver},
-    task::spawn,
+    task::{spawn, JoinHandle},
 };
 
 /// Expected topic name where notifications of royalty transfers are sent on.
@@ -428,7 +430,23 @@ impl Node {
             }
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 event_header = "FailedToFetchHolders";
+                let network = self.network.clone();
                 error!("Received notification from replication_fetcher, notifying {bad_nodes:?} failed to fetch replication copies from.");
+                let _handle = spawn(async move {
+                    for peer_id in bad_nodes {
+                        network.notify_node_status(peer_id, Default::default(), true);
+                    }
+                });
+            }
+            NetworkEvent::BadNodeVerification { peer_id, addrs } => {
+                event_header = "BadNodeVerification";
+                let network = self.network.clone();
+
+                trace!("Need to verify whether peer {peer_id:?} is a bad node");
+                let _handle = spawn(async move {
+                    let is_bad = Self::is_peer_bad_node(&network, peer_id).await;
+                    network.notify_node_status(peer_id, addrs, is_bad);
+                });
             }
         }
 
@@ -436,6 +454,58 @@ impl Node {
             "Network handling statistics, Event {event_header:?} handled in {:?} : {event_string:?}",
             start.elapsed()
         );
+    }
+
+    // Query close_group peers to the target to verifify whether the target is bad_node
+    // Returns true when it is a bad_node, otherwise false
+    async fn is_peer_bad_node(network: &Network, peer_id: PeerId) -> bool {
+        // using `client` to exclude self
+        let closest_peers = match network
+            .client_get_closest_peers(&NetworkAddress::from_peer(peer_id))
+            .await
+        {
+            Ok(peers) => peers,
+            Err(err) => {
+                error!("Failed to finding closest_peers to {peer_id:?} client_get_closest_peers errored: {err:?}");
+                return true;
+            }
+        };
+
+        // Query the peer status from the close_group to the peer,
+        // raise alert as long as getting alerts from majority(3) of the close_group.
+        let req = Request::Query(Query::CheckNodeInProblem(NetworkAddress::from_peer(
+            peer_id,
+        )));
+        let mut handles = Vec::new();
+        for peer in closest_peers {
+            let req_copy = req.clone();
+            let network_copy = network.clone();
+            let handle: JoinHandle<bool> = spawn(async move {
+                trace!("getting node_status of {peer_id:?} from {peer:?}");
+                if let Ok(resp) = network_copy.send_request(req_copy, peer).await {
+                    match resp {
+                        Response::Query(QueryResponse::CheckNodeInProblem {
+                            is_in_trouble,
+                            ..
+                        }) => is_in_trouble,
+                        other => {
+                            error!("Cannot get node status of {peer_id:?} from node {peer:?}, with response {other:?}");
+                            false
+                        }
+                    }
+                } else {
+                    false
+                }
+            });
+            handles.push(handle);
+        }
+        let results: Vec<_> = futures::future::join_all(handles).await;
+
+        results
+            .iter()
+            .filter(|r| *r.as_ref().unwrap_or(&false))
+            .count()
+            >= close_group_majority()
     }
 
     // Handle the response that was not awaited at the call site
@@ -527,6 +597,23 @@ impl Node {
                 }
 
                 QueryResponse::GetChunkExistenceProof(result)
+            }
+            Query::CheckNodeInProblem(target_address) => {
+                trace!("Got CheckNodeInProblem for peer {target_address:?}");
+
+                let is_in_trouble =
+                    if let Ok(result) = network.is_peer_bad(target_address.clone()).await {
+                        result
+                    } else {
+                        trace!("Could not get status of {target_address:?}.");
+                        false
+                    };
+
+                QueryResponse::CheckNodeInProblem {
+                    reporter_address: NetworkAddress::from_peer(network.peer_id),
+                    target_address,
+                    is_in_trouble,
+                }
             }
         };
         Response::Query(resp)
