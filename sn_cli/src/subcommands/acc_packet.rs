@@ -102,6 +102,7 @@ pub struct AccountPacket {
     tracking_info_dir: PathBuf,
     curr_metadata: BTreeMap<PathBuf, MetadataTrackingInfo>,
     root_folder_addr: RegisterAddress,
+    root_folder_created: bool,
 }
 
 impl AccountPacket {
@@ -110,16 +111,16 @@ impl AccountPacket {
         let (_, _, meta_dir) = build_tracking_info_paths(path)?;
 
         // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
-        if let Ok(addr) = read_root_folder_addr(&meta_dir) {
+        if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             bail!(
-                "The path is already uploaded and being tracked with Folder address: {}",
+                "The path is already being tracked with Folder address: {}",
                 addr.to_hex()
             );
         }
 
         let mut rng = rand::thread_rng();
         let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
-        store_root_folder_tracking_info(&meta_dir, root_folder_addr)?;
+        store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
         Self::from_path(client, wallet_dir, path)
     }
 
@@ -129,7 +130,8 @@ impl AccountPacket {
 
         // this will fail if there is no tracking info found
         let curr_metadata = read_tracking_info_from_disk(&meta_dir)?;
-        let root_folder_addr = read_root_folder_addr(&meta_dir).map_err(|err| eyre!("Root Folder address not found, make sure the dir is initialised to be tracked: {err:?}"))?;
+        let (root_folder_addr,root_folder_created) = read_root_folder_addr(&meta_dir)
+            .map_err(|_| eyre!("Root Folder address not found, make sure the dir is initialised to be tracked."))?;
 
         Ok(Self {
             client,
@@ -139,6 +141,7 @@ impl AccountPacket {
             tracking_info_dir,
             curr_metadata,
             root_folder_addr,
+            root_folder_created,
         })
     }
 
@@ -159,7 +162,7 @@ impl AccountPacket {
         create_dir_all(download_path)?;
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(download_path)?;
 
-        if let Ok(addr) = read_root_folder_addr(&meta_dir) {
+        if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             // bail out if there is already a root folder address different from the passed in
             if addr != address {
                 bail!(
@@ -170,7 +173,7 @@ impl AccountPacket {
 
             // TODO: merge what we'll retrieve from network into what exists locally
         } else {
-            store_root_folder_tracking_info(&meta_dir, address)?;
+            store_root_folder_tracking_info(&meta_dir, address, true)?;
         }
 
         let mut acc_packet = Self {
@@ -181,6 +184,7 @@ impl AccountPacket {
             tracking_info_dir,
             curr_metadata: BTreeMap::default(),
             root_folder_addr: address,
+            root_folder_created: true,
         };
 
         let mut files_to_download = vec![];
@@ -228,19 +232,23 @@ impl AccountPacket {
         println!("Looking for local changes made to files/folders...");
         let changes = self.scan_files_and_folders_for_changes(false)?;
 
-        println!("Local changes made to files/folders:");
-        changes.mutations.iter().for_each(|m| println!("{m}"));
+        if changes.mutations.is_empty() {
+            println!("No local changes made to files/folders.");
+        } else {
+            println!("Local changes made to files/folders:");
+            changes.mutations.iter().for_each(|m| println!("{m}"));
 
-        println!(
-            "\nChanges found to local files/folders: {}",
-            changes.mutations.len()
-        );
+            println!(
+                "\nChanges found to local files/folders: {}",
+                changes.mutations.len()
+            );
+        }
         Ok(())
     }
 
     /// Sync local changes made to files and folder with their version on the network,
     /// pushing changes made locally to the network.
-    pub async fn sync(&self, options: FilesUploadOptions) -> Result<()> {
+    pub async fn sync(&mut self, options: FilesUploadOptions) -> Result<()> {
         let ChangesToApply { folders, mutations } =
             self.scan_files_and_folders_for_changes(false)?;
 
@@ -255,6 +263,16 @@ impl AccountPacket {
 
         println!("Paying for folders hierarchy and uploading...");
         self.pay_and_sync_folders(folders, options).await?;
+
+        // marked root folder as synced if it wasn't already
+        if !self.root_folder_created {
+            self.root_folder_created = true;
+            store_root_folder_tracking_info(
+                &self.meta_dir,
+                self.root_folder_addr,
+                self.root_folder_created,
+            )?;
+        }
 
         // store/remove tracking info locally
         for mutation in mutations {
@@ -513,8 +531,9 @@ impl AccountPacket {
     fn find_folder_in_tracking_info(&self, path: &Path) -> Result<(FoldersApi, DetectedChange)> {
         let mut detected_change = DetectedChange::NewFolder;
         let address = if path == self.files_dir {
-            // FIXME: depending if this was a sync or upload the Folder is new
-            detected_change = DetectedChange::None;
+            if self.root_folder_created {
+                detected_change = DetectedChange::None;
+            }
             Some(self.root_folder_addr)
         } else {
             self.get_tracking_info(path)?.and_then(|tracking_info| {
@@ -705,19 +724,20 @@ fn read_tracking_info_from_disk(
 fn store_root_folder_tracking_info(
     meta_dir: &Path,
     root_folder_addr: RegisterAddress,
+    created: bool,
 ) -> Result<()> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let mut meta_file = File::create(path)?;
-    meta_file.write_all(root_folder_addr.to_hex().as_bytes())?;
+    meta_file.write_all(&rmp_serde::to_vec(&(root_folder_addr, created))?)?;
 
     Ok(())
 }
 
 // Read the tracking info about the root folder
-fn read_root_folder_addr(meta_dir: &Path) -> Result<RegisterAddress> {
+fn read_root_folder_addr(meta_dir: &Path) -> Result<(RegisterAddress, bool)> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let bytes = std::fs::read(&path)
-        .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err}"))?;
+        .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err:?}"))?;
 
-    Ok(RegisterAddress::from_hex(&String::from_utf8(bytes)?)?)
+    Ok(rmp_serde::from_slice(&bytes)?)
 }
