@@ -58,7 +58,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     path::PathBuf,
 };
 use tokio::sync::{
@@ -546,6 +546,16 @@ impl Network {
             .map_err(|_e| Error::InternalMsgChannelDropped)
     }
 
+    /// Whether the target peer is considered as `in trouble` by self
+    pub async fn is_peer_bad(&self, target: NetworkAddress) -> Result<bool> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::IsPeerInTrouble { target, sender })?;
+
+        receiver
+            .await
+            .map_err(|_e| Error::InternalMsgChannelDropped)
+    }
+
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
@@ -717,6 +727,16 @@ impl Network {
 
     pub fn trigger_interval_replication(&self) -> Result<()> {
         self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
+    }
+
+    pub fn notify_node_status(&self, peer_id: PeerId, addrs: HashSet<Multiaddr>, is_bad: bool) {
+        if let Err(error) = self.send_swarm_cmd(SwarmCmd::SendNodeStatus {
+            peer_id,
+            addrs,
+            is_bad,
+        }) {
+            error!("Error while notifying node status: {error:?}");
+        }
     }
 
     // Helper to send SwarmCmd
