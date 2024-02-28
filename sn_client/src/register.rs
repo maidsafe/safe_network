@@ -861,3 +861,39 @@ impl ClientRegister {
         Ok(reg.register()?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Client, ClientRegister};
+    use bls::SecretKey;
+    use eyre::{self, Result};
+    use rand::thread_rng;
+    use xor_name::XorName;
+
+    #[tokio::test]
+    async fn replace_entry() -> Result<()> {
+        let mut rng = thread_rng();
+        let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+        let address = XorName::random(&mut rng);
+        let mut register = ClientRegister::create(client.clone(), address);
+        let addr = *register.address();
+
+        let hash0 = register.write(b"00")?;
+        for e in register.read() {
+            println!(">> {e:?}");
+        }
+
+        let mut reg2 = ClientRegister::create_with_addr(client, addr);
+        let _hash1 = reg2.write_atop(b"11", &vec![hash0].into_iter().collect())?;
+        for e in reg2.read() {
+            println!(">2> {e:?}");
+        }
+
+        reg2.register.merge(register.register);
+        for e in reg2.read() {
+            println!(">3> {e:?}");
+        }
+
+        Ok(())
+    }
+}
