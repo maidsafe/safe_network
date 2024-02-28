@@ -264,7 +264,7 @@ impl AccountPacket {
         println!("Paying for folders hierarchy and uploading...");
         self.pay_and_sync_folders(folders, options).await?;
 
-        // marked root folder as synced if it wasn't already
+        // marked root folder as created if it wasn't already
         if !self.root_folder_created {
             self.root_folder_created = true;
             store_root_folder_tracking_info(
@@ -392,6 +392,10 @@ impl AccountPacket {
                         }
                         FolderEntry::Folder(_) => {
                             // New file found where there used to be a folder
+                            if parent_folder.get().1 == DetectedChange::None {
+                                parent_folder.get_mut().1 = DetectedChange::NewEntries;
+                            }
+
                             // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                             let (entry_hash, meta_xorname, metadata) =
                                 parent_folder.get_mut().0.replace_file(
@@ -443,9 +447,13 @@ impl AccountPacket {
                 FolderEntry::Folder(_) => match folders.get(&abs_path) {
                     Some(_) => {}
                     None => {
-                        if let Some((parent_folder, _)) =
+                        if let Some((parent_folder, detected_change)) =
                             abs_path.parent().and_then(|p| folders.get_mut(p))
                         {
+                            if detected_change == &DetectedChange::None {
+                                *detected_change = DetectedChange::NewEntries;
+                            }
+
                             parent_folder.remove_item(tracking_info.entry_hash)?;
                         }
                         changes.mutations.push(Mutation::FolderRemoved((
@@ -459,9 +467,12 @@ impl AccountPacket {
                         .iter_chunked_files()
                         .all(|chunked_file| chunked_file.file_path != abs_path)
                     {
-                        if let Some((parent_folder, _)) =
+                        if let Some((parent_folder, detected_change)) =
                             abs_path.parent().and_then(|p| folders.get_mut(p))
                         {
+                            if detected_change == &DetectedChange::None {
+                                *detected_change = DetectedChange::NewEntries;
+                            }
                             parent_folder.remove_item(tracking_info.entry_hash)?;
                         }
 
@@ -490,7 +501,7 @@ impl AccountPacket {
                 )
             })
         }) {
-            let (folder, detected_change) = changes
+            let (folder, parent_detected_change) = changes
                 .folders
                 .entry(dir_path.clone())
                 .or_insert(self.find_folder_in_tracking_info(&dir_path)?)
@@ -498,14 +509,18 @@ impl AccountPacket {
             let curr_folder_addr = *folder.address();
 
             if depth > 0 {
-                let (parent_folder, _) = changes
+                let (parent_folder, detected_change) = changes
                     .folders
                     .entry(parent.clone())
                     .or_insert(self.find_folder_in_tracking_info(&parent)?);
+                if detected_change == &DetectedChange::None {
+                    *detected_change = DetectedChange::NewEntries;
+                }
+
                 let (entry_hash, meta_xorname, metadata) =
                     parent_folder.add_folder(dir_name, curr_folder_addr)?;
 
-                if detected_change == DetectedChange::NewFolder {
+                if parent_detected_change == DetectedChange::NewFolder {
                     changes
                         .mutations
                         .push(Mutation::NewFolder(MetadataTrackingInfo {
@@ -618,7 +633,7 @@ impl AccountPacket {
 
         // sync Folders concurrently
         let mut tasks = JoinSet::new();
-        for (path, (mut folder, _)) in folders {
+        for (path, (mut folder, _detected_change)) in folders {
             tasks.spawn(async move {
                 match folder
                     .sync(options.verify_store, Some(options.retry_strategy))
