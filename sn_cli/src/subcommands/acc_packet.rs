@@ -46,11 +46,19 @@ type Folders = BTreeMap<PathBuf, (FoldersApi, DetectedChange)>;
 #[derive(Default)]
 struct ChangesToApply {
     folders: BTreeMap<PathBuf, (FoldersApi, DetectedChange)>,
-    tracking2remove: Vec<XorName>,
-    tracking2store: Vec<XorName>,
+    mutations: Vec<Change>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
+enum Change {
+    NewFile(MetadataTrackingInfo),
+    FileRemoved((PathBuf, XorName)),
+    FileContentChanged((XorName, MetadataTrackingInfo)),
+    NewFolder(MetadataTrackingInfo),
+    FolderRemoved((PathBuf, XorName)),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 enum DetectedChange {
     None,
     NewFolder,
@@ -182,85 +190,31 @@ impl AccountPacket {
     }
 
     /// Generate a report with differences found in local files/folders in comparison with their versions stored on the network.
-    pub async fn status(&self) -> Result<()> {
-        let mut changes = self.scan_files_and_folders_for_changes(false, false)?;
-
-        let mut num_of_diffs = 0;
+    pub fn status(&self) -> Result<()> {
         println!("Looking for local changes made to files/folders...");
+        let changes = self.scan_files_and_folders_for_changes(false, false)?;
 
-        // let's first compare from current files/folders read from disk, with the previous versions of them
-        let folders = &mut changes.folders;
-        for (folder_path, (folder, _)) in folders.iter_mut() {
-            for (_, meta_xorname, metadata) in folder.entries().await? {
-                let file_path = folder_path.join(&metadata.name);
-
-                // try to find the tracking info of the file/folder by its name
-                match self.get_tracking_info(&file_path) {
-                    Ok(Some(tracking_info)) => {
-                        match (&tracking_info.metadata.content, metadata.content) {
-                            (FolderEntry::File(_), FolderEntry::File(_)) => {
-                                if tracking_info.meta_xorname != meta_xorname {
-                                    num_of_diffs += 1;
-                                    println!("- File content changed: {file_path:?}",);
-                                }
-                            }
-                            (FolderEntry::Folder(_), FolderEntry::Folder(_)) => {}
-                            (FolderEntry::Folder(_), FolderEntry::File(_)) => {
-                                num_of_diffs += 1;
-                                println!(
-                                    "- New file found where there used to be a folder: {file_path:?}"
-                                );
-                            }
-                            (FolderEntry::File(_), FolderEntry::Folder(_)) => {
-                                num_of_diffs += 1;
-                                println!(
-                                    "- New folder found where there used to be a file: {file_path:?}"
-                                );
-                            }
-                        }
-                    }
-                    Ok(None) | Err(_) => {
-                        num_of_diffs += 1;
-                        match metadata.content {
-                            FolderEntry::File(_) => println!("- New file: {file_path:?}"),
-                            FolderEntry::Folder(_) => println!("- New folder: {file_path:?}"),
-                        }
-                    }
+        println!("Local changes made to files/folders:");
+        for mutation in &changes.mutations {
+            match mutation {
+                Change::NewFile(tracking_info) => {
+                    println!("New file: {:?}", tracking_info.file_path)
                 }
+                Change::FileRemoved((path, _)) => println!("File removed: {path:?}"),
+                Change::FileContentChanged((_, tracking_info)) => {
+                    println!("File content changed: {:?}", tracking_info.file_path)
+                }
+                Change::NewFolder(tracking_info) => {
+                    println!("New folder: {:?}", tracking_info.file_path)
+                }
+                Change::FolderRemoved((path, _)) => println!("Folder removed: {path:?}"),
             }
         }
 
-        // now let's check if any file/folder was removed from disk
-        for (item_path, tracking_info) in self.curr_metadata.iter() {
-            let abs_path = self.files_dir.join(item_path);
-            match tracking_info.metadata.content {
-                FolderEntry::Folder(_) => match folders.get(&abs_path) {
-                    Some(_) => {}
-                    None => {
-                        num_of_diffs += 1;
-                        println!("- Folder removed: {abs_path:?}");
-                    }
-                },
-                FolderEntry::File(_) => {
-                    match abs_path.parent().and_then(|parent| folders.get_mut(parent)) {
-                        Some((folder, _)) => {
-                            if folder.entries().await?.iter().all(|(_, _, metadata)| {
-                                metadata.name != tracking_info.metadata.name
-                            }) {
-                                num_of_diffs += 1;
-                                println!("- File removed: {abs_path:?}");
-                            }
-                        }
-                        None => {
-                            num_of_diffs += 1;
-                            println!("- File removed along with its folder: {abs_path:?}");
-                        }
-                    }
-                }
-            }
-        }
-
-        println!("Changes found to local files/folders: {num_of_diffs}");
+        println!(
+            "Changes found to local files/folders: {}",
+            changes.mutations.len()
+        );
         Ok(())
     }
 
@@ -306,20 +260,37 @@ impl AccountPacket {
                     println!("Failed to sync Folder (for {folder_path:?}) with the network: {err}",)
                 }
             }
-
-            for (entry_hash, meta_xorname, metadata) in folder.entries().await? {
-                // store tracking info locally
-                let file_abs_path = folder_path.join(&metadata.name);
-                println!("==> STORE TRACKING INFO: {file_abs_path:?}, {metadata:?}, {meta_xorname:?}, {entry_hash:?}");
-                self.store_tracking_info(&file_abs_path, metadata, meta_xorname, entry_hash)?;
-            }
         }
 
-        for meta_xorname in changes.tracking2remove {
-            let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
-            println!("==> TRACKINFO TO REMOVE {metadata_file_path:?}");
-            if let Err(err) = remove_file(&metadata_file_path) {
-                println!("Failed to remove tracking info file {metadata_file_path:?}: {err}");
+        // store/remove tracking info locally
+        for mutation in changes.mutations {
+            match mutation {
+                Change::NewFile(tracking_info) | Change::NewFolder(tracking_info) => {
+                    println!("==> STORE TRACKING INFO: {tracking_info:?}");
+                    self.store_tracking_info(tracking_info)?;
+                }
+                Change::FileRemoved((path, meta_xorname))
+                | Change::FolderRemoved((path, meta_xorname)) => {
+                    let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
+                    println!("==> TRACKINFO TO REMOVE for {path:?} ==> {metadata_file_path:?}");
+                    if let Err(err) = remove_file(&metadata_file_path) {
+                        println!(
+                            "Failed to remove tracking info file {metadata_file_path:?}: {err}"
+                        );
+                    }
+                }
+                Change::FileContentChanged((meta_xorname, tracking_info)) => {
+                    println!("==> STORE TRACKING INFO: {tracking_info:?}");
+                    self.store_tracking_info(tracking_info)?;
+
+                    let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
+                    println!("==> TRACKINFO TO REMOVE for {metadata_file_path:?} ==> {metadata_file_path:?}");
+                    if let Err(err) = remove_file(&metadata_file_path) {
+                        println!(
+                            "Failed to remove tracking info file {metadata_file_path:?}: {err}"
+                        );
+                    }
+                }
             }
         }
 
@@ -340,17 +311,19 @@ impl AccountPacket {
     // Store tracking info in a file to keep track of any changes made to the source file/folder
     fn store_tracking_info(
         &self,
-        src_path: &Path,
-        metadata: Metadata,
-        meta_xorname: XorName,
-        entry_hash: EntryHash,
+        MetadataTrackingInfo {
+            file_path,
+            meta_xorname,
+            metadata,
+            entry_hash,
+        }: MetadataTrackingInfo,
     ) -> Result<()> {
         let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
         let mut meta_file = File::create(metadata_file_path)?;
 
-        let file_path = self.get_relative_path(src_path)?;
         let tracking_info = MetadataTrackingInfo {
-            file_path,
+            // we store the relative path so the root folder can be moved if desired by the user
+            file_path: self.get_relative_path(&file_path)?,
             meta_xorname,
             metadata,
             entry_hash,
@@ -391,8 +364,13 @@ impl AccountPacket {
                 )?;
 
                 if store_tracking_info {
-                    let file_abs_path = parent_folder.key().join(&metadata.name);
-                    self.store_tracking_info(&file_abs_path, metadata, meta_xorname, entry_hash)?;
+                    let file_path = parent_folder.key().join(&metadata.name);
+                    self.store_tracking_info(MetadataTrackingInfo {
+                        file_path,
+                        meta_xorname,
+                        metadata,
+                        entry_hash,
+                    })?;
                 }
             }
         }
@@ -429,53 +407,67 @@ impl AccountPacket {
                     Ok(Some(tracking_info)) => match &tracking_info.metadata.content {
                         FolderEntry::File(chunk) => {
                             if chunk.address() != &chunked_file.head_chunk_address {
-                                println!(
-                                    "-@ File content changed: {file_path:?} === {}",
-                                    hex::encode(tracking_info.meta_xorname)
-                                );
-                                changes.tracking2remove.push(tracking_info.meta_xorname);
-
                                 if parent_folder.get().1 == DetectedChange::None {
                                     parent_folder.get_mut().1 = DetectedChange::NewEntries;
                                 }
 
                                 // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                                let (_, meta_xorname, _) = parent_folder.get_mut().0.replace_file(
+                                let (entry_hash, meta_xorname, metadata) =
+                                    parent_folder.get_mut().0.replace_file(
+                                        tracking_info.entry_hash,
+                                        chunked_file.file_name.clone(),
+                                        chunked_file.data_map.clone(),
+                                    )?;
+
+                                changes.mutations.push(Change::FileContentChanged((
+                                    tracking_info.meta_xorname,
+                                    MetadataTrackingInfo {
+                                        file_path: file_path.to_path_buf(),
+                                        meta_xorname,
+                                        metadata,
+                                        entry_hash,
+                                    },
+                                )));
+                            }
+                        }
+                        FolderEntry::Folder(_) => {
+                            // New file found where there used to be a folder
+                            // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
+                            let (entry_hash, meta_xorname, metadata) =
+                                parent_folder.get_mut().0.replace_file(
                                     tracking_info.entry_hash,
                                     chunked_file.file_name.clone(),
                                     chunked_file.data_map.clone(),
                                 )?;
-                                println!(
-                                    "-@ File content changed NEW: {file_path:?} === {}",
-                                    hex::encode(meta_xorname)
-                                );
-                            } else {
-                                println!("- File content NOT changed: {file_path:?}");
-                            }
-                        }
-                        FolderEntry::Folder(_) => {
-                            println!(
-                                "- New file found where there used to be a folder: {file_path:?}"
-                            );
-                            // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                            let _ = parent_folder.get_mut().0.replace_file(
-                                tracking_info.entry_hash,
-                                chunked_file.file_name.clone(),
-                                chunked_file.data_map.clone(),
-                            )?;
+                            changes
+                                .mutations
+                                .push(Change::NewFile(MetadataTrackingInfo {
+                                    file_path: file_path.to_path_buf(),
+                                    meta_xorname,
+                                    metadata,
+                                    entry_hash,
+                                }));
                         }
                     },
                     Ok(None) => {
-                        println!("- New file: {file_path:?}");
                         if parent_folder.get().1 == DetectedChange::None {
                             parent_folder.get_mut().1 = DetectedChange::NewEntries;
                         }
 
                         // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                        let _ = parent_folder.get_mut().0.add_file(
-                            chunked_file.file_name.clone(),
-                            chunked_file.data_map.clone(),
-                        )?;
+                        let (entry_hash, meta_xorname, metadata) =
+                            parent_folder.get_mut().0.add_file(
+                                chunked_file.file_name.clone(),
+                                chunked_file.data_map.clone(),
+                            )?;
+                        changes
+                            .mutations
+                            .push(Change::NewFile(MetadataTrackingInfo {
+                                file_path: file_path.to_path_buf(),
+                                meta_xorname,
+                                metadata,
+                                entry_hash,
+                            }));
                     }
                     Err(err) => {
                         println!("Skipping file {file_path:?}: {err:?}");
@@ -491,30 +483,31 @@ impl AccountPacket {
                 FolderEntry::Folder(_) => match folders.get(&abs_path) {
                     Some(_) => {}
                     None => {
-                        println!("--@ Folder removed: {abs_path:?}");
                         if let Some((parent_folder, _)) =
                             abs_path.parent().and_then(|p| folders.get_mut(p))
                         {
                             parent_folder.remove_item(tracking_info.entry_hash)?;
                         }
-                        changes.tracking2remove.push(tracking_info.meta_xorname);
+                        changes.mutations.push(Change::FolderRemoved((
+                            abs_path,
+                            tracking_info.meta_xorname,
+                        )));
                     }
                 },
                 FolderEntry::File(_) => {
                     if chunk_manager
                         .iter_chunked_files()
-                        .any(|chunked_file| chunked_file.file_path == abs_path)
+                        .all(|chunked_file| chunked_file.file_path != abs_path)
                     {
-                        println!("-- File NOT removed: {abs_path:?}");
-                    } else {
-                        println!("--@ File removed: {abs_path:?}");
                         if let Some((parent_folder, _)) =
                             abs_path.parent().and_then(|p| folders.get_mut(p))
                         {
                             parent_folder.remove_item(tracking_info.entry_hash)?;
                         }
 
-                        changes.tracking2remove.push(tracking_info.meta_xorname);
+                        changes
+                            .mutations
+                            .push(Change::FileRemoved((abs_path, tracking_info.meta_xorname)));
                     }
                 }
             }
@@ -539,12 +532,12 @@ impl AccountPacket {
                 )
             })
         }) {
-            let curr_folder_addr = *changes
+            let (folder, detected_change) = changes
                 .folders
                 .entry(dir_path.clone())
                 .or_insert(self.find_folder_in_tracking_info(&dir_path)?)
-                .0
-                .address();
+                .clone();
+            let curr_folder_addr = *folder.address();
 
             if depth > 0 {
                 let (parent_folder, _) = changes
@@ -554,8 +547,15 @@ impl AccountPacket {
                 let (entry_hash, meta_xorname, metadata) =
                     parent_folder.add_folder(dir_name, curr_folder_addr)?;
 
-                if store_tracking_info {
-                    self.store_tracking_info(&dir_path, metadata, meta_xorname, entry_hash)?;
+                if detected_change == DetectedChange::NewFolder {
+                    changes
+                        .mutations
+                        .push(Change::NewFolder(MetadataTrackingInfo {
+                            file_path: dir_path,
+                            meta_xorname,
+                            metadata,
+                            entry_hash,
+                        }));
                 }
             }
         }
@@ -712,7 +712,12 @@ impl AccountPacket {
                 }
             };
 
-            self.store_tracking_info(&item_path, metadata, meta_xorname, entry_hash)?;
+            self.store_tracking_info(MetadataTrackingInfo {
+                file_path: item_path,
+                meta_xorname,
+                metadata,
+                entry_hash,
+            })?;
         }
 
         Ok(())
