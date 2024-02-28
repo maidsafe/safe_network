@@ -25,7 +25,7 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     fmt::Debug,
 };
 use tokio::sync::oneshot;
@@ -162,6 +162,17 @@ pub enum SwarmCmd {
         msg: Bytes,
     },
     GossipHandler,
+    /// Notify whether peer is in trouble
+    SendNodeStatus {
+        peer_id: PeerId,
+        addrs: HashSet<Multiaddr>,
+        is_bad: bool,
+    },
+    // Whether peer is considered as `in trouble` by self
+    IsPeerInTrouble {
+        target: NetworkAddress,
+        sender: oneshot::Sender<bool>,
+    },
 }
 
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
@@ -285,6 +296,17 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::GossipHandler => {
                 write!(f, "SwarmCmd::GossipHandler")
+            }
+            SwarmCmd::SendNodeStatus {
+                peer_id, is_bad, ..
+            } => {
+                write!(
+                    f,
+                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, is_bad: {is_bad:?}"
+                )
+            }
+            SwarmCmd::IsPeerInTrouble { target, .. } => {
+                write!(f, "SwarmCmd::IsPeerInTrouble target: {target:?}")
             }
         }
     }
@@ -717,6 +739,36 @@ impl SwarmDriver {
             }
             SwarmCmd::GossipHandler => {
                 self.is_gossip_handler = true;
+            }
+            SwarmCmd::SendNodeStatus {
+                peer_id,
+                addrs,
+                is_bad,
+            } => {
+                cmd_string = "SendNodeStatus";
+                let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
+                if is_bad {
+                    info!("Peer {peer_id:?} is considered as bad");
+                    let _ = self.bad_nodes.insert(peer_id);
+                } else {
+                    trace!(%peer_id, ?addrs, "peer considered as active, attempting to add addresses to routing table");
+
+                    for multiaddr in &addrs {
+                        let _routing_update = self
+                            .swarm
+                            .behaviour_mut()
+                            .kademlia
+                            .add_address(&peer_id, multiaddr.clone());
+                    }
+                }
+            }
+            SwarmCmd::IsPeerInTrouble { target, sender } => {
+                cmd_string = "IsPeerInTrouble";
+                if let Some(peer_id) = target.as_peer_id() {
+                    let _ = sender.send(self.bad_nodes.contains(&peer_id));
+                } else {
+                    let _ = sender.send(false);
+                }
             }
         }
 

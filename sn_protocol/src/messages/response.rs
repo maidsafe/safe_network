@@ -32,6 +32,14 @@ pub enum QueryResponse {
         /// Node's Peer Address
         peer_address: NetworkAddress,
     },
+    CheckNodeInProblem {
+        /// Address of the peer that queried
+        reporter_address: NetworkAddress,
+        /// Address of the target to be queried
+        target_address: NetworkAddress,
+        /// Status flag indicating whether the target is in trouble
+        is_in_trouble: bool,
+    },
     // ===== ReplicatedRecord =====
     //
     /// Response to [`GetReplicatedRecord`]
@@ -58,6 +66,16 @@ impl Debug for QueryResponse {
                 write!(
                     f,
                     "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?})"
+                )
+            }
+            QueryResponse::CheckNodeInProblem {
+                reporter_address,
+                target_address,
+                is_in_trouble,
+            } => {
+                write!(
+                    f,
+                    "CheckNodeInProblem({reporter_address:?} report target {target_address:?} as {is_in_trouble:?} in problem"
                 )
             }
             QueryResponse::GetReplicatedRecord(result) => match result {
