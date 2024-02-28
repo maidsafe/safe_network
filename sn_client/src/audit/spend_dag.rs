@@ -153,8 +153,13 @@ impl SpendDag {
                 // there is already an entry for another spend at this address
                 [(Some(existing_spend), _)] if existing_spend != &spend => {
                     // save and report double spend
-                    self.insert(spend_addr, spend.clone());
-                    Err(Error::DoubleSpend(spend_addr))
+                    let e = Err(Error::DoubleSpend(
+                        spend_addr,
+                        Box::new(existing_spend.clone()),
+                        Box::new(spend.clone()),
+                    ));
+                    self.insert(spend_addr, spend);
+                    e
                 }
                 // there is an UTXO entry for this address
                 [(None, _)] => {
@@ -163,7 +168,13 @@ impl SpendDag {
                     Ok(true)
                 }
                 // there are already multiple spends at this address
-                _ => Err(Error::DoubleSpend(spend_addr)),
+                [(Some(spend1), _), (Some(spend2), _), ..] => Err(Error::DoubleSpend(
+                    spend_addr,
+                    Box::new(spend1.clone()),
+                    Box::new(spend2.clone()),
+                )),
+                // dag is incoherent
+                _ => Err(Error::InvalidDag),
             }
         } else {
             // there is no entry for this address

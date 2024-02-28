@@ -11,7 +11,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 use super::ClientEvent;
 use sn_protocol::NetworkAddress;
 use sn_registers::{Entry, EntryHash};
-use sn_transfers::SpendAddress;
+use sn_transfers::{SignedSpend, SpendAddress};
 use std::collections::BTreeSet;
 use thiserror::Error;
 use tokio::time::Duration;
@@ -57,7 +57,9 @@ pub enum Error {
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
     #[error("Double spend detected at address: {0:?}")]
-    DoubleSpend(SpendAddress),
+    DoubleSpend(SpendAddress, Box<SignedSpend>, Box<SignedSpend>),
+    #[error("Invalid DAG")]
+    InvalidDag,
     #[error("Serialization error: {0:?}")]
     Serialization(#[from] rmp_serde::encode::Error),
     #[error("Deserialization error: {0:?}")]

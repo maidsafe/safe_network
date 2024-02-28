@@ -939,10 +939,7 @@ impl Client {
                     let one = deserialized_record.remove(0);
                     let two = deserialized_record.remove(0);
                     error!("Found double spend for {address:?}");
-                    Err(Error::CouldNotVerifyTransfer(format!(
-                "Found double spend for the unique_pubkey {address:?} - {:?}: spend_one {:?} and spend_two {:?}",
-                PrettyPrintRecordKey::from(&key), one.derived_key_sig, two.derived_key_sig
-            )))
+                    Err(Error::DoubleSpend(address, Box::new(one), Box::new(two)))
                 }
             }
         } else {
