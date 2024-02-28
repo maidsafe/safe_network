@@ -1,9 +1,6 @@
 use crate::subcommands::files;
 use crate::subcommands::files::{ChunkManager, FilesUploadOptions};
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::eyre, Result};
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use sn_client::{Client, Error as ClientError, FileUploadEvent, FilesApi, FilesUpload};
@@ -13,6 +10,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use walkdir::DirEntry;
+use xor_name::XorName;
 
 /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
 pub(crate) async fn upload_files_with_iter(
@@ -29,19 +27,13 @@ pub(crate) async fn upload_files_with_iter(
         batch_size,
         retry_strategy,
     } = options;
-    debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
-    if make_data_public {
-        info!("{files_path:?} will be made public and linkable");
-        println!("{files_path:?} will be made public and linkable");
-    }
 
-    let files_api: FilesApi = FilesApi::new(client.clone(), wallet_dir);
-    if files_api.wallet()?.balance().is_zero() {
-        bail!("The wallet is empty. Cannot upload any files! Please transfer some funds into the wallet");
-    }
-
+    let files_api = FilesApi::build(client.clone(), wallet_dir)?;
     let mut chunk_manager = ChunkManager::new(&root_dir);
-    println!("Starting to chunk {files_path:?} now.");
+    let mut rng = thread_rng();
+
+    msg_init(&files_path, &batch_size, &verify_store, make_data_public);
+
     chunk_manager.chunk_with_iter(entries_iter, true, make_data_public)?;
 
     // Return early if we already uploaded them
@@ -74,7 +66,7 @@ pub(crate) async fn upload_files_with_iter(
             if chunk_manager.completed_files().is_empty() {
                 msg_chk_mgr_no_verified_file_nor_re_upload();
             }
-            file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager);
+            msg_chunk_manager_upload_complete(chunk_manager);
             return Ok(());
         }
         msg_unverified_chunks_reattempted(&failed_chunks.len());
@@ -85,10 +77,9 @@ pub(crate) async fn upload_files_with_iter(
 
     // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
     // having multiple client instances uploading the same target.
-    let mut rng = thread_rng();
     chunks_to_upload.shuffle(&mut rng);
 
-    let chunks_to_upload_len = chunks_to_upload.len();
+    let chunk_amount_to_upload = chunks_to_upload.len();
     let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
     let total_existing_chunks = Arc::new(AtomicU64::new(0));
     let mut files_upload = FilesUpload::new(files_api)
@@ -134,8 +125,10 @@ pub(crate) async fn upload_files_with_iter(
         // this check is to make sure that we don't partially write to the uploaded_files file if the upload process
         // terminates with an error. This race condition can happen as we bail on `upload_result` before we await the
         // handler.
-        if !upload_terminated_with_error {
-            check_incomplete_files(&mut chunk_manager);
+        if upload_terminated_with_error {
+            error!("Got FileUploadEvent::Error inside upload event loop");
+        } else {
+            msg_check_incomplete_files(&mut chunk_manager);
 
             // log uploaded file information
             msg_uploaded_files_banner();
@@ -143,20 +136,37 @@ pub(crate) async fn upload_files_with_iter(
                 msg_not_public_by_default_banner();
             }
             msg_star_line();
-
-            file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager);
-        } else {
-            error!("Got FileUploadEvent::Error inside upload event loop");
+            msg_chunk_manager_upload_complete(chunk_manager);
         }
 
         Ok::<_, ClientError>(())
     });
 
-    // upload the files
-    msg_uploading_chunks(chunks_to_upload_len);
+    msg_uploading_chunks(chunk_amount_to_upload);
 
-    let now = Instant::now();
-    let upload_result = match files_upload.upload_chunks(chunks_to_upload).await {
+    let current_instant = Instant::now();
+
+    upload_result(chunks_to_upload, &mut files_upload).await?;
+
+    progress_handler
+        .await?
+        .map_err(|err| eyre!("Failed to write uploaded files with err: {err:?}"))?;
+
+    msg_final(
+        chunk_amount_to_upload,
+        current_instant,
+        total_existing_chunks,
+        files_upload,
+    );
+
+    Ok(())
+}
+
+async fn upload_result(
+    chunks_to_upload: Vec<(XorName, PathBuf)>,
+    files_upload: &mut FilesUpload,
+) -> Result<()> {
+    match files_upload.upload_chunks(chunks_to_upload).await {
         Ok(()) => Ok(()),
         Err(ClientError::Transfers(WalletError::Transfer(TransfersError::NotEnoughBalance(
             available,
@@ -166,47 +176,13 @@ pub(crate) async fn upload_files_with_iter(
             We have {available:?} but need {required:?} to pay for the chunk"
         )),
         Err(err) => Err(eyre!("Failed to upload chunk batch: {err}")),
-    };
-
-    // bail on errors
-    upload_result?;
-
-    progress_handler
-        .await?
-        .map_err(|err| eyre!("Failed to write uploaded files with err: {err:?}"))?;
-
-    let elapsed = format_elapsed_time(now.elapsed());
-    let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
-    let total_storage_cost = files_upload.get_upload_storage_cost();
-    let total_royalty_fees = files_upload.get_upload_royalty_fees();
-    let final_balance = files_upload.get_upload_final_balance();
-    let uploaded_chunks = chunks_to_upload_len - total_existing_chunks as usize;
-
-    msg_chunks_found_existed(
-        chunks_to_upload_len,
-        &elapsed,
-        total_existing_chunks,
-        uploaded_chunks,
-    );
-    msg_chunks_found_existed_info(
-        chunks_to_upload_len,
-        elapsed,
-        total_existing_chunks,
-        uploaded_chunks,
-    );
-    msg_payment_details(
-        total_storage_cost,
-        total_royalty_fees,
-        final_balance,
-        uploaded_chunks,
-    );
-    msg_made_payment_info(total_storage_cost, uploaded_chunks);
-
-    Ok(())
+    }
 }
 
+/////////////////  Message Code  /////////////////
+
 /// Function to format elapsed time into a string
-fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
+fn msg_format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     let elapsed_minutes = elapsed_time.as_secs() / 60;
     let elapsed_seconds = elapsed_time.as_secs() % 60;
     if elapsed_minutes > 0 {
@@ -216,19 +192,7 @@ fn format_elapsed_time(elapsed_time: std::time::Duration) -> String {
     }
 }
 
-fn file_and_addr_in_chunk_mgr_completed_files_to_msg(chunk_manager: ChunkManager) {
-    for (file_name, addr) in chunk_manager.completed_files() {
-        let hex_addr = addr.to_hex();
-        if let Some(file_name) = file_name.to_str() {
-            println!("\"{file_name}\" {hex_addr}");
-            info!("Uploaded {file_name} to {hex_addr}");
-        } else {
-            println!("\"{file_name:?}\" {hex_addr}");
-            info!("Uploaded {file_name:?} to {hex_addr}");
-        }
-    }
-}
-fn check_incomplete_files(chunk_manager: &mut ChunkManager) {
+fn msg_check_incomplete_files(chunk_manager: &mut ChunkManager) {
     for file_name in chunk_manager.incomplete_files() {
         if let Some(file_name) = file_name.to_str() {
             println!("Unverified file \"{file_name}\", suggest to re-upload again.");
@@ -240,15 +204,65 @@ fn check_incomplete_files(chunk_manager: &mut ChunkManager) {
     }
 }
 
-/////////////////  Messages  /////////////////
+fn msg_init(files_path: &PathBuf, batch_size: &usize, verify_store: &bool, make_data_public: bool) {
+    debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
+    if make_data_public {
+        info!("{files_path:?} will be made public and linkable");
+        println!("{files_path:?} will be made public and linkable");
+    }
+    println!("Starting to chunk {files_path:?} now."); // check message responsibility
+}
 
+fn msg_final(
+    chunks_to_upload_amount: usize,
+    time_since_mark: Instant,
+    total_existing_chunks: Arc<AtomicU64>,
+    files_upload: FilesUpload,
+) {
+    let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
+    let uploaded_chunks = chunks_to_upload_amount - total_existing_chunks as usize;
+    let time_since_mark_formatted = msg_format_elapsed_time(time_since_mark.elapsed());
+
+    msg_chunks_found_existed(
+        chunks_to_upload_amount,
+        &time_since_mark_formatted,
+        total_existing_chunks,
+        uploaded_chunks,
+    );
+    msg_chunks_found_existed_info(
+        chunks_to_upload_amount,
+        &time_since_mark_formatted,
+        total_existing_chunks,
+        uploaded_chunks,
+    );
+    msg_payment_details(
+        files_upload.get_upload_storage_cost(),
+        files_upload.get_upload_royalty_fees(),
+        files_upload.get_upload_final_balance(),
+        uploaded_chunks,
+    );
+
+    msg_made_payment_info(files_upload.get_upload_storage_cost(), uploaded_chunks);
+}
+fn msg_chunk_manager_upload_complete(chunk_manager: ChunkManager) {
+    for (file_name, addr) in chunk_manager.completed_files() {
+        let hex_addr = addr.to_hex();
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {hex_addr}");
+            info!("Uploaded {file_name} to {hex_addr}");
+        } else {
+            println!("\"{file_name:?}\" {hex_addr}");
+            info!("Uploaded {file_name:?} to {hex_addr}");
+        }
+    }
+}
 fn msg_made_payment_info(total_storage_cost: NanoTokens, uploaded_chunks: usize) {
     info!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
 }
 
 fn msg_chunks_found_existed_info(
     chunks_to_upload_len: usize,
-    elapsed: String,
+    elapsed: &String,
     total_existing_chunks: u64,
     uploaded_chunks: usize,
 ) {
