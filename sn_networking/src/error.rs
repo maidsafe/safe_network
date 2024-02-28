@@ -123,9 +123,8 @@ pub enum Error {
     InCorrectRecordHeader,
 
     // ---------- Transfer Errors
-    #[error("Failed to get transfer parent spend")]
-    FailedToGetTransferParentSpend,
-
+    #[error("Failed to get spend: {0}")]
+    FailedToGetSpend(String),
     #[error("Transfer is invalid: {0}")]
     InvalidTransfer(String),
 

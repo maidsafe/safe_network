@@ -810,7 +810,48 @@ impl Client {
             .verify_and_unpack_transfer(transfer, wallet)
             .map_err(|e| WalletError::CouldNotReceiveMoney(format!("{e:?}")))
             .await?;
-        Ok(cashnotes)
+        let valuable_cashnotes = self.filter_out_already_spend_cash_notes(cashnotes).await?;
+        Ok(valuable_cashnotes)
+    }
+
+    /// Check that the redeemed CashNotes are not already spent
+    async fn filter_out_already_spend_cash_notes(
+        &self,
+        mut cash_notes: Vec<CashNote>,
+    ) -> WalletResult<Vec<CashNote>> {
+        trace!("Validating CashNotes are not already spent");
+        let mut tasks = JoinSet::new();
+        for cn in &cash_notes {
+            let pk = cn.unique_pubkey();
+            let addr = SpendAddress::from_unique_pubkey(&pk);
+            let self_clone = self.network.clone();
+            let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
+        }
+        while let Some(result) = tasks.join_next().await {
+            let res = result.map_err(|e| WalletError::FailedToGetSpend(format!("{e}")))?;
+            match res {
+                // if we get a RecordNotFound, it means the CashNote is not spent, which is good
+                Err(sn_networking::Error::GetRecordError(GetRecordError::RecordNotFound)) => (),
+                // if we get a spend, it means the CashNote is already spent
+                Ok(s) => {
+                    warn!(
+                        "CashNoteRedemption contains a CashNote that is already spent, skipping it: {:?}",
+                        s.unique_pubkey()
+                    );
+                    cash_notes.retain(|c| &c.unique_pubkey() != s.unique_pubkey());
+                }
+                // report all other errors
+                Err(e) => return Err(WalletError::FailedToGetSpend(format!("{e}"))),
+            }
+        }
+
+        if cash_notes.is_empty() {
+            return Err(WalletError::CouldNotVerifyTransfer(
+                "All the redeemed CashNotes are already spent".to_string(),
+            ));
+        }
+
+        Ok(cash_notes)
     }
 
     /// Verify that the spends referred to (in the CashNote) exist on the network.
