@@ -65,6 +65,12 @@ pub enum FoldersCmds {
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
     },
+    /// Sync up local files/folders changes with their versions stored on the network.
+    Sync {
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+    },
 }
 
 pub(crate) async fn folders_cmds(
@@ -128,6 +134,11 @@ pub(crate) async fn folders_cmds(
             let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             acc_packet.status().await?;
+        }
+        FoldersCmds::Sync { path } => {
+            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+
+            acc_packet.sync().await?;
         }
     }
     Ok(())
