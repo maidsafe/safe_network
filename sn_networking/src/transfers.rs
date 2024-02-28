@@ -153,7 +153,7 @@ impl Network {
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
             let signed_spend = result
-                .map_err(|_| Error::FailedToGetTransferParentSpend)?
+                .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
                 .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
             let _ = parent_spends.insert(signed_spend.clone());
         }
@@ -210,7 +210,7 @@ impl Network {
             }
             while let Some(result) = tasks.join_next().await {
                 let signed_spend = result
-                    .map_err(|_| Error::FailedToGetTransferParentSpend)?
+                    .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
                     .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
                 let _ = parent_spends.insert(signed_spend.clone());
             }
