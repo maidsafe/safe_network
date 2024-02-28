@@ -100,7 +100,7 @@ pub(crate) async fn folders_cmds(
             retry_strategy,
         } => {
             // init path as a fresh new folder
-            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
@@ -156,7 +156,7 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
