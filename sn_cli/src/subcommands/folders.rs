@@ -133,7 +133,7 @@ pub(crate) async fn folders_cmds(
         FoldersCmds::Status { path } => {
             let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
-            acc_packet.status().await?;
+            acc_packet.status()?;
         }
         FoldersCmds::Sync { path } => {
             let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
