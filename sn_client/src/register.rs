@@ -360,7 +360,7 @@ impl ClientRegister {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write(&mut self, entry: &[u8]) -> Result<()> {
+    pub fn write(&mut self, entry: &[u8]) -> Result<EntryHash> {
         let children = self.register.read();
         if children.len() > 1 {
             return Err(Error::ContentBranchDetected(children));
@@ -395,7 +395,7 @@ impl ClientRegister {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write_merging_branches(&mut self, entry: &[u8]) -> Result<()> {
+    pub fn write_merging_branches(&mut self, entry: &[u8]) -> Result<EntryHash> {
         let children: BTreeSet<EntryHash> = self
             .register
             .read()
@@ -432,19 +432,23 @@ impl ClientRegister {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write_atop(&mut self, entry: &[u8], children: &BTreeSet<EntryHash>) -> Result<()> {
+    pub fn write_atop(
+        &mut self,
+        entry: &[u8],
+        children: &BTreeSet<EntryHash>,
+    ) -> Result<EntryHash> {
         // check permissions first
         let public_key = self.client.signer_pk();
         self.register.check_user_permissions(public_key)?;
 
-        let (_hash, op) = self
+        let (entry_hash, op) = self
             .register
             .write(entry.into(), children, self.client.signer())?;
         let cmd = RegisterCmd::Edit(op);
 
         self.ops.push_front(cmd);
 
-        Ok(())
+        Ok(entry_hash)
     }
 
     // ********* Online methods  *********
