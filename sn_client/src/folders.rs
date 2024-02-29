@@ -48,6 +48,7 @@ pub struct FoldersApi {
     wallet_dir: PathBuf,
     register: ClientRegister,
     files_api: FilesApi,
+    // Cache of metadata chunks. We keep the Chunk it self till we upload it to the network.
     metadata: BTreeMap<XorName, (Metadata, Option<Chunk>)>,
 }
 
