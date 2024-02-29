@@ -125,7 +125,7 @@ pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
 
 #[cfg(windows)]
 pub fn create_owned_dir(path: PathBuf, _owner: &str) -> Result<()> {
-    std::fs::create_dir_all(&path)?;
+    std::fs::create_dir_all(path)?;
     Ok(())
 }
 
@@ -133,7 +133,7 @@ pub fn create_owned_dir(path: PathBuf, _owner: &str) -> Result<()> {
 pub fn get_node_registry_path() -> Result<PathBuf> {
     let path = Path::new("C:\\ProgramData\\safenode-manager");
     if !path.exists() {
-        std::fs::create_dir_all(&path)?;
+        std::fs::create_dir_all(path)?;
     }
     Ok(path.join("node_registry.json"))
 }
