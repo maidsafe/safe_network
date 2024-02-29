@@ -72,7 +72,7 @@ pub(crate) struct ChunkManager {
 }
 
 impl ChunkManager {
-    // Provide the root_dir. The function creates a sub-directory to store the SE chunks
+    // Provide the root_dir. The function creates a subdirectory to store the SE chunks
     pub(crate) fn new(root_dir: &Path) -> Self {
         let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
         Self {
@@ -556,6 +556,87 @@ impl ChunkManager {
             .map_err(|_| error!("Failed to convert hex_decoded xorname into an [u8; 32]"))
             .ok()?;
         Some(XorName(decoded_xorname))
+    }
+    pub(crate) fn mark_completed_async(
+        mut chunk_manager: ChunkManager,
+        chunks: impl Iterator<Item = XorName>,
+    ) -> Result<()> {
+        let set_of_completed_chunks = chunks.collect::<BTreeSet<_>>();
+        trace!("marking as completed: {set_of_completed_chunks:?}");
+
+        // remove those files
+        chunk_manager
+            .chunks
+            .par_iter()
+            .flat_map(|(_, chunked_file)| &chunked_file.chunks)
+            .map(|(chunk_xor, chunk_path)| {
+                if set_of_completed_chunks.contains(chunk_xor) {
+                    debug!("removing {chunk_xor:?} at {chunk_path:?} as it is marked as completed");
+                    fs::remove_file(chunk_path).map_err(|_err| {
+                        error!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}");
+                        eyre!("Failed to remove SE chunk {chunk_xor} from {chunk_path:?}")
+                    })?;
+                }
+                Ok(())
+            })
+            .collect::<Result<()>>()?;
+
+        let mut entire_file_is_done = BTreeSet::new();
+        // remove the entries from the struct
+        chunk_manager
+            .chunks
+            .iter_mut()
+            .for_each(|(path_xor, chunked_file)| {
+                chunked_file
+                    .chunks
+                    // if chunk is part of completed_chunks, return false to remove it
+                    .retain(|(chunk_xor, _)| !set_of_completed_chunks.contains(chunk_xor));
+                if chunked_file.chunks.is_empty() {
+                    entire_file_is_done.insert(path_xor.clone());
+                }
+            });
+
+        for path_xor in &entire_file_is_done {
+            // todo: should we remove the entry? ig so
+            if let Some(chunked_file) = chunk_manager.chunks.remove(path_xor) {
+                trace!("removed {path_xor:?} from chunks list");
+
+                chunk_manager.completed_files.push((
+                    chunked_file.file_name.clone(),
+                    chunked_file.head_chunk_address,
+                ));
+
+                let uploaded_file_metadata = UploadedFile {
+                    filename: chunked_file.file_name,
+                    data_map: Some(chunked_file.data_map.value),
+                };
+                // errors are logged by write()
+                let _result = uploaded_file_metadata
+                    .write(&chunk_manager.root_dir, &chunked_file.head_chunk_address);
+            }
+        }
+        Ok(())
+
+        // let mut entire_file_is_done = BTreeSet::new();
+        // // remove the entries from the struct
+        // self.chunks.iter_mut().for_each(|(path_xor, chunked_file)| {
+        //     chunked_file
+        //         .chunks
+        //         // if chunk is part of completed_chunks, return false to remove it
+        //         .retain(|(chunk_xor, _)| !set_of_completed_chunks.contains(chunk_xor));
+        //     if chunked_file.chunks.is_empty() {
+        //         entire_file_is_done.insert(path_xor.clone());
+        //     }
+        // });
+
+        // for path_xor in &entire_file_is_done {
+        //     // todo: should we remove the entry? ig so
+        //     if let Some(chunked_file) = self.chunks.remove(path_xor) {
+        //         trace!("removed {path_xor:?} from chunks list");
+        //         self.verified_files
+        //             .push((chunked_file.file_name, chunked_file.head_chunk_address));
+        //     }
+        // }
     }
 }
 

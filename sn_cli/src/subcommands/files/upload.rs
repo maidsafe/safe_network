@@ -1,13 +1,13 @@
+use crate::subcommands::files::iterative_upload::IterativeUploader;
+use crate::subcommands::files::ChunkManager;
 use bytes::Bytes;
 use color_eyre::Result;
 use serde::Deserialize;
-use sn_client::Client;
+use sn_client::{Client, FilesApi};
 use sn_protocol::storage::{ChunkAddress, RetryStrategy};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-
-use crate::subcommands::files::upload_with_iter;
 
 /// Subdir for storing uploaded file into
 pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
@@ -86,12 +86,14 @@ pub async fn upload_files(
     root_dir: PathBuf,
     options: FilesUploadOptions,
 ) -> Result<()> {
-    upload_with_iter::upload_files_with_iter(
+    IterativeUploader::new(
+        ChunkManager::new(root_dir.as_path()),
+        FilesApi::build(client.clone(), root_dir).expect("upload_files: failed to build Files Api"),
+    )
+    .iterate_upload(
         WalkDir::new(&files_path).into_iter().flatten(),
         files_path,
         client,
-        root_dir.clone(),
-        root_dir,
         options,
     )
     .await
