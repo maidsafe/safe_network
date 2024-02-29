@@ -425,7 +425,11 @@ impl NodeRecordStore {
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self) -> NanoTokens {
         let stored_records = self.records.len();
-        let cost = calculate_cost_for_records(stored_records, self.received_payment_count);
+        let cost = calculate_cost_for_records(
+            stored_records,
+            self.received_payment_count,
+            self.config.max_records,
+        );
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for {stored_records:?} stored of {MAX_RECORDS_COUNT:?} max, {:?} times got paid.",
@@ -657,14 +661,33 @@ impl RecordStore for ClientRecordStore {
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
 }
 
-// Using a linear growth function, and be tweaked by `received_payment_count`
-// to allow nodes receiving too many replication copies can still got paid.
-fn calculate_cost_for_records(step: usize, received_payment_count: usize) -> u64 {
-    use std::cmp::max;
+// Using a linear growth function, and be tweaked by `received_payment_count` and `max_records`,
+// to allow nodes receiving too many replication copies can still got paid,
+// and gives an exponential pricing curve when storage reaches high.
+fn calculate_cost_for_records(
+    records_stored: usize,
+    received_payment_count: usize,
+    max_records: usize,
+) -> u64 {
+    use std::cmp::{max, min};
 
-    let ori_cost = (10 * step) as u64;
-    let divider = max(1, step / max(1, received_payment_count)) as u64;
-    max(10, ori_cost / divider)
+    let ori_cost = (10 * records_stored) as u64;
+    let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
+
+    // 1.05.powf(200) = 18157
+    // Given currently the max_records is set at 2048,
+    // hence setting the multiplier trigger at 90% of the max_records
+    let exponential_pricing_trigger = 9 * max_records / 10;
+
+    let base_multiplier = 1.05_f32;
+    let multiplier = max(
+        1,
+        base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
+            as u64,
+    );
+    let charge = max(10, ori_cost * multiplier / divider);
+    // Deploy an upper cap safe_guard to the store_cost
+    min(3456788899, charge)
 }
 
 #[allow(trivial_casts)]
@@ -1033,7 +1056,8 @@ mod tests {
                         for peer in peers_in_replicate_range.iter() {
                             let entry = peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
-                                let cost = calculate_cost_for_records(entry.0, entry.2);
+                                let cost =
+                                    calculate_cost_for_records(entry.0, entry.2, MAX_RECORDS_COUNT);
                                 entry.1 += cost;
                                 entry.2 += 1;
                             }
@@ -1055,7 +1079,7 @@ mod tests {
             let mut max_store_cost = 0;
 
             for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_records(stats.0, stats.2);
+                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
                 received_payment_count += stats.2;
                 if stats.1 == 0 {
@@ -1146,7 +1170,7 @@ mod tests {
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(stats.0, stats.2);
+                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);
