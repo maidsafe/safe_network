@@ -12,6 +12,7 @@ mod estimate;
 pub(crate) mod download;
 pub(crate) mod iterative_upload;
 pub(crate) mod upload;
+mod upload_with_iter;
 
 pub(crate) use chunk_manager::ChunkManager;
 
