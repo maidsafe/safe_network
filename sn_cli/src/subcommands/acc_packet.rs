@@ -14,15 +14,18 @@ use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
 use sn_registers::EntryHash;
 use sn_transfers::HotWallet;
 
-use crate::subcommands::files::download::download_file;
-use crate::subcommands::files::iterative_uploader::IterativeUploader;
-use crate::subcommands::files::upload::FilesUploadOptions;
+use crate::subcommands::files::{
+    download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
+};
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{
+        btree_map::{Entry, OccupiedEntry},
+        BTreeMap,
+    },
     ffi::OsString,
     fmt,
     fs::{create_dir_all, remove_file, File},
@@ -48,9 +51,29 @@ type Folders = BTreeMap<PathBuf, (FoldersApi, FolderChange)>;
 // Type of local changes detected to a Folder
 #[derive(Clone, Debug, PartialEq)]
 enum FolderChange {
-    None,
+    NoChange,
     NewFolder,
     NewEntries,
+}
+
+impl FolderChange {
+    /// Returns true if it's currently set to NoChange.
+    pub fn is_no_change(&self) -> bool {
+        self == &Self::NoChange
+    }
+
+    /// Returns true if it's currently set to NewFolder.
+    pub fn is_new_folder(&self) -> bool {
+        self == &Self::NewFolder
+    }
+
+    /// If it's currently set to NoChange then switch it to NewEntries.
+    /// Otherwise we don't need to change it as the entire Folder will need to be uploaded.
+    pub fn has_new_entries(&mut self) {
+        if self == &Self::NoChange {
+            *self = Self::NewEntries;
+        }
+    }
 }
 
 // Changes detected locally which eventually can be applied and upload to network.
@@ -378,18 +401,13 @@ impl AccountPacket {
                     Ok(Some(tracking_info)) => match &tracking_info.metadata.content {
                         FolderEntry::File(chunk) => {
                             if chunk.address() != &chunked_file.head_chunk_address {
-                                if parent_folder.get().1 == FolderChange::None {
-                                    parent_folder.get_mut().1 = FolderChange::NewEntries;
-                                }
-
                                 // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                                let (entry_hash, meta_xorname, metadata) =
-                                    parent_folder.get_mut().0.replace_file(
-                                        tracking_info.entry_hash,
-                                        chunked_file.file_name.clone(),
-                                        chunked_file.data_map.clone(),
-                                    )?;
-
+                                let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
+                                    &mut parent_folder,
+                                    tracking_info.entry_hash,
+                                    chunked_file.file_name.clone(),
+                                    chunked_file.data_map.clone(),
+                                )?;
                                 changes.mutations.push(Mutation::FileContentChanged((
                                     tracking_info.meta_xorname,
                                     MetadataTrackingInfo {
@@ -403,17 +421,13 @@ impl AccountPacket {
                         }
                         FolderEntry::Folder(_) => {
                             // New file found where there used to be a folder
-                            if parent_folder.get().1 == FolderChange::None {
-                                parent_folder.get_mut().1 = FolderChange::NewEntries;
-                            }
-
                             // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                            let (entry_hash, meta_xorname, metadata) =
-                                parent_folder.get_mut().0.replace_file(
-                                    tracking_info.entry_hash,
-                                    chunked_file.file_name.clone(),
-                                    chunked_file.data_map.clone(),
-                                )?;
+                            let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
+                                &mut parent_folder,
+                                tracking_info.entry_hash,
+                                chunked_file.file_name.clone(),
+                                chunked_file.data_map.clone(),
+                            )?;
                             changes
                                 .mutations
                                 .push(Mutation::NewFile(MetadataTrackingInfo {
@@ -425,16 +439,14 @@ impl AccountPacket {
                         }
                     },
                     Ok(None) => {
-                        if parent_folder.get().1 == FolderChange::None {
-                            parent_folder.get_mut().1 = FolderChange::NewEntries;
-                        }
-
                         // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                         let (entry_hash, meta_xorname, metadata) =
                             parent_folder.get_mut().0.add_file(
                                 chunked_file.file_name.clone(),
                                 chunked_file.data_map.clone(),
                             )?;
+                        parent_folder.get_mut().1.has_new_entries();
+
                         changes
                             .mutations
                             .push(Mutation::NewFile(MetadataTrackingInfo {
@@ -455,38 +467,21 @@ impl AccountPacket {
         for (item_path, tracking_info) in self.curr_metadata.iter() {
             let abs_path = self.files_dir.join(item_path);
             match tracking_info.metadata.content {
-                FolderEntry::Folder(_) => match folders.get(&abs_path) {
-                    Some(_) => {}
-                    None => {
-                        if let Some((parent_folder, folder_change)) =
-                            abs_path.parent().and_then(|p| folders.get_mut(p))
-                        {
-                            if folder_change == &FolderChange::None {
-                                *folder_change = FolderChange::NewEntries;
-                            }
-
-                            parent_folder.remove_item(tracking_info.entry_hash)?;
-                        }
+                FolderEntry::Folder(_) => {
+                    if !folders.contains_key(&abs_path) {
+                        remove_from_parent(folders, &abs_path, tracking_info.entry_hash)?;
                         changes.mutations.push(Mutation::FolderRemoved((
                             abs_path,
                             tracking_info.meta_xorname,
                         )));
                     }
-                },
+                }
                 FolderEntry::File(_) => {
                     if chunk_manager
                         .iter_chunked_files()
                         .all(|chunked_file| chunked_file.file_path != abs_path)
                     {
-                        if let Some((parent_folder, folder_change)) =
-                            abs_path.parent().and_then(|p| folders.get_mut(p))
-                        {
-                            if folder_change == &FolderChange::None {
-                                *folder_change = FolderChange::NewEntries;
-                            }
-                            parent_folder.remove_item(tracking_info.entry_hash)?;
-                        }
-
+                        remove_from_parent(folders, &abs_path, tracking_info.entry_hash)?;
                         changes.mutations.push(Mutation::FileRemoved((
                             abs_path,
                             tracking_info.meta_xorname,
@@ -512,7 +507,7 @@ impl AccountPacket {
                 )
             })
         }) {
-            let (folder, parent_detected_change) = changes
+            let (folder, folder_change) = changes
                 .folders
                 .entry(dir_path.clone())
                 .or_insert(self.find_folder_in_tracking_info(&dir_path)?)
@@ -520,18 +515,16 @@ impl AccountPacket {
             let curr_folder_addr = *folder.address();
 
             if depth > 0 {
-                let (parent_folder, folder_change) = changes
+                let (parent_folder, parent_folder_change) = changes
                     .folders
                     .entry(parent.clone())
                     .or_insert(self.find_folder_in_tracking_info(&parent)?);
-                if folder_change == &FolderChange::None {
-                    *folder_change = FolderChange::NewEntries;
-                }
 
-                let (entry_hash, meta_xorname, metadata) =
-                    parent_folder.add_folder(dir_name, curr_folder_addr)?;
+                if folder_change.is_new_folder() {
+                    let (entry_hash, meta_xorname, metadata) =
+                        parent_folder.add_folder(dir_name, curr_folder_addr)?;
+                    parent_folder_change.has_new_entries();
 
-                if parent_detected_change == FolderChange::NewFolder {
                     changes
                         .mutations
                         .push(Mutation::NewFolder(MetadataTrackingInfo {
@@ -558,14 +551,14 @@ impl AccountPacket {
         let mut folder_change = FolderChange::NewFolder;
         let address = if path == self.files_dir {
             if self.root_folder_created {
-                folder_change = FolderChange::None;
+                folder_change = FolderChange::NoChange;
             }
             Some(self.root_folder_addr)
         } else {
             self.get_tracking_info(path)?.and_then(|tracking_info| {
                 match tracking_info.metadata.content {
                     FolderEntry::Folder(addr) => {
-                        folder_change = FolderChange::None;
+                        folder_change = FolderChange::NoChange;
                         Some(addr)
                     }
                     FolderEntry::File(_) => None,
@@ -621,9 +614,9 @@ impl AccountPacket {
         // let's get rid of folders which don't need to be synced,
         // and collect list of addresses we do need to pay for
         folders.retain(|_, (folder, folder_change)| {
-            if folder_change == &FolderChange::None {
+            if folder_change.is_no_change() {
                 return false;
-            } else if folder_change == &FolderChange::NewFolder {
+            } else if folder_change.is_new_folder() {
                 net_addresses.push(folder.as_net_addr());
                 new_folders += 1;
             }
@@ -648,10 +641,10 @@ impl AccountPacket {
         // sync Folders concurrently now that payments have been made
         let mut tasks = JoinSet::new();
         for (path, (mut folder, folder_change)) in folders {
-            let op = if folder_change == FolderChange::NewEntries {
-                "sync"
-            } else {
+            let op = if folder_change.is_new_folder() {
                 "create"
+            } else {
+                "sync"
             };
             tasks.spawn(async move {
                 match folder
@@ -774,4 +767,28 @@ fn read_root_folder_addr(meta_dir: &Path) -> Result<(RegisterAddress, bool)> {
         .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err:?}"))?;
 
     Ok(rmp_serde::from_slice(&bytes)?)
+}
+
+// Given an absolute path, find the Folder containing such item, and remove it from its entries.
+fn remove_from_parent(folders: &mut Folders, path: &Path, entry_hash: EntryHash) -> Result<()> {
+    if let Some((parent_folder, folder_change)) = path.parent().and_then(|p| folders.get_mut(p)) {
+        folder_change.has_new_entries();
+        parent_folder.remove_item(entry_hash)?;
+    }
+    Ok(())
+}
+
+// Replace a file/folder item from a given Folder (passed in as a container's OccupiedEntry').
+fn replace_item_in_folder(
+    folder: &mut OccupiedEntry<'_, PathBuf, (FoldersApi, FolderChange)>,
+    entry_hash: EntryHash,
+    file_name: OsString,
+    data_map: Chunk,
+) -> Result<(EntryHash, XorName, Metadata)> {
+    folder.get_mut().1.has_new_entries();
+    let res = folder
+        .get_mut()
+        .0
+        .replace_file(entry_hash, file_name.clone(), data_map.clone())?;
+    Ok(res)
 }
