@@ -10,7 +10,8 @@ pub(crate) mod download;
 pub(crate) mod upload;
 
 use crate::{
-    chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, WalletClient,
+    chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, Error,
+    WalletClient,
 };
 use bytes::Bytes;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
@@ -46,6 +47,16 @@ impl FilesApi {
     /// Create file apis instance.
     pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
         Self { client, wallet_dir }
+    }
+    pub fn build(client: Client, wallet_dir: PathBuf) -> Result<FilesApi> {
+        if HotWallet::load_from(wallet_dir.as_path())?
+            .balance()
+            .is_zero()
+        {
+            Err(Error::AmountIsZero)
+        } else {
+            Ok(FilesApi::new(client, wallet_dir))
+        }
     }
 
     /// Return the client instance
@@ -139,12 +150,13 @@ impl FilesApi {
         let mut wallet_client = self.wallet()?;
         info!("Paying for and uploading {:?} chunks", chunks.len());
 
-        let res =
-            wallet_client
-                .pay_for_storage(chunks.iter().map(|name| {
-                    sn_protocol::NetworkAddress::ChunkAddress(ChunkAddress::new(*name))
-                }))
-                .await?;
+        let res = wallet_client
+            .pay_for_storage(
+                chunks
+                    .iter()
+                    .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
+            )
+            .await?;
 
         wallet_client.store_local_wallet()?;
         Ok(res)
