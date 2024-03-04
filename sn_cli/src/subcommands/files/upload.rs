@@ -7,7 +7,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::subcommands::files::upload_with_iter;
+use crate::subcommands::files::iterative_upload;
 
 /// Subdir for storing uploaded file into
 pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
@@ -86,7 +86,7 @@ pub async fn upload_files(
     root_dir: PathBuf,
     options: FilesUploadOptions,
 ) -> Result<()> {
-    upload_with_iter::upload_files_with_iter(
+    iterative_upload::upload_files_with_iter(
         WalkDir::new(&files_path).into_iter().flatten(),
         files_path,
         client,
