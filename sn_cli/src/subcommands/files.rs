@@ -10,7 +10,7 @@ mod chunk_manager;
 mod estimate;
 
 pub(crate) mod download;
-pub(crate) mod iterative_upload;
+pub(crate) mod iterative_uploader;
 pub(crate) mod upload;
 
 pub(crate) use chunk_manager::ChunkManager;
