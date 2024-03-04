@@ -7,7 +7,8 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-use crate::subcommands::files::{iterative_uploader, ChunkManager};
+use crate::subcommands::files::iterative_uploader::IterativeUploader;
+use crate::subcommands::files::ChunkManager;
 
 /// Subdir for storing uploaded file into
 pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
@@ -89,13 +90,12 @@ pub async fn upload_files(
     let files_api = FilesApi::build(client.clone(), root_dir.clone())?;
     let chunk_manager = ChunkManager::new(&root_dir.clone());
 
-    iterative_uploader::iterate_upload(
-        WalkDir::new(&files_path).into_iter().flatten(),
-        files_path,
-        client,
-        files_api,
-        chunk_manager,
-        options,
-    )
-    .await
+    IterativeUploader::new(chunk_manager, files_api)
+        .iterate_upload(
+            WalkDir::new(&files_path).into_iter().flatten(),
+            files_path,
+            client,
+            options,
+        )
+        .await
 }
