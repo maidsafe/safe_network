@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1709557350726,
+  "lastUpdate": 1709557460316,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "1f22221e561047247c87f7adde5692cc7868423d",
-          "message": "fix(cli): don't bail if a payment was not found during verify/repayment",
-          "timestamp": "2023-10-23T13:48:52+02:00",
-          "tree_id": "d25a5faa86773a8204c009cbded19d9499c96a0f",
-          "url": "https://github.com/maidsafe/safe_network/commit/1f22221e561047247c87f7adde5692cc7868423d"
-        },
-        "date": 1698064365825,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 73,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "95e0ff7f899f5cb251782791dd6f5b3a98ff471f",
           "message": "chore(networking): remove unused content hash\n\nThis could take a long time for larger records",
           "timestamp": "2023-10-23T14:45:27+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "64e77ca71f311cbaf5d66892269df5bc07f18b9f",
+          "message": "chore(deps): bump actions/cache from 4.0.0 to 4.0.1\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.0 to 4.0.1.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.0...v4.0.1)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-03-04T12:05:09Z",
+          "tree_id": "f7a6531886e2257972381951a6eee68ed582e40e",
+          "url": "https://github.com/maidsafe/safe_network/commit/64e77ca71f311cbaf5d66892269df5bc07f18b9f"
+        },
+        "date": 1709557459466,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
