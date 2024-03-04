@@ -137,11 +137,49 @@ pub(crate) async fn files_cmds(
                 );
             }
 
-            let download_dir = dirs_next::download_dir().unwrap_or(root_dir.to_path_buf());
+            let mut download_dir = root_dir.to_path_buf();
+            let mut download_file_name = file_name.clone();
+            if let Some(file_name) = file_name {
+                // file_name may direct the downloaded data to:
+                //
+                // the current directory (just a filename)
+                // eg safe files download myfile.txt ADDRESS
+                //
+                // a directory relative to the current directory (relative filename)
+                // eg safe files download my/relative/path/myfile.txt ADDRESS
+                //
+                // a directory relative to root of the filesystem (absolute filename)
+                // eg safe files download /home/me/mydir/myfile.txt ADDRESS
+                let file_name_path = Path::new(&file_name);
+                if file_name_path.is_dir() {
+                    return Err(eyre!("Cannot download file to path: {:?}", file_name));
+                }
+                let file_name_dir = file_name_path.parent();
+                if file_name_dir.is_none() {
+                    // just a filename, use the current_dir
+                    download_dir = std::env::current_dir().unwrap_or(root_dir.to_path_buf());
+                } else if file_name_path.is_relative() {
+                    // relative to the current directory. Make the relative path
+                    // into an absolute path by joining it to current_dir
+                    if let Some(relative_dir) = file_name_dir {
+                        let current_dir = std::env::current_dir().unwrap_or(root_dir.to_path_buf());
+                        download_dir = current_dir.join(relative_dir);
+                        if !download_dir.exists() {
+                            return Err(eyre!("Directory does not exist: {:?}", download_dir));
+                        }
+                        if let Some(path_file_name) = file_name_path.file_name() {
+                            download_file_name = Some(OsString::from(path_file_name));
+                        }
+                    }
+                } else {
+                    // absolute dir
+                    download_dir = file_name_dir.unwrap_or(root_dir).to_path_buf();
+                }
+            }
             let files_api: FilesApi = FilesApi::new(client.clone(), download_dir.clone());
 
-            match (file_name, file_addr) {
-                (Some(file_name), Some(address_provided)) => {
+            match (download_file_name, file_addr) {
+                (Some(download_file_name), Some(address_provided)) => {
                     let bytes =
                         hex::decode(&address_provided).expect("Input address is not a hex string");
                     let xor_name_provided = XorName(
@@ -169,7 +207,7 @@ pub(crate) async fn files_cmds(
                     download::download_file(
                         files_api,
                         xor_name_provided,
-                        (file_name, local_data_map),
+                        (download_file_name, local_data_map),
                         &download_dir,
                         show_holders,
                         batch_size,
