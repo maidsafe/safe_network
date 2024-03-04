@@ -14,6 +14,7 @@ use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
 use crate::subcommands::files::download::download_file;
+use crate::subcommands::files::iterative_uploader::IterativeUploader;
 use crate::subcommands::files::upload::FilesUploadOptions;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -403,15 +404,14 @@ impl AccountPacket {
         let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
         let chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
 
-        iterate_upload(
-            self.iter_only_files(),
-            self.files_dir.clone(),
-            &self.client,
-            files_api,
-            chunk_manager,
-            options.clone(),
-        )
-        .await?;
+        IterativeUploader::new(chunk_manager, files_api)
+            .iterate_upload(
+                self.iter_only_files(),
+                self.files_dir.clone(),
+                &self.client,
+                options.clone(),
+            )
+            .await?;
 
         // Let's make the storage payment for Folders
         let mut wallet_client =

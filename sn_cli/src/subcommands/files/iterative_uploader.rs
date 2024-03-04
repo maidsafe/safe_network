@@ -166,7 +166,7 @@ fn spawn_progress_handler(
     progress_bar_clone: ProgressBar,
     total_existing_chunks_clone: Arc<AtomicU64>,
 ) -> JoinHandle<Result<(), Error>> {
-    let progress_handler = tokio::spawn(async move {
+    tokio::spawn(async move {
         let mut upload_terminated_with_error = false;
         // The loop is guaranteed to end, as the channel will be closed when the upload completes or errors out.
         while let Some(event) = upload_event_rx.recv().await {
@@ -215,11 +215,10 @@ fn spawn_progress_handler(
         }
 
         Ok::<_, ClientError>(())
-    });
-    progress_handler
+    })
 }
 
-/////////////////  Message Code  /////////////////
+/////////////////  Messages  /////////////////
 
 /// Function to format elapsed time into a string
 fn msg_format_elapsed_time(elapsed_time: std::time::Duration) -> String {
