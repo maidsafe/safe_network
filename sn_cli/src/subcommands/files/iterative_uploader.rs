@@ -13,7 +13,7 @@ use walkdir::DirEntry;
 use xor_name::XorName;
 
 /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
-pub(crate) async fn upload_files_with_iter(
+pub(crate) async fn iterate_upload(
     entries_iter: impl Iterator<Item = DirEntry>,
     files_path: PathBuf,
     client: &Client,

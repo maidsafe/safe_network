@@ -14,7 +14,7 @@ use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
 use sn_transfers::HotWallet;
 
 use crate::subcommands::files::download::download_file;
-use crate::subcommands::files::iterative_upload::upload_files_with_iter;
+use crate::subcommands::files::iterative_uploader::iterate_upload;
 use crate::subcommands::files::upload::FilesUploadOptions;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -401,7 +401,7 @@ impl AccountPacket {
         folders: BTreeMap<PathBuf, FoldersApi>,
         options: FilesUploadOptions,
     ) -> Result<()> {
-        upload_files_with_iter(
+        iterate_upload(
             self.iter_only_files(),
             self.files_dir.clone(),
             &self.client,
