@@ -401,12 +401,15 @@ impl AccountPacket {
         folders: BTreeMap<PathBuf, FoldersApi>,
         options: FilesUploadOptions,
     ) -> Result<()> {
+        let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
+        let chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+
         iterate_upload(
             self.iter_only_files(),
             self.files_dir.clone(),
             &self.client,
-            self.wallet_dir.clone(),
-            self.tracking_info_dir.clone(),
+            files_api,
+            chunk_manager,
             options.clone(),
         )
         .await?;

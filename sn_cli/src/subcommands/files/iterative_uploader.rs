@@ -17,8 +17,8 @@ pub(crate) async fn iterate_upload(
     entries_iter: impl Iterator<Item = DirEntry>,
     files_path: PathBuf,
     client: &Client,
-    wallet_dir: PathBuf,
-    root_dir: PathBuf,
+    files_api: FilesApi,
+    mut chunk_manager: ChunkManager,
     options: FilesUploadOptions,
 ) -> Result<()> {
     let FilesUploadOptions {
@@ -28,8 +28,6 @@ pub(crate) async fn iterate_upload(
         retry_strategy,
     } = options;
 
-    let files_api = FilesApi::build(client.clone(), wallet_dir)?;
-    let mut chunk_manager = ChunkManager::new(&root_dir);
     let mut rng = thread_rng();
 
     msg_init(&files_path, &batch_size, &verify_store, make_data_public);
