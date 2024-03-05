@@ -60,6 +60,7 @@ eyre = "0.6.8"
 criterion = "0.5.1"
 tempfile = "3.6.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
+sn_client = { path = "../sn_client", version = "0.104.27", features = ["test-utils"] }
 
 [lints]
 workspace = true
