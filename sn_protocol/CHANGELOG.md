@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0](https://github.com/joshuef/safe_network/compare/sn_protocol-v0.14.8...sn_protocol-v0.15.0) - 2024-03-05
+
+### Added
+- *(node)* bad verification to exclude connections from bad_nodes
+- *(manager)* add subcommands for daemon
+- *(test)* add option to retain_peer_id for the node's restart rpc cmd
+- *(test)* imporve restart api for tests
+- *(protocol)* add daemon socket addr to node registry
+- *(manager)* add rpc call to restart node service and process
+- [**breaking**] provide `faucet start` command
+- provide `faucet add` command
+
+### Other
+- *(daemon)* rename daemon binary to safenodemand
+- *(manager)* removing support for process restarts
+
 ## [0.14.8](https://github.com/maidsafe/safe_network/compare/sn_protocol-v0.14.7...sn_protocol-v0.14.8) - 2024-02-23
 
 ### Other
