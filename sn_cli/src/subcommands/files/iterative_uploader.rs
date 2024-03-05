@@ -46,55 +46,27 @@ impl IterativeUploader {
         } = options;
 
         let mut rng = thread_rng();
-
         msg_init(&files_path, &batch_size, &verify_store, make_data_public);
-
-        self.chunk_manager
-            .chunk_with_iter(entries_iter, true, make_data_public)?;
-
-        // Return early if we already uploaded them
+        self.chunk_manager.chunk_with_iter(entries_iter, true, make_data_public)?;
         let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
-            // make sure we don't have any failed chunks in those
-
-            let chunks = self
-                .chunk_manager
-                .already_put_chunks(&files_path, make_data_public)?;
-            println!(
-                "Files upload attempted previously, verifying {} chunks",
-                chunks.len()
-            );
-
+            let chunks = self.chunk_manager.already_put_chunks(&files_path, make_data_public)?;
+            println!("Files upload attempted previously, verifying {} chunks",chunks.len());
             let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
-
-            // mark the non-failed ones as completed
-            self.chunk_manager.mark_completed(
-                chunks
-                    .into_iter()
-                    .filter(|c| !failed_chunks.contains(c))
-                    .map(|(xor, _)| xor),
-            )?;
-
-            // if none are failed, we can return early
+            self.chunk_manager.mark_completed(chunks.into_iter().filter(|c| !failed_chunks.contains(c)).map(|(xor, _)| xor),)?;
             if failed_chunks.is_empty() {
                 msg_files_already_uploaded_verified();
-                if !make_data_public {
-                    msg_not_public_by_default();
-                }
+                if !make_data_public { msg_not_public_by_default(); }
                 msg_star_line();
-                if self.chunk_manager.completed_files().is_empty() {
-                    msg_chk_mgr_no_verified_file_nor_re_upload();
-                }
+                if self.chunk_manager.completed_files().is_empty() { msg_chk_mgr_no_verified_file_nor_re_upload(); }
                 msg_chunk_manager_upload_complete(self.chunk_manager);
                 return Ok(());
+            } else {
+                msg_unverified_chunks_reattempted(&failed_chunks.len());
+                failed_chunks
             }
-            msg_unverified_chunks_reattempted(&failed_chunks.len());
-            failed_chunks
         } else {
             self.chunk_manager.get_chunks()
         };
-
-        // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
-        // having multiple client instances uploading the same target.
         chunks_to_upload.shuffle(&mut rng);
 
         let chunk_amount_to_upload = chunks_to_upload.len();
