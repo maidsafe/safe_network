@@ -51,7 +51,7 @@ impl IterativeUploader {
         let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
             let chunks = self.chunk_manager.already_put_chunks(&files_path, make_data_public)?;
             println!("Files upload attempted previously, verifying {} chunks",chunks.len());
-            let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+            let failed_chunks = self.chunk_manager.verify_uploaded_chunks(&chunks, batch_size, client).await?;
             self.chunk_manager.mark_completed(chunks.into_iter().filter(|c| !failed_chunks.contains(c)).map(|(xor, _)| xor),)?;
             if failed_chunks.is_empty() {
                 msg_files_already_uploaded_verified();
