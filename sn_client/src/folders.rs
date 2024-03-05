@@ -15,6 +15,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy},
     NetworkAddress,
 };
+use sn_registers::EntryHash;
 use sn_transfers::HotWallet;
 use xor_name::{XorName, XOR_NAME_LEN};
 
@@ -47,6 +48,7 @@ pub struct FoldersApi {
     wallet_dir: PathBuf,
     register: ClientRegister,
     files_api: FilesApi,
+    // Cache of metadata chunks. We keep the Chunk it self till we upload it to the network.
     metadata: BTreeMap<XorName, (Metadata, Option<Chunk>)>,
 }
 
@@ -103,14 +105,14 @@ impl FoldersApi {
         &mut self,
         file_name: OsString,
         data_map_chunk: Chunk,
-    ) -> Result<(Metadata, XorName)> {
+    ) -> Result<(EntryHash, XorName, Metadata)> {
         // create metadata Chunk for this entry
         let metadata = Metadata {
             name: file_name.to_str().unwrap_or("unknown").to_string(),
             content: FolderEntry::File(data_map_chunk),
         };
 
-        self.add_entry(metadata)
+        self.add_entry(metadata, &BTreeSet::default())
     }
 
     /// Add subfolder as entry of this Folder (locally).
@@ -118,14 +120,39 @@ impl FoldersApi {
         &mut self,
         folder_name: OsString,
         address: RegisterAddress,
-    ) -> Result<(Metadata, XorName)> {
+    ) -> Result<(EntryHash, XorName, Metadata)> {
         // create metadata Chunk for this entry
         let metadata = Metadata {
             name: folder_name.to_str().unwrap_or("unknown").to_string(),
             content: FolderEntry::Folder(address),
         };
 
-        self.add_entry(metadata)
+        self.add_entry(metadata, &BTreeSet::default())
+    }
+
+    /// Replace an existing file with the provided one (locally).
+    pub fn replace_file(
+        &mut self,
+        existing_entry: EntryHash,
+        file_name: OsString,
+        data_map_chunk: Chunk,
+    ) -> Result<(EntryHash, XorName, Metadata)> {
+        // create metadata Chunk for this entry
+        let metadata = Metadata {
+            name: file_name.to_str().unwrap_or("unknown").to_string(),
+            content: FolderEntry::File(data_map_chunk),
+        };
+
+        self.add_entry(metadata, &vec![existing_entry].into_iter().collect())
+    }
+
+    /// Remove a file/folder item from this Folder (locally).
+    pub fn remove_item(&mut self, existing_entry: EntryHash) -> Result<()> {
+        let _ = self.register.write_atop(
+            &XorName::default(),
+            &vec![existing_entry].into_iter().collect(),
+        )?;
+        Ok(())
     }
 
     /// Sync local Folder with the network.
@@ -164,13 +191,19 @@ impl FoldersApi {
         Self::create(client, wallet_dir, register)
     }
 
-    /// Returns the list of entries of this Folder
-    pub async fn entries(&mut self) -> Result<Vec<(XorName, Metadata)>> {
+    /// Returns the list of entries of this Folder, including their entry hash,
+    /// metadata xorname, and metadata itself.
+    pub async fn entries(&mut self) -> Result<Vec<(EntryHash, XorName, Metadata)>> {
         let mut entries = vec![];
-        for (_, entry) in self.register.read() {
+        for (entry_hash, entry) in self.register.read() {
             let mut xorname = [0; XOR_NAME_LEN];
             xorname.copy_from_slice(&entry);
             let meta_xorname = XorName(xorname);
+            if meta_xorname == XorName::default() {
+                // this is the mark signaling a removed file/folder, so we skip it
+                continue;
+            }
+
             let metadata = match self.metadata.get(&meta_xorname) {
                 Some((metadata, _)) => metadata.clone(),
                 None => {
@@ -184,7 +217,7 @@ impl FoldersApi {
                     metadata
                 }
             };
-            entries.push((meta_xorname, metadata));
+            entries.push((entry_hash, meta_xorname, metadata));
         }
         Ok(entries)
     }
@@ -205,7 +238,11 @@ impl FoldersApi {
     }
 
     // Add the given entry to the underlying Register as well as creating the metadata Chunk
-    fn add_entry(&mut self, metadata: Metadata) -> Result<(Metadata, XorName)> {
+    fn add_entry(
+        &mut self,
+        metadata: Metadata,
+        children: &BTreeSet<EntryHash>,
+    ) -> Result<(EntryHash, XorName, Metadata)> {
         let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE);
         bytes.put(rmp_serde::to_vec(&metadata)?.as_slice());
         let meta_chunk = Chunk::new(bytes.freeze());
@@ -213,9 +250,8 @@ impl FoldersApi {
 
         self.metadata
             .insert(meta_xorname, (metadata.clone(), Some(meta_chunk)));
-        self.register
-            .write_atop(&meta_xorname, &BTreeSet::default())?;
+        let entry_hash = self.register.write_atop(&meta_xorname, children)?;
 
-        Ok((metadata, meta_xorname))
+        Ok((entry_hash, meta_xorname, metadata))
     }
 }

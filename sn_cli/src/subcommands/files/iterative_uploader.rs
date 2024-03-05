@@ -1,97 +1,172 @@
 use crate::subcommands::files;
 use crate::subcommands::files::{ChunkManager, FilesUploadOptions};
 use color_eyre::{eyre::eyre, Result};
+use indicatif::ProgressBar;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
-use sn_client::{Client, Error as ClientError, FileUploadEvent, FilesApi, FilesUpload};
+use sn_client::{Client, Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
 use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
+use tokio::sync::mpsc::Receiver;
+use tokio::task::JoinHandle;
 use walkdir::DirEntry;
 use xor_name::XorName;
 
-/// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
-pub(crate) async fn iterate_upload(
-    entries_iter: impl Iterator<Item = DirEntry>,
-    files_path: PathBuf,
-    client: &Client,
-    wallet_dir: PathBuf,
-    root_dir: PathBuf,
-    options: FilesUploadOptions,
-) -> Result<()> {
-    let FilesUploadOptions {
-        make_data_public,
-        verify_store,
-        batch_size,
-        retry_strategy,
-    } = options;
+pub(crate) struct IterativeUploader {
+    chunk_manager: ChunkManager,
+    files_api: FilesApi,
+}
 
-    let files_api = FilesApi::build(client.clone(), wallet_dir)?;
-    let mut chunk_manager = ChunkManager::new(&root_dir);
-    let mut rng = thread_rng();
+impl IterativeUploader {
+    pub(crate) fn new(chunk_manager: ChunkManager, files_api: FilesApi) -> Self {
+        Self {
+            chunk_manager,
+            files_api,
+        }
+    }
+}
 
-    msg_init(&files_path, &batch_size, &verify_store, make_data_public);
+impl IterativeUploader {
+    /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
+    pub(crate) async fn iterate_upload(
+        mut self,
+        entries_iter: impl Iterator<Item = DirEntry>,
+        files_path: PathBuf,
+        client: &Client,
+        options: FilesUploadOptions,
+    ) -> Result<()> {
+        let FilesUploadOptions {
+            make_data_public,
+            verify_store,
+            batch_size,
+            retry_strategy,
+        } = options;
 
-    chunk_manager.chunk_with_iter(entries_iter, true, make_data_public)?;
+        let mut rng = thread_rng();
 
-    // Return early if we already uploaded them
-    let mut chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        // make sure we don't have any failed chunks in those
+        msg_init(&files_path, &batch_size, &verify_store, make_data_public);
 
-        let chunks = chunk_manager.already_put_chunks(&files_path, make_data_public)?;
-        println!(
-            "Files upload attempted previously, verifying {} chunks",
-            chunks.len()
+        self.chunk_manager
+            .chunk_with_iter(entries_iter, true, make_data_public)?;
+
+        // Return early if we already uploaded them
+        let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
+            // make sure we don't have any failed chunks in those
+
+            let chunks = self
+                .chunk_manager
+                .already_put_chunks(&files_path, make_data_public)?;
+            println!(
+                "Files upload attempted previously, verifying {} chunks",
+                chunks.len()
+            );
+
+            let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+
+            // mark the non-failed ones as completed
+            self.chunk_manager.mark_completed(
+                chunks
+                    .into_iter()
+                    .filter(|c| !failed_chunks.contains(c))
+                    .map(|(xor, _)| xor),
+            )?;
+
+            // if none are failed, we can return early
+            if failed_chunks.is_empty() {
+                msg_files_already_uploaded_verified();
+                if !make_data_public {
+                    msg_not_public_by_default();
+                }
+                msg_star_line();
+                if self.chunk_manager.completed_files().is_empty() {
+                    msg_chk_mgr_no_verified_file_nor_re_upload();
+                }
+                msg_chunk_manager_upload_complete(self.chunk_manager);
+                return Ok(());
+            }
+            msg_unverified_chunks_reattempted(&failed_chunks.len());
+            failed_chunks
+        } else {
+            self.chunk_manager.get_chunks()
+        };
+
+        // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
+        // having multiple client instances uploading the same target.
+        chunks_to_upload.shuffle(&mut rng);
+
+        let chunk_amount_to_upload = chunks_to_upload.len();
+        let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
+        let total_existing_chunks = Arc::new(AtomicU64::new(0));
+        let mut files_upload = FilesUpload::new(self.files_api)
+            .set_batch_size(batch_size)
+            .set_verify_store(verify_store)
+            .set_retry_strategy(retry_strategy);
+
+        let upload_event_rx = files_upload.get_upload_events();
+        // keep track of the progress in a separate task
+        let progress_bar_clone = progress_bar.clone();
+        let total_existing_chunks_clone = total_existing_chunks.clone();
+
+        let process_join_handle = spawn_progress_handler(
+            self.chunk_manager,
+            make_data_public,
+            progress_bar,
+            upload_event_rx,
+            progress_bar_clone,
+            total_existing_chunks_clone,
         );
 
-        let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+        msg_uploading_chunks(chunk_amount_to_upload);
 
-        // mark the non-failed ones as completed
-        chunk_manager.mark_completed(
-            chunks
-                .into_iter()
-                .filter(|c| !failed_chunks.contains(c))
-                .map(|(xor, _)| xor),
-        )?;
+        let current_instant = Instant::now();
 
-        // if none are failed, we can return early
-        if failed_chunks.is_empty() {
-            msg_files_already_uploaded_verified();
-            if !make_data_public {
-                msg_not_public_by_default();
-            }
-            msg_star_line();
-            if chunk_manager.completed_files().is_empty() {
-                msg_chk_mgr_no_verified_file_nor_re_upload();
-            }
-            msg_chunk_manager_upload_complete(chunk_manager);
-            return Ok(());
+        IterativeUploader::upload_result(chunks_to_upload, &mut files_upload).await?;
+
+        process_join_handle
+            .await?
+            .map_err(|err| eyre!("Failed to write uploaded files with err: {err:?}"))?;
+
+        msg_final(
+            chunk_amount_to_upload,
+            current_instant,
+            total_existing_chunks,
+            files_upload,
+        );
+
+        Ok(())
+    }
+
+    async fn upload_result(
+        chunks_to_upload: Vec<(XorName, PathBuf)>,
+        files_upload: &mut FilesUpload,
+    ) -> Result<()> {
+        match files_upload.upload_chunks(chunks_to_upload).await {
+            Ok(()) => Ok(()),
+            Err(ClientError::Transfers(WalletError::Transfer(
+                TransfersError::NotEnoughBalance(available, required),
+            ))) => Err(eyre!(
+                "Not enough balance in wallet to pay for chunk. \
+            We have {available:?} but need {required:?} to pay for the chunk"
+            )),
+            Err(err) => Err(eyre!("Failed to upload chunk batch: {err}")),
         }
-        msg_unverified_chunks_reattempted(&failed_chunks.len());
-        failed_chunks
-    } else {
-        chunk_manager.get_chunks()
-    };
+    }
+}
 
-    // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
-    // having multiple client instances uploading the same target.
-    chunks_to_upload.shuffle(&mut rng);
+///////////////// Associative Functions /////////////////
 
-    let chunk_amount_to_upload = chunks_to_upload.len();
-    let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
-    let total_existing_chunks = Arc::new(AtomicU64::new(0));
-    let mut files_upload = FilesUpload::new(files_api)
-        .set_batch_size(batch_size)
-        .set_verify_store(verify_store)
-        .set_retry_strategy(retry_strategy);
-    let mut upload_event_rx = files_upload.get_upload_events();
-    // keep track of the progress in a separate task
-    let progress_bar_clone = progress_bar.clone();
-    let total_existing_chunks_clone = total_existing_chunks.clone();
-
-    let progress_handler = tokio::spawn(async move {
+fn spawn_progress_handler(
+    mut chunk_manager: ChunkManager,
+    make_data_public: bool,
+    progress_bar: ProgressBar,
+    mut upload_event_rx: Receiver<FileUploadEvent>,
+    progress_bar_clone: ProgressBar,
+    total_existing_chunks_clone: Arc<AtomicU64>,
+) -> JoinHandle<Result<(), Error>> {
+    tokio::spawn(async move {
         let mut upload_terminated_with_error = false;
         // The loop is guaranteed to end, as the channel will be closed when the upload completes or errors out.
         while let Some(event) = upload_event_rx.recv().await {
@@ -140,46 +215,10 @@ pub(crate) async fn iterate_upload(
         }
 
         Ok::<_, ClientError>(())
-    });
-
-    msg_uploading_chunks(chunk_amount_to_upload);
-
-    let current_instant = Instant::now();
-
-    upload_result(chunks_to_upload, &mut files_upload).await?;
-
-    progress_handler
-        .await?
-        .map_err(|err| eyre!("Failed to write uploaded files with err: {err:?}"))?;
-
-    msg_final(
-        chunk_amount_to_upload,
-        current_instant,
-        total_existing_chunks,
-        files_upload,
-    );
-
-    Ok(())
+    })
 }
 
-async fn upload_result(
-    chunks_to_upload: Vec<(XorName, PathBuf)>,
-    files_upload: &mut FilesUpload,
-) -> Result<()> {
-    match files_upload.upload_chunks(chunks_to_upload).await {
-        Ok(()) => Ok(()),
-        Err(ClientError::Transfers(WalletError::Transfer(TransfersError::NotEnoughBalance(
-            available,
-            required,
-        )))) => Err(eyre!(
-            "Not enough balance in wallet to pay for chunk. \
-            We have {available:?} but need {required:?} to pay for the chunk"
-        )),
-        Err(err) => Err(eyre!("Failed to upload chunk batch: {err}")),
-    }
-}
-
-/////////////////  Message Code  /////////////////
+/////////////////  Messages  /////////////////
 
 /// Function to format elapsed time into a string
 fn msg_format_elapsed_time(elapsed_time: std::time::Duration) -> String {

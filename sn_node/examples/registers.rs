@@ -132,7 +132,7 @@ async fn main() -> Result<()> {
             println!("Writing msg (offline) to Register: '{input_text}'");
             let msg = format!("[{user}]: {input_text}");
             match reg_replica.write(msg.as_bytes()) {
-                Ok(()) => {}
+                Ok(_) => {}
                 Err(Error::ContentBranchDetected(branches)) => {
                     println!(
                         "Branches ({}) detected in Register, let's merge them all...",

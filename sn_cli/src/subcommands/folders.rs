@@ -65,6 +65,25 @@ pub enum FoldersCmds {
         #[clap(name = "path", value_name = "PATH")]
         path: PathBuf,
     },
+    /// Sync up local files/folders changes with their versions stored on the network.
+    Sync {
+        /// Can be a file or a directory.
+        #[clap(name = "path", value_name = "PATH")]
+        path: PathBuf,
+        /// The batch_size to split chunks into parallel handling batches
+        /// during payment and upload processing.
+        #[clap(long, default_value_t = BATCH_SIZE, short='b')]
+        batch_size: usize,
+        /// Should the file be made accessible to all. (This is irreversible)
+        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
+        make_data_public: bool,
+        /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
+        ///
+        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
+        /// to 'persistent' (most effort).
+        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
+        retry_strategy: RetryStrategy,
+    },
 }
 
 pub(crate) async fn folders_cmds(
@@ -80,7 +99,8 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            // init path as a fresh new folder
+            let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path)?;
 
             let options = FilesUploadOptions {
                 make_data_public,
@@ -88,10 +108,11 @@ pub(crate) async fn folders_cmds(
                 batch_size,
                 retry_strategy,
             };
-            let root_dir_xorname = acc_packet.add_all_files(options).await?;
+            acc_packet.sync(options).await?;
+
             println!(
                 "\nFolder hierarchy from {path:?} uploaded successfully at {}",
-                root_dir_xorname.to_hex()
+                acc_packet.root_folder_addr().to_hex()
             );
         }
         FoldersCmds::Download {
@@ -127,7 +148,23 @@ pub(crate) async fn folders_cmds(
         FoldersCmds::Status { path } => {
             let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
-            acc_packet.status().await?;
+            acc_packet.status()?;
+        }
+        FoldersCmds::Sync {
+            path,
+            batch_size,
+            make_data_public,
+            retry_strategy,
+        } => {
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+
+            let options = FilesUploadOptions {
+                make_data_public,
+                verify_store,
+                batch_size,
+                retry_strategy,
+            };
+            acc_packet.sync(options).await?;
         }
     }
     Ok(())

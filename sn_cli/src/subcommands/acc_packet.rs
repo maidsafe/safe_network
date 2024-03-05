@@ -11,19 +11,24 @@ use super::files::ChunkManager;
 use serde::{Deserialize, Serialize};
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
 use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
+use sn_registers::EntryHash;
 use sn_transfers::HotWallet;
 
-use crate::subcommands::files::download::download_file;
-use crate::subcommands::files::iterative_uploader::iterate_upload;
-use crate::subcommands::files::upload::FilesUploadOptions;
+use crate::subcommands::files::{
+    download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
+};
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
 use std::{
-    collections::{btree_map::Entry, BTreeMap},
+    collections::{
+        btree_map::{Entry, OccupiedEntry},
+        BTreeMap,
+    },
     ffi::OsString,
-    fs::{create_dir_all, File},
+    fmt,
+    fs::{create_dir_all, remove_file, File},
     io::Write,
     path::{Path, PathBuf},
 };
@@ -40,15 +45,86 @@ const METADATA_CACHE_DIR: &str = "metadata";
 // Name of the file where metadata about root folder is locally kept.
 const ROOT_FOLDER_METADATA_FILENAME: &str = "root_folder.addr";
 
+// Container to keep track in memory what changes are detected in local Folders hierarchy and files.
+type Folders = BTreeMap<PathBuf, (FoldersApi, FolderChange)>;
+
+// Type of local changes detected to a Folder
+#[derive(Clone, Debug, PartialEq)]
+enum FolderChange {
+    NoChange,
+    NewFolder,
+    NewEntries,
+}
+
+impl FolderChange {
+    /// Returns true if it's currently set to NoChange.
+    pub fn is_no_change(&self) -> bool {
+        self == &Self::NoChange
+    }
+
+    /// Returns true if it's currently set to NewFolder.
+    pub fn is_new_folder(&self) -> bool {
+        self == &Self::NewFolder
+    }
+
+    /// If it's currently set to NoChange then switch it to NewEntries.
+    /// Otherwise we don't need to change it as the entire Folder will need to be uploaded.
+    pub fn has_new_entries(&mut self) {
+        if self == &Self::NoChange {
+            *self = Self::NewEntries;
+        }
+    }
+}
+
+// Changes detected locally which eventually can be applied and upload to network.
+#[derive(Default)]
+struct ChangesToApply {
+    folders: Folders,
+    mutations: Vec<Mutation>,
+}
+
+// Type of mutation detected locally.
+#[derive(Debug)]
+enum Mutation {
+    NewFile(MetadataTrackingInfo),
+    FileRemoved((PathBuf, XorName)),
+    FileContentChanged((XorName, MetadataTrackingInfo)),
+    NewFolder(MetadataTrackingInfo),
+    FolderRemoved((PathBuf, XorName)),
+}
+
+impl fmt::Display for Mutation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::NewFile(tracking_info) => {
+                write!(f, "New file: {:?}", tracking_info.file_path)
+            }
+            Self::FileRemoved((path, _)) => write!(f, "File removed: {path:?}"),
+            Self::FileContentChanged((_, tracking_info)) => {
+                write!(f, "File content changed: {:?}", tracking_info.file_path)
+            }
+            Self::NewFolder(tracking_info) => {
+                write!(f, "New folder: {:?}", tracking_info.file_path)
+            }
+            Self::FolderRemoved((path, _)) => write!(f, "Folder removed: {path:?}"),
+        }
+    }
+}
+
 // Information stored locally to keep track of local changes to files/folders.
-// TODO: to make file changes discovery more efficient, add more info like file size and last modified timestamp.
+// TODO: to make file changes discovery more efficient, and prevent chunking for
+// such purposes, add more info like file size and last modified timestamp.
 #[derive(Debug, Serialize, Deserialize)]
 struct MetadataTrackingInfo {
     file_path: PathBuf,
     meta_xorname: XorName,
     metadata: Metadata,
+    entry_hash: EntryHash,
 }
 
+/// Object which allows a user to store and manage files, wallets, etc., with the ability
+/// and tols necessary to keep a local instance in sync with its remote version stored on the network.
+/// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
 pub struct AccountPacket {
     client: Client,
     wallet_dir: PathBuf,
@@ -57,14 +133,36 @@ pub struct AccountPacket {
     tracking_info_dir: PathBuf,
     curr_metadata: BTreeMap<PathBuf, MetadataTrackingInfo>,
     root_folder_addr: RegisterAddress,
+    root_folder_created: bool,
 }
 
 impl AccountPacket {
-    /// Create AccountPacket instance.
+    /// Initialise directory as a fresh new packet with new random address for root folder.
+    pub fn init(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
+        let (_, _, meta_dir) = build_tracking_info_paths(path)?;
+
+        // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
+        if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
+            bail!(
+                "The path is already being tracked with Folder address: {}",
+                addr.to_hex()
+            );
+        }
+
+        let mut rng = rand::thread_rng();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
+        store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
+        Self::from_path(client, wallet_dir, path)
+    }
+
+    /// Create AccountPacket instance from a directory which already contains tracking information.
     pub fn from_path(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
-        let (curr_metadata, root_folder_addr) = read_tracking_info_from_disk(&client, &meta_dir)?;
+        // this will fail if there is no tracking information found
+        let curr_metadata = read_tracking_info_from_disk(&meta_dir)?;
+        let (root_folder_addr,root_folder_created) = read_root_folder_addr(&meta_dir)
+            .map_err(|_| eyre!("Root Folder address not found, make sure the dir is initialised to be tracked."))?;
 
         Ok(Self {
             client,
@@ -74,17 +172,13 @@ impl AccountPacket {
             tracking_info_dir,
             curr_metadata,
             root_folder_addr,
+            root_folder_created,
         })
     }
 
-    /// Add all files found in the set path, uploading them to the network, and start keeping track of them.
-    pub async fn add_all_files(&self, options: FilesUploadOptions) -> Result<RegisterAddress> {
-        let folders = self.read_files_and_folders_from_disk(options.make_data_public, true)?;
-
-        println!("Paying for folders hierarchy and uploading...");
-        self.pay_and_upload_folders(folders, options).await?;
-
-        Ok(self.root_folder_addr)
+    /// Return the address of the root Folder
+    pub fn root_folder_addr(&self) -> RegisterAddress {
+        self.root_folder_addr
     }
 
     /// Retrieve and store entire Folders hierarchy from the network, generating tracking info.
@@ -99,7 +193,7 @@ impl AccountPacket {
         create_dir_all(download_path)?;
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(download_path)?;
 
-        if let Ok(addr) = read_root_folder_addr(&meta_dir) {
+        if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             // bail out if there is already a root folder address different from the passed in
             if addr != address {
                 bail!(
@@ -110,7 +204,7 @@ impl AccountPacket {
 
             // TODO: merge what we'll retrieve from network into what exists locally
         } else {
-            store_root_folder_tracking_info(&meta_dir, address)?;
+            store_root_folder_tracking_info(&meta_dir, address, true)?;
         }
 
         let mut acc_packet = Self {
@@ -121,6 +215,7 @@ impl AccountPacket {
             tracking_info_dir,
             curr_metadata: BTreeMap::default(),
             root_folder_addr: address,
+            root_folder_created: true,
         };
 
         let mut files_to_download = vec![];
@@ -157,99 +252,93 @@ impl AccountPacket {
             .await;
         }
 
-        let (curr_metadata, _) = read_tracking_info_from_disk(client, &acc_packet.meta_dir)?;
+        let curr_metadata = read_tracking_info_from_disk(&acc_packet.meta_dir)?;
         acc_packet.curr_metadata = curr_metadata;
 
         Ok(acc_packet)
     }
 
     /// Generate a report with differences found in local files/folders in comparison with their versions stored on the network.
-    pub async fn status(&self) -> Result<()> {
-        let mut folders = self.read_files_and_folders_from_disk(false, false)?;
-
-        let mut num_of_diffs = 0;
+    pub fn status(&self) -> Result<()> {
         println!("Looking for local changes made to files/folders...");
+        let changes = self.scan_files_and_folders_for_changes(false)?;
 
-        // let's first compare from current files/folders read from disk, with the previous versions of them
-        for (folder_path, folder) in folders.iter_mut() {
-            for (meta_xorname, metadata) in folder.entries().await? {
-                let file_path = folder_path.join(&metadata.name);
+        if changes.mutations.is_empty() {
+            println!("No local changes made to files/folders.");
+        } else {
+            println!("Local changes made to files/folders:");
+            changes.mutations.iter().for_each(|m| println!("{m}"));
 
-                // try to find the tracking info of the file/folder by its name
-                match self.get_tracking_info(&file_path) {
-                    Ok(Some(tracking_info)) => {
-                        match (&tracking_info.metadata.content, metadata.content) {
-                            (FolderEntry::File(_), FolderEntry::File(_)) => {
-                                if tracking_info.meta_xorname != meta_xorname {
-                                    num_of_diffs += 1;
-                                    println!("- File content changed: {file_path:?}",);
-                                }
-                            }
-                            (FolderEntry::Folder(_), FolderEntry::Folder(_)) => {}
-                            (FolderEntry::Folder(_), FolderEntry::File(_)) => {
-                                num_of_diffs += 1;
-                                println!(
-                                    "- New file found where there used to be a folder: {file_path:?}"
-                                );
-                            }
-                            (FolderEntry::File(_), FolderEntry::Folder(_)) => {
-                                num_of_diffs += 1;
-                                println!(
-                                    "- New folder found where there used to be a file: {file_path:?}"
-                                );
-                            }
-                        }
+            println!(
+                "\nChanges found to local files/folders: {}",
+                changes.mutations.len()
+            );
+        }
+        Ok(())
+    }
+
+    /// Sync local changes made to files and folder with their version on the network,
+    /// pushing changes made locally to the network.
+    // TODO: download/pull changes and files from network version.
+    pub async fn sync(&mut self, options: FilesUploadOptions) -> Result<()> {
+        let ChangesToApply { folders, mutations } =
+            self.scan_files_and_folders_for_changes(false)?;
+
+        if mutations.is_empty() {
+            println!("No local changes made to files/folders to be pushed to network.");
+            return Ok(());
+        } else {
+            println!("Local changes made to files/folders to be synced with network:");
+            mutations.iter().for_each(|m| println!("{m}"));
+        }
+
+        println!("Paying for folders hierarchy and uploading...");
+        self.pay_and_sync_folders(folders, options).await?;
+
+        // marked root folder as created if it wasn't already
+        if !self.root_folder_created {
+            self.root_folder_created = true;
+            store_root_folder_tracking_info(
+                &self.meta_dir,
+                self.root_folder_addr,
+                self.root_folder_created,
+            )?;
+        }
+
+        // update tracking information locally kept
+        for mutation in mutations {
+            match mutation {
+                Mutation::NewFile(tracking_info) | Mutation::NewFolder(tracking_info) => {
+                    self.store_tracking_info(tracking_info)?;
+                }
+                Mutation::FileRemoved((_, meta_xorname))
+                | Mutation::FolderRemoved((_, meta_xorname)) => {
+                    let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
+                    if let Err(err) = remove_file(&metadata_file_path) {
+                        println!(
+                            "Failed to remove tracking info file {metadata_file_path:?}: {err}"
+                        );
                     }
-                    Ok(None) | Err(_) => {
-                        num_of_diffs += 1;
-                        match metadata.content {
-                            FolderEntry::File(_) => println!("- New file: {file_path:?}"),
-                            FolderEntry::Folder(_) => println!("- New folder: {file_path:?}"),
-                        }
+                }
+                Mutation::FileContentChanged((meta_xorname, tracking_info)) => {
+                    self.store_tracking_info(tracking_info)?;
+
+                    let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
+                    if let Err(err) = remove_file(&metadata_file_path) {
+                        println!(
+                            "Failed to remove tracking info file {metadata_file_path:?}: {err}"
+                        );
                     }
                 }
             }
         }
 
-        // now let's check if any file/folder was removed from disk
-        for (item_path, tracking_info) in self.curr_metadata.iter() {
-            let abs_path = self.files_dir.join(item_path);
-            match tracking_info.metadata.content {
-                FolderEntry::Folder(_) => match folders.get(&abs_path) {
-                    Some(_) => {}
-                    None => {
-                        num_of_diffs += 1;
-                        println!("- Folder removed: {abs_path:?}");
-                    }
-                },
-                FolderEntry::File(_) => {
-                    match abs_path.parent().and_then(|parent| folders.get_mut(parent)) {
-                        Some(folder) => {
-                            if folder
-                                .entries()
-                                .await?
-                                .iter()
-                                .all(|(_, metadata)| metadata.name != tracking_info.metadata.name)
-                            {
-                                num_of_diffs += 1;
-                                println!("- File removed: {abs_path:?}");
-                            }
-                        }
-                        None => {
-                            num_of_diffs += 1;
-                            println!("- File removed along with its folder: {abs_path:?}");
-                        }
-                    }
-                }
-            }
-        }
-
-        println!("Changes found to local files/folders: {num_of_diffs}");
         Ok(())
     }
 
     // Private helpers
 
+    // Generate the path relative to the user's root folder
     fn get_relative_path(&self, path: &Path) -> Result<PathBuf> {
         let relative_path = path
             .to_path_buf()
@@ -262,18 +351,23 @@ impl AccountPacket {
     // Store tracking info in a file to keep track of any changes made to the source file/folder
     fn store_tracking_info(
         &self,
-        src_path: &Path,
-        metadata: Metadata,
-        meta_xorname: XorName,
+        MetadataTrackingInfo {
+            file_path,
+            meta_xorname,
+            metadata,
+            entry_hash,
+        }: MetadataTrackingInfo,
     ) -> Result<()> {
         let metadata_file_path = self.meta_dir.join(hex::encode(meta_xorname));
         let mut meta_file = File::create(metadata_file_path)?;
 
-        let file_path = self.get_relative_path(src_path)?;
         let tracking_info = MetadataTrackingInfo {
-            file_path,
+            // we store the relative path so the root folder can be moved to
+            // different locations/paths if desired by the user.
+            file_path: self.get_relative_path(&file_path)?,
             meta_xorname,
             metadata,
+            entry_hash,
         };
 
         meta_file.write_all(&rmp_serde::to_vec(&tracking_info)?)?;
@@ -281,49 +375,128 @@ impl AccountPacket {
         Ok(())
     }
 
-    fn read_files_and_folders_from_disk(
+    // Scan existing files and folders on disk, generating a report of all the detected
+    // changes based on the tracking info kept locally.
+    // TODO: encrypt the data-map and metadata if make_data_public is false.
+    fn scan_files_and_folders_for_changes(
         &self,
         _make_data_public: bool,
-        store_tracking_info: bool,
-    ) -> Result<BTreeMap<PathBuf, FoldersApi>> {
+    ) -> Result<ChangesToApply> {
+        // we don't use the local cache in order to realise of any changes made to files content.
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir);
-        // we never used the local cache so we can realise of any changes made to files content.
         chunk_manager.chunk_with_iter(self.iter_only_files(), false, false)?;
 
-        let mut folders = self.read_folders_hierarchy_from_disk(store_tracking_info)?;
-        if store_tracking_info {
-            store_root_folder_tracking_info(&self.meta_dir, self.root_folder_addr)?;
-        }
+        let mut changes = self.read_folders_hierarchy_from_disk()?;
 
         // add chunked files to the corresponding Folders
+        let folders = &mut changes.folders;
         for chunked_file in chunk_manager.iter_chunked_files() {
-            if let Some(Entry::Occupied(mut entry)) = chunked_file
-                .file_path
+            let file_path = &chunked_file.file_path;
+            if let Some(Entry::Occupied(mut parent_folder)) = file_path
                 .parent()
                 .map(|parent| folders.entry(parent.to_path_buf()))
             {
-                // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
-                let (metadata, meta_xorname) = entry.get_mut().add_file(
-                    chunked_file.file_name.clone(),
-                    chunked_file.data_map.clone(),
-                )?;
+                // try to find the tracking info of the file/folder by its name
+                match self.get_tracking_info(file_path) {
+                    Ok(Some(tracking_info)) => match &tracking_info.metadata.content {
+                        FolderEntry::File(chunk) => {
+                            if chunk.address() != &chunked_file.head_chunk_address {
+                                // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
+                                let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
+                                    &mut parent_folder,
+                                    tracking_info.entry_hash,
+                                    chunked_file.file_name.clone(),
+                                    chunked_file.data_map.clone(),
+                                )?;
+                                changes.mutations.push(Mutation::FileContentChanged((
+                                    tracking_info.meta_xorname,
+                                    MetadataTrackingInfo {
+                                        file_path: file_path.to_path_buf(),
+                                        meta_xorname,
+                                        metadata,
+                                        entry_hash,
+                                    },
+                                )));
+                            }
+                        }
+                        FolderEntry::Folder(_) => {
+                            // New file found where there used to be a folder
+                            // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
+                            let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
+                                &mut parent_folder,
+                                tracking_info.entry_hash,
+                                chunked_file.file_name.clone(),
+                                chunked_file.data_map.clone(),
+                            )?;
+                            changes
+                                .mutations
+                                .push(Mutation::NewFile(MetadataTrackingInfo {
+                                    file_path: file_path.to_path_buf(),
+                                    meta_xorname,
+                                    metadata,
+                                    entry_hash,
+                                }));
+                        }
+                    },
+                    Ok(None) => {
+                        // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
+                        let (entry_hash, meta_xorname, metadata) =
+                            parent_folder.get_mut().0.add_file(
+                                chunked_file.file_name.clone(),
+                                chunked_file.data_map.clone(),
+                            )?;
+                        parent_folder.get_mut().1.has_new_entries();
 
-                if store_tracking_info {
-                    let file_path = entry.key().join(&metadata.name);
-                    self.store_tracking_info(&file_path, metadata, meta_xorname)?;
+                        changes
+                            .mutations
+                            .push(Mutation::NewFile(MetadataTrackingInfo {
+                                file_path: file_path.to_path_buf(),
+                                meta_xorname,
+                                metadata,
+                                entry_hash,
+                            }));
+                    }
+                    Err(err) => {
+                        println!("Skipping file {file_path:?}: {err:?}");
+                    }
                 }
             }
         }
 
-        Ok(folders)
+        // now let's check if any file/folder was removed from disk
+        for (item_path, tracking_info) in self.curr_metadata.iter() {
+            let abs_path = self.files_dir.join(item_path);
+            match tracking_info.metadata.content {
+                FolderEntry::Folder(_) => {
+                    if !folders.contains_key(&abs_path) {
+                        remove_from_parent(folders, &abs_path, tracking_info.entry_hash)?;
+                        changes.mutations.push(Mutation::FolderRemoved((
+                            abs_path,
+                            tracking_info.meta_xorname,
+                        )));
+                    }
+                }
+                FolderEntry::File(_) => {
+                    if chunk_manager
+                        .iter_chunked_files()
+                        .all(|chunked_file| chunked_file.file_path != abs_path)
+                    {
+                        remove_from_parent(folders, &abs_path, tracking_info.entry_hash)?;
+                        changes.mutations.push(Mutation::FileRemoved((
+                            abs_path,
+                            tracking_info.meta_xorname,
+                        )));
+                    }
+                }
+            }
+        }
+
+        Ok(changes)
     }
 
     // Build Folders hierarchy from the set files dir
-    fn read_folders_hierarchy_from_disk(
-        &self,
-        store_tracking_info: bool,
-    ) -> Result<BTreeMap<PathBuf, FoldersApi>> {
-        let mut folders = BTreeMap::new();
+    fn read_folders_hierarchy_from_disk(&self) -> Result<ChangesToApply> {
+        let mut changes = ChangesToApply::default();
         for (dir_path, depth, parent, dir_name) in self.iter_only_dirs().filter_map(|entry| {
             entry.path().parent().map(|parent| {
                 (
@@ -334,25 +507,37 @@ impl AccountPacket {
                 )
             })
         }) {
-            let curr_folder_addr = *folders
+            let (folder, folder_change) = changes
+                .folders
                 .entry(dir_path.clone())
                 .or_insert(self.find_folder_in_tracking_info(&dir_path)?)
-                .address();
+                .clone();
+            let curr_folder_addr = *folder.address();
 
             if depth > 0 {
-                let parent_folder = folders
+                let (parent_folder, parent_folder_change) = changes
+                    .folders
                     .entry(parent.clone())
                     .or_insert(self.find_folder_in_tracking_info(&parent)?);
-                let (metadata, meta_xorname) =
-                    parent_folder.add_folder(dir_name, curr_folder_addr)?;
 
-                if store_tracking_info {
-                    self.store_tracking_info(&dir_path, metadata, meta_xorname)?;
+                if folder_change.is_new_folder() {
+                    let (entry_hash, meta_xorname, metadata) =
+                        parent_folder.add_folder(dir_name, curr_folder_addr)?;
+                    parent_folder_change.has_new_entries();
+
+                    changes
+                        .mutations
+                        .push(Mutation::NewFolder(MetadataTrackingInfo {
+                            file_path: dir_path,
+                            meta_xorname,
+                            metadata,
+                            entry_hash,
+                        }));
                 }
             }
         }
 
-        Ok(folders)
+        Ok(changes)
     }
 
     // Read local tracking info for given file/folder item
@@ -362,20 +547,27 @@ impl AccountPacket {
     }
 
     // Instantiate a FolderApi based on local tracking info for given folder item
-    fn find_folder_in_tracking_info(&self, path: &Path) -> Result<FoldersApi> {
-        let mut address =
+    fn find_folder_in_tracking_info(&self, path: &Path) -> Result<(FoldersApi, FolderChange)> {
+        let mut folder_change = FolderChange::NewFolder;
+        let address = if path == self.files_dir {
+            if self.root_folder_created {
+                folder_change = FolderChange::NoChange;
+            }
+            Some(self.root_folder_addr)
+        } else {
             self.get_tracking_info(path)?.and_then(|tracking_info| {
                 match tracking_info.metadata.content {
-                    FolderEntry::Folder(addr) => Some(addr),
+                    FolderEntry::Folder(addr) => {
+                        folder_change = FolderChange::NoChange;
+                        Some(addr)
+                    }
                     FolderEntry::File(_) => None,
                 }
-            });
+            })
+        };
 
-        if address.is_none() && path == self.files_dir {
-            address = Some(self.root_folder_addr);
-        }
         let folders_api = FoldersApi::new(self.client.clone(), &self.wallet_dir, address)?;
-        Ok(folders_api)
+        Ok((folders_api, folder_change))
     }
 
     // Creates an iterator over the user's dirs names, excluding the '.safe' tracking dir
@@ -395,60 +587,76 @@ impl AccountPacket {
             .filter(|e| e.file_type().is_file())
     }
 
-    // Make a single payment for all Folders (Registers) and metadata chunks, and upload them to the network
-    async fn pay_and_upload_folders(
+    // Make a single payment for all Folders (Registers) and metadata chunks, and upload them
+    // to the network along with all new files.
+    async fn pay_and_sync_folders(
         &self,
-        folders: BTreeMap<PathBuf, FoldersApi>,
+        mut folders: Folders,
         options: FilesUploadOptions,
     ) -> Result<()> {
-        iterate_upload(
-            self.iter_only_files(),
-            self.files_dir.clone(),
-            &self.client,
-            self.wallet_dir.clone(),
-            self.tracking_info_dir.clone(),
-            options.clone(),
-        )
-        .await?;
+        let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
+        let chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+
+        IterativeUploader::new(chunk_manager, files_api)
+            .iterate_upload(
+                self.iter_only_files(),
+                self.files_dir.clone(),
+                &self.client,
+                options.clone(),
+            )
+            .await?;
 
         // Let's make the storage payment for Folders
         let mut wallet_client =
             WalletClient::new(self.client.clone(), HotWallet::load_from(&self.wallet_dir)?);
         let mut net_addresses = vec![];
-        folders.values().for_each(|folder| {
+        let mut new_folders = 0;
+        // let's get rid of folders which don't need to be synced,
+        // and collect list of addresses we do need to pay for
+        folders.retain(|_, (folder, folder_change)| {
+            if folder_change.is_no_change() {
+                return false;
+            } else if folder_change.is_new_folder() {
+                net_addresses.push(folder.as_net_addr());
+                new_folders += 1;
+            }
             net_addresses.extend(folder.meta_addrs_to_pay());
-            net_addresses.push(folder.as_net_addr());
+            true
         });
 
         let payment_result = wallet_client
             .pay_for_storage(net_addresses.into_iter())
             .await?;
-        let balance = wallet_client.balance();
         match payment_result
             .storage_cost
             .checked_add(payment_result.royalty_fees)
         {
-            Some(cost) => println!(
-                "Made payment of {cost} for {} Folders. New balance: {balance}",
-                folders.len()
-            ),
+            Some(cost) => {
+                let balance = wallet_client.balance();
+                println!("Made payment of {cost} for {new_folders} Folders. New balance: {balance}",)
+            }
             None => bail!("Failed to calculate total payment cost"),
         }
 
-        // sync Folders concurrently
+        // sync Folders concurrently now that payments have been made
         let mut tasks = JoinSet::new();
-        for (path, mut folder) in folders {
+        for (path, (mut folder, folder_change)) in folders {
+            let op = if folder_change.is_new_folder() {
+                "create"
+            } else {
+                "sync"
+            };
             tasks.spawn(async move {
                 match folder
                     .sync(options.verify_store, Some(options.retry_strategy))
                     .await
                 {
                     Ok(()) => println!(
-                        "Folder (for {path:?}) synced with the network at: {}",
+                        "Folder (for {path:?}) {op}ed with the network at: {}",
                         folder.address().to_hex()
                     ),
                     Err(err) => {
-                        println!("Failed to sync Folder (for {path:?}) with the network: {err}",)
+                        println!("Failed to {op} Folder (for {path:?}) with the network: {err}",)
                     }
                 }
             });
@@ -456,7 +664,7 @@ impl AccountPacket {
 
         while let Some(res) = tasks.join_next().await {
             if let Err(err) = res {
-                println!("Failed to sync a Folder with the network: {err:?}");
+                println!("Failed to sync/create a Folder with/on the network: {err:?}");
             }
         }
 
@@ -471,33 +679,36 @@ impl AccountPacket {
         files_to_download: &mut Vec<(OsString, Chunk, PathBuf)>,
         folders_to_download: &mut Vec<(OsString, RegisterAddress, PathBuf)>,
     ) -> Result<()> {
-        create_dir_all(target_path)?;
         let mut folders_api =
             FoldersApi::retrieve(self.client.clone(), &self.wallet_dir, folder_addr).await?;
-        for (meta_xorname, metadata) in folders_api.entries().await?.into_iter() {
+        for (entry_hash, meta_xorname, metadata) in folders_api.entries().await?.into_iter() {
             let name = metadata.name.clone();
-            let item_path = match &metadata.content {
+            let item_path = target_path.join(name.clone());
+            match &metadata.content {
                 FolderEntry::File(data_map_chunk) => {
                     files_to_download.push((
                         name.clone().into(),
                         data_map_chunk.clone(),
                         target_path.to_path_buf(),
                     ));
-                    let item_path = target_path.join(name);
                     let _ = File::create(&item_path)?;
-                    item_path
                 }
                 FolderEntry::Folder(subfolder_addr) => {
                     folders_to_download.push((
                         name.clone().into(),
                         *subfolder_addr,
-                        target_path.join(name),
+                        item_path.clone(),
                     ));
-                    target_path.to_path_buf()
+                    create_dir_all(&item_path)?;
                 }
             };
 
-            self.store_tracking_info(&item_path, metadata, meta_xorname)?;
+            self.store_tracking_info(MetadataTrackingInfo {
+                file_path: item_path,
+                meta_xorname,
+                metadata,
+                entry_hash,
+            })?;
         }
 
         Ok(())
@@ -516,14 +727,8 @@ fn build_tracking_info_paths(path: &Path) -> Result<(PathBuf, PathBuf, PathBuf)>
 }
 
 fn read_tracking_info_from_disk(
-    client: &Client,
     meta_dir: &Path,
-) -> Result<(BTreeMap<PathBuf, MetadataTrackingInfo>, RegisterAddress)> {
-    let root_folder_addr = read_root_folder_addr(meta_dir).unwrap_or_else(|_| {
-        let mut rng = rand::thread_rng();
-        RegisterAddress::new(XorName::random(&mut rng), client.signer_pk())
-    });
-
+) -> Result<BTreeMap<PathBuf, MetadataTrackingInfo>> {
     let mut curr_metadata = BTreeMap::new();
     for entry in WalkDir::new(meta_dir)
         .into_iter()
@@ -539,26 +744,51 @@ fn read_tracking_info_from_disk(
         curr_metadata.insert(tracking_info.file_path.clone(), tracking_info);
     }
 
-    Ok((curr_metadata, root_folder_addr))
+    Ok(curr_metadata)
 }
 
 // Store tracking info about the root folder in a file to keep track of any changes made
 fn store_root_folder_tracking_info(
     meta_dir: &Path,
     root_folder_addr: RegisterAddress,
+    created: bool,
 ) -> Result<()> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let mut meta_file = File::create(path)?;
-    meta_file.write_all(root_folder_addr.to_hex().as_bytes())?;
+    meta_file.write_all(&rmp_serde::to_vec(&(root_folder_addr, created))?)?;
 
     Ok(())
 }
 
 // Read the tracking info about the root folder
-fn read_root_folder_addr(meta_dir: &Path) -> Result<RegisterAddress> {
+fn read_root_folder_addr(meta_dir: &Path) -> Result<(RegisterAddress, bool)> {
     let path = meta_dir.join(ROOT_FOLDER_METADATA_FILENAME);
     let bytes = std::fs::read(&path)
-        .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err}"))?;
+        .map_err(|err| eyre!("Error while reading the tracking info from {path:?}: {err:?}"))?;
 
-    Ok(RegisterAddress::from_hex(&String::from_utf8(bytes)?)?)
+    Ok(rmp_serde::from_slice(&bytes)?)
+}
+
+// Given an absolute path, find the Folder containing such item, and remove it from its entries.
+fn remove_from_parent(folders: &mut Folders, path: &Path, entry_hash: EntryHash) -> Result<()> {
+    if let Some((parent_folder, folder_change)) = path.parent().and_then(|p| folders.get_mut(p)) {
+        folder_change.has_new_entries();
+        parent_folder.remove_item(entry_hash)?;
+    }
+    Ok(())
+}
+
+// Replace a file/folder item from a given Folder (passed in as a container's OccupiedEntry').
+fn replace_item_in_folder(
+    folder: &mut OccupiedEntry<'_, PathBuf, (FoldersApi, FolderChange)>,
+    entry_hash: EntryHash,
+    file_name: OsString,
+    data_map: Chunk,
+) -> Result<(EntryHash, XorName, Metadata)> {
+    folder.get_mut().1.has_new_entries();
+    let res = folder
+        .get_mut()
+        .0
+        .replace_file(entry_hash, file_name.clone(), data_map.clone())?;
+    Ok(res)
 }
