@@ -6,6 +6,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.3.11...sn-node-manager-v0.4.0) - 2024-03-05
+
+### Added
+- *(manager)* add subcommands for daemon
+- *(daemon)* retain peer_id while restarting a safenode service
+- *(test)* add option to retain_peer_id for the node's restart rpc cmd
+- *(protocol)* add daemon socket addr to node registry
+- *(manager)* stop the daemon if it is already running
+- *(manager)* add rpc call to restart node service and process
+- *(manager)* provide option to start the manager as a daemon
+- provide `faucet stop` command
+- [**breaking**] provide `faucet start` command
+- provide `faucet add` command
+
+### Fixed
+- *(test)* provide absolute path for daemon restart test
+- *(daemon)* create node service dir while restarting as new peer
+- *(daemon)* set the proper safenode path while restarting a service
+- *(deps)* don't add unix dep to whole crate
+- *(manager)* don't specify user while spawning daemon
+- *(manager)* fix sync issue while trying to use trait objects
+
+### Other
+- *(release)* sn_protocol-v0.15.0
+- get clippy to stop mentioning this
+- *(daemon)* rename daemon binary to safenodemand
+- *(manager)* add daemon restart test
+- *(daemon)* add more context to errors
+- *(manager)* removing support for process restarts
+- create a `faucet_control` module
+
 ## [0.3.11](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.3.10...sn-node-manager-v0.3.11) - 2024-02-23
 
 ### Added
