@@ -5215,7 +5215,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.16.0"
+version = "0.16.1"
 dependencies = [
  "assert_fs",
  "blsttc",

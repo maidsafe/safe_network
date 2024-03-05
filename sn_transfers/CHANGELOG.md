@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.0...sn_transfers-v0.16.1) - 2024-03-05
+
+### Added
+- provide `faucet add` command
+
 ## [0.16.0](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.15.9...sn_transfers-v0.16.0) - 2024-02-23
 
 ### Added
