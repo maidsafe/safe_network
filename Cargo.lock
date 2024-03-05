@@ -5082,6 +5082,7 @@ name = "sn_node"
 version = "0.104.35"
 dependencies = [
  "assert_fs",
+ "assert_matches",
  "async-trait",
  "blsttc",
  "bytes",

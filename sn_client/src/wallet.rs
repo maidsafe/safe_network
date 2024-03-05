@@ -722,6 +722,7 @@ impl Client {
     ) -> WalletResult<()> {
         let mut tasks = Vec::new();
 
+        // send spends to the network in parralel
         for spend_request in spend_requests {
             debug!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
@@ -739,29 +740,50 @@ impl Client {
             tasks.push(the_task);
         }
 
-        let mut spent_cash_notes = BTreeSet::default();
-        for (cash_note_key, spend_attempt_result) in join_all(tasks).await {
-            // This is a record mismatch on spend, we need to clean up and remove the spent CashNote from the wallet
-            // This only happens if we're verifying the store
-            if let Err(Error::Network(sn_networking::Error::GetRecordError(
-                GetRecordError::RecordDoesNotMatch(record_key),
-            ))) = spend_attempt_result
-            {
-                warn!("Record mismatch on spend, removing CashNote from wallet: {record_key:?}");
-                spent_cash_notes.insert(*cash_note_key);
-            } else {
-                return spend_attempt_result
-                    .map_err(|err| WalletError::CouldNotSendMoney(err.to_string()));
+        // wait for all the tasks to complete and gather the errors
+        let mut errors = Vec::new();
+        let mut double_spent_keys = BTreeSet::new();
+        for (spend_key, spend_attempt_result) in join_all(tasks).await {
+            match spend_attempt_result {
+                Err(Error::Network(sn_networking::Error::GetRecordError(
+                    GetRecordError::RecordDoesNotMatch(_),
+                )))
+                | Err(Error::Network(sn_networking::Error::GetRecordError(
+                    GetRecordError::SplitRecord { .. },
+                ))) => {
+                    warn!(
+                        "Double spend detected while trying to spend: {:?}",
+                        spend_key
+                    );
+                    double_spent_keys.insert(*spend_key);
+                }
+                Err(e) => {
+                    warn!("Spend request errored out when sent to the network {spend_key:?}: {e}");
+                    errors.push((spend_key, e));
+                }
+                Ok(()) => {
+                    trace!("Spend request was successfully sent to the network: {spend_key:?}");
+                }
             }
         }
 
-        if spent_cash_notes.is_empty() {
-            Ok(())
-        } else {
-            Err(WalletError::DoubleSpendAttemptedForCashNotes(
-                spent_cash_notes,
-            ))
+        // report errors accordingly
+        // double spend errors in priority as they should be dealt with by the wallet
+        if !double_spent_keys.is_empty() {
+            return Err(WalletError::DoubleSpendAttemptedForCashNotes(
+                double_spent_keys,
+            ));
         }
+        if !errors.is_empty() {
+            let mut err_report = "Failed to send spend requests to the network:".to_string();
+            for (spend_key, e) in &errors {
+                warn!("Failed to send spend request to the network: {spend_key:?}: {e}");
+                err_report.push_str(&format!("{spend_key:?}: {e}"));
+            }
+            return Err(WalletError::CouldNotSendMoney(err_report));
+        }
+
+        Ok(())
     }
 
     /// Receive a Transfer, verify and redeem CashNotes from the Network.

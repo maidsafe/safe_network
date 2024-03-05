@@ -370,7 +370,7 @@ mod tests {
         let sk = SecretKey::from_hex(sn_transfers::GENESIS_CASHNOTE_SK)?;
         let mut wallet = HotWallet::load_from_path(&temp_dir, Some(MainSecretKey::new(sk)))?;
         let royalties_pk = NETWORK_ROYALTIES_PK.public_key();
-        client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())?;
+        client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string());
 
         let mut events_receiver = client.events_channel();
 
