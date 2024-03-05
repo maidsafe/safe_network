@@ -9,10 +9,10 @@
 use bls::PublicKey;
 use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
+use sn_client::protocol::storage::RegisterAddress;
+use sn_client::registers::Permissions;
+use sn_client::transfers::HotWallet;
 use sn_client::{Client, Error as ClientError, WalletClient};
-use sn_protocol::storage::RegisterAddress;
-use sn_registers::Permissions;
-use sn_transfers::HotWallet;
 use std::path::Path;
 use xor_name::XorName;
 

@@ -9,8 +9,10 @@
 use std::path::Path;
 
 use color_eyre::Result;
+use sn_client::transfers::{
+    CashNoteRedemption, HotWallet, SpendAddress, Transfer, GENESIS_CASHNOTE,
+};
 use sn_client::{Client, SpendDag};
-use sn_transfers::{CashNoteRedemption, HotWallet, SpendAddress, Transfer, GENESIS_CASHNOTE};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
 

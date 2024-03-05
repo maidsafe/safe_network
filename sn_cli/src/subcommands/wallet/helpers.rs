@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use color_eyre::Result;
+use sn_client::transfers::{HotWallet, SpendAddress, Transfer};
 use sn_client::Client;
-use sn_transfers::{HotWallet, SpendAddress, Transfer};
 use std::{path::Path, str::FromStr};
 use url::Url;
 
