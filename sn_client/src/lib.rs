@@ -117,3 +117,9 @@ pub struct Client {
     events_broadcaster: ClientEventsBroadcaster,
     signer: bls::SecretKey,
 }
+
+impl Client {
+    pub fn get_network_clone(&self) -> Network {
+        self.network.clone()
+    }
+}

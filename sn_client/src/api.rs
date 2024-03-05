@@ -7,14 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    chunks::Error as ChunksError,
     error::{Error, Result},
     Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver, ClientRegister,
     WalletClient,
 };
 use bls::{PublicKey, SecretKey, Signature};
 use bytes::Bytes;
-use futures::future::join_all;
 use libp2p::{
     identity::Keypair,
     kad::{Quorum, Record},
@@ -43,7 +41,6 @@ use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
-    path::PathBuf,
 };
 use tokio::time::Duration;
 use tracing::trace;
@@ -719,32 +716,7 @@ impl Client {
         }
     }
 
-    /// Verify if a `Chunk` is stored by expected nodes on the network.
-    /// Single local use. Marked Private.
-    async fn verify_chunk_stored(&self, chunk: &Chunk) -> Result<()> {
-        let address = chunk.network_address();
-        info!("Verifying chunk: {address:?}");
-        let random_nonce = thread_rng().gen::<u64>();
-        let record_value = try_serialize_record(&chunk, RecordKind::Chunk)?;
-        let expected_proof = ChunkProof::new(record_value.as_ref(), random_nonce);
 
-        if let Err(err) = self
-            .network
-            .verify_chunk_existence(
-                address.clone(),
-                random_nonce,
-                expected_proof,
-                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
-                None,
-            )
-            .await
-        {
-            error!("Failed to verify the existence of chunk {address:?} with err {err:?}");
-            return Err(err.into());
-        }
-
-        Ok(())
-    }
 
     /// Verify if a `Register` is stored by expected nodes on the network.
     ///
@@ -1047,8 +1019,8 @@ impl Client {
     /// let main_pub_key = MainPubkey::new(pk);
     /// // Create a Cash Note Redemption Vector
     /// let cash_note = CashNote::from_hex("&hex").unwrap();
-    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
-    /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
+    /// let cash_note_redemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let vector = vec![cash_note_redemption.clone(), cash_note_redemption.clone()];
     /// // Verify the cash note redemptions
     /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);
     /// # Ok(())
@@ -1066,80 +1038,8 @@ impl Client {
         Ok(cash_notes)
     }
 
-    /// Verify that chunks were uploaded
-    ///
-    /// Returns a vec of any chunks that could not be verified
-    ///
-    /// # Arguments
-    /// * 'chunks_paths' - [([XorName], [PathBuf])]
-    /// * 'batch_size' - usize
-    ///
-    /// Return Type:
-    ///
-    /// Result<[Vec]<([XorName], [PathBuf])>>
-    ///
-    /// # Example
-    /// ```no_run
-    /// use sn_client::{Client, Error};
-    /// use bls::SecretKey;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// use std::path::PathBuf;
-    /// use xor_name::XorName;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// // Setup for chunk_path
-    /// let mut chunk_path = PathBuf::from("/");
-    /// // Setup an XorName
-    /// let mut rng = rand::thread_rng();
-    /// let xorname = XorName::random(&mut rng);
-    /// // set up the vector for check
-    /// let tuple_arg = (xorname,chunk_path);
-    /// let vector = vec![tuple_arg.clone(), tuple_arg.clone()];
-    /// // Verify Chunks
-    /// let verified_chunks = client.verify_uploaded_chunks(&vector,1).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn verify_uploaded_chunks(
-        &self,
-        chunks_paths: &[(XorName, PathBuf)],
-        batch_size: usize,
-    ) -> Result<Vec<(XorName, PathBuf)>> {
-        let mut failed_chunks = Vec::new();
 
-        for chunks_batch in chunks_paths.chunks(batch_size) {
-            // now we try and get batched chunks, keep track of any that fail
-            // Iterate over each uploaded chunk
-            let mut verify_handles = Vec::new();
 
-            for (name, chunk_path) in chunks_batch.iter().cloned() {
-                let client = self.clone();
-                // Spawn a new task to fetch each chunk concurrently
-                // this is specifically tokio here, as wasm-bindgen-futures breaks this
-                let handle = tokio::spawn(async move {
-                    // make sure the chunk is stored;
-                    let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));
-                    let res = client.verify_chunk_stored(&chunk).await;
-
-                    Ok::<_, ChunksError>(((name, chunk_path), res.is_err()))
-                });
-                verify_handles.push(handle);
-            }
-
-            // Await all fetch tasks and collect the results
-            let verify_results = join_all(verify_handles).await;
-
-            // Check for any errors during fetch
-            for result in verify_results {
-                if let ((chunk_addr, path), true) = result?? {
-                    warn!("Failed to fetch a chunk {chunk_addr:?}");
-                    failed_chunks.push((chunk_addr, path));
-                }
-            }
-        }
-
-        Ok(failed_chunks)
-    }
 }
 
 fn get_register_from_record(record: &Record) -> Result<SignedRegister> {
