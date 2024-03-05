@@ -132,8 +132,13 @@ pub struct AccountPacket {
 }
 
 impl AccountPacket {
-    /// Initialise directory as a fresh new packet with new random address for root folder.
-    pub fn init(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
+    /// Initialise directory as a fresh new packet with the given/random address for its root Folder.
+    pub fn init(
+        client: Client,
+        wallet_dir: &Path,
+        path: &Path,
+        root_folder_addr: Option<RegisterAddress>,
+    ) -> Result<Self> {
         let (_, _, meta_dir) = build_tracking_info_paths(path)?;
 
         // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
@@ -145,19 +150,20 @@ impl AccountPacket {
         }
 
         let mut rng = rand::thread_rng();
-        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
+        let root_folder_addr = root_folder_addr
+            .unwrap_or_else(|| RegisterAddress::new(XorName::random(&mut rng), client.signer_pk()));
         store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
         Self::from_path(client, wallet_dir, path)
     }
 
-    /// Create AccountPacket instance from a directory which already contains tracking information.
+    /// Create AccountPacket instance from a directory which has been already initialised.
     pub fn from_path(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
-        // this will fail if there is no tracking information found
+        // this will fail if the directory was not previously initialised with 'init'.
         let curr_metadata = read_tracking_info_from_disk(&meta_dir)?;
         let (root_folder_addr,root_folder_created) = read_root_folder_addr(&meta_dir)
-            .map_err(|_| eyre!("Root Folder address not found, make sure the dir is initialised to be tracked."))?;
+            .map_err(|_| eyre!("Root Folder address not found, make sure the directory {path:?} is initialised."))?;
 
         Ok(Self {
             client,
