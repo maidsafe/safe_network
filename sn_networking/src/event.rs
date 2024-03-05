@@ -1017,7 +1017,7 @@ impl SwarmDriver {
 
     /// Check for changes in our close group
     ///
-    fn check_for_change_in_our_close_group(&mut self) -> bool {
+    pub(crate) fn check_for_change_in_our_close_group(&mut self) -> bool {
         // this includes self
         let closest_k_peers = self.get_closest_k_value_local_peers();
 
@@ -1039,7 +1039,7 @@ impl SwarmDriver {
         }
     }
 
-    fn log_kbuckets(&mut self, peer: &PeerId) {
+    pub(crate) fn log_kbuckets(&mut self, peer: &PeerId) {
         let distance = NetworkAddress::from_peer(self.self_peer_id)
             .distance(&NetworkAddress::from_peer(*peer));
         info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
