@@ -9,10 +9,10 @@
 use super::files::ChunkManager;
 
 use serde::{Deserialize, Serialize};
+use sn_client::protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
+use sn_client::registers::EntryHash;
+use sn_client::transfers::HotWallet;
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
-use sn_protocol::storage::{Chunk, RegisterAddress, RetryStrategy};
-use sn_registers::EntryHash;
-use sn_transfers::HotWallet;
 
 use crate::subcommands::files::{
     download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
