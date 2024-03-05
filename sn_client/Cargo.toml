@@ -14,8 +14,9 @@ version = "0.104.27"
 default=[]
 local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
+test-utils=["sn_protocol/test-utils"]
 # required to pass on flag to node builds
-websockets = ["sn_networking/websockets"]
+websockets = ["sn_networking/websockets", "sn_protocol/websockets"]
 
 [dependencies]
 async-trait = "0.1"
