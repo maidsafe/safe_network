@@ -9,11 +9,12 @@
 mod common;
 
 use assert_fs::TempDir;
+use assert_matches::assert_matches;
 use common::client::{get_gossip_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_transfers::{
-    rng, DerivationIndex, Hash, HotWallet, MainSecretKey, NanoTokens, OfflineTransfer,
+    rng, DerivationIndex, Hash, HotWallet, MainSecretKey, NanoTokens, OfflineTransfer, WalletError,
     GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
 };
 use tracing::info;
@@ -116,13 +117,13 @@ async fn genesis_double_spend_fail() -> Result<()> {
     let reason_hash = Hash::default();
     let transfer =
         OfflineTransfer::new(genesis_cashnote, vec![recipient], change_addr, reason_hash)?;
-    std::mem::drop(exclusive_access);
 
     // send the transfer to the network which will mark genesis as a double spent
     // making its direct descendants unspendable
     let res = client
         .send_spends(transfer.all_spend_requests.iter(), false)
         .await;
+    std::mem::drop(exclusive_access);
     assert!(res.is_ok());
 
     // put the bad cashnote in the first wallet
@@ -148,13 +149,13 @@ async fn genesis_double_spend_fail() -> Result<()> {
         change_addr,
         reason_hash,
     )?;
-    std::mem::drop(exclusive_access);
 
     // send the transfer to the network which should reject it
     let res = client
         .send_spends(transfer2.all_spend_requests.iter(), false)
         .await;
-    assert!(res.is_err());
+    std::mem::drop(exclusive_access);
+    assert_matches!(res, Err(WalletError::CouldNotSendMoney(_)));
 
     Ok(())
 }

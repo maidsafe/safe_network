@@ -114,6 +114,8 @@ pub enum Error {
     // GetRecord query errors
     #[error("GetRecord Query Error {0:?}")]
     GetRecordError(#[from] GetRecordError),
+    #[error("Record not stored by nodes, it could be invalid, else you should retry: {0:?}")]
+    RecordNotStoredByNodes(NetworkAddress),
 
     // The RecordKind that was obtained did not match with the expected one
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
@@ -135,7 +137,6 @@ pub enum Error {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-
     #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
     DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
 
