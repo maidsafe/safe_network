@@ -931,15 +931,14 @@ impl Client {
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// // Subscribing to the gossipsub topic "Royalty Transfer Notification"
-    /// client.subscribe_to_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"))?;
+    /// client.subscribe_to_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"));
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
+    pub fn subscribe_to_topic(&self, topic_id: String) {
         info!("Subscribing to topic id: {topic_id}");
-        self.network.subscribe_to_topic(topic_id)?;
-        self.network.start_handle_gossip()?;
-        Ok(())
+        self.network.subscribe_to_topic(topic_id);
+        self.network.start_handle_gossip();
     }
 
     /// Unsubscribe from given gossipsub topic
@@ -955,14 +954,13 @@ impl Client {
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// // Unsubscribing to the gossipsub topic "Royalty Transfer Notification"
-    /// client.unsubscribe_from_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"))?;
+    /// client.unsubscribe_from_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"));
     /// # Ok(())
     /// # }
     /// ```
-    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
+    pub fn unsubscribe_from_topic(&self, topic_id: String) {
         info!("Unsubscribing from topic id: {topic_id}");
-        self.network.unsubscribe_from_topic(topic_id)?;
-        Ok(())
+        self.network.unsubscribe_from_topic(topic_id);
     }
 
     /// Publish message on given topic
@@ -980,14 +978,13 @@ impl Client {
     /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
     /// let msg = String::from("Transfer Successful.");
     /// // Note the use of .into() to set the argument as bytes
-    /// client.publish_on_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"), msg.into())?;
+    /// client.publish_on_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"), msg.into());
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
         info!("Publishing msg on topic id: {topic_id}");
-        self.network.publish_on_topic(topic_id, msg)?;
-        Ok(())
+        self.network.publish_on_topic(topic_id, msg);
     }
 
     /// This function is used to receive a Vector of CashNoteRedemptions and turn them back into spendable CashNotes.
