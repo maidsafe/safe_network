@@ -750,6 +750,19 @@ impl SwarmDriver {
                 if is_bad {
                     info!("Peer {peer_id:?} is considered as bad");
                     let _ = self.bad_nodes.insert(peer_id);
+
+                    warn!("Cleaning out bad_peer {peer_id:?}");
+                    if let Some(dead_peer) =
+                        self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
+                    {
+                        self.connected_peers = self.connected_peers.saturating_sub(1);
+                        self.send_event(NetworkEvent::PeerRemoved(
+                            *dead_peer.node.key.preimage(),
+                            self.connected_peers,
+                        ));
+                        self.log_kbuckets(&peer_id);
+                        let _ = self.check_for_change_in_our_close_group();
+                    }
                 } else {
                     trace!(%peer_id, ?addrs, "peer considered as active, attempting to add addresses to routing table");
 
