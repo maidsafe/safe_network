@@ -14,8 +14,8 @@ use color_eyre::{
     Result,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use sn_client::protocol::storage::{Chunk, ChunkAddress};
 use sn_client::FilesApi;
-use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -565,8 +565,8 @@ mod tests {
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
+    use sn_client::protocol::test_utils::assert_list_eq;
     use sn_logging::LogBuilder;
-    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
 
     #[test]

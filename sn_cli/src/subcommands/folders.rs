@@ -10,7 +10,7 @@ use crate::subcommands::acc_packet::AccountPacket;
 
 use sn_client::{Client, BATCH_SIZE};
 
-use sn_protocol::storage::{RegisterAddress, RetryStrategy};
+use sn_client::protocol::storage::{RegisterAddress, RetryStrategy};
 
 use crate::subcommands::files::upload::FilesUploadOptions;
 use clap::Parser;

@@ -18,8 +18,8 @@ pub(crate) use chunk_manager::ChunkManager;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Help, Result};
 use indicatif::{ProgressBar, ProgressStyle};
+use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
-use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use std::time::Duration;
 use std::{
     ffi::OsString,
