@@ -285,7 +285,7 @@ impl Node {
 
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
-        self.network.put_local_record(record)?;
+        self.network.put_local_record(record);
 
         self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));
 
@@ -327,7 +327,7 @@ impl Node {
         let content_hash = XorName::from_content(&record.value);
 
         debug!("Storing register {reg_addr:?} as Record locally");
-        self.network.put_local_record(record)?;
+        self.network.put_local_record(record);
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
@@ -389,7 +389,7 @@ impl Node {
             publisher: None,
             expires: None,
         };
-        self.network.put_local_record(record)?;
+        self.network.put_local_record(record);
 
         // Notify the sender of any double spend
         if validated_spends.len() > 1 {
@@ -503,7 +503,7 @@ impl Node {
         trace!("Received payment of {received_fee:?} for {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
-        let _ = self.network.notify_payment_received();
+        self.network.notify_payment_received();
 
         // deposit the CashNotes in our wallet
         wallet.deposit_and_store_to_disk(&cash_notes)?;
@@ -540,9 +540,7 @@ impl Node {
             match royalties_cash_notes_r.serialize(&mut serialiser) {
                 Ok(()) => {
                     let msg = msg.into_inner().freeze();
-                    if let Err(err) = self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg) {
-                        debug!("Failed to publish a network royalties payment notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}: {err:?}");
-                    }
+                    self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg);
                 }
                 Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
             }

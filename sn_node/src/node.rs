@@ -170,9 +170,8 @@ impl NodeBuilder {
                 info!("Picked as a forwarding node to subscribe to the {ROYALTY_TRANSFER_NOTIF_TOPIC} topic");
                 // Forwarder only needs to forward topic msgs on libp2p level,
                 // i.e. no need to handle topic msgs, hence not a `listener`.
-                running_node
-                    .subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())
-                    .map(|()| info!("Node has been subscribed to gossipsub topic '{ROYALTY_TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications."))?;
+                running_node.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string());
+                info!("Node has been subscribed to gossipsub topic '{ROYALTY_TRANSFER_NOTIF_TOPIC}' to receive network royalties payments notifications.");
             }
         }
 
@@ -258,11 +257,7 @@ impl Node {
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
                         let _handle = spawn(async move {
-                            if let Err(err) = Self::try_interval_replication(network)
-                            {
-                                error!("Error while triggering replication {err:?}");
-                            }
-
+                            Self::try_interval_replication(network);
                             trace!("Periodic replication took {:?}", start.elapsed());
                         });
                     }
@@ -270,7 +265,7 @@ impl Node {
                         match node_cmd {
                             Ok(NodeCmd::TransferNotifsFilter(filter)) => {
                                 self.transfer_notifs_filter = filter;
-                                let _ = self.network.start_handle_gossip();
+                                self.network.start_handle_gossip();
                             }
                             Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
@@ -314,9 +309,7 @@ impl Node {
                 let net_clone = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(err) = Self::try_interval_replication(net_clone) {
-                        error!("Error while triggering replication {err:?}");
-                    }
+                    Self::try_interval_replication(net_clone);
                 });
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
@@ -327,9 +320,7 @@ impl Node {
                 let net = self.network.clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
                 let _handle = spawn(async move {
-                    if let Err(e) = Self::try_interval_replication(net) {
-                        error!("Error while triggering replication {e:?}");
-                    }
+                    Self::try_interval_replication(net);
                 });
             }
             NetworkEvent::NewListenAddr(_) => {
@@ -371,9 +362,7 @@ impl Node {
                     let res = Self::handle_query(&network, query, payment_address).await;
                     trace!("Sending response {res:?}");
 
-                    if let Err(error) = network.send_response(res, channel) {
-                        error!("Error while sending response form query req: {error:?}");
-                    }
+                    network.send_response(res, channel);
                 });
             }
             NetworkEvent::UnverifiedRecord(record) => {

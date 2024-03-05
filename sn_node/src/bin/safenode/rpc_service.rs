@@ -237,20 +237,9 @@ impl SafeNode for SafeNodeRpcService {
 
         // Assuming the rpc subscription request also force the node to handle the gossip.
         // So far, this is only used during test to allow counting the gossip msgs received by node.
-        if let Err(err) = self.running_node.start_handle_gossip() {
-            return Err(Status::new(
-                Code::Internal,
-                format!("Failed to start handle gossip: {err}"),
-            ));
-        }
-
-        match self.running_node.subscribe_to_topic(topic.clone()) {
-            Ok(()) => Ok(Response::new(GossipsubSubscribeResponse {})),
-            Err(err) => Err(Status::new(
-                Code::Internal,
-                format!("Failed to subscribe to topic '{topic}': {err}"),
-            )),
-        }
+        self.running_node.start_handle_gossip();
+        self.running_node.subscribe_to_topic(topic.clone());
+        Ok(Response::new(GossipsubSubscribeResponse {}))
     }
 
     async fn unsubscribe_from_topic(
@@ -265,13 +254,8 @@ impl SafeNode for SafeNodeRpcService {
 
         let topic = &request.get_ref().topic;
 
-        match self.running_node.unsubscribe_from_topic(topic.clone()) {
-            Ok(()) => Ok(Response::new(GossipsubUnsubscribeResponse {})),
-            Err(err) => Err(Status::new(
-                Code::Internal,
-                format!("Failed to unsubscribe from topic '{topic}': {err}"),
-            )),
-        }
+        self.running_node.unsubscribe_from_topic(topic.clone());
+        Ok(Response::new(GossipsubUnsubscribeResponse {}))
     }
 
     async fn publish_on_topic(
@@ -288,13 +272,8 @@ impl SafeNode for SafeNodeRpcService {
         // Convert the message from Vec<u8> to Bytes
         let msg = Bytes::from(request.get_ref().msg.clone());
 
-        match self.running_node.publish_on_topic(topic.clone(), msg) {
-            Ok(()) => Ok(Response::new(GossipsubPublishResponse {})),
-            Err(err) => Err(Status::new(
-                Code::Internal,
-                format!("Failed to publish on topic '{topic}': {err}"),
-            )),
-        }
+        self.running_node.publish_on_topic(topic.clone(), msg);
+        Ok(Response::new(GossipsubPublishResponse {}))
     }
 
     async fn stop(&self, request: Request<StopRequest>) -> Result<Response<StopResponse>, Status> {
