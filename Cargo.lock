@@ -4833,7 +4833,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.3.11"
+version = "0.4.0"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -5171,7 +5171,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.14.8"
+version = "0.15.0"
 dependencies = [
  "blsttc",
  "bytes",
