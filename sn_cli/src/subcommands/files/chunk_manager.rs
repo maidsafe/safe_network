@@ -13,9 +13,10 @@ use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
+use sn_client::{Client, Error as ChunksError, Error};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::protocol::storage::{Chunk, ChunkAddress};
 use sn_client::FilesApi;
+use sn_protocol::storage::{Chunk, ChunkAddress, RecordKind, try_serialize_record};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -24,8 +25,13 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
+use std::num::NonZeroUsize;
+use futures::future::join_all;
+use libp2p::kad::Quorum;
+use rand::{Rng, thread_rng};
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
+use sn_protocol::messages::ChunkProof;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
@@ -443,6 +449,112 @@ impl ChunkManager {
             .collect()
     }
 
+    /// Verify that chunks were uploaded
+    ///
+    /// Returns a vec of any chunks that could not be verified
+    ///
+    /// # Arguments
+    /// * 'chunks_paths' - [([XorName], [PathBuf])]
+    /// * 'batch_size' - usize
+    ///
+    /// Return Type:
+    ///
+    /// Result<[Vec]<([XorName], [PathBuf])>>
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use std::path::PathBuf;
+    /// use xor_name::XorName;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Setup for chunk_path
+    /// let mut chunk_path = PathBuf::from("/");
+    /// // Setup an XorName
+    /// let mut rng = rand::thread_rng();
+    /// let xorname = XorName::random(&mut rng);
+    /// // set up the vector for check
+    /// let tuple_arg = (xorname,chunk_path);
+    /// let vector = vec![tuple_arg.clone(), tuple_arg.clone()];
+    /// // Verify Chunks
+    /// let verified_chunks = client.verify_uploaded_chunks(&vector,1).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn verify_uploaded_chunks(
+        &self,
+        chunks_paths: &[(XorName, PathBuf)],
+        batch_size: usize,
+        client: &Client,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        let mut failed_chunks = Vec::new();
+
+        for chunks_batch in chunks_paths.chunks(batch_size) {
+            // now we try and get batched chunks, keep track of any that fail
+            // Iterate over each uploaded chunk
+            let mut verify_handles = Vec::new();
+
+            for (name, chunk_path) in chunks_batch.iter().cloned() {
+                // let client = self.clone();
+                // Spawn a new task to fetch each chunk concurrently
+                // this is specifically tokio here, as wasm-bindgen-futures breaks this
+
+                let x = client.clone();
+
+                let handle = tokio::spawn(async move {
+                    // make sure the chunk is stored;
+                    let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));
+                    let res = ChunkManager::verify_chunk_stored(x, &chunk).await;
+
+                    Ok::<_, ChunksError>(((name, chunk_path), res.is_err()))
+                });
+                verify_handles.push(handle);
+            }
+
+            // Await all fetch tasks and collect the results
+            let verify_results = join_all(verify_handles).await;
+
+            // Check for any errors during fetch
+            for result in verify_results {
+                if let ((chunk_addr, path), true) = result?? {
+                    warn!("Failed to fetch a chunk {chunk_addr:?}");
+                    failed_chunks.push((chunk_addr, path));
+                }
+            }
+        }
+
+        Ok(failed_chunks)
+    }
+
+    /// Verify if a `Chunk` is stored by expected nodes on the network.
+    /// Single local use. Marked Private.
+    async fn verify_chunk_stored(client: sn_client::Client, chunk: &Chunk) -> Result<()> {
+        let address = chunk.network_address();
+        info!("Verifying chunk: {address:?}");
+        let random_nonce = thread_rng().gen::<u64>();
+        let record_value = try_serialize_record(&chunk, RecordKind::Chunk)?;
+        let expected_proof = ChunkProof::new(record_value.as_ref(), random_nonce);
+
+        if let Err(err) = client
+            .get_network_clone()
+            .verify_chunk_existence(
+                address.clone(),
+                random_nonce,
+                expected_proof,
+                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                None,
+            )
+            .await
+        {
+            error!("Failed to verify the existence of chunk {address:?} with err {err:?}");
+            return Err(err.into());
+        }
+
+        Ok(())
+    }
+
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// completed
     pub(crate) fn already_put_chunks(
@@ -565,8 +677,8 @@ mod tests {
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
-    use sn_client::protocol::test_utils::assert_list_eq;
     use sn_logging::LogBuilder;
+    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
 
     #[test]
