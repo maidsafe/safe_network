@@ -15,11 +15,11 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
-use sn_client::{Client, ClientEvent};
-use sn_transfers::{
+use sn_client::transfers::{
     CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend,
     UniquePubkey, WalletError, WatchOnlyWallet,
 };
+use sn_client::{Client, ClientEvent};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},

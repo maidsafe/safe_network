@@ -7,8 +7,8 @@ use indicatif::ProgressBar;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
+use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{FilesApi, FilesDownload, FilesDownloadEvent};
-use sn_protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 
 use crate::subcommands::files;
 use crate::subcommands::files::upload::{UploadedFile, UPLOADED_FILES};
