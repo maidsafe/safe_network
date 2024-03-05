@@ -135,27 +135,23 @@ impl RunningNode {
     }
 
     /// Subscribe to given gossipsub topic
-    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
-        self.network.subscribe_to_topic(topic_id)?;
-        Ok(())
+    pub fn subscribe_to_topic(&self, topic_id: String) {
+        self.network.subscribe_to_topic(topic_id);
     }
 
     /// Starts handling gossipsub topics
-    pub fn start_handle_gossip(&self) -> Result<()> {
-        self.network.start_handle_gossip()?;
-        Ok(())
+    pub fn start_handle_gossip(&self) {
+        self.network.start_handle_gossip();
     }
 
     /// Unsubscribe from given gossipsub topic
-    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
-        self.network.unsubscribe_from_topic(topic_id)?;
-        Ok(())
+    pub fn unsubscribe_from_topic(&self, topic_id: String) {
+        self.network.unsubscribe_from_topic(topic_id);
     }
 
     /// Publish a message on a given gossipsub topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
-        self.network.publish_on_topic(topic_id, msg)?;
-        Ok(())
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
+        self.network.publish_on_topic(topic_id, msg);
     }
 
     /// Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.

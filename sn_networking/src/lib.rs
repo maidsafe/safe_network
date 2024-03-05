@@ -172,7 +172,7 @@ impl Network {
     /// This function will only be called for the bootstrap nodes.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::Dial { addr, sender })?;
+        self.send_swarm_cmd(SwarmCmd::Dial { addr, sender });
         receiver.await?
     }
 
@@ -194,7 +194,7 @@ impl Network {
     /// Does not include self
     pub async fn get_kbuckets(&self) -> Result<BTreeMap<u32, Vec<PeerId>>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender });
         receiver
             .await
             .map_err(|_e| Error::InternalMsgChannelDropped)
@@ -208,7 +208,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GetCloseGroupLocalPeers {
             key: key.clone(),
             sender,
-        })?;
+        });
 
         match receiver.await {
             Ok(close_peers) => {
@@ -243,7 +243,7 @@ impl Network {
     /// Also contains our own PeerId.
     pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender });
 
         receiver
             .await
@@ -254,7 +254,7 @@ impl Network {
     /// Also contains our own PeerId.
     pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestKLocalPeers { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetClosestKLocalPeers { sender });
 
         receiver
             .await
@@ -396,21 +396,18 @@ impl Network {
     }
 
     /// Subscribe to given gossipsub topic
-    pub fn subscribe_to_topic(&self, topic_id: String) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id))?;
-        Ok(())
+    pub fn subscribe_to_topic(&self, topic_id: String) {
+        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id));
     }
 
     /// Unsubscribe from given gossipsub topic
-    pub fn unsubscribe_from_topic(&self, topic_id: String) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::GossipsubUnsubscribe(topic_id))?;
-        Ok(())
+    pub fn unsubscribe_from_topic(&self, topic_id: String) {
+        self.send_swarm_cmd(SwarmCmd::GossipsubUnsubscribe(topic_id));
     }
 
     /// Publish a msg on a given topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg })?;
-        Ok(())
+    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
+        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg });
     }
 
     /// Get a record from the network
@@ -428,7 +425,7 @@ impl Network {
             key: key.clone(),
             sender,
             cfg: cfg.clone(),
-        })?;
+        });
         let result = receiver.await.map_err(|e| {
             error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
             Error::InternalMsgChannelDropped
@@ -464,11 +461,7 @@ impl Network {
                     key: key.clone(),
                     sender,
                     cfg: cfg.clone(),
-                })
-                .map_err(|err| BackoffError::Transient {
-                    err,
-                    retry_after: None,
-                })?;
+                });
                 let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 Error::InternalMsgChannelDropped
@@ -520,7 +513,7 @@ impl Network {
     /// Get the cost of storing the next record from the network
     pub async fn get_local_storecost(&self, key: RecordKey) -> Result<NanoTokens> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { key, sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { key, sender });
 
         receiver
             .await
@@ -528,9 +521,8 @@ impl Network {
     }
 
     /// Notify the node receicced a payment.
-    pub fn notify_payment_received(&self) -> Result<()> {
-        self.send_swarm_cmd(SwarmCmd::PaymentReceived)?;
-        Ok(())
+    pub fn notify_payment_received(&self) {
+        self.send_swarm_cmd(SwarmCmd::PaymentReceived);
     }
 
     /// Get `Record` from the local RecordStore
@@ -539,7 +531,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GetLocalRecord {
             key: key.clone(),
             sender,
-        })?;
+        });
 
         receiver
             .await
@@ -549,7 +541,7 @@ impl Network {
     /// Whether the target peer is considered as `in trouble` by self
     pub async fn is_peer_bad(&self, target: NetworkAddress) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::IsPeerInTrouble { target, sender })?;
+        self.send_swarm_cmd(SwarmCmd::IsPeerInTrouble { target, sender });
 
         receiver
             .await
@@ -605,13 +597,13 @@ impl Network {
                 record: record.clone(),
                 sender,
                 quorum: cfg.put_quorum,
-            })?;
+            });
         } else {
             self.send_swarm_cmd(SwarmCmd::PutRecord {
                 record: record.clone(),
                 sender,
                 quorum: cfg.put_quorum,
-            })?;
+            });
         }
 
         let response = receiver.await?;
@@ -640,8 +632,26 @@ impl Network {
                 )
                 .await?;
             } else {
-                self.get_record_from_network(record.key.clone(), get_cfg)
-                    .await?;
+                match self
+                    .get_record_from_network(record.key.clone(), get_cfg)
+                    .await
+                {
+                    Ok(_) => {
+                        debug!("Record {pretty_key:?} verified to be stored.");
+                    }
+                    Err(Error::GetRecordError(GetRecordError::RecordNotFound)) => {
+                        warn!("Record {pretty_key:?} not found after PUT, either rejected or not yet stored by nodes when we asked");
+                        return Err(Error::RecordNotStoredByNodes(
+                            NetworkAddress::from_record_key(&record_key),
+                        ));
+                    }
+                    Err(e) => {
+                        debug!(
+                            "Failed to verify record {pretty_key:?} to be stored with error: {e:?}"
+                        );
+                        return Err(e);
+                    }
+                }
             }
         }
         response
@@ -649,7 +659,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    pub fn put_local_record(&self, record: Record) -> Result<()> {
+    pub fn put_local_record(&self, record: Record) {
         trace!(
             "Writing Record locally, for {:?} - length {:?}",
             PrettyPrintRecordKey::from(&record.key),
@@ -664,7 +674,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
             key: key.clone(),
             sender,
-        })?;
+        });
 
         receiver
             .await
@@ -676,7 +686,7 @@ impl Network {
         &self,
     ) -> Result<HashMap<NetworkAddress, RecordType>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender })?;
+        self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender });
 
         receiver
             .await
@@ -693,13 +703,13 @@ impl Network {
             req,
             peer,
             sender: Some(sender),
-        })?;
+        });
         receiver.await?
     }
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
-    pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) -> Result<()> {
+    pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) {
         let swarm_cmd = SwarmCmd::SendRequest {
             req,
             peer,
@@ -709,40 +719,37 @@ impl Network {
     }
 
     /// Send a `Response` through the channel opened by the requester.
-    pub fn send_response(&self, resp: Response, channel: MsgResponder) -> Result<()> {
+    pub fn send_response(&self, resp: Response, channel: MsgResponder) {
         self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
     }
 
     /// Return a `SwarmLocalState` with some information obtained from swarm's local state.
     pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender))?;
+        self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender));
         let state = receiver.await?;
         Ok(state)
     }
 
-    pub fn start_handle_gossip(&self) -> Result<()> {
+    pub fn start_handle_gossip(&self) {
         self.send_swarm_cmd(SwarmCmd::GossipHandler)
     }
 
-    pub fn trigger_interval_replication(&self) -> Result<()> {
+    pub fn trigger_interval_replication(&self) {
         self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
     }
 
     pub fn notify_node_status(&self, peer_id: PeerId, addrs: HashSet<Multiaddr>, is_bad: bool) {
-        if let Err(error) = self.send_swarm_cmd(SwarmCmd::SendNodeStatus {
+        self.send_swarm_cmd(SwarmCmd::SendNodeStatus {
             peer_id,
             addrs,
             is_bad,
-        }) {
-            error!("Error while notifying node status: {error:?}");
-        }
+        });
     }
 
     // Helper to send SwarmCmd
-    fn send_swarm_cmd(&self, cmd: SwarmCmd) -> Result<()> {
+    fn send_swarm_cmd(&self, cmd: SwarmCmd) {
         send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
-        Ok(())
     }
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
@@ -757,7 +764,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GetClosestPeersToAddressFromNetwork {
             key: key.clone(),
             sender,
-        })?;
+        });
         let k_bucket_peers = receiver.await?;
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result

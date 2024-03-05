@@ -22,7 +22,7 @@ use std::{
 const WALLET_FILE_NAME: &str = "wallet";
 const WALLET_LOCK_FILE_NAME: &str = "wallet.lock";
 const CASHNOTES_DIR_NAME: &str = "cash_notes";
-const UNCONFRIMED_TX_NAME: &str = "unconfirmed_spend_requests";
+const UNCONFIRMED_TX_NAME: &str = "unconfirmed_spend_requests";
 
 /// Writes the `KeyLessWallet` to the specified path.
 pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
@@ -48,7 +48,7 @@ pub(super) fn store_unconfirmed_spend_requests(
     wallet_dir: &Path,
     unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
 ) -> Result<()> {
-    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
+    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFIRMED_TX_NAME);
 
     let mut file = fs::File::create(unconfirmed_spend_requests_path)?;
     let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
@@ -61,7 +61,7 @@ pub(super) fn remove_unconfirmed_spend_requests(
     wallet_dir: &Path,
     _unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
 ) -> Result<()> {
-    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFRIMED_TX_NAME);
+    let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFIRMED_TX_NAME);
 
     debug!("Removing unconfirmed_spend_requests from {unconfirmed_spend_requests_path:?}");
     fs::remove_file(unconfirmed_spend_requests_path)?;
@@ -72,7 +72,7 @@ pub(super) fn remove_unconfirmed_spend_requests(
 pub(super) fn get_unconfirmed_spend_requests(
     wallet_dir: &Path,
 ) -> Result<Option<BTreeSet<SignedSpend>>> {
-    let path = wallet_dir.join(UNCONFRIMED_TX_NAME);
+    let path = wallet_dir.join(UNCONFIRMED_TX_NAME);
     if !path.is_file() {
         return Ok(None);
     }

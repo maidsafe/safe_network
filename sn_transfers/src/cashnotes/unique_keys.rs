@@ -146,6 +146,12 @@ impl std::fmt::Debug for UniquePubkey {
     }
 }
 
+impl std::fmt::Display for UniquePubkey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_hex())
+    }
+}
+
 /// This is the key that unlocks the value of a CashNote.
 /// Holding this key gives you access to the tokens of the
 /// CashNote with the corresponding UniquePubkey.
