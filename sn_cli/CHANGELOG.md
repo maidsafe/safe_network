@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.81](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.80...sn_cli-v0.89.81) - 2024-03-06
+
+### Added
+- *(cli)* cmd to initialise a directory as root Folder for storing and syncing on/with network
+- *(cli)* pull any Folders changes from network when syncing and merge them to local version
+- make sn_cli use sn_clients reeports
+- *(cli)* files download respects filename path
+- *(folders)* make payments for local mutations detected before syncing
+- *(folders)* build mutations report to be used by status and sync apis
+- *(folders)* sync up logic and CLI cmd
+- impl iterate uploader self to extract spawn theads
+- impl iterate uploader self to extract spawn theads
+- elevate files api and cm
+- refactor upload with iter
+- a more clear param for a message function
+- split upload and upload with iter
+- removal of some messages from vody body
+- batch royalties redemption
+- collect royalties through DAG
+- *(folders)* avoid chunking files when retrieving them with Folders from the network
+- *(folders)* store files data-map within Folders metadata chunk
+- file to download
+- *(folders)* regenerate tracking info when downloading Folders fm the network
+- *(folders)* realise local changes made to folders/files
+- *(folders)* keep track of local changes to Folders
+
+### Fixed
+- *(folders)* set correct change state to folders when scanning
+- *(folders)* keep track of root folder sync status
+
+### Other
+- clean swarm commands errs and spend errors
+- also add deps features in sn_client
+- *(release)* sn_transfers-v0.16.1
+- *(release)* sn_protocol-v0.15.0/sn-node-manager-v0.4.0
+- *(cli)* removing some redundant logic from acc-packet codebase
+- *(cli)* minor improvements to acc-packet codebase comments
+- rename to iterative upload
+- rename to iterative upload
+- *(folders)* some simplifications to acc-packet codebase
+- *(folders)* minor improvements to folders status report
+
 ## [0.89.80](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.89.79...sn_cli-v0.89.80) - 2024-02-23
 
 ### Added
