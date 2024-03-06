@@ -30,11 +30,11 @@ use bls::SecretKey;
 use clap::Parser;
 use color_eyre::Result;
 use indicatif::ProgressBar;
+use sn_client::transfers::bls_secret_from_hex;
 use sn_client::{Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver};
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, LogBuilder, LogFormat};
 use sn_peers_acquisition::get_peers_from_args;
-use sn_transfers::bls_secret_from_hex;
 use std::{io, path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::Level;

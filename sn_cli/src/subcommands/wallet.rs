@@ -10,7 +10,7 @@ pub(crate) mod helpers;
 pub(crate) mod hot_wallet;
 pub(crate) mod wo_wallet;
 
-use sn_transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
+use sn_client::transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
 
 use color_eyre::Result;
 use std::{collections::BTreeSet, io::Read, path::Path};
@@ -95,8 +95,7 @@ impl WalletApiHelper {
 
         self.try_load_cash_notes()?;
 
-        let deposited =
-            sn_transfers::NanoTokens::from(self.balance().as_nano() - previous_balance.as_nano());
+        let deposited = NanoTokens::from(self.balance().as_nano() - previous_balance.as_nano());
         if deposited.is_zero() {
             println!("Nothing deposited.");
         } else if let Err(err) = self.deposit_and_store_to_disk(&vec![]) {
