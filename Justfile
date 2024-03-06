@@ -216,7 +216,7 @@ upload-github-release-assets:
   binary_crates=(
     "sn_cli"
     "sn_node"
-    "sn-node-manager"
+    "sn_node_manager"
     "sn_faucet"
     "sn_node_rpc_client"
   )
@@ -243,7 +243,7 @@ upload-github-release-assets:
             bin_name="safenode"
             bucket="sn-node"
             ;;
-          sn-node-manager)
+          sn_node_manager)
             bin_name="safenode-manager"
             bucket="sn-node-manager"
             ;;
@@ -267,7 +267,7 @@ upload-github-release-assets:
           if [[ $crate_with_version == $crate-v* ]]; then
             (
               cd deploy/$bin_name
-              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
+              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn_node_manager" ]]; then
                 echo "Uploading $bin_name assets to $crate_with_version release..."
                 ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               fi
