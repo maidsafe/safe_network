@@ -741,6 +741,12 @@ mod tests {
     }
 
     #[test]
+    fn test_calculate_cost_for_records() {
+        let sut = calculate_cost_for_records(2049, 2050, 2048);
+        assert_eq!(sut, 474814770);
+    }
+
+    #[test]
     fn put_get_remove_record() {
         fn prop(r: ArbitraryRecord) {
             let rt = if let Ok(rt) = Runtime::new() {
