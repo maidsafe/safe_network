@@ -10,10 +10,7 @@
 extern crate tracing;
 
 use clap::Parser;
-use color_eyre::{
-    self,
-    eyre::{OptionExt, Result},
-};
+use color_eyre::eyre::{OptionExt, Result};
 use libp2p_identity::PeerId;
 use sn_node_manager::{
     config::get_node_registry_path,
