@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{config::create_owned_dir, node_control, service::ServiceControl, VerbosityLevel};
+use crate::{
+    config::create_owned_dir, helpers::get_bin_version, node_control, ServiceManager,
+    VerbosityLevel,
+};
 use color_eyre::{
     eyre::{eyre, OptionExt},
     Result,
@@ -14,8 +17,11 @@ use color_eyre::{
 use colored::Colorize;
 use libp2p::PeerId;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
-use sn_node_rpc_client::RpcActions;
-use sn_service_management::{Daemon, Node, NodeRegistry, NodeStatus};
+use sn_service_management::{
+    control::{ServiceControl, ServiceController},
+    rpc::RpcClient,
+    DaemonServiceData, NodeRegistry, NodeService, NodeServiceData, ServiceStatus,
+};
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -62,12 +68,13 @@ pub fn add_daemon(
 
     match service_control.install(install_ctx) {
         Ok(()) => {
-            let daemon = Daemon {
-                daemon_path,
+            let daemon = DaemonServiceData {
+                daemon_path: daemon_path.clone(),
                 endpoint: Some(SocketAddr::new(IpAddr::V4(address), port)),
                 pid: None,
                 service_name: DAEMON_SERVICE_NAME.to_string(),
-                status: NodeStatus::Added,
+                status: ServiceStatus::Added,
+                version: get_bin_version(&daemon_path)?,
             };
             node_registry.daemon = Some(daemon);
 
@@ -78,76 +85,7 @@ pub fn add_daemon(
         }
         Err(e) => {
             println!("Failed to add daemon service: {e}");
-            Err(e)
-        }
-    }
-}
-
-pub fn start_daemon(
-    daemon: &mut Daemon,
-    service_control: &dyn ServiceControl,
-    verbosity: VerbosityLevel,
-) -> Result<()> {
-    if let NodeStatus::Running = daemon.status {
-        if service_control.is_service_process_running(daemon.pid.unwrap()) {
-            println!("The {} service is already running", daemon.service_name);
-            return Ok(());
-        }
-    }
-
-    if verbosity != VerbosityLevel::Minimal {
-        println!("Attempting to start {}...", daemon.service_name);
-    }
-    service_control.start(&daemon.service_name)?;
-
-    let pid = service_control.get_process_pid(&daemon.service_name)?;
-    daemon.pid = Some(pid);
-    daemon.status = NodeStatus::Running;
-
-    println!("{} Started faucet service", "✓".green());
-    if verbosity != VerbosityLevel::Minimal {
-        println!("  - PID: {}", pid);
-        println!("  - Endpoint: {:?}", daemon.endpoint);
-    }
-
-    Ok(())
-}
-
-pub fn stop_daemon(daemon: &mut Daemon, service_control: &dyn ServiceControl) -> Result<()> {
-    match daemon.status {
-        NodeStatus::Added => {
-            println!("The daemon has not been started since it was installed");
-            Ok(())
-        }
-        NodeStatus::Removed => {
-            println!("The daemon service was removed");
-            Ok(())
-        }
-        NodeStatus::Running => {
-            let pid = daemon.pid.ok_or_eyre("The PID was not set")?;
-            if service_control.is_service_process_running(pid) {
-                println!("Attempting to stop {}...", daemon.service_name);
-                service_control.stop(&daemon.service_name)?;
-                println!(
-                    "{} Service {} with PID {} was stopped",
-                    "✓".green(),
-                    daemon.service_name,
-                    pid
-                );
-            } else {
-                println!(
-                    "{} Service {} was already stopped",
-                    "✓".green(),
-                    daemon.service_name
-                );
-            }
-            daemon.pid = None;
-            daemon.status = NodeStatus::Stopped;
-            Ok(())
-        }
-        NodeStatus::Stopped => {
-            println!("{} The faucet was already stopped", "✓".green(),);
-            Ok(())
+            Err(e.into())
         }
     }
 }
@@ -156,8 +94,6 @@ pub async fn restart_node_service(
     node_registry: &mut NodeRegistry,
     peer_id: PeerId,
     retain_peer_id: bool,
-    rpc_client: &dyn RpcActions,
-    service_control: &dyn ServiceControl,
 ) -> Result<()> {
     let nodes_len = node_registry.nodes.len();
     let current_node = node_registry
@@ -165,15 +101,17 @@ pub async fn restart_node_service(
         .iter_mut()
         .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
         .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
-    node_control::stop(current_node, service_control)
-        .await
-        .map_err(|err| {
-            eyre!(
-                "Error while stopping node {:?} with: {err:?}",
-                current_node.service_name
-            )
-        })?;
 
+    let rpc_client = RpcClient::from_socket_addr(current_node.rpc_socket_addr);
+    let service = NodeService::new(current_node.clone(), Box::new(rpc_client));
+    let mut service_manager = ServiceManager::new(
+        service,
+        Box::new(ServiceController {}),
+        VerbosityLevel::Normal,
+    );
+    service_manager.stop().await?;
+
+    let service_control = ServiceController {};
     if retain_peer_id {
         // reuse the same port and root dir to retain peer id.
         service_control
@@ -204,19 +142,7 @@ pub async fn restart_node_service(
                 current_node.service_name
             )
         })?;
-        node_control::start(
-            current_node,
-            service_control,
-            rpc_client,
-            VerbosityLevel::Normal,
-        )
-        .await
-        .map_err(|err| {
-            eyre!(
-                "Error while starting node {:?} with: {err:?}",
-                current_node.service_name
-            )
-        })?;
+        service_manager.start().await?;
     } else {
         // else start a new node instance.
         let new_node_number = nodes_len + 1;
@@ -296,7 +222,7 @@ pub async fn restart_node_service(
             eyre!("Error while installing node {new_service_name:?} with: {err:?}",)
         })?;
 
-        let mut node = Node {
+        let node = NodeServiceData {
             genesis: current_node.genesis,
             local: current_node.local,
             service_name: new_service_name.clone(),
@@ -304,7 +230,7 @@ pub async fn restart_node_service(
             number: new_node_number as u16,
             rpc_socket_addr: current_node.rpc_socket_addr,
             version: current_node.version.clone(),
-            status: NodeStatus::Added,
+            status: ServiceStatus::Added,
             listen_addr: None,
             pid: None,
             peer_id: None,
@@ -313,15 +239,18 @@ pub async fn restart_node_service(
             safenode_path,
             connected_peers: None,
         };
-        node_control::start(
-            &mut node,
-            service_control,
-            rpc_client,
+
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(ServiceController {}),
             VerbosityLevel::Normal,
-        )
-        .await
-        .map_err(|err| eyre!("Error while starting node {new_service_name:?} with: {err:?}",))?;
-        node_registry.nodes.push(node);
+        );
+        service_manager.start().await?;
+        node_registry
+            .nodes
+            .push(service_manager.service.service_data);
     };
 
     node_registry

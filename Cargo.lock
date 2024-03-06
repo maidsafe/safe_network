@@ -5235,15 +5235,24 @@ dependencies = [
 name = "sn_service_management"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "dirs-next",
  "libp2p",
+ "libp2p-identity",
+ "mockall",
  "prost 0.9.0",
+ "semver",
  "serde",
  "serde_json",
+ "service-manager",
  "sn_protocol",
+ "sysinfo",
  "thiserror",
+ "tokio",
  "tonic 0.6.2",
  "tonic-build",
+ "tracing",
+ "tracing-core",
 ]
 
 [[package]]

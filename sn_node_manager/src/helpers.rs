@@ -113,7 +113,6 @@ pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
         .ok_or_else(|| eyre!("Failed to capture stdout"))?
         .read_to_string(&mut output)?;
 
-    println!("{output}");
     let version = output
         .split_whitespace()
         .last()
