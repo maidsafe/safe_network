@@ -1,7 +1,12 @@
-mod error;
+// Copyright (C) 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
-pub use crate::error::{Error, Result};
-
+use crate::error::{Error, Result};
 use async_trait::async_trait;
 use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use sn_protocol::safenode_proto::{
@@ -73,11 +78,11 @@ impl RpcClient {
         loop {
             match SafeNodeClient::connect(self.endpoint.clone()).await {
                 Ok(rpc_client) => break Ok(rpc_client),
-                Err(err) => {
+                Err(_) => {
                     attempts += 1;
                     tokio::time::sleep(Self::CONNECTION_RETRY_DELAY_SEC).await;
                     if attempts >= Self::MAX_CONNECTION_RETRY_ATTEMPTS {
-                        return Err(Error::RpcEndpointConnectionFailure(err));
+                        return Err(Error::RpcConnectionError(self.endpoint.clone()));
                     }
                     error!(
                         "Could not connect to RPC endpoint {:?}. Retrying {attempts}/{}",
@@ -97,9 +102,9 @@ impl RpcActions for RpcClient {
         let response = client
             .node_info(Request::new(NodeInfoRequest {}))
             .await
-            .map_err(|err| {
-                error!("Could not obtain NodeInfo through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not obtain node info through RPC: {e:?}");
+                Error::RpcNodeInfoError(e.to_string())
             })?;
         let node_info_resp = response.get_ref();
         let peer_id = PeerId::from_bytes(&node_info_resp.peer_id)?;
@@ -113,15 +118,14 @@ impl RpcActions for RpcClient {
         };
         Ok(node_info)
     }
-
     async fn network_info(&self) -> Result<NetworkInfo> {
         let mut client = self.connect_with_retry().await?;
         let response = client
             .network_info(Request::new(NetworkInfoRequest {}))
             .await
-            .map_err(|err| {
-                error!("Could not obtain NetworkInfo through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not obtain network info through RPC: {e:?}");
+                Error::RpcNodeInfoError(e.to_string())
             })?;
         let network_info = response.get_ref();
 
@@ -148,9 +152,9 @@ impl RpcActions for RpcClient {
         let response = client
             .record_addresses(Request::new(RecordAddressesRequest {}))
             .await
-            .map_err(|err| {
-                error!("Could not obtain RecordAddresses through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not obtain record addresses through RPC: {e:?}");
+                Error::RpcRecordAddressError(e.to_string())
             })?;
         let mut record_addresses = vec![];
         for bytes in response.get_ref().addresses.iter() {
@@ -167,9 +171,9 @@ impl RpcActions for RpcClient {
                 topic: topic.to_string(),
             }))
             .await
-            .map_err(|err| {
-                error!("Could not Subscribe to gossip topic {topic:?} through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not subscribe to gossip topic {topic:?} through RPC: {e:?}");
+                Error::RpcGossipSubscribeError(topic.to_string(), e.to_string())
             })?;
         Ok(())
     }
@@ -181,9 +185,9 @@ impl RpcActions for RpcClient {
                 topic: topic.to_string(),
             }))
             .await
-            .map_err(|err| {
-                error!("Could not unsubscribe from gossip topic {topic:?} through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not unsubscribe from gossip topic {topic:?} through RPC: {e:?}");
+                Error::RpcGossipUnsubscribeError(topic.to_string(), e.to_string())
             })?;
         Ok(())
     }
@@ -196,9 +200,9 @@ impl RpcActions for RpcClient {
                 msg: msg.into(),
             }))
             .await
-            .map_err(|err| {
-                error!("Could not publish on topic {topic:?}, msg: {msg:?} through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not publish on topic {topic:?} through RPC: {e:?}");
+                Error::RpcGossipPublishError(topic.to_string(), e.to_string())
             })?;
         Ok(())
     }
@@ -211,9 +215,9 @@ impl RpcActions for RpcClient {
                 retain_peer_id,
             }))
             .await
-            .map_err(|err| {
-                error!("Could not restart node through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not restart node through RPC: {e:?}");
+                Error::RpcNodeRestartError(e.to_string())
             })?;
         Ok(())
     }
@@ -223,9 +227,9 @@ impl RpcActions for RpcClient {
         let _response = client
             .stop(Request::new(StopRequest { delay_millis }))
             .await
-            .map_err(|err| {
-                error!("Could not stop node through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not restart node through RPC: {e:?}");
+                Error::RpcNodeStopError(e.to_string())
             })?;
         Ok(())
     }
@@ -235,9 +239,9 @@ impl RpcActions for RpcClient {
         let _response = client
             .update(Request::new(UpdateRequest { delay_millis }))
             .await
-            .map_err(|err| {
-                error!("Could not update node through RPC: {err:?}");
-                err
+            .map_err(|e| {
+                error!("Could not update node through RPC: {e:?}");
+                Error::RpcNodeUpdateError(e.to_string())
             })?;
         Ok(())
     }

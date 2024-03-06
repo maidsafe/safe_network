@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::Result;
-#[cfg(test)]
-use mockall::automock;
+use crate::error::{Error, Result};
+
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
@@ -23,7 +22,6 @@ use sysinfo::{Pid, ProcessExt, System, SystemExt};
 /// need assert that the service manager is used. Testing code that used the real service manager
 /// would result in real services on the machines we are testing on; that can leave a bit of a mess
 /// to clean up, especially if the tests fail.
-#[cfg_attr(test, automock)]
 pub trait ServiceControl: Sync {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
@@ -36,12 +34,11 @@ pub trait ServiceControl: Sync {
     fn wait(&self, delay: u64);
 }
 
-pub struct NodeServiceManager {}
+pub struct ServiceController {}
 
-impl ServiceControl for NodeServiceManager {
+impl ServiceControl for ServiceController {
     #[cfg(target_os = "linux")]
     fn create_service_user(&self, username: &str) -> Result<()> {
-        use color_eyre::eyre::eyre;
         use std::process::Command;
 
         let output = Command::new("id").arg("-u").arg(username).output()?;
@@ -57,7 +54,7 @@ impl ServiceControl for NodeServiceManager {
             .arg(username)
             .output()?;
         if !output.status.success() {
-            return Err(eyre!("Failed to create user account"));
+            return Err(Error::ServiceUserAccountCreationFailed);
         }
         println!("Created {username} user account for running the service");
         Ok(())
@@ -65,7 +62,6 @@ impl ServiceControl for NodeServiceManager {
 
     #[cfg(target_os = "macos")]
     fn create_service_user(&self, username: &str) -> Result<()> {
-        use color_eyre::eyre::eyre;
         use std::process::Command;
         use std::str;
 
@@ -115,7 +111,7 @@ impl ServiceControl for NodeServiceManager {
         for cmd in commands {
             let status = Command::new("sh").arg("-c").arg(&cmd).status()?;
             if !status.success() {
-                return Err(eyre!("Failed to create service user account"));
+                return Err(Error::ServiceUserAccountCreationFailed);
             }
         }
         Ok(())
@@ -143,8 +139,6 @@ impl ServiceControl for NodeServiceManager {
     }
 
     fn get_process_pid(&self, name: &str) -> Result<u32> {
-        use color_eyre::eyre::eyre;
-
         let mut system = System::new_all();
         system.refresh_all();
         for (pid, process) in system.processes() {
@@ -154,7 +148,7 @@ impl ServiceControl for NodeServiceManager {
                 return Ok(pid.to_string().parse::<u32>()?);
             }
         }
-        Err(eyre!("Could not find process named {name}"))
+        Err(Error::ServiceProcessNotFound(name.to_string()))
     }
 
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {

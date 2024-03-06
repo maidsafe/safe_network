@@ -12,7 +12,7 @@ use service_manager::ServiceInstallCtx;
 use std::{ffi::OsString, path::PathBuf};
 
 #[derive(Debug, PartialEq)]
-pub(super) struct InstallFaucetServiceCtxBuilder {
+pub struct InstallFaucetServiceCtxBuilder {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub faucet_path: PathBuf,
