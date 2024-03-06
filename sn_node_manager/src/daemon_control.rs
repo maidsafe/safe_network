@@ -15,7 +15,7 @@ use colored::Colorize;
 use libp2p::PeerId;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_node_rpc_client::RpcActions;
-use sn_protocol::node_registry::{Daemon, Node, NodeRegistry, NodeStatus};
+use sn_service_management::{Daemon, Node, NodeRegistry, NodeStatus};
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},

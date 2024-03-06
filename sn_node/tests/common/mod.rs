@@ -19,19 +19,23 @@ use rand::{
     Rng,
 };
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use serde::{de, Deserialize, Deserializer};
 use sn_client::{Client, FilesApi};
 use sn_protocol::{
-    node_registry::{get_local_node_registry_path, NodeRegistry},
-    safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient,
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest},
     storage::ChunkAddress,
-    test_utils::DeploymentInventory,
+};
+use sn_service_management::{
+    get_local_node_registry_path,
+    safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient, NodeRegistry,
 };
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::Write,
-    net::SocketAddr,
+    net::{IpAddr, SocketAddr},
     path::{Path, PathBuf},
+    str::FromStr,
     time::Duration,
 };
 use tonic::Request;
@@ -39,6 +43,78 @@ use tracing::{debug, error, warn};
 use xor_name::XorName;
 
 type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
+
+fn deserialize_peer_socket_map<'de, D>(
+    deserializer: D,
+) -> std::result::Result<BTreeMap<PeerId, SocketAddr>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: BTreeMap<String, SocketAddr> = BTreeMap::deserialize(deserializer)?;
+    let s = s
+        .into_iter()
+        .map(|(peer_id, socket_addr)| {
+            PeerId::from_str(&peer_id)
+                .map_err(de::Error::custom)
+                .map(|peer_id| (peer_id, socket_addr))
+        })
+        .collect::<std::result::Result<Vec<_>, D::Error>>()?;
+    Ok(s.into_iter().collect())
+}
+
+// The contents of the file stored by sn-testnet-deploy.
+#[derive(Clone, Debug, Deserialize)]
+pub struct DeploymentInventory {
+    pub name: String,
+    pub version_info: Option<(String, String)>,
+    pub branch_info: Option<(String, String)>,
+    pub vm_list: Vec<(String, IpAddr)>,
+    #[serde(deserialize_with = "deserialize_peer_socket_map")]
+    pub rpc_endpoints: BTreeMap<PeerId, SocketAddr>,
+    #[serde(deserialize_with = "deserialize_peer_socket_map")]
+    pub safenodemand_endpoints: BTreeMap<PeerId, SocketAddr>,
+    pub node_count: u16,
+    pub ssh_user: String,
+    pub genesis_multiaddr: String,
+    pub peers: Vec<String>,
+    pub faucet_address: String,
+    pub uploaded_files: Vec<(String, String)>,
+}
+
+impl DeploymentInventory {
+    pub fn load() -> Result<Self> {
+        let path = Self::get_deployment_path()?;
+        println!("SN_INVENTORY var set to {path:?}");
+        let inventory_file = std::fs::read(path)?;
+        let inventory = serde_json::from_slice(&inventory_file)?;
+        println!("Read DeploymentInventory");
+        Ok(inventory)
+    }
+
+    // Read the path from the env variable SN_INVENTORY
+    // Else read deployment name from SN_INVENTORY
+    fn get_deployment_path() -> Result<PathBuf> {
+        let sn_inventory = std::env::var("SN_INVENTORY")
+        .map_err(|_| eyre!("SN_INVENTORY not set. Provide either the deployment name or the direct path to the inventory.json file"))?;
+        let path_from_env = PathBuf::from(&sn_inventory);
+        if path_from_env.exists() {
+            Ok(path_from_env)
+        } else {
+            let path = dirs_next::data_dir()
+                .ok_or_else(|| eyre!("Could not obtain data_dir"))?
+                .join("safe")
+                .join("testnet-deploy")
+                .join(format!("{sn_inventory}-inventory.json"));
+            if path.exists() {
+                Ok(path)
+            } else {
+                Err(eyre!(
+                    "Could not obtain the deployment path from SN_INVENTORY"
+                ))
+            }
+        }
+    }
+}
 
 pub fn random_content(
     client: &Client,

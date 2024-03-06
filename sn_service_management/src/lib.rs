@@ -6,10 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{get_port_from_multiaddr, Error};
-use color_eyre::Result;
+pub mod error;
+
+pub mod safenode_manager_proto {
+    tonic::include_proto!("safenode_manager_proto");
+}
+
+use crate::error::{Error, Result};
 use libp2p::{Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
+use sn_protocol::get_port_from_multiaddr;
 use std::{
     io::{Read, Write},
     net::SocketAddr,

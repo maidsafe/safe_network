@@ -24,11 +24,11 @@ use libp2p_identity::PeerId;
 use mockall::{mock, predicate::*, Sequence};
 use predicates::prelude::*;
 use sn_node_rpc_client::{NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions};
-use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
 use sn_releases::{
     ArchiveType, Platform, ProgressCallback, ReleaseType, Result as SnReleaseResult,
     SafeReleaseRepositoryInterface,
 };
+use sn_service_management::{Node, NodeRegistry, NodeStatus};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},

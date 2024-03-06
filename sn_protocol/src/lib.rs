@@ -15,26 +15,16 @@ pub mod error;
 pub mod messages;
 /// Helpers for safenode
 pub mod node;
-/// Data structures for node management.
-pub mod node_registry;
 /// RPC commands to node
 pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
-/// Test utils
-#[cfg(feature = "test-utils")]
-pub mod test_utils;
 
 // this includes code generated from .proto files
 #[allow(clippy::unwrap_used)]
 #[cfg(feature = "rpc")]
 pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
-}
-#[allow(clippy::unwrap_used)]
-#[cfg(feature = "rpc")]
-pub mod safenode_manager_proto {
-    tonic::include_proto!("safenode_manager_proto");
 }
 pub use error::Error;
 

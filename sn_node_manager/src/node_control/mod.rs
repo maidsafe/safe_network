@@ -21,7 +21,7 @@ use colored::Colorize;
 use libp2p::multiaddr::Protocol;
 use semver::Version;
 use sn_node_rpc_client::{RpcActions, RpcClient};
-use sn_protocol::node_registry::{Node, NodeRegistry, NodeStatus};
+use sn_service_management::{Node, NodeRegistry, NodeStatus};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 pub enum UpgradeResult {

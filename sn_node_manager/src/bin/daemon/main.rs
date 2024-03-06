@@ -10,10 +10,7 @@
 extern crate tracing;
 
 use clap::Parser;
-use color_eyre::{
-    self,
-    eyre::{OptionExt, Result},
-};
+use color_eyre::{self, eyre::OptionExt, eyre::Result};
 use libp2p_identity::PeerId;
 use sn_node_manager::{
     config::get_node_registry_path,
@@ -21,12 +18,12 @@ use sn_node_manager::{
     service::NodeServiceManager,
 };
 use sn_node_rpc_client::RpcClient;
-use sn_protocol::{
-    node_registry::NodeRegistry,
+use sn_service_management::{
     safenode_manager_proto::{
         safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
         NodeServiceRestartRequest, NodeServiceRestartResponse,
     },
+    NodeRegistry,
 };
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Code, Request, Response, Status};
