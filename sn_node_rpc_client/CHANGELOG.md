@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.67](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.4.66...sn_node_rpc_client-v0.4.67) - 2024-03-06
+
+### Added
+- *(test)* add option to retain_peer_id for the node's restart rpc cmd
+
+### Fixed
+- *(manager)* fix sync issue while trying to use trait objects
+
+### Other
+- *(release)* sn_transfers-v0.16.1
+- *(release)* sn_protocol-v0.15.0/sn-node-manager-v0.4.0
+
 ## [0.4.66](https://github.com/maidsafe/safe_network/compare/sn_node_rpc_client-v0.4.65...sn_node_rpc_client-v0.4.66) - 2024-02-23
 
 ### Other
