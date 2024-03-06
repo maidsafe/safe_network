@@ -228,6 +228,16 @@ impl Node {
             let mut replication_interval = tokio::time::interval(replication_interval_time);
             let _ = replication_interval.tick().await; // first tick completes immediately
 
+            // use a random timeout to ensure not sync when transmit messages.
+            let bad_nodes_check_interval: u64 = rng.gen_range(
+                PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+            );
+            let bad_nodes_check_time = Duration::from_secs(bad_nodes_check_interval);
+            debug!("BadNodesCheck interval set to {bad_nodes_check_time:?}");
+
+            let mut bad_nodes_check_interval = tokio::time::interval(bad_nodes_check_time);
+            let _ = bad_nodes_check_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -259,6 +269,18 @@ impl Node {
                         let _handle = spawn(async move {
                             Self::try_interval_replication(network);
                             trace!("Periodic replication took {:?}", start.elapsed());
+                        });
+                    }
+                    // runs every bad_nodes_check_time time
+                    _ = bad_nodes_check_interval.tick() => {
+                        let start = std::time::Instant::now();
+                        trace!("Periodic bad_nodes check triggered");
+                        let network = self.network.clone();
+                        self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
+
+                        let _handle = spawn(async move {
+                            Self::try_bad_nodes_check(network).await;
+                            trace!("Periodic bad_nodes check took {:?}", start.elapsed());
                         });
                     }
                     node_cmd = cmds_receiver.recv() => {
@@ -606,6 +628,24 @@ impl Node {
             }
         };
         Response::Query(resp)
+    }
+
+    async fn try_bad_nodes_check(network: Network) {
+        if let Ok(peers) = network.get_all_local_peers().await {
+            if peers.len() > 100 {
+                for peer_id in peers {
+                    let network_clone = network.clone();
+                    let _handle = spawn(async move {
+                        let is_bad = Self::is_peer_bad_node(&network_clone, peer_id).await;
+                        if is_bad {
+                            network_clone.notify_node_status(peer_id, Default::default(), is_bad);
+                        }
+                    });
+                }
+            } else {
+                debug!("Skip bad_nodes check as not having too many nodes in RT");
+            }
+        }
     }
 }
 

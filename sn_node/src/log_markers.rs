@@ -66,6 +66,9 @@ pub enum Marker<'a> {
 
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),
+
+    /// Interval based bad_nodes check
+    IntervalBadNodesCheckTriggered,
 }
 
 impl<'a> Marker<'a> {
