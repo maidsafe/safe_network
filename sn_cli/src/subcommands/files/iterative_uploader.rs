@@ -36,7 +36,6 @@ impl IterativeUploader {
         client: &Client,
         options: FilesUploadOptions,
     ) -> Result<()> {
-
         let FilesUploadOptions {
             make_data_public,
             verify_store,
@@ -44,17 +43,20 @@ impl IterativeUploader {
             retry_strategy,
         } = options;
 
-        let chunks_to_upload = self.chunk_manager.chunks_to_upload(
-            entries_iter,
-            files_path,
-            client,
-            verify_store,
-            batch_size,
-            make_data_public,
-        ).await?;
+        let chunks_to_upload = self
+            .chunk_manager
+            .chunks_to_upload(
+                entries_iter,
+                files_path,
+                client,
+                verify_store,
+                batch_size,
+                make_data_public,
+            )
+            .await?;
 
-        if chunks_to_upload.is_empty(){
-            return Ok(())
+        if chunks_to_upload.is_empty() {
+            return Ok(());
         }
 
         let chunk_amount_to_upload = chunks_to_upload.len();
@@ -153,7 +155,11 @@ fn spawn_progress_handler(
             }
         }
         progress_bar.finish_and_clear();
-        msg_check_upload_with_error(&mut chunk_manager, make_data_public, upload_terminated_with_error);
+        msg_check_upload_with_error(
+            &mut chunk_manager,
+            make_data_public,
+            upload_terminated_with_error,
+        );
         Ok::<_, ClientError>(())
     })
 }
@@ -171,7 +177,11 @@ fn msg_upload_complete(mut chunk_manager: &mut ChunkManager, make_data_public: b
     msg_star_line();
     ChunkManager::msg_chunk_manager_upload_complete(chunk_manager);
 }
-fn msg_check_upload_with_error(mut chunk_manager: &mut ChunkManager, make_data_public: bool, upload_terminated_with_error: bool) {
+fn msg_check_upload_with_error(
+    mut chunk_manager: &mut ChunkManager,
+    make_data_public: bool,
+    upload_terminated_with_error: bool,
+) {
     if upload_terminated_with_error {
         error!("Got FileUploadEvent::Error inside upload event loop");
     } else {
@@ -271,12 +281,9 @@ fn msg_payment_details(
     println!("New wallet balance: {final_balance}");
 }
 
-
-
 pub(crate) fn msg_star_line() {
     println!("**************************************");
 }
-
 
 fn msg_uploading_chunks(chunks_to_upload_len: usize) {
     println!("Uploading {chunks_to_upload_len} chunks",);
@@ -293,4 +300,3 @@ fn msg_uploaded_files_banner() {
     println!("**************************************");
     println!("*          Uploaded Files            *");
 }
-
