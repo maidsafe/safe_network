@@ -36,7 +36,6 @@ mod node;
 mod put_validation;
 mod quote;
 mod replication;
-mod spends;
 
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},

@@ -12,7 +12,7 @@ use super::{
     Spend, UniquePubkey,
 };
 
-use crate::{Error, Result};
+use crate::{Result, TransferError};
 
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -211,7 +211,7 @@ impl CashNoteBuilder {
         // Verify the tx, along with signed spends.
         // Note that we do this just once for entire tx, not once per output CashNote.
         self.spent_tx
-            .verify_against_inputs_spent(&self.signed_spends)?;
+            .verify_against_inputs_spent(self.signed_spends.iter())?;
 
         // Build output CashNotes.
         self.build_output_cashnotes()
@@ -231,7 +231,7 @@ impl CashNoteBuilder {
                 let (main_pubkey, derivation_index) = self
                     .output_details
                     .get(&output.unique_pubkey)
-                    .ok_or(Error::UniquePubkeyNotFound)?;
+                    .ok_or(TransferError::UniquePubkeyNotFound)?;
 
                 Ok((
                     CashNote {
