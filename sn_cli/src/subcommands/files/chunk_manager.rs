@@ -15,7 +15,6 @@ use color_eyre::{
 };
 use sn_client::{Client, Error as ChunksError, Error};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::protocol::storage::{Chunk, ChunkAddress};
 use sn_client::FilesApi;
 use sn_protocol::storage::{Chunk, ChunkAddress, RecordKind, try_serialize_record};
 use std::{
@@ -31,10 +30,6 @@ use futures::future::join_all;
 use libp2p::kad::Quorum;
 use rand::{Rng, thread_rng};
 use rand::prelude::SliceRandom;
-use std::num::NonZeroUsize;
-use futures::future::join_all;
-use libp2p::kad::Quorum;
-use rand::{Rng, thread_rng};
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 use sn_protocol::messages::ChunkProof;
@@ -774,8 +769,8 @@ mod tests {
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
-    use sn_client::protocol::test_utils::assert_list_eq;
     use sn_logging::LogBuilder;
+    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
 
     #[test]

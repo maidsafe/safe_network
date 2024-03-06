@@ -2,10 +2,8 @@ use crate::subcommands::files;
 use crate::subcommands::files::{ChunkManager, FilesUploadOptions};
 use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
-use rand::prelude::SliceRandom;
-use rand::thread_rng;
-use sn_client::transfers::{Error as TransfersError, NanoTokens, WalletError};
 use sn_client::{Client, Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
+use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -38,6 +36,7 @@ impl IterativeUploader {
         client: &Client,
         options: FilesUploadOptions,
     ) -> Result<()> {
+
         let FilesUploadOptions {
             make_data_public,
             verify_store,
@@ -278,18 +277,6 @@ pub(crate) fn msg_star_line() {
     println!("**************************************");
 }
 
-fn msg_not_public_by_default() {
-    println!("*                                    *");
-    println!("*  These are not public by default.  *");
-    println!("*     Reupload with `-p` option      *");
-    println!("*      to publish the datamaps.      *");
-}
-
-fn msg_files_already_uploaded_verified() {
-    println!("All files were already uploaded and verified");
-    println!("**************************************");
-    println!("*          Uploaded Files            *");
-}
 
 fn msg_uploading_chunks(chunks_to_upload_len: usize) {
     println!("Uploading {chunks_to_upload_len} chunks",);
