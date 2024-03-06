@@ -8,7 +8,7 @@
 
 use super::{
     audit::audit,
-    helpers::{get_faucet, receive, verify_spend},
+    helpers::{get_faucet, receive, verify_spend_at},
     WalletApiHelper,
 };
 use crate::get_stdin_response;
@@ -20,8 +20,8 @@ use color_eyre::{
 };
 use dialoguer::Confirm;
 use sn_client::transfers::{
-    Error as TransferError, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
-    UnsignedTransfer, WalletError,
+    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
+    WalletError,
 };
 use sn_client::{Client, Error as ClientError};
 use std::{path::Path, str::FromStr};
@@ -220,7 +220,7 @@ pub(crate) async fn wallet_cmds(
         WalletCmds::Verify {
             spend_address,
             genesis,
-        } => verify_spend(spend_address, genesis, client).await,
+        } => verify_spend_at(spend_address, genesis, client).await,
         cmd => Err(eyre!(
             "{cmd:?} has to be processed before connecting to the network"
         )),

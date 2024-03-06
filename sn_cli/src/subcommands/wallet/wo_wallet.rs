@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{helpers::verify_spend, watch_only_wallet_from_pk, WalletApiHelper};
+use super::{helpers::verify_spend_at, watch_only_wallet_from_pk, WalletApiHelper};
 
 use bls::{PublicKey, PK_SIZE};
 use clap::Parser;
@@ -206,7 +206,7 @@ pub(crate) async fn wo_wallet_cmds(
         WatchOnlyWalletCmds::Verify {
             spend_address,
             genesis,
-        } => verify_spend(spend_address, genesis, client).await,
+        } => verify_spend_at(spend_address, genesis, client).await,
         cmd => Err(eyre!(
             "{cmd:?} has to be processed before connecting to the network"
         )),

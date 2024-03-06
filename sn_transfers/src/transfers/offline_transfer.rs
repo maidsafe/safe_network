@@ -8,8 +8,9 @@
 
 use crate::{
     cashnotes::{CashNoteBuilder, UnsignedTransfer},
-    rng, CashNote, DerivationIndex, DerivedSecretKey, Error, Hash, Input, MainPubkey, NanoTokens,
-    Result, SignedSpend, Transaction, TransactionBuilder, UniquePubkey, NETWORK_ROYALTIES_PK,
+    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, Result,
+    SignedSpend, Transaction, TransactionBuilder, TransferError, UniquePubkey,
+    NETWORK_ROYALTIES_PK,
 };
 
 use serde::{Deserialize, Serialize};
@@ -97,7 +98,7 @@ impl OfflineTransfer {
                 total.checked_add(*amount)
             })
             .ok_or_else(|| {
-                Error::CashNoteReissueFailed(
+                TransferError::CashNoteReissueFailed(
                     "Overflow occurred while summing the amounts for the recipients.".to_string(),
                 )
             })?;
@@ -141,7 +142,7 @@ pub fn create_unsigned_transfer(
         .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
             total.checked_add(*amount)
         })
-        .ok_or(Error::ExcessiveNanoValue)?;
+        .ok_or(TransferError::ExcessiveNanoValue)?;
 
     // We need to select the necessary number of cash_notes from those that we were passed.
     let (cash_notes_to_spend, change_amount) =
@@ -195,7 +196,7 @@ fn select_inputs(
         // Input amount increases with the amount of the cash_note.
         total_input_amount = total_input_amount.checked_add(cash_note_balance)
             .ok_or_else(|| {
-                Error::CashNoteReissueFailed(
+                TransferError::CashNoteReissueFailed(
                     "Overflow occurred while increasing total input amount while trying to cover the output CashNotes."
                     .to_string(),
             )
@@ -219,7 +220,7 @@ fn select_inputs(
 
     // Make sure total input amount gathered with input CashNotes are enough for the output amount
     if total_output_amount > total_input_amount {
-        return Err(Error::NotEnoughBalance(
+        return Err(TransferError::NotEnoughBalance(
             total_input_amount,
             total_output_amount,
         ));
@@ -314,7 +315,7 @@ fn create_offline_transfer_with(
         .iter()
         .all(|(unique_pubkey, _)| src_txs.contains_key(*unique_pubkey))
     {
-        return Err(Error::CashNoteReissueFailed(
+        return Err(TransferError::CashNoteReissueFailed(
             "Not all signed spends could be matched to a source cash_note transaction.".to_string(),
         ));
     }

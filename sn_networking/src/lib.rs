@@ -24,6 +24,7 @@ mod network_discovery;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+mod spends;
 pub mod target_arch;
 mod transfers;
 
