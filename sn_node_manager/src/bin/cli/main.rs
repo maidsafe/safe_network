@@ -25,8 +25,8 @@ use sn_node_manager::{
 };
 use sn_node_rpc_client::RpcClient;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_protocol::node_registry::{get_local_node_registry_path, NodeRegistry};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_service_management::{get_local_node_registry_path, NodeRegistry};
 use sn_transfers::get_faucet_data_dir;
 use std::{
     net::Ipv4Addr,
