@@ -716,8 +716,6 @@ impl Client {
         }
     }
 
-
-
     /// Verify if a `Register` is stored by expected nodes on the network.
     ///
     /// # Arguments
@@ -1034,9 +1032,6 @@ impl Client {
             .await?;
         Ok(cash_notes)
     }
-
-
-
 }
 
 fn get_register_from_record(record: &Record) -> Result<SignedRegister> {

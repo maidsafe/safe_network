@@ -13,9 +13,16 @@ use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
+use futures::future::join_all;
+use libp2p::kad::Quorum;
+use rand::prelude::SliceRandom;
+use rand::{thread_rng, Rng};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::protocol::storage::{Chunk, ChunkAddress};
 use sn_client::FilesApi;
+use sn_client::{Client, Error as ChunksError, Error};
+use sn_protocol::messages::ChunkProof;
+use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind};
+use std::num::NonZeroUsize;
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -84,6 +91,51 @@ impl ChunkManager {
             resumed_files_count: 0,
             resumed_chunk_count: 0,
         }
+    }
+
+    pub(crate) async fn chunks_to_upload(
+        &mut self,
+        entries_iter: impl Iterator<Item = DirEntry> + Sized,
+        files_path: PathBuf,
+        client: &Client,
+        verify_store: bool,
+        batch_size: usize,
+        make_data_public: bool,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        ChunkManager::msg_starting_messages(
+            &files_path,
+            &batch_size,
+            &verify_store,
+            make_data_public,
+        );
+
+        self.chunk_with_iter(entries_iter, true, make_data_public)?;
+
+        let mut chunks_to_upload = if self.chunks_have_contents() {
+            self.get_chunks()
+        } else {
+            let attempted_chunks = self.already_put_chunks(&files_path, make_data_public)?;
+            let failed_chunks = self
+                .verify_uploaded_chunks(&attempted_chunks, batch_size, client)
+                .await?;
+            self.mark_completed(
+                attempted_chunks
+                    .into_iter()
+                    .filter(|c| !failed_chunks.contains(c))
+                    .map(|(xor, _)| xor),
+            )?;
+
+            if !failed_chunks.is_empty() {
+                ChunkManager::msg_unverified_chunks_reattempted(&failed_chunks.len());
+                failed_chunks
+            } else {
+                self.msg_chunks_all_empty(make_data_public);
+                return Ok(vec![]);
+            }
+        };
+        let mut rng = thread_rng();
+        chunks_to_upload.shuffle(&mut rng);
+        Ok(chunks_to_upload)
     }
 
     /// Chunk all the files in the provided `files_path`
@@ -331,7 +383,7 @@ impl ChunkManager {
             .collect::<Vec<(XorName, PathBuf)>>()
     }
 
-    pub(crate) fn is_chunks_empty(&self) -> bool {
+    pub(crate) fn chunks_have_contents(&self) -> bool {
         self.chunks
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
@@ -443,6 +495,112 @@ impl ChunkManager {
             .collect()
     }
 
+    /// Verify that chunks were uploaded
+    ///
+    /// Returns a vec of any chunks that could not be verified
+    ///
+    /// # Arguments
+    /// * 'chunks_paths' - [([XorName], [PathBuf])]
+    /// * 'batch_size' - usize
+    ///
+    /// Return Type:
+    ///
+    /// Result<[Vec]<([XorName], [PathBuf])>>
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// use std::path::PathBuf;
+    /// use xor_name::XorName;
+    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// // Setup for chunk_path
+    /// let mut chunk_path = PathBuf::from("/");
+    /// // Setup an XorName
+    /// let mut rng = rand::thread_rng();
+    /// let xorname = XorName::random(&mut rng);
+    /// // set up the vector for check
+    /// let tuple_arg = (xorname,chunk_path);
+    /// let vector = vec![tuple_arg.clone(), tuple_arg.clone()];
+    /// // Verify Chunks
+    /// let verified_chunks = client.verify_uploaded_chunks(&vector,1).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn verify_uploaded_chunks(
+        &self,
+        chunks_paths: &[(XorName, PathBuf)],
+        batch_size: usize,
+        client: &Client,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        let mut failed_chunks = Vec::new();
+
+        for chunks_batch in chunks_paths.chunks(batch_size) {
+            // now we try and get batched chunks, keep track of any that fail
+            // Iterate over each uploaded chunk
+            let mut verify_handles = Vec::new();
+
+            for (name, chunk_path) in chunks_batch.iter().cloned() {
+                // let client = self.clone();
+                // Spawn a new task to fetch each chunk concurrently
+                // this is specifically tokio here, as wasm-bindgen-futures breaks this
+
+                let x = client.clone();
+
+                let handle = tokio::spawn(async move {
+                    // make sure the chunk is stored;
+                    let chunk = Chunk::new(Bytes::from(std::fs::read(&chunk_path)?));
+                    let res = ChunkManager::verify_chunk_stored(x, &chunk).await;
+
+                    Ok::<_, ChunksError>(((name, chunk_path), res.is_err()))
+                });
+                verify_handles.push(handle);
+            }
+
+            // Await all fetch tasks and collect the results
+            let verify_results = join_all(verify_handles).await;
+
+            // Check for any errors during fetch
+            for result in verify_results {
+                if let ((chunk_addr, path), true) = result?? {
+                    warn!("Failed to fetch a chunk {chunk_addr:?}");
+                    failed_chunks.push((chunk_addr, path));
+                }
+            }
+        }
+
+        Ok(failed_chunks)
+    }
+
+    /// Verify if a `Chunk` is stored by expected nodes on the network.
+    /// Single local use. Marked Private.
+    async fn verify_chunk_stored(client: sn_client::Client, chunk: &Chunk) -> Result<()> {
+        let address = chunk.network_address();
+        info!("Verifying chunk: {address:?}");
+        let random_nonce = thread_rng().gen::<u64>();
+        let record_value = try_serialize_record(&chunk, RecordKind::Chunk)?;
+        let expected_proof = ChunkProof::new(record_value.as_ref(), random_nonce);
+
+        if let Err(err) = client
+            .get_network_clone()
+            .verify_chunk_existence(
+                address.clone(),
+                random_nonce,
+                expected_proof,
+                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                None,
+            )
+            .await
+        {
+            error!("Failed to verify the existence of chunk {address:?} with err {err:?}");
+            return Err(err.into());
+        }
+
+        Ok(())
+    }
+
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// completed
     pub(crate) fn already_put_chunks(
@@ -451,6 +609,10 @@ impl ChunkManager {
         make_files_public: bool,
     ) -> Result<Vec<(XorName, PathBuf)>> {
         self.chunk_path(files_path, false, make_files_public)?;
+        println!(
+            "Files upload attempted previously, verifying {} chunks",
+            self.get_chunks().len()
+        );
         Ok(self.get_chunks())
     }
 
@@ -557,7 +719,73 @@ impl ChunkManager {
             .ok()?;
         Some(XorName(decoded_xorname))
     }
+
+    /////////////////  Messages  /////////////////
+
+    fn msg_chunks_all_empty(&mut self, make_data_public: bool) {
+        ChunkManager::msg_files_already_uploaded_verified();
+        if !make_data_public {
+            ChunkManager::msg_not_public_by_default();
+        }
+        ChunkManager::msg_star_line();
+        if self.completed_files().is_empty() {
+            ChunkManager::msg_chk_mgr_no_verified_file_nor_re_upload();
+        }
+        ChunkManager::msg_chunk_manager_upload_complete(self);
+    }
+
+    pub(crate) fn msg_chunk_manager_upload_complete(chunk_manager: &mut ChunkManager) {
+        for (file_name, addr) in chunk_manager.completed_files() {
+            let hex_addr = addr.to_hex();
+            if let Some(file_name) = file_name.to_str() {
+                println!("\"{file_name}\" {hex_addr}");
+                info!("Uploaded {file_name} to {hex_addr}");
+            } else {
+                println!("\"{file_name:?}\" {hex_addr}");
+                info!("Uploaded {file_name:?} to {hex_addr}");
+            }
+        }
+    }
+    pub(crate) fn msg_chk_mgr_no_verified_file_nor_re_upload() {
+        println!(
+            "chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload."
+        );
+    }
+    pub(crate) fn msg_not_public_by_default() {
+        println!("*                                    *");
+        println!("*  These are not public by default.  *");
+        println!("*     Reupload with `-p` option      *");
+        println!("*      to publish the datamaps.      *");
+    }
+    pub(crate) fn msg_star_line() {
+        println!("**************************************");
+    }
+    pub(crate) fn msg_files_already_uploaded_verified() {
+        println!("All files were already uploaded and verified");
+        println!("**************************************");
+        println!("*          Uploaded Files            *");
+    }
+    pub(crate) fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
+        println!(
+            "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
+        );
+    }
+    pub(crate) fn msg_starting_messages(
+        files_path: &PathBuf,
+        batch_size: &usize,
+        verify_store: &bool,
+        make_data_public: bool,
+    ) {
+        debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
+        if make_data_public {
+            info!("{files_path:?} will be made public and linkable");
+            println!("{files_path:?} will be made public and linkable");
+        }
+        println!("Starting to chunk {files_path:?} now."); // check message responsibility
+    }
 }
+
+/////////////////  Tests  /////////////////
 
 #[cfg(test)]
 mod tests {
@@ -565,8 +793,8 @@ mod tests {
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
-    use sn_client::protocol::test_utils::assert_list_eq;
     use sn_logging::LogBuilder;
+    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
 
     #[test]
