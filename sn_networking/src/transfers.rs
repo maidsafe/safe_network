@@ -40,11 +40,12 @@ fn parse_signed_spends(address: &SpendAddress, record: &Record) -> Result<Signed
 }
 
 impl Network {
-    /// Gets a spend from the Network.
+    /// Gets raw spends from the Network.
+    /// Double spends returned together as is, not as an error.
     /// The target may have high chance not present in the network yet.
     ///
     /// If we get a quorum error, we enable re-try
-    pub async fn try_get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
+    pub async fn get_raw_spends(&self, address: SpendAddress) -> Result<Vec<SignedSpend>> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
@@ -60,8 +61,7 @@ impl Network {
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-
-        parse_signed_spends(&address, &record)
+        get_singed_spends_from_record(&record)
     }
 
     /// Gets a spend from the Network.
@@ -216,7 +216,7 @@ impl Network {
             }
 
             // verify the Tx against the inputs spends
-            let input_spends = parent_spends
+            let input_spends: BTreeSet<_> = parent_spends
                 .iter()
                 .filter(|s| s.spent_tx_hash() == tx.hash())
                 .cloned()
@@ -230,6 +230,7 @@ impl Network {
     }
 }
 
+/// NB TODO make sure this is used for all spend record deserialization
 /// Tries to get the signed spend out of a record.
 pub fn get_singed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
     let header = RecordHeader::from_record(record)?;

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use crate::error::{Error, Result};
+use crate::error::{Result, TransferError};
 
 /// Transfer sent to a recipient
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
@@ -61,7 +61,7 @@ impl Transfer {
         let recipient = cash_note.main_pubkey;
         let u = CashNoteRedemption::from_cash_note(cash_note)?;
         let t = Self::create(vec![u], recipient)
-            .map_err(|_| Error::CashNoteRedemptionEncryptionFailed)?;
+            .map_err(|_| TransferError::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)
     }
 
@@ -106,17 +106,18 @@ impl Transfer {
 
     /// Deserializes a `Transfer` represented as a hex string to a `Transfer`.
     pub fn from_hex(hex: &str) -> Result<Self> {
-        let mut bytes = hex::decode(hex).map_err(|_| Error::TransferDeserializationFailed)?;
+        let mut bytes =
+            hex::decode(hex).map_err(|_| TransferError::TransferDeserializationFailed)?;
         bytes.reverse();
-        let transfer: Self =
-            rmp_serde::from_slice(&bytes).map_err(|_| Error::TransferDeserializationFailed)?;
+        let transfer: Self = rmp_serde::from_slice(&bytes)
+            .map_err(|_| TransferError::TransferDeserializationFailed)?;
         Ok(transfer)
     }
 
     /// Serialize this `Transfer` instance to a readable hex string that a human can copy paste
     pub fn to_hex(&self) -> Result<String> {
         let mut serialized =
-            rmp_serde::to_vec(&self).map_err(|_| Error::TransferSerializationFailed)?;
+            rmp_serde::to_vec(&self).map_err(|_| TransferError::TransferSerializationFailed)?;
         serialized.reverse();
         Ok(hex::encode(serialized))
     }
@@ -153,7 +154,7 @@ impl CashNoteRedemption {
         let parent_spend = match cash_note.signed_spends.iter().next() {
             Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
             None => {
-                return Err(Error::CashNoteHasNoParentSpends);
+                return Err(TransferError::CashNoteHasNoParentSpends);
             }
         };
         Ok(Self::new(derivation_index, parent_spend))
@@ -161,12 +162,13 @@ impl CashNoteRedemption {
 
     /// Serialize the CashNoteRedemption to bytes
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        rmp_serde::to_vec(self).map_err(|_| Error::CashNoteRedemptionSerialisationFailed)
+        rmp_serde::to_vec(self).map_err(|_| TransferError::CashNoteRedemptionSerialisationFailed)
     }
 
     /// Deserialize the CashNoteRedemption from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        rmp_serde::from_slice(bytes).map_err(|_| Error::CashNoteRedemptionSerialisationFailed)
+        rmp_serde::from_slice(bytes)
+            .map_err(|_| TransferError::CashNoteRedemptionSerialisationFailed)
     }
 
     /// Encrypt the CashNoteRedemption to a public key
@@ -180,7 +182,7 @@ impl CashNoteRedemption {
         let bytes = sk
             .secret_key()
             .decrypt(cypher)
-            .ok_or(Error::CashNoteRedemptionDecryptionFailed)?;
+            .ok_or(TransferError::CashNoteRedemptionDecryptionFailed)?;
         Self::from_bytes(&bytes)
     }
 }

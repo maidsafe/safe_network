@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Result};
+use crate::{Result, TransferError};
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -68,7 +68,7 @@ impl From<u64> for NanoTokens {
 }
 
 impl FromStr for NanoTokens {
-    type Err = Error;
+    type Err = TransferError;
 
     fn from_str(value_str: &str) -> Result<Self> {
         let mut itr = value_str.splitn(2, '.');
@@ -77,12 +77,12 @@ impl FromStr for NanoTokens {
                 .next()
                 .and_then(|s| s.parse::<u64>().ok())
                 .ok_or_else(|| {
-                    Error::FailedToParseNanoToken("Can't parse token units".to_string())
+                    TransferError::FailedToParseNanoToken("Can't parse token units".to_string())
                 })?;
 
             units
                 .checked_mul(TOKEN_TO_RAW_CONVERSION)
-                .ok_or(Error::ExcessiveNanoValue)?
+                .ok_or(TransferError::ExcessiveNanoValue)?
         };
 
         let remainder = {
@@ -92,12 +92,12 @@ impl FromStr for NanoTokens {
                 0
             } else {
                 let parsed_remainder = remainder_str.parse::<u64>().map_err(|_| {
-                    Error::FailedToParseNanoToken("Can't parse token remainder".to_string())
+                    TransferError::FailedToParseNanoToken("Can't parse token remainder".to_string())
                 })?;
 
                 let remainder_conversion = TOKEN_TO_RAW_POWER_OF_10_CONVERSION
                     .checked_sub(remainder_str.len() as u32)
-                    .ok_or(Error::LossOfNanoPrecision)?;
+                    .ok_or(TransferError::LossOfNanoPrecision)?;
                 parsed_remainder * 10_u64.pow(remainder_conversion)
             }
         };
@@ -151,29 +151,29 @@ mod tests {
         );
 
         assert_eq!(
-            Err(Error::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseNanoToken(
                 "Can't parse token units".to_string()
             )),
             NanoTokens::from_str("a")
         );
         assert_eq!(
-            Err(Error::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseNanoToken(
                 "Can't parse token remainder".to_string()
             )),
             NanoTokens::from_str("0.a")
         );
         assert_eq!(
-            Err(Error::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseNanoToken(
                 "Can't parse token remainder".to_string()
             )),
             NanoTokens::from_str("0.0.0")
         );
         assert_eq!(
-            Err(Error::LossOfNanoPrecision),
+            Err(TransferError::LossOfNanoPrecision),
             NanoTokens::from_str("0.0000000009")
         );
         assert_eq!(
-            Err(Error::ExcessiveNanoValue),
+            Err(TransferError::ExcessiveNanoValue),
             NanoTokens::from_str("18446744074")
         );
         Ok(())

@@ -9,8 +9,8 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    CashNote, DerivationIndex, Error as CashNoteError, Hash, Input, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, Transaction, TransactionBuilder,
+    CashNote, DerivationIndex, Hash, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    Transaction, TransactionBuilder, TransferError as CashNoteError,
 };
 
 use bls::SecretKey;

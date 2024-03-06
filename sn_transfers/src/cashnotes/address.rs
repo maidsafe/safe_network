@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Result};
+use crate::{Result, TransferError};
 
 use super::UniquePubkey;
 
@@ -40,12 +40,11 @@ impl SpendAddress {
     }
 
     pub fn from_hex(hex: &str) -> Result<Self> {
-        let bytes = hex::decode(hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
-        let xorname = XorName(
-            bytes
-                .try_into()
-                .map_err(|_| Error::HexDeserializationFailed("wrong string size".to_string()))?,
-        );
+        let bytes =
+            hex::decode(hex).map_err(|e| TransferError::HexDeserializationFailed(e.to_string()))?;
+        let xorname = XorName(bytes.try_into().map_err(|_| {
+            TransferError::HexDeserializationFailed("wrong string size".to_string())
+        })?);
         Ok(Self::new(xorname))
     }
 }
@@ -57,7 +56,7 @@ impl std::fmt::Debug for SpendAddress {
 }
 
 impl std::str::FromStr for SpendAddress {
-    type Err = Error;
+    type Err = TransferError;
 
     fn from_str(s: &str) -> Result<Self> {
         let pk_res = UniquePubkey::from_hex(s);
@@ -66,7 +65,7 @@ impl std::str::FromStr for SpendAddress {
         match (pk_res, addr_res) {
             (Ok(pk), _) => Ok(SpendAddress::from_unique_pubkey(&pk)),
             (_, Ok(addr)) => Ok(addr),
-            _ => Err(Error::HexDeserializationFailed(
+            _ => Err(TransferError::HexDeserializationFailed(
                 "Invalid SpendAddress".to_string(),
             )),
         }
