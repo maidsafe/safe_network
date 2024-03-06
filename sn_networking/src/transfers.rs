@@ -53,10 +53,7 @@ impl Network {
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
-            Ok(record) => record,
-            Err(err) => return Err(err),
-        };
+        let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
