@@ -4,7 +4,7 @@ description = "A command-line application for installing, managing and operating
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"
-name = "sn-node-manager"
+name = "sn_node_manager"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 version = "0.4.1"
@@ -14,8 +14,8 @@ name = "safenode-manager"
 path = "src/bin/cli/main.rs"
 
 [[bin]]
-name="safenodemand"
-path="src/bin/daemon/main.rs"
+name = "safenodemand"
+path = "src/bin/daemon/main.rs"
 
 [features]
 chaos = []
