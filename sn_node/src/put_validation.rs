@@ -14,7 +14,7 @@ use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 #[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
-use sn_networking::Error as NetworkError;
+use sn_networking::{get_singed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
@@ -362,9 +362,16 @@ impl Node {
 
         // validate the signed spends against the network and the local knowledge
         debug!("Validating spends for {pretty_key:?} with unique key: {unique_pubkey:?}");
-        let (spend1, maybe_spend2) = self
+        let (spend1, maybe_spend2) = match self
             .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey)
-            .await?;
+            .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("Failed to validate spends at {pretty_key:?} with unique key {unique_pubkey:?}: {e}");
+                return Err(e);
+            }
+        };
         let validated_spends = maybe_spend2
             .clone()
             .map(|spend2| vec![spend1.clone(), spend2])
@@ -641,7 +648,9 @@ impl Node {
         unique_pubkey: UniquePubkey,
     ) -> Result<(SignedSpend, Option<SignedSpend>)> {
         let spend_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
-        debug!("Validating and storing spend at {spend_addr:?} with unique key: {unique_pubkey}");
+        debug!(
+            "Validating before storing spend at {spend_addr:?} with unique key: {unique_pubkey}"
+        );
 
         // if we already have a double spend locally, no need to check the rest
         let local_spends = self.get_local_spends(spend_addr).await?;
@@ -651,7 +660,25 @@ impl Node {
         }
 
         // get spends from the network at the address for that unique pubkey
-        let network_spends = self.network.get_raw_spends(spend_addr).await?;
+        let network_spends = match self.network.get_raw_spends(spend_addr).await {
+            Ok(spends) => spends,
+            Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => vec![],
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
+                warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
+                let mut spends = vec![];
+                for (record, _) in result_map.values() {
+                    match get_singed_spends_from_record(record) {
+                        Ok(s) => spends.extend(s),
+                        Err(e) => warn!("Ignoring invalid record received from the network for spend: {unique_pubkey:?}: {e}"),
+                    }
+                }
+                spends
+            }
+            Err(e) => {
+                warn!("Failed to get spends from the network for {unique_pubkey:?}: {e}");
+                return Err(e)?;
+            }
+        };
 
         // check the received spends and the spends got from the network
         let mut tasks = JoinSet::new();
