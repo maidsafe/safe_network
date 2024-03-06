@@ -22,7 +22,7 @@ pub use cashnotes::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
     SignedSpend, Spend, SpendAddress, Transaction, UniquePubkey, UnsignedTransfer,
 };
-pub use error::{Error, Result};
+pub use error::{Result, TransferError};
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 
 /// Utilities exposed

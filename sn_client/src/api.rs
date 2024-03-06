@@ -577,7 +577,7 @@ impl Client {
                     total_cost
                         .checked_add(royalties_top_up)
                         .ok_or(Error::Transfers(sn_transfers::WalletError::from(
-                            sn_transfers::Error::ExcessiveNanoValue,
+                            sn_transfers::TransferError::ExcessiveNanoValue,
                         )))?;
                 stored = self.verify_register_stored(*reg_address).await.is_ok();
             }
