@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.2](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.1...sn_transfers-v0.16.2) - 2024-03-06
+
+### Other
+- clean swarm commands errs and spend errors
+
 ## [0.16.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.0...sn_transfers-v0.16.1) - 2024-03-05
 
 ### Added

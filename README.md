@@ -101,7 +101,7 @@ cargo run --bin safe --features local-discovery -- files download
 
 ### Folders
 
-The folders storage capability can be demonstrated by uploading folders to the local network, then retrieving them.
+The folders storage capability can be demonstrated by uploading folders to the local network, making changes and syncing them with the stored version on the network, as well as downloading the entire folders hierarchy onto a local directory.
 
 Upload a directory:
 ```bash
@@ -113,6 +113,16 @@ After it finishes uploading the complete directory, with files and sub-directori
 Now download the folders, optionally providing a target directory name:
 ```bash
 cargo run --bin safe --features local-discovery -- folders download <address> [dir name]
+```
+
+If any changes are now made to files or directories within this folder, before trying to push those changes to the network we can check the changes that has been made locally: 
+```bash
+cargo run --bin safe --features local-discovery -- folders status [dir-path]
+```
+
+We can both push local changes made to files and directories to the network, as well as pull any changes that have been made to the version stored on the network since last time we synced with it:
+```bash
+cargo run --bin safe --features local-discovery -- folders sync [dir-path]
 ```
 
 ### Token Transfers

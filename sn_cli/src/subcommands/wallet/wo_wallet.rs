@@ -15,11 +15,11 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
-use sn_client::{Client, ClientEvent};
-use sn_transfers::{
+use sn_client::transfers::{
     CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend,
     UniquePubkey, WalletError, WatchOnlyWallet,
 };
+use sn_client::{Client, ClientEvent};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
@@ -365,7 +365,7 @@ async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, pk_hex: Str
     let main_pk = wallet.address();
     let pk = main_pk.public_key();
 
-    client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string())?;
+    client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string());
     let mut events_receiver = client.events_channel();
 
     println!("Current balance in local wallet: {}", wallet.balance());

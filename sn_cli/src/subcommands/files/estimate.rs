@@ -2,10 +2,10 @@ use std::path::{Path, PathBuf};
 
 use color_eyre::Result;
 
+use sn_client::protocol::storage::ChunkAddress;
+use sn_client::protocol::NetworkAddress;
+use sn_client::transfers::NanoTokens;
 use sn_client::{Client, FilesApi};
-use sn_protocol::storage::ChunkAddress;
-use sn_protocol::NetworkAddress;
-use sn_transfers::NanoTokens;
 
 use crate::subcommands::files::ChunkManager;
 

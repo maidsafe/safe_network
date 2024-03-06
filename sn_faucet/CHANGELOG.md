@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.81](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.3.80...sn_faucet-v0.3.81) - 2024-03-06
+
+### Added
+- provide `faucet add` command
+- *(faucet)* claim using signature of safe wallet
+
+### Other
+- *(release)* sn_transfers-v0.16.1
+
 ## [0.3.80](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.3.79...sn_faucet-v0.3.80) - 2024-02-23
 
 ### Other

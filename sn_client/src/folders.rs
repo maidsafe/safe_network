@@ -191,8 +191,29 @@ impl FoldersApi {
         Self::create(client, wallet_dir, register)
     }
 
+    /// Returns true if there is a file/folder which matches the given entry hash
+    pub fn contains(&self, entry_hash: &EntryHash) -> bool {
+        self.register
+            .read()
+            .iter()
+            .any(|(hash, _)| hash == entry_hash)
+    }
+
+    /// Find file/folder in this Folder by its name, returning metadata chunk xorname and metadata itself.
+    pub fn find_by_name(&self, name: &str) -> Option<(&XorName, &Metadata)> {
+        self.metadata
+            .iter()
+            .find_map(|(meta_xorname, (metadata, _))| {
+                if metadata.name == name {
+                    Some((meta_xorname, metadata))
+                } else {
+                    None
+                }
+            })
+    }
+
     /// Returns the list of entries of this Folder, including their entry hash,
-    /// metadata xorname, and metadata itself.
+    /// metadata chunk xorname, and metadata itself.
     pub async fn entries(&mut self) -> Result<Vec<(EntryHash, XorName, Metadata)>> {
         let mut entries = vec![];
         for (entry_hash, entry) in self.register.read() {

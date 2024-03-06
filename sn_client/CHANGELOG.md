@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.28](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.27...sn_client-v0.104.28) - 2024-03-06
+
+### Added
+- *(cli)* pull any Folders changes from network when syncing and merge them to local version
+- make sn_cli use sn_clients reeports
+- *(folders)* sync up logic and CLI cmd
+- *(register)* when a new entry is written return its hash
+- refactor upload with iter
+- actionable double spend reporting
+- collect royalties through DAG
+- *(folders)* store files data-map within Folders metadata chunk
+- *(folders)* regenerate tracking info when downloading Folders fm the network
+- *(folders)* realise local changes made to folders/files
+- *(folders)* keep track of local changes to Folders
+- expose sn related deps to app builders
+
+### Fixed
+- filter out spent cashnotes in received client transfers
+
+### Other
+- clean swarm commands errs and spend errors
+- also add deps features in sn_client
+- *(release)* sn_transfers-v0.16.1
+- *(release)* sn_protocol-v0.15.0/sn-node-manager-v0.4.0
+- *(cli)* removing some redundant logic from acc-packet codebase
+- *(folders)* some simplifications to acc-packet codebase
+
 ## [0.104.27](https://github.com/maidsafe/safe_network/compare/sn_client-v0.104.26...sn_client-v0.104.27) - 2024-02-23
 
 ### Other

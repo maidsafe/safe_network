@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.36](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.35...sn_node-v0.104.36) - 2024-03-06
+
+### Added
+- *(register)* when a new entry is written return its hash
+- *(node)* bad verification to exclude connections from bad_nodes
+- genesis double spend test
+- *(test)* add option to retain_peer_id for the node's restart rpc cmd
+- *(test)* imporve restart api for tests
+- *(manager)* add rpc call to restart node service and process
+
+### Fixed
+- double spend case identified by Shu
+
+### Other
+- clean swarm commands errs and spend errors
+- *(release)* sn_transfers-v0.16.1
+- *(release)* sn_protocol-v0.15.0/sn-node-manager-v0.4.0
+- *(daemon)* rename daemon binary to safenodemand
+- revert wrong rebase changes
+- *(manager)* add daemon restart test
+- fix royalties gossip test
+
 ## [0.104.35](https://github.com/maidsafe/safe_network/compare/sn_node-v0.104.34...sn_node-v0.104.35) - 2024-02-23
 
 ### Added

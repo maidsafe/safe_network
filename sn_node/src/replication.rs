@@ -21,8 +21,8 @@ use tokio::task::{spawn, JoinHandle};
 
 impl Node {
     /// Sends _all_ record keys every interval to all peers within the REPLICATE_RANGE.
-    pub(crate) fn try_interval_replication(network: Network) -> Result<()> {
-        Ok(network.trigger_interval_replication()?)
+    pub(crate) fn try_interval_replication(network: Network) {
+        network.trigger_interval_replication()
     }
 
     /// Get the Record from a peer or from the network without waiting.
@@ -173,7 +173,7 @@ impl Node {
                     keys: keys.clone(),
                 });
 
-                let _ = network.send_req_ignore_reply(request, *peer_id);
+                network.send_req_ignore_reply(request, *peer_id);
             }
             trace!(
                 "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
