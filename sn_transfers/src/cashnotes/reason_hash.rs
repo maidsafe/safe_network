@@ -9,7 +9,7 @@
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-use crate::Error;
+use crate::TransferError;
 
 /// sha3 256 hash used for Spend Reasons, Transaction hashes, anything hash related in this crate
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize)]
@@ -28,10 +28,10 @@ impl Hash {
     }
 
     /// Deserializes a `Hash` represented as a hex string to a `Hash`.
-    pub fn from_hex(hex: &str) -> Result<Self, Error> {
+    pub fn from_hex(hex: &str) -> Result<Self, TransferError> {
         let mut h = Self::default();
         hex::decode_to_slice(hex, &mut h.0)
-            .map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
+            .map_err(|e| TransferError::HexDeserializationFailed(e.to_string()))?;
         Ok(h)
     }
 
@@ -42,7 +42,7 @@ impl Hash {
 }
 
 impl FromStr for Hash {
-    type Err = Error;
+    type Err = TransferError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Hash::from_hex(s)
@@ -108,14 +108,14 @@ mod tests {
         let too_long_hex = format!("{expected_hex}ab");
         assert_eq!(
             Hash::from_hex(&too_long_hex),
-            Err(Error::HexDeserializationFailed(
+            Err(TransferError::HexDeserializationFailed(
                 "Invalid string length".to_string()
             ))
         );
 
         assert_eq!(
             Hash::from_hex(&expected_hex[0..30]),
-            Err(Error::HexDeserializationFailed(
+            Err(TransferError::HexDeserializationFailed(
                 "Invalid string length".to_string()
             ))
         );

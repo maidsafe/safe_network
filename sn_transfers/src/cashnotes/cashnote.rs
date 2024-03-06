@@ -11,7 +11,7 @@ use super::{
     Transaction, UniquePubkey,
 };
 
-use crate::{Error, Result};
+use crate::{Result, TransferError};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -89,7 +89,7 @@ impl CashNote {
     /// CashNote MainPubkey.
     pub fn derived_key(&self, main_key: &MainSecretKey) -> Result<DerivedSecretKey> {
         if &main_key.main_pubkey() != self.main_pubkey() {
-            return Err(Error::MainSecretKeyDoesNotMatchMainPubkey);
+            return Err(TransferError::MainSecretKeyDoesNotMatchMainPubkey);
         }
         Ok(main_key.derive_key(&self.derivation_index()))
     }
@@ -99,7 +99,7 @@ impl CashNote {
     /// CashNote MainPubkey.
     pub fn derived_pubkey(&self, main_pubkey: &MainPubkey) -> Result<UniquePubkey> {
         if main_pubkey != self.main_pubkey() {
-            return Err(Error::MainPubkeyMismatch);
+            return Err(TransferError::MainPubkeyMismatch);
         }
         Ok(main_pubkey.new_unique_pubkey(&self.derivation_index()))
     }
@@ -126,7 +126,7 @@ impl CashNote {
             .outputs
             .iter()
             .find(|o| &self.unique_pubkey() == o.unique_pubkey())
-            .ok_or(Error::OutputNotFound)?
+            .ok_or(TransferError::OutputNotFound)?
             .amount)
     }
 
@@ -160,9 +160,9 @@ impl CashNote {
     ///
     /// see TransactionVerifier::verify() for a description of
     /// verifier requirements.
-    pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), Error> {
+    pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), TransferError> {
         self.src_tx
-            .verify_against_inputs_spent(&self.signed_spends)?;
+            .verify_against_inputs_spent(self.signed_spends.iter())?;
 
         let unique_pubkey = self.derived_key(main_key)?.unique_pubkey();
         if !self
@@ -171,32 +171,32 @@ impl CashNote {
             .iter()
             .any(|o| unique_pubkey.eq(o.unique_pubkey()))
         {
-            return Err(Error::CashNoteCiphersNotPresentInTransactionOutput);
+            return Err(TransferError::CashNoteCiphersNotPresentInTransactionOutput);
         }
 
         // verify that all signed_spend reasons are equal
         let reason = self.reason();
         let reasons_are_equal = |s: &SignedSpend| reason == s.reason();
         if !self.signed_spends.iter().all(reasons_are_equal) {
-            return Err(Error::SignedSpendReasonMismatch(unique_pubkey));
+            return Err(TransferError::SignedSpendReasonMismatch(unique_pubkey));
         }
         Ok(())
     }
 
     /// Deserializes a `CashNote` represented as a hex string to a `CashNote`.
-    pub fn from_hex(hex: &str) -> Result<Self, Error> {
+    pub fn from_hex(hex: &str) -> Result<Self, TransferError> {
         let mut bytes =
-            hex::decode(hex).map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
+            hex::decode(hex).map_err(|e| TransferError::HexDeserializationFailed(e.to_string()))?;
         bytes.reverse();
         let cashnote: CashNote = rmp_serde::from_slice(&bytes)
-            .map_err(|e| Error::HexDeserializationFailed(e.to_string()))?;
+            .map_err(|e| TransferError::HexDeserializationFailed(e.to_string()))?;
         Ok(cashnote)
     }
 
     /// Serialize this `CashNote` instance to a hex string.
-    pub fn to_hex(&self) -> Result<String, Error> {
-        let mut serialized =
-            rmp_serde::to_vec(&self).map_err(|e| Error::HexSerializationFailed(e.to_string()))?;
+    pub fn to_hex(&self) -> Result<String, TransferError> {
+        let mut serialized = rmp_serde::to_vec(&self)
+            .map_err(|e| TransferError::HexSerializationFailed(e.to_string()))?;
         serialized.reverse();
         Ok(hex::encode(serialized))
     }

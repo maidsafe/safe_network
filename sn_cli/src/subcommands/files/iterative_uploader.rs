@@ -4,7 +4,7 @@ use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
-use sn_client::transfers::{Error as TransfersError, NanoTokens, WalletError};
+use sn_client::transfers::{NanoTokens, TransferError, WalletError};
 use sn_client::{Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -149,7 +149,7 @@ impl IterativeUploader {
         match files_upload.upload_chunks(chunks_to_upload).await {
             Ok(()) => Ok(()),
             Err(ClientError::Transfers(WalletError::Transfer(
-                TransfersError::NotEnoughBalance(available, required),
+                TransferError::NotEnoughBalance(available, required),
             ))) => Err(eyre!(
                 "Not enough balance in wallet to pay for chunk. \
             We have {available:?} but need {required:?} to pay for the chunk"

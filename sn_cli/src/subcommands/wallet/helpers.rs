@@ -156,7 +156,7 @@ pub async fn receive(
 
 /// Verify a spend on the Network.
 /// if genesis is true, verify all the way to Genesis, note that this might take A VERY LONG TIME
-pub async fn verify_spend(spend_address: String, genesis: bool, client: &Client) -> Result<()> {
+pub async fn verify_spend_at(spend_address: String, genesis: bool, client: &Client) -> Result<()> {
     if genesis {
         println!("Verifying spend all the way to Genesis, note that this might take a while...");
     } else {
@@ -164,7 +164,7 @@ pub async fn verify_spend(spend_address: String, genesis: bool, client: &Client)
     }
 
     let addr = SpendAddress::from_str(&spend_address)?;
-    match client.verify_spend(addr, genesis).await {
+    match client.verify_spend_at(addr, genesis).await {
         Ok(()) => println!("Spend verified to be stored and unique at {addr:?}"),
         Err(e) => println!("Failed to verify spend at {addr:?}: {e}"),
     }
