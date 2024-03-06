@@ -18,10 +18,9 @@ use libp2p::kad::Quorum;
 use rand::prelude::SliceRandom;
 use rand::{thread_rng, Rng};
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use sn_client::protocol::storage::{Chunk, ChunkAddress, try_serialize_record};
 use sn_client::FilesApi;
 use sn_client::{Client, Error as ChunksError, Error};
-use sn_protocol::messages::ChunkProof;
-use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind};
 use std::num::NonZeroUsize;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -33,6 +32,8 @@ use std::{
 };
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
+use sn_client::protocol::messages::ChunkProof;
+use sn_client::protocol::storage::RecordKind;
 
 const CHUNK_ARTIFACTS_DIR: &str = "chunk_artifacts";
 const METADATA_FILE: &str = "metadata";
@@ -794,8 +795,8 @@ mod tests {
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
     use sn_logging::LogBuilder;
-    use sn_protocol::test_utils::assert_list_eq;
     use tempfile::TempDir;
+    use sn_client::protocol::test_utils::assert_list_eq;
 
     #[test]
     fn chunked_files_should_be_written_to_artifacts_dir() -> Result<()> {

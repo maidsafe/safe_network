@@ -2,8 +2,8 @@ use crate::subcommands::files;
 use crate::subcommands::files::{ChunkManager, FilesUploadOptions};
 use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
+use sn_client::transfers::{Error as TransfersError, NanoTokens, WalletError};
 use sn_client::{Client, Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
-use sn_transfers::{Error as TransfersError, NanoTokens, WalletError};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -166,8 +166,8 @@ fn spawn_progress_handler(
 
 /////////////////  Messages  /////////////////
 
-fn msg_upload_complete(mut chunk_manager: &mut ChunkManager, make_data_public: bool) {
-    msg_check_incomplete_files(&mut chunk_manager);
+fn msg_upload_complete(chunk_manager: &mut ChunkManager, make_data_public: bool) {
+    msg_check_incomplete_files(chunk_manager);
 
     // log uploaded file information
     msg_uploaded_files_banner();
@@ -178,14 +178,14 @@ fn msg_upload_complete(mut chunk_manager: &mut ChunkManager, make_data_public: b
     ChunkManager::msg_chunk_manager_upload_complete(chunk_manager);
 }
 fn msg_check_upload_with_error(
-    mut chunk_manager: &mut ChunkManager,
+    chunk_manager: &mut ChunkManager,
     make_data_public: bool,
     upload_terminated_with_error: bool,
 ) {
     if upload_terminated_with_error {
         error!("Got FileUploadEvent::Error inside upload event loop");
     } else {
-        msg_upload_complete(&mut chunk_manager, make_data_public);
+        msg_upload_complete(chunk_manager, make_data_public);
     }
 }
 /// Function to format elapsed time into a string
