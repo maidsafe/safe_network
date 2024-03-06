@@ -741,9 +741,8 @@ mod tests {
     }
     #[test]
     fn test_calculate_cost_for_records() {
-        let sut = calculate_cost_for_records(15, 2, 1234);
-
-        assert_eq!(sut, 21);
+        let sut = calculate_cost_for_records(5, 5, 2048);
+        assert_eq!(sut, 50);
     }
 
     #[test]
