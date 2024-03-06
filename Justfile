@@ -292,6 +292,9 @@ upload-release-assets-to-s3 bin_name:
     safenode-manager)
       bucket="sn-node-manager"
       ;;
+    safenodemand)
+      bucket="sn-node-manager"
+      ;;
     faucet)
       bucket="sn-faucet"
       ;;
