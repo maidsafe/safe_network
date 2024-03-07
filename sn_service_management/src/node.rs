@@ -140,7 +140,7 @@ impl ServiceStateActions for NodeService {
     }
 
     fn pid(&self) -> Option<u32> {
-        self.service_data.pid.clone()
+        self.service_data.pid
     }
 
     fn on_remove(&mut self) {
