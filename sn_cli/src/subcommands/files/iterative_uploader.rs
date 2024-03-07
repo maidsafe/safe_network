@@ -35,7 +35,7 @@ impl IterativeUploader {
         mut self,
         entries_iter: impl Iterator<Item = DirEntry>,
         files_path: PathBuf,
-        client: &Client,
+        _client: &Client,
         options: FilesUploadOptions,
     ) -> Result<()> {
         let FilesUploadOptions {
@@ -64,7 +64,11 @@ impl IterativeUploader {
                 chunks.len()
             );
 
-            let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+            let failed_chunks = self
+                .files_api
+                .client()
+                .verify_uploaded_chunks(&chunks, batch_size)
+                .await?;
 
             // mark the non-failed ones as completed
             self.chunk_manager.mark_completed(
