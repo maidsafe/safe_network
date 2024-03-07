@@ -12,13 +12,14 @@ use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
+    add_services::{
+        add, add_daemon, add_faucet,
+        config::{AddFaucetServiceOptions, AddServiceOptions},
+    },
     config::*,
-    daemon_control,
-    faucet_control::{add_faucet, AddFaucetServiceOptions},
     helpers::download_and_extract_release,
     local::{kill_network, run_network, LocalNetworkOptions},
-    node_control::{add, status, AddServiceOptions},
-    ServiceManager, VerbosityLevel,
+    status, ServiceManager, VerbosityLevel,
 };
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
@@ -515,7 +516,7 @@ async fn main() -> Result<()> {
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
 
             let service_manager = ServiceController {};
-            daemon_control::add_daemon(address, port, path, &mut node_registry, &service_manager)?;
+            add_daemon(address, port, path, &mut node_registry, &service_manager)?;
 
             Ok(())
         }

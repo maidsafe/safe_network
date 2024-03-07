@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{config::create_owned_dir, node_control, ServiceManager, VerbosityLevel};
+use crate::{
+    add_services::config::InstallNodeServiceCtxBuilder, config::create_owned_dir, ServiceManager,
+    VerbosityLevel,
+};
 use color_eyre::{
     eyre::{eyre, OptionExt},
     Result,
@@ -50,7 +53,7 @@ pub async fn restart_node_service(
                     current_node.service_name
                 )
             })?;
-        let install_ctx = node_control::InstallNodeServiceCtxBuilder {
+        let install_ctx = InstallNodeServiceCtxBuilder {
             local: current_node.local,
             data_dir_path: current_node.data_dir_path.clone(),
             genesis: current_node.genesis,
@@ -130,7 +133,7 @@ pub async fn restart_node_service(
             safenode_path
         };
 
-        let install_ctx = node_control::InstallNodeServiceCtxBuilder {
+        let install_ctx = InstallNodeServiceCtxBuilder {
             local: current_node.local,
             genesis: current_node.genesis,
             name: new_service_name.clone(),
