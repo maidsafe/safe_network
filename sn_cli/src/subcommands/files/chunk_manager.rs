@@ -15,7 +15,7 @@ use color_eyre::{
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use sn_client::protocol::storage::{Chunk, ChunkAddress};
-use sn_client::FilesApi;
+use sn_client::{Client, FilesApi};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -86,6 +86,48 @@ impl ChunkManager {
         }
     }
 
+    pub(crate) async fn chunks_to_upload(
+        mut self,
+        files_path: &Path,
+        client: &Client,
+        make_data_public: bool,
+        batch_size: usize,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        let chunks_to_upload = if self.is_chunks_empty() {
+            let chunks = self.already_put_chunks(files_path, make_data_public)?;
+            println!(
+                "Files upload attempted previously, verifying {} chunks",
+                chunks.len()
+            );
+
+            let failed_chunks = client.verify_uploaded_chunks(&chunks, batch_size).await?;
+
+            self.mark_completed(
+                chunks
+                    .into_iter()
+                    .filter(|c| !failed_chunks.contains(c))
+                    .map(|(xor, _)| xor),
+            )?;
+
+            if failed_chunks.is_empty() {
+                msg_files_already_uploaded_verified();
+                if !make_data_public {
+                    msg_not_public_by_default();
+                }
+                msg_star_line();
+                if self.completed_files().is_empty() {
+                    msg_chk_mgr_no_verified_file_nor_re_upload();
+                }
+                msg_chunk_manager_upload_complete(self);
+                return Ok(vec![]);
+            }
+            msg_unverified_chunks_reattempted(&failed_chunks.len());
+            failed_chunks
+        } else {
+            self.get_chunks()
+        };
+        Ok(chunks_to_upload)
+    }
     /// Chunk all the files in the provided `files_path`
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account
@@ -559,6 +601,48 @@ impl ChunkManager {
     }
 }
 
+/////////////////  Messages  /////////////////
+pub fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
+    println!(
+        "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
+    );
+}
+
+pub fn msg_chunk_manager_upload_complete(chunk_manager: ChunkManager) {
+    for (file_name, addr) in chunk_manager.completed_files() {
+        let hex_addr = addr.to_hex();
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {hex_addr}");
+            info!("Uploaded {file_name} to {hex_addr}");
+        } else {
+            println!("\"{file_name:?}\" {hex_addr}");
+            info!("Uploaded {file_name:?} to {hex_addr}");
+        }
+    }
+}
+
+pub fn msg_star_line() {
+    println!("**************************************");
+}
+
+fn msg_chk_mgr_no_verified_file_nor_re_upload() {
+    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+}
+
+fn msg_files_already_uploaded_verified() {
+    println!("All files were already uploaded and verified");
+    println!("**************************************");
+    println!("*          Uploaded Files            *");
+}
+
+fn msg_not_public_by_default() {
+    println!("*                                    *");
+    println!("*  These are not public by default.  *");
+    println!("*     Reupload with `-p` option      *");
+    println!("*      to publish the datamaps.      *");
+}
+
+/////////////////  Tests  /////////////////
 #[cfg(test)]
 mod tests {
     use super::*;

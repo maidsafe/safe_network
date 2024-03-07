@@ -30,9 +30,10 @@ impl IterativeUploader {
 }
 
 impl IterativeUploader {
-    /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
+    /// Given an iterator over files, upload them.
+    /// Optionally verify if the data was stored successfully.
     pub(crate) async fn iterate_upload(
-        mut self,
+        self,
         entries_iter: impl Iterator<Item = DirEntry>,
         files_path: PathBuf,
         options: FilesUploadOptions,
@@ -49,81 +50,48 @@ impl IterativeUploader {
         msg_init(&files_path, &batch_size, &verify_store, make_data_public);
 
         self.chunk_manager
+            .clone()
             .chunk_with_iter(entries_iter, true, make_data_public)?;
 
-        // Return early if we already uploaded them
-        let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
-            // make sure we don't have any failed chunks in those
+        let mut chunks_to_upload = self
+            .chunk_manager
+            .clone()
+            .chunks_to_upload(
+                &files_path,
+                self.files_api.client(),
+                make_data_public,
+                batch_size,
+            )
+            .await?;
 
-            let chunks = self
-                .chunk_manager
-                .already_put_chunks(&files_path, make_data_public)?;
-            println!(
-                "Files upload attempted previously, verifying {} chunks",
-                chunks.len()
-            );
-
-            let failed_chunks = self
-                .files_api
-                .client()
-                .verify_uploaded_chunks(&chunks, batch_size)
-                .await?;
-
-            // mark the non-failed ones as completed
-            self.chunk_manager.mark_completed(
-                chunks
-                    .into_iter()
-                    .filter(|c| !failed_chunks.contains(c))
-                    .map(|(xor, _)| xor),
-            )?;
-
-            // if none are failed, we can return early
-            if failed_chunks.is_empty() {
-                msg_files_already_uploaded_verified();
-                if !make_data_public {
-                    msg_not_public_by_default();
-                }
-                msg_star_line();
-                if self.chunk_manager.completed_files().is_empty() {
-                    msg_chk_mgr_no_verified_file_nor_re_upload();
-                }
-                msg_chunk_manager_upload_complete(self.chunk_manager);
-                return Ok(());
-            }
-            msg_unverified_chunks_reattempted(&failed_chunks.len());
-            failed_chunks
+        if chunks_to_upload.is_empty() {
+            return Ok(());
         } else {
-            self.chunk_manager.get_chunks()
-        };
-
-        // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
-        // having multiple client instances uploading the same target.
-        chunks_to_upload.shuffle(&mut rng);
+            chunks_to_upload.shuffle(&mut rng);
+        }
 
         let chunk_amount_to_upload = chunks_to_upload.len();
         let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
         let total_existing_chunks = Arc::new(AtomicU64::new(0));
+
         let mut files_upload = FilesUpload::new(self.files_api)
             .set_batch_size(batch_size)
             .set_verify_store(verify_store)
             .set_retry_strategy(retry_strategy);
 
         let upload_event_rx = files_upload.get_upload_events();
-        // keep track of the progress in a separate task
         let progress_bar_clone = progress_bar.clone();
         let total_existing_chunks_clone = total_existing_chunks.clone();
 
         let process_join_handle = spawn_progress_handler(
-            self.chunk_manager,
+            self.chunk_manager.clone(),
             make_data_public,
             progress_bar,
             upload_event_rx,
             progress_bar_clone,
             total_existing_chunks_clone,
         );
-
         msg_uploading_chunks(chunk_amount_to_upload);
-
         let current_instant = Instant::now();
 
         IterativeUploader::upload_result(chunks_to_upload, &mut files_upload).await?;
@@ -131,14 +99,12 @@ impl IterativeUploader {
         process_join_handle
             .await?
             .map_err(|err| eyre!("Failed to write uploaded files with err: {err:?}"))?;
-
         msg_final(
             chunk_amount_to_upload,
             current_instant,
             total_existing_chunks,
             files_upload,
         );
-
         Ok(())
     }
 
@@ -213,6 +179,7 @@ fn spawn_progress_handler(
             if !make_data_public {
                 msg_not_public_by_default_banner();
             }
+
             msg_star_line();
             msg_chunk_manager_upload_complete(chunk_manager);
         }
@@ -286,18 +253,7 @@ fn msg_final(
 
     msg_made_payment_info(files_upload.get_upload_storage_cost(), uploaded_chunks);
 }
-fn msg_chunk_manager_upload_complete(chunk_manager: ChunkManager) {
-    for (file_name, addr) in chunk_manager.completed_files() {
-        let hex_addr = addr.to_hex();
-        if let Some(file_name) = file_name.to_str() {
-            println!("\"{file_name}\" {hex_addr}");
-            info!("Uploaded {file_name} to {hex_addr}");
-        } else {
-            println!("\"{file_name:?}\" {hex_addr}");
-            info!("Uploaded {file_name:?} to {hex_addr}");
-        }
-    }
-}
+
 fn msg_made_payment_info(total_storage_cost: NanoTokens, uploaded_chunks: usize) {
     info!("Made payment of {total_storage_cost} for {uploaded_chunks} chunks");
 }
@@ -336,25 +292,8 @@ fn msg_payment_details(
     println!("New wallet balance: {final_balance}");
 }
 
-fn msg_chk_mgr_no_verified_file_nor_re_upload() {
-    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
-}
-
 fn msg_star_line() {
     println!("**************************************");
-}
-
-fn msg_not_public_by_default() {
-    println!("*                                    *");
-    println!("*  These are not public by default.  *");
-    println!("*     Reupload with `-p` option      *");
-    println!("*      to publish the datamaps.      *");
-}
-
-fn msg_files_already_uploaded_verified() {
-    println!("All files were already uploaded and verified");
-    println!("**************************************");
-    println!("*          Uploaded Files            *");
 }
 
 fn msg_uploading_chunks(chunks_to_upload_len: usize) {
@@ -372,8 +311,16 @@ fn msg_uploaded_files_banner() {
     println!("**************************************");
     println!("*          Uploaded Files            *");
 }
-fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
-    println!(
-        "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
-    );
+
+fn msg_chunk_manager_upload_complete(chunk_manager: ChunkManager) {
+    for (file_name, addr) in chunk_manager.completed_files() {
+        let hex_addr = addr.to_hex();
+        if let Some(file_name) = file_name.to_str() {
+            println!("\"{file_name}\" {hex_addr}");
+            info!("Uploaded {file_name} to {hex_addr}");
+        } else {
+            println!("\"{file_name:?}\" {hex_addr}");
+            info!("Uploaded {file_name:?} to {hex_addr}");
+        }
+    }
 }
