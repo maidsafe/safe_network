@@ -14,7 +14,7 @@ use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 #[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
-use sn_networking::{get_singed_spends_from_record, Error as NetworkError, GetRecordError};
+use sn_networking::{get_signed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
@@ -339,7 +339,7 @@ impl Node {
                 let spend_record_key = network_address.to_record_key();
                 let spend_pretty = PrettyPrintRecordKey::from(&spend_record_key);
                 if &spend_record_key != record_key {
-                    warn!("Received spend for another record key {spend_pretty:?} when verifying: {pretty_key:?}");
+                    warn!("Ignoring spend for another record key {spend_pretty:?} when verifying: {pretty_key:?}");
                     return false;
                 }
                 true
@@ -376,10 +376,8 @@ impl Node {
             .clone()
             .map(|spend2| vec![spend1.clone(), spend2])
             .unwrap_or_else(|| vec![spend1.clone()]);
-        debug!(
-            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
-            validated_spends.len(),
-        );
+        let len = validated_spends.len();
+        debug!("Got {len} validated spends with key: {unique_pubkey:?} at {pretty_key:?}");
 
         // store the record into the local storage
         let record = Record {
@@ -389,6 +387,9 @@ impl Node {
             expires: None,
         };
         self.network.put_local_record(record);
+        debug!(
+            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
+        );
 
         // report double spends
         if let Some(spend2) = maybe_spend2 {
@@ -667,7 +668,7 @@ impl Node {
                 warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
                 let mut spends = vec![];
                 for (record, _) in result_map.values() {
-                    match get_singed_spends_from_record(record) {
+                    match get_signed_spends_from_record(record) {
                         Ok(s) => spends.extend(s),
                         Err(e) => warn!("Ignoring invalid record received from the network for spend: {unique_pubkey:?}: {e}"),
                     }
@@ -675,8 +676,8 @@ impl Node {
                 spends
             }
             Err(e) => {
-                warn!("Failed to get spends from the network for {unique_pubkey:?}: {e}");
-                return Err(e)?;
+                warn!("Continuing without network spends as failed to get spends from the network for {unique_pubkey:?}: {e}");
+                vec![]
             }
         };
 
@@ -716,7 +717,7 @@ impl Node {
                     let s =
                         format!("Async thread error while verifying spend {unique_pubkey}: {e:?}");
                     error!("{}", s);
-                    return Err(Error::JoinError(s))?;
+                    return Err(Error::JoinErrorInAsyncThread(s))?;
                 }
             }
         }
