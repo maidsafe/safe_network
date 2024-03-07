@@ -15,6 +15,7 @@ pub(crate) mod upload;
 
 pub(crate) use chunk_manager::ChunkManager;
 
+use crate::subcommands::files::iterative_uploader::IterativeUploader;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Help, Result};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -26,6 +27,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use upload::{FilesUploadOptions, UploadedFile, UPLOADED_FILES};
+use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -43,7 +45,7 @@ pub enum FilesCmds {
         ///
         /// Can be a file or a directory.
         #[clap(name = "path", value_name = "PATH")]
-        path: PathBuf,
+        file_path: PathBuf,
         /// The batch_size to split chunks into parallel handling batches
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
@@ -95,29 +97,33 @@ pub(crate) async fn files_cmds(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
+    let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
+    let chunk_manager = ChunkManager::new(&root_dir.clone());
+
     match cmds {
         FilesCmds::Estimate {
             path,
             make_data_public,
         } => estimate::estimate_cost(path, make_data_public, client, root_dir).await?,
         FilesCmds::Upload {
-            path,
+            file_path,
             batch_size,
             retry_strategy,
             make_data_public,
         } => {
-            upload::upload_files(
-                path,
-                client,
-                root_dir.to_path_buf(),
-                FilesUploadOptions {
-                    make_data_public,
-                    verify_store,
-                    batch_size,
-                    retry_strategy,
-                },
-            )
-            .await?
+            IterativeUploader::new(chunk_manager, files_api)
+                .iterate_upload(
+                    WalkDir::new(&file_path).into_iter().flatten(),
+                    file_path,
+                    client,
+                    FilesUploadOptions {
+                        make_data_public,
+                        verify_store,
+                        batch_size,
+                        retry_strategy,
+                    },
+                )
+                .await
         }
         FilesCmds::Download {
             file_name,
