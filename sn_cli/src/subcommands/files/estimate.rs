@@ -40,9 +40,10 @@ impl Estimator {
             .as_nano();
 
         for (chunk_address, _location) in self.chunk_manager.get_chunks() {
+            let c = self.files_api.clone();
+
             tokio::spawn(async move {
-                let (_peer, _cost, quote) = self
-                    .files_api
+                let (_peer, _cost, quote) = c
                     .wallet()
                     .expect("estimate_cost: Wallet error.")
                     .get_store_cost_at_address(NetworkAddress::from_chunk_address(
