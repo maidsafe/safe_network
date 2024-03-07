@@ -97,7 +97,7 @@ impl RecordHeader {
 
     pub fn try_deserialize(bytes: &[u8]) -> Result<Self, Error> {
         rmp_serde::from_slice(bytes).map_err(|err| {
-            error!("Failed to deserialized RecordHeader with error: {err:?}");
+            error!("Failed to deserialize RecordHeader with error: {err:?}");
             Error::RecordHeaderParsingFailed
         })
     }

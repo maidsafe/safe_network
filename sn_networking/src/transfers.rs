@@ -20,7 +20,7 @@ use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
 fn parse_signed_spends(address: &SpendAddress, record: &Record) -> Result<SignedSpend> {
-    match get_singed_spends_from_record(record)?.as_slice() {
+    match get_signed_spends_from_record(record)?.as_slice() {
         [one, two, ..] => {
             error!("Found double spend for {address:?}");
             Err(Error::DoubleSpendAttempt(
@@ -58,7 +58,7 @@ impl Network {
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-        get_singed_spends_from_record(&record)
+        get_signed_spends_from_record(&record)
     }
 
     /// Gets a spend from the Network.
@@ -227,9 +227,8 @@ impl Network {
     }
 }
 
-/// NB TODO make sure this is used for all spend record deserialization
 /// Tries to get the signed spend out of a record.
-pub fn get_singed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
+pub fn get_signed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
     let header = RecordHeader::from_record(record)?;
     if let RecordKind::Spend = header.kind {
         let spends = try_deserialize_record::<Vec<SignedSpend>>(record)?;

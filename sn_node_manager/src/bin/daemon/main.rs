@@ -10,7 +10,7 @@
 extern crate tracing;
 
 use clap::Parser;
-use color_eyre::{self, eyre::Result};
+use color_eyre::eyre::Result;
 use libp2p_identity::PeerId;
 use sn_node_manager::{config::get_node_registry_path, rpc, DAEMON_DEFAULT_PORT};
 use sn_service_management::{

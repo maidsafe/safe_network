@@ -621,7 +621,6 @@ impl WalletClient {
 
     /// Resend failed transactions. This can optionally verify the store has been successful.
     /// This will attempt to GET the cash_note from the network.
-    // TODO: Used only once in current file: Set to Private. No Docs issued.
     async fn resend_pending_transactions(&mut self, verify_store: bool) {
         if self
             .client
@@ -633,10 +632,6 @@ impl WalletClient {
             .is_ok()
         {
             self.wallet.clear_confirmed_spend_requests();
-            // We might want to be _really_ sure and do the below
-            // as well, but it's not necessary.
-            // use crate::domain::wallet::VerifyingClient;
-            // client.verify(tx_hash).await.ok();
         }
     }
 

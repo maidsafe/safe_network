@@ -84,5 +84,5 @@ pub enum Error {
     InvalidRequest(String),
     /// Error occurred in an async thread
     #[error("Error occured in async thread: {0}")]
-    JoinError(String),
+    JoinErrorInAsyncThread(String),
 }
