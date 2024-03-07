@@ -167,7 +167,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn_node_manager --release --test e2e -- --nocapture
+          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
 
       # Powershell step runs as admin by default.
       - name: run integration test in powershell
@@ -180,7 +180,7 @@ jobs:
           Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
           $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-          cargo test --release --package sn_node_manager --test e2e -- --nocapture
+          cargo test --release --package sn-node-manager --test e2e -- --nocapture
 
   # Each upgrade test needs its own VM, otherwise they will interfere with each other.
   node-manager-upgrade-tests:
@@ -251,7 +251,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn_node_manager --release \
+          ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
             --test upgrades ${{ matrix.test }} -- --nocapture
 
       # Powershell step runs as admin by default.
@@ -265,7 +265,7 @@ jobs:
           Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
           $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-          cargo test --package sn_node_manager --release `
+          cargo test --package sn-node-manager --release `
             --test upgrades ${{ matrix.test }} -- --nocapture
 
   # Each daemon test needs its own VM, otherwise they will interfere with each other.
@@ -303,7 +303,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn_node_manager --release \
+          ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
             --test daemon ${{ matrix.test }} -- --nocapture
 
       # Powershell step runs as admin by default.
@@ -317,7 +317,7 @@ jobs:
           Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
           $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-          cargo test --package sn_node_manager --release `
+          cargo test --package sn-node-manager --release `
             --test daemon ${{ matrix.test }} -- --nocapture
 
   e2e:
