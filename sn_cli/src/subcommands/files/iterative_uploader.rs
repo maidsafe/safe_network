@@ -5,7 +5,7 @@ use indicatif::ProgressBar;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use sn_client::transfers::{Error as TransfersError, NanoTokens, WalletError};
-use sn_client::{Client, Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
+use sn_client::{Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -35,7 +35,6 @@ impl IterativeUploader {
         mut self,
         entries_iter: impl Iterator<Item = DirEntry>,
         files_path: PathBuf,
-        _client: &Client,
         options: FilesUploadOptions,
     ) -> Result<()> {
         let FilesUploadOptions {
