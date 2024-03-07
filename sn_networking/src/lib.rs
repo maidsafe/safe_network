@@ -37,7 +37,7 @@ pub use self::{
     error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
-    transfers::get_singed_spends_from_record,
+    transfers::get_signed_spends_from_record,
 };
 
 use self::{cmd::SwarmCmd, error::Result};
