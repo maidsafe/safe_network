@@ -94,7 +94,7 @@ impl ChunkManager {
         batch_size: usize,
     ) -> Result<Vec<(XorName, PathBuf)>> {
         let chunks_to_upload = if self.is_chunks_empty() {
-            let chunks = self.already_put_chunks(files_path, make_data_public)?;
+            let chunks = self.already_put_chunks(&files_path, make_data_public)?;
             println!(
                 "Files upload attempted previously, verifying {} chunks",
                 chunks.len()
@@ -492,7 +492,7 @@ impl ChunkManager {
         files_path: &Path,
         make_files_public: bool,
     ) -> Result<Vec<(XorName, PathBuf)>> {
-        self.chunk_path(files_path, false, make_files_public)?;
+        self.chunk_path(&files_path, false, make_files_public)?;
         Ok(self.get_chunks())
     }
 
