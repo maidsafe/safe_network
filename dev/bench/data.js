@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1709836181563,
+  "lastUpdate": 1709836285150,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "95e0ff7f899f5cb251782791dd6f5b3a98ff471f",
-          "message": "chore(networking): remove unused content hash\n\nThis could take a long time for larger records",
-          "timestamp": "2023-10-23T14:45:27+02:00",
-          "tree_id": "2ea152a4f4a9ca97b8647d37722eddc6c2879ba0",
-          "url": "https://github.com/maidsafe/safe_network/commit/95e0ff7f899f5cb251782791dd6f5b3a98ff471f"
-        },
-        "date": 1698068077011,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 90,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/64e77ca71f311cbaf5d66892269df5bc07f18b9f"
         },
         "date": 1709557459466,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "ff291dd13b7384d7d121640c53fe07662b7c81c6",
+          "message": "chore(deps): bump mio from 0.8.10 to 0.8.11\n\nBumps [mio](https://github.com/tokio-rs/mio) from 0.8.10 to 0.8.11.\n- [Release notes](https://github.com/tokio-rs/mio/releases)\n- [Changelog](https://github.com/tokio-rs/mio/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/tokio-rs/mio/compare/v0.8.10...v0.8.11)\n\n---\nupdated-dependencies:\n- dependency-name: mio\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-03-07T17:38:45Z",
+          "tree_id": "262d00631bb1ac7d77646fe2a8445ce8a6f6468c",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff291dd13b7384d7d121640c53fe07662b7c81c6"
+        },
+        "date": 1709836284754,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
