@@ -19,11 +19,11 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
-use sn_client::{Client, Error as ClientError};
-use sn_transfers::{
+use sn_client::transfers::{
     Error as TransferError, HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer,
     UnsignedTransfer, WalletError,
 };
+use sn_client::{Client, Error as ClientError};
 use std::{path::Path, str::FromStr};
 
 // Please do not remove the blank lines in these doc comments.

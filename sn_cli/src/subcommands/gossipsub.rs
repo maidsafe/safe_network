@@ -39,7 +39,7 @@ pub enum GossipsubCmds {
 pub(crate) async fn gossipsub_cmds(cmds: GossipsubCmds, client: &Client) -> Result<()> {
     match cmds {
         GossipsubCmds::Subscribe { topic } => {
-            client.subscribe_to_topic(topic.clone())?;
+            client.subscribe_to_topic(topic.clone());
             println!("Subscribed to topic '{topic}'. Listening for messages published on it...");
             let mut events_channel = client.events_channel();
             while let Ok(event) = events_channel.recv().await {
@@ -50,11 +50,11 @@ pub(crate) async fn gossipsub_cmds(cmds: GossipsubCmds, client: &Client) -> Resu
             }
         }
         GossipsubCmds::Unsubscribe { topic } => {
-            client.unsubscribe_from_topic(topic.clone())?;
+            client.unsubscribe_from_topic(topic.clone());
             println!("Unsubscribed from topic '{topic}'.");
         }
         GossipsubCmds::Publish { topic, msg } => {
-            client.publish_on_topic(topic.clone(), msg.into())?;
+            client.publish_on_topic(topic.clone(), msg.into());
             println!("Message published on topic '{topic}'.");
         }
     }

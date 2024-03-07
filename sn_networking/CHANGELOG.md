@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.30](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.29...sn_networking-v0.13.30) - 2024-03-06
+
+### Added
+- *(node)* exponential pricing when storage reaches high
+- *(node)* bad verification to exclude connections from bad_nodes
+- collect royalties through DAG
+- *(node)* record_store chunk in batch and setup distance_range
+
+### Fixed
+- filter out spent cashnotes in received client transfers
+- record_store no longer update distance_range via close_group change
+
+### Other
+- clean swarm commands errs and spend errors
+- *(release)* sn_transfers-v0.16.1
+- *(release)* sn_protocol-v0.15.0/sn-node-manager-v0.4.0
+
 ## [0.13.29](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.13.28...sn_networking-v0.13.29) - 2024-02-23
 
 ### Added

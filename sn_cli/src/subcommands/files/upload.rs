@@ -1,8 +1,8 @@
 use bytes::Bytes;
 use color_eyre::Result;
 use serde::Deserialize;
+use sn_client::protocol::storage::{ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi};
-use sn_protocol::storage::{ChunkAddress, RetryStrategy};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
