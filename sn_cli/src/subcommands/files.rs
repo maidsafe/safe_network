@@ -104,7 +104,11 @@ pub(crate) async fn files_cmds(
         FilesCmds::Estimate {
             path,
             make_data_public,
-        } => estimate::estimate_cost(path, make_data_public, client, root_dir).await?,
+        } => {
+            estimate::Estimator::new(chunk_manager, files_api)
+                .estimate_cost(path, make_data_public, root_dir)
+                .await?
+        }
         FilesCmds::Upload {
             file_path,
             batch_size,
@@ -115,7 +119,6 @@ pub(crate) async fn files_cmds(
                 .iterate_upload(
                     WalkDir::new(&file_path).into_iter().flatten(),
                     file_path,
-                    client,
                     FilesUploadOptions {
                         make_data_public,
                         verify_store,
@@ -123,7 +126,7 @@ pub(crate) async fn files_cmds(
                         retry_strategy,
                     },
                 )
-                .await
+                .await?
         }
         FilesCmds::Download {
             file_name,
@@ -234,7 +237,7 @@ pub(crate) async fn files_cmds(
                 }
             }
         }
-    };
+    }
     Ok(())
 }
 
