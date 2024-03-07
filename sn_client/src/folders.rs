@@ -15,7 +15,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy},
     NetworkAddress,
 };
-use sn_registers::EntryHash;
+use sn_registers::{Entry, EntryHash};
 use sn_transfers::HotWallet;
 use xor_name::{XorName, XOR_NAME_LEN};
 
@@ -48,7 +48,7 @@ pub struct FoldersApi {
     wallet_dir: PathBuf,
     register: ClientRegister,
     files_api: FilesApi,
-    // Cache of metadata chunks. We keep the Chunk it self till we upload it to the network.
+    // Cache of metadata chunks. We keep the Chunk itself till we upload it to the network.
     metadata: BTreeMap<XorName, (Metadata, Option<Chunk>)>,
 }
 
@@ -81,7 +81,8 @@ impl FoldersApi {
 
     /// Return the list of metadata chunks addresses that need to be payed for in order to be
     /// able to then store all data on the network upon calling `sync` method.
-    pub fn meta_addrs_to_pay(&self) -> Vec<NetworkAddress> {
+    #[allow(clippy::mutable_key_type)]
+    pub fn meta_addrs_to_pay(&self) -> BTreeSet<NetworkAddress> {
         self.metadata
             .iter()
             .filter_map(|(meta_xorname, (_, chunk))| {
@@ -201,10 +202,18 @@ impl FoldersApi {
 
     /// Find file/folder in this Folder by its name, returning metadata chunk xorname and metadata itself.
     pub fn find_by_name(&self, name: &str) -> Option<(&XorName, &Metadata)> {
+        // let's get the list of metadata xornames of non-removed entries
+        let non_removed_items: BTreeSet<XorName> = self
+            .register
+            .read()
+            .iter()
+            .map(|(_, meta_xorname)| xorname_from_entry(meta_xorname))
+            .collect();
+
         self.metadata
             .iter()
             .find_map(|(meta_xorname, (metadata, _))| {
-                if metadata.name == name {
+                if metadata.name == name && non_removed_items.contains(meta_xorname) {
                     Some((meta_xorname, metadata))
                 } else {
                     None
@@ -214,12 +223,10 @@ impl FoldersApi {
 
     /// Returns the list of entries of this Folder, including their entry hash,
     /// metadata chunk xorname, and metadata itself.
-    pub async fn entries(&mut self) -> Result<Vec<(EntryHash, XorName, Metadata)>> {
-        let mut entries = vec![];
+    pub async fn entries(&mut self) -> Result<BTreeMap<EntryHash, (XorName, Metadata)>> {
+        let mut entries = BTreeMap::new();
         for (entry_hash, entry) in self.register.read() {
-            let mut xorname = [0; XOR_NAME_LEN];
-            xorname.copy_from_slice(&entry);
-            let meta_xorname = XorName(xorname);
+            let meta_xorname = xorname_from_entry(&entry);
             if meta_xorname == XorName::default() {
                 // this is the mark signaling a removed file/folder, so we skip it
                 continue;
@@ -238,7 +245,7 @@ impl FoldersApi {
                     metadata
                 }
             };
-            entries.push((entry_hash, meta_xorname, metadata));
+            entries.insert(entry_hash, (meta_xorname, metadata));
         }
         Ok(entries)
     }
@@ -275,4 +282,11 @@ impl FoldersApi {
 
         Ok((entry_hash, meta_xorname, metadata))
     }
+}
+
+// Helper to convert a Register/Folder entry into a XorName
+fn xorname_from_entry(entry: &Entry) -> XorName {
+    let mut xorname = [0; XOR_NAME_LEN];
+    xorname.copy_from_slice(entry);
+    XorName(xorname)
 }

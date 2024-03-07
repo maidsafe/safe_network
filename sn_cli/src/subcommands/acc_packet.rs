@@ -792,7 +792,7 @@ impl AccountPacket {
         files_to_download: &mut Vec<(OsString, Chunk, PathBuf)>,
         folders_to_download: &mut Vec<(OsString, FoldersApi, PathBuf)>,
     ) -> Result<()> {
-        for (entry_hash, meta_xorname, metadata) in folders_api.entries().await?.into_iter() {
+        for (entry_hash, (meta_xorname, metadata)) in folders_api.entries().await?.into_iter() {
             let name = metadata.name.clone();
             let item_path = target_path.join(name.clone());
             match &metadata.content {
