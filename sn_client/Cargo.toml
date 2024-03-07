@@ -48,9 +48,12 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 
 [dev-dependencies]
+dirs-next = "~2.0.0"
 eyre = "0.6.8"
+lazy_static = "~1.4.0"
 # add rand to libp2p
 libp2p-identity = { version="0.2.7", features = ["rand"] }
+sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6" }
 
 [lints]
 workspace = true
