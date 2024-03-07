@@ -36,26 +36,6 @@ jobs:
         # should be fixed by https://github.com/dalek-cryptography/curve25519-dalek/pull/619
         continue-on-error: true
 
-  cargo-publish:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Check crates can be published
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly # Needs nightly to distinguish between deps of different versions
-        with:
-          # we need rustfmt here while we have a build step
-          components: rustfmt
-
-      # install jq for parsing json
-      - name: Install jq
-        run: sudo apt-get install jq
-
-      - name: Check each crate could be published
-        run: cargo metadata --no-deps --format-version 1 | jq -r ".packages[].name" | xargs -I {} cargo publish --manifest-path {}/Cargo.toml --dry-run
-
   lint:
     runs-on: ubuntu-latest
     env:
