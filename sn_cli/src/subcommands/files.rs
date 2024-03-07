@@ -98,7 +98,7 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
-    let chunk_manager = ChunkManager::new(&root_dir.clone());
+    let chunk_manager = ChunkManager::new(root_dir);
 
     match cmds {
         FilesCmds::Estimate {
