@@ -6,12 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+pub mod add_services;
 pub mod config;
-pub mod daemon_control;
-pub mod faucet_control;
 pub mod helpers;
 pub mod local;
-pub mod node_control;
 pub mod rpc;
 
 #[derive(Clone, PartialEq)]
@@ -39,9 +37,14 @@ use color_eyre::{
 use colored::Colorize;
 use semver::Version;
 use sn_service_management::{
-    control::ServiceControl, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
+    control::ServiceControl,
+    rpc::{RpcActions, RpcClient},
+    NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
+    UpgradeResult,
 };
 
+pub const DAEMON_DEFAULT_PORT: u16 = 12500;
+pub const DAEMON_SERVICE_NAME: &str = "safenodemand";
 const RPC_START_UP_DELAY_MS: u64 = 3000;
 
 pub struct ServiceManager<T: ServiceStateActions + Send> {
@@ -228,6 +231,138 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 options.target_version.to_string(),
             )),
         }
+    }
+}
+
+pub async fn status(
+    node_registry: &mut NodeRegistry,
+    service_control: &dyn ServiceControl,
+    detailed_view: bool,
+    output_json: bool,
+    fail: bool,
+) -> Result<()> {
+    // Again confirm that services which are marked running are still actually running.
+    // If they aren't we'll mark them as stopped.
+    for node in &mut node_registry.nodes {
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+        if let ServiceStatus::Running = node.status {
+            if let Some(pid) = node.pid {
+                // First we can try the PID we have now. If there is still a process running with
+                // that PID, we know the node is still running.
+                if service_control.is_service_process_running(pid) {
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
+                } else {
+                    // The process with the PID we had has died at some point. However, if the
+                    // service has been configured to restart on failures, it's possible that a new
+                    // process has been launched and hence we would have a new PID. We can use the
+                    // RPC service to try and retrieve it.
+                    match rpc_client.node_info().await {
+                        Ok(info) => {
+                            node.pid = Some(info.pid);
+                        }
+                        Err(_) => {
+                            // Finally, if there was an error communicating with the RPC client, we
+                            // can assume that this node is actually stopped.
+                            node.status = ServiceStatus::Stopped;
+                            node.pid = None;
+                        }
+                    }
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if output_json {
+        let json = serde_json::to_string(&node_registry.nodes)?;
+        println!("{json}");
+    } else if detailed_view {
+        for node in &node_registry.nodes {
+            let service_status = format!("{} - {}", node.service_name, format_status(&node.status));
+            let banner = "=".repeat(service_status.len());
+            println!("{}", banner);
+            println!("{service_status}");
+            println!("{}", banner);
+            println!("Version: {}", node.version);
+            println!(
+                "Peer ID: {}",
+                node.peer_id.map_or("-".to_string(), |p| p.to_string())
+            );
+            println!("RPC Socket: {}", node.rpc_socket_addr);
+            println!("Listen Addresses: {:?}", node.listen_addr);
+            println!(
+                "PID: {}",
+                node.pid.map_or("-".to_string(), |p| p.to_string())
+            );
+            println!("Data path: {}", node.data_dir_path.to_string_lossy());
+            println!("Log path: {}", node.log_dir_path.to_string_lossy());
+            println!("Bin path: {}", node.safenode_path.to_string_lossy());
+            println!(
+                "Connected peers: {}",
+                node.connected_peers
+                    .as_ref()
+                    .map_or("-".to_string(), |p| p.len().to_string())
+            );
+            println!();
+        }
+    } else {
+        println!(
+            "{:<18} {:<52} {:<7} {:>15}",
+            "Service Name", "Peer ID", "Status", "Connected Peers"
+        );
+        let nodes = node_registry
+            .nodes
+            .iter()
+            .filter(|n| n.status != ServiceStatus::Removed)
+            .collect::<Vec<&NodeServiceData>>();
+        for node in nodes {
+            let peer_id = node.peer_id.map_or("-".to_string(), |p| p.to_string());
+            let connected_peers = node
+                .connected_peers
+                .clone()
+                .map_or("-".to_string(), |p| p.len().to_string());
+            println!(
+                "{:<18} {:<52} {:<7} {:>15}",
+                node.service_name,
+                peer_id,
+                format_status(&node.status),
+                connected_peers
+            );
+        }
+    }
+
+    if fail
+        && node_registry
+            .nodes
+            .iter()
+            .any(|n| n.status != ServiceStatus::Running)
+    {
+        return Err(eyre!("One or more nodes are not in a running state"));
+    }
+
+    Ok(())
+}
+
+fn format_status(status: &ServiceStatus) -> String {
+    match status {
+        ServiceStatus::Running => "RUNNING".green().to_string(),
+        ServiceStatus::Stopped => "STOPPED".red().to_string(),
+        ServiceStatus::Added => "ADDED".yellow().to_string(),
+        ServiceStatus::Removed => "REMOVED".red().to_string(),
     }
 }
 

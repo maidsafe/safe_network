@@ -5,22 +5,29 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-
-mod config;
+pub mod config;
 #[cfg(test)]
 mod tests;
 
-pub use config::{AddServiceOptions, InstallNodeServiceCtxBuilder};
-
-use crate::{config::create_owned_dir, VerbosityLevel};
+use self::config::{
+    AddFaucetServiceOptions, AddServiceOptions, InstallFaucetServiceCtxBuilder,
+    InstallNodeServiceCtxBuilder,
+};
+use crate::{
+    config::create_owned_dir, helpers::get_bin_version, VerbosityLevel, DAEMON_SERVICE_NAME,
+};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
+use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_service_management::{
-    control::ServiceControl,
-    rpc::{RpcActions, RpcClient},
-    NodeRegistry, NodeServiceData, ServiceStatus,
+    control::ServiceControl, DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData,
+    ServiceStatus,
 };
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::{
+    ffi::OsString,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 
 /// Install safenode as a service.
 ///
@@ -197,134 +204,133 @@ pub async fn add(
     Ok(())
 }
 
-pub async fn status(
+/// Install the daemon as a service.
+///
+/// This only defines the service; it does not start it.
+pub fn add_daemon(
+    address: Ipv4Addr,
+    port: u16,
+    daemon_path: PathBuf,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
-    detailed_view: bool,
-    output_json: bool,
-    fail: bool,
 ) -> Result<()> {
-    // Again confirm that services which are marked running are still actually running.
-    // If they aren't we'll mark them as stopped.
-    for node in &mut node_registry.nodes {
-        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        if let ServiceStatus::Running = node.status {
-            if let Some(pid) = node.pid {
-                // First we can try the PID we have now. If there is still a process running with
-                // that PID, we know the node is still running.
-                if service_control.is_service_process_running(pid) {
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
-                    }
-                } else {
-                    // The process with the PID we had has died at some point. However, if the
-                    // service has been configured to restart on failures, it's possible that a new
-                    // process has been launched and hence we would have a new PID. We can use the
-                    // RPC service to try and retrieve it.
-                    match rpc_client.node_info().await {
-                        Ok(info) => {
-                            node.pid = Some(info.pid);
-                        }
-                        Err(_) => {
-                            // Finally, if there was an error communicating with the RPC client, we
-                            // can assume that this node is actually stopped.
-                            node.status = ServiceStatus::Stopped;
-                            node.pid = None;
-                        }
-                    }
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
-                    }
-                }
-            }
-        }
+    let service_name: ServiceLabel = DAEMON_SERVICE_NAME.parse()?;
+
+    // try to stop and uninstall if already installed
+    if let Err(err) = service_control.stop(DAEMON_SERVICE_NAME) {
+        println!("Error while stopping manager daemon. Ignoring the error. {err:?}");
+    }
+    if let Err(err) = service_control.uninstall(DAEMON_SERVICE_NAME) {
+        println!("Error while uninstalling manager daemon. Ignoring the error. {err:?}");
     }
 
-    if output_json {
-        let json = serde_json::to_string(&node_registry.nodes)?;
-        println!("{json}");
-    } else if detailed_view {
-        for node in &node_registry.nodes {
-            let service_status = format!("{} - {}", node.service_name, format_status(&node.status));
-            let banner = "=".repeat(service_status.len());
-            println!("{}", banner);
-            println!("{service_status}");
-            println!("{}", banner);
-            println!("Version: {}", node.version);
-            println!(
-                "Peer ID: {}",
-                node.peer_id.map_or("-".to_string(), |p| p.to_string())
-            );
-            println!("RPC Socket: {}", node.rpc_socket_addr);
-            println!("Listen Addresses: {:?}", node.listen_addr);
-            println!(
-                "PID: {}",
-                node.pid.map_or("-".to_string(), |p| p.to_string())
-            );
-            println!("Data path: {}", node.data_dir_path.to_string_lossy());
-            println!("Log path: {}", node.log_dir_path.to_string_lossy());
-            println!("Bin path: {}", node.safenode_path.to_string_lossy());
-            println!(
-                "Connected peers: {}",
-                node.connected_peers
-                    .as_ref()
-                    .map_or("-".to_string(), |p| p.len().to_string())
-            );
-            println!();
+    let install_ctx = ServiceInstallCtx {
+        label: service_name.clone(),
+        program: daemon_path.clone(),
+        args: vec![
+            OsString::from("--port"),
+            OsString::from(port.to_string()),
+            OsString::from("--address"),
+            OsString::from(address.to_string()),
+        ],
+        contents: None,
+        username: None,
+        working_directory: None,
+        environment: None,
+    };
+
+    match service_control.install(install_ctx) {
+        Ok(()) => {
+            let daemon = DaemonServiceData {
+                daemon_path: daemon_path.clone(),
+                endpoint: Some(SocketAddr::new(IpAddr::V4(address), port)),
+                pid: None,
+                service_name: DAEMON_SERVICE_NAME.to_string(),
+                status: ServiceStatus::Added,
+                version: get_bin_version(&daemon_path)?,
+            };
+            node_registry.daemon = Some(daemon);
+
+            println!("Daemon service added {}", "✓".green());
+            println!("[!] Note: the service has not been started");
+            node_registry.save()?;
+            Ok(())
         }
-    } else {
-        println!(
-            "{:<18} {:<52} {:<7} {:>15}",
-            "Service Name", "Peer ID", "Status", "Connected Peers"
-        );
-        let nodes = node_registry
-            .nodes
-            .iter()
-            .filter(|n| n.status != ServiceStatus::Removed)
-            .collect::<Vec<&NodeServiceData>>();
-        for node in nodes {
-            let peer_id = node.peer_id.map_or("-".to_string(), |p| p.to_string());
-            let connected_peers = node
-                .connected_peers
-                .clone()
-                .map_or("-".to_string(), |p| p.len().to_string());
-            println!(
-                "{:<18} {:<52} {:<7} {:>15}",
-                node.service_name,
-                peer_id,
-                format_status(&node.status),
-                connected_peers
-            );
+        Err(e) => {
+            println!("Failed to add daemon service: {e}");
+            Err(e.into())
         }
     }
-
-    if fail
-        && node_registry
-            .nodes
-            .iter()
-            .any(|n| n.status != ServiceStatus::Running)
-    {
-        return Err(eyre!("One or more nodes are not in a running state"));
-    }
-
-    Ok(())
 }
 
-fn format_status(status: &ServiceStatus) -> String {
-    match status {
-        ServiceStatus::Running => "RUNNING".green().to_string(),
-        ServiceStatus::Stopped => "STOPPED".red().to_string(),
-        ServiceStatus::Added => "ADDED".yellow().to_string(),
-        ServiceStatus::Removed => "REMOVED".red().to_string(),
+/// Install the faucet as a service.
+///
+/// This only defines the service; it does not start it.
+///
+/// There are several arguments that probably seem like they could be handled within the function,
+/// but they enable more controlled unit testing.
+pub fn add_faucet(
+    install_options: AddFaucetServiceOptions,
+    node_registry: &mut NodeRegistry,
+    service_control: &dyn ServiceControl,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
+    create_owned_dir(
+        install_options.service_log_dir_path.clone(),
+        &install_options.user,
+    )?;
+
+    std::fs::copy(
+        install_options.faucet_download_bin_path.clone(),
+        install_options.faucet_install_bin_path.clone(),
+    )?;
+
+    let install_ctx = InstallFaucetServiceCtxBuilder {
+        bootstrap_peers: install_options.bootstrap_peers.clone(),
+        env_variables: install_options.env_variables.clone(),
+        faucet_path: install_options.faucet_install_bin_path.clone(),
+        local: install_options.local,
+        log_dir_path: install_options.service_log_dir_path.clone(),
+        name: "faucet".to_string(),
+        service_user: install_options.user.clone(),
+    }
+    .build()?;
+
+    match service_control.install(install_ctx) {
+        Ok(()) => {
+            node_registry.faucet = Some(FaucetServiceData {
+                faucet_path: install_options.faucet_install_bin_path.clone(),
+                local: false,
+                log_dir_path: install_options.service_log_dir_path.clone(),
+                pid: None,
+                service_name: "faucet".to_string(),
+                status: ServiceStatus::Added,
+                user: install_options.user.clone(),
+                version: install_options.version,
+            });
+            println!("Faucet service added {}", "✓".green());
+            if verbosity != VerbosityLevel::Minimal {
+                println!(
+                    "  - Bin path: {}",
+                    install_options.faucet_install_bin_path.to_string_lossy()
+                );
+                println!(
+                    "  - Data path: {}",
+                    install_options.service_data_dir_path.to_string_lossy()
+                );
+                println!(
+                    "  - Log path: {}",
+                    install_options.service_log_dir_path.to_string_lossy()
+                );
+            }
+            println!("[!] Note: the service has not been started");
+            std::fs::remove_file(install_options.faucet_download_bin_path)?;
+            node_registry.save()?;
+            Ok(())
+        }
+        Err(e) => {
+            println!("Failed to add faucet service: {e}");
+            Err(e.into())
+        }
     }
 }
