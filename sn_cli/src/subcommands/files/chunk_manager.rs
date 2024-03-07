@@ -88,13 +88,13 @@ impl ChunkManager {
 
     pub(crate) async fn chunks_to_upload(
         mut self,
-        files_path: &Path,
+        files_path: PathBuf,
         client: &Client,
         make_data_public: bool,
         batch_size: usize,
     ) -> Result<Vec<(XorName, PathBuf)>> {
         let chunks_to_upload = if self.is_chunks_empty() {
-            let chunks = self.already_put_chunks(&files_path, make_data_public)?;
+            let chunks = self.already_put_chunks(files_path, make_data_public)?;
             println!(
                 "Files upload attempted previously, verifying {} chunks",
                 chunks.len()
@@ -489,7 +489,7 @@ impl ChunkManager {
     /// completed
     pub(crate) fn already_put_chunks(
         &mut self,
-        files_path: &Path,
+        files_path: PathBuf,
         make_files_public: bool,
     ) -> Result<Vec<(XorName, PathBuf)>> {
         self.chunk_path(&files_path, false, make_files_public)?;

@@ -57,7 +57,7 @@ impl IterativeUploader {
             .chunk_manager
             .clone()
             .chunks_to_upload(
-                &files_path,
+                files_path,
                 self.files_api.client(),
                 make_data_public,
                 batch_size,
