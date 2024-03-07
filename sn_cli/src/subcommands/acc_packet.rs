@@ -667,7 +667,6 @@ impl AccountPacket {
             .iterate_upload(
                 self.iter_only_files(),
                 self.files_dir.clone(),
-                &self.client,
                 options.clone(),
             )
             .await?;
