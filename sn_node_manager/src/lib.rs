@@ -12,6 +12,7 @@ pub mod faucet_control;
 pub mod helpers;
 pub mod local;
 pub mod node_control;
+pub mod rpc;
 
 #[derive(Clone, PartialEq)]
 pub enum VerbosityLevel {

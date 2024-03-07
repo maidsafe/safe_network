@@ -12,10 +12,7 @@ extern crate tracing;
 use clap::Parser;
 use color_eyre::{self, eyre::Result};
 use libp2p_identity::PeerId;
-use sn_node_manager::{
-    config::get_node_registry_path,
-    daemon_control::{self, DAEMON_DEFAULT_PORT},
-};
+use sn_node_manager::{config::get_node_registry_path, daemon_control::DAEMON_DEFAULT_PORT, rpc};
 use sn_service_management::{
     safenode_manager_proto::{
         safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
@@ -83,8 +80,7 @@ impl SafeNodeManagerDaemon {
         peer_id: PeerId,
         retain_peer_id: bool,
     ) -> Result<()> {
-        let res =
-            daemon_control::restart_node_service(&mut node_registry, peer_id, retain_peer_id).await;
+        let res = rpc::restart_node_service(&mut node_registry, peer_id, retain_peer_id).await;
 
         // make sure to save the state even if the above fn fails.
         node_registry.save()?;
