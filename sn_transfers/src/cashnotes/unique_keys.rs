@@ -38,12 +38,10 @@ impl DerivationIndex {
     }
 }
 
-// NB TODO remove Serialize impl when enough nodes have updated to support the new serialisation format!
-// cf below for the new Serialize impl
 /// A Unique Public Key is the unique identifier of a CashNote and its SignedSpend on the Network when it is spent.
 /// It is the mechanism that makes transactions untraceable to the real owner (MainPubkey).
 /// It is the equivalent to using a different key for each transaction in bitcoin.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UniquePubkey(PublicKey);
 
 impl UniquePubkey {
@@ -74,16 +72,14 @@ impl UniquePubkey {
     }
 }
 
-// NB TODO enable this when enough nodes have updated to support the new serialisation format!
-// cf above (remove the derived Serialize impl and enable this one)
-// /// Custom implementation of Serialize and Deserialize for UniquePubkey to make it an actionable
-// /// hex string that can be copy pasted in apps, instead of a useless array of numbers
-// /// Caveat: this is slower than the default implementation
-// impl Serialize for UniquePubkey {
-//     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-//         serializer.serialize_str(&self.to_hex())
-//     }
-// }
+/// Custom implementation of Serialize and Deserialize for UniquePubkey to make it an actionable
+/// hex string that can be copy pasted in apps, instead of a useless array of numbers
+/// Caveat: this is slower than the default implementation
+impl Serialize for UniquePubkey {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.to_hex())
+    }
+}
 
 impl<'de> Deserialize<'de> for UniquePubkey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
