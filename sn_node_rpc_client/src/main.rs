@@ -7,8 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 //
 
-use sn_node_rpc_client::{RpcActions, RpcClient};
-
 use assert_fs::TempDir;
 use bls::SecretKey;
 use clap::Parser;
@@ -23,6 +21,7 @@ use sn_protocol::safenode_proto::{
     TransferNotifsFilterRequest,
 };
 use sn_protocol::storage::SpendAddress;
+use sn_service_management::rpc::{RpcActions, RpcClient};
 use sn_transfers::{MainPubkey, WatchOnlyWallet};
 use std::{fs, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio_stream::StreamExt;

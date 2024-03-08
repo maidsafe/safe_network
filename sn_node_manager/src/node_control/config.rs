@@ -8,7 +8,6 @@
 
 use color_eyre::Result;
 use libp2p::Multiaddr;
-use semver::Version;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use std::{
     ffi::OsString,
@@ -133,13 +132,4 @@ pub struct AddServiceOptions {
     pub url: Option<String>,
     pub user: String,
     pub version: String,
-}
-
-pub struct UpgradeOptions {
-    pub bootstrap_peers: Vec<Multiaddr>,
-    pub env_variables: Option<Vec<(String, String)>>,
-    pub force: bool,
-    pub start_node: bool,
-    pub target_safenode_path: PathBuf,
-    pub target_version: Version,
 }

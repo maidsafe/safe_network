@@ -8,15 +8,51 @@
 
 use thiserror::Error;
 
-pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
     #[error(transparent)]
+    AddrParseError(#[from] std::net::AddrParseError),
+    #[error("The endpoint for the daemon has not been set")]
+    DaemonEndpointNotSet,
+    #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    MultiAddrParseError(#[from] libp2p::multiaddr::Error),
+    #[error("The registry does not contain a service named '{0}'")]
+    NodeNotFound(String),
+    #[error(transparent)]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    PeerIdParseError(#[from] libp2p_identity::ParseError),
+    #[error("Could not connect to RPC endpoint '{0}'")]
+    RpcConnectionError(String),
+    #[error("Could not publish on topic {0} through RPC: {1}")]
+    RpcGossipPublishError(String, String),
+    #[error("Could not subscribe to gossip topic {0} through RPC: {1}")]
+    RpcGossipSubscribeError(String, String),
+    #[error("Could not unsubscribe from gossip topic {0} through RPC: {1}")]
+    RpcGossipUnsubscribeError(String, String),
+    #[error("Could not obtain node info through RPC: {0}")]
+    RpcNodeInfoError(String),
+    #[error("Could not obtain network info through RPC: {0}")]
+    RpcNetworkInfoError(String),
+    #[error("Could not restart node through RPC: {0}")]
+    RpcNodeRestartError(String),
+    #[error("Could not stop node through RPC: {0}")]
+    RpcNodeStopError(String),
+    #[error("Could not update node through RPC: {0}")]
+    RpcNodeUpdateError(String),
+    #[error("Could not obtain record addresses through RPC: {0}")]
+    RpcRecordAddressError(String),
+    #[error("Could not find process '{0}'")]
+    ServiceProcessNotFound(String),
+    #[error("Failed to create service user account")]
+    ServiceUserAccountCreationFailed,
     #[error("Could not obtain user's data directory")]
     UserDataDirectoryNotObtainable,
 }
