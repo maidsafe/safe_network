@@ -10,15 +10,13 @@ pub mod config;
 mod tests;
 
 use self::config::{
-    AddFaucetServiceOptions, AddServiceOptions, InstallFaucetServiceCtxBuilder,
-    InstallNodeServiceCtxBuilder,
+    AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions,
+    InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder,
 };
-use crate::{
-    config::create_owned_dir, helpers::get_bin_version, VerbosityLevel, DAEMON_SERVICE_NAME,
-};
+use crate::{config::create_owned_dir, VerbosityLevel, DAEMON_SERVICE_NAME};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
-use service_manager::{ServiceInstallCtx, ServiceLabel};
+use service_manager::ServiceInstallCtx;
 use sn_service_management::{
     control::ServiceControl, DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData,
     ServiceStatus,
@@ -26,7 +24,6 @@ use sn_service_management::{
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
 };
 
 /// Install safenode as a service.
@@ -208,30 +205,27 @@ pub async fn add(
 ///
 /// This only defines the service; it does not start it.
 pub fn add_daemon(
-    address: Ipv4Addr,
-    port: u16,
-    daemon_path: PathBuf,
+    options: AddDaemonServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
 ) -> Result<()> {
-    let service_name: ServiceLabel = DAEMON_SERVICE_NAME.parse()?;
+    if node_registry.daemon.is_some() {
+        return Err(eyre!("A safenodemand service has already been created"));
+    }
 
-    // try to stop and uninstall if already installed
-    if let Err(err) = service_control.stop(DAEMON_SERVICE_NAME) {
-        println!("Error while stopping manager daemon. Ignoring the error. {err:?}");
-    }
-    if let Err(err) = service_control.uninstall(DAEMON_SERVICE_NAME) {
-        println!("Error while uninstalling manager daemon. Ignoring the error. {err:?}");
-    }
+    std::fs::copy(
+        options.daemon_download_bin_path.clone(),
+        options.daemon_install_bin_path.clone(),
+    )?;
 
     let install_ctx = ServiceInstallCtx {
-        label: service_name.clone(),
-        program: daemon_path.clone(),
+        label: DAEMON_SERVICE_NAME.parse()?,
+        program: options.daemon_install_bin_path.clone(),
         args: vec![
             OsString::from("--port"),
-            OsString::from(port.to_string()),
+            OsString::from(options.port.to_string()),
             OsString::from("--address"),
-            OsString::from(address.to_string()),
+            OsString::from(options.address.to_string()),
         ],
         contents: None,
         username: None,
@@ -242,18 +236,18 @@ pub fn add_daemon(
     match service_control.install(install_ctx) {
         Ok(()) => {
             let daemon = DaemonServiceData {
-                daemon_path: daemon_path.clone(),
-                endpoint: Some(SocketAddr::new(IpAddr::V4(address), port)),
+                daemon_path: options.daemon_install_bin_path.clone(),
+                endpoint: Some(SocketAddr::new(IpAddr::V4(options.address), options.port)),
                 pid: None,
                 service_name: DAEMON_SERVICE_NAME.to_string(),
                 status: ServiceStatus::Added,
-                version: get_bin_version(&daemon_path)?,
+                version: options.version,
             };
             node_registry.daemon = Some(daemon);
-
             println!("Daemon service added {}", "✓".green());
             println!("[!] Note: the service has not been started");
             node_registry.save()?;
+            std::fs::remove_file(options.daemon_download_bin_path)?;
             Ok(())
         }
         Err(e) => {
@@ -275,6 +269,10 @@ pub fn add_faucet(
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
+    if node_registry.faucet.is_some() {
+        return Err(eyre!("A faucet service has already been created"));
+    }
+
     create_owned_dir(
         install_options.service_log_dir_path.clone(),
         &install_options.user,
