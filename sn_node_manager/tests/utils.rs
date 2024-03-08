@@ -8,10 +8,10 @@
 
 use assert_cmd::{assert::OutputAssertExt, cargo::CommandCargoExt};
 use color_eyre::{eyre::eyre, Result};
-use serde_json::Value;
+use sn_service_management::StatusSummary;
 use std::process::Command;
 
-pub async fn get_service_status() -> Result<Vec<Value>> {
+pub async fn get_service_status() -> Result<StatusSummary> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     let output = cmd
         .arg("status")
@@ -26,9 +26,9 @@ pub async fn get_service_status() -> Result<Vec<Value>> {
     println!("status command output:");
     println!("{output}");
 
-    let services: Vec<Value> = match serde_json::from_str(output) {
+    let status: StatusSummary = match serde_json::from_str(output) {
         Ok(json) => json,
         Err(e) => return Err(eyre!("Failed to parse JSON output: {:?}", e)),
     };
-    Ok(services)
+    Ok(status)
 }

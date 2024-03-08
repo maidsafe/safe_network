@@ -79,6 +79,13 @@ pub trait ServiceStateActions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StatusSummary {
+    pub nodes: Vec<NodeServiceData>,
+    pub daemon: Option<DaemonServiceData>,
+    pub faucet: Option<FaucetServiceData>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub daemon: Option<DaemonServiceData>,
@@ -144,6 +151,14 @@ impl NodeRegistry {
             return Ok(());
         }
         Err(Error::NodeNotFound(new_data.service_name))
+    }
+
+    pub fn to_status_summary(&self) -> StatusSummary {
+        StatusSummary {
+            nodes: self.nodes.clone(),
+            daemon: self.daemon.clone(),
+            faucet: self.faucet.clone(),
+        }
     }
 }
 
