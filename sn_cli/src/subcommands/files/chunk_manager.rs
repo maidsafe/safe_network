@@ -93,7 +93,7 @@ impl ChunkManager {
         make_data_public: bool,
         batch_size: usize,
     ) -> Result<Vec<(XorName, PathBuf)>> {
-        let chunks_to_upload = if self.is_chunks_empty() {
+        if self.is_chunks_empty() {
             let chunks = self.already_put_chunks(files_path, make_data_public)?;
             println!(
                 "Files upload attempted previously, verifying {} chunks",
@@ -122,11 +122,10 @@ impl ChunkManager {
                 return Ok(vec![]);
             }
             msg_unverified_chunks_reattempted(&failed_chunks.len());
-            failed_chunks
+            Ok(failed_chunks)
         } else {
-            self.get_chunks()
-        };
-        Ok(chunks_to_upload)
+            Ok(self.get_chunks())
+        }
     }
     /// Chunk all the files in the provided `files_path`
     /// These are stored to the CHUNK_ARTIFACTS_DIR
