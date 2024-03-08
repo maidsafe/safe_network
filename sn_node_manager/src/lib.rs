@@ -288,15 +288,11 @@ pub async fn status(
     }
 
     if output_json {
-        let json = serde_json::to_string(&node_registry.nodes)?;
+        let json = serde_json::to_string_pretty(&node_registry.to_status_summary())?;
         println!("{json}");
     } else if detailed_view {
         for node in &node_registry.nodes {
-            let service_status = format!("{} - {}", node.service_name, format_status(&node.status));
-            let banner = "=".repeat(service_status.len());
-            println!("{}", banner);
-            println!("{service_status}");
-            println!("{}", banner);
+            print_banner(&node.service_name, &node.status);
             println!("Version: {}", node.version);
             println!(
                 "Peer ID: {}",
@@ -318,6 +314,19 @@ pub async fn status(
                     .map_or("-".to_string(), |p| p.len().to_string())
             );
             println!();
+        }
+
+        if let Some(daemon) = &node_registry.daemon {
+            print_banner(&daemon.service_name, &daemon.status);
+            println!("Version: {}", daemon.version);
+            println!("Bin path: {}", daemon.daemon_path.to_string_lossy());
+        }
+
+        if let Some(faucet) = &node_registry.faucet {
+            print_banner(&faucet.service_name, &faucet.status);
+            println!("Version: {}", faucet.version);
+            println!("Bin path: {}", faucet.faucet_path.to_string_lossy());
+            println!("Log path: {}", faucet.log_dir_path.to_string_lossy());
         }
     } else {
         println!(
@@ -343,6 +352,24 @@ pub async fn status(
                 connected_peers
             );
         }
+        if let Some(daemon) = &node_registry.daemon {
+            println!(
+                "{:<18} {:<52} {:<7} {:>15}",
+                daemon.service_name,
+                "-",
+                format_status(&daemon.status),
+                "-"
+            );
+        }
+        if let Some(faucet) = &node_registry.faucet {
+            println!(
+                "{:<18} {:<52} {:<7} {:>15}",
+                faucet.service_name,
+                "-",
+                format_status(&faucet.status),
+                "-"
+            );
+        }
     }
 
     if fail
@@ -364,6 +391,14 @@ fn format_status(status: &ServiceStatus) -> String {
         ServiceStatus::Added => "ADDED".yellow().to_string(),
         ServiceStatus::Removed => "REMOVED".red().to_string(),
     }
+}
+
+fn print_banner(service_name: &str, status: &ServiceStatus) {
+    let service_status = format!("{} - {}", service_name, format_status(status));
+    let banner = "=".repeat(service_status.len());
+    println!("{}", banner);
+    println!("{service_status}");
+    println!("{}", banner);
 }
 
 #[cfg(test)]

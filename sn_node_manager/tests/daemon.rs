@@ -10,7 +10,6 @@ mod utils;
 
 use assert_cmd::Command;
 use color_eyre::eyre::{bail, eyre, OptionExt, Result};
-use libp2p::PeerId;
 use sn_node_manager::DAEMON_DEFAULT_PORT;
 use sn_service_management::safenode_manager_proto::{
     safe_node_manager_client::SafeNodeManagerClient, NodeServiceRestartRequest,
@@ -20,7 +19,6 @@ use std::{
     io::Read,
     net::{Ipv4Addr, SocketAddr},
     process::Stdio,
-    str::FromStr,
     time::Duration,
 };
 use tonic::Request;
@@ -80,11 +78,11 @@ async fn restart_node() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("start").assert().success();
 
-    let services = get_service_status().await?;
-    let old_pid = services[node_index_to_restart]["pid"]
-        .as_u64()
+    let status = get_service_status().await?;
+    let old_pid = status.nodes[node_index_to_restart]
+        .pid
         .ok_or_eyre("PID should be present")?;
-    assert_eq!(services.len(), 3);
+    assert_eq!(status.nodes.len(), 3);
 
     println!("Attempting to add the safenodemand service...");
     let mut cmd = Command::cargo_bin("safenode-manager")?;
@@ -105,10 +103,9 @@ async fn restart_node() -> Result<()> {
         DAEMON_DEFAULT_PORT,
     ))
     .await?;
-    let node_to_restart = services[node_index_to_restart]["peer_id"]
-        .as_str()
+    let node_to_restart = status.nodes[node_index_to_restart]
+        .peer_id
         .ok_or_eyre("We should have PeerId")?;
-    let node_to_restart = PeerId::from_str(node_to_restart)?;
 
     let _response = rpc_client
         .restart_node_service(Request::new(NodeServiceRestartRequest {
@@ -119,10 +116,10 @@ async fn restart_node() -> Result<()> {
         .await?;
 
     // make sure that we still have just 3 services running and pid's are different
-    let services = get_service_status().await?;
-    assert_eq!(services.len(), 3);
-    let new_pid = services[node_index_to_restart]["pid"]
-        .as_u64()
+    let status = get_service_status().await?;
+    assert_eq!(status.nodes.len(), 3);
+    let new_pid = status.nodes[node_index_to_restart]
+        .pid
         .ok_or_eyre("PID should be present")?;
     assert_ne!(old_pid, new_pid);
 
@@ -136,14 +133,10 @@ async fn restart_node() -> Result<()> {
         .await?;
 
     // make sure that we still have an extra service, and the new one has the same rpc addr as the old one.
-    let services = get_service_status().await?;
-    assert_eq!(services.len(), 4);
-    let old_rpc_socket_addr = services[node_index_to_restart]["rpc_socket_addr"]
-        .as_str()
-        .ok_or_eyre("rpc_socket_addr should be present")?;
-    let new_rpc_socket_addr = services[3]["rpc_socket_addr"]
-        .as_str()
-        .ok_or_eyre("rpc_socket_addr should be present")?;
+    let status = get_service_status().await?;
+    assert_eq!(status.nodes.len(), 4);
+    let old_rpc_socket_addr = status.nodes[node_index_to_restart].rpc_socket_addr;
+    let new_rpc_socket_addr = status.nodes[3].rpc_socket_addr;
     assert_eq!(old_rpc_socket_addr, new_rpc_socket_addr);
 
     Ok(())
