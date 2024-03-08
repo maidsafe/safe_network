@@ -780,6 +780,7 @@ async fn main() -> Result<()> {
                 let mut service_manager =
                     ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
                 service_manager.remove(keep_directories).await?;
+                node_registry.update_node(service_manager.service.service_data)?;
             } else if let Some(ref peer_id) = peer_id {
                 let peer_id = PeerId::from_str(peer_id)?;
                 let node = node_registry
@@ -797,6 +798,7 @@ async fn main() -> Result<()> {
                 let mut service_manager =
                     ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
                 service_manager.remove(keep_directories).await?;
+                node_registry.update_node(service_manager.service.service_data)?;
             }
 
             node_registry.save()?;
@@ -1181,13 +1183,12 @@ async fn main() -> Result<()> {
 
                 match service_manager.upgrade(options).await {
                     Ok(upgrade_result) => {
-                        upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                        upgrade_summary
+                            .push((service_manager.service.service_data, upgrade_result));
                     }
                     Err(e) => {
-                        upgrade_summary.push((
-                            node.service_name.clone(),
-                            UpgradeResult::Error(format!("Error: {}", e)),
-                        ));
+                        upgrade_summary
+                            .push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
                     }
                 }
             } else if let Some(ref peer_id) = peer_id {
@@ -1224,13 +1225,12 @@ async fn main() -> Result<()> {
 
                 match service_manager.upgrade(options).await {
                     Ok(upgrade_result) => {
-                        upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                        upgrade_summary
+                            .push((service_manager.service.service_data, upgrade_result));
                     }
                     Err(e) => {
-                        upgrade_summary.push((
-                            node.service_name.clone(),
-                            UpgradeResult::Error(format!("Error: {}", e)),
-                        ));
+                        upgrade_summary
+                            .push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
                     }
                 }
             } else {
@@ -1259,11 +1259,12 @@ async fn main() -> Result<()> {
 
                     match service_manager.upgrade(options).await {
                         Ok(upgrade_result) => {
-                            upgrade_summary.push((node.service_name.clone(), upgrade_result));
+                            upgrade_summary
+                                .push((service_manager.service.service_data, upgrade_result));
                         }
                         Err(e) => {
                             upgrade_summary.push((
-                                node.service_name.clone(),
+                                node.clone(),
                                 UpgradeResult::Error(format!("Error: {}", e)),
                             ));
                         }
@@ -1271,31 +1272,38 @@ async fn main() -> Result<()> {
                 }
             }
 
-            node_registry.save()?;
-
             println!("Upgrade summary:");
-            for (service_name, upgrade_result) in upgrade_summary {
+            for (node, upgrade_result) in upgrade_summary {
+                node_registry.update_node(node.clone())?;
                 match upgrade_result {
                     UpgradeResult::NotRequired => {
-                        println!("- {service_name} did not require an upgrade");
+                        println!("- {} did not require an upgrade", node.service_name);
                     }
                     UpgradeResult::Upgraded(previous_version, new_version) => {
                         println!(
-                            "{} {service_name} upgraded from {previous_version} to {new_version}",
-                            "✓".green()
+                            "{} {} upgraded from {previous_version} to {new_version}",
+                            "✓".green(),
+                            node.service_name
                         );
                     }
                     UpgradeResult::Forced(previous_version, target_version) => {
                         println!(
-                            "{} Forced {service_name} version change from {previous_version} to {target_version}.",
-                            "✓".green()
+                            "{} Forced {} version change from {previous_version} to {target_version}.",
+                            "✓".green(), node.service_name
                         );
                     }
                     UpgradeResult::Error(msg) => {
-                        println!("{} {service_name} was not upgraded: {}", "✕".red(), msg);
+                        println!(
+                            "{} {} was not upgraded: {}",
+                            "✕".red(),
+                            node.service_name,
+                            msg
+                        );
                     }
                 }
             }
+
+            node_registry.save()?;
 
             Ok(())
         }

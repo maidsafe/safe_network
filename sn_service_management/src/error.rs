@@ -55,4 +55,6 @@ pub enum Error {
     ServiceUserAccountCreationFailed,
     #[error("Could not obtain user's data directory")]
     UserDataDirectoryNotObtainable,
+    #[error(transparent)]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
