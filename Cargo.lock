@@ -4906,7 +4906,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.82-alpha.1"
+version = "0.89.82"
 dependencies = [
  "base64 0.21.7",
  "bitcoin",
@@ -5228,7 +5228,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.16.3-alpha.1"
+version = "0.16.3"
 dependencies = [
  "assert_fs",
  "blsttc",
