@@ -4869,6 +4869,7 @@ dependencies = [
  "sn_node_rpc_client",
  "sn_peers_acquisition",
  "sn_protocol",
+ "sn_service_management",
  "sn_transfers",
  "sysinfo",
  "tokio",
@@ -4933,6 +4934,7 @@ dependencies = [
  "sn_client",
  "sn_logging",
  "sn_peers_acquisition",
+ "sn_protocol",
  "tempfile",
  "tokio",
  "tracing",
@@ -4969,6 +4971,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "serde_json",
  "sn_networking",
  "sn_peers_acquisition",
  "sn_protocol",
@@ -5119,6 +5122,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "serde_json",
  "sn_build_info",
  "sn_client",
  "sn_logging",
@@ -5126,6 +5130,7 @@ dependencies = [
  "sn_peers_acquisition",
  "sn_protocol",
  "sn_registers",
+ "sn_service_management",
  "sn_transfers",
  "strum",
  "tempfile",
@@ -5224,6 +5229,21 @@ dependencies = [
  "thiserror",
  "tiny-keccak",
  "xor_name",
+]
+
+[[package]]
+name = "sn_service_management"
+version = "0.1.0"
+dependencies = [
+ "dirs-next",
+ "libp2p",
+ "prost 0.9.0",
+ "serde",
+ "serde_json",
+ "sn_protocol",
+ "thiserror",
+ "tonic 0.6.2",
+ "tonic-build",
 ]
 
 [[package]]

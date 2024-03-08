@@ -17,7 +17,7 @@ use color_eyre::Result;
 use mockall::{predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
-use sn_protocol::node_registry::{Faucet, NodeRegistry, NodeStatus};
+use sn_service_management::{Faucet, NodeRegistry, NodeStatus};
 use std::ffi::OsString;
 use std::path::PathBuf;
 

@@ -64,6 +64,7 @@ criterion = "0.5.1"
 tempfile = "3.6.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 sn_client = { path = "../sn_client", version = "0.104.29-alpha.1", features = ["test-utils"] }
+sn_protocol = { path = "../sn_protocol", version = "0.15.2-alpha.0" }
 
 [lints]
 workspace = true

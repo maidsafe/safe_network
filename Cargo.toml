@@ -14,6 +14,7 @@ members = [
     "sn_peers_acquisition",
     "sn_protocol",
     "sn_registers",
+    "sn_service_management",
     "sn_transfers",
     "token_supplies",
 ]

@@ -12,7 +12,7 @@ use assert_cmd::Command;
 use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::PeerId;
 use sn_node_manager::daemon_control::DAEMON_DEFAULT_PORT;
-use sn_protocol::safenode_manager_proto::{
+use sn_service_management::safenode_manager_proto::{
     safe_node_manager_client::SafeNodeManagerClient, NodeServiceRestartRequest,
 };
 use std::{

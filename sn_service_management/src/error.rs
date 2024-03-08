@@ -5,9 +5,18 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-// use sn_build_info::pre_build_set_git_commit_env;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("./src/safenode_proto/safenode.proto")?;
-    Ok(())
+use thiserror::Error;
+
+pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[derive(Debug, Error)]
+#[allow(missing_docs)]
+pub enum Error {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error("Could not obtain user's data directory")]
+    UserDataDirectoryNotObtainable,
 }

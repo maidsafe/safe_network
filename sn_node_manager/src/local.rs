@@ -16,7 +16,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 use sn_node_rpc_client::{RpcActions, RpcClient};
-use sn_protocol::node_registry::{Faucet, Node, NodeRegistry, NodeStatus};
+use sn_service_management::{Faucet, Node, NodeRegistry, NodeStatus};
 use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},

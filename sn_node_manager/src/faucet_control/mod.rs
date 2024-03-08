@@ -16,7 +16,7 @@ use self::config::InstallFaucetServiceCtxBuilder;
 use crate::{config::create_owned_dir, service::ServiceControl, VerbosityLevel};
 use color_eyre::{eyre::OptionExt, Result};
 use colored::Colorize;
-use sn_protocol::node_registry::{Faucet, NodeRegistry, NodeStatus};
+use sn_service_management::{Faucet, NodeRegistry, NodeStatus};
 
 /// Install the faucet as a service.
 ///
