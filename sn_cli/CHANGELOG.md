@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.82-alpha.1](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.82-alpha.0...sn_cli-v0.89.82-alpha.1) - 2024-03-08
+
+### Added
+- reference checks
+- reference checks
+- builder added to estimate
+- removal of unnecessary code in upload rs
+- remove all use of client in iter uploader
+
+### Other
+- *(folders)* adding automated tests to sn_client::FoldersApi
+
 ## [0.89.81](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.80...sn_cli-v0.89.81) - 2024-03-06
 
 ### Added

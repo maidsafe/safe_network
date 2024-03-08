@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.3-alpha.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.3-alpha.0...sn_transfers-v0.16.3-alpha.1) - 2024-03-08
+
+### Added
+- [**breaking**] pretty serialisation for unique keys
+
 ## [0.16.2](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.1...sn_transfers-v0.16.2) - 2024-03-06
 
 ### Other
