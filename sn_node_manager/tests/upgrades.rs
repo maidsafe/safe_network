@@ -39,11 +39,9 @@ async fn upgrade_to_latest_version() -> Result<()> {
         .assert()
         .success();
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some("0.98.27")),
+        status.nodes.iter().all(|node| node.version == "0.98.27"),
         "Services were not correctly initialised"
     );
 
@@ -65,11 +63,9 @@ async fn upgrade_to_latest_version() -> Result<()> {
     println!("upgrade command output:");
     println!("{output}");
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(&latest_version)),
+        status.nodes.iter().all(|n| n.version == latest_version),
         "Not all services were updated to the latest version"
     );
 
@@ -96,11 +92,9 @@ async fn force_upgrade_when_two_binaries_have_the_same_version() -> Result<()> {
         .assert()
         .success();
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(version)),
+        status.nodes.iter().all(|n| n.version == version),
         "Services were not correctly initialised"
     );
 
@@ -131,11 +125,9 @@ async fn force_upgrade_when_two_binaries_have_the_same_version() -> Result<()> {
         "Forced safenode3 version change from {version} to {version}"
     )));
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(version)),
+        status.nodes.iter().all(|n| n.version == version),
         "Not all services were updated to the latest version"
     );
 
@@ -160,11 +152,9 @@ async fn force_downgrade_to_a_previous_version() -> Result<()> {
         .assert()
         .success();
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(initial_version)),
+        status.nodes.iter().all(|n| n.version == initial_version),
         "Services were not correctly initialised"
     );
 
@@ -195,11 +185,9 @@ async fn force_downgrade_to_a_previous_version() -> Result<()> {
         "Forced safenode3 version change from {initial_version} to {downgrade_version}"
     )));
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(downgrade_version)),
+        status.nodes.iter().all(|n| n.version == downgrade_version),
         "Not all services were updated to the latest version"
     );
 
@@ -224,11 +212,9 @@ async fn upgrade_from_older_version_to_specific_version() -> Result<()> {
         .assert()
         .success();
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(initial_version)),
+        status.nodes.iter().all(|n| n.version == initial_version),
         "Services were not correctly initialised"
     );
 
@@ -258,11 +244,9 @@ async fn upgrade_from_older_version_to_specific_version() -> Result<()> {
         "safenode3 upgraded from {initial_version} to {upgrade_version}"
     )));
 
-    let services = get_service_status().await?;
+    let status = get_service_status().await?;
     assert!(
-        services
-            .iter()
-            .all(|service| service["version"].as_str() == Some(upgrade_version)),
+        status.nodes.iter().all(|n| n.version == upgrade_version),
         "Not all services were updated to the latest version"
     );
 
