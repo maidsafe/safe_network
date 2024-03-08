@@ -14,10 +14,10 @@ use semver::Version;
 use sn_node_manager::{
     add_services::{
         add, add_daemon, add_faucet,
-        config::{AddFaucetServiceOptions, AddServiceOptions},
+        config::{AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions},
     },
     config::*,
-    helpers::download_and_extract_release,
+    helpers::{download_and_extract_release, get_bin_version},
     local::{kill_network, run_network, LocalNetworkOptions},
     status, ServiceManager, VerbosityLevel,
 };
@@ -346,21 +346,22 @@ pub enum SubCmd {
 /// Manage Daemon service.
 #[derive(Subcommand, Debug)]
 pub enum DaemonSubCmd {
-    /// Add a daemon service. This allows you to interact with the safenode manager through a RPC.
+    /// Add a daemon service for issuing commands via RPC.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "add")]
     Add {
-        /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
+        /// Specify an Ipv4Addr for the daemon to listen on.
         ///
-        /// If not set, the daemon listens locally for commands.
+        /// This is useful for managing nodes remotely.
+        ///
+        /// If not set, the daemon listens locally.
         #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
         address: Ipv4Addr,
-        /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+        /// Specify a port for the daemon to listen on.
         #[clap(long, default_value_t = 12500)]
         port: u16,
-        /// Daemon Path
-        // todo: provide url/version.
+        /// The path of the safenodemand binary
         #[clap(long)]
         path: PathBuf,
     },
@@ -514,9 +515,18 @@ async fn main() -> Result<()> {
             }
 
             let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-
-            let service_manager = ServiceController {};
-            add_daemon(address, port, path, &mut node_registry, &service_manager)?;
+            add_daemon(
+                AddDaemonServiceOptions {
+                    address,
+                    port,
+                    daemon_download_bin_path: path.clone(),
+                    // TODO: make this cross platform
+                    daemon_install_bin_path: PathBuf::from("/usr/local/bin/safenodemand"),
+                    version: get_bin_version(&path)?,
+                },
+                &mut node_registry,
+                &ServiceController {},
+            )?;
 
             Ok(())
         }
