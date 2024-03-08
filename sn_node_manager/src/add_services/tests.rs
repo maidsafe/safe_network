@@ -8,8 +8,11 @@
 
 use crate::{
     add_services::{
-        add, add_faucet,
-        config::{AddFaucetServiceOptions, AddServiceOptions, InstallNodeServiceCtxBuilder},
+        add, add_daemon, add_faucet,
+        config::{
+            AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions,
+            InstallNodeServiceCtxBuilder,
+        },
     },
     VerbosityLevel,
 };
@@ -22,7 +25,9 @@ use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
 use sn_service_management::control::ServiceControl;
 use sn_service_management::error::Result as ServiceControlResult;
-use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
+use sn_service_management::{
+    DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
+};
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -38,6 +43,10 @@ const SAFENODE_FILE_NAME: &str = "safenode.exe";
 const FAUCET_FILE_NAME: &str = "faucet";
 #[cfg(target_os = "windows")]
 const FAUCET_FILE_NAME: &str = "faucet.exe";
+#[cfg(not(target_os = "windows"))]
+const DAEMON_FILE_NAME: &str = "safenodemand";
+#[cfg(target_os = "windows")]
+const DAEMON_FILE_NAME: &str = "safenodemand.exe";
 
 mock! {
     pub ServiceControl {}
@@ -1086,6 +1095,198 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
     assert_eq!(saved_faucet.status, ServiceStatus::Added);
     assert_eq!(saved_faucet.user, get_username());
     assert_eq!(saved_faucet.version, latest_version);
+
+    Ok(())
+}
+#[tokio::test]
+async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_created() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let faucet_logs_dir = temp_dir.child("logs");
+    faucet_logs_dir.create_dir_all()?;
+    let faucet_data_dir = temp_dir.child("data");
+    faucet_data_dir.create_dir_all()?;
+    let faucet_install_dir = temp_dir.child("install");
+    faucet_install_dir.create_dir_all()?;
+    let faucet_install_path = faucet_install_dir.child(FAUCET_FILE_NAME);
+    let faucet_download_path = temp_dir.child(FAUCET_FILE_NAME);
+    faucet_download_path.write_binary(b"fake faucet bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: None,
+        faucet: Some(FaucetServiceData {
+            faucet_path: faucet_download_path.to_path_buf(),
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/faucet"),
+            pid: Some(1000),
+            service_name: "faucet".to_string(),
+            status: ServiceStatus::Running,
+            user: "safe".to_string(),
+            version: latest_version.to_string(),
+        }),
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let result = add_faucet(
+        AddFaucetServiceOptions {
+            bootstrap_peers: vec![],
+            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            faucet_download_bin_path: faucet_download_path.to_path_buf(),
+            faucet_install_bin_path: faucet_install_path.to_path_buf(),
+            local: false,
+            service_data_dir_path: faucet_data_dir.to_path_buf(),
+            service_log_dir_path: faucet_logs_dir.to_path_buf(),
+            url: None,
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    );
+
+    match result {
+        Ok(_) => panic!("This test should result in an error"),
+        Err(e) => {
+            assert_eq!(
+                format!("A faucet service has already been created"),
+                e.to_string()
+            )
+        }
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let daemon_install_dir = temp_dir.child("install");
+    daemon_install_dir.create_dir_all()?;
+    let daemon_install_path = daemon_install_dir.child(DAEMON_FILE_NAME);
+    let daemon_download_path = temp_dir.child(DAEMON_FILE_NAME);
+    daemon_download_path.write_binary(b"fake daemon bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: None,
+        faucet: None,
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--port"),
+                OsString::from("8080"),
+                OsString::from("--address"),
+                OsString::from("127.0.0.1"),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenodemand".parse()?,
+            program: daemon_install_path.to_path_buf(),
+            username: None,
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()));
+
+    add_daemon(
+        AddDaemonServiceOptions {
+            address: Ipv4Addr::new(127, 0, 0, 1),
+            port: 8080,
+            daemon_download_bin_path: daemon_download_path.to_path_buf(),
+            daemon_install_bin_path: daemon_install_path.to_path_buf(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+    )?;
+
+    daemon_download_path.assert(predicate::path::missing());
+    daemon_install_path.assert(predicate::path::is_file());
+
+    node_reg_path.assert(predicates::path::is_file());
+
+    let saved_daemon = node_registry.daemon.unwrap();
+    assert_eq!(saved_daemon.daemon_path, daemon_install_path.to_path_buf());
+    assert!(saved_daemon.pid.is_none());
+    assert_eq!(saved_daemon.service_name, "safenodemand");
+    assert_eq!(saved_daemon.status, ServiceStatus::Added);
+    assert_eq!(saved_daemon.version, latest_version);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_daemon_should_return_an_error_if_a_daemon_service_was_already_created() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let daemon_install_dir = temp_dir.child("install");
+    daemon_install_dir.create_dir_all()?;
+    let daemon_install_path = daemon_install_dir.child(DAEMON_FILE_NAME);
+    let daemon_download_path = temp_dir.child(DAEMON_FILE_NAME);
+    daemon_download_path.write_binary(b"fake daemon bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: Some(DaemonServiceData {
+            daemon_path: PathBuf::from("/usr/local/bin/safenodemand"),
+            endpoint: Some(SocketAddr::new(
+                IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                8080,
+            )),
+            pid: Some(1234),
+            service_name: "safenodemand".to_string(),
+            status: ServiceStatus::Running,
+            version: latest_version.to_string(),
+        }),
+        faucet: None,
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let result = add_daemon(
+        AddDaemonServiceOptions {
+            address: Ipv4Addr::new(127, 0, 0, 1),
+            port: 8080,
+            daemon_download_bin_path: daemon_download_path.to_path_buf(),
+            daemon_install_bin_path: daemon_install_path.to_path_buf(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+    );
+
+    match result {
+        Ok(_) => panic!("This test should result in an error"),
+        Err(e) => {
+            assert_eq!(
+                format!("A safenodemand service has already been created"),
+                e.to_string()
+            )
+        }
+    }
 
     Ok(())
 }

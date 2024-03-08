@@ -189,3 +189,11 @@ pub struct AddFaucetServiceOptions {
     pub user: String,
     pub version: String,
 }
+
+pub struct AddDaemonServiceOptions {
+    pub address: Ipv4Addr,
+    pub port: u16,
+    pub daemon_download_bin_path: PathBuf,
+    pub daemon_install_bin_path: PathBuf,
+    pub version: String,
+}
