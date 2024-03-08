@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.29-alpha.1](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29-alpha.0...sn_client-v0.104.29-alpha.1) - 2024-03-08
+
+### Other
+- *(folders)* adding automated tests to sn_client::FoldersApi
+
 ## [0.104.28](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.27...sn_client-v0.104.28) - 2024-03-06
 
 ### Added
