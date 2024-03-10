@@ -12,13 +12,15 @@ mod layers;
 #[cfg(feature = "process-metrics")]
 pub mod metrics;
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 use layers::TracingLayers;
 use std::path::PathBuf;
 use tracing::info;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{dispatcher::DefaultGuard, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
+
+pub use error::Error;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDest {
