@@ -110,13 +110,14 @@ async fn get_network_contacts(_args: &PeersArgs) -> Result<Vec<Multiaddr>> {
 
 #[cfg(feature = "network-contacts")]
 async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
-    info!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
-    println!("Trying to fetch the bootstrap peers from {NETWORK_CONTACTS_URL}");
-
     let url = args
         .network_contacts_url
         .clone()
         .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
+
+    info!("Trying to fetch the bootstrap peers from {url}");
+    println!("Trying to fetch the bootstrap peers from {url}");
+
     get_bootstrap_peers_from_url(url).await
 }
 
@@ -179,14 +180,14 @@ async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                         return Ok(multi_addresses);
                     } else {
                         return Err(Error::NoMultiAddrObtainedFromNetworkContacts(
-                            NETWORK_CONTACTS_URL.to_string(),
+                            url.to_string(),
                         ));
                     }
                 } else {
                     retries += 1;
                     if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
                         return Err(Error::NetworkContactsUnretrievable(
-                            NETWORK_CONTACTS_URL.to_string(),
+                            url.to_string(),
                             MAX_NETWORK_CONTACTS_GET_RETRIES,
                         ));
                     }
@@ -196,7 +197,7 @@ async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                 retries += 1;
                 if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
                     return Err(Error::NetworkContactsUnretrievable(
-                        NETWORK_CONTACTS_URL.to_string(),
+                        url.to_string(),
                         MAX_NETWORK_CONTACTS_GET_RETRIES,
                     ));
                 }
