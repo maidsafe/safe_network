@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710163053871,
+  "lastUpdate": 1710170156867,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1",
-          "message": "chore(networking): kad logging and another content_hash removed",
-          "timestamp": "2023-10-24T06:48:28+02:00",
-          "tree_id": "9300ad4b525fdb674ed15df176c0405a80d5a899",
-          "url": "https://github.com/maidsafe/safe_network/commit/2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1"
-        },
-        "date": 1698124447915,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.09287640327116871,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5901071095213479,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.50713330467742,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.411159449811606,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b5db038120cccbfce81cdc7129808bdfcee14f92",
+          "message": "refactor(cli): chunk-mgr to report files chunked/uploaded rather than bailing out",
+          "timestamp": "2024-03-11T14:28:37Z",
+          "tree_id": "6ed0ae0257a1f77faec2badc9f3959ff5d1e0597",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5db038120cccbfce81cdc7129808bdfcee14f92"
+        },
+        "date": 1710170153084,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2696423546914177,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8455060875770237,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.4145650448753,
             "unit": "MiB/s"
           }
         ]
