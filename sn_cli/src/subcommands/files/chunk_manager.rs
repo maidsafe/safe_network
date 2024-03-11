@@ -99,7 +99,7 @@ impl ChunkManager {
         files_path: &Path,
         read_cache: bool,
         include_data_maps: bool,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         self.chunk_with_iter(
             WalkDir::new(files_path).into_iter().flatten(),
             read_cache,
@@ -115,7 +115,7 @@ impl ChunkManager {
         entries_iter: impl Iterator<Item = DirEntry>,
         read_cache: bool,
         include_data_maps: bool,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -125,14 +125,8 @@ impl ChunkManager {
         self.resumed_files_count = 0;
 
         // collect the files to chunk
-        let mut files_path_is_dir = false;
         entries_iter.for_each(|entry| {
-            let is_file = entry.file_type().is_file();
-            if entry.depth() == 0 {
-                files_path_is_dir = !is_file;
-            }
-
-            if is_file {
+            if entry.file_type().is_file() {
                 let path_xor = PathXorName::new(entry.path());
                 info!(
                     "Added file {:?} with path_xor: {path_xor:?} to be chunked/resumed",
@@ -147,14 +141,8 @@ impl ChunkManager {
         });
         let total_files = self.files_to_chunk.len();
         if total_files == 0 {
-            if files_path_is_dir {
-                bail!(
-                    "The directory specified for upload is empty. Please verify the provided path."
-                );
-            } else {
-                bail!("The provided file path is invalid. Please verify the path.");
-            }
-        }
+            return Ok(0);
+        };
 
         // resume the chunks from the artifacts dir
         if read_cache {
@@ -199,7 +187,7 @@ impl ChunkManager {
                 "All files_to_chunk ({total_files:?}) were resumed. Returning the resumed chunks.",
             );
             debug!("It took {:?} to resume all the files", now.elapsed());
-            return Ok(());
+            return Ok(total_files);
         }
 
         let progress_bar = get_progress_bar(total_files as u64)?;
@@ -287,14 +275,10 @@ impl ChunkManager {
             .collect::<Result<()>>()?;
 
         progress_bar.finish_and_clear();
-        debug!(
-            "It took {:?} to chunk {} files",
-            now.elapsed(),
-            self.files_to_chunk.len()
-        );
+        debug!("It took {:?} to chunk {} files", now.elapsed(), total_files);
         self.chunks.extend(chunked_files);
 
-        Ok(())
+        Ok(total_files)
     }
 
     // Try to resume the chunks
