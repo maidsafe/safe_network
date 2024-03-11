@@ -13,11 +13,11 @@ use std::{collections::BTreeSet, iter::Iterator};
 
 impl Network {
     /// This function verifies a single spend.
-    /// This is used by nodes validation to before they store it.
-    /// - It does NOT check if the spend exists online
-    /// - It does NOT check if the spend is already spent on the Network
+    /// This is used by nodes for spends validation, before storing them.
     /// - It checks if the spend has valid ancestry, that its parents exist on the Network
     /// - It checks that the spend has a valid signature and content
+    /// - It does NOT check if the spend exists online
+    /// - It does NOT check if the spend is already spent on the Network
     pub async fn verify_spend(&self, spend: &SignedSpend) -> Result<()> {
         let unique_key = spend.unique_pubkey();
         debug!("Verifying spend {unique_key}");
@@ -44,7 +44,7 @@ impl Network {
             .into_iter()
             .collect::<Result<BTreeSet<_>>>()
             .map_err(|e| {
-                let s = format!("Failed to get parent spend: {e}");
+                let s = format!("Failed to get parent spend of {unique_key:?}: {e}");
                 warn!("{}", s);
                 Error::Transfer(TransferError::InvalidParentSpend(s))
             })?;

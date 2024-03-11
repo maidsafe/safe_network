@@ -262,7 +262,7 @@ async fn send(
                 ClientError::AmountIsZero => {
                     println!("Zero amount passed in. Nothing sent.");
                 }
-                ClientError::Transfers(WalletError::Transfer(TransferError::NotEnoughBalance(
+                ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(
                     available,
                     required,
                 ))) => {
