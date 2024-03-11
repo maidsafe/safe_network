@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710122199523,
+  "lastUpdate": 1710122200821,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "696d57d8d858d4439c1981ae5f45f861caf040f2",
-          "message": "fix(protocol): use custom `Display` for `PrettyPrintKBucketKey`",
-          "timestamp": "2023-10-24T06:36:32+02:00",
-          "tree_id": "a4f34430ddade54647013f3776e364a8518383c4",
-          "url": "https://github.com/maidsafe/safe_network/commit/696d57d8d858d4439c1981ae5f45f861caf040f2"
-        },
-        "date": 1698124226680,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 169,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 63,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 211,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "2525b3f7267ad8142de40e2bd6dd6b49dc1597b9",
+          "message": "chore: fix logging logic",
+          "timestamp": "2024-03-11T01:15:29Z",
+          "tree_id": "4abcefa65bce70572347d96f4dd118a0f54014b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2525b3f7267ad8142de40e2bd6dd6b49dc1597b9"
+        },
+        "date": 1710122200461,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
             "unit": "MB"
           },
           {
