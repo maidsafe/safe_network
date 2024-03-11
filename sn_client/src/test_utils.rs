@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{send, Client, WalletClient};
+use crate::{send, Client, WalletClient};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
 use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens};

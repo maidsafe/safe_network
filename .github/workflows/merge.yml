@@ -95,7 +95,7 @@ jobs:
 
       - name: Run CLI tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_cli
+        run: cargo test --release --package sn_cli -- --skip test_acc_packet_
 
       - name: Run client tests
         timeout-minutes: 25
@@ -395,6 +395,13 @@ jobs:
       # Client FoldersApi tests against local network
       - name: Client FoldersApi tests against local network
         run: cargo test --release --package sn_client --test folders_api
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
+      # CLI Acc-Packet files and folders tests against local network
+      - name: CLI Acc-Packet files and folders tests
+        run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
         env:
           SN_LOG: "all"
         timeout-minutes: 10

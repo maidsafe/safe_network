@@ -14,7 +14,7 @@ version = "0.104.29-alpha.1"
 default=[]
 local-discovery=["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
-test-utils=["sn_protocol/test-utils"]
+test-utils=["sn_protocol/test-utils", "sn_peers_acquisition", "lazy_static", "eyre"]
 # required to pass on flag to node builds
 websockets = ["sn_networking/websockets", "sn_protocol/websockets"]
 
@@ -47,14 +47,15 @@ tiny-keccak = "~2.0.2"
 tokio = { version = "1.35.0", features = ["io-util", "macros", "rt", "sync", "time"] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
+sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6", optional = true }
+eyre = { version = "0.6.8", optional = true }
+lazy_static = { version = "~1.4.0", optional = true }
 
 [dev-dependencies]
 dirs-next = "~2.0.0"
-eyre = "0.6.8"
-lazy_static = "~1.4.0"
 # add rand to libp2p
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.6" }
+sn_client = { path = "../sn_client", features = ["test-utils"]}
 
 [lints]
 workspace = true

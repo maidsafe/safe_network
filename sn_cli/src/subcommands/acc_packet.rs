@@ -145,7 +145,7 @@ impl AccountPacket {
         // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
         if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             bail!(
-                "The path is already being tracked with Folder address: {}",
+                "The local path {path:?} is already being tracked with Folder address: {}",
                 addr.to_hex()
             );
         }
@@ -198,7 +198,7 @@ impl AccountPacket {
         if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             // bail out if there is already a root folder address different from the passed in
             if addr == address {
-                bail!("The download path is already tracking that Folder, you use 'sync' instead.");
+                bail!("The download path is already tracking that Folder, use 'sync' instead.");
             } else {
                 bail!(
                     "The download path is already tracking another Folder with address: {}",
@@ -759,6 +759,11 @@ impl AccountPacket {
         let mut files_to_download = vec![];
         let mut updated_folders = Folders::new();
         while let Some((name, folders_api, target_path)) = folders_to_download.pop() {
+            if updated_folders.contains_key(&target_path) {
+                // we've already downloaded this Folder
+                continue;
+            }
+
             println!(
                 "Downloading Folder {name:?} from {}",
                 folders_api.address().to_hex()
@@ -801,14 +806,15 @@ impl AccountPacket {
         for (entry_hash, (meta_xorname, metadata)) in folders_api.entries().await?.into_iter() {
             let name = metadata.name.clone();
             let item_path = target_path.join(name.clone());
+            if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
+                if tracking_info.meta_xorname == meta_xorname {
+                    // thus we already have this same file/folder locally
+                    continue;
+                }
+            }
+
             match &metadata.content {
                 FolderEntry::File(data_map_chunk) => {
-                    if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
-                        if tracking_info.meta_xorname == meta_xorname {
-                            continue;
-                        }
-                    }
-                    // thus we don't have this file locally
                     files_to_download.push((
                         name.clone().into(),
                         data_map_chunk.clone(),
@@ -817,12 +823,6 @@ impl AccountPacket {
                     let _ = File::create(&item_path)?;
                 }
                 FolderEntry::Folder(subfolder_addr) => {
-                    if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
-                        if tracking_info.meta_xorname == meta_xorname {
-                            continue;
-                        }
-                    }
-                    // thus we don't have this folder locally
                     let folders_api = FoldersApi::retrieve(
                         self.client.clone(),
                         &self.wallet_dir,
@@ -931,4 +931,159 @@ fn find_by_name_in_parent_folder(name: &str, path: &Path, folders: &Folders) -> 
         .and_then(|parent| folders.get(parent))
         .and_then(|(folder, _)| folder.find_by_name(name))
         .map(|(meta_xorname, _)| *meta_xorname)
+}
+
+#[cfg(test)]
+mod tests {
+    // All tests require a network running so Clients can be instantiated.
+
+    use std::{
+        fs::{create_dir_all, File},
+        io::{Read, Write},
+        path::{Path, PathBuf},
+    };
+
+    use crate::subcommands::files::upload::FilesUploadOptions;
+
+    use super::AccountPacket;
+
+    use sn_client::{
+        protocol::storage::{Chunk, RetryStrategy},
+        registers::RegisterAddress,
+        test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
+        BATCH_SIZE,
+    };
+
+    use bls::SecretKey;
+    use eyre::{eyre, Result};
+    use xor_name::XorName;
+
+    #[tokio::test]
+    async fn test_acc_packet_upload_download() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpacket");
+        println!("Files source root dir: {src_files_path:?}");
+
+        // let's create some random files and dirs
+        let files = &[
+            (
+                Path::new("file0.txt").to_path_buf(),
+                Some(random_file_chunk()),
+            ),
+            (
+                Path::new("dir1").join("file1.txt"),
+                Some(random_file_chunk()),
+            ),
+            (Path::new("dir2").to_path_buf(), None),
+        ];
+        create_files_with_random_content(&src_files_path, files)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        let options = FilesUploadOptions {
+            make_data_public: false,
+            verify_store: true,
+            batch_size: BATCH_SIZE,
+            retry_strategy: RetryStrategy::Quick,
+        };
+        acc_packet.sync(options).await?;
+        println!(
+            "Account packet sync-ed to address {}\n",
+            acc_packet.root_folder_addr().to_hex()
+        );
+
+        let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
+        println!("Downloading acc-packet to dir: {download_files_path:?}...\n");
+
+        let _downloaded_acc_packet = AccountPacket::retrieve_folders(
+            &client,
+            wallet_dir,
+            root_folder_addr,
+            &download_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await?;
+
+        check_files_and_dirs_match(&src_files_path, files, &download_files_path)?;
+
+        Ok(())
+    }
+
+    fn create_files_with_random_content(
+        base_path: &Path,
+        files: &[(PathBuf, Option<Chunk>)],
+    ) -> Result<()> {
+        for (path, chunk) in files {
+            let full_path = base_path.join(path);
+            if let Some(chunk) = chunk {
+                // it's a file, thus we create it and store its chunk bytes
+                create_dir_all(full_path.parent().expect("invalid path for test file"))?;
+                let mut file = File::create(full_path)?;
+                file.write_all(chunk.value())?;
+            } else {
+                // it's a dir, and it shall be empty
+                create_dir_all(full_path)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn check_files_and_dirs_match(
+        src_path: &Path,
+        files: &[(PathBuf, Option<Chunk>)],
+        target_path: &Path,
+    ) -> Result<()> {
+        for (path, chunk) in files {
+            let src_file_path = src_path.join(path);
+            let target_file_path = target_path.join(path);
+            if let Some(chunk) = chunk {
+                // it's a file, let's compare their content
+                let mut src_file = File::open(&src_file_path)
+                    .map_err(|err| eyre!("couldn't open source file {src_file_path:?}: {err:?}"))?;
+                let mut target_file = File::open(&target_file_path).map_err(|err| {
+                    eyre!("couldn't open target file {target_file_path:?}: {err:?}")
+                })?;
+
+                let mut src_content = Vec::new();
+                src_file
+                    .read_to_end(&mut src_content)
+                    .expect("couldn't read source file");
+                let mut target_content = Vec::new();
+                target_file
+                    .read_to_end(&mut target_content)
+                    .expect("couldn't read target file");
+
+                assert_eq!(
+                    src_content,
+                    chunk.value().slice(..),
+                    "source file content doesn't match with expected"
+                );
+                assert_eq!(
+                    target_content,
+                    chunk.value().slice(..),
+                    "target file content doesn't match with expected"
+                );
+            } else {
+                // it's a dir, let's check they exist as dirs
+                assert!(src_file_path.is_dir());
+                assert!(target_file_path.is_dir());
+            }
+        }
+        Ok(())
+    }
 }
