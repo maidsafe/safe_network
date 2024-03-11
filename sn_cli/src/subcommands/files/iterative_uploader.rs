@@ -36,7 +36,7 @@ impl IterativeUploader {
         entries_iter: impl Iterator<Item = DirEntry>,
         files_path: PathBuf,
         options: FilesUploadOptions,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         let FilesUploadOptions {
             make_data_public,
             verify_store,
@@ -48,8 +48,12 @@ impl IterativeUploader {
 
         msg_init(&files_path, &batch_size, &verify_store, make_data_public);
 
-        self.chunk_manager
-            .chunk_with_iter(entries_iter, true, make_data_public)?;
+        let total_files =
+            self.chunk_manager
+                .chunk_with_iter(entries_iter, true, make_data_public)?;
+        if total_files == 0 {
+            return Ok(0);
+        }
 
         // Return early if we already uploaded them
         let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
@@ -88,7 +92,7 @@ impl IterativeUploader {
                     msg_chk_mgr_no_verified_file_nor_re_upload();
                 }
                 msg_chunk_manager_upload_complete(self.chunk_manager);
-                return Ok(());
+                return Ok(total_files);
             }
             msg_unverified_chunks_reattempted(&failed_chunks.len());
             failed_chunks
@@ -139,7 +143,7 @@ impl IterativeUploader {
             files_upload,
         );
 
-        Ok(())
+        Ok(total_files)
     }
 
     async fn upload_result(

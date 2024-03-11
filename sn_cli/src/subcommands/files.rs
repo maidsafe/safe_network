@@ -17,7 +17,10 @@ pub(crate) use chunk_manager::ChunkManager;
 
 use crate::subcommands::files::iterative_uploader::IterativeUploader;
 use clap::Parser;
-use color_eyre::{eyre::eyre, Help, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Help, Result,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
@@ -115,10 +118,10 @@ pub(crate) async fn files_cmds(
             retry_strategy,
             make_data_public,
         } => {
-            IterativeUploader::new(chunk_manager, files_api)
+            let total_files = IterativeUploader::new(chunk_manager, files_api)
                 .iterate_upload(
                     WalkDir::new(&file_path).into_iter().flatten(),
-                    file_path,
+                    file_path.clone(),
                     FilesUploadOptions {
                         make_data_public,
                         verify_store,
@@ -126,7 +129,14 @@ pub(crate) async fn files_cmds(
                         retry_strategy,
                     },
                 )
-                .await?
+                .await?;
+            if total_files == 0 {
+                if file_path.is_dir() {
+                    bail!("The directory specified for upload is empty. Please verify the provided path.");
+                } else {
+                    bail!("The provided file path is invalid. Please verify the path.");
+                }
+            }
         }
         FilesCmds::Download {
             file_name,
