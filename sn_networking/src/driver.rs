@@ -317,24 +317,26 @@ impl NetworkBuilder {
         // Listen on the provided address
         let listen_socket_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
 
-        // Flesh out the multiaddress
-        let start_addr = Multiaddr::from(listen_socket_addr.ip());
-
-        let listen_addr = if cfg!(any(feature = "websockets", target_arch = "wasm32")) {
-            start_addr
-                .with(Protocol::Tcp(listen_socket_addr.port()))
-                .with(Protocol::Ws("/".into()))
-        } else {
-            start_addr
-                .with(Protocol::Udp(listen_socket_addr.port()))
-                .with(Protocol::QuicV1)
-        };
-
-        debug!("Attempting to listen on: {listen_addr:?}");
+        // Listen on QUIC
+        let addr_quic = Multiaddr::from(listen_socket_addr.ip())
+            .with(Protocol::Udp(listen_socket_addr.port()))
+            .with(Protocol::QuicV1);
         let _listener_id = swarm_driver
             .swarm
-            .listen_on(listen_addr)
-            .expect("Failed to listen on the provided address");
+            .listen_on(addr_quic)
+            .expect("Multiaddr should be supported by our configured transports");
+
+        // Listen on WebSocket
+        #[cfg(any(feature = "websockets", target_arch = "wasm32"))]
+        {
+            let addr_ws = Multiaddr::from(listen_socket_addr.ip())
+                .with(Protocol::Tcp(listen_socket_addr.port()))
+                .with(Protocol::Ws("/".into()));
+            let _listener_id = swarm_driver
+                .swarm
+                .listen_on(addr_ws)
+                .expect("Multiaddr should be supported by our configured transports");
+        }
 
         Ok((network, events_receiver, swarm_driver))
     }
