@@ -13,8 +13,8 @@ use libp2p_identity::PeerId;
 use semver::Version;
 use sn_node_manager::{
     add_services::{
-        add, add_daemon, add_faucet,
-        config::{AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions},
+        add_daemon, add_faucet, add_node,
+        config::{AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions},
     },
     config::*,
     helpers::{download_and_extract_release, get_bin_version},
@@ -476,7 +476,7 @@ async fn main() -> Result<()> {
                 &*release_repo,
             )
             .await?;
-            let options = AddServiceOptions {
+            let options = AddNodeServiceOptions {
                 local,
                 genesis: peers.first,
                 count,
@@ -493,7 +493,7 @@ async fn main() -> Result<()> {
                 env_variables,
             };
 
-            add(options, &mut node_registry, &service_manager, verbosity).await?;
+            add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
             node_registry.save()?;
 

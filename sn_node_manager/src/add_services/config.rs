@@ -76,7 +76,7 @@ impl InstallNodeServiceCtxBuilder {
     }
 }
 
-pub struct AddServiceOptions {
+pub struct AddNodeServiceOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
     pub env_variables: Option<Vec<(String, String)>>,

@@ -8,9 +8,9 @@
 
 use crate::{
     add_services::{
-        add, add_daemon, add_faucet,
+        add_daemon, add_faucet, add_node,
         config::{
-            AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions,
+            AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
             InstallNodeServiceCtxBuilder,
         },
     },
@@ -128,8 +128,8 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: true,
             genesis: true,
             count: None,
@@ -223,8 +223,8 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
 
     let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
-    let result = add(
-        AddServiceOptions {
+    let result = add_node(
+        AddNodeServiceOptions {
             local: true,
             genesis: true,
             count: None,
@@ -281,8 +281,8 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
 
     let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
-    let result = add(
-        AddServiceOptions {
+    let result = add_node(
+        AddNodeServiceOptions {
             local: true,
             genesis: true,
             count: Some(3),
@@ -433,8 +433,8 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: false,
             genesis: false,
             count: Some(3),
@@ -571,8 +571,8 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: false,
             genesis: false,
             count: None,
@@ -683,8 +683,8 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: false,
             genesis: false,
             count: None,
@@ -805,8 +805,8 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: false,
             genesis: false,
             count: None,
@@ -908,8 +908,8 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         .returning(|_| Ok(()))
         .in_sequence(&mut seq);
 
-    add(
-        AddServiceOptions {
+    add_node(
+        AddNodeServiceOptions {
             local: false,
             genesis: false,
             count: None,
@@ -980,8 +980,8 @@ async fn add_node_should_return_error_if_custom_port_is_used_and_more_than_one_s
 
     let custom_port = 12000;
 
-    let result = add(
-        AddServiceOptions {
+    let result = add_node(
+        AddNodeServiceOptions {
             local: true,
             genesis: false,
             count: Some(3),
