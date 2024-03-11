@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710122280489,
+  "lastUpdate": 1710122383886,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1",
-          "message": "chore(networking): kad logging and another content_hash removed",
-          "timestamp": "2023-10-24T06:48:28+02:00",
-          "tree_id": "9300ad4b525fdb674ed15df176c0405a80d5a899",
-          "url": "https://github.com/maidsafe/safe_network/commit/2f09bd34dc47c05c88fd9d5e0e973e51c53aafb1"
-        },
-        "date": 1698125263776,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 64,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "9b8b7d4a8f2f22d59360308f2cd6d282dc0d3134",
           "message": "chore(client): log and wait tweaks",
           "timestamp": "2023-10-24T07:08:18+02:00",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fb309bf4977623196660261ccaf637e0993e05a3",
+          "message": "chore(api): make logging::Error public\n\nit's public in other crates, it makes error handling easier.",
+          "timestamp": "2024-03-11T01:15:43Z",
+          "tree_id": "0ceb828a58c2550e6b445b934f094cdc884f6c02",
+          "url": "https://github.com/maidsafe/safe_network/commit/fb309bf4977623196660261ccaf637e0993e05a3"
+        },
+        "date": 1710122383341,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
