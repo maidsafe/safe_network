@@ -46,6 +46,7 @@ use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
     path::PathBuf,
+    sync::Arc,
 };
 use tokio::time::Duration;
 use tracing::trace;
@@ -126,7 +127,7 @@ impl Client {
         let client = Self {
             network: network.clone(),
             events_broadcaster,
-            signer,
+            signer: Arc::new(signer),
         };
 
         // subscribe to our events channel first, so we don't have intermittent

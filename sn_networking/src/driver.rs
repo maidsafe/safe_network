@@ -56,6 +56,7 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
+    sync::Arc,
 };
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
@@ -564,9 +565,9 @@ impl NetworkBuilder {
         Ok((
             Network {
                 swarm_cmd_sender,
-                peer_id,
-                root_dir_path: self.root_dir,
-                keypair: self.keypair,
+                peer_id: Arc::new(peer_id),
+                root_dir_path: Arc::new(self.root_dir),
+                keypair: Arc::new(self.keypair),
             },
             network_event_receiver,
             swarm_driver,

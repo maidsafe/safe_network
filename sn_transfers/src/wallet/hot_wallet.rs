@@ -291,7 +291,7 @@ impl HotWallet {
         Ok((available_cash_notes, exclusive_access))
     }
 
-    /// Return the payment_details for the given chunk_name if cached.
+    /// Return the payment_details for the given XorName if cached.
     pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<PaymentDetails> {
         match self.watchonly_wallet.get_payment_transaction(name) {
             Ok(payment_detail) => Some(payment_detail),
@@ -302,7 +302,7 @@ impl HotWallet {
         }
     }
 
-    /// Remove the payment_details of the given chunk_name from disk.
+    /// Remove the payment_details of the given XorName from disk.
     pub fn remove_payment_for_xorname(&self, name: &XorName) {
         self.watchonly_wallet.remove_payment_transaction(name)
     }

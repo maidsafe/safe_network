@@ -59,9 +59,9 @@ impl WatchOnlyWallet {
         }
     }
 
-    pub fn get_payment_transaction(&self, chunk_name: &XorName) -> Result<PaymentDetails> {
+    pub fn get_payment_transaction(&self, name: &XorName) -> Result<PaymentDetails> {
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let unique_file_name = format!("{}.payment", hex::encode(*name));
         let payment_file_path = created_payments_dir.join(unique_file_name);
 
         debug!("Getting payment from {payment_file_path:?}");
@@ -71,13 +71,9 @@ impl WatchOnlyWallet {
         Ok(payment)
     }
 
-    pub fn insert_payment_transaction(
-        &self,
-        chunk_name: XorName,
-        payment: PaymentDetails,
-    ) -> Result<()> {
+    pub fn insert_payment_transaction(&self, name: XorName, payment: PaymentDetails) -> Result<()> {
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(chunk_name));
+        let unique_file_name = format!("{}.payment", hex::encode(name));
 
         fs::create_dir_all(&created_payments_dir)?;
 
@@ -90,9 +86,9 @@ impl WatchOnlyWallet {
         Ok(())
     }
 
-    pub fn remove_payment_transaction(&self, chunk_name: &XorName) {
+    pub fn remove_payment_transaction(&self, name: &XorName) {
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let unique_file_name = format!("{}.payment", hex::encode(*name));
         let payment_file_path = created_payments_dir.join(unique_file_name);
 
         debug!("Removing payment from {payment_file_path:?}");
