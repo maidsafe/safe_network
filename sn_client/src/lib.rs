@@ -20,6 +20,10 @@ mod folders;
 mod register;
 mod wallet;
 
+/// Test utils
+#[cfg(feature = "test-utils")]
+pub mod test_utils;
+
 // re-export used crates to make them available to app builders
 // this ensures the version of the crates used by the app builders are the same as the ones used by the client
 // so they don't run into issues with incompatible types due to different versions of the same crate
