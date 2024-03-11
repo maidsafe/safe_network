@@ -148,7 +148,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .iter()
         .take(subset_len)
         .all(|name| paying_wallet
-            .get_cached_payment_for_xorname(&name.as_xorname().unwrap())
+            .get_recent_cached_payment_for_xorname(&name.as_xorname().unwrap())
             .is_some()));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
