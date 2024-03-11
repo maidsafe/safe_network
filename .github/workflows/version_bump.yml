@@ -10,8 +10,9 @@ on:
   push:
     branches:
       # run for everything that gets into main
-      - main
-      - beta
+      # - main
+      # - beta
+
   schedule:
     # Schedule for midnight UTC. Adjust according to your timezone
     - cron: "0 0 * * *" # Runs at 00:00 UTC every day
