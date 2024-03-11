@@ -33,7 +33,7 @@ impl IterativeUploader {
     /// Given an iterator over files, upload them. Optionally verify if the data was stored successfully.
     pub(crate) async fn iterate_upload(
         mut self,
-        entries_iter: impl Iterator<Item = DirEntry>,
+        total_files: usize,
         files_path: PathBuf,
         options: FilesUploadOptions,
     ) -> Result<usize> {
@@ -44,18 +44,8 @@ impl IterativeUploader {
             retry_strategy,
         } = options;
 
-        let mut rng = thread_rng();
-
         msg_init(&files_path, &batch_size, &verify_store, make_data_public);
 
-        let total_files =
-            self.chunk_manager
-                .chunk_with_iter(entries_iter, true, make_data_public)?;
-        if total_files == 0 {
-            return Ok(0);
-        }
-
-        // Return early if we already uploaded them
         let mut chunks_to_upload = if self.chunk_manager.is_chunks_empty() {
             // make sure we don't have any failed chunks in those
 
@@ -73,7 +63,6 @@ impl IterativeUploader {
                 .verify_uploaded_chunks(&chunks, batch_size)
                 .await?;
 
-            // mark the non-failed ones as completed
             self.chunk_manager.mark_completed(
                 chunks
                     .into_iter()
@@ -81,7 +70,6 @@ impl IterativeUploader {
                     .map(|(xor, _)| xor),
             )?;
 
-            // if none are failed, we can return early
             if failed_chunks.is_empty() {
                 msg_files_already_uploaded_verified();
                 if !make_data_public {
@@ -100,8 +88,7 @@ impl IterativeUploader {
             self.chunk_manager.get_chunks()
         };
 
-        // Random shuffle the chunks_to_upload, so that uploading of a large file can be speed up by
-        // having multiple client instances uploading the same target.
+        let mut rng = thread_rng();
         chunks_to_upload.shuffle(&mut rng);
 
         let chunk_amount_to_upload = chunks_to_upload.len();

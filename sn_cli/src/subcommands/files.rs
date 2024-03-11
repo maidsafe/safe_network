@@ -101,7 +101,7 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
-    let chunk_manager = ChunkManager::new(root_dir);
+    let mut chunk_manager = ChunkManager::new(root_dir);
 
     match cmds {
         FilesCmds::Estimate {
@@ -118,9 +118,18 @@ pub(crate) async fn files_cmds(
             retry_strategy,
             make_data_public,
         } => {
+            let total_files = chunk_manager.chunk_with_iter(
+                WalkDir::new(&file_path).into_iter().flatten(),
+                true,
+                make_data_public,
+            )?;
+            if total_files == 0 {
+                Ok(0)
+            }
+
             let total_files = IterativeUploader::new(chunk_manager, files_api)
                 .iterate_upload(
-                    WalkDir::new(&file_path).into_iter().flatten(),
+                    total_files,
                     file_path.clone(),
                     FilesUploadOptions {
                         make_data_public,
