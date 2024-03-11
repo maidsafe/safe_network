@@ -554,7 +554,7 @@ impl Node {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
                 let record_key = address.to_record_key();
-                let self_id = network.peer_id;
+                let self_id = *network.peer_id;
 
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
 
@@ -586,7 +586,7 @@ impl Node {
             Query::GetReplicatedRecord { requester, key } => {
                 trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
-                let our_address = NetworkAddress::from_peer(network.peer_id);
+                let our_address = NetworkAddress::from_peer(*network.peer_id);
                 let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
                     holder: Box::new(our_address.clone()),
                     key: Box::new(key.clone()),
@@ -629,7 +629,7 @@ impl Node {
                     };
 
                 QueryResponse::CheckNodeInProblem {
-                    reporter_address: NetworkAddress::from_peer(network.peer_id),
+                    reporter_address: NetworkAddress::from_peer(*network.peer_id),
                     target_address,
                     is_in_trouble,
                 }

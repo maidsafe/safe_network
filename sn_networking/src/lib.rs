@@ -62,6 +62,7 @@ use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, HashMap},
     path::PathBuf,
+    sync::Arc,
 };
 use tokio::sync::{
     mpsc::{self, Sender},
@@ -154,9 +155,9 @@ pub fn sort_peers_by_key<'a, T>(
 /// API to interact with the underlying Swarm
 pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    pub peer_id: PeerId,
-    pub root_dir_path: PathBuf,
-    keypair: Keypair,
+    pub peer_id: Arc<PeerId>,
+    pub root_dir_path: Arc<PathBuf>,
+    keypair: Arc<Keypair>,
 }
 
 impl Network {
@@ -772,7 +773,7 @@ impl Network {
         // ensure we're not including self here
         if client {
             // remove our peer id from the calculations here:
-            closest_peers.retain(|&x| x != self.peer_id);
+            closest_peers.retain(|&x| x != *self.peer_id);
         }
         if tracing::level_enabled!(tracing::Level::TRACE) {
             let close_peers_pretty_print: Vec<_> = closest_peers
