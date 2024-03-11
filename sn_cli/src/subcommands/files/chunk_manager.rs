@@ -565,9 +565,32 @@ mod tests {
     use color_eyre::{eyre::eyre, Result};
     use rand::{thread_rng, Rng};
     use rayon::prelude::IntoParallelIterator;
-    use sn_client::protocol::test_utils::assert_list_eq;
     use sn_logging::LogBuilder;
     use tempfile::TempDir;
+
+    /// Assert any collection/iterator even if their orders do not match.
+    pub fn assert_list_eq<I, J, K>(a: I, b: J)
+    where
+        K: Eq + Clone,
+        I: IntoIterator<Item = K>,
+        J: IntoIterator<Item = K>,
+    {
+        let vec1: Vec<_> = a.into_iter().collect::<Vec<_>>();
+        let mut vec2: Vec<_> = b.into_iter().collect();
+
+        assert_eq!(vec1.len(), vec2.len());
+
+        for item1 in &vec1 {
+            let idx2 = vec2
+                .iter()
+                .position(|item2| item1 == item2)
+                .expect("Item not found in second list");
+
+            vec2.swap_remove(idx2);
+        }
+
+        assert_eq!(vec2.len(), 0);
+    }
 
     #[test]
     fn chunked_files_should_be_written_to_artifacts_dir() -> Result<()> {

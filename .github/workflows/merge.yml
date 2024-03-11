@@ -146,7 +146,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
       - shell: bash
-        run: cargo test --release --bin safenode-manager
+        run: cargo test --lib --package sn-node-manager
 
   node-manager-e2e-tests:
     name: node manager e2e tests

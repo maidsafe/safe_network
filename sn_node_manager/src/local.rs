@@ -6,17 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{helpers::get_bin_version, service::ServiceControl};
-use color_eyre::{
-    eyre::{eyre, OptionExt},
-    Result,
-};
+use crate::helpers::get_bin_version;
+use color_eyre::eyre::OptionExt;
+use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
-use sn_node_rpc_client::{RpcActions, RpcClient};
-use sn_protocol::node_registry::{Faucet, Node, NodeRegistry, NodeStatus};
+use sn_service_management::{
+    control::ServiceControl,
+    rpc::{RpcActions, RpcClient},
+    FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
+};
 use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -255,13 +256,13 @@ pub async fn run_network(
         println!("Launching the faucet server...");
         let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
         let version = get_bin_version(&options.faucet_bin_path)?;
-        let faucet = Faucet {
+        let faucet = FaucetServiceData {
             faucet_path: options.faucet_bin_path,
             local: true,
             log_dir_path: get_faucet_data_dir(),
             pid: Some(pid),
             service_name: "faucet".to_string(),
-            status: NodeStatus::Running,
+            status: ServiceStatus::Running,
             user: get_username()?,
             version,
         };
@@ -284,7 +285,7 @@ pub async fn run_node(
     run_options: RunNodeOptions,
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
-) -> Result<Node> {
+) -> Result<NodeServiceData> {
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
         run_options.rpc_socket_addr,
@@ -302,7 +303,7 @@ pub async fn run_node(
         .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
         .collect();
 
-    Ok(Node {
+    Ok(NodeServiceData {
         connected_peers,
         genesis: run_options.genesis,
         // not read for local network.
@@ -312,7 +313,7 @@ pub async fn run_node(
         number: run_options.number,
         rpc_socket_addr: run_options.rpc_socket_addr,
         version: run_options.version.to_string(),
-        status: NodeStatus::Running,
+        status: ServiceStatus::Running,
         pid: Some(node_info.pid),
         listen_addr: Some(listen_addrs),
         peer_id: Some(peer_id),
@@ -387,8 +388,9 @@ mod tests {
     use libp2p_identity::PeerId;
     use mockall::mock;
     use mockall::predicate::*;
-    use sn_node_rpc_client::{
-        NetworkInfo, NodeInfo, RecordAddress, Result as RpcResult, RpcActions,
+    use sn_service_management::{
+        error::Result as RpcResult,
+        rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
     };
     use std::str::FromStr;
 
@@ -481,7 +483,7 @@ mod tests {
         assert_eq!(node.number, 1);
         assert_eq!(node.pid, Some(1000));
         assert_eq!(node.rpc_socket_addr, rpc_socket_addr);
-        assert_eq!(node.status, NodeStatus::Running);
+        assert_eq!(node.status, ServiceStatus::Running);
         assert_eq!(node.safenode_path, PathBuf::from("/usr/local/bin/safenode"));
 
         Ok(())
