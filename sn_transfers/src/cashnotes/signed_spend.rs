@@ -143,7 +143,7 @@ impl SignedSpend {
         }
     }
 
-    /// Verify the parents of this Spend, making sure that they where spent for it
+    /// Verify the parents of this Spend, making sure the input parent_spends are ancestors of self.
     /// - verifies that the parent_spends where spent in our spend's parent_tx
     /// - verifies the parent_tx against the parent_spends
     pub fn verify_parent_spends<'a, T>(&self, parent_spends: T) -> Result<()>

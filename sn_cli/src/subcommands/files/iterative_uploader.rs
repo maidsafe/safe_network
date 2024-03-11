@@ -148,9 +148,10 @@ impl IterativeUploader {
     ) -> Result<()> {
         match files_upload.upload_chunks(chunks_to_upload).await {
             Ok(()) => Ok(()),
-            Err(ClientError::Transfers(WalletError::Transfer(
-                TransferError::NotEnoughBalance(available, required),
-            ))) => Err(eyre!(
+            Err(ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(
+                available,
+                required,
+            )))) => Err(eyre!(
                 "Not enough balance in wallet to pay for chunk. \
             We have {available:?} but need {required:?} to pay for the chunk"
             )),

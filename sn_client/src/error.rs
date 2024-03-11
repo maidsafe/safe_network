@@ -23,8 +23,11 @@ pub enum Error {
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::GenesisError),
 
+    #[error("Wallet Error {0}.")]
+    Wallet(#[from] sn_transfers::WalletError),
+
     #[error("Transfer Error {0}.")]
-    Transfers(#[from] sn_transfers::WalletError),
+    Transfer(#[from] sn_transfers::TransferError),
 
     #[error("Network Error {0}.")]
     Network(#[from] sn_networking::Error),

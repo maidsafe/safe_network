@@ -14,7 +14,7 @@ use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 #[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
-use sn_networking::{get_signed_spends_from_record, Error as NetworkError, GetRecordError};
+use sn_networking::{get_raw_signed_spends_from_record, Error as NetworkError, GetRecordError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
@@ -668,7 +668,7 @@ impl Node {
                 warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
                 let mut spends = vec![];
                 for (record, _) in result_map.values() {
-                    match get_signed_spends_from_record(record) {
+                    match get_raw_signed_spends_from_record(record) {
                         Ok(s) => spends.extend(s),
                         Err(e) => warn!("Ignoring invalid record received from the network for spend: {unique_pubkey:?}: {e}"),
                     }
