@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710170263077,
+  "lastUpdate": 1710170265908,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20416,40 +20416,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "72e5a48eaa0d304ee52095d18929dc8b33a6cc7a",
-          "message": "fix(node): dont try and replicate to non existent peers",
-          "timestamp": "2023-10-24T12:01:10+02:00",
-          "tree_id": "660b96f8193c739fc59a47d1202f5ac713823023",
-          "url": "https://github.com/maidsafe/safe_network/commit/72e5a48eaa0d304ee52095d18929dc8b33a6cc7a"
-        },
-        "date": 1698143705218,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 153,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 39,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "df8b357f3cda843baabf505f95718eedb1787b9d",
           "message": "ci: Register test negation\n\nIgnore reg storage test.\nCHUNKS_ONLY for data tests for now.\n\nRegister merges are unstable",
           "timestamp": "2023-10-24T10:12:37Z",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b5db038120cccbfce81cdc7129808bdfcee14f92",
+          "message": "refactor(cli): chunk-mgr to report files chunked/uploaded rather than bailing out",
+          "timestamp": "2024-03-11T14:28:37Z",
+          "tree_id": "6ed0ae0257a1f77faec2badc9f3959ff5d1e0597",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5db038120cccbfce81cdc7129808bdfcee14f92"
+        },
+        "date": 1710170264730,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 184,
             "unit": "MB"
           },
           {
