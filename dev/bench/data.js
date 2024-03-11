@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710139472874,
+  "lastUpdate": 1710139474356,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38626,6 +38626,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34765,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c",
+          "message": "refactor(service): make the add node naming more explicit",
+          "timestamp": "2024-03-11T05:56:56Z",
+          "tree_id": "5c373d816ff7401aa8a7b1e2e58e53d2084eac92",
+          "url": "https://github.com/maidsafe/safe_network/commit/48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c"
+        },
+        "date": 1710139474060,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6037,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34032,
             "unit": "ms"
           },
           {
