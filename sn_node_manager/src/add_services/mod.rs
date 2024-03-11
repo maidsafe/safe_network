@@ -10,7 +10,7 @@ pub mod config;
 mod tests;
 
 use self::config::{
-    AddDaemonServiceOptions, AddFaucetServiceOptions, AddServiceOptions,
+    AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
     InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder,
 };
 use crate::{config::create_owned_dir, VerbosityLevel, DAEMON_SERVICE_NAME};
@@ -32,8 +32,8 @@ use std::{
 ///
 /// There are several arguments that probably seem like they could be handled within the function,
 /// but they enable more controlled unit testing.
-pub async fn add(
-    options: AddServiceOptions,
+pub async fn add_node(
+    options: AddNodeServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
