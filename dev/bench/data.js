@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710170265908,
+  "lastUpdate": 1710170268849,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38704,6 +38704,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34718,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b5db038120cccbfce81cdc7129808bdfcee14f92",
+          "message": "refactor(cli): chunk-mgr to report files chunked/uploaded rather than bailing out",
+          "timestamp": "2024-03-11T14:28:37Z",
+          "tree_id": "6ed0ae0257a1f77faec2badc9f3959ff5d1e0597",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5db038120cccbfce81cdc7129808bdfcee14f92"
+        },
+        "date": 1710170267635,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6718,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37401,
             "unit": "ms"
           },
           {
