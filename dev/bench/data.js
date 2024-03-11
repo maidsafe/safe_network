@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710122200821,
+  "lastUpdate": 1710122202370,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38548,6 +38548,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35138,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "2525b3f7267ad8142de40e2bd6dd6b49dc1597b9",
+          "message": "chore: fix logging logic",
+          "timestamp": "2024-03-11T01:15:29Z",
+          "tree_id": "4abcefa65bce70572347d96f4dd118a0f54014b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2525b3f7267ad8142de40e2bd6dd6b49dc1597b9"
+        },
+        "date": 1710122202010,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5837,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32506,
             "unit": "ms"
           },
           {
