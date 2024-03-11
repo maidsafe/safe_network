@@ -75,7 +75,7 @@ impl ServiceStateActions for NodeService {
             args.push(OsString::from(peers_str));
         }
 
-        let mut service_ctx = ServiceInstallCtx {
+        Ok(ServiceInstallCtx {
             label: label.clone(),
             program: self.service_data.safenode_path.to_path_buf(),
             args,
@@ -83,48 +83,7 @@ impl ServiceStateActions for NodeService {
             username: Some(self.service_data.user.to_string()),
             working_directory: None,
             environment: options.env_variables,
-        };
-        // Temporary fix to enable the restart cmd to properly restart a running service.
-        // 'ServiceInstallCtx::content' will override the other passed in fields.
-        #[cfg(target_os = "linux")]
-        {
-            use std::fmt::Write;
-            let mut service = String::new();
-
-            let _ = writeln!(service, "[Unit]");
-            let _ = writeln!(
-                service,
-                "Description={}",
-                service_ctx.label.to_script_name()
-            );
-            let _ = writeln!(service, "[Service]");
-            let program = service_ctx.program.to_string_lossy();
-            let args = service_ctx
-                .args
-                .clone()
-                .into_iter()
-                .map(|a| a.to_string_lossy().to_string())
-                .collect::<Vec<String>>()
-                .join(" ");
-            let _ = writeln!(service, "ExecStart={program} {args}");
-            if let Some(env_vars) = &service_ctx.environment {
-                for (var, val) in env_vars {
-                    let _ = writeln!(service, "Environment=\"{}={}\"", var, val);
-                }
-            }
-            let _ = writeln!(service, "Restart=on-failure");
-            let _ = writeln!(service, "User={}", self.service_data.user);
-            let _ = writeln!(service, "KillMode=process"); // fixes the restart issue
-            let _ = writeln!(service, "[Install]");
-            let _ = writeln!(service, "WantedBy=multi-user.target");
-
-            service_ctx.contents = Some(service);
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            service_ctx.contents = None;
-        }
-        Ok(service_ctx)
+        })
     }
 
     fn data_dir_path(&self) -> PathBuf {
