@@ -936,7 +936,7 @@ mod tests {
     // All tests require a network running so Clients can be instantiated.
 
     use std::{
-        collections::BTreeMap,
+        collections::{BTreeMap, BTreeSet},
         fs::{create_dir_all, remove_dir_all, remove_file, File, OpenOptions},
         io::{Read, Write},
         path::{Path, PathBuf},
@@ -954,7 +954,7 @@ mod tests {
     };
 
     use bls::SecretKey;
-    use eyre::{eyre, Result};
+    use eyre::{bail, eyre, Result};
     use xor_name::XorName;
 
     const SYNC_OPTS: FilesUploadOptions = FilesUploadOptions {
@@ -990,7 +990,7 @@ mod tests {
         acc_packet.sync(SYNC_OPTS).await?;
 
         let clone_files_path = tmp_dir.path().join("myaccpacketempty-clone");
-        let _ = AccountPacket::retrieve_folders(
+        let cloned_acc_packet = AccountPacket::retrieve_folders(
             &client,
             wallet_dir,
             root_folder_addr,
@@ -1001,7 +1001,7 @@ mod tests {
         .await?;
 
         // let's verify both the original and cloned packets are empty
-        check_files_and_dirs_match(&src_files_path, &BTreeMap::new(), &clone_files_path)?;
+        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, BTreeMap::new())?;
 
         Ok(())
     }
@@ -1019,7 +1019,7 @@ mod tests {
         let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpacket");
-        let files = create_test_files_on_disk(&src_files_path)?;
+        let expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
@@ -1032,7 +1032,7 @@ mod tests {
 
         let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
 
-        let _ = AccountPacket::retrieve_folders(
+        let downloaded_acc_packet = AccountPacket::retrieve_folders(
             &client,
             wallet_dir,
             root_folder_addr,
@@ -1042,7 +1042,7 @@ mod tests {
         )
         .await?;
 
-        check_files_and_dirs_match(&src_files_path, &files, &download_files_path)?;
+        check_files_and_dirs_match(&acc_packet, &downloaded_acc_packet, expected_files)?;
 
         Ok(())
     }
@@ -1060,7 +1060,7 @@ mod tests {
         let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpackettosync");
-        let mut files = create_test_files_on_disk(&src_files_path)?;
+        let mut expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
@@ -1072,7 +1072,6 @@ mod tests {
         acc_packet.sync(SYNC_OPTS).await?;
 
         let clone_files_path = tmp_dir.path().join("myaccpackettosync-clone");
-
         let mut cloned_acc_packet = AccountPacket::retrieve_folders(
             &client,
             wallet_dir,
@@ -1091,26 +1090,28 @@ mod tests {
             .write(true)
             .open(clone_files_path.join(file2modify))?
             .write_all(new_chunk.value())?;
-        files.insert(file2modify.to_path_buf(), Some(new_chunk));
+        expected_files.insert(file2modify.to_path_buf(), Some(new_chunk));
         // - remove one of the files
         let file2remove = Path::new("dir1").join("file1.txt");
         remove_file(clone_files_path.join(&file2remove))?;
-        files.remove(&file2remove);
+        expected_files.remove(&file2remove);
+        // we need to keep the empty dir within the list of expected files though
+        expected_files.insert(Path::new("dir1").to_path_buf(), None);
         // - remove one of the dirs
         let dir2remove = Path::new("dir2");
         remove_dir_all(clone_files_path.join(dir2remove))?;
-        files.remove(dir2remove);
+        expected_files.remove(dir2remove);
         // - create new dir
         let dir2create = Path::new("dir2").join("dir2_1");
         create_dir_all(clone_files_path.join(&dir2create))?;
-        files.insert(dir2create.to_path_buf(), None);
+        expected_files.insert(dir2create.to_path_buf(), None);
         // - create new file
         create_dir_all(clone_files_path.join("dir3").join("dir3_1"))?;
         let file2create = Path::new("dir3").join("dir3_1").join("file3.txt");
         let mut file = File::create(clone_files_path.join(&file2create))?;
         let new_chunk = random_file_chunk();
         file.write_all(new_chunk.value())?;
-        files.insert(file2create, Some(new_chunk));
+        expected_files.insert(file2create, Some(new_chunk));
 
         // and finally, sync the clone up with the network
         cloned_acc_packet.sync(SYNC_OPTS).await?;
@@ -1120,11 +1121,12 @@ mod tests {
         acc_packet.sync(SYNC_OPTS).await?;
 
         // let's verify both the original and cloned packets contain the same content
-        check_files_and_dirs_match(&src_files_path, &files, &clone_files_path)?;
+        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, expected_files)?;
 
         Ok(())
     }
 
+    // Create a hard-coded set of test files and dirs on disk
     fn create_test_files_on_disk(base_path: &Path) -> Result<BTreeMap<PathBuf, Option<Chunk>>> {
         // let's create a hierarchy with dirs and files with random content
         let mut files = BTreeMap::new();
@@ -1153,15 +1155,50 @@ mod tests {
         Ok(files)
     }
 
-    // TODO: check both dirs have the same set of files and folders and no more
+    // Collect list of files and non empty dirs, to be used for comparing in tests
+    fn list_of_files_and_empty_dirs(acc_packet: &AccountPacket) -> BTreeSet<PathBuf> {
+        acc_packet
+            .iter_only_files()
+            .chain(acc_packet.iter_only_dirs())
+            .flat_map(|file_entry| {
+                let path = file_entry.path();
+                if path.is_dir()
+                    && !path
+                        .read_dir()
+                        .map(|mut i| i.next().is_none())
+                        .unwrap_or(false)
+                {
+                    bail!("we skip non empty dirs");
+                }
+
+                acc_packet.get_relative_path(path)
+            })
+            .collect()
+    }
+
+    // Check both dirs have the same set of files and folders and no more
     fn check_files_and_dirs_match(
-        src_path: &Path,
-        files: &BTreeMap<PathBuf, Option<Chunk>>,
-        target_path: &Path,
+        src_packet: &AccountPacket,
+        target_packet: &AccountPacket,
+        mut expected_files: BTreeMap<PathBuf, Option<Chunk>>,
     ) -> Result<()> {
-        for (path, chunk) in files {
-            let src_path = src_path.join(path);
-            let target_path = target_path.join(path);
+        // let's collect all paths in target acc packet, i.e. files and empty dirs paths
+        let mut target_packet_files: BTreeSet<PathBuf> =
+            list_of_files_and_empty_dirs(target_packet);
+
+        // let's now compare those paths in target acc packet with those in source acc packet
+        for relative_path in list_of_files_and_empty_dirs(src_packet) {
+            if !target_packet_files.remove(&relative_path) {
+                bail!("File/dir found in source is missing in target directory: {relative_path:?}");
+            }
+
+            let src_path = src_packet.files_dir.join(&relative_path);
+            let target_path = target_packet.files_dir.join(&relative_path);
+
+            let chunk = expected_files.remove(&relative_path).ok_or_else(|| {
+                eyre!("Unexpected file/dir found on source and target directories: {src_path:?}")
+            })?;
+
             if let Some(chunk) = chunk {
                 // it's a file, let's compare their content
                 let mut src_file = File::open(&src_path)
@@ -1197,6 +1234,14 @@ mod tests {
                 );
             }
         }
+
+        if !target_packet_files.is_empty() {
+            bail!("File/dir/s found in target directory but missing in source directory: {target_packet_files:?}");
+        }
+        if !expected_files.is_empty() {
+            bail!("Some expected file/dir/s were not found in source or target directories: {expected_files:?}");
+        }
+
         Ok(())
     }
 }
