@@ -387,14 +387,16 @@ impl Droplet {
     ) -> Result<()> {
         let mut rpc_client = get_safenode_manager_rpc_client(daemon_endpoint).await?;
 
-        let _response = rpc_client.restart_node_service(Request::new(NodeServiceRestartRequest {
-            peer_id: peer_id.to_bytes(),
-            delay_millis: 0,
-            retain_peer_id,
-        }));
+        let _response = rpc_client
+            .restart_node_service(Request::new(NodeServiceRestartRequest {
+                peer_id: peer_id.to_bytes(),
+                delay_millis: 0,
+                retain_peer_id,
+            }))
+            .await?;
 
-        println!("Node restart requested to RPC service at {daemon_endpoint}");
-        info!("Node restart requested to RPC service at {daemon_endpoint}");
+        println!("Node restart requested to safenodemand {daemon_endpoint}");
+        info!("Node restart requested to safenodemand {daemon_endpoint}");
 
         Ok(())
     }
