@@ -427,17 +427,6 @@ impl ChunkManager {
             .collect()
     }
 
-    /// Return the filename and the file's Xor address if all their chunks has been marked as
-    /// completed
-    pub(crate) fn already_put_chunks(
-        &mut self,
-        files_path: &Path,
-        make_files_public: bool,
-    ) -> Result<Vec<(XorName, PathBuf)>> {
-        self.chunk_path(files_path, false, make_files_public)?;
-        Ok(self.get_chunks())
-    }
-
     /// Returns an iterator over the list of chunked files
     pub(crate) fn iter_chunked_files(&mut self) -> impl Iterator<Item = &ChunkedFile> {
         self.chunks.values()

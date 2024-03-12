@@ -664,18 +664,17 @@ impl AccountPacket {
         let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
 
-        let chunks_to_upload = files::chunks_to_upload(
+        let chunks_to_upload = files::chunks_to_upload_with_iter(
             &files_api,
             &mut chunk_manager,
-            &self.files_dir.clone(),
+            self.iter_only_files(),
             options.batch_size,
             options.make_data_public,
-            true,
         )
         .await?;
 
         IterativeUploader::new(chunk_manager, files_api)
-            .iterate_upload(chunks_to_upload, self.files_dir.clone(), options.clone())
+            .iterate_upload(chunks_to_upload, &self.files_dir, options.clone())
             .await?;
 
         // Let's make the storage payment for Folders
