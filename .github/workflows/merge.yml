@@ -97,6 +97,7 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_cli -- --skip test_acc_packet_
 
+        # We do not run client `--tests` here as they can require a network
       - name: Run client tests
         timeout-minutes: 25
         run: |
@@ -365,6 +366,13 @@ jobs:
           else
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
+
+      # only these unit tests require a network, the rest are run above
+      - name: Run sn_client --tests
+        run: cargo test --package sn_client --release --tests
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 15
 
       - name: Create and fund a wallet to pay for files storage
         run: |
