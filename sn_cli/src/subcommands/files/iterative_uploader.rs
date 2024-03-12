@@ -4,7 +4,7 @@ use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
 use sn_client::transfers::{NanoTokens, TransferError, WalletError};
 use sn_client::{Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -31,7 +31,7 @@ impl IterativeUploader {
     pub(crate) async fn iterate_upload(
         self,
         chunks_to_upload: Vec<(XorName, PathBuf)>,
-        files_path: PathBuf,
+        files_path: &Path,
         options: FilesUploadOptions,
     ) -> Result<()> {
         let FilesUploadOptions {
@@ -41,7 +41,7 @@ impl IterativeUploader {
             retry_strategy,
         } = options;
 
-        msg_init(&files_path, &batch_size, &verify_store, make_data_public);
+        msg_init(files_path, &batch_size, &verify_store, make_data_public);
 
         let mut files_upload = FilesUpload::new(self.files_api)
             .set_batch_size(batch_size)
@@ -179,7 +179,7 @@ fn msg_check_incomplete_files(chunk_manager: &mut ChunkManager) {
     }
 }
 
-fn msg_init(files_path: &PathBuf, batch_size: &usize, verify_store: &bool, make_data_public: bool) {
+fn msg_init(files_path: &Path, batch_size: &usize, verify_store: &bool, make_data_public: bool) {
     debug!("Uploading file(s) from {files_path:?}, batch size {batch_size:?} will verify?: {verify_store}");
     if make_data_public {
         info!("{files_path:?} will be made public and linkable");

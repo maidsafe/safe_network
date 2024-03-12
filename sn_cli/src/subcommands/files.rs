@@ -32,7 +32,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use upload::{FilesUploadOptions, UploadedFile, UPLOADED_FILES};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -142,14 +142,13 @@ pub(crate) async fn files_cmds(
                     &file_path,
                     batch_size,
                     make_data_public,
-                    false,
                 )
                 .await?;
 
                 IterativeUploader::new(chunk_manager, files_api)
                     .iterate_upload(
                         chunks_to_upload,
-                        file_path.clone(),
+                        &file_path,
                         FilesUploadOptions {
                             make_data_public,
                             verify_store,
@@ -276,13 +275,31 @@ pub(crate) async fn files_cmds(
 pub async fn chunks_to_upload(
     files_api: &FilesApi,
     chunk_manager: &mut ChunkManager,
-    file_path: &Path,
+    files_path: &Path,
     batch_size: usize,
     make_data_public: bool,
-    acc_pac: bool,
+) -> Result<Vec<(XorName, PathBuf)>> {
+    chunks_to_upload_with_iter(
+        files_api,
+        chunk_manager,
+        WalkDir::new(files_path).into_iter().flatten(),
+        batch_size,
+        make_data_public,
+    )
+    .await
+}
+
+pub async fn chunks_to_upload_with_iter(
+    files_api: &FilesApi,
+    chunk_manager: &mut ChunkManager,
+    entries_iter: impl Iterator<Item = DirEntry>,
+    batch_size: usize,
+    make_data_public: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        let chunks = chunk_manager.already_put_chunks(file_path, make_data_public)?;
+        chunk_manager.chunk_with_iter(entries_iter, false, make_data_public)?;
+
+        let chunks = chunk_manager.get_chunks();
 
         let failed_chunks = files_api
             .client()
@@ -307,11 +324,7 @@ pub async fn chunks_to_upload(
             }
             iterative_uploader::msg_chunk_manager_upload_complete(chunk_manager.clone());
 
-            if acc_pac {
-                bail!("")
-            } else {
-                return Ok(vec![]);
-            }
+            return Ok(vec![]);
         }
         msg_unverified_chunks_reattempted(&failed_chunks.len());
         failed_chunks
