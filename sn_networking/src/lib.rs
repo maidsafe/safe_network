@@ -60,7 +60,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::PathBuf,
     sync::Arc,
 };
@@ -344,9 +344,13 @@ impl Network {
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
     /// Record already exists will have a cost of zero to be returned.
+    ///
+    /// Ignore the quote from any peers from `ignore_peers`. This is useful if we want to repay a different PeerId
+    /// on failure.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
+        ignore_peers: Vec<PeerId>,
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
@@ -391,11 +395,22 @@ impl Network {
                 .distance(peer_address_a)
                 .cmp(&record_address.distance(peer_address_b))
         });
+        #[allow(clippy::mutable_key_type)]
+        let ignore_peers = ignore_peers
+            .into_iter()
+            .map(NetworkAddress::from_peer)
+            .collect::<BTreeSet<_>>();
 
         // Ensure we dont have any further out nodes than `close_group_majority()`
         // This should ensure that if we didnt get all responses from close nodes,
         // we're less likely to be paying a node that is not in the CLOSE_GROUP
-        let all_costs = all_costs.into_iter().take(close_group_majority()).collect();
+        //
+        // Also filter out the peers.
+        let all_costs = all_costs
+            .into_iter()
+            .filter(|(peer_address, ..)| !ignore_peers.contains(peer_address))
+            .take(close_group_majority())
+            .collect();
 
         get_fees_from_store_cost_responses(all_costs)
     }

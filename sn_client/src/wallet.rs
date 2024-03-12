@@ -441,7 +441,7 @@ impl WalletClient {
     ) -> WalletResult<PayeeQuote> {
         self.client
             .network
-            .get_store_costs_from_network(address)
+            .get_store_costs_from_network(address, vec![])
             .await
             .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()))
     }
@@ -523,7 +523,7 @@ impl WalletClient {
             tasks.spawn(async move {
                 let cost = client
                     .network
-                    .get_store_costs_from_network(content_addr.clone())
+                    .get_store_costs_from_network(content_addr.clone(), vec![])
                     .await
                     .map_err(|error| WalletError::CouldNotSendMoney(error.to_string()));
 

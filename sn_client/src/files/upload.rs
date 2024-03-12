@@ -448,9 +448,10 @@ impl FilesUpload {
         let _handle = tokio::spawn(async move {
             let cost = match client
                 .network
-                .get_store_costs_from_network(NetworkAddress::from_chunk_address(
-                    ChunkAddress::new(chunk_info.name),
-                ))
+                .get_store_costs_from_network(
+                    NetworkAddress::from_chunk_address(ChunkAddress::new(chunk_info.name)),
+                    vec![],
+                )
                 .await
             {
                 Ok(cost) => {
