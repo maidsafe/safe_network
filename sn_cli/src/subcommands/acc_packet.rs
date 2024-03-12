@@ -14,9 +14,9 @@ use sn_client::registers::EntryHash;
 use sn_client::transfers::HotWallet;
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
 
-use crate::subcommands::files;
 use crate::subcommands::files::{
-    download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
+    self, download::download_file, iterative_uploader::IterativeUploader,
+    upload::FilesUploadOptions,
 };
 use color_eyre::{
     eyre::{bail, eyre},
