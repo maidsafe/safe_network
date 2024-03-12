@@ -110,7 +110,7 @@ impl fmt::Display for Mutation {
 // Information stored locally to keep track of local changes to files/folders.
 // TODO: to make file changes discovery more efficient, and prevent chunking for
 // such purposes, add more info like file size and last modified timestamp.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct MetadataTrackingInfo {
     file_path: PathBuf,
     meta_xorname: XorName,
@@ -935,26 +935,23 @@ fn find_by_name_in_parent_folder(name: &str, path: &Path, folders: &Folders) -> 
 mod tests {
     // All tests require a network running so Clients can be instantiated.
 
+    use super::{read_root_folder_addr, read_tracking_info_from_disk, AccountPacket};
+    use crate::subcommands::files::upload::FilesUploadOptions;
+    use sn_client::{
+        protocol::storage::{Chunk, RetryStrategy},
+        registers::RegisterAddress,
+        test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
+        FolderEntry, BATCH_SIZE,
+    };
+
+    use bls::SecretKey;
+    use eyre::{bail, eyre, Result};
     use std::{
         collections::{BTreeMap, BTreeSet},
         fs::{create_dir_all, remove_dir_all, remove_file, File, OpenOptions},
         io::{Read, Write},
         path::{Path, PathBuf},
     };
-
-    use crate::subcommands::files::upload::FilesUploadOptions;
-
-    use super::AccountPacket;
-
-    use sn_client::{
-        protocol::storage::{Chunk, RetryStrategy},
-        registers::RegisterAddress,
-        test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
-        BATCH_SIZE,
-    };
-
-    use bls::SecretKey;
-    use eyre::{bail, eyre, Result};
     use xor_name::XorName;
 
     const SYNC_OPTS: FilesUploadOptions = FilesUploadOptions {
@@ -1002,6 +999,7 @@ mod tests {
 
         // let's verify both the original and cloned packets are empty
         check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, BTreeMap::new())?;
+        check_tracking_info_match(&acc_packet, &cloned_acc_packet, BTreeMap::new())?;
 
         Ok(())
     }
@@ -1042,7 +1040,8 @@ mod tests {
         )
         .await?;
 
-        check_files_and_dirs_match(&acc_packet, &downloaded_acc_packet, expected_files)?;
+        check_files_and_dirs_match(&acc_packet, &downloaded_acc_packet, expected_files.clone())?;
+        check_tracking_info_match(&acc_packet, &downloaded_acc_packet, expected_files)?;
 
         Ok(())
     }
@@ -1121,7 +1120,8 @@ mod tests {
         acc_packet.sync(SYNC_OPTS).await?;
 
         // let's verify both the original and cloned packets contain the same content
-        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, expected_files)?;
+        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, expected_files.clone())?;
+        check_tracking_info_match(&acc_packet, &cloned_acc_packet, expected_files)?;
 
         Ok(())
     }
@@ -1155,6 +1155,13 @@ mod tests {
         Ok(files)
     }
 
+    // Helper to check if a dir is empty
+    fn is_empty_dir(path: &Path) -> bool {
+        path.read_dir()
+            .map(|mut i| i.next().is_none())
+            .unwrap_or(false)
+    }
+
     // Collect list of files and non empty dirs, to be used for comparing in tests
     fn list_of_files_and_empty_dirs(acc_packet: &AccountPacket) -> BTreeSet<PathBuf> {
         acc_packet
@@ -1162,18 +1169,87 @@ mod tests {
             .chain(acc_packet.iter_only_dirs())
             .flat_map(|file_entry| {
                 let path = file_entry.path();
-                if path.is_dir()
-                    && !path
-                        .read_dir()
-                        .map(|mut i| i.next().is_none())
-                        .unwrap_or(false)
-                {
+                if path.is_dir() && !is_empty_dir(path) {
                     bail!("we skip non empty dirs");
                 }
 
                 acc_packet.get_relative_path(path)
             })
             .collect()
+    }
+
+    // Check both acc packets kept the same set of tracking information locally
+    fn check_tracking_info_match(
+        src_packet: &AccountPacket,
+        target_packet: &AccountPacket,
+        mut expected_files: BTreeMap<PathBuf, Option<Chunk>>,
+    ) -> Result<()> {
+        let root_addr = src_packet.root_folder_addr();
+        assert_eq!(
+            read_root_folder_addr(&src_packet.meta_dir)?,
+            (root_addr, true),
+            "Root folder address doesn't match in source directory tracking info."
+        );
+        assert_eq!(
+            read_root_folder_addr(&target_packet.meta_dir)?,
+            (root_addr, true),
+            "Root folder address doesn't match in target directory tracking info."
+        );
+
+        let src_tracking_info = read_tracking_info_from_disk(&src_packet.meta_dir)?;
+        let mut target_tracking_info = read_tracking_info_from_disk(&target_packet.meta_dir)?;
+
+        for (path, src_tracking_info) in src_tracking_info {
+            match target_tracking_info.remove(&path) {
+                None => {
+                    bail!("Tracking info found in source is missing in target directory for file/dir: {path:?}")
+                }
+                Some(info) => {
+                    if info != src_tracking_info {
+                        bail!("Different tracking info kept in source and target for file/dir: {path:?}");
+                    }
+                }
+            }
+
+            let abs_path = src_packet.files_dir.join(&path);
+            if abs_path.is_dir() {
+                assert_eq!(src_tracking_info.file_path, path,
+                    "Incorrect path in tracking info found in source and target directories for dir: {path:?}");
+                assert!(matches!(src_tracking_info.metadata.content, FolderEntry::Folder(_)),
+                    "Incorrect tracking info found in source and target directories for dir: {path:?}");
+                // if it's an empty dir we shall find it in the list of expected files
+                if is_empty_dir(&abs_path) {
+                    let _ = expected_files.remove(&path).ok_or_else(|| {
+                        eyre!(
+                            "Unexpected tracking info found on source and target directories for dir: {path:?}"
+                        )
+                    })?;
+                }
+            } else {
+                let chunk = expected_files.remove(&path).ok_or_else(|| {
+                    eyre!(
+                        "Unexpected tracking info found on source and target directories for file: {path:?}"
+                    )
+                })?;
+
+                if chunk.is_some() {
+                    assert!(matches!(src_tracking_info.metadata.content, FolderEntry::File(_)),
+                        "Tracking info found in source and target directories don't match the file: {path:?}");
+                } else {
+                    assert!(matches!(src_tracking_info.metadata.content, FolderEntry::Folder(_)),
+                        "Tracking info found in source and target directories don't match the dir: {path:?}");
+                }
+            }
+        }
+
+        if !target_tracking_info.is_empty() {
+            bail!("Tracking info found in target directory but missing in source directory: {target_tracking_info:?}");
+        }
+        if !expected_files.is_empty() {
+            bail!("Some expected file/dir/s are lacking their tracking info in source or target directories: {expected_files:?}");
+        }
+
+        Ok(())
     }
 
     // Check both dirs have the same set of files and folders and no more
