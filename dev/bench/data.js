@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710254407866,
+  "lastUpdate": 1710254513215,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11716,35 +11716,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "0ccc8d6371ce802af507d76a7a96a8fb5fe95228",
-          "message": "refactor(node): use iterator to calculate fees received in storage payment",
-          "timestamp": "2023-10-24T16:04:27+02:00",
-          "tree_id": "782d3e5f88f6532324e14ee0417fd0c9224c8062",
-          "url": "https://github.com/maidsafe/safe_network/commit/0ccc8d6371ce802af507d76a7a96a8fb5fe95228"
-        },
-        "date": 1698159008603,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "f11c62d9cee067b8c9511d106a8df788706bbb26",
           "message": "fix(tests): nodes rewards tests to account for repayments amounts",
           "timestamp": "2023-10-24T21:08:20Z",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "952f1b1bd6f05bbe9529580850a56bd6a572b0f5",
+          "message": "fix(test): use unqiue dir during test",
+          "timestamp": "2024-03-12T13:36:14Z",
+          "tree_id": "e9ee1d081c740c906811e2e00d126feff87cf401",
+          "url": "https://github.com/maidsafe/safe_network/commit/952f1b1bd6f05bbe9529580850a56bd6a572b0f5"
+        },
+        "date": 1710254512131,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
