@@ -957,6 +957,55 @@ mod tests {
     use eyre::{eyre, Result};
     use xor_name::XorName;
 
+    const SYNC_OPTS: FilesUploadOptions = FilesUploadOptions {
+        make_data_public: false,
+        verify_store: true,
+        batch_size: BATCH_SIZE,
+        retry_strategy: RetryStrategy::Quick,
+    };
+
+    #[tokio::test]
+    async fn test_acc_packet_from_empty_dir() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpacketempty");
+        create_dir_all(&src_files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        // let's sync up with the network from the original empty account packet
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        let clone_files_path = tmp_dir.path().join("myaccpacketempty-clone");
+        let _ = AccountPacket::retrieve_folders(
+            &client,
+            wallet_dir,
+            root_folder_addr,
+            &clone_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await?;
+
+        // let's verify both the original and cloned packets are empty
+        check_files_and_dirs_match(&src_files_path, &BTreeMap::new(), &clone_files_path)?;
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_acc_packet_upload_download() -> Result<()> {
         let mut rng = rand::thread_rng();
@@ -979,13 +1028,7 @@ mod tests {
             Some(root_folder_addr),
         )?;
 
-        let options = FilesUploadOptions {
-            make_data_public: false,
-            verify_store: true,
-            batch_size: BATCH_SIZE,
-            retry_strategy: RetryStrategy::Quick,
-        };
-        acc_packet.sync(options).await?;
+        acc_packet.sync(SYNC_OPTS).await?;
 
         let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
 
@@ -1026,13 +1069,7 @@ mod tests {
             Some(root_folder_addr),
         )?;
 
-        let options = FilesUploadOptions {
-            make_data_public: false,
-            verify_store: true,
-            batch_size: BATCH_SIZE,
-            retry_strategy: RetryStrategy::Quick,
-        };
-        acc_packet.sync(options.clone()).await?;
+        acc_packet.sync(SYNC_OPTS).await?;
 
         let clone_files_path = tmp_dir.path().join("myaccpackettosync-clone");
 
@@ -1076,11 +1113,11 @@ mod tests {
         files.insert(file2create, Some(new_chunk));
 
         // and finally, sync the clone up with the network
-        cloned_acc_packet.sync(options.clone()).await?;
+        cloned_acc_packet.sync(SYNC_OPTS).await?;
 
         // let's sync up with the network from the original account packet to merge
         // changes made earlier from the cloned version
-        acc_packet.sync(options).await?;
+        acc_packet.sync(SYNC_OPTS).await?;
 
         // let's verify both the original and cloned packets contain the same content
         check_files_and_dirs_match(&src_files_path, &files, &clone_files_path)?;
