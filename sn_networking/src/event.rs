@@ -8,7 +8,7 @@
 
 use crate::{
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
-    error::{Error, Result},
+    error::{NetworkError, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
 };
@@ -282,7 +282,7 @@ impl SwarmDriver {
                                 info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dail back to confirm external accesable", ilog2);
                                 self.dialed_peers
                                     .push(peer_id)
-                                    .map_err(|_| Error::CircularVecPopFrontError)?;
+                                    .map_err(|_| NetworkError::CircularVecPopFrontError)?;
                                 if let Err(err) = self.swarm.dial(
                                     DialOpts::peer_id(peer_id)
                                         .condition(PeerCondition::NotDialing)
@@ -444,7 +444,7 @@ impl SwarmDriver {
                 if endpoint.is_dialer() {
                     self.dialed_peers
                         .push(peer_id)
-                        .map_err(|_| Error::CircularVecPopFrontError)?;
+                        .map_err(|_| NetworkError::CircularVecPopFrontError)?;
                 }
             }
             SwarmEvent::ConnectionClosed {
@@ -623,7 +623,7 @@ impl SwarmDriver {
     pub fn handle_msg(
         &mut self,
         event: request_response::Event<Request, Response>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), NetworkError> {
         match event {
             request_response::Event::Message { message, peer } => match message {
                 Message::Request {
@@ -644,7 +644,7 @@ impl SwarmDriver {
                                 .behaviour_mut()
                                 .request_response
                                 .send_response(channel, response)
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
@@ -669,7 +669,7 @@ impl SwarmDriver {
                         match sender {
                             Some(sender) => sender
                                 .send(Ok(response))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?,
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?,
                             None => {
                                 if let Response::Cmd(CmdResponse::Replicate(Ok(()))) = response {
                                     // Nothing to do, response was fine
@@ -700,16 +700,16 @@ impl SwarmDriver {
                         Some(sender) => {
                             sender
                                 .send(Err(error.into()))
-                                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                         }
                         None => {
                             warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
-                            return Err(Error::ReceivedResponseDropped(request_id));
+                            return Err(NetworkError::ReceivedResponseDropped(request_id));
                         }
                     }
                 } else {
                     warn!("RequestResponse: OutboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
-                    return Err(Error::ReceivedResponseDropped(request_id));
+                    return Err(NetworkError::ReceivedResponseDropped(request_id));
                 }
             }
             request_response::Event::InboundFailure {
@@ -761,13 +761,13 @@ impl SwarmDriver {
                             PendingGetClosestType::FunctionCall(sender) => {
                                 sender
                                     .send(current_closest)
-                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                             }
                         }
                     }
                 } else {
                     trace!("Can't locate query task {id:?}, it has likely been completed already.");
-                    return Err(Error::ReceivedKademliaEventDropped {
+                    return Err(NetworkError::ReceivedKademliaEventDropped {
                         query_id: id,
                         event: "GetClosestPeers Ok".to_string(),
                     });
@@ -788,7 +788,7 @@ impl SwarmDriver {
                         trace!(
                             "Can't locate query task {id:?}, it has likely been completed already."
                         );
-                        Error::ReceivedKademliaEventDropped {
+                        NetworkError::ReceivedKademliaEventDropped {
                             query_id: id,
                             event: "Get ClosestPeers error".to_string(),
                         }
@@ -810,7 +810,7 @@ impl SwarmDriver {
                     PendingGetClosestType::FunctionCall(sender) => {
                         sender
                             .send(current_closest)
-                            .map_err(|_| Error::InternalMsgChannelDropped)?;
+                            .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                     }
                 }
             }

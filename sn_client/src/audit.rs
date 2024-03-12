@@ -19,7 +19,7 @@ use super::{
 };
 
 use futures::future::join_all;
-use sn_networking::target_arch::Instant;
+use sn_networking::{target_arch::Instant, GetRecordError, NetworkError};
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::{collections::BTreeSet, iter::Iterator};
 
@@ -188,10 +188,14 @@ impl Client {
 
                 // get all descendant spends in parallel
                 let tasks: Vec<_> = addrs_to_follow
-                    .into_iter()
+                    .clone()
                     .map(|a| self.get_spend_from_network(a))
                     .collect();
-                let spends_res = join_all(tasks).await.into_iter().collect::<Vec<_>>();
+                let spends_res = join_all(tasks)
+                    .await
+                    .into_iter()
+                    .zip(addrs_to_follow)
+                    .collect::<Vec<_>>();
 
                 // split spends into utxos and spends
                 let (utxos, spends) = split_utxos_and_spends(spends_res)
@@ -236,17 +240,17 @@ impl Client {
 }
 
 fn split_utxos_and_spends(
-    spends_res: Vec<Result<SignedSpend>>,
+    spends_res: Vec<(Result<SignedSpend>, SpendAddress)>,
 ) -> Result<(Vec<SpendAddress>, Vec<SignedSpend>)> {
     let mut utxos = Vec::new();
     let mut spends = Vec::new();
 
-    for res in spends_res {
+    for (res, addr) in spends_res {
         match res {
             Ok(spend) => {
                 spends.push(spend);
             }
-            Err(Error::MissingSpendRecord(addr)) => {
+            Err(Error::Network(NetworkError::GetRecordError(GetRecordError::RecordNotFound))) => {
                 utxos.push(addr);
             }
             Err(err) => {

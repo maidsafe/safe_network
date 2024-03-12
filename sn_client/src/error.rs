@@ -30,7 +30,7 @@ pub enum Error {
     Transfer(#[from] sn_transfers::TransferError),
 
     #[error("Network Error {0}.")]
-    Network(#[from] sn_networking::Error),
+    Network(#[from] sn_networking::NetworkError),
 
     #[error("Protocol error {0}.")]
     Protocol(#[from] sn_protocol::error::Error),
@@ -70,9 +70,6 @@ pub enum Error {
     Serialization(#[from] rmp_serde::encode::Error),
     #[error("Deserialization error: {0:?}")]
     Deserialization(#[from] rmp_serde::decode::Error),
-
-    #[error("There is no Spend record at this address: {0:?}")]
-    MissingSpendRecord(SpendAddress),
 
     #[error(
         "Content branches detected in the Register which need to be merged/resolved by user. \

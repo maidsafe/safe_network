@@ -6,7 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{close_group_majority, driver::GetRecordCfg, Error, GetRecordError, Network, Result};
+use crate::{
+    close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError, Result,
+};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
@@ -56,7 +58,7 @@ impl Network {
         };
         let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
             Ok(record) => record,
-            Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
                 record,
                 expected,
                 got,
@@ -67,11 +69,13 @@ impl Network {
                     get_cfg.retry_strategy = Some(RetryStrategy::Persistent);
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
-                    return Err(Error::GetRecordError(GetRecordError::NotEnoughCopies {
-                        record,
-                        expected,
-                        got,
-                    }));
+                    return Err(NetworkError::GetRecordError(
+                        GetRecordError::NotEnoughCopies {
+                            record,
+                            expected,
+                            got,
+                        },
+                    ));
                 }
             }
             Err(err) => return Err(err),
@@ -131,8 +135,8 @@ impl Network {
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
             let signed_spend = result
-                .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
-                .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
+                .map_err(|e| NetworkError::FailedToGetSpend(format!("{e}")))?
+                .map_err(|e| NetworkError::InvalidTransfer(format!("{e}")))?;
             let _ = parent_spends.insert(signed_spend.clone());
         }
         let parent_txs: BTreeSet<Transaction> =
@@ -152,7 +156,7 @@ impl Network {
             let src_tx = parent_txs
                 .iter()
                 .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
-                .ok_or(Error::InvalidTransfer(
+                .ok_or(NetworkError::InvalidTransfer(
                     "None of the CashNoteRedemptions are destined to our key".to_string(),
                 ))?
                 .clone();
@@ -188,8 +192,8 @@ impl Network {
             }
             while let Some(result) = tasks.join_next().await {
                 let signed_spend = result
-                    .map_err(|e| Error::FailedToGetSpend(format!("{e}")))?
-                    .map_err(|e| Error::InvalidTransfer(format!("{e}")))?;
+                    .map_err(|e| NetworkError::FailedToGetSpend(format!("{e}")))?
+                    .map_err(|e| NetworkError::InvalidTransfer(format!("{e}")))?;
                 let _ = parent_spends.insert(signed_spend.clone());
             }
 
@@ -200,7 +204,10 @@ impl Network {
                 .cloned()
                 .collect();
             tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
-                Error::InvalidTransfer(format!("Payment parent Tx {:?} invalid: {e}", tx.hash()))
+                NetworkError::InvalidTransfer(format!(
+                    "Payment parent Tx {:?} invalid: {e}",
+                    tx.hash()
+                ))
             })?;
         }
 
@@ -219,7 +226,7 @@ pub fn get_raw_signed_spends_from_record(record: &Record) -> Result<Vec<SignedSp
             "RecordKind mismatch while trying to retrieve spends from record {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-        Err(Error::RecordKindMismatch(RecordKind::Spend))
+        Err(NetworkError::RecordKindMismatch(RecordKind::Spend))
     }
 }
 
@@ -232,7 +239,7 @@ pub fn get_signed_spend_from_record(
     match get_raw_signed_spends_from_record(record)?.as_slice() {
         [one, two, ..] => {
             warn!("Found double spend for {address:?}");
-            Err(Error::DoubleSpendAttempt(
+            Err(NetworkError::DoubleSpendAttempt(
                 Box::new(one.to_owned()),
                 Box::new(two.to_owned()),
             ))
@@ -243,7 +250,7 @@ pub fn get_signed_spend_from_record(
         }
         _ => {
             trace!("Found no spend for {address:?}");
-            Err(Error::NoSpendFoundInsideRecord(*address))
+            Err(NetworkError::NoSpendFoundInsideRecord(*address))
         }
     }
 }

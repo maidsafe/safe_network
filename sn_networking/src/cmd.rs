@@ -8,7 +8,7 @@
 
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
-    error::{Error, Result},
+    error::{NetworkError, Result},
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
 };
@@ -321,7 +321,7 @@ pub struct SwarmLocalState {
 }
 
 impl SwarmDriver {
-    pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), Error> {
+    pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), NetworkError> {
         let start = Instant::now();
         let mut cmd_string = "";
         match cmd {
@@ -415,7 +415,7 @@ impl SwarmDriver {
                     }
                     Err(error) => {
                         error!("Error sending record {record_key:?} to network");
-                        Err(Error::from(error))
+                        Err(NetworkError::from(error))
                     }
                 };
 
@@ -462,13 +462,13 @@ impl SwarmDriver {
                             }
                             RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
                                 error!("Record {record_key:?} with payment shall not be stored locally.");
-                                return Err(Error::InCorrectRecordHeader);
+                                return Err(NetworkError::InCorrectRecordHeader);
                             }
                         }
                     }
                     Err(err) => {
                         error!("For record {record_key:?}, failed to parse record_header {err:?}");
-                        return Err(Error::InCorrectRecordHeader);
+                        return Err(NetworkError::InCorrectRecordHeader);
                     }
                 };
 
@@ -680,7 +680,7 @@ impl SwarmDriver {
                             Some(channel) => {
                                 channel
                                     .send(Ok(resp))
-                                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                             }
                             None => {
                                 // responses that are not awaited at the call site must be handled
@@ -694,7 +694,7 @@ impl SwarmDriver {
                             .behaviour_mut()
                             .request_response
                             .send_response(channel, resp)
-                            .map_err(Error::OutgoingResponseDropped)?;
+                            .map_err(NetworkError::OutgoingResponseDropped)?;
                     }
                 }
             }
@@ -707,7 +707,7 @@ impl SwarmDriver {
 
                 sender
                     .send(current_state)
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
             SwarmCmd::GossipsubSubscribe(topic_id) => {
                 let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);

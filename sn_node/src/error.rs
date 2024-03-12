@@ -17,7 +17,7 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 #[allow(missing_docs)]
 pub enum Error {
     #[error("Network error {0}")]
-    Network(#[from] sn_networking::Error),
+    Network(#[from] sn_networking::NetworkError),
 
     #[error("Protocol error {0}")]
     Protocol(#[from] sn_protocol::Error),

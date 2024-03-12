@@ -37,6 +37,8 @@ pub struct SpendDag {
     dag: DiGraph<SpendAddress, NanoTokens>,
     /// All the spends refered to in the dag along with their index in the dag, indexed by their SpendAddress
     spends: BTreeMap<SpendAddress, Vec<(Option<SignedSpend>, usize)>>,
+    /// All recorded errors in the DAG
+    errors: BTreeMap<SpendAddress, DagError>,
 }
 
 /// The result of a get operation on the DAG
@@ -47,7 +49,7 @@ pub enum SpendDagGet {
     /// Spend is an UTXO, meaning it was not spent yet but its ancestors exist
     SpendIsAnUtxo,
     /// Spend is a double spend
-    DoubleSpend,
+    DoubleSpend(Vec<SignedSpend>),
     /// Spend is in the DAG
     Spend(Box<SignedSpend>),
 }
@@ -57,6 +59,7 @@ impl SpendDag {
         Self {
             dag: DiGraph::new(),
             spends: BTreeMap::new(),
+            errors: BTreeMap::new(),
         }
     }
 
@@ -214,6 +217,9 @@ impl SpendDag {
                 }
             }
         }
+
+        // merge errors
+        self.errors.extend(sub_dag.errors);
     }
 
     /// Get the spend at a given address
@@ -222,8 +228,11 @@ impl SpendDag {
             None => SpendDagGet::SpendNotFound,
             Some(spends) => match spends.as_slice() {
                 [(Some(spend), _)] => SpendDagGet::Spend(Box::new(spend.clone())),
+                [(Some(_spend1), _), (Some(_spend2), _), ..] => {
+                    SpendDagGet::DoubleSpend(spends.iter().filter_map(|(s, _)| s.clone()).collect())
+                }
                 [(None, _)] => SpendDagGet::SpendIsAnUtxo,
-                _ => SpendDagGet::DoubleSpend,
+                _ => SpendDagGet::SpendNotFound,
             },
         }
     }
@@ -360,9 +369,29 @@ impl SpendDag {
         }
     }
 
-    /// Verify the DAG
-    /// Returns a list of errors found in the DAG
-    /// Note that the `MissingSource` error makes the entire DAG invalid
+    /// Record errors in the DAG assuming source as the Genesis or start of a sub DAG
+    /// Any spend that is not a descendant of the source is considered an orphan, and thus invalid
+    /// Verifies the DAG and records errors in the DAG
+    /// If the DAG is invalid, returns an error immediately, without mutating the DAG
+    pub fn record_errors(&mut self, source: &SpendAddress) -> std::result::Result<(), DagError> {
+        let errors = self.verify(source);
+
+        // make sure none of the errors make the DAG invalid
+        if let Some(e) = errors.iter().find(|e| e.makes_dag_invalid()) {
+            return Err(e.clone());
+        }
+
+        // record errors in the DAG
+        for e in errors {
+            self.errors.insert(e.spend_address(), e);
+        }
+        Ok(())
+    }
+
+    /// Verify the DAG assuming source as the Genesis or start of a sub DAG
+    /// Returns a list of errors found in the DAG without recording them, this is a read only operation
+    /// Note that some errors make the entire DAG invalid
+    /// `DagError::makes_dag_invalid()` can be used to check if an error makes the DAG invalid
     pub fn verify(&self, source: &SpendAddress) -> Vec<DagError> {
         info!("Verifying DAG starting off: {source:?}");
         let mut recorded_errors = Vec::new();

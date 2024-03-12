@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Network, Result};
+use crate::{Network, NetworkError, Result};
 use futures::future::join_all;
 use sn_transfers::{is_genesis_spend, SignedSpend, SpendAddress, TransferError};
 use std::{collections::BTreeSet, iter::Iterator};
@@ -46,7 +46,7 @@ impl Network {
             .map_err(|e| {
                 let s = format!("Failed to get parent spend of {unique_key:?}: {e}");
                 warn!("{}", s);
-                Error::Transfer(TransferError::InvalidParentSpend(s))
+                NetworkError::Transfer(TransferError::InvalidParentSpend(s))
             })?;
 
         // verify the parents
