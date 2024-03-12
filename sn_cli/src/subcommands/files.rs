@@ -283,6 +283,7 @@ pub async fn chunks_to_upload(
         files_api,
         chunk_manager,
         WalkDir::new(files_path).into_iter().flatten(),
+        false,
         batch_size,
         make_data_public,
     )
@@ -293,11 +294,12 @@ pub async fn chunks_to_upload_with_iter(
     files_api: &FilesApi,
     chunk_manager: &mut ChunkManager,
     entries_iter: impl Iterator<Item = DirEntry>,
+    read_cache: bool,
     batch_size: usize,
     make_data_public: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
     let chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        chunk_manager.chunk_with_iter(entries_iter, false, make_data_public)?;
+        chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
 
         let chunks = chunk_manager.get_chunks();
 
