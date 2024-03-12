@@ -24,6 +24,7 @@ mod network_discovery;
 mod record_store;
 mod record_store_api;
 mod replication_fetcher;
+mod spends;
 pub mod target_arch;
 mod transfers;
 mod transport;
@@ -37,7 +38,7 @@ pub use self::{
     error::{Error, GetRecordError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
-    transfers::get_singed_spends_from_record,
+    transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
 };
 
 use self::{cmd::SwarmCmd, error::Result};

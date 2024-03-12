@@ -19,32 +19,14 @@ use sn_transfers::{
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
-fn parse_signed_spends(address: &SpendAddress, record: &Record) -> Result<SignedSpend> {
-    match get_singed_spends_from_record(record)?.as_slice() {
-        [one, two, ..] => {
-            error!("Found double spend for {address:?}");
-            Err(Error::DoubleSpendAttempt(
-                Box::new(one.to_owned()),
-                Box::new(two.to_owned()),
-            ))
-        }
-        [one] => {
-            trace!("Spend get for address: {address:?} successful");
-            Ok(one.clone())
-        }
-        _ => {
-            trace!("Found no spend for {address:?}");
-            Err(Error::NoSpendFoundInsideRecord(*address))
-        }
-    }
-}
-
 impl Network {
-    /// Gets a spend from the Network.
+    /// Gets raw spends from the Network.
+    /// For normal use please prefer using `get_spend` instead.
+    /// Double spends returned together as is, not as an error.
     /// The target may have high chance not present in the network yet.
     ///
     /// If we get a quorum error, we enable re-try
-    pub async fn try_get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
+    pub async fn get_raw_spends(&self, address: SpendAddress) -> Result<Vec<SignedSpend>> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
@@ -52,16 +34,12 @@ impl Network {
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
-            Ok(record) => record,
-            Err(err) => return Err(err),
-        };
+        let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
-
-        parse_signed_spends(&address, &record)
+        get_raw_signed_spends_from_record(&record)
     }
 
     /// Gets a spend from the Network.
@@ -103,7 +81,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        parse_signed_spends(&address, &record)
+        get_signed_spend_from_record(&address, &record)
     }
 
     /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
@@ -216,7 +194,7 @@ impl Network {
             }
 
             // verify the Tx against the inputs spends
-            let input_spends = parent_spends
+            let input_spends: BTreeSet<_> = parent_spends
                 .iter()
                 .filter(|s| s.spent_tx_hash() == tx.hash())
                 .cloned()
@@ -230,14 +208,42 @@ impl Network {
     }
 }
 
-/// Tries to get the signed spend out of a record.
-pub fn get_singed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
+/// Tries to get the signed spend out of a record as is, double spends are returned together as is.
+pub fn get_raw_signed_spends_from_record(record: &Record) -> Result<Vec<SignedSpend>> {
     let header = RecordHeader::from_record(record)?;
     if let RecordKind::Spend = header.kind {
         let spends = try_deserialize_record::<Vec<SignedSpend>>(record)?;
         Ok(spends)
     } else {
-        error!("RecordKind mismatch while trying to retrieve a Vec<SignedSpend>");
+        warn!(
+            "RecordKind mismatch while trying to retrieve spends from record {:?}",
+            PrettyPrintRecordKey::from(&record.key)
+        );
         Err(Error::RecordKindMismatch(RecordKind::Spend))
+    }
+}
+
+/// Get the signed spend out of a record.
+/// Double spends are returned as an error
+pub fn get_signed_spend_from_record(
+    address: &SpendAddress,
+    record: &Record,
+) -> Result<SignedSpend> {
+    match get_raw_signed_spends_from_record(record)?.as_slice() {
+        [one, two, ..] => {
+            warn!("Found double spend for {address:?}");
+            Err(Error::DoubleSpendAttempt(
+                Box::new(one.to_owned()),
+                Box::new(two.to_owned()),
+            ))
+        }
+        [one] => {
+            trace!("Spend get for address: {address:?} successful");
+            Ok(one.clone())
+        }
+        _ => {
+            trace!("Found no spend for {address:?}");
+            Err(Error::NoSpendFoundInsideRecord(*address))
+        }
     }
 }

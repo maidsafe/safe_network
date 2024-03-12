@@ -24,7 +24,7 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
 use sn_networking::{
-    multiaddr_is_global,
+    get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
     Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder, NetworkEvent,
     PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
@@ -39,7 +39,9 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::{Permissions, SignedRegister};
-use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend};
+use sn_transfers::{
+    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
+};
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
@@ -573,12 +575,11 @@ impl Client {
                 total_cost = total_cost
                     .checked_add(top_up_cost)
                     .ok_or(Error::TotalPriceTooHigh)?;
-                total_royalties =
-                    total_cost
-                        .checked_add(royalties_top_up)
-                        .ok_or(Error::Transfers(sn_transfers::WalletError::from(
-                            sn_transfers::Error::ExcessiveNanoValue,
-                        )))?;
+                total_royalties = total_cost
+                    .checked_add(royalties_top_up)
+                    .ok_or(Error::Wallet(sn_transfers::WalletError::from(
+                        sn_transfers::TransferError::ExcessiveNanoValue,
+                    )))?;
                 stored = self.verify_register_stored(*reg_address).await.is_ok();
             }
         }
@@ -892,59 +893,30 @@ impl Client {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        let header = RecordHeader::from_record(&record).map_err(|err| {
-            Error::CouldNotVerifyTransfer(format!(
-                "Can't parse RecordHeader for the spend at {address:?} with error {err:?}"
-            ))
-        })?;
+        let signed_spend = get_signed_spend_from_record(&address, &record)?;
 
-        if let RecordKind::Spend = header.kind {
-            let mut deserialized_record = try_deserialize_record::<Vec<SignedSpend>>(&record)
-                .map_err(|err| {
-                    Error::CouldNotVerifyTransfer(format!(
-                        "Can't deserialize record for the spend at {address:?} with error {err:?}"
-                    ))
-                })?;
+        // check addr
+        let spend_addr = SpendAddress::from_unique_pubkey(signed_spend.unique_pubkey());
+        if address != spend_addr {
+            let s = format!("Spend got from the Network at {address:?} contains different spend address: {spend_addr:?}");
+            warn!("{s}");
+            return Err(Error::Transfer(TransferError::InvalidSpendValue(
+                *signed_spend.unique_pubkey(),
+            )));
+        }
 
-            match deserialized_record.len() {
-                0 => {
-                    trace!("Found no spend for {address:?}");
-                    Err(Error::CouldNotVerifyTransfer(format!(
-                        "Fetched record shows no spend for cash_note {address:?}."
-                    )))
-                }
-                1 => {
-                    let signed_spend = deserialized_record.remove(0);
-                    trace!("Spend get for address: {address:?} successful");
-                    if address == SpendAddress::from_unique_pubkey(signed_spend.unique_pubkey()) {
-                        match signed_spend.verify(signed_spend.spent_tx_hash()) {
-                            Ok(_) => {
-                                trace!("Verified signed spend got from network for {address:?}");
-                                Ok(signed_spend)
-                            }
-                            Err(err) => {
-                                warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
-                                Err(Error::CouldNotVerifyTransfer(format!(
-                                "Spend failed verifiation for the unique_pubkey {address:?} with error {err:?}")))
-                            }
-                        }
-                    } else {
-                        warn!("Signed spend ({:?}) got from network mismatched the expected one {address:?}.", signed_spend.unique_pubkey());
-                        Err(Error::CouldNotVerifyTransfer(format!(
-                                "Signed spend ({:?}) got from network mismatched the expected one {address:?}.", signed_spend.unique_pubkey())))
-                    }
-                }
-                _ => {
-                    // each one is 0 as it shifts remaining elements
-                    let one = deserialized_record.remove(0);
-                    let two = deserialized_record.remove(0);
-                    error!("Found double spend for {address:?}");
-                    Err(Error::DoubleSpend(address, Box::new(one), Box::new(two)))
-                }
+        // check spend
+        match signed_spend.verify(signed_spend.spent_tx_hash()) {
+            Ok(()) => {
+                trace!("Verified signed spend got from network for {address:?}");
+                Ok(signed_spend.clone())
             }
-        } else {
-            error!("RecordKind mismatch while trying to retrieve a cash_note spend");
-            Err(NetworkError::RecordKindMismatch(RecordKind::Spend).into())
+            Err(err) => {
+                warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
+                Err(Error::CouldNotVerifyTransfer(format!(
+                    "Spend failed verifiation for the unique_pubkey {address:?} with error {err:?}"
+                )))
+            }
         }
     }
 

@@ -104,8 +104,10 @@ pub enum Error {
     #[error("SnProtocol Error: {0}")]
     ProtocolError(#[from] sn_protocol::error::Error),
 
-    #[error("Transfer Error {0}.")]
-    Transfers(#[from] sn_transfers::WalletError),
+    #[error("Wallet Error {0}")]
+    Wallet(#[from] sn_transfers::WalletError),
+    #[error("Transfer Error {0}")]
+    Transfer(#[from] sn_transfers::TransferError),
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),

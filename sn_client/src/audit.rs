@@ -50,7 +50,7 @@ impl Client {
     /// ```
     ///
     /// This function will return an error if any spend in the way is invalid.
-    pub async fn verify_spend(&self, addr: SpendAddress, to_genesis: bool) -> WalletResult<()> {
+    pub async fn verify_spend_at(&self, addr: SpendAddress, to_genesis: bool) -> WalletResult<()> {
         let first_spend = self
             .get_spend_from_network(addr)
             .await

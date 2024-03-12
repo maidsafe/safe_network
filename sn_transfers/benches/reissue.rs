@@ -143,7 +143,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     )
     .expect("transfer to succeed");
     let merge_spent_tx = many_to_one_transfer.tx.clone();
-    let signed_spends = many_to_one_transfer
+    let signed_spends: Vec<_> = many_to_one_transfer
         .all_spend_requests
         .into_iter()
         .collect();

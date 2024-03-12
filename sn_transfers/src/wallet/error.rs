@@ -70,7 +70,7 @@ pub enum Error {
 
     /// Transfer error
     #[error("Transfer error: {0}")]
-    Transfer(#[from] crate::Error),
+    Transfer(#[from] crate::TransferError),
     /// Bls error
     #[error("Bls error: {0}")]
     Bls(#[from] bls::error::Error),

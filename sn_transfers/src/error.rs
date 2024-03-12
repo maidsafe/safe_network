@@ -10,25 +10,27 @@ use crate::{Hash, NanoTokens, UniquePubkey};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
-pub type Result<T, E = Error> = std::result::Result<T, E>;
+pub type Result<T, E = TransferError> = std::result::Result<T, E>;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug, Clone, PartialEq)]
 #[non_exhaustive]
-/// Node error variants.
-pub enum Error {
-    /// While parsing a `Nano`, precision would be lost.
+/// Transfer errors
+pub enum TransferError {
     #[error("Lost precision on the number of coins during parsing.")]
     LossOfNanoPrecision,
-    /// The amount would exceed the maximum value for `Nano` (u64::MAX).
     #[error("The token amount would exceed the maximum value (u64::MAX).")]
     ExcessiveNanoValue,
-    /// Failed to parse a `NanoToken` from a string.
     #[error("Failed to parse: {0}")]
     FailedToParseNanoToken(String),
-
     #[error("Invalid Spend: value was tampered with {0:?}")]
     InvalidSpendValue(UniquePubkey),
+    #[error("Invalid parent Tx: {0}")]
+    InvalidParentTx(String),
+    #[error("Invalid spent Tx: {0}")]
+    InvalidSpentTx(String),
+    #[error("Invalid parent spend: {0}")]
+    InvalidParentSpend(String),
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
     #[error("Transaction hash is different from the hash in the the Spend: {0:?} != {1:?}")]
@@ -65,8 +67,6 @@ pub enum Error {
     SpendsDoNotMatchInputs,
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
-
-    /// Not enough balance to perform a transaction
     #[error("Not enough balance, {0} available, {1} required")]
     NotEnoughBalance(NanoTokens, NanoTokens),
     #[error("CashNoteHasNoParentSpends: {0}")]
