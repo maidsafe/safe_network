@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub mod add_services;
+pub mod cmd;
 pub mod config;
 pub mod helpers;
 pub mod local;
@@ -234,7 +235,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
     }
 }
 
-pub async fn status(
+pub async fn status_report(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     detailed_view: bool,
