@@ -668,6 +668,7 @@ impl AccountPacket {
             &files_api,
             &mut chunk_manager,
             self.iter_only_files(),
+            true,
             options.batch_size,
             options.make_data_public,
         )
