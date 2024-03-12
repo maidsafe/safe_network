@@ -5085,6 +5085,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tracing",
+ "uuid",
  "walkdir",
  "wasm-bindgen-futures",
  "wasmtimer",
