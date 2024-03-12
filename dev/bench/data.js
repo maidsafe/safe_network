@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710251067021,
+  "lastUpdate": 1710251068522,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38743,6 +38743,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37401,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "a2b13e2348874641c8f95a2ff8e7b3a52d553772",
+          "message": "feat: self in import change",
+          "timestamp": "2024-03-12T12:42:33Z",
+          "tree_id": "9888c03d17009a0534b38bb45d94f89907bc7638",
+          "url": "https://github.com/maidsafe/safe_network/commit/a2b13e2348874641c8f95a2ff8e7b3a52d553772"
+        },
+        "date": 1710251068189,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6345,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37310,
             "unit": "ms"
           },
           {
