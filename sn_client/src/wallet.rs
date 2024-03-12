@@ -740,10 +740,10 @@ impl Client {
         let mut double_spent_keys = BTreeSet::new();
         for (spend_key, spend_attempt_result) in join_all(tasks).await {
             match spend_attempt_result {
-                Err(Error::Network(sn_networking::Error::GetRecordError(
+                Err(Error::Network(sn_networking::NetworkError::GetRecordError(
                     GetRecordError::RecordDoesNotMatch(_),
                 )))
-                | Err(Error::Network(sn_networking::Error::GetRecordError(
+                | Err(Error::Network(sn_networking::NetworkError::GetRecordError(
                     GetRecordError::SplitRecord { .. },
                 ))) => {
                     warn!(
@@ -848,7 +848,9 @@ impl Client {
             let res = result.map_err(|e| WalletError::FailedToGetSpend(format!("{e}")))?;
             match res {
                 // if we get a RecordNotFound, it means the CashNote is not spent, which is good
-                Err(sn_networking::Error::GetRecordError(GetRecordError::RecordNotFound)) => (),
+                Err(sn_networking::NetworkError::GetRecordError(
+                    GetRecordError::RecordNotFound,
+                )) => (),
                 // if we get a spend, it means the CashNote is already spent
                 Ok(s) => {
                     warn!(

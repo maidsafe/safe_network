@@ -35,7 +35,7 @@ pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 pub use self::{
     cmd::SwarmLocalState,
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
-    error::{Error, GetRecordError},
+    error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
     record_store::NodeRecordStore,
     transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
@@ -121,7 +121,7 @@ pub fn sort_peers_by_key<'a, T>(
     // bail early if that's not the case
     if CLOSE_GROUP_SIZE > peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
-        return Err(Error::NotEnoughPeers {
+        return Err(NetworkError::NotEnoughPeers {
             found: peers.len(),
             required: CLOSE_GROUP_SIZE,
         });
@@ -162,7 +162,7 @@ pub struct Network {
 impl Network {
     /// Signs the given data with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        self.keypair.sign(msg).map_err(Error::from)
+        self.keypair.sign(msg).map_err(NetworkError::from)
     }
 
     /// Verifies a signature for the given data and the node's public key.
@@ -199,7 +199,7 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender });
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
@@ -236,7 +236,7 @@ impl Network {
             }
             Err(err) => {
                 error!("When getting local knowledge of close peers to {key:?}, failed with error {err:?}");
-                Err(Error::InternalMsgChannelDropped)
+                Err(NetworkError::InternalMsgChannelDropped)
             }
         }
     }
@@ -249,7 +249,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
@@ -260,7 +260,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Get the Chunk existence proof from the close nodes to the provided chunk address.
@@ -336,7 +336,9 @@ impl Network {
             sleep(waiting_time).await;
         }
 
-        Err(Error::FailedToVerifyChunkProof(chunk_address.clone()))
+        Err(NetworkError::FailedToVerifyChunkProof(
+            chunk_address.clone(),
+        ))
     }
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
@@ -430,10 +432,10 @@ impl Network {
         });
         let result = receiver.await.map_err(|e| {
             error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
-            Error::InternalMsgChannelDropped
+            NetworkError::InternalMsgChannelDropped
         })?;
 
-        result.map_err(Error::from)
+        result.map_err(NetworkError::from)
     }
 
     /// Get the Record from the network
@@ -466,7 +468,7 @@ impl Network {
                 });
                 let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
-                Error::InternalMsgChannelDropped
+                NetworkError::InternalMsgChannelDropped
             }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
 
                 // log the results
@@ -497,14 +499,14 @@ impl Network {
                 // if we don't want to retry, throw permanent error
                 if cfg.retry_strategy.is_none() {
                     if let Err(e) = result {
-                        return Err(BackoffError::Permanent(Error::from(e)));
+                        return Err(BackoffError::Permanent(NetworkError::from(e)));
                     }
                 }
                 if result.is_err() {
                     trace!("Getting record from network of {pretty_key:?} via backoff...");
                 }
                 result.map_err(|err| BackoffError::Transient {
-                    err: Error::from(err),
+                    err: NetworkError::from(err),
                     retry_after: None,
                 })
             },
@@ -519,7 +521,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Notify the node receicced a payment.
@@ -537,7 +539,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Whether the target peer is considered as `in trouble` by self
@@ -547,7 +549,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Put `Record` to network
@@ -641,9 +643,9 @@ impl Network {
                     Ok(_) => {
                         debug!("Record {pretty_key:?} verified to be stored.");
                     }
-                    Err(Error::GetRecordError(GetRecordError::RecordNotFound)) => {
+                    Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => {
                         warn!("Record {pretty_key:?} not found after PUT, either rejected or not yet stored by nodes when we asked");
-                        return Err(Error::RecordNotStoredByNodes(
+                        return Err(NetworkError::RecordNotStoredByNodes(
                             NetworkAddress::from_record_key(&record_key),
                         ));
                     }
@@ -680,7 +682,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Returns the Addresses of all the locally stored Records
@@ -692,7 +694,7 @@ impl Network {
 
         receiver
             .await
-            .map_err(|_e| Error::InternalMsgChannelDropped)
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Send `Request` to the given `PeerId` and await for the response. If `self` is the recipient,
@@ -857,14 +859,14 @@ fn get_fees_from_store_cost_responses(
     let payee = all_costs
         .into_iter()
         .next()
-        .ok_or(Error::NoStoreCostResponses)?;
+        .ok_or(NetworkError::NoStoreCostResponses)?;
     info!("Final fees calculated as: {payee:?}");
     // we dont need to have the address outside of here for now
     let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
         peer_id
     } else {
         error!("Can't get PeerId from payee {:?}", payee.0);
-        return Err(Error::NoStoreCostResponses);
+        return Err(NetworkError::NoStoreCostResponses);
     };
     Ok((payee_id, payee.1, payee.2))
 }

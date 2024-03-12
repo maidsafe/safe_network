@@ -14,7 +14,7 @@ use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
 #[cfg(feature = "royalties-by-gossip")]
 use serde::Serialize;
-use sn_networking::{get_raw_signed_spends_from_record, Error as NetworkError, GetRecordError};
+use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{

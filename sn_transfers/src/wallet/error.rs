@@ -68,6 +68,9 @@ pub enum Error {
     #[error("No ongoing payment found for address {0:?}")]
     NoPaymentForAddress(XorName),
 
+    /// DAG error
+    #[error("DAG error: {0}")]
+    Dag(String),
     /// Transfer error
     #[error("Transfer error: {0}")]
     Transfer(#[from] crate::TransferError),

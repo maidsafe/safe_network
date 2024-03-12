@@ -25,7 +25,7 @@ use thiserror::Error;
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
-pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
+pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 
 /// GetRecord Query errors
 #[derive(Error)]
@@ -88,7 +88,7 @@ impl Debug for GetRecordError {
 /// Network Errors
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
-pub enum Error {
+pub enum NetworkError {
     #[error("Dial Error")]
     DialError(#[from] DialError),
 

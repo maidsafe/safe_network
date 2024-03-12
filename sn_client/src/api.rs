@@ -26,8 +26,8 @@ use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
-    Error as NetworkError, GetRecordCfg, GetRecordError, NetworkBuilder, NetworkEvent,
-    PutRecordCfg, VerificationKind, CLOSE_GROUP_SIZE,
+    GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
+    VerificationKind, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -879,15 +879,7 @@ impl Client {
         let record = self
             .network
             .get_record_from_network(key.clone(), &get_cfg)
-            .await
-            .map_err(|err| match err {
-                sn_networking::Error::GetRecordError(GetRecordError::RecordNotFound) => {
-                    Error::MissingSpendRecord(address)
-                }
-                _ => Error::CouldNotVerifyTransfer(format!(
-                    "failed to get spend at {address:?}: {err:?}"
-                )),
-            })?;
+            .await?;
         info!(
             "For spend at {address:?} got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
@@ -914,7 +906,7 @@ impl Client {
             Err(err) => {
                 warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
                 Err(Error::CouldNotVerifyTransfer(format!(
-                    "Spend failed verifiation for the unique_pubkey {address:?} with error {err:?}"
+                    "Verifiation failed for spent at {address:?} with error {err:?}"
                 )))
             }
         }

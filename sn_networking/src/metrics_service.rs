@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, Result};
+use crate::{NetworkError, Result};
 use futures::Future;
 use hyper::{service::Service, Body, Method, Request, Response, Server, StatusCode};
 use prometheus_client::{encoding::text::encode, registry::Registry};
@@ -50,14 +50,14 @@ impl MetricService {
             hyper::header::CONTENT_TYPE,
             METRICS_CONTENT_TYPE
                 .try_into()
-                .map_err(|_| Error::NetworkMetricError)?,
+                .map_err(|_| NetworkError::NetworkMetricError)?,
         );
 
         let reg = self.get_reg();
-        let reg = reg.lock().map_err(|_| Error::NetworkMetricError)?;
+        let reg = reg.lock().map_err(|_| NetworkError::NetworkMetricError)?;
         encode(&mut response.body_mut(), &reg).map_err(|err| {
             error!("Failed to encode the metrics Registry {err:?}");
-            Error::NetworkMetricError
+            NetworkError::NetworkMetricError
         })?;
 
         *response.status_mut() = StatusCode::OK;

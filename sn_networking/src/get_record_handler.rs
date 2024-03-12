@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    get_quorum_value, Error, GetRecordCfg, GetRecordError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    get_quorum_value, GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use libp2p::{
     kad::{self, PeerRecord, ProgressStep, QueryId, QueryStats, Record},
@@ -114,7 +115,7 @@ impl SwarmDriver {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
                     sender
                         .send(Err(GetRecordError::SplitRecord { result_map }))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                 }
 
                 // Stop the query; possibly stops more nodes from being queried.
@@ -127,7 +128,7 @@ impl SwarmDriver {
             }
         } else {
             // return error if the entry cannot be found
-            return Err(Error::ReceivedKademliaEventDropped {
+            return Err(NetworkError::ReceivedKademliaEventDropped {
                 query_id,
                 event: format!("Accumulate Get Record of {pretty_key:?}"),
             });
@@ -188,7 +189,7 @@ impl SwarmDriver {
 
             sender
                 .send(result)
-                .map_err(|_| Error::InternalMsgChannelDropped)?;
+                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
         } else {
             // We manually perform `query.finish()` if we return early from accumulate fn.
             // Thus we will still get FinishedWithNoAdditionalRecord.
@@ -217,7 +218,7 @@ impl SwarmDriver {
                 let (sender, _, cfg) =
                 self.pending_get_record.remove(&query_id).ok_or_else(|| {
                     trace!("Can't locate query task {query_id:?}, it has likely been completed already.");
-                    Error::ReceivedKademliaEventDropped {
+                    NetworkError::ReceivedKademliaEventDropped {
                             query_id,
                             event: "GetRecordError NotFound or QuorumFailed".to_string(),
                         }
@@ -230,7 +231,7 @@ impl SwarmDriver {
                 }
                 sender
                     .send(Err(GetRecordError::RecordNotFound))
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
             kad::GetRecordError::Timeout { key } => {
                 // return error if the entry cannot be found
@@ -240,7 +241,7 @@ impl SwarmDriver {
                         trace!(
                             "Can't locate query task {query_id:?} for {pretty_key:?}, it has likely been completed already."
                         );
-                        Error::ReceivedKademliaEventDropped {
+                        NetworkError::ReceivedKademliaEventDropped {
                             query_id,
                             event: format!("GetRecordError Timeout {pretty_key:?}"),
                         }
@@ -257,7 +258,7 @@ impl SwarmDriver {
                     );
                     sender
                         .send(Err(GetRecordError::QueryTimeout))
-                        .map_err(|_| Error::InternalMsgChannelDropped)?;
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
 
                     return Ok(());
                 }
@@ -274,7 +275,7 @@ impl SwarmDriver {
                 // Otherwise report the timeout
                 sender
                     .send(Err(GetRecordError::QueryTimeout))
-                    .map_err(|_| Error::InternalMsgChannelDropped)?;
+                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
         }
 
@@ -289,11 +290,11 @@ impl SwarmDriver {
         if cfg.target_record.is_none() || cfg.does_target_match(&record) {
             sender
                 .send(Ok(record))
-                .map_err(|_| Error::InternalMsgChannelDropped)
+                .map_err(|_| NetworkError::InternalMsgChannelDropped)
         } else {
             sender
                 .send(Err(GetRecordError::RecordDoesNotMatch(record)))
-                .map_err(|_| Error::InternalMsgChannelDropped)
+                .map_err(|_| NetworkError::InternalMsgChannelDropped)
         }
     }
 }

@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use serde::{Deserialize, Serialize};
 use sn_transfers::SpendAddress;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Error, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum DagError {
     // Errors that mean the DAG is invalid
     #[error("DAG has no valid source at {0:?}")]
@@ -35,6 +36,25 @@ pub enum DagError {
 
 impl DagError {
     pub fn dag_is_invalid(&self) -> bool {
+        matches!(
+            self,
+            DagError::MissingSource(_) | DagError::IncoherentDag(_, _)
+        )
+    }
+
+    pub fn spend_address(&self) -> SpendAddress {
+        match self {
+            DagError::MissingSource(addr)
+            | DagError::IncoherentDag(addr, _)
+            | DagError::DoubleSpend(addr)
+            | DagError::MissingAncestry(addr)
+            | DagError::InvalidTransaction(addr, _)
+            | DagError::PoisonedAncestry(addr, _)
+            | DagError::OrphanSpend { orphan: addr, .. } => *addr,
+        }
+    }
+
+    pub fn makes_dag_invalid(&self) -> bool {
         matches!(
             self,
             DagError::MissingSource(_) | DagError::IncoherentDag(_, _)

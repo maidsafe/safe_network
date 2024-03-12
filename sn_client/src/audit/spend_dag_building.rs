@@ -10,14 +10,14 @@ use super::{Client, SpendDag};
 use crate::{Error, Result};
 
 use futures::future::join_all;
+use sn_networking::GetRecordError;
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::BTreeSet;
-use tokio::task::JoinSet;
 
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
-    /// Once the DAG collected, verifies all the transactions
+    /// Once the DAG collected, verifies and records errors in the DAG
     pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
         let mut dag = SpendDag::new();
@@ -25,10 +25,18 @@ impl Client {
         // get first spend
         let first_spend = match self.get_spend_from_network(spend_addr).await {
             Ok(s) => s,
-            Err(Error::MissingSpendRecord(_)) => {
+            Err(Error::Network(sn_networking::NetworkError::GetRecordError(
+                GetRecordError::RecordNotFound,
+            ))) => {
                 // the cashnote was not spent yet, so it's an UTXO
                 info!("UTXO at {spend_addr:?}");
                 return Ok(dag);
+            }
+            Err(Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(s1, s2))) => {
+                // the cashnote was spent twice, take it into account and continue
+                info!("Double spend at {spend_addr:?}");
+                dag.insert(spend_addr, *s2);
+                *s1
             }
             Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
         };
@@ -79,7 +87,12 @@ impl Client {
                         dag.insert(addr, spend.clone());
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
                     }
-                    (Err(Error::MissingSpendRecord(_)), addr) => {
+                    (
+                        Err(Error::Network(sn_networking::NetworkError::GetRecordError(
+                            GetRecordError::RecordNotFound,
+                        ))),
+                        addr,
+                    ) => {
                         info!("Reached UTXO at {addr:?}");
                     }
                     (Err(err), addr) => {
@@ -98,15 +111,20 @@ impl Client {
         }
 
         let elapsed = start.elapsed();
-        info!("Finished building SpendDAG in {elapsed:?}");
+        info!("Finished building SpendDAG from {spend_addr:?} in {elapsed:?}");
 
         // verify the DAG
-        info!("Now verifying SpendDAG...");
+        info!("Now verifying SpendDAG from {spend_addr:?} and recording errors...");
         let start = std::time::Instant::now();
-        let recorded_errors = dag.verify(&spend_addr);
-        warn!("SpendDAG verification recorded errors: {recorded_errors:?}");
+        if let Err(e) = dag.record_errors(&spend_addr) {
+            let s = format!(
+                "Collected DAG starting at {spend_addr:?} is invalid, this is probably a bug: {e}"
+            );
+            error!("{s}");
+            return Err(WalletError::Dag(s));
+        }
         let elapsed = start.elapsed();
-        info!("Finished verifying SpendDAG in {elapsed:?}");
+        info!("Finished verifying SpendDAG from {spend_addr:?} in {elapsed:?}");
         Ok(dag)
     }
 
@@ -114,6 +132,7 @@ impl Client {
     /// tracing back the ancestors of that Spend all the way to a known Spend in the DAG or else back to Genesis
     /// Verifies all transactions on the way, making sure only valid data is inserted in the DAG
     /// This is useful to keep a partial SpendDag to be able to verify that new spends come from Genesis
+    /// Note that it does not record errors in the DAG as it returns on the first error
     ///
     /// ```text
     ///              ... --
@@ -230,20 +249,22 @@ impl Client {
 
     /// Extends an existing SpendDag starting from the utxos in this DAG
     /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
+    /// Records errors in the new DAG branches if any
     pub async fn spend_dag_continue_from_utxos(&self, dag: &mut SpendDag) -> WalletResult<()> {
         info!("Gathering spend DAG from utxos...");
         let utxos = dag.get_utxos();
-        let mut tasks = JoinSet::new();
-        for utxo in utxos {
-            info!("Launching task to gather utxo: {:?}", utxo);
-            let self_clone = self.clone();
-            tasks.spawn(async move { self_clone.spend_dag_build_from(utxo).await });
-        }
-        while let Some(res) = tasks.join_next().await {
-            let sub_dag = res.map_err(|e| {
-                WalletError::FailedToGetSpend(format!("DAG gathering task failed: {e}"))
-            })??;
-            dag.merge(sub_dag);
+
+        let tasks: Vec<_> = utxos
+            .iter()
+            .map(|utxo| {
+                info!("Launching task to gather DAG from utxo: {:?}", utxo);
+                self.spend_dag_build_from(*utxo)
+            })
+            .collect();
+        let sub_dags = join_all(tasks).await;
+
+        for res in sub_dags {
+            dag.merge(res?);
         }
         info!("Done gathering spend DAG from utxos");
         Ok(())

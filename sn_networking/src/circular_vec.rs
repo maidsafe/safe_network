@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::error::Error;
+use crate::error::NetworkError;
 
 /// Based on https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/7
 
@@ -25,11 +25,11 @@ impl<T> CircularVec<T> {
     }
 
     /// Pushes an item into the CircularVec. If the CircularVec is full, the oldest item is removed.
-    pub fn push(&mut self, item: T) -> Result<(), Error> {
+    pub fn push(&mut self, item: T) -> Result<(), NetworkError> {
         if self.inner.len() == self.inner.capacity() {
             self.inner
                 .pop_front()
-                .ok_or(Error::CircularVecPopFrontError)?;
+                .ok_or(NetworkError::CircularVecPopFrontError)?;
         }
         self.inner.push_back(item);
         Ok(())

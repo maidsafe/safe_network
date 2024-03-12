@@ -15,7 +15,7 @@ use libp2p::PeerId;
 use rand::Rng;
 use sn_client::{Error as ClientError, FilesDownload, FilesUpload, WalletClient};
 use sn_logging::LogBuilder;
-use sn_networking::{Error as NetworkError, GetRecordError};
+use sn_networking::{GetRecordError, NetworkError};
 use sn_protocol::{
     error::Error as ProtocolError,
     storage::{ChunkAddress, RegisterAddress},

@@ -15,7 +15,7 @@ use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
     cmd::SwarmCmd,
-    error::{Error, Result},
+    error::{NetworkError, Result},
     event::NetworkEvent,
     event::NodeEvent,
     get_record_handler::PendingGetRecord,
@@ -275,7 +275,8 @@ impl NetworkBuilder {
             .set_max_packet_size(MAX_PACKET_SIZE)
             // How many nodes _should_ store data.
             .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+                NonZeroUsize::new(CLOSE_GROUP_SIZE)
+                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
             )
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
@@ -292,7 +293,7 @@ impl NetworkBuilder {
             // Configures the disk_store to store records under the provided path and increase the max record size
             let storage_dir_path = self.root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
-                return Err(Error::FailedToCreateRecordStoreDir {
+                return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
                     source: error,
                 });
@@ -315,7 +316,7 @@ impl NetworkBuilder {
         )?;
 
         // Listen on the provided address
-        let listen_socket_addr = listen_addr.ok_or(Error::ListenAddressNotProvided)?;
+        let listen_socket_addr = listen_addr.ok_or(NetworkError::ListenAddressNotProvided)?;
 
         // Listen on QUIC
         let addr_quic = Multiaddr::from(listen_socket_addr.ip())
@@ -354,7 +355,8 @@ impl NetworkBuilder {
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
             .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE).ok_or_else(|| Error::InvalidCloseGroupSize)?,
+                NonZeroUsize::new(CLOSE_GROUP_SIZE)
+                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
             );
 
         let (network, net_event_recv, driver) = self.build(
@@ -484,7 +486,7 @@ impl NetworkBuilder {
                 // default is 10sec, increase to 60sec to reduce the risk of looping
                 .published_message_ids_cache_time(Duration::from_secs(60))
                 .build()
-                .map_err(|err| Error::GossipsubConfigError(err.to_string()))?;
+                .map_err(|err| NetworkError::GossipsubConfigError(err.to_string()))?;
 
             // Set the message authenticity
             let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Anonymous;
