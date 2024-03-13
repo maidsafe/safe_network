@@ -23,7 +23,6 @@ use sn_client::{Client, FilesApi};
 use sn_protocol::{
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest},
     storage::ChunkAddress,
-    test_utils::DeploymentInventory,
 };
 use sn_service_management::{
     get_local_node_registry_path,
@@ -36,6 +35,7 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
+use test_utils::testnet::DeploymentInventory;
 use tonic::Request;
 use tracing::{debug, error, warn};
 use xor_name::XorName;

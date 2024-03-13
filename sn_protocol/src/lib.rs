@@ -19,9 +19,6 @@ pub mod node;
 pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
-#[cfg(feature = "test-utils")]
-/// Test utilities used among crates
-pub mod test_utils;
 
 // this includes code generated from .proto files
 #[allow(clippy::unwrap_used)]

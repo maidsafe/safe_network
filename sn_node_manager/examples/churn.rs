@@ -12,7 +12,6 @@ use color_eyre::{
     Result,
 };
 use libp2p::PeerId;
-use sn_protocol::test_utils::DeploymentInventory;
 use sn_service_management::{
     safenode_manager_proto::{
         safe_node_manager_client::SafeNodeManagerClient, GetStatusRequest,
@@ -21,6 +20,7 @@ use sn_service_management::{
     ServiceStatus,
 };
 use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
+use test_utils::testnet::DeploymentInventory;
 use tonic::{transport::Channel, Request};
 
 #[derive(Parser, Debug)]
@@ -44,6 +44,7 @@ struct Opt {
     churn_cycles: usize,
 }
 
+// Run using `cargo run --release --example churn -- --inventory <inventory name/path> --churn-cycles 2`
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
