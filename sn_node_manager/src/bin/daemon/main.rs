@@ -10,13 +10,14 @@
 extern crate tracing;
 
 use clap::Parser;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use libp2p_identity::PeerId;
 use sn_node_manager::{config::get_node_registry_path, rpc, DAEMON_DEFAULT_PORT};
 use sn_service_management::{
     safenode_manager_proto::{
+        get_status_response::Node,
         safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
-        NodeServiceRestartRequest, NodeServiceRestartResponse,
+        GetStatusRequest, GetStatusResponse, NodeServiceRestartRequest, NodeServiceRestartResponse,
     },
     NodeRegistry,
 };
@@ -47,17 +48,10 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
     ) -> Result<Response<NodeServiceRestartResponse>, Status> {
         println!("RPC request received {:?}", request.get_ref());
         info!("RPC request received {:?}", request.get_ref());
-
-        let node_registry_path = get_node_registry_path().map_err(|err| {
+        let node_registry = Self::load_node_registry().map_err(|err| {
             Status::new(
                 Code::Internal,
-                format!("Could not obtain node registry path {err}"),
-            )
-        })?;
-        let node_registry = NodeRegistry::load(&node_registry_path).map_err(|err| {
-            Status::new(
-                Code::Internal,
-                format!("Could not open local node registry with {err}"),
+                format!("Failed to load node registry: {err}"),
             )
         })?;
 
@@ -72,9 +66,42 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
 
         Ok(Response::new(NodeServiceRestartResponse {}))
     }
+
+    async fn get_status(
+        &self,
+        request: Request<GetStatusRequest>,
+    ) -> Result<Response<GetStatusResponse>, Status> {
+        println!("RPC request received {:?}", request.get_ref());
+        info!("RPC request received {:?}", request.get_ref());
+        let node_registry = Self::load_node_registry().map_err(|err| {
+            Status::new(
+                Code::Internal,
+                format!("Failed to load node registry: {err}"),
+            )
+        })?;
+
+        let nodes_info = node_registry
+            .nodes
+            .iter()
+            .map(|node| Node {
+                peer_id: node.peer_id.map(|id| id.to_bytes()),
+                status: node.status.clone() as i32,
+                number: node.number as u32,
+            })
+            .collect::<Vec<_>>();
+        Ok(Response::new(GetStatusResponse { nodes: nodes_info }))
+    }
 }
 
 impl SafeNodeManagerDaemon {
+    fn load_node_registry() -> Result<NodeRegistry> {
+        let node_registry_path = get_node_registry_path()
+            .map_err(|err| eyre!("Could not obtain node registry path: {err:?}"))?;
+        let node_registry = NodeRegistry::load(&node_registry_path)
+            .map_err(|err| eyre!("Could not load node registry: {err:?}"))?;
+        Ok(node_registry)
+    }
+
     async fn restart_handler(
         mut node_registry: NodeRegistry,
         peer_id: PeerId,

@@ -18,6 +18,9 @@ package safenode_manager_proto;
 import "req_resp_types.proto";
 
 service SafeNodeManager {
-  // Restart a running safenode service
+  // Restart a running safenode service.
   rpc RestartNodeService (NodeServiceRestartRequest) returns (NodeServiceRestartResponse);
+
+  // Get the status of the nodes managed by the Daemon
+  rpc GetStatus (GetStatusRequest) returns (GetStatusResponse);
 }

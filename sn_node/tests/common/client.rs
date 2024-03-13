@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::DeploymentInventory;
 use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
 use libp2p::PeerId;
@@ -18,6 +17,7 @@ use sn_service_management::{
 };
 use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
+use test_utils::testnet::DeploymentInventory;
 use tokio::{
     sync::Mutex,
     time::{Duration, Instant},
