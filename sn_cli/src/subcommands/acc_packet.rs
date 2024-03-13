@@ -15,7 +15,8 @@ use sn_client::transfers::HotWallet;
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
 
 use crate::subcommands::files::{
-    download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
+    self, download::download_file, iterative_uploader::IterativeUploader,
+    upload::FilesUploadOptions,
 };
 use color_eyre::{
     eyre::{bail, eyre},
@@ -661,14 +662,20 @@ impl AccountPacket {
         options: FilesUploadOptions,
     ) -> Result<Folders> {
         let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
-        let chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+        let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+
+        let chunks_to_upload = files::chunks_to_upload(
+            &files_api,
+            &mut chunk_manager,
+            &self.files_dir.clone(),
+            options.batch_size,
+            options.make_data_public,
+            true,
+        )
+        .await?;
 
         IterativeUploader::new(chunk_manager, files_api)
-            .iterate_upload(
-                self.iter_only_files(),
-                self.files_dir.clone(),
-                options.clone(),
-            )
+            .iterate_upload(chunks_to_upload, self.files_dir.clone(), options.clone())
             .await?;
 
         // Let's make the storage payment for Folders
