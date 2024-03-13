@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710309873859,
+  "lastUpdate": 1710309979603,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "129674997+shuoer86@users.noreply.github.com",
-            "name": "shuoer86",
-            "username": "shuoer86"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "40d90f081858a68096c7e7ce3ec729b8ba2a9d4e",
-          "message": "fix: typos",
-          "timestamp": "2023-10-26T07:05:18Z",
-          "tree_id": "1b578aaeaf5c055c2aa73b3b1da777736ab560cf",
-          "url": "https://github.com/maidsafe/safe_network/commit/40d90f081858a68096c7e7ce3ec729b8ba2a9d4e"
-        },
-        "date": 1698309035459,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "13e22ada1364075ca5aec12c092dabaeaf02a93b",
+          "message": "fix(rpc_client): revert to old binary name",
+          "timestamp": "2024-03-13T05:16:30Z",
+          "tree_id": "5a6bb8f5ffb4c7bd55f34d5948656ee9bd7a3c1b",
+          "url": "https://github.com/maidsafe/safe_network/commit/13e22ada1364075ca5aec12c092dabaeaf02a93b"
+        },
+        "date": 1710309978436,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
