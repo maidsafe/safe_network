@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710298188294,
+  "lastUpdate": 1710298190164,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38860,6 +38860,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37636,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "63b88778c3191efbb56229063243366c941bf5f9",
+          "message": "ci: fix windows linker issues when running unit tests amongst e2e",
+          "timestamp": "2024-03-13T03:35:48+01:00",
+          "tree_id": "d6adb328ccb3c3b42df5b5dd3fee3a7703afcd14",
+          "url": "https://github.com/maidsafe/safe_network/commit/63b88778c3191efbb56229063243366c941bf5f9"
+        },
+        "date": 1710298189590,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6206,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34677,
             "unit": "ms"
           },
           {
