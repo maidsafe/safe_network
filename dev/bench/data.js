@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710317318349,
+  "lastUpdate": 1710340898738,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "625c5a46d116129c1ecb561960a216e23f25bd5d",
-          "message": "refactor: pass RecordKey by reference\n\nThis prevents cloning in many places this is called, as the RecordKey is\ncopied into a Vec anyway.",
-          "timestamp": "2023-10-26T05:49:18Z",
-          "tree_id": "4bfd87522c9b4f5477c955d53c824ca29ac95af4",
-          "url": "https://github.com/maidsafe/safe_network/commit/625c5a46d116129c1ecb561960a216e23f25bd5d"
-        },
-        "date": 1698303017846,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.14438885091061954,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.4131383807107058,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.635548565489874,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.60798183662346,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "cdc574b88cf26fff46e80396322fc80bd2c2cf15",
+          "message": "refactor: store test utils under a new crate",
+          "timestamp": "2024-03-13T13:43:42Z",
+          "tree_id": "0b30dfa7852bcc56950a0454d9d84bb2c59bb0d7",
+          "url": "https://github.com/maidsafe/safe_network/commit/cdc574b88cf26fff46e80396322fc80bd2c2cf15"
+        },
+        "date": 1710340894862,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3006972108854644,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8346381590937841,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.86332760149663,
             "unit": "MiB/s"
           }
         ]
