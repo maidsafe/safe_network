@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710298099678,
+  "lastUpdate": 1710298186605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff",
-          "message": "fix(cli): remove Arc from ProgressBar as it is Arc internally",
-          "timestamp": "2023-10-25T12:53:15Z",
-          "tree_id": "02df850858675658eed4fa540d34a799a40dfae6",
-          "url": "https://github.com/maidsafe/safe_network/commit/f1c7614c42d2deb7deda6ef4a6ab9bdd41a6adff"
-        },
-        "date": 1698243828004,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "63b88778c3191efbb56229063243366c941bf5f9",
+          "message": "ci: fix windows linker issues when running unit tests amongst e2e",
+          "timestamp": "2024-03-13T03:35:48+01:00",
+          "tree_id": "d6adb328ccb3c3b42df5b5dd3fee3a7703afcd14",
+          "url": "https://github.com/maidsafe/safe_network/commit/63b88778c3191efbb56229063243366c941bf5f9"
+        },
+        "date": 1710298185985,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
