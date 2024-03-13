@@ -6,13 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::DeploymentInventory;
 use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
 use libp2p::PeerId;
 use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
+use sn_protocol::{
+    safenode_proto::{NodeInfoRequest, RestartRequest},
+    test_utils::DeploymentInventory,
+};
 use sn_service_management::{
     get_local_node_registry_path, safenode_manager_proto::NodeServiceRestartRequest, NodeRegistry,
 };
