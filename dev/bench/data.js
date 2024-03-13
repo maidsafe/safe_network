@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710298204705,
+  "lastUpdate": 1710298206518,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "625c5a46d116129c1ecb561960a216e23f25bd5d",
-          "message": "refactor: pass RecordKey by reference\n\nThis prevents cloning in many places this is called, as the RecordKey is\ncopied into a Vec anyway.",
-          "timestamp": "2023-10-26T05:49:18Z",
-          "tree_id": "4bfd87522c9b4f5477c955d53c824ca29ac95af4",
-          "url": "https://github.com/maidsafe/safe_network/commit/625c5a46d116129c1ecb561960a216e23f25bd5d"
-        },
-        "date": 1698304421010,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 176,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 79,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "129674997+shuoer86@users.noreply.github.com",
             "name": "shuoer86",
             "username": "shuoer86"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 204,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a00d2537d9b7453fa4410a069a4d03d0f8969b3b",
+          "message": "ci: remove release schedule for now",
+          "timestamp": "2024-03-13T03:37:01+01:00",
+          "tree_id": "8f0b20430725903ff18d87854819084d3e8b5c09",
+          "url": "https://github.com/maidsafe/safe_network/commit/a00d2537d9b7453fa4410a069a4d03d0f8969b3b"
+        },
+        "date": 1710298205925,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
             "unit": "MB"
           },
           {
