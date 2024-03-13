@@ -15,7 +15,8 @@ use sn_client::transfers::HotWallet;
 use sn_client::{Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient};
 
 use crate::subcommands::files::{
-    download::download_file, iterative_uploader::IterativeUploader, upload::FilesUploadOptions,
+    self, download::download_file, iterative_uploader::IterativeUploader,
+    upload::FilesUploadOptions,
 };
 use color_eyre::{
     eyre::{bail, eyre},
@@ -109,7 +110,7 @@ impl fmt::Display for Mutation {
 // Information stored locally to keep track of local changes to files/folders.
 // TODO: to make file changes discovery more efficient, and prevent chunking for
 // such purposes, add more info like file size and last modified timestamp.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct MetadataTrackingInfo {
     file_path: PathBuf,
     meta_xorname: XorName,
@@ -126,7 +127,7 @@ pub struct AccountPacket {
     files_dir: PathBuf,
     meta_dir: PathBuf,
     tracking_info_dir: PathBuf,
-    curr_metadata: BTreeMap<PathBuf, MetadataTrackingInfo>,
+    curr_tracking_info: BTreeMap<PathBuf, MetadataTrackingInfo>,
     root_folder_addr: RegisterAddress,
     root_folder_created: bool,
 }
@@ -144,7 +145,7 @@ impl AccountPacket {
         // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
         if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             bail!(
-                "The path is already being tracked with Folder address: {}",
+                "The local path {path:?} is already being tracked with Folder address: {}",
                 addr.to_hex()
             );
         }
@@ -161,7 +162,7 @@ impl AccountPacket {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
         // this will fail if the directory was not previously initialised with 'init'.
-        let curr_metadata = read_tracking_info_from_disk(&meta_dir)?;
+        let curr_tracking_info = read_tracking_info_from_disk(&meta_dir)?;
         let (root_folder_addr,root_folder_created) = read_root_folder_addr(&meta_dir)
             .map_err(|_| eyre!("Root Folder address not found, make sure the directory {path:?} is initialised."))?;
 
@@ -171,7 +172,7 @@ impl AccountPacket {
             files_dir,
             meta_dir,
             tracking_info_dir,
-            curr_metadata,
+            curr_tracking_info,
             root_folder_addr,
             root_folder_created,
         })
@@ -197,7 +198,7 @@ impl AccountPacket {
         if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             // bail out if there is already a root folder address different from the passed in
             if addr == address {
-                bail!("The download path is already tracking that Folder, you use 'sync' instead.");
+                bail!("The download path is already tracking that Folder, use 'sync' instead.");
             } else {
                 bail!(
                     "The download path is already tracking another Folder with address: {}",
@@ -214,7 +215,7 @@ impl AccountPacket {
             files_dir,
             meta_dir,
             tracking_info_dir,
-            curr_metadata: BTreeMap::default(),
+            curr_tracking_info: BTreeMap::default(),
             root_folder_addr: address,
             root_folder_created: true,
         };
@@ -227,7 +228,7 @@ impl AccountPacket {
             .download_folders_and_files(folders_to_download, batch_size, retry_strategy)
             .await?;
 
-        acc_packet.curr_metadata = read_tracking_info_from_disk(&acc_packet.meta_dir)?;
+        acc_packet.curr_tracking_info = read_tracking_info_from_disk(&acc_packet.meta_dir)?;
 
         Ok(acc_packet)
     }
@@ -313,15 +314,15 @@ impl AccountPacket {
         // Now let's check if any file/folder was removed remotely so we remove them locally from disk.
         // We do it in two phases, first we get rid of all dirs that were removed, then we go through
         // the files, this is to make sure we remove files which belong to nested folders being removed.
-        let mut curr_metadata = read_tracking_info_from_disk(&self.meta_dir)?;
-        curr_metadata.retain(|_, tracking_info| {
+        let mut curr_tracking_info = read_tracking_info_from_disk(&self.meta_dir)?;
+        curr_tracking_info.retain(|_, tracking_info| {
             if let FolderEntry::Folder(_) = tracking_info.metadata.content {
                 !self.remove_tracking_if_not_found_in_folders(tracking_info, &mut updated_folders)
             } else {
                 true
             }
         });
-        curr_metadata.retain(|_, tracking_info| {
+        curr_tracking_info.retain(|_, tracking_info| {
             if let FolderEntry::File(_) = tracking_info.metadata.content {
                 !self.remove_tracking_if_not_found_in_folders(tracking_info, &mut updated_folders)
             } else {
@@ -329,7 +330,7 @@ impl AccountPacket {
             }
         });
 
-        self.curr_metadata = curr_metadata;
+        self.curr_tracking_info = curr_tracking_info;
 
         Ok(())
     }
@@ -530,7 +531,7 @@ impl AccountPacket {
         }
 
         // now let's check if any file/folder was removed from disk
-        for (item_path, tracking_info) in self.curr_metadata.iter() {
+        for (item_path, tracking_info) in self.curr_tracking_info.iter() {
             let abs_path = self.files_dir.join(item_path);
             match tracking_info.metadata.content {
                 FolderEntry::Folder(_) => {
@@ -609,7 +610,7 @@ impl AccountPacket {
     // Read local tracking info for given file/folder item
     fn get_tracking_info(&self, path: &Path) -> Result<Option<&MetadataTrackingInfo>> {
         let path = self.get_relative_path(path)?;
-        Ok(self.curr_metadata.get(&path))
+        Ok(self.curr_tracking_info.get(&path))
     }
 
     // Instantiate a FolderApi based on local tracking info for given folder item
@@ -661,14 +662,20 @@ impl AccountPacket {
         options: FilesUploadOptions,
     ) -> Result<Folders> {
         let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
-        let chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+        let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+
+        let chunks_to_upload = files::chunks_to_upload_with_iter(
+            &files_api,
+            &mut chunk_manager,
+            self.iter_only_files(),
+            true,
+            options.batch_size,
+            options.make_data_public,
+        )
+        .await?;
 
         IterativeUploader::new(chunk_manager, files_api)
-            .iterate_upload(
-                self.iter_only_files(),
-                self.files_dir.clone(),
-                options.clone(),
-            )
+            .iterate_upload(chunks_to_upload, &self.files_dir, options.clone())
             .await?;
 
         // Let's make the storage payment for Folders
@@ -751,14 +758,19 @@ impl AccountPacket {
     ) -> Result<Folders> {
         let mut files_to_download = vec![];
         let mut updated_folders = Folders::new();
-        while let Some((name, folders_api, target_path)) = folders_to_download.pop() {
+        while let Some((name, mut folders_api, target_path)) = folders_to_download.pop() {
+            if updated_folders.contains_key(&target_path) {
+                // we've already downloaded this Folder
+                continue;
+            }
+
             println!(
                 "Downloading Folder {name:?} from {}",
                 folders_api.address().to_hex()
             );
             self.download_folder_from_network(
                 &target_path,
-                folders_api.clone(),
+                &mut folders_api,
                 &mut files_to_download,
                 &mut folders_to_download,
             )
@@ -787,21 +799,22 @@ impl AccountPacket {
     async fn download_folder_from_network(
         &self,
         target_path: &Path,
-        mut folders_api: FoldersApi,
+        folders_api: &mut FoldersApi,
         files_to_download: &mut Vec<(OsString, Chunk, PathBuf)>,
         folders_to_download: &mut Vec<(OsString, FoldersApi, PathBuf)>,
     ) -> Result<()> {
         for (entry_hash, (meta_xorname, metadata)) in folders_api.entries().await?.into_iter() {
             let name = metadata.name.clone();
             let item_path = target_path.join(name.clone());
+            if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
+                if tracking_info.meta_xorname == meta_xorname {
+                    // thus we already have this same file/folder locally
+                    continue;
+                }
+            }
+
             match &metadata.content {
                 FolderEntry::File(data_map_chunk) => {
-                    if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
-                        if tracking_info.meta_xorname == meta_xorname {
-                            continue;
-                        }
-                    }
-                    // thus we don't have this file locally
                     files_to_download.push((
                         name.clone().into(),
                         data_map_chunk.clone(),
@@ -810,12 +823,6 @@ impl AccountPacket {
                     let _ = File::create(&item_path)?;
                 }
                 FolderEntry::Folder(subfolder_addr) => {
-                    if let Ok(Some(tracking_info)) = self.get_tracking_info(&item_path) {
-                        if tracking_info.meta_xorname == meta_xorname {
-                            continue;
-                        }
-                    }
-                    // thus we don't have this folder locally
                     let folders_api = FoldersApi::retrieve(
                         self.client.clone(),
                         &self.wallet_dir,
@@ -854,7 +861,7 @@ fn build_tracking_info_paths(path: &Path) -> Result<(PathBuf, PathBuf, PathBuf)>
 fn read_tracking_info_from_disk(
     meta_dir: &Path,
 ) -> Result<BTreeMap<PathBuf, MetadataTrackingInfo>> {
-    let mut curr_metadata = BTreeMap::new();
+    let mut curr_tracking_info = BTreeMap::new();
     for entry in WalkDir::new(meta_dir)
         .into_iter()
         .flatten()
@@ -866,10 +873,10 @@ fn read_tracking_info_from_disk(
         let tracking_info: MetadataTrackingInfo = rmp_serde::from_slice(&bytes)
             .map_err(|err| eyre!("Error while deserializing tracking info from {path:?}: {err}"))?;
 
-        curr_metadata.insert(tracking_info.file_path.clone(), tracking_info);
+        curr_tracking_info.insert(tracking_info.file_path.clone(), tracking_info);
     }
 
-    Ok(curr_metadata)
+    Ok(curr_tracking_info)
 }
 
 // Store tracking info about the root folder in a file to keep track of any changes made
@@ -910,11 +917,9 @@ fn replace_item_in_folder(
     file_name: OsString,
     data_map: Chunk,
 ) -> Result<(EntryHash, XorName, Metadata)> {
-    folder.get_mut().1.has_new_entries();
-    let res = folder
-        .get_mut()
-        .0
-        .replace_file(entry_hash, file_name.clone(), data_map.clone())?;
+    let (ref mut folders_api, ref mut folder_change) = folder.get_mut();
+    folder_change.has_new_entries();
+    let res = folders_api.replace_file(entry_hash, file_name.clone(), data_map.clone())?;
     Ok(res)
 }
 
@@ -924,4 +929,395 @@ fn find_by_name_in_parent_folder(name: &str, path: &Path, folders: &Folders) -> 
         .and_then(|parent| folders.get(parent))
         .and_then(|(folder, _)| folder.find_by_name(name))
         .map(|(meta_xorname, _)| *meta_xorname)
+}
+
+#[cfg(test)]
+mod tests {
+    // All tests require a network running so Clients can be instantiated.
+
+    use super::{read_root_folder_addr, read_tracking_info_from_disk, AccountPacket};
+    use crate::subcommands::files::upload::FilesUploadOptions;
+    use sn_client::{
+        protocol::storage::{Chunk, RetryStrategy},
+        registers::RegisterAddress,
+        test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
+        FolderEntry, BATCH_SIZE,
+    };
+
+    use bls::SecretKey;
+    use eyre::{bail, eyre, Result};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        fs::{create_dir_all, remove_dir_all, remove_file, File, OpenOptions},
+        io::{Read, Write},
+        path::{Path, PathBuf},
+    };
+    use xor_name::XorName;
+
+    const SYNC_OPTS: FilesUploadOptions = FilesUploadOptions {
+        make_data_public: false,
+        verify_store: true,
+        batch_size: BATCH_SIZE,
+        retry_strategy: RetryStrategy::Quick,
+    };
+
+    #[tokio::test]
+    async fn test_acc_packet_from_empty_dir() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpacketempty");
+        create_dir_all(&src_files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        // let's sync up with the network from the original empty account packet
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        let clone_files_path = tmp_dir.path().join("myaccpacketempty-clone");
+        let cloned_acc_packet = AccountPacket::retrieve_folders(
+            &client,
+            wallet_dir,
+            root_folder_addr,
+            &clone_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await?;
+
+        // let's verify both the original and cloned packets are empty
+        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, BTreeMap::new())?;
+        check_tracking_info_match(&acc_packet, &cloned_acc_packet, BTreeMap::new())?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_acc_packet_upload_download() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpacket");
+        let expected_files = create_test_files_on_disk(&src_files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
+
+        let downloaded_acc_packet = AccountPacket::retrieve_folders(
+            &client,
+            wallet_dir,
+            root_folder_addr,
+            &download_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await?;
+
+        check_files_and_dirs_match(&acc_packet, &downloaded_acc_packet, expected_files.clone())?;
+        check_tracking_info_match(&acc_packet, &downloaded_acc_packet, expected_files)?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_acc_packet_sync_mutations() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpackettosync");
+        let mut expected_files = create_test_files_on_disk(&src_files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        let clone_files_path = tmp_dir.path().join("myaccpackettosync-clone");
+        let mut cloned_acc_packet = AccountPacket::retrieve_folders(
+            &client,
+            wallet_dir,
+            root_folder_addr,
+            &clone_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await?;
+
+        // let's make mutations to the clone:
+        // - modify the content of a file
+        let new_chunk = random_file_chunk();
+        let file2modify = Path::new("file0.txt");
+        OpenOptions::new()
+            .write(true)
+            .open(clone_files_path.join(file2modify))?
+            .write_all(new_chunk.value())?;
+        expected_files.insert(file2modify.to_path_buf(), Some(new_chunk));
+        // - remove one of the files
+        let file2remove = Path::new("dir1").join("file1.txt");
+        remove_file(clone_files_path.join(&file2remove))?;
+        expected_files.remove(&file2remove);
+        // we need to keep the empty dir within the list of expected files though
+        expected_files.insert(Path::new("dir1").to_path_buf(), None);
+        // - remove one of the dirs
+        let dir2remove = Path::new("dir2");
+        remove_dir_all(clone_files_path.join(dir2remove))?;
+        expected_files.remove(dir2remove);
+        // - create new dir
+        let dir2create = Path::new("dir2").join("dir2_1");
+        create_dir_all(clone_files_path.join(&dir2create))?;
+        expected_files.insert(dir2create.to_path_buf(), None);
+        // - create new file
+        create_dir_all(clone_files_path.join("dir3").join("dir3_1"))?;
+        let file2create = Path::new("dir3").join("dir3_1").join("file3.txt");
+        let mut file = File::create(clone_files_path.join(&file2create))?;
+        let new_chunk = random_file_chunk();
+        file.write_all(new_chunk.value())?;
+        expected_files.insert(file2create, Some(new_chunk));
+
+        // and finally, sync the clone up with the network
+        cloned_acc_packet.sync(SYNC_OPTS).await?;
+
+        // let's sync up with the network from the original account packet to merge
+        // changes made earlier from the cloned version
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        // let's verify both the original and cloned packets contain the same content
+        check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, expected_files.clone())?;
+        check_tracking_info_match(&acc_packet, &cloned_acc_packet, expected_files)?;
+
+        Ok(())
+    }
+
+    // Create a hard-coded set of test files and dirs on disk
+    fn create_test_files_on_disk(base_path: &Path) -> Result<BTreeMap<PathBuf, Option<Chunk>>> {
+        // let's create a hierarchy with dirs and files with random content
+        let mut files = BTreeMap::new();
+        files.insert(
+            Path::new("file0.txt").to_path_buf(),
+            Some(random_file_chunk()),
+        );
+        files.insert(
+            Path::new("dir1").join("file1.txt"),
+            Some(random_file_chunk()),
+        );
+        files.insert(Path::new("dir2").to_path_buf(), None);
+
+        for (path, chunk) in files.iter() {
+            let full_path = base_path.join(path);
+            if let Some(chunk) = chunk {
+                // it's a file, thus we create it and store its chunk bytes
+                create_dir_all(full_path.parent().expect("invalid path for test file"))?;
+                let mut file = File::create(full_path)?;
+                file.write_all(chunk.value())?;
+            } else {
+                // it's a dir, and it shall be empty
+                create_dir_all(full_path)?;
+            }
+        }
+        Ok(files)
+    }
+
+    // Helper to check if a dir is empty
+    fn is_empty_dir(path: &Path) -> bool {
+        path.read_dir()
+            .map(|mut i| i.next().is_none())
+            .unwrap_or(false)
+    }
+
+    // Collect list of files and non empty dirs, to be used for comparing in tests
+    fn list_of_files_and_empty_dirs(acc_packet: &AccountPacket) -> BTreeSet<PathBuf> {
+        acc_packet
+            .iter_only_files()
+            .chain(acc_packet.iter_only_dirs())
+            .flat_map(|file_entry| {
+                let path = file_entry.path();
+                if path.is_dir() && !is_empty_dir(path) {
+                    bail!("we skip non empty dirs");
+                }
+
+                acc_packet.get_relative_path(path)
+            })
+            .collect()
+    }
+
+    // Check both acc packets kept the same set of tracking information locally
+    fn check_tracking_info_match(
+        src_packet: &AccountPacket,
+        target_packet: &AccountPacket,
+        mut expected_files: BTreeMap<PathBuf, Option<Chunk>>,
+    ) -> Result<()> {
+        let root_addr = src_packet.root_folder_addr();
+        assert_eq!(
+            read_root_folder_addr(&src_packet.meta_dir)?,
+            (root_addr, true),
+            "Root folder address doesn't match in source directory tracking info."
+        );
+        assert_eq!(
+            read_root_folder_addr(&target_packet.meta_dir)?,
+            (root_addr, true),
+            "Root folder address doesn't match in target directory tracking info."
+        );
+
+        let src_tracking_info = read_tracking_info_from_disk(&src_packet.meta_dir)?;
+        let mut target_tracking_info = read_tracking_info_from_disk(&target_packet.meta_dir)?;
+
+        for (path, src_tracking_info) in src_tracking_info {
+            match target_tracking_info.remove(&path) {
+                None => {
+                    bail!("Tracking info found in source is missing in target directory for file/dir: {path:?}")
+                }
+                Some(info) => {
+                    if info != src_tracking_info {
+                        bail!("Different tracking info kept in source and target for file/dir: {path:?}");
+                    }
+                }
+            }
+
+            let abs_path = src_packet.files_dir.join(&path);
+            if abs_path.is_dir() {
+                assert_eq!(src_tracking_info.file_path, path,
+                    "Incorrect path in tracking info found in source and target directories for dir: {path:?}");
+                assert!(matches!(src_tracking_info.metadata.content, FolderEntry::Folder(_)),
+                    "Incorrect tracking info found in source and target directories for dir: {path:?}");
+                // if it's an empty dir we shall find it in the list of expected files
+                if is_empty_dir(&abs_path) {
+                    let _ = expected_files.remove(&path).ok_or_else(|| {
+                        eyre!(
+                            "Unexpected tracking info found on source and target directories for dir: {path:?}"
+                        )
+                    })?;
+                }
+            } else {
+                let chunk = expected_files.remove(&path).ok_or_else(|| {
+                    eyre!(
+                        "Unexpected tracking info found on source and target directories for file: {path:?}"
+                    )
+                })?;
+
+                if chunk.is_some() {
+                    assert!(matches!(src_tracking_info.metadata.content, FolderEntry::File(_)),
+                        "Tracking info found in source and target directories don't match the file: {path:?}");
+                } else {
+                    assert!(matches!(src_tracking_info.metadata.content, FolderEntry::Folder(_)),
+                        "Tracking info found in source and target directories don't match the dir: {path:?}");
+                }
+            }
+        }
+
+        if !target_tracking_info.is_empty() {
+            bail!("Tracking info found in target directory but missing in source directory: {target_tracking_info:?}");
+        }
+        if !expected_files.is_empty() {
+            bail!("Some expected file/dir/s are lacking their tracking info in source or target directories: {expected_files:?}");
+        }
+
+        Ok(())
+    }
+
+    // Check both dirs have the same set of files and folders and no more
+    fn check_files_and_dirs_match(
+        src_packet: &AccountPacket,
+        target_packet: &AccountPacket,
+        mut expected_files: BTreeMap<PathBuf, Option<Chunk>>,
+    ) -> Result<()> {
+        // let's collect all paths in target acc packet, i.e. files and empty dirs paths
+        let mut target_packet_files: BTreeSet<PathBuf> =
+            list_of_files_and_empty_dirs(target_packet);
+
+        // let's now compare those paths in target acc packet with those in source acc packet
+        for relative_path in list_of_files_and_empty_dirs(src_packet) {
+            if !target_packet_files.remove(&relative_path) {
+                bail!("File/dir found in source is missing in target directory: {relative_path:?}");
+            }
+
+            let src_path = src_packet.files_dir.join(&relative_path);
+            let target_path = target_packet.files_dir.join(&relative_path);
+
+            let chunk = expected_files.remove(&relative_path).ok_or_else(|| {
+                eyre!("Unexpected file/dir found on source and target directories: {src_path:?}")
+            })?;
+
+            if let Some(chunk) = chunk {
+                // it's a file, let's compare their content
+                let mut src_file = File::open(&src_path)
+                    .map_err(|err| eyre!("couldn't open source file {src_path:?}: {err:?}"))?;
+                let mut target_file = File::open(&target_path)
+                    .map_err(|err| eyre!("couldn't open target file {target_path:?}: {err:?}"))?;
+
+                let mut src_content = Vec::new();
+                src_file
+                    .read_to_end(&mut src_content)
+                    .expect("couldn't read source file");
+                let mut target_content = Vec::new();
+                target_file
+                    .read_to_end(&mut target_content)
+                    .expect("couldn't read target file");
+
+                assert_eq!(
+                    src_content,
+                    chunk.value().slice(..),
+                    "source file content doesn't match with expected"
+                );
+                assert_eq!(
+                    target_content,
+                    chunk.value().slice(..),
+                    "target file content doesn't match with expected"
+                );
+            } else {
+                // it's a dir, let's check they exist as dirs
+                assert!(src_path.is_dir(), "source path is not a dir {src_path:?}");
+                assert!(
+                    target_path.is_dir(),
+                    "target path is not a dir {target_path:?}"
+                );
+            }
+        }
+
+        if !target_packet_files.is_empty() {
+            bail!("File/dir/s found in target directory but missing in source directory: {target_packet_files:?}");
+        }
+        if !expected_files.is_empty() {
+            bail!("Some expected file/dir/s were not found in source or target directories: {expected_files:?}");
+        }
+
+        Ok(())
+    }
 }

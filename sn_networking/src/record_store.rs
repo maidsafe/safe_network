@@ -462,7 +462,7 @@ impl NodeRecordStore {
             })
             .count();
 
-        debug!("Relevant records len is {:?}", relevant_records_len);
+        debug!("Relevant records len is {relevant_records_len:?}");
         relevant_records_len
     }
 
@@ -945,9 +945,14 @@ mod tests {
     async fn get_records_within_distance_range() -> eyre::Result<()> {
         let max_records = 50;
 
+        let temp_dir = std::env::temp_dir();
+        let unique_dir_name = uuid::Uuid::new_v4().to_string();
+        let storage_dir = temp_dir.join(unique_dir_name);
+
         // setup the store
         let store_config = NodeRecordStoreConfig {
             max_records,
+            storage_dir,
             ..Default::default()
         };
         let self_id = PeerId::random();

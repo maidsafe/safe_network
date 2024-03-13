@@ -8,9 +8,9 @@
 
 // All tests require a network running so Clients can be instantiated.
 
-mod common;
-
-use common::{get_funded_wallet, get_new_client, pay_for_storage, random_file_chunk};
+use sn_client::test_utils::{
+    get_funded_wallet, get_new_client, pay_for_storage, random_file_chunk,
+};
 
 use sn_client::{FolderEntry, FoldersApi, Metadata};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress};

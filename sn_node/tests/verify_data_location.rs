@@ -149,11 +149,15 @@ async fn verify_data_location() -> Result<()> {
         let response = rpc_client
             .node_info(Request::new(NodeInfoRequest {}))
             .await?;
-        let peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
+        let new_peer_id = PeerId::from_bytes(&response.get_ref().peer_id)?;
         // The below indexing assumes that, the way we do iteration to retrieve all_peers inside get_all_rpc_addresses
         // and get_all_peer_ids is the same as how we do the iteration inside NodeRestart.
         // todo: make this more cleaner.
-        all_peers[node_index] = peer_id;
+        if all_peers[node_index] == new_peer_id {
+            error!("new and old peer id are the same {new_peer_id:?}");
+            println!("new and old peer id are the same {new_peer_id:?}");
+        }
+        all_peers[node_index] = new_peer_id;
         node_index += 1;
 
         print_node_close_groups(&all_peers);

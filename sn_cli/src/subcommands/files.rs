@@ -22,6 +22,8 @@ use color_eyre::{
     Help, Result,
 };
 use indicatif::{ProgressBar, ProgressStyle};
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
 use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
 use std::time::Duration;
@@ -30,7 +32,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use upload::{FilesUploadOptions, UploadedFile, UPLOADED_FILES};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -101,7 +103,7 @@ pub(crate) async fn files_cmds(
     verify_store: bool,
 ) -> Result<()> {
     let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
-    let chunk_manager = ChunkManager::new(root_dir);
+    let mut chunk_manager = ChunkManager::new(root_dir);
 
     match cmds {
         FilesCmds::Estimate {
@@ -118,24 +120,43 @@ pub(crate) async fn files_cmds(
             retry_strategy,
             make_data_public,
         } => {
-            let total_files = IterativeUploader::new(chunk_manager, files_api)
-                .iterate_upload(
-                    WalkDir::new(&file_path).into_iter().flatten(),
-                    file_path.clone(),
-                    FilesUploadOptions {
-                        make_data_public,
-                        verify_store,
-                        batch_size,
-                        retry_strategy,
-                    },
-                )
-                .await?;
+            let total_files = chunk_manager.chunk_with_iter(
+                WalkDir::new(&file_path).into_iter().flatten(),
+                true,
+                make_data_public,
+            )?;
+
             if total_files == 0 {
                 if file_path.is_dir() {
-                    bail!("The directory specified for upload is empty. Please verify the provided path.");
+                    bail!(
+                        "The directory specified for upload is empty. \
+                    Please verify the provided path."
+                    );
                 } else {
                     bail!("The provided file path is invalid. Please verify the path.");
                 }
+            } else {
+                let chunks_to_upload = chunks_to_upload(
+                    &files_api,
+                    &mut chunk_manager,
+                    &file_path,
+                    batch_size,
+                    make_data_public,
+                )
+                .await?;
+
+                IterativeUploader::new(chunk_manager, files_api)
+                    .iterate_upload(
+                        chunks_to_upload,
+                        &file_path,
+                        FilesUploadOptions {
+                            make_data_public,
+                            verify_store,
+                            batch_size,
+                            retry_strategy,
+                        },
+                    )
+                    .await?;
             }
         }
         FilesCmds::Download {
@@ -251,6 +272,73 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
+pub async fn chunks_to_upload(
+    files_api: &FilesApi,
+    chunk_manager: &mut ChunkManager,
+    files_path: &Path,
+    batch_size: usize,
+    make_data_public: bool,
+) -> Result<Vec<(XorName, PathBuf)>> {
+    chunks_to_upload_with_iter(
+        files_api,
+        chunk_manager,
+        WalkDir::new(files_path).into_iter().flatten(),
+        false,
+        batch_size,
+        make_data_public,
+    )
+    .await
+}
+
+pub async fn chunks_to_upload_with_iter(
+    files_api: &FilesApi,
+    chunk_manager: &mut ChunkManager,
+    entries_iter: impl Iterator<Item = DirEntry>,
+    read_cache: bool,
+    batch_size: usize,
+    make_data_public: bool,
+) -> Result<Vec<(XorName, PathBuf)>> {
+    let chunks_to_upload = if chunk_manager.is_chunks_empty() {
+        chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
+
+        let chunks = chunk_manager.get_chunks();
+
+        let failed_chunks = files_api
+            .client()
+            .verify_uploaded_chunks(&chunks, batch_size)
+            .await?;
+
+        chunk_manager.mark_completed(
+            chunks
+                .into_iter()
+                .filter(|c| !failed_chunks.contains(c))
+                .map(|(xor, _)| xor),
+        )?;
+
+        if failed_chunks.is_empty() {
+            msg_files_already_uploaded_verified();
+            if !make_data_public {
+                msg_not_public_by_default();
+            }
+            msg_star_line();
+            if chunk_manager.completed_files().is_empty() {
+                msg_chk_mgr_no_verified_file_nor_re_upload();
+            }
+            iterative_uploader::msg_chunk_manager_upload_complete(chunk_manager.clone());
+
+            return Ok(vec![]);
+        }
+        msg_unverified_chunks_reattempted(&failed_chunks.len());
+        failed_chunks
+    } else {
+        let mut chunks = chunk_manager.get_chunks();
+        let mut rng = thread_rng();
+        chunks.shuffle(&mut rng);
+        chunks
+    };
+    Ok(chunks_to_upload)
+}
+
 pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     let progress_bar = ProgressBar::new(length);
     progress_bar.set_style(
@@ -260,4 +348,31 @@ pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     );
     progress_bar.enable_steady_tick(Duration::from_millis(100));
     Ok(progress_bar)
+}
+
+fn msg_files_already_uploaded_verified() {
+    println!("All files were already uploaded and verified");
+    println!("**************************************");
+    println!("*          Uploaded Files            *");
+}
+
+fn msg_chk_mgr_no_verified_file_nor_re_upload() {
+    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+}
+
+fn msg_not_public_by_default() {
+    println!("*                                    *");
+    println!("*  These are not public by default.  *");
+    println!("*     Reupload with `-p` option      *");
+    println!("*      to publish the datamaps.      *");
+}
+
+fn msg_star_line() {
+    println!("**************************************");
+}
+
+fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
+    println!(
+        "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
+    );
 }

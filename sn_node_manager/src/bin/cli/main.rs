@@ -7,35 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::{Parser, Subcommand};
-use color_eyre::{eyre::eyre, Help, Result};
-use colored::Colorize;
-use libp2p_identity::PeerId;
-use semver::Version;
-use sn_node_manager::{
-    add_services::{
-        add_daemon, add_faucet, add_node,
-        config::{AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions},
-    },
-    config::*,
-    helpers::{download_and_extract_release, get_bin_version},
-    local::{kill_network, run_network, LocalNetworkOptions},
-    status, ServiceManager, VerbosityLevel,
-};
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
-use sn_service_management::{
-    control::{ServiceControl, ServiceController},
-    get_local_node_registry_path,
-    rpc::RpcClient,
-    DaemonService, FaucetService, NodeRegistry, NodeService, UpgradeOptions, UpgradeResult,
-};
-use sn_transfers::get_faucet_data_dir;
-use std::{
-    net::Ipv4Addr,
-    path::PathBuf,
-    process::{Command, Stdio},
-    str::FromStr,
-};
+use color_eyre::{eyre::eyre, Result};
+use sn_node_manager::{cmd, VerbosityLevel};
+use sn_peers_acquisition::PeersArgs;
+use std::{net::Ipv4Addr, path::PathBuf};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
@@ -390,7 +365,8 @@ pub enum FaucetSubCmd {
     Add {
         /// Provide environment variables for the faucet service.
         ///
-        /// Useful for setting log levels. Each variable should be comma separated without any space.
+        /// Useful for setting log levels. Each variable should be comma separated without any
+        /// space.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
@@ -437,159 +413,39 @@ async fn main() -> Result<()> {
         SubCmd::Add {
             count,
             data_dir_path,
+            env_variables,
             local,
             log_dir_path,
             peers,
             port,
             rpc_address,
-            env_variables,
             url,
             user,
             version,
         } => {
-            if !is_running_as_root() {
-                return Err(eyre!("The add command must run as the root user"));
-            }
-
-            if verbosity != VerbosityLevel::Minimal {
-                println!("=================================================");
-                println!("              Add Safenode Services              ");
-                println!("=================================================");
-                println!("{} service(s) to be added", count.unwrap_or(1));
-            }
-
-            let service_user = user.unwrap_or("safe".to_string());
-            let service_manager = ServiceController {};
-            service_manager.create_service_user(&service_user)?;
-
-            let service_data_dir_path = get_service_data_dir_path(data_dir_path, &service_user)?;
-            let service_log_dir_path =
-                get_service_log_dir_path(ReleaseType::Safenode, log_dir_path, &service_user)?;
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-
-            let (safenode_download_path, version) = download_and_extract_release(
-                ReleaseType::Safenode,
-                url.clone(),
-                version,
-                &*release_repo,
-            )
-            .await?;
-            let options = AddNodeServiceOptions {
-                local,
-                genesis: peers.first,
+            cmd::node::add(
                 count,
-                bootstrap_peers: get_peers_from_args(peers).await?,
-                node_port: port,
-                rpc_address,
-                safenode_bin_path: safenode_download_path,
-                safenode_dir_path: service_data_dir_path.clone(),
-                service_data_dir_path,
-                service_log_dir_path,
-                url,
-                user: service_user,
-                version,
+                data_dir_path,
                 env_variables,
-            };
-
-            add_node(options, &mut node_registry, &service_manager, verbosity).await?;
-
-            node_registry.save()?;
-
-            Ok(())
+                local,
+                log_dir_path,
+                peers,
+                port,
+                rpc_address,
+                url,
+                user,
+                version,
+                verbosity,
+            )
+            .await
         }
         SubCmd::Daemon(DaemonSubCmd::Add {
             address,
             port,
             path,
-        }) => {
-            if !is_running_as_root() {
-                return Err(eyre!("The add command must run as the root user"));
-            }
-
-            if verbosity != VerbosityLevel::Minimal {
-                println!("=================================================");
-                println!("              Add Daemon Service                 ");
-                println!("=================================================");
-            }
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            add_daemon(
-                AddDaemonServiceOptions {
-                    address,
-                    port,
-                    daemon_download_bin_path: path.clone(),
-                    // TODO: make this cross platform
-                    daemon_install_bin_path: PathBuf::from("/usr/local/bin/safenodemand"),
-                    version: get_bin_version(&path)?,
-                },
-                &mut node_registry,
-                &ServiceController {},
-            )?;
-
-            Ok(())
-        }
-        SubCmd::Daemon(DaemonSubCmd::Start {}) => {
-            if !is_running_as_root() {
-                return Err(eyre!("The start command must run as the root user"));
-            }
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if let Some(daemon) = node_registry.daemon.clone() {
-                if verbosity != VerbosityLevel::Minimal {
-                    println!("=================================================");
-                    println!("             Start Daemon Service                ");
-                    println!("=================================================");
-                }
-
-                let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.start().await?;
-
-                println!(
-                    "Endpoint: {}",
-                    service_manager
-                        .service
-                        .service_data
-                        .endpoint
-                        .map_or("-".to_string(), |e| e.to_string())
-                );
-
-                node_registry.daemon = Some(service_manager.service.service_data);
-                node_registry.save()?;
-                return Ok(());
-            }
-
-            Err(eyre!("The daemon service has not been added yet"))
-        }
-        SubCmd::Daemon(DaemonSubCmd::Stop {}) => {
-            if !is_running_as_root() {
-                return Err(eyre!("The stop command must run as the root user"));
-            }
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if let Some(daemon) = node_registry.daemon.clone() {
-                if verbosity != VerbosityLevel::Minimal {
-                    println!("=================================================");
-                    println!("             Stop Daemon Service                 ");
-                    println!("=================================================");
-                }
-
-                let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.stop().await?;
-
-                node_registry.daemon = Some(service_manager.service.service_data);
-                node_registry.save()?;
-
-                return Ok(());
-            }
-
-            Err(eyre!("The daemon service has not been added yet"))
-        }
+        }) => cmd::daemon::add(address, port, path, verbosity).await,
+        SubCmd::Daemon(DaemonSubCmd::Start {}) => cmd::daemon::start(verbosity).await,
+        SubCmd::Daemon(DaemonSubCmd::Stop {}) => cmd::daemon::stop(verbosity).await,
         SubCmd::Faucet(faucet_command) => match faucet_command {
             FaucetSubCmd::Add {
                 env_variables,
@@ -598,110 +454,10 @@ async fn main() -> Result<()> {
                 url,
                 version,
             } => {
-                if !is_running_as_root() {
-                    return Err(eyre!("The add command must run as the root user"));
-                }
-
-                if verbosity != VerbosityLevel::Minimal {
-                    println!("=================================================");
-                    println!("              Add Faucet Service                 ");
-                    println!("=================================================");
-                }
-
-                let service_user = "safe";
-                let service_manager = ServiceController {};
-                service_manager.create_service_user(service_user)?;
-
-                let service_log_dir_path =
-                    get_service_log_dir_path(ReleaseType::Faucet, log_dir_path, service_user)?;
-
-                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-                let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-
-                let (faucet_download_path, version) = download_and_extract_release(
-                    ReleaseType::Faucet,
-                    url.clone(),
-                    version,
-                    &*release_repo,
-                )
-                .await?;
-
-                add_faucet(
-                    AddFaucetServiceOptions {
-                        bootstrap_peers: get_peers_from_args(peers).await?,
-                        env_variables,
-                        faucet_download_bin_path: faucet_download_path,
-                        faucet_install_bin_path: PathBuf::from("/usr/local/bin/faucet"),
-                        local: false,
-                        service_data_dir_path: get_faucet_data_dir(),
-                        service_log_dir_path,
-                        url,
-                        user: service_user.to_string(),
-                        version,
-                    },
-                    &mut node_registry,
-                    &service_manager,
-                    verbosity,
-                )?;
-
-                Ok(())
+                cmd::faucet::add(env_variables, log_dir_path, peers, url, version, verbosity).await
             }
-            FaucetSubCmd::Start {} => {
-                if !is_running_as_root() {
-                    return Err(eyre!("The start command must run as the root user"));
-                }
-
-                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-                if let Some(faucet) = node_registry.faucet.clone() {
-                    if verbosity != VerbosityLevel::Minimal {
-                        println!("=================================================");
-                        println!("             Start Faucet Service                ");
-                        println!("=================================================");
-                    }
-
-                    let service =
-                        FaucetService::new(faucet.clone(), Box::new(ServiceController {}));
-                    let mut service_manager = ServiceManager::new(
-                        service,
-                        Box::new(ServiceController {}),
-                        VerbosityLevel::Normal,
-                    );
-                    service_manager.start().await?;
-
-                    node_registry.faucet = Some(service_manager.service.service_data);
-                    node_registry.save()?;
-                    return Ok(());
-                }
-
-                Err(eyre!("The faucet service has not been added yet"))
-            }
-            FaucetSubCmd::Stop {} => {
-                if !is_running_as_root() {
-                    return Err(eyre!("The stop command must run as the root user"));
-                }
-
-                let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-                if let Some(faucet) = node_registry.faucet.clone() {
-                    if verbosity != VerbosityLevel::Minimal {
-                        println!("=================================================");
-                        println!("             Stop Faucet Service                 ");
-                        println!("=================================================");
-                    }
-
-                    let service =
-                        FaucetService::new(faucet.clone(), Box::new(ServiceController {}));
-                    let mut service_manager =
-                        ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                    service_manager.stop().await?;
-
-                    node_registry.faucet = Some(service_manager.service.service_data);
-                    node_registry.save()?;
-
-                    return Ok(());
-                }
-
-                Err(eyre!("The faucet service has not been added yet"))
-            }
+            FaucetSubCmd::Start {} => cmd::faucet::start(verbosity).await,
+            FaucetSubCmd::Stop {} => cmd::faucet::stop(verbosity).await,
         },
         SubCmd::Join {
             build,
@@ -714,107 +470,25 @@ async fn main() -> Result<()> {
             peers,
             skip_validation: _,
         } => {
-            println!("=================================================");
-            println!("             Joining Local Network               ");
-            println!("=================================================");
-
-            let local_node_reg_path = &get_local_node_registry_path()?;
-            let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
-
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let faucet_path = get_bin_path(
+            cmd::local::join(
                 build,
+                count,
                 faucet_path,
-                ReleaseType::Faucet,
                 faucet_version,
-                &*release_repo,
-            )
-            .await?;
-            let node_path = get_bin_path(
-                build,
-                node_path,
-                ReleaseType::Safenode,
-                node_version,
-                &*release_repo,
-            )
-            .await?;
-
-            // If no peers are obtained we will attempt to join the existing local network, if one
-            // is running.
-            let peers = match get_peers_from_args(peers).await {
-                Ok(peers) => Some(peers),
-                Err(e) => match e {
-                    sn_peers_acquisition::error::Error::PeersNotObtained => None,
-                    _ => return Err(e.into()),
-                },
-            };
-            let options = LocalNetworkOptions {
-                faucet_bin_path: faucet_path,
                 interval,
-                join: true,
-                node_count: count,
+                node_path,
+                node_version,
                 peers,
-                safenode_bin_path: node_path,
-                skip_validation: true,
-            };
-            run_network(options, &mut local_node_registry, &ServiceController {}).await?;
-            Ok(())
+                true,
+            )
+            .await
         }
-        SubCmd::Kill { keep_directories } => kill_local_network(verbosity, keep_directories),
+        SubCmd::Kill { keep_directories } => cmd::local::kill(keep_directories, verbosity),
         SubCmd::Remove {
+            keep_directories,
             peer_id,
             service_name,
-            keep_directories,
-        } => {
-            if !is_running_as_root() {
-                return Err(eyre!("The remove command must run as the root user"));
-            }
-            if peer_id.is_none() && service_name.is_none() {
-                return Err(eyre!("Either a peer ID or a service name must be supplied"));
-            }
-
-            println!("=================================================");
-            println!("           Remove Safenode Services              ");
-            println!("=================================================");
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if let Some(ref name) = service_name {
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.service_name == *name)
-                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.remove(keep_directories).await?;
-                node_registry.update_node(service_manager.service.service_data)?;
-            } else if let Some(ref peer_id) = peer_id {
-                let peer_id = PeerId::from_str(peer_id)?;
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.peer_id == Some(peer_id))
-                    .ok_or_else(|| {
-                        eyre!(format!(
-                            "Could not find node with peer ID '{}'",
-                            peer_id.to_string()
-                        ))
-                    })?;
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.remove(keep_directories).await?;
-                node_registry.update_node(service_manager.service.service_data)?;
-            }
-
-            node_registry.save()?;
-
-            Ok(())
-        }
+        } => cmd::node::remove(keep_directories, peer_id, service_name, verbosity).await,
         SubCmd::Run {
             build,
             clean,
@@ -826,270 +500,33 @@ async fn main() -> Result<()> {
             node_version,
             skip_validation: _,
         } => {
-            // In the clean case, the node registry must be loaded *after* the existing network has
-            // been killed, which clears it out.
-            let local_node_reg_path = &get_local_node_registry_path()?;
-            let mut local_node_registry = if clean {
-                let client_data_path = dirs_next::data_dir()
-                    .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
-                    .join("safe")
-                    .join("client");
-                if client_data_path.is_dir() {
-                    std::fs::remove_dir_all(client_data_path)?;
-                }
-                kill_local_network(verbosity.clone(), false)?;
-                NodeRegistry::load(local_node_reg_path)?
-            } else {
-                let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
-                if !local_node_registry.nodes.is_empty() {
-                    return Err(eyre!("A local network is already running")
-                        .suggestion("Use the kill command to destroy the network then try again"));
-                }
-                local_node_registry
-            };
-
-            if verbosity != VerbosityLevel::Minimal {
-                println!("=================================================");
-                println!("             Launching Local Network             ");
-                println!("=================================================");
-            }
-
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let faucet_path = get_bin_path(
+            cmd::local::run(
                 build,
+                clean,
+                count,
                 faucet_path,
-                ReleaseType::Faucet,
                 faucet_version,
-                &*release_repo,
-            )
-            .await?;
-            let node_path = get_bin_path(
-                build,
-                node_path,
-                ReleaseType::Safenode,
-                node_version,
-                &*release_repo,
-            )
-            .await?;
-
-            let options = LocalNetworkOptions {
-                faucet_bin_path: faucet_path,
-                join: false,
                 interval,
-                node_count: count,
-                peers: None,
-                safenode_bin_path: node_path,
-                skip_validation: true,
-            };
-            run_network(options, &mut local_node_registry, &ServiceController {}).await?;
-
-            local_node_registry.save()?;
-
-            Ok(())
+                node_path,
+                node_version,
+                true,
+                verbosity,
+            )
+            .await
         }
         SubCmd::Start {
             peer_id,
             service_name,
-        } => {
-            if !is_running_as_root() {
-                return Err(eyre!("The start command must run as the root user"));
-            }
-
-            if verbosity != VerbosityLevel::Minimal {
-                println!("=================================================");
-                println!("             Start Safenode Services             ");
-                println!("=================================================");
-            }
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if let Some(ref name) = service_name {
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.service_name == *name)
-                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.start().await?;
-
-                node_registry.update_node(service_manager.service.service_data)?;
-                node_registry.save()?;
-            } else if let Some(ref peer_id) = peer_id {
-                let peer_id = PeerId::from_str(peer_id)?;
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.peer_id == Some(peer_id))
-                    .ok_or_else(|| {
-                        eyre!(format!(
-                            "Could not find node with peer ID '{}'",
-                            peer_id.to_string()
-                        ))
-                    })?;
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.start().await?;
-
-                node_registry.update_node(service_manager.service.service_data)?;
-                node_registry.save()?;
-            } else {
-                let mut failed_services = Vec::new();
-                let node_count = node_registry.nodes.len();
-                for i in 0..node_count {
-                    let rpc_client =
-                        RpcClient::from_socket_addr(node_registry.nodes[i].rpc_socket_addr);
-                    let service =
-                        NodeService::new(node_registry.nodes[i].clone(), Box::new(rpc_client));
-                    let mut service_manager = ServiceManager::new(
-                        service,
-                        Box::new(ServiceController {}),
-                        verbosity.clone(),
-                    );
-                    match service_manager.start().await {
-                        Ok(()) => {
-                            node_registry.update_node(service_manager.service.service_data)?;
-                            node_registry.save()?;
-                        }
-                        Err(e) => {
-                            failed_services
-                                .push((node_registry.nodes[i].service_name.clone(), e.to_string()));
-                        }
-                    }
-                }
-
-                if !failed_services.is_empty() {
-                    println!("Failed to start {} service(s):", failed_services.len());
-                    for failed in failed_services.iter() {
-                        println!("{} {}: {}", "✕".red(), failed.0, failed.1);
-                    }
-                    return Err(eyre!("Failed to start one or more services").suggestion(
-                        "However, any services that were successfully started will be usable.",
-                    ));
-                }
-            }
-
-            Ok(())
-        }
+        } => cmd::node::start(peer_id, service_name, verbosity).await,
         SubCmd::Status {
             details,
             fail,
             json,
-        } => {
-            let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
-            if !local_node_registry.nodes.is_empty() {
-                if !json {
-                    println!("=================================================");
-                    println!("                Local Network                    ");
-                    println!("=================================================");
-                }
-                status(
-                    &mut local_node_registry,
-                    &ServiceController {},
-                    details,
-                    json,
-                    fail,
-                )
-                .await?;
-                local_node_registry.save()?;
-                return Ok(());
-            }
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if !node_registry.nodes.is_empty() {
-                if !json {
-                    println!("=================================================");
-                    println!("                Safenode Services                ");
-                    println!("=================================================");
-                }
-                status(
-                    &mut node_registry,
-                    &ServiceController {},
-                    details,
-                    json,
-                    fail,
-                )
-                .await?;
-                node_registry.save()?;
-            }
-
-            Ok(())
-        }
+        } => cmd::node::status(details, fail, json).await,
         SubCmd::Stop {
             peer_id,
             service_name,
-        } => {
-            if !is_running_as_root() {
-                return Err(eyre!("The stop command must run as the root user"));
-            }
-
-            println!("=================================================");
-            println!("              Stop Safenode Services             ");
-            println!("=================================================");
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if let Some(ref name) = service_name {
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.service_name == *name)
-                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.stop().await?;
-
-                node_registry.update_node(service_manager.service.service_data)?;
-                node_registry.save()?;
-            } else if let Some(ref peer_id) = peer_id {
-                let peer_id = PeerId::from_str(peer_id)?;
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.peer_id == Some(peer_id))
-                    .ok_or_else(|| {
-                        eyre!(format!(
-                            "Could not find node with peer ID '{}'",
-                            peer_id.to_string()
-                        ))
-                    })?;
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-                service_manager.stop().await?;
-
-                node_registry.update_node(service_manager.service.service_data)?;
-                node_registry.save()?;
-            } else {
-                let node_count = node_registry.nodes.len();
-                for i in 0..node_count {
-                    let rpc_client =
-                        RpcClient::from_socket_addr(node_registry.nodes[i].rpc_socket_addr);
-                    let service =
-                        NodeService::new(node_registry.nodes[i].clone(), Box::new(rpc_client));
-                    let mut service_manager = ServiceManager::new(
-                        service,
-                        Box::new(ServiceController {}),
-                        verbosity.clone(),
-                    );
-                    service_manager.stop().await?;
-
-                    node_registry.update_node(service_manager.service.service_data)?;
-                    node_registry.save()?;
-                }
-            }
-
-            Ok(())
-        }
+        } => cmd::node::stop(peer_id, service_name, verbosity).await,
         SubCmd::Upgrade {
             do_not_start,
             force,
@@ -1099,317 +536,19 @@ async fn main() -> Result<()> {
             url,
             version,
         } => {
-            if !is_running_as_root() {
-                return Err(eyre!("The upgrade command must run as the root user"));
-            }
-
-            if verbosity != VerbosityLevel::Minimal {
-                println!("=================================================");
-                println!("           Upgrade Safenode Services             ");
-                println!("=================================================");
-            }
-
-            let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-            let (upgrade_bin_path, target_version) = if let Some(version) = version {
-                let (upgrade_bin_path, version) = download_and_extract_release(
-                    ReleaseType::Safenode,
-                    None,
-                    Some(version),
-                    &*release_repo,
-                )
-                .await?;
-                (upgrade_bin_path, Version::parse(&version)?)
-            } else if let Some(url) = url {
-                let (upgrade_bin_path, version) = download_and_extract_release(
-                    ReleaseType::Safenode,
-                    Some(url),
-                    None,
-                    &*release_repo,
-                )
-                .await?;
-                (upgrade_bin_path, Version::parse(&version)?)
-            } else {
-                println!("Retrieving latest version of safenode...");
-                let latest_version = release_repo
-                    .get_latest_version(&ReleaseType::Safenode)
-                    .await?;
-                let latest_version = Version::parse(&latest_version)?;
-                println!("Latest version is {latest_version}");
-                let (upgrade_bin_path, _) = download_and_extract_release(
-                    ReleaseType::Safenode,
-                    None,
-                    Some(latest_version.to_string()),
-                    &*release_repo,
-                )
-                .await?;
-                (upgrade_bin_path, latest_version)
-            };
-
-            let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-            if !force {
-                let node_versions = node_registry
-                    .nodes
-                    .iter()
-                    .map(|n| {
-                        Version::parse(&n.version).map_err(|_| eyre!("Failed to parse Version"))
-                    })
-                    .collect::<Result<Vec<Version>>>()?;
-                let any_nodes_need_upgraded = node_versions
-                    .iter()
-                    .any(|current_version| current_version < &target_version);
-                if !any_nodes_need_upgraded {
-                    println!("{} All nodes are at the latest version", "✓".green());
-                    return Ok(());
-                }
-            }
-
-            let mut upgrade_summary = Vec::new();
-
-            if let Some(ref name) = service_name {
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.service_name == *name)
-                    .ok_or_else(|| eyre!("No service named '{name}'"))?;
-
-                let env_variables = if provided_env_variable.is_some() {
-                    &provided_env_variable
-                } else {
-                    &node_registry.environment_variables
-                };
-                let options = UpgradeOptions {
-                    bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                    env_variables: env_variables.clone(),
-                    force,
-                    start_service: !do_not_start,
-                    target_bin_path: upgrade_bin_path.clone(),
-                    target_version: target_version.clone(),
-                };
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-
-                match service_manager.upgrade(options).await {
-                    Ok(upgrade_result) => {
-                        upgrade_summary
-                            .push((service_manager.service.service_data, upgrade_result));
-                    }
-                    Err(e) => {
-                        upgrade_summary
-                            .push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
-                    }
-                }
-            } else if let Some(ref peer_id) = peer_id {
-                let peer_id = PeerId::from_str(peer_id)?;
-                let node = node_registry
-                    .nodes
-                    .iter_mut()
-                    .find(|x| x.peer_id == Some(peer_id))
-                    .ok_or_else(|| {
-                        eyre!(format!(
-                            "Could not find node with peer ID '{}'",
-                            peer_id.to_string()
-                        ))
-                    })?;
-
-                let env_variables = if provided_env_variable.is_some() {
-                    &provided_env_variable
-                } else {
-                    &node_registry.environment_variables
-                };
-                let options = UpgradeOptions {
-                    bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                    env_variables: env_variables.clone(),
-                    force,
-                    start_service: !do_not_start,
-                    target_bin_path: upgrade_bin_path.clone(),
-                    target_version: target_version.clone(),
-                };
-
-                let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                let mut service_manager =
-                    ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
-
-                match service_manager.upgrade(options).await {
-                    Ok(upgrade_result) => {
-                        upgrade_summary
-                            .push((service_manager.service.service_data, upgrade_result));
-                    }
-                    Err(e) => {
-                        upgrade_summary
-                            .push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
-                    }
-                }
-            } else {
-                for node in node_registry.nodes.iter_mut() {
-                    let env_variables = if provided_env_variable.is_some() {
-                        &provided_env_variable
-                    } else {
-                        &node_registry.environment_variables
-                    };
-                    let options = UpgradeOptions {
-                        bootstrap_peers: node_registry.bootstrap_peers.clone(),
-                        env_variables: env_variables.clone(),
-                        force,
-                        start_service: !do_not_start,
-                        target_bin_path: upgrade_bin_path.clone(),
-                        target_version: target_version.clone(),
-                    };
-
-                    let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-                    let service = NodeService::new(node.clone(), Box::new(rpc_client));
-                    let mut service_manager = ServiceManager::new(
-                        service,
-                        Box::new(ServiceController {}),
-                        verbosity.clone(),
-                    );
-
-                    match service_manager.upgrade(options).await {
-                        Ok(upgrade_result) => {
-                            upgrade_summary
-                                .push((service_manager.service.service_data, upgrade_result));
-                        }
-                        Err(e) => {
-                            upgrade_summary.push((
-                                node.clone(),
-                                UpgradeResult::Error(format!("Error: {}", e)),
-                            ));
-                        }
-                    }
-                }
-            }
-
-            println!("Upgrade summary:");
-            for (node, upgrade_result) in upgrade_summary {
-                node_registry.update_node(node.clone())?;
-                match upgrade_result {
-                    UpgradeResult::NotRequired => {
-                        println!("- {} did not require an upgrade", node.service_name);
-                    }
-                    UpgradeResult::Upgraded(previous_version, new_version) => {
-                        println!(
-                            "{} {} upgraded from {previous_version} to {new_version}",
-                            "✓".green(),
-                            node.service_name
-                        );
-                    }
-                    UpgradeResult::Forced(previous_version, target_version) => {
-                        println!(
-                            "{} Forced {} version change from {previous_version} to {target_version}.",
-                            "✓".green(), node.service_name
-                        );
-                    }
-                    UpgradeResult::Error(msg) => {
-                        println!(
-                            "{} {} was not upgraded: {}",
-                            "✕".red(),
-                            node.service_name,
-                            msg
-                        );
-                    }
-                }
-            }
-
-            node_registry.save()?;
-
-            Ok(())
+            cmd::node::upgrade(
+                do_not_start,
+                force,
+                peer_id,
+                provided_env_variable,
+                service_name,
+                url,
+                version,
+                verbosity,
+            )
+            .await
         }
     }
-}
-
-async fn get_bin_path(
-    build: bool,
-    path: Option<PathBuf>,
-    release_type: ReleaseType,
-    version: Option<String>,
-    release_repo: &dyn SafeReleaseRepositoryInterface,
-) -> Result<PathBuf> {
-    if build {
-        build_binary(&release_type)?;
-        Ok(PathBuf::from("target")
-            .join("release")
-            .join(release_type.to_string()))
-    } else if let Some(path) = path {
-        Ok(path)
-    } else {
-        let (download_path, _) =
-            download_and_extract_release(release_type, None, version, release_repo).await?;
-        Ok(download_path)
-    }
-}
-
-fn build_binary(bin_type: &ReleaseType) -> Result<()> {
-    let mut args = vec!["build", "--release"];
-    let bin_name = bin_type.to_string();
-    args.push("--bin");
-    args.push(&bin_name);
-
-    // Keep features consistent to avoid recompiling.
-    if cfg!(feature = "chaos") {
-        println!("*** Building testnet with CHAOS enabled. Watch out. ***");
-        args.push("--features");
-        args.push("chaos");
-    }
-    if cfg!(feature = "statemap") {
-        args.extend(["--features", "statemap"]);
-    }
-    if cfg!(feature = "otlp") {
-        args.extend(["--features", "otlp"]);
-    }
-    if cfg!(feature = "local-discovery") {
-        args.extend(["--features", "local-discovery"]);
-    }
-    if cfg!(feature = "network-contacts") {
-        args.extend(["--features", "network-contacts"]);
-    }
-    if cfg!(feature = "websockets") {
-        args.extend(["--features", "websockets"]);
-    }
-    if cfg!(feature = "open-metrics") {
-        args.extend(["--features", "open-metrics"]);
-    }
-
-    let build_binary_msg = format!("Building {} binary", bin_name);
-    let banner = "=".repeat(build_binary_msg.len());
-    println!("{}\n{}\n{}", banner, build_binary_msg, banner);
-
-    let mut build_result = Command::new("cargo");
-    let _ = build_result.args(args.clone());
-
-    if let Ok(val) = std::env::var("CARGO_TARGET_DIR") {
-        let _ = build_result.env("CARGO_TARGET_DIR", val);
-    }
-
-    let build_result = build_result
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()?;
-
-    if !build_result.status.success() {
-        return Err(eyre!("Failed to build binaries"));
-    }
-
-    Ok(())
-}
-
-fn kill_local_network(verbosity: VerbosityLevel, keep_directories: bool) -> Result<()> {
-    let local_reg_path = &get_local_node_registry_path()?;
-    let local_node_registry = NodeRegistry::load(local_reg_path)?;
-    if local_node_registry.nodes.is_empty() {
-        println!("No local network is currently running");
-    } else {
-        if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Killing Local Network               ");
-            println!("=================================================");
-        }
-        kill_network(&local_node_registry, keep_directories)?;
-        std::fs::remove_file(local_reg_path)?;
-    }
-    Ok(())
 }
 
 // Since delimiter is on, we get element of the csv and not the entire csv.
