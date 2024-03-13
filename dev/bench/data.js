@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710317315407,
+  "lastUpdate": 1710317316751,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "4f4ae06d6dedba87e5b7a06430bba186da9ea4fc",
-          "message": "fix: add libp2p identity with rand dep for tests",
-          "timestamp": "2023-10-26T11:36:31Z",
-          "tree_id": "f177239e3b1b09d9c46dc9b0f1bdb63a3f5ab337",
-          "url": "https://github.com/maidsafe/safe_network/commit/4f4ae06d6dedba87e5b7a06430bba186da9ea4fc"
-        },
-        "date": 1698326060463,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
           "message": "fix: sn_testnet build check was missing rand dep",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 210,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2164b3ca615edf2d7a442139644f1d3210c8bf72",
+          "message": "ci: refine the scheduled bump run, remove on push",
+          "timestamp": "2024-03-13T08:55:45+01:00",
+          "tree_id": "4f5ae137fab9316c3c594e01d6913fcab9c76d46",
+          "url": "https://github.com/maidsafe/safe_network/commit/2164b3ca615edf2d7a442139644f1d3210c8bf72"
+        },
+        "date": 1710317316429,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 207,
             "unit": "MB"
           },
           {
