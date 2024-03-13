@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710340898738,
+  "lastUpdate": 1710341003311,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
-          "message": "fix: sn_testnet build check was missing rand dep",
-          "timestamp": "2023-10-26T15:10:19+02:00",
-          "tree_id": "2e63b206332b2a94701684e3ba139f3f5e796420",
-          "url": "https://github.com/maidsafe/safe_network/commit/13c5b36b84701f62317b38fd8109de3b49f45a9a"
-        },
-        "date": 1698330165583,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "cdc574b88cf26fff46e80396322fc80bd2c2cf15",
+          "message": "refactor: store test utils under a new crate",
+          "timestamp": "2024-03-13T13:43:42Z",
+          "tree_id": "0b30dfa7852bcc56950a0454d9d84bb2c59bb0d7",
+          "url": "https://github.com/maidsafe/safe_network/commit/cdc574b88cf26fff46e80396322fc80bd2c2cf15"
+        },
+        "date": 1710341002235,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
