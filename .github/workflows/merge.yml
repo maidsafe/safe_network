@@ -372,6 +372,9 @@ jobs:
         run: cargo test --package sn_client --release --tests
         env:
           SN_LOG: "all"
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 15
 
       - name: Create and fund a wallet to pay for files storage
