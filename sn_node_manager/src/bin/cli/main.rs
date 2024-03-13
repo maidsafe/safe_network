@@ -71,14 +71,16 @@ pub enum SubCmd {
         #[clap(long)]
         port: Option<u16>,
         #[clap(long)]
-        /// Specify an Ipv4Addr for the node's RPC service to run on. This is useful if you want to expose the
-        /// RPC server outside. The ports are assigned automatically.
+        /// Specify an Ipv4Addr for the node's RPC server to run on.
+        ///
+        /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
         ///
         /// If not set, the RPC server is run locally.
         rpc_address: Option<Ipv4Addr>,
         /// Provide environment variables for the safenode service.
         ///
-        /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
+        /// Useful to set safenode's log levels. Variables should be comma separated without
+        /// spaces.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
@@ -125,7 +127,7 @@ pub enum SubCmd {
     Join {
         /// Set to build the safenode and faucet binaries.
         ///
-        /// This assumes the command is being run from the root of the safe_network repository.
+        /// This option requires the command run from the root of the safe_network repository.
         #[clap(long)]
         build: bool,
         /// The number of nodes to run.
@@ -190,7 +192,7 @@ pub enum SubCmd {
     Run {
         /// Set to build the safenode and faucet binaries.
         ///
-        /// This assumes the command is being run from the root of the safe_network repository.
+        /// This option requires the command run from the root of the safe_network repository.
         #[clap(long)]
         build: bool,
         /// Set to remove the client data directory and kill any existing local network.
@@ -199,7 +201,7 @@ pub enum SubCmd {
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
-        /// Path to a faucet binary
+        /// Path to a faucet binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "faucet_version", conflicts_with = "build")]
@@ -287,8 +289,7 @@ pub enum SubCmd {
         /// Set this flag to force the upgrade command to replace binaries without comparing any
         /// version numbers.
         ///
-        /// This may be required in a case where we want to 'downgrade' in case an upgrade caused a
-        /// problem, or for testing purposes.
+        /// Required if we want to downgrade, or for testing purposes.
         #[clap(long)]
         force: bool,
         /// The peer ID of the service to upgrade
@@ -297,15 +298,17 @@ pub enum SubCmd {
         /// The name of the service to upgrade
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Option<String>,
-        /// Provide environment variables for the safenode service. This will override the values set during the Add
-        /// command.
+        /// Provide environment variables for the safenode service.
         ///
-        /// This is useful to set the safenode's log levels. Each variable should be comma separated without any space.
+        /// Values set when the service was added will be overridden.
+        ///
+        /// Useful to set safenode's log levels. Variables should be comma separated without
+        /// spaces.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
-        /// Provide a binary to upgrade to, using a URL.
+        /// Provide a binary to upgrade to using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
         ///
@@ -401,6 +404,46 @@ pub enum FaucetSubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
     Stop {},
+    /// Upgrade the faucet.
+    ///
+    /// The running faucet will be stopped, its binary will be replaced, then it will be started
+    /// again.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "upgrade")]
+    Upgrade {
+        /// Set this flag to upgrade the faucet without starting it.
+        ///
+        /// Can be useful for testing scenarios.
+        #[clap(long)]
+        do_not_start: bool,
+        /// Set this flag to force the upgrade command to replace binaries without comparing any
+        /// version numbers.
+        ///
+        /// Required if we want to downgrade, or for testing purposes.
+        #[clap(long)]
+        force: bool,
+        /// Provide environment variables for the faucet service.
+        ///
+        /// Values set when the service was added will be overridden.
+        ///
+        /// Useful to set safenode's log levels. Variables should be comma separated without
+        /// spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
+        /// Provide a binary to upgrade to using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This can be useful for testing scenarios.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Upgrade to a specific version rather than the latest version.
+        #[clap(long)]
+        version: Option<String>,
+    },
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -458,6 +501,23 @@ async fn main() -> Result<()> {
             }
             FaucetSubCmd::Start {} => cmd::faucet::start(verbosity).await,
             FaucetSubCmd::Stop {} => cmd::faucet::stop(verbosity).await,
+            FaucetSubCmd::Upgrade {
+                do_not_start,
+                force,
+                env_variables: provided_env_variable,
+                url,
+                version,
+            } => {
+                cmd::faucet::upgrade(
+                    do_not_start,
+                    force,
+                    provided_env_variable,
+                    url,
+                    version,
+                    verbosity,
+                )
+                .await
+            }
         },
         SubCmd::Join {
             build,

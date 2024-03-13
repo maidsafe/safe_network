@@ -8,7 +8,7 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::is_running_as_root;
+use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade_summary};
 use crate::{
     add_services::{add_node, config::AddNodeServiceOptions},
     config,
@@ -361,37 +361,8 @@ pub async fn upgrade(
         println!("=================================================");
     }
 
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
-    let (upgrade_bin_path, target_version) = if let Some(version) = version {
-        let (upgrade_bin_path, version) = download_and_extract_release(
-            ReleaseType::Safenode,
-            None,
-            Some(version),
-            &*release_repo,
-        )
-        .await?;
-        (upgrade_bin_path, Version::parse(&version)?)
-    } else if let Some(url) = url {
-        let (upgrade_bin_path, version) =
-            download_and_extract_release(ReleaseType::Safenode, Some(url), None, &*release_repo)
-                .await?;
-        (upgrade_bin_path, Version::parse(&version)?)
-    } else {
-        println!("Retrieving latest version of safenode...");
-        let latest_version = release_repo
-            .get_latest_version(&ReleaseType::Safenode)
-            .await?;
-        let latest_version = Version::parse(&latest_version)?;
-        println!("Latest version is {latest_version}");
-        let (upgrade_bin_path, _) = download_and_extract_release(
-            ReleaseType::Safenode,
-            None,
-            Some(latest_version.to_string()),
-            &*release_repo,
-        )
-        .await?;
-        (upgrade_bin_path, latest_version)
-    };
+    let (upgrade_bin_path, target_version) =
+        download_and_get_upgrade_bin_path(ReleaseType::Safenode, url, version).await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if !force {
@@ -518,36 +489,15 @@ pub async fn upgrade(
         }
     }
 
-    println!("Upgrade summary:");
-    for (node, upgrade_result) in upgrade_summary {
+    print_upgrade_summary(
+        upgrade_summary
+            .iter()
+            .map(|x| (x.0.service_name.clone(), x.1.clone()))
+            .collect::<Vec<(String, UpgradeResult)>>(),
+    );
+
+    for (node, _) in upgrade_summary {
         node_registry.update_node(node.clone())?;
-        match upgrade_result {
-            UpgradeResult::NotRequired => {
-                println!("- {} did not require an upgrade", node.service_name);
-            }
-            UpgradeResult::Upgraded(previous_version, new_version) => {
-                println!(
-                    "{} {} upgraded from {previous_version} to {new_version}",
-                    "✓".green(),
-                    node.service_name
-                );
-            }
-            UpgradeResult::Forced(previous_version, target_version) => {
-                println!(
-                    "{} Forced {} version change from {previous_version} to {target_version}.",
-                    "✓".green(),
-                    node.service_name
-                );
-            }
-            UpgradeResult::Error(msg) => {
-                println!(
-                    "{} {} was not upgraded: {}",
-                    "✕".red(),
-                    node.service_name,
-                    msg
-                );
-            }
-        }
     }
 
     node_registry.save()?;
