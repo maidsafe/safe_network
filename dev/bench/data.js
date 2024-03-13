@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710293201816,
+  "lastUpdate": 1710293308568,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f11c62d9cee067b8c9511d106a8df788706bbb26",
-          "message": "fix(tests): nodes rewards tests to account for repayments amounts",
-          "timestamp": "2023-10-24T21:08:20Z",
-          "tree_id": "1071efbc4a3f6dc32e87bb382ec3a07ce4e2f79d",
-          "url": "https://github.com/maidsafe/safe_network/commit/f11c62d9cee067b8c9511d106a8df788706bbb26"
-        },
-        "date": 1698187032472,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 69,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fa8f22d9d2a3b54e34b5ec695163235471292d1",
+          "message": "refactor: reorganise command processing\n\nThe code in the `main` module of the node manager was becoming unwieldy and difficult to navigate,\nso I've refactored it into a few different modules.\n\nThere are absolutely no functional changes here.\n\nClippy was complaining about some functions having too many arguments, so I suppressed those\nwarnings. These are just utility functions, and adding new structs just to encapsulate a few\narguments would have been tedious and overkill.",
+          "timestamp": "2024-03-13T00:39:09Z",
+          "tree_id": "5a8a853755daa9eea61da986222e62f393e477b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fa8f22d9d2a3b54e34b5ec695163235471292d1"
+        },
+        "date": 1710293307749,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
