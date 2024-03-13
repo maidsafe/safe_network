@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710341005968,
+  "lastUpdate": 1710341008848,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39016,6 +39016,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35216,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "cdc574b88cf26fff46e80396322fc80bd2c2cf15",
+          "message": "refactor: store test utils under a new crate",
+          "timestamp": "2024-03-13T13:43:42Z",
+          "tree_id": "0b30dfa7852bcc56950a0454d9d84bb2c59bb0d7",
+          "url": "https://github.com/maidsafe/safe_network/commit/cdc574b88cf26fff46e80396322fc80bd2c2cf15"
+        },
+        "date": 1710341007719,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6234,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35490,
             "unit": "ms"
           },
           {
