@@ -19,4 +19,22 @@ message NodeServiceRestartRequest {
 }
   
 message NodeServiceRestartResponse {}
-  
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+    enum ServiceStatus {
+        Added = 0;
+        Running = 1;
+        Stopped = 2;
+        Removed = 3;
+    }
+    message Node {
+        optional bytes peer_id = 1;
+        ServiceStatus status = 2;
+        uint32 number = 3;
+    }
+
+    repeated Node nodes = 1;
+
+}
