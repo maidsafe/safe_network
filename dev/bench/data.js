@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710293310969,
+  "lastUpdate": 1710293313439,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -38821,6 +38821,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35946,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fa8f22d9d2a3b54e34b5ec695163235471292d1",
+          "message": "refactor: reorganise command processing\n\nThe code in the `main` module of the node manager was becoming unwieldy and difficult to navigate,\nso I've refactored it into a few different modules.\n\nThere are absolutely no functional changes here.\n\nClippy was complaining about some functions having too many arguments, so I suppressed those\nwarnings. These are just utility functions, and adding new structs just to encapsulate a few\narguments would have been tedious and overkill.",
+          "timestamp": "2024-03-13T00:39:09Z",
+          "tree_id": "5a8a853755daa9eea61da986222e62f393e477b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fa8f22d9d2a3b54e34b5ec695163235471292d1"
+        },
+        "date": 1710293312615,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6746,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37636,
             "unit": "ms"
           },
           {
