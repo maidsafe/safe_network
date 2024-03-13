@@ -805,13 +805,17 @@ fn find_by_name_in_parent_folder(name: &str, path: &Path, folders: &Folders) -> 
 mod tests {
     // All tests require a network running so Clients can be instantiated.
 
-    use super::{read_root_folder_addr, read_tracking_info_from_disk, AccountPacket};
+    use super::{
+        read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
+        MetadataTrackingInfo,
+    };
     use crate::subcommands::files::upload::FilesUploadOptions;
+    use bytes::Bytes;
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
-        registers::RegisterAddress,
+        registers::{EntryHash, RegisterAddress},
         test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
-        FolderEntry, BATCH_SIZE,
+        Client, FolderEntry, BATCH_SIZE,
     };
 
     use bls::SecretKey;
@@ -832,12 +836,68 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_acc_packet_from_empty_dir() -> Result<()> {
+    async fn test_acc_packet_private_helpers() -> Result<()> {
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let files_path = tmp_dir.path().join("myfiles");
+        create_dir_all(&files_path)?;
+
+        let acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &files_path,
+            Some(root_folder_addr),
+        )?;
+
+        assert_eq!(acc_packet.root_folder_addr(), root_folder_addr);
+
+        let mut test_files = create_test_files_on_disk(&files_path)?;
         let mut rng = rand::thread_rng();
-        let owner_sk = SecretKey::random();
-        let owner_pk = owner_sk.public_key();
-        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
-        let client = get_new_client(owner_sk).await?;
+        let dummy_metadata = Metadata {
+            name: "dummy".to_string(),
+            content: FolderEntry::File(Chunk::new(Bytes::new())),
+        };
+        for (relative_path, _) in test_files.iter() {
+            let abs_path = files_path.join(relative_path);
+
+            // test helper which calculates relative paths based on root files dir of acc packet
+            assert!(
+                matches!(acc_packet.get_relative_path(&abs_path), Ok(p) if &p == relative_path),
+                "AccountPacket::get_relative_path helper returned invalid path"
+            );
+
+            // let's test helper to store tracking info
+            // use just dummy/invalid metadata and meta-xorname since we won't verify it
+            let meta_xorname = XorName::random(&mut rng);
+            acc_packet.store_tracking_info(MetadataTrackingInfo {
+                file_path: abs_path,
+                meta_xorname,
+                metadata: dummy_metadata.clone(),
+                entry_hash: EntryHash::default(),
+            })?;
+            assert!(acc_packet.meta_dir.join(hex::encode(meta_xorname)).exists());
+        }
+
+        // let's test helpers to read and remove tracking info
+        let tracking_info = read_tracking_info_from_disk(&acc_packet.meta_dir)?;
+        assert_eq!(tracking_info.len(), test_files.len());
+        for (abs_path, info) in tracking_info.iter() {
+            assert!(test_files.remove(abs_path).is_some());
+            acc_packet.remove_tracking_info(info.meta_xorname);
+            assert!(!acc_packet
+                .meta_dir
+                .join(hex::encode(info.meta_xorname))
+                .exists());
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_acc_packet_from_empty_dir() -> Result<()> {
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -876,11 +936,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_acc_packet_upload_download() -> Result<()> {
-        let mut rng = rand::thread_rng();
-        let owner_sk = SecretKey::random();
-        let owner_pk = owner_sk.public_key();
-        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
-        let client = get_new_client(owner_sk).await?;
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -918,11 +974,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_acc_packet_sync_mutations() -> Result<()> {
-        let mut rng = rand::thread_rng();
-        let owner_sk = SecretKey::random();
-        let owner_pk = owner_sk.public_key();
-        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
-        let client = get_new_client(owner_sk).await?;
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -952,35 +1004,7 @@ mod tests {
         .await?;
 
         // let's make mutations to the clone:
-        // - modify the content of a file
-        let new_chunk = random_file_chunk();
-        let file2modify = Path::new("file0.txt");
-        OpenOptions::new()
-            .write(true)
-            .open(clone_files_path.join(file2modify))?
-            .write_all(new_chunk.value())?;
-        expected_files.insert(file2modify.to_path_buf(), Some(new_chunk));
-        // - remove one of the files
-        let file2remove = Path::new("dir1").join("file1.txt");
-        remove_file(clone_files_path.join(&file2remove))?;
-        expected_files.remove(&file2remove);
-        // we need to keep the empty dir within the list of expected files though
-        expected_files.insert(Path::new("dir1").to_path_buf(), None);
-        // - remove one of the dirs
-        let dir2remove = Path::new("dir2");
-        remove_dir_all(clone_files_path.join(dir2remove))?;
-        expected_files.remove(dir2remove);
-        // - create new dir
-        let dir2create = Path::new("dir2").join("dir2_1");
-        create_dir_all(clone_files_path.join(&dir2create))?;
-        expected_files.insert(dir2create.to_path_buf(), None);
-        // - create new file
-        create_dir_all(clone_files_path.join("dir3").join("dir3_1"))?;
-        let file2create = Path::new("dir3").join("dir3_1").join("file3.txt");
-        let mut file = File::create(clone_files_path.join(&file2create))?;
-        let new_chunk = random_file_chunk();
-        file.write_all(new_chunk.value())?;
-        expected_files.insert(file2create, Some(new_chunk));
+        mutate_test_files_on_disk(&clone_files_path, &mut expected_files)?;
 
         // and finally, sync the clone up with the network
         cloned_acc_packet.sync(SYNC_OPTS).await?;
@@ -994,6 +1018,18 @@ mod tests {
         check_tracking_info_match(&acc_packet, &cloned_acc_packet, expected_files)?;
 
         Ok(())
+    }
+
+    // Helpers functions to generate and verify test data
+
+    // Build a new Client and a random address for a Folder (Register)
+    async fn get_client_and_folder_addr() -> Result<(Client, RegisterAddress)> {
+        let mut rng = rand::thread_rng();
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+        let root_folder_addr = RegisterAddress::new(XorName::random(&mut rng), owner_pk);
+        let client = get_new_client(owner_sk).await?;
+        Ok((client, root_folder_addr))
     }
 
     // Create a hard-coded set of test files and dirs on disk
@@ -1023,6 +1059,44 @@ mod tests {
             }
         }
         Ok(files)
+    }
+
+    // Apply a hard-coded set of mutations to test files and dirs on disk
+    fn mutate_test_files_on_disk(
+        path: &Path,
+        test_files: &mut BTreeMap<PathBuf, Option<Chunk>>,
+    ) -> Result<()> {
+        // - modify the content of a file
+        let new_chunk = random_file_chunk();
+        let file2modify = Path::new("file0.txt");
+        OpenOptions::new()
+            .write(true)
+            .open(path.join(file2modify))?
+            .write_all(new_chunk.value())?;
+        test_files.insert(file2modify.to_path_buf(), Some(new_chunk));
+        // - remove one of the files
+        let file2remove = Path::new("dir1").join("file1.txt");
+        remove_file(path.join(&file2remove))?;
+        test_files.remove(&file2remove);
+        // we need to keep the empty dir within the list of expected files though
+        test_files.insert(Path::new("dir1").to_path_buf(), None);
+        // - remove one of the dirs
+        let dir2remove = Path::new("dir2");
+        remove_dir_all(path.join(dir2remove))?;
+        test_files.remove(dir2remove);
+        // - create new dir
+        let dir2create = Path::new("dir2").join("dir2_1");
+        create_dir_all(path.join(&dir2create))?;
+        test_files.insert(dir2create.to_path_buf(), None);
+        // - create new file
+        create_dir_all(path.join("dir3").join("dir3_1"))?;
+        let file2create = Path::new("dir3").join("dir3_1").join("file3.txt");
+        let mut file = File::create(path.join(&file2create))?;
+        let new_chunk = random_file_chunk();
+        file.write_all(new_chunk.value())?;
+        test_files.insert(file2create, Some(new_chunk));
+
+        Ok(())
     }
 
     // Helper to check if a dir is empty
