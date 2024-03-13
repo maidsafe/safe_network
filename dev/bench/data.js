@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710254519434,
+  "lastUpdate": 1710293201816,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "72e5a48eaa0d304ee52095d18929dc8b33a6cc7a",
-          "message": "fix(node): dont try and replicate to non existent peers",
-          "timestamp": "2023-10-24T12:01:10+02:00",
-          "tree_id": "660b96f8193c739fc59a47d1202f5ac713823023",
-          "url": "https://github.com/maidsafe/safe_network/commit/72e5a48eaa0d304ee52095d18929dc8b33a6cc7a"
-        },
-        "date": 1698143431384,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.166983008432685,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7721498360310406,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 21.79779451273609,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.45328800899262,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8fa8f22d9d2a3b54e34b5ec695163235471292d1",
+          "message": "refactor: reorganise command processing\n\nThe code in the `main` module of the node manager was becoming unwieldy and difficult to navigate,\nso I've refactored it into a few different modules.\n\nThere are absolutely no functional changes here.\n\nClippy was complaining about some functions having too many arguments, so I suppressed those\nwarnings. These are just utility functions, and adding new structs just to encapsulate a few\narguments would have been tedious and overkill.",
+          "timestamp": "2024-03-13T00:39:09Z",
+          "tree_id": "5a8a853755daa9eea61da986222e62f393e477b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/8fa8f22d9d2a3b54e34b5ec695163235471292d1"
+        },
+        "date": 1710293198266,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2648186420081122,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8230650814857916,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.71243455086735,
             "unit": "MiB/s"
           }
         ]
