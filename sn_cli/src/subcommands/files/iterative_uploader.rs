@@ -32,7 +32,7 @@ impl IterativeUploader {
     pub(crate) async fn iterate_upload(
         self,
         chunks_to_upload: Vec<(XorName, PathBuf)>,
-        files_path: PathBuf,
+        files_path: &PathBuf,
         options: FilesUploadOptions,
     ) -> Result<()> {
         //
@@ -58,7 +58,7 @@ impl IterativeUploader {
         let current_instant = Instant::now();
 
         msg_begin_messages(
-            &files_path,
+            files_path,
             &batch_size,
             &verify_store,
             make_data_public,
