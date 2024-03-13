@@ -11,15 +11,13 @@ use lazy_static::lazy_static;
 use libp2p::PeerId;
 use sn_client::{send, Client};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_protocol::{
-    safenode_proto::{NodeInfoRequest, RestartRequest},
-    test_utils::DeploymentInventory,
-};
+use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{
     get_local_node_registry_path, safenode_manager_proto::NodeServiceRestartRequest, NodeRegistry,
 };
 use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
+use test_utils::testnet::DeploymentInventory;
 use tokio::{
     sync::Mutex,
     time::{Duration, Instant},

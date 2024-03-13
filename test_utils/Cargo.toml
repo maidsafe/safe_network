@@ -1,0 +1,17 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network Test Utilities"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "test_utils"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+color-eyre = "~0.6.2"
+dirs-next = "~2.0.0"
+libp2p = { version="0.53", features = ["identify", "kad"] }
+serde = { version = "1.0.133", features = [ "derive"]}
+serde_json = "1.0"
