@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710293313439,
+  "lastUpdate": 1710298082716,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "df8b357f3cda843baabf505f95718eedb1787b9d",
-          "message": "ci: Register test negation\n\nIgnore reg storage test.\nCHUNKS_ONLY for data tests for now.\n\nRegister merges are unstable",
-          "timestamp": "2023-10-24T10:12:37Z",
-          "tree_id": "760d73b9a44a93256a62362408020bc25b1e9d08",
-          "url": "https://github.com/maidsafe/safe_network/commit/df8b357f3cda843baabf505f95718eedb1787b9d"
-        },
-        "date": 1698145640140,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.16412618672031498,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7497537766255218,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.839812640270704,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.71243455086735,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "63b88778c3191efbb56229063243366c941bf5f9",
+          "message": "ci: fix windows linker issues when running unit tests amongst e2e",
+          "timestamp": "2024-03-13T03:35:48+01:00",
+          "tree_id": "d6adb328ccb3c3b42df5b5dd3fee3a7703afcd14",
+          "url": "https://github.com/maidsafe/safe_network/commit/63b88778c3191efbb56229063243366c941bf5f9"
+        },
+        "date": 1710298078945,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3092075520094082,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8518665822673768,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.617946544421095,
             "unit": "MiB/s"
           }
         ]
