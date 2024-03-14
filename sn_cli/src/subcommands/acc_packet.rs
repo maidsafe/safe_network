@@ -809,7 +809,7 @@ mod tests {
         read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
         MetadataTrackingInfo,
     };
-    use crate::subcommands::files::upload::FilesUploadOptions;
+    use crate::subcommands::{acc_packet::Mutation, files::upload::FilesUploadOptions};
     use bytes::Bytes;
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
@@ -973,6 +973,57 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_acc_packet_scan_files_and_folders_changes() -> Result<()> {
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let files_path = tmp_dir.path().join("myaccpacket-to-scan");
+        let mut test_files = create_test_files_on_disk(&files_path)?;
+        let files_path = files_path.canonicalize()?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &files_path,
+            Some(root_folder_addr),
+        )?;
+
+        let changes = acc_packet.scan_files_and_folders_for_changes(false)?;
+        // verify changes detected
+        assert_eq!(changes.mutations.len(), 4);
+        assert!(changes.mutations.iter().all(|mutation| {
+            matches!(mutation, Mutation::NewFile(i) if i.file_path == files_path.join("file0.txt"))
+            || matches!(mutation, Mutation::NewFile(i) if i.file_path == files_path.join("dir1").join("file1.txt"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir1"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir2"))
+        }), "at least one of the mutations detected was unexpected/incorrect");
+
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        // let's make some mutations/changes
+        mutate_test_files_on_disk(&files_path, &mut test_files)?;
+
+        let changes = acc_packet.scan_files_and_folders_for_changes(false)?;
+        // verify new changes detected
+        assert_eq!(changes.mutations.len(), 8);
+        assert!(changes.mutations.iter().all(|mutation| {
+            matches!(mutation, Mutation::FileContentChanged((_,i)) if i.file_path == files_path.join("file0.txt"))
+            || matches!(mutation, Mutation::FileRemoved((p, _)) if p == &files_path.join("dir1").join("file1.txt"))
+            || matches!(mutation, Mutation::FolderRemoved((p,_)) if p == &files_path.join("dir2"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir3"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir3").join("dir3_1"))
+            || matches!(mutation, Mutation::NewFile(i) if i.file_path == files_path.join("dir3").join("dir3_1").join("file3.txt"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir4"))
+            || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir4").join("dir4_1"))
+        }), "at least one of the mutations detected was unexpected/incorrect");
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_acc_packet_sync_mutations() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
@@ -1084,17 +1135,17 @@ mod tests {
         let dir2remove = Path::new("dir2");
         remove_dir_all(path.join(dir2remove))?;
         test_files.remove(dir2remove);
-        // - create new dir
-        let dir2create = Path::new("dir2").join("dir2_1");
-        create_dir_all(path.join(&dir2create))?;
-        test_files.insert(dir2create.to_path_buf(), None);
-        // - create new file
+        // - create new file within subdirs
         create_dir_all(path.join("dir3").join("dir3_1"))?;
         let file2create = Path::new("dir3").join("dir3_1").join("file3.txt");
         let mut file = File::create(path.join(&file2create))?;
         let new_chunk = random_file_chunk();
         file.write_all(new_chunk.value())?;
         test_files.insert(file2create, Some(new_chunk));
+        // - create new subdirs
+        let dir2create = Path::new("dir4").join("dir4_1");
+        create_dir_all(path.join(&dir2create))?;
+        test_files.insert(dir2create.to_path_buf(), None);
 
         Ok(())
     }
