@@ -48,13 +48,14 @@ impl IterativeUploader {
             .set_retry_strategy(retry_strategy);
         let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
         let total_existing_chunks = Arc::new(AtomicU64::new(0));
-        let map_join_handle_that_contains_resulting_file_upload_events = spawn_file_upload_events(
-            self.chunk_manager,
-            make_data_public,
-            progress_bar,
-            files_upload.get_upload_events(),
-            total_existing_chunks.clone(),
-        );
+        let map_join_handle_that_contains_resulting_file_upload_events =
+            spawn_file_upload_events_handler(
+                self.chunk_manager,
+                make_data_public,
+                progress_bar,
+                files_upload.get_upload_events(),
+                total_existing_chunks.clone(),
+            );
         let current_instant = Instant::now();
 
         msg_begin_messages(
@@ -101,7 +102,7 @@ impl IterativeUploader {
 
 ///////////////// Associative Functions /////////////////
 
-fn spawn_file_upload_events(
+fn spawn_file_upload_events_handler(
     mut chunk_manager: ChunkManager,
     make_data_public: bool,
     progress_bar: ProgressBar,
