@@ -410,6 +410,27 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 2
 
+      - name: Validate downloaded file after saved changes for Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "upload the test document"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources/test_doc.txt" --retry-strategy quick
+          echo "validate the test document contains the number 1 in its alphabetic data"          
+          $condition = Get-Content ./resources/test_doc.txt | ForEach-Object {$_ -Replace "[^0-9]", ""}
+          if ( $condition -ne 1) { exit 1 }
+          echo "add the values 2 and 3 to the test document"
+          "23" >> "./resources/test_doc.txt"
+          echo "Upload the recently changed test document"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources/test_doc.txt" --retry-strategy quick
+          echo "Download the test document"
+          cargo run --bin safe --release -- --log-output-dest=data-dir files download --retry-strategy quick
+          echo "Test if the document includes the new values 2 and 3"
+          $condition = Get-Content C:\Users\runneradmin\Downloads\safe_files\test_doc.txt | ForEach-Object {$_ -Replace "[^0-9]", ""}
+          if ( $condition -ne 123) { exit 1 }
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+
       # Client FoldersApi tests against local network
       - name: Client FoldersApi tests against local network
         run: cargo test --release --package sn_client --test folders_api
