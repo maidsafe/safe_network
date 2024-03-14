@@ -52,15 +52,11 @@ fi
 
 commit_message="chore(release): "
 for crate in "${crates_bumped[@]}"; do
-    # split the crate name and version
-    crate_name=$(echo "$crate" | cut -d'v' -f1)
-    # remove trailing hyphen
-    crate_name=${crate_name%-}
-
-    echo "the crate is: $crate_name"
-    version=$(echo "$crate" | cut -d'v' -f2)
+    # Extract the crate name and version in a cross-platform way
+    crate_name=$(echo "$crate" | sed -E 's/-v.*$//')
+    version=$(echo "$crate" | sed -E 's/^.*-v(.*)$/\1/')
     new_version=$version
-
+    echo "the crate is: $crate_name"
     # if we're changing the release channel...
     if [ -n "$SUFFIX" ]; then
         #if we're already in a realse channel, reapplying the suffix will reset things.
