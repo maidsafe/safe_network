@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710417591656,
+  "lastUpdate": 1710417695114,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "873469b2b743f77d49c262ece21ba75bf910c1fd",
-          "message": "refactor: make rpc client a bin",
-          "timestamp": "2023-10-27T10:12:59Z",
-          "tree_id": "cd19859e3c646059218aeb21397306397bef09a7",
-          "url": "https://github.com/maidsafe/safe_network/commit/873469b2b743f77d49c262ece21ba75bf910c1fd"
-        },
-        "date": 1698405718776,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 77,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "28fdac6b671db13296c74c61985a66a61e022d1e",
+          "message": "chore(deps): remove version from local dev deps",
+          "timestamp": "2024-03-14T12:43:30+01:00",
+          "tree_id": "da1794d5bbc32320c0687c6ed520748584aa7ee6",
+          "url": "https://github.com/maidsafe/safe_network/commit/28fdac6b671db13296c74c61985a66a61e022d1e"
+        },
+        "date": 1710417694494,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
