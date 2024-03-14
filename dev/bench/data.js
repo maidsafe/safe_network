@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710376832214,
+  "lastUpdate": 1710376834221,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39055,6 +39055,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35490,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "224624a274288d7a3241d5d0b4af61c09286688b",
+          "message": "ci: fix the call to sn_client tests on nightly.\n\npackage, not bin",
+          "timestamp": "2024-03-14T01:27:26+01:00",
+          "tree_id": "a1bbfa4159a16708e5972d30a66d2bce2353c410",
+          "url": "https://github.com/maidsafe/safe_network/commit/224624a274288d7a3241d5d0b4af61c09286688b"
+        },
+        "date": 1710376833605,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6289,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34825,
             "unit": "ms"
           },
           {
