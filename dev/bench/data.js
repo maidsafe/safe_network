@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710425467092,
+  "lastUpdate": 1710425573198,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7bee9d98d25559fd84c00f6c930f35ffcb2a1098",
-          "message": "feat(rpc_client): show total accumulated balance when decrypting transfers received",
-          "timestamp": "2023-10-27T13:03:04+02:00",
-          "tree_id": "e33de2264bc2c628705eb506f9077c7818fbe0bb",
-          "url": "https://github.com/maidsafe/safe_network/commit/7bee9d98d25559fd84c00f6c930f35ffcb2a1098"
-        },
-        "date": 1698406436942,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 67,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "68c06d307518170c6c881d1e0e3ba080540a454d",
+          "message": "chore: name change to spawn events handler",
+          "timestamp": "2024-03-14T13:00:18Z",
+          "tree_id": "bb5ef71afcc3f3cf7b357b7e50a1c74b44b49b8f",
+          "url": "https://github.com/maidsafe/safe_network/commit/68c06d307518170c6c881d1e0e3ba080540a454d"
+        },
+        "date": 1710425572550,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
