@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710398439200,
+  "lastUpdate": 1710398441929,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39133,6 +39133,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 38922,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4f936141c61f8420b7f772c6cf8bc771fcdbc54a",
+          "message": "feat(networking): listen on WS addr too",
+          "timestamp": "2024-03-14T05:20:37Z",
+          "tree_id": "e5d8fd7dfc38d641154ebc3999f2d38a3f2bf44e",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f936141c61f8420b7f772c6cf8bc771fcdbc54a"
+        },
+        "date": 1710398440845,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5934,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33378,
             "unit": "ms"
           },
           {
