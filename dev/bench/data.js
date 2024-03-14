@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710417698942,
+  "lastUpdate": 1710425467092,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "16bbb9c84e4742ea2fef7587ed225f511723df00",
-          "message": "feat(networking): adjust reverification times\n\nIncrease the minimum, to increase the chance the data will actually be\nPUT on a node",
-          "timestamp": "2023-10-27T06:09:48Z",
-          "tree_id": "4f54fd2edb6b6451162ef84d698017bc0b47a962",
-          "url": "https://github.com/maidsafe/safe_network/commit/16bbb9c84e4742ea2fef7587ed225f511723df00"
-        },
-        "date": 1698390688623,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1596561656605346,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6563736866926176,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 17.153725851663708,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.102057857343084,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "68c06d307518170c6c881d1e0e3ba080540a454d",
+          "message": "chore: name change to spawn events handler",
+          "timestamp": "2024-03-14T13:00:18Z",
+          "tree_id": "bb5ef71afcc3f3cf7b357b7e50a1c74b44b49b8f",
+          "url": "https://github.com/maidsafe/safe_network/commit/68c06d307518170c6c881d1e0e3ba080540a454d"
+        },
+        "date": 1710425463351,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2748338998195874,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8209504805687107,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.90944651759274,
             "unit": "MiB/s"
           }
         ]
