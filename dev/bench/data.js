@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710376830373,
+  "lastUpdate": 1710376832214,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4dee4ef0b295187318dec1611620af1e2972a660",
-          "message": "fix: throw out SplitRecord error for the later on merge",
-          "timestamp": "2023-10-26T13:26:34Z",
-          "tree_id": "048d2e167431e753de8c9695f490350b64f41abb",
-          "url": "https://github.com/maidsafe/safe_network/commit/4dee4ef0b295187318dec1611620af1e2972a660"
-        },
-        "date": 1698331872484,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 153,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 61,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "224624a274288d7a3241d5d0b4af61c09286688b",
+          "message": "ci: fix the call to sn_client tests on nightly.\n\npackage, not bin",
+          "timestamp": "2024-03-14T01:27:26+01:00",
+          "tree_id": "a1bbfa4159a16708e5972d30a66d2bce2353c410",
+          "url": "https://github.com/maidsafe/safe_network/commit/224624a274288d7a3241d5d0b4af61c09286688b"
+        },
+        "date": 1710376831612,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
