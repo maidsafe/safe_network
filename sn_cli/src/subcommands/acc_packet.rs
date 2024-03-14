@@ -1071,6 +1071,59 @@ mod tests {
         Ok(())
     }
 
+    // Acc-packets can be moved to different locations on local disk without affecting their tracking info.
+    // We disable this test for Windows since in CI the use of std::fs::rename gives a permissions issue.
+    #[cfg(any(target_os = "linux", target_os = "linux"))]
+    #[tokio::test]
+    async fn test_acc_packet_moved_folder() -> Result<()> {
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let src_files_path = tmp_dir.path().join("myaccpacket-to-move");
+        let mut test_files = create_test_files_on_disk(&src_files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(root_folder_addr),
+        )?;
+
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        // let's make just one mutation before moving the dir to another disk location
+        let new_chunk = random_file_chunk();
+        let file2modify = Path::new("dir1").join("file1.txt");
+        OpenOptions::new()
+            .write(true)
+            .open(src_files_path.join(&file2modify))?
+            .write_all(new_chunk.value())?;
+        test_files.insert(file2modify, Some(new_chunk));
+
+        // let's now move it to another disk location
+        let moved_files_path = tmp_dir.path().join("myaccpacket-moved");
+        create_dir_all(&moved_files_path)?;
+        std::fs::rename(src_files_path, &moved_files_path)?;
+        let moved_files_path = moved_files_path.canonicalize()?;
+
+        let moved_acc_packet =
+            AccountPacket::from_path(client.clone(), wallet_dir, &moved_files_path)?;
+
+        // verify only one change is detected still after moved to another location on disk
+        let changes = moved_acc_packet.scan_files_and_folders_for_changes(false)?;
+        assert_eq!(changes.mutations.len(), 1);
+        assert_eq!(changes.mutations.first().map(|mutation| {
+            matches!(mutation, Mutation::FileContentChanged((_,i)) if i.file_path == moved_files_path.join("dir1").join("file1.txt"))
+        }), Some(true));
+
+        check_tracking_info_match(&moved_acc_packet, &moved_acc_packet, test_files)?;
+
+        Ok(())
+    }
+
     // Helpers functions to generate and verify test data
 
     // Build a new Client and a random address for a Folder (Register)
