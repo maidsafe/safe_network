@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710427110819,
+  "lastUpdate": 1710429456883,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "873469b2b743f77d49c262ece21ba75bf910c1fd",
-          "message": "refactor: make rpc client a bin",
-          "timestamp": "2023-10-27T10:12:59Z",
-          "tree_id": "cd19859e3c646059218aeb21397306397bef09a7",
-          "url": "https://github.com/maidsafe/safe_network/commit/873469b2b743f77d49c262ece21ba75bf910c1fd"
-        },
-        "date": 1698405019135,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1675871128507379,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6573464924995743,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.780982676491952,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.702966783947744,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "fb9191c1d1b431e080890b4049a5e99b19308be1",
+          "message": "fix(test): make tweaks to wan nightly tests",
+          "timestamp": "2024-03-14T14:29:06Z",
+          "tree_id": "e63a2351c243c4ff09fbe4766a38095bcc38056e",
+          "url": "https://github.com/maidsafe/safe_network/commit/fb9191c1d1b431e080890b4049a5e99b19308be1"
+        },
+        "date": 1710429453222,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2849923042337745,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8174312524657188,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.09354473489316,
             "unit": "MiB/s"
           }
         ]
