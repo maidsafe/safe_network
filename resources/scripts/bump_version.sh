@@ -67,12 +67,14 @@ for crate in "${crates_bumped[@]}"; do
         else
             new_version="${version}-${SUFFIX}.0"
         fi
-
-        # set the version
-        crate=$new_version
-        # echo "new v for $crate_name: $new_version"
-        cargo set-version -p $crate_name $new_version
+    else
+        # For main release, strip any alpha or beta suffix from the version
+        new_version=$(echo "$version" | sed -E 's/(-alpha\.[0-9]+|-beta\.[0-9]+)$//')
     fi
+
+    # set the version
+    crate=$new_version
+    cargo set-version -p $crate_name $new_version
     # update the commit msg
     commit_message="${commit_message}${crate_name}-v$new_version/"
 done
