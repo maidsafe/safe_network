@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710429566009,
+  "lastUpdate": 1710439871953,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7bee9d98d25559fd84c00f6c930f35ffcb2a1098",
-          "message": "feat(rpc_client): show total accumulated balance when decrypting transfers received",
-          "timestamp": "2023-10-27T13:03:04+02:00",
-          "tree_id": "e33de2264bc2c628705eb506f9077c7818fbe0bb",
-          "url": "https://github.com/maidsafe/safe_network/commit/7bee9d98d25559fd84c00f6c930f35ffcb2a1098"
-        },
-        "date": 1698406038567,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.17302036008098845,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5279229068950091,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.667853787394066,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.09354473489316,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441",
+          "message": "test(acc-packet): adding test for acc-packet moved to a different location on disk",
+          "timestamp": "2024-03-14T17:26:23Z",
+          "tree_id": "25b8ab8102f2eec2d53db67bc68fdc775914102b",
+          "url": "https://github.com/maidsafe/safe_network/commit/b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441"
+        },
+        "date": 1710439868665,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.30662907188553,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8504264621457056,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.07592905556115,
             "unit": "MiB/s"
           }
         ]
