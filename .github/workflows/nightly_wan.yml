@@ -303,13 +303,13 @@ jobs:
         run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 45
 
       - name: execute the storage payment tests
         run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1          
         env:
           SN_LOG: "all"
-        timeout-minutes: 10
+        timeout-minutes: 45
 
       - name: Small wait to allow reward receipt
         run: sleep 30
