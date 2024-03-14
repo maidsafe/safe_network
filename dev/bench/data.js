@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710427109365,
+  "lastUpdate": 1710427110819,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39250,6 +39250,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34304,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "42360f07333e925a19af6d0eaa58c2bec06c5f2c",
+          "message": "fix(ci): build packages separately to bypass feature unification process",
+          "timestamp": "2024-03-14T13:39:53Z",
+          "tree_id": "46545226be557a3e8f9cd06b88ee41070d606de8",
+          "url": "https://github.com/maidsafe/safe_network/commit/42360f07333e925a19af6d0eaa58c2bec06c5f2c"
+        },
+        "date": 1710427110512,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6017,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34789,
             "unit": "ms"
           },
           {
