@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710396701389,
+  "lastUpdate": 1710396703288,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39094,6 +39094,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34825,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c631fd34c9187580303dc74f02467ada25277ac2",
+          "message": "fix: require rpc from proto",
+          "timestamp": "2024-03-14T06:58:16+01:00",
+          "tree_id": "867117c22262ecac3c49c136fa998f8ca53f6008",
+          "url": "https://github.com/maidsafe/safe_network/commit/c631fd34c9187580303dc74f02467ada25277ac2"
+        },
+        "date": 1710396702667,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6925,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38922,
             "unit": "ms"
           },
           {
