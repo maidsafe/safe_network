@@ -16,7 +16,7 @@ use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_logging::{LogFormat, LogOutputDest};
+use sn_logging::{LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
@@ -159,7 +159,8 @@ fn main() -> Result<()> {
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
-    let (log_output_dest, _log_appender_guard) = init_logging(&opt, keypair.public().to_peer_id())?;
+    let (log_output_dest, _log_reload_handle, _log_appender_guard) =
+        init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
     let bootstrap_peers = rt.block_on(get_peers_from_args(opt.peers))?;
@@ -360,7 +361,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
     });
 }
 
-fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuard>)> {
+fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Option<WorkerGuard>)> {
     let logging_targets = vec![
         ("sn_networking".to_string(), Level::INFO),
         ("safenode".to_string(), Level::DEBUG),
@@ -383,7 +384,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
     };
 
     #[cfg(not(feature = "otlp"))]
-    let log_appender_guard = {
+    let (reload_handle, log_appender_guard) = {
         let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
         log_builder.output_dest(output_dest.clone());
         log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
@@ -398,10 +399,10 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
     };
 
     #[cfg(feature = "otlp")]
-    let (_rt, log_appender_guard) = {
+    let (_rt, reload_handle, log_appender_guard) = {
         // init logging in a separate runtime if we are sending traces to an opentelemetry server
         let rt = Runtime::new()?;
-        let guard = rt.block_on(async {
+        let (reload_handle, log_appender_guard) = rt.block_on(async {
             let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
             log_builder.output_dest(output_dest.clone());
             log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
@@ -413,9 +414,10 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, Option<WorkerGuar
             }
             log_builder.initialize()
         })?;
-        (rt, guard)
+        (rt, reload_handle, log_appender_guard)
     };
-    Ok((output_dest.to_string(), log_appender_guard))
+
+    Ok((output_dest.to_string(), reload_handle, log_appender_guard))
 }
 
 fn create_secret_key_file(path: impl AsRef<Path>) -> Result<std::fs::File, std::io::Error> {

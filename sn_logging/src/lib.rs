@@ -21,6 +21,7 @@ use tracing_core::{dispatcher::DefaultGuard, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 pub use error::Error;
+pub use layers::ReloadHandle;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDest {
@@ -102,12 +103,11 @@ impl LogBuilder {
     /// This guard should be held for the life of the program.
     ///
     /// Logging should be instantiated only once.
-    pub fn initialize(self) -> Result<Option<WorkerGuard>> {
+    pub fn initialize(self) -> Result<(ReloadHandle, Option<WorkerGuard>)> {
         let mut layers = TracingLayers::default();
 
-        #[cfg(not(feature = "otlp"))]
-        layers.fmt_layer(
-            self.default_logging_targets,
+        let reload_handle = layers.fmt_layer(
+            self.default_logging_targets.clone(),
             &self.output_dest,
             self.format,
             self.max_uncompressed_log_files,
@@ -116,14 +116,6 @@ impl LogBuilder {
 
         #[cfg(feature = "otlp")]
         {
-            layers.fmt_layer(
-                self.default_logging_targets.clone(),
-                &self.output_dest,
-                self.format,
-                self.max_uncompressed_log_files,
-                self.max_compressed_log_files,
-            )?;
-
             match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
                 Ok(_) => layers.otlp_layer(self.default_logging_targets)?,
                 Err(_) => println!(
@@ -141,7 +133,7 @@ impl LogBuilder {
             println!("Tried to initialize and set global default subscriber more than once");
         }
 
-        Ok(layers.guard)
+        Ok((reload_handle, layers.log_appender_guard))
     }
 
     /// Logs to the data_dir. Should be called from a single threaded tokio/non-tokio context.
@@ -160,7 +152,7 @@ impl LogBuilder {
         if let Some(test_name) = std::thread::current().name() {
             info!("Running test: {test_name}");
         }
-        (layers.guard, log_guard)
+        (layers.log_appender_guard, log_guard)
     }
 
     /// Logs to the data_dir. Should be called from a multi threaded tokio context.
@@ -176,7 +168,7 @@ impl LogBuilder {
         .try_init()
         .expect("You have tried to init multi_threaded tokio logging twice\nRefer sn_logging::get_test_layers docs for more.");
 
-        layers.guard
+        layers.log_appender_guard
     }
 
     /// Initialize just the fmt_layer for testing purposes.
@@ -202,7 +194,7 @@ impl LogBuilder {
 
         let mut layers = TracingLayers::default();
 
-        layers
+        let _reload_handle = layers
             .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None)
             .expect("Failed to get TracingLayers");
         layers
