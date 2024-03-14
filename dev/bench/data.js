@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710439978392,
+  "lastUpdate": 1710439980350,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39328,6 +39328,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36839,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441",
+          "message": "test(acc-packet): adding test for acc-packet moved to a different location on disk",
+          "timestamp": "2024-03-14T17:26:23Z",
+          "tree_id": "25b8ab8102f2eec2d53db67bc68fdc775914102b",
+          "url": "https://github.com/maidsafe/safe_network/commit/b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441"
+        },
+        "date": 1710439979722,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6042,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33535,
             "unit": "ms"
           },
           {
