@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.39](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.38...sn_node-v0.104.39) - 2024-03-14
+
+### Added
+- refactor spend validation
+
+### Fixed
+- *(test)* await on the restart node rpc call
+- dont stop spend verification at spend error, generalise spend serde
+- put validation network spends errors management
+
+### Other
+- store test utils under a new crate
+- move DeploymentInventory to test utils
+- improve code quality
+- new `sn_service_management` crate
+- *(release)* sn_transfers-v0.16.3/sn_cli-v0.89.82
+
 ## [0.104.38](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.37-alpha.0...sn_node-v0.104.38) - 2024-03-08
 
 ### Other
