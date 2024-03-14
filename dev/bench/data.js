@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710439976530,
+  "lastUpdate": 1710439978392,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc",
-          "message": "feat(cli): error out if empty wallet",
-          "timestamp": "2023-10-30T13:10:24Z",
-          "tree_id": "4d9ba228778082d7576f6df3dd3a821cda5b43f3",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c24e25ec0e8a29b87cacb14fe6b14e02aab8bdc"
-        },
-        "date": 1698674855147,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 148,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 41,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441",
+          "message": "test(acc-packet): adding test for acc-packet moved to a different location on disk",
+          "timestamp": "2024-03-14T17:26:23Z",
+          "tree_id": "25b8ab8102f2eec2d53db67bc68fdc775914102b",
+          "url": "https://github.com/maidsafe/safe_network/commit/b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441"
+        },
+        "date": 1710439977777,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
             "unit": "MB"
           },
           {
