@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710396592622,
+  "lastUpdate": 1710396699587,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "16bbb9c84e4742ea2fef7587ed225f511723df00",
-          "message": "feat(networking): adjust reverification times\n\nIncrease the minimum, to increase the chance the data will actually be\nPUT on a node",
-          "timestamp": "2023-10-27T06:09:48Z",
-          "tree_id": "4f54fd2edb6b6451162ef84d698017bc0b47a962",
-          "url": "https://github.com/maidsafe/safe_network/commit/16bbb9c84e4742ea2fef7587ed225f511723df00"
-        },
-        "date": 1698391434210,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/224624a274288d7a3241d5d0b4af61c09286688b"
         },
         "date": 1710376829803,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c631fd34c9187580303dc74f02467ada25277ac2",
+          "message": "fix: require rpc from proto",
+          "timestamp": "2024-03-14T06:58:16+01:00",
+          "tree_id": "867117c22262ecac3c49c136fa998f8ca53f6008",
+          "url": "https://github.com/maidsafe/safe_network/commit/c631fd34c9187580303dc74f02467ada25277ac2"
+        },
+        "date": 1710396698980,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
