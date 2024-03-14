@@ -159,7 +159,7 @@ fn main() -> Result<()> {
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
-    let (log_output_dest, _log_reload_handle, _log_appender_guard) =
+    let (log_output_dest, log_reload_handle, _log_appender_guard) =
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
@@ -191,7 +191,8 @@ fn main() -> Result<()> {
         let mut node_builder = node_builder;
         #[cfg(feature = "open-metrics")]
         node_builder.metrics_server_port(opt.metrics_server_port);
-        let restart_options = run_node(node_builder, opt.rpc, &log_output_dest).await?;
+        let restart_options =
+            run_node(node_builder, opt.rpc, &log_output_dest, log_reload_handle).await?;
 
         Ok::<_, eyre::Report>(restart_options)
     })?;
@@ -215,6 +216,7 @@ async fn run_node(
     node_builder: NodeBuilder,
     rpc: Option<SocketAddr>,
     log_output_dest: &str,
+    log_reload_handle: ReloadHandle,
 ) -> Result<Option<(PathBuf, u16)>> {
     let started_instant = std::time::Instant::now();
 
@@ -271,6 +273,7 @@ You can check your reward balance by running:
             running_node.clone(),
             ctrl_tx,
             started_instant,
+            log_reload_handle,
         );
     }
 
