@@ -45,7 +45,7 @@ jobs:
 
       # only these unit tests require a network, the rest are run above in unit test section
       - name: Run sn_client --tests
-        run: cargo test --bin sn_client --release --tests
+        run: cargo test --package sn_client --release --tests
         env:
           SN_LOG: "all"
           # only set the target dir for windows to bypass the linker issue.
