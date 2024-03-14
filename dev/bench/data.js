@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710396703288,
+  "lastUpdate": 1710398329954,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "13c5b36b84701f62317b38fd8109de3b49f45a9a",
-          "message": "fix: sn_testnet build check was missing rand dep",
-          "timestamp": "2023-10-26T15:10:19+02:00",
-          "tree_id": "2e63b206332b2a94701684e3ba139f3f5e796420",
-          "url": "https://github.com/maidsafe/safe_network/commit/13c5b36b84701f62317b38fd8109de3b49f45a9a"
-        },
-        "date": 1698328203500,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.14277881309589202,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.29162603407226334,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.051558410402478,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.1782056076331,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4f936141c61f8420b7f772c6cf8bc771fcdbc54a",
+          "message": "feat(networking): listen on WS addr too",
+          "timestamp": "2024-03-14T05:20:37Z",
+          "tree_id": "e5d8fd7dfc38d641154ebc3999f2d38a3f2bf44e",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f936141c61f8420b7f772c6cf8bc771fcdbc54a"
+        },
+        "date": 1710398325968,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3027161093640116,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8499190002805046,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.95040249380446,
             "unit": "MiB/s"
           }
         ]
