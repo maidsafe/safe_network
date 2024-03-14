@@ -437,6 +437,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;
+            async fn update_log_level(&self, log_levels: String) -> ServiceControlResult<()>;
         }
     }
 

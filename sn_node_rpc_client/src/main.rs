@@ -110,6 +110,15 @@ enum Cmd {
         #[clap(default_value = "0")]
         delay_millis: u64,
     },
+    /// Update the node's log levels.
+    #[clap(name = "log")]
+    Log {
+        /// Change the log level of the safenode.
+        ///
+        /// Example: --level SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "level", long)]
+        log_level: String,
+    },
 }
 
 #[tokio::main]
@@ -154,6 +163,7 @@ async fn main() -> Result<()> {
         } => node_restart(addr, delay_millis, retain_peer_id).await,
         Cmd::Stop { delay_millis } => node_stop(addr, delay_millis).await,
         Cmd::Update { delay_millis } => node_update(addr, delay_millis).await,
+        Cmd::Log { log_level } => update_log_level(addr, log_level).await,
     }
 }
 
@@ -393,5 +403,14 @@ pub async fn node_update(addr: SocketAddr, delay_millis: u64) -> Result<()> {
         "Node successfully received the request to try to update in {:?}",
         Duration::from_millis(delay_millis)
     );
+    Ok(())
+}
+
+pub async fn update_log_level(addr: SocketAddr, log_levels: String) -> Result<()> {
+    let endpoint = format!("https://{addr}");
+    let client = RpcClient::new(&endpoint);
+
+    client.update_log_level(log_levels.clone()).await?;
+    println!("Node successfully received the request to update the log level to {log_levels:?}",);
     Ok(())
 }

@@ -12,7 +12,7 @@ use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use sn_protocol::safenode_proto::{
     safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
     GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
-    RestartRequest, StopRequest, UpdateRequest,
+    RestartRequest, StopRequest, UpdateLogLevelRequest, UpdateRequest,
 };
 use std::{net::SocketAddr, path::PathBuf, str::FromStr};
 use tokio::time::Duration;
@@ -51,6 +51,7 @@ pub trait RpcActions: Sync {
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
+    async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
 pub struct RpcClient {
@@ -238,6 +239,20 @@ impl RpcActions for RpcClient {
         let mut client = self.connect_with_retry().await?;
         let _response = client
             .update(Request::new(UpdateRequest { delay_millis }))
+            .await
+            .map_err(|e| {
+                error!("Could not update node through RPC: {e:?}");
+                Error::RpcNodeUpdateError(e.to_string())
+            })?;
+        Ok(())
+    }
+
+    async fn update_log_level(&self, log_levels: String) -> Result<()> {
+        let mut client = self.connect_with_retry().await?;
+        let _response = client
+            .update_log_level(Request::new(UpdateLogLevelRequest {
+                log_level: log_levels,
+            }))
             .await
             .map_err(|e| {
                 error!("Could not update node through RPC: {e:?}");
