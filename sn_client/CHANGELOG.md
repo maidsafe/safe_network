@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.29-alpha.2](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29-alpha.1...sn_client-v0.104.29-alpha.2) - 2024-03-14
+
+### Added
+- moved param to outside calc
+- refactor spend validation
+
+### Fixed
+- dont stop spend verification at spend error, generalise spend serde
+
+### Other
+- store test utils under a new crate
+- *(acc-packet)* adding automated tests to sn_cli::AccountPacket
+- improve code quality
+- new `sn_service_management` crate
+- *(release)* sn_transfers-v0.16.3/sn_cli-v0.89.82
+
 ## [0.104.29-alpha.1](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29-alpha.0...sn_client-v0.104.29-alpha.1) - 2024-03-08
 
 ### Other

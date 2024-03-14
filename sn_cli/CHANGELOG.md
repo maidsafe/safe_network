@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.83](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.82...sn_cli-v0.89.83) - 2024-03-14
+
+### Added
+- self in import change
+- moved param to outside calc
+- refactor spend validation
+
+### Fixed
+- *(cli)* allow to upload chunks from acc-packet using chunked files local cache
+- *(cli)* use chunk-mgr with iterator skipping tracking info files
+
+### Other
+- *(acc-packet)* adding verifications to compare tracking info generated on acc-packets cloned
+- *(acc-packet)* adding verifications to compare the files/dirs stored on acc-packets cloned
+- *(acc-packet)* testing sync empty root dirs
+- *(acc-packet)* testing mutations syncing across clones of an acc-packet
+- *(acc-packet)* adding automated tests to sn_cli::AccountPacket
+- *(cli)* chunk-mgr to report files chunked/uploaded rather than bailing out
+- improve code quality
+- new `sn_service_management` crate
+
 ## [0.89.82-alpha.1](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.82-alpha.0...sn_cli-v0.89.82-alpha.1) - 2024-03-08
 
 ### Added
