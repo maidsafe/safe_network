@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710425575150,
+  "lastUpdate": 1710425577137,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39211,6 +39211,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37025,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "68c06d307518170c6c881d1e0e3ba080540a454d",
+          "message": "chore: name change to spawn events handler",
+          "timestamp": "2024-03-14T13:00:18Z",
+          "tree_id": "bb5ef71afcc3f3cf7b357b7e50a1c74b44b49b8f",
+          "url": "https://github.com/maidsafe/safe_network/commit/68c06d307518170c6c881d1e0e3ba080540a454d"
+        },
+        "date": 1710425576507,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6061,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34304,
             "unit": "ms"
           },
           {
