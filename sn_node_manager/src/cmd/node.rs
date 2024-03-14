@@ -10,7 +10,10 @@
 
 use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade_summary};
 use crate::{
-    add_services::{add_node, config::AddNodeServiceOptions},
+    add_services::{
+        add_node,
+        config::{AddNodeServiceOptions, PortRange},
+    },
     config,
     helpers::download_and_extract_release,
     status_report, ServiceManager, VerbosityLevel,
@@ -36,7 +39,7 @@ pub async fn add(
     local: bool,
     log_dir_path: Option<PathBuf>,
     peers: PeersArgs,
-    port: Option<u16>,
+    port: Option<PortRange>,
     rpc_address: Option<Ipv4Addr>,
     url: Option<String>,
     user: Option<String>,

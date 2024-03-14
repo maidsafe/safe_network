@@ -8,7 +8,10 @@
 
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
-use sn_node_manager::{cmd, VerbosityLevel};
+use sn_node_manager::{
+    add_services::config::{parse_port_range, PortRange},
+    cmd, VerbosityLevel,
+};
 use sn_peers_acquisition::PeersArgs;
 use std::{net::Ipv4Addr, path::PathBuf};
 
@@ -65,11 +68,15 @@ pub enum SubCmd {
         log_dir_path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
-        /// Specify a port for the node to run on. If not used, a port will be selected at random.
+        /// Specify a port for the safenode service(s).
         ///
-        /// This option only applies when a single service is being added.
-        #[clap(long)]
-        port: Option<u16>,
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = parse_port_range)]
+        port: Option<PortRange>,
         #[clap(long)]
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
