@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710398436471,
+  "lastUpdate": 1710398439200,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "d20fb55b73204c6a79a426f76cf6ffa6628f009c",
-          "message": "chore: update libp2p req/resp + autonat dep",
-          "timestamp": "2023-10-27T06:57:58Z",
-          "tree_id": "3688e90c0df5ef8ccb93b1e585c75b695a2932b1",
-          "url": "https://github.com/maidsafe/safe_network/commit/d20fb55b73204c6a79a426f76cf6ffa6628f009c"
-        },
-        "date": 1698394071800,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 161,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 64,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4f936141c61f8420b7f772c6cf8bc771fcdbc54a",
+          "message": "feat(networking): listen on WS addr too",
+          "timestamp": "2024-03-14T05:20:37Z",
+          "tree_id": "e5d8fd7dfc38d641154ebc3999f2d38a3f2bf44e",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f936141c61f8420b7f772c6cf8bc771fcdbc54a"
+        },
+        "date": 1710398438065,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
