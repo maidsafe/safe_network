@@ -31,7 +31,7 @@ use super::get_safenode_manager_rpc_client;
 
 /// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.
 /// This is limited to 10 requests to the faucet, where each request yields 100 SNT
-pub const INITIAL_WALLET_BALANCE: u64 = 10 * 100 * 1_000_000_000;
+pub const INITIAL_WALLET_BALANCE: u64 = 3 * 100 * 1_000_000_000;
 
 /// 100 SNT is added when `add_funds_to_wallet` is called.
 /// This is limited to 1 request to the faucet, where each request yields 100 SNT
@@ -315,7 +315,7 @@ impl Droplet {
         let _guard = FAUCET_WALLET_MUTEX.lock().await;
 
         let requests_to_faucet = if initial_wallet {
-            let requests_to_faucet = 10;
+            let requests_to_faucet = 3;
             assert_eq!(
                 requests_to_faucet * 100 * 1_000_000_000,
                 INITIAL_WALLET_BALANCE

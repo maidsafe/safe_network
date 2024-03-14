@@ -154,8 +154,8 @@ async fn verify_data_location() -> Result<()> {
         // and get_all_peer_ids is the same as how we do the iteration inside NodeRestart.
         // todo: make this more cleaner.
         if all_peers[node_index] == new_peer_id {
-            error!("new and old peer id are the same {new_peer_id:?}");
             println!("new and old peer id are the same {new_peer_id:?}");
+            return Err(eyre!("new and old peer id are the same {new_peer_id:?}"));
         }
         all_peers[node_index] = new_peer_id;
         node_index += 1;
