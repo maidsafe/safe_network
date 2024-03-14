@@ -16,6 +16,9 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    #[error(transparent)]
+    ReloadError(#[from] tracing_subscriber::reload::Error),
+
     #[cfg(feature = "otlp")]
     #[error("OpenTelemetry Tracing error: {0}")]
     OpenTelemetryTracing(#[from] opentelemetry::trace::TraceError),
