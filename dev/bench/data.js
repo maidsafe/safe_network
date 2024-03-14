@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710425577137,
+  "lastUpdate": 1710427004022,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "d20fb55b73204c6a79a426f76cf6ffa6628f009c",
-          "message": "chore: update libp2p req/resp + autonat dep",
-          "timestamp": "2023-10-27T06:57:58Z",
-          "tree_id": "3688e90c0df5ef8ccb93b1e585c75b695a2932b1",
-          "url": "https://github.com/maidsafe/safe_network/commit/d20fb55b73204c6a79a426f76cf6ffa6628f009c"
-        },
-        "date": 1698393475559,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.16854100492961765,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.57425393641424,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 17.804461152692934,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.90944651759274,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "42360f07333e925a19af6d0eaa58c2bec06c5f2c",
+          "message": "fix(ci): build packages separately to bypass feature unification process",
+          "timestamp": "2024-03-14T13:39:53Z",
+          "tree_id": "46545226be557a3e8f9cd06b88ee41070d606de8",
+          "url": "https://github.com/maidsafe/safe_network/commit/42360f07333e925a19af6d0eaa58c2bec06c5f2c"
+        },
+        "date": 1710427001060,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.280881827582409,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8490382266923564,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.702966783947744,
             "unit": "MiB/s"
           }
         ]
