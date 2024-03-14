@@ -11,7 +11,7 @@ mod tests;
 
 use self::config::{
     AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
-    InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder,
+    InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder, PortRange,
 };
 use crate::{config::create_owned_dir, VerbosityLevel, DAEMON_SERVICE_NAME};
 use color_eyre::{eyre::eyre, Help, Result};
@@ -51,12 +51,25 @@ pub async fn add_node(
         }
     }
 
-    if options.count.is_some() && options.node_port.is_some() {
-        let count = options.count.unwrap();
-        if count > 1 {
-            return Err(eyre!(
-                "Custom node port can only be used when adding a single service"
-            ));
+    if let Some(ref port_range) = options.node_port {
+        match port_range {
+            PortRange::Single(_) => {
+                let count = options.count.unwrap_or(1);
+                if count != 1 {
+                    return Err(eyre!(
+                        "The number of services to add ({count}) does not match the number of ports (1)"
+                    ));
+                }
+            }
+            PortRange::Range(start, end) => {
+                let port_count = end - start + 1;
+                let service_count = options.count.unwrap_or(1);
+                if port_count != service_count {
+                    return Err(eyre!(
+                        "The number of services to add ({service_count}) does not match the number of ports ({port_count})"
+                    ));
+                }
+            }
         }
     }
 
@@ -99,6 +112,15 @@ pub async fn add_node(
     let target_node_count = current_node_count + options.count.unwrap_or(1);
 
     let mut node_number = current_node_count + 1;
+    let mut port_number = if let Some(port) = options.node_port {
+        match port {
+            PortRange::Single(val) => Some(val),
+            PortRange::Range(start, _) => Some(start),
+        }
+    } else {
+        None
+    };
+
     while node_number <= target_node_count {
         let rpc_free_port = service_control.get_available_port()?;
         let rpc_socket_addr = if let Some(addr) = options.rpc_address {
@@ -127,7 +149,7 @@ pub async fn add_node(
             local: options.local,
             log_dir_path: service_log_dir_path.clone(),
             name: service_name.clone(),
-            node_port: options.node_port,
+            node_port: port_number,
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
@@ -171,6 +193,12 @@ pub async fn add_node(
         }
 
         node_number += 1;
+        port_number = if let Some(port) = port_number {
+            let incremented_port = port + 1;
+            Some(incremented_port)
+        } else {
+            None
+        };
     }
 
     std::fs::remove_file(options.safenode_bin_path)?;
