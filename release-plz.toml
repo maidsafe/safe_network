@@ -67,16 +67,20 @@ changelog_update = true
 git_release_enable = false
 publish = true
 
-
 [[package]]
 name = "sn_metrics"
 changelog_update = true
 git_release_enable = false
 publish = false
 
-
 [[package]]
 name = "token_supplies"
 changelog_update = true
 git_release_enable = false
 publish = true
+
+[[package]]
+name = "test_utils"
+changelog_update = true
+git_release_enable = false
+publish = false

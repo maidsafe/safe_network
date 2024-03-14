@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.33](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.32...sn_networking-v0.13.33) - 2024-03-14
+
+### Added
+- refactor spend validation
+
+### Fixed
+- *(test)* use unqiue dir during test
+- dont stop spend verification at spend error, generalise spend serde
+- put validation network spends errors management
+
+### Other
+- improve code quality
+- *(release)* sn_transfers-v0.16.3/sn_cli-v0.89.82
+
 ## [0.13.32](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.31-alpha.0...sn_networking-v0.13.32) - 2024-03-08
 
 ### Other

@@ -52,15 +52,11 @@ fi
 
 commit_message="chore(release): "
 for crate in "${crates_bumped[@]}"; do
-    # split the crate name and version
-    crate_name=$(echo "$crate" | cut -d'v' -f1)
-    # remove trailing hyphen
-    crate_name=${crate_name%-}
-
-    echo "the crate is: $crate_name"
-    version=$(echo "$crate" | cut -d'v' -f2)
+    # Extract the crate name and version in a cross-platform way
+    crate_name=$(echo "$crate" | sed -E 's/-v.*$//')
+    version=$(echo "$crate" | sed -E 's/^.*-v(.*)$/\1/')
     new_version=$version
-
+    echo "the crate is: $crate_name"
     # if we're changing the release channel...
     if [ -n "$SUFFIX" ]; then
         #if we're already in a realse channel, reapplying the suffix will reset things.
@@ -71,12 +67,14 @@ for crate in "${crates_bumped[@]}"; do
         else
             new_version="${version}-${SUFFIX}.0"
         fi
-
-        # set the version
-        crate=$new_version
-        # echo "new v for $crate_name: $new_version"
-        cargo set-version -p $crate_name $new_version
+    else
+        # For main release, strip any alpha or beta suffix from the version
+        new_version=$(echo "$version" | sed -E 's/(-alpha\.[0-9]+|-beta\.[0-9]+)$//')
     fi
+
+    # set the version
+    crate=$new_version
+    cargo set-version -p $crate_name $new_version
     # update the commit msg
     commit_message="${commit_message}${crate_name}-v$new_version/"
 done

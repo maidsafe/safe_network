@@ -27,6 +27,7 @@ mod replication_fetcher;
 mod spends;
 pub mod target_arch;
 mod transfers;
+mod transport;
 
 // re-export arch dependent deps for use in the crate, or above
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
