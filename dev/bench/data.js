@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710341008848,
+  "lastUpdate": 1710376724784,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "129674997+shuoer86@users.noreply.github.com",
-            "name": "shuoer86",
-            "username": "shuoer86"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "40d90f081858a68096c7e7ce3ec729b8ba2a9d4e",
-          "message": "fix: typos",
-          "timestamp": "2023-10-26T07:05:18Z",
-          "tree_id": "1b578aaeaf5c055c2aa73b3b1da777736ab560cf",
-          "url": "https://github.com/maidsafe/safe_network/commit/40d90f081858a68096c7e7ce3ec729b8ba2a9d4e"
-        },
-        "date": 1698307442885,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.15696538659251716,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.5845036566900619,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.498489449924257,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.86332760149663,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "224624a274288d7a3241d5d0b4af61c09286688b",
+          "message": "ci: fix the call to sn_client tests on nightly.\n\npackage, not bin",
+          "timestamp": "2024-03-14T01:27:26+01:00",
+          "tree_id": "a1bbfa4159a16708e5972d30a66d2bce2353c410",
+          "url": "https://github.com/maidsafe/safe_network/commit/224624a274288d7a3241d5d0b4af61c09286688b"
+        },
+        "date": 1710376721095,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.28067288290885,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8037688079493317,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.62313723923117,
             "unit": "MiB/s"
           }
         ]
