@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710376834221,
+  "lastUpdate": 1710396592622,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4f4ae06d6dedba87e5b7a06430bba186da9ea4fc",
-          "message": "fix: add libp2p identity with rand dep for tests",
-          "timestamp": "2023-10-26T11:36:31Z",
-          "tree_id": "f177239e3b1b09d9c46dc9b0f1bdb63a3f5ab337",
-          "url": "https://github.com/maidsafe/safe_network/commit/4f4ae06d6dedba87e5b7a06430bba186da9ea4fc"
-        },
-        "date": 1698324745132,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.14385694340412508,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.4026115682734076,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.77307096598554,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.62313723923117,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c631fd34c9187580303dc74f02467ada25277ac2",
+          "message": "fix: require rpc from proto",
+          "timestamp": "2024-03-14T06:58:16+01:00",
+          "tree_id": "867117c22262ecac3c49c136fa998f8ca53f6008",
+          "url": "https://github.com/maidsafe/safe_network/commit/c631fd34c9187580303dc74f02467ada25277ac2"
+        },
+        "date": 1710396589473,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2501309041760371,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7551392049490966,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.1782056076331,
             "unit": "MiB/s"
           }
         ]
