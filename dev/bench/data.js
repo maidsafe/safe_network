@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710463442565,
+  "lastUpdate": 1710463445363,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39367,6 +39367,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33535,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e4646093c7393886bc71de14dc7bd5c774cd08bb",
+          "message": "feat: provide `faucet upgrade` command\n\nUses the generic service manager to provide a `faucet upgrade` command, which will be used during\nthe general upgrade process to either upgrade or downgrade the faucet.\n\nSome code was common between the node and faucet upgrades, so that was refactored to be shared\nbetween the two.\n\nAlso clarifies some of the language used on the command documentation.",
+          "timestamp": "2024-03-14T23:56:52Z",
+          "tree_id": "13b8597d102c3f071f352c50cdc2d0e010929320",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4646093c7393886bc71de14dc7bd5c774cd08bb"
+        },
+        "date": 1710463444306,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6333,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36698,
             "unit": "ms"
           },
           {
