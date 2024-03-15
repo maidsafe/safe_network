@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710439980350,
+  "lastUpdate": 1710463333440,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "9ff900dc92f2ff4db013430a932e2141c3d720fa",
-          "message": "chore(node): use Bytes for Gossip related data types",
-          "timestamp": "2023-10-30T07:05:55Z",
-          "tree_id": "34c683e6d6c9e1435ed924969f9362a15b026315",
-          "url": "https://github.com/maidsafe/safe_network/commit/9ff900dc92f2ff4db013430a932e2141c3d720fa"
-        },
-        "date": 1698653256823,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.2016793932073492,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.6891692053926272,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 20.24790528220554,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.07592905556115,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e4646093c7393886bc71de14dc7bd5c774cd08bb",
+          "message": "feat: provide `faucet upgrade` command\n\nUses the generic service manager to provide a `faucet upgrade` command, which will be used during\nthe general upgrade process to either upgrade or downgrade the faucet.\n\nSome code was common between the node and faucet upgrades, so that was refactored to be shared\nbetween the two.\n\nAlso clarifies some of the language used on the command documentation.",
+          "timestamp": "2024-03-14T23:56:52Z",
+          "tree_id": "13b8597d102c3f071f352c50cdc2d0e010929320",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4646093c7393886bc71de14dc7bd5c774cd08bb"
+        },
+        "date": 1710463329139,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3021420585837775,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.838552105896722,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.91814766479749,
             "unit": "MiB/s"
           }
         ]
