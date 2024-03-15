@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710463439822,
+  "lastUpdate": 1710463442565,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc",
-          "message": "chore(networking): de/serialise directly to Bytes",
-          "timestamp": "2023-10-30T13:45:39Z",
-          "tree_id": "73e01c8deb5b26c0e47293e78e37b24e8f8ec85c",
-          "url": "https://github.com/maidsafe/safe_network/commit/4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc"
-        },
-        "date": 1698677104631,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 157,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 39,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e4646093c7393886bc71de14dc7bd5c774cd08bb",
+          "message": "feat: provide `faucet upgrade` command\n\nUses the generic service manager to provide a `faucet upgrade` command, which will be used during\nthe general upgrade process to either upgrade or downgrade the faucet.\n\nSome code was common between the node and faucet upgrades, so that was refactored to be shared\nbetween the two.\n\nAlso clarifies some of the language used on the command documentation.",
+          "timestamp": "2024-03-14T23:56:52Z",
+          "tree_id": "13b8597d102c3f071f352c50cdc2d0e010929320",
+          "url": "https://github.com/maidsafe/safe_network/commit/e4646093c7393886bc71de14dc7bd5c774cd08bb"
+        },
+        "date": 1710463441435,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 204,
             "unit": "MB"
           },
           {
