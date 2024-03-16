@@ -89,10 +89,12 @@ pub async fn download_and_extract_release(
         };
     };
     pb.finish_and_clear();
-    println!("Download completed");
 
     let safenode_download_path =
         release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
+
+    println!("Download completed: {}", &safenode_download_path.display());
+
     // Finally, obtain the version number from the binary by running `--version`. This is useful
     // when the `--url` argument is used, and in any case, ultimately the binary we obtained is the
     // source of truth.
