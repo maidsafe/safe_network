@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710624702227,
+  "lastUpdate": 1710624703631,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "33b366c24794e06c0da9ad1d402c425a27f78aff",
-          "message": "feat(rpc-client): allow to set peers to connect to in order to validate decrypted transfers events",
-          "timestamp": "2023-10-31T08:55:16Z",
-          "tree_id": "9d81bb1e906579b0ed741fbcc85a3b003f22c040",
-          "url": "https://github.com/maidsafe/safe_network/commit/33b366c24794e06c0da9ad1d402c425a27f78aff"
-        },
-        "date": 1698745898979,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 115,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 35,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "1ea3cd2238a2a3fab664baf17ead8b54d77071ef",
           "message": "refactor(node): using unsigned gossipsub msgs",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 204,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "maciej@robotix-lozinski.pl",
+            "name": "loziniak",
+            "username": "loziniak"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "397e7caa4456ffe3aebff83c98b07dba7c301eec",
+          "message": "feat(manager): display download path",
+          "timestamp": "2024-03-16T20:46:10Z",
+          "tree_id": "9e9f91b9dae1073e0adace421bdc18c368df81a2",
+          "url": "https://github.com/maidsafe/safe_network/commit/397e7caa4456ffe3aebff83c98b07dba7c301eec"
+        },
+        "date": 1710624703278,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
             "unit": "MB"
           },
           {
