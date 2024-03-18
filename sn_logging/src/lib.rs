@@ -200,3 +200,83 @@ impl LogBuilder {
         layers
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{layers::LogFormatter, ReloadHandle};
+    use color_eyre::Result;
+    use tracing::{trace, warn, Level};
+    use tracing_subscriber::{
+        filter::Targets,
+        fmt as tracing_fmt,
+        layer::{Filter, SubscriberExt},
+        reload,
+        util::SubscriberInitExt,
+        Layer, Registry,
+    };
+    use tracing_test::internal::GLOBAL_BUF;
+
+    #[test]
+    // todo: break down the TracingLayers so that we can plug in the writer without having to rewrite the whole function
+    // here.
+    fn reload_handle_should_change_log_levels() -> Result<()> {
+        // A mock write that writes to stdout + collects events to a global buffer. We can later read from this buffer.
+        let mock_writer = tracing_test::internal::MockWriter::new(&GLOBAL_BUF);
+
+        // Constructing the fmt layer manually.
+        let layer = tracing_fmt::layer()
+            .with_ansi(false)
+            .with_target(false)
+            .event_format(LogFormatter)
+            .with_writer(mock_writer)
+            .boxed();
+
+        let test_target = "sn_logging::tests".to_string();
+        // to enable logs just for the test.
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_targets(vec![(test_target.clone(), Level::TRACE)]));
+
+        // add the reload layer
+        let (filter, handle) = reload::Layer::new(target_filters);
+        let reload_handle = ReloadHandle(handle);
+        let layer = layer.with_filter(filter);
+        tracing_subscriber::registry().with(layer).try_init()?;
+
+        // Span is not controlled by the ReloadHandle. So we can set any span here.
+        let _span = tracing::info_span!("info span");
+
+        trace!("First trace event");
+
+        {
+            let buf = GLOBAL_BUF.lock().unwrap();
+
+            let events: Vec<&str> = std::str::from_utf8(&buf)
+                .expect("Logs contain invalid UTF8")
+                .lines()
+                .collect();
+            assert_eq!(events.len(), 1);
+            assert!(events[0].contains("First trace event"));
+        }
+
+        reload_handle.modify_log_level("sn_logging::tests=WARN")?;
+
+        // trace should not be logged now.
+        trace!("Second trace event");
+        warn!("First warn event");
+
+        {
+            let buf = GLOBAL_BUF.lock().unwrap();
+
+            let events: Vec<&str> = std::str::from_utf8(&buf)
+                .expect("Logs contain invalid UTF8")
+                .lines()
+                .collect();
+
+            assert_eq!(events.len(), 2);
+            assert!(events[0].contains("First trace event"));
+            assert!(events[1].contains("First warn event"));
+        }
+
+        Ok(())
+    }
+}

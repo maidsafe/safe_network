@@ -37,7 +37,7 @@ const ALL_SN_LOGS: &str = "all";
 const VERBOSE_SN_LOGS: &str = "v";
 
 /// Handle that implements functions to change the log level on the fly.
-pub struct ReloadHandle(Handle<Box<dyn Filter<Registry> + Send + Sync>, Registry>);
+pub struct ReloadHandle(pub(crate) Handle<Box<dyn Filter<Registry> + Send + Sync>, Registry>);
 
 impl ReloadHandle {
     /// Modify the log level to the provided CSV value
@@ -59,7 +59,7 @@ impl ReloadHandle {
 
 #[derive(Default)]
 /// Tracing log formatter setup for easier span viewing
-struct LogFormatter;
+pub(crate) struct LogFormatter;
 
 impl<S, N> FormatEvent<S, N> for LogFormatter
 where
