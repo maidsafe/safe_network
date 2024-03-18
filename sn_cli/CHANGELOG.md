@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.84](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.83...sn_cli-v0.89.84) - 2024-03-18
+
+### Other
+- *(acc-packet)* adding test for acc-packet moved to a different location on disk
+- *(acc-packet)* adding unit test for acc-packet changes scanning logic
+- *(acc-packet)* adding unit test to private methods/helpers
+- *(cli)* breaking up acc-packet logic within its own mod
+- name change to spawn events handler
+- increase of text length
+- iterate upload code rearranged for clear readability
+
 ## [0.89.83](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.82...sn_cli-v0.89.83) - 2024-03-14
 
 ### Added
