@@ -8,6 +8,7 @@
 
 mod change_tracking;
 
+use bls::PublicKey;
 use change_tracking::*;
 
 use super::files::ChunkManager;
@@ -103,6 +104,8 @@ pub struct AccountPacket {
 
 impl AccountPacket {
     /// Initialise directory as a fresh new packet with the given/random address for its root Folder.
+    /// The client's key will be used for encrypting the files/folders metadata chunks. Currently,
+    /// when the user requests to encrypt data, the provided Client's signer key is used.
     pub fn init(
         client: Client,
         wallet_dir: &Path,
@@ -225,7 +228,7 @@ impl AccountPacket {
     /// both pushing and pulling changes to/form the network.
     pub async fn sync(&mut self, options: FilesUploadOptions) -> Result<()> {
         let ChangesToApply { folders, mutations } =
-            self.scan_files_and_folders_for_changes(false)?;
+            self.scan_files_and_folders_for_changes(options.make_data_public)?;
 
         if mutations.is_empty() {
             println!("No local changes made to files/folders to be pushed to network.");
@@ -413,16 +416,20 @@ impl AccountPacket {
 
     // Scan existing files and folders on disk, generating a report of all the detected
     // changes based on the tracking info kept locally.
-    // TODO: encrypt the data-map and metadata if make_data_public is false.
-    fn scan_files_and_folders_for_changes(
-        &self,
-        _make_data_public: bool,
-    ) -> Result<ChangesToApply> {
+    // If make_data_public is false the metadata chunks are encrypted.
+    fn scan_files_and_folders_for_changes(&self, make_data_public: bool) -> Result<ChangesToApply> {
         // we don't use the local cache in order to realise of any changes made to files content.
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir);
         chunk_manager.chunk_with_iter(self.iter_only_files(), false, false)?;
 
-        let mut changes = self.read_folders_hierarchy_from_disk()?;
+        let encryption_pk = if make_data_public {
+            None
+        } else {
+            // we pass down the key to encrypt the metadata chunk of any new content detected.
+            Some(self.client.signer_pk())
+        };
+
+        let mut changes = self.read_folders_hierarchy_from_disk(encryption_pk)?;
 
         // add chunked files to the corresponding Folders
         let folders = &mut changes.folders;
@@ -437,13 +444,14 @@ impl AccountPacket {
                     Ok(Some(tracking_info)) => match &tracking_info.metadata.content {
                         FolderEntry::File(chunk) => {
                             if chunk.address() != &chunked_file.head_chunk_address {
-                                // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                                 let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
                                     &mut parent_folder,
                                     tracking_info.entry_hash,
                                     chunked_file.file_name.clone(),
                                     chunked_file.data_map.clone(),
+                                    encryption_pk,
                                 )?;
+
                                 changes.mutations.push(Mutation::FileContentChanged((
                                     tracking_info.meta_xorname,
                                     MetadataTrackingInfo {
@@ -457,12 +465,12 @@ impl AccountPacket {
                         }
                         FolderEntry::Folder(_) => {
                             // New file found where there used to be a folder
-                            // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                             let (entry_hash, meta_xorname, metadata) = replace_item_in_folder(
                                 &mut parent_folder,
                                 tracking_info.entry_hash,
                                 chunked_file.file_name.clone(),
                                 chunked_file.data_map.clone(),
+                                encryption_pk,
                             )?;
                             changes
                                 .mutations
@@ -475,11 +483,11 @@ impl AccountPacket {
                         }
                     },
                     Ok(None) => {
-                        // TODO: we need to encrypt the data-map and metadata if make_data_public is false.
                         let (entry_hash, meta_xorname, metadata) =
                             parent_folder.get_mut().0.add_file(
                                 chunked_file.file_name.clone(),
                                 chunked_file.data_map.clone(),
+                                encryption_pk,
                             )?;
                         parent_folder.get_mut().1.has_new_entries();
 
@@ -530,8 +538,12 @@ impl AccountPacket {
         Ok(changes)
     }
 
-    // Build Folders hierarchy from the set files dir
-    fn read_folders_hierarchy_from_disk(&self) -> Result<ChangesToApply> {
+    // Build Folders hierarchy from the set files dir. The metadata chunk of every new folder
+    // will be encrpyted if an encrpytion key has been provided.
+    fn read_folders_hierarchy_from_disk(
+        &self,
+        encryption_pk: Option<PublicKey>,
+    ) -> Result<ChangesToApply> {
         let mut changes = ChangesToApply::default();
         for (dir_path, depth, parent, dir_name) in self.iter_only_dirs().filter_map(|entry| {
             entry.path().parent().map(|parent| {
@@ -558,7 +570,7 @@ impl AccountPacket {
 
                 if folder_change.is_new_folder() {
                     let (entry_hash, meta_xorname, metadata) =
-                        parent_folder.add_folder(dir_name, curr_folder_addr)?;
+                        parent_folder.add_folder(dir_name, curr_folder_addr, encryption_pk)?;
                     parent_folder_change.has_new_entries();
 
                     changes
@@ -826,15 +838,22 @@ fn remove_from_parent(folders: &mut Folders, path: &Path, entry_hash: EntryHash)
 }
 
 // Replace a file/folder item from a given Folder (passed in as a container's OccupiedEntry').
+// The metadata chunk of the new item (folder/file) will be encrpyted if a key has been provided.
 fn replace_item_in_folder(
     folder: &mut OccupiedEntry<'_, PathBuf, (FoldersApi, FolderChange)>,
     entry_hash: EntryHash,
     file_name: OsString,
     data_map: Chunk,
+    encryption_pk: Option<PublicKey>,
 ) -> Result<(EntryHash, XorName, Metadata)> {
     let (ref mut folders_api, ref mut folder_change) = folder.get_mut();
     folder_change.has_new_entries();
-    let res = folders_api.replace_file(entry_hash, file_name.clone(), data_map.clone())?;
+    let res = folders_api.replace_file(
+        entry_hash,
+        file_name.clone(),
+        data_map.clone(),
+        encryption_pk,
+    )?;
     Ok(res)
 }
 
