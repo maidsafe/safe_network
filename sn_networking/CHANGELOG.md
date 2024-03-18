@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.34](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.33...sn_networking-v0.13.34) - 2024-03-18
+
+### Added
+- *(networking)* listen on WS addr too
+- *(networking)* support fallback WS transport
+
 ## [0.13.33](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.32...sn_networking-v0.13.33) - 2024-03-14
 
 ### Added

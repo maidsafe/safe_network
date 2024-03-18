@@ -4907,7 +4907,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.83"
+version = "0.89.84"
 dependencies = [
  "base64 0.21.7",
  "bitcoin",
@@ -4946,7 +4946,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.29"
+version = "0.104.30"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5057,7 +5057,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.33"
+version = "0.13.34"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5096,7 +5096,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.39"
+version = "0.104.40"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -5237,7 +5237,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "dirs-next",

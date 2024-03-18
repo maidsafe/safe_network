@@ -31,7 +31,7 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-sn_client = { path = "../sn_client", version = "0.104.29" }
+sn_client = { path = "../sn_client", version = "0.104.30" }
 sn_logging = { path = "../sn_logging", version = "0.2.23" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.8" }
 sn_transfers = { path = "../sn_transfers", version = "0.16.4" }

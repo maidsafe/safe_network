@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.30](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29...sn_client-v0.104.30) - 2024-03-18
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.104.29-alpha.2](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29-alpha.1...sn_client-v0.104.29-alpha.2) - 2024-03-14
 
 ### Added
