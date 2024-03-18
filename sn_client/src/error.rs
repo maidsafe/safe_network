@@ -41,6 +41,9 @@ pub enum Error {
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
 
+    #[error("Decrypting a Folder's item failed.")]
+    FolderEntryDecryption,
+
     #[error("SelfEncryption Error {0}.")]
     SelfEncryptionIO(#[from] self_encryption::Error),
 
