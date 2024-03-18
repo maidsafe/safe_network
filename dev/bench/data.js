@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710730805639,
+  "lastUpdate": 1710730807292,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39445,6 +39445,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33901,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "75e125675b95107781135311479bc94ba4c56550",
+          "message": "feat: support a port range on the `add` command\n\nPreviously we would not allow a custom port to be specified if more than one service was being\nadded. However, without autonat, people still need to open ports manually on their router, so the\nnode services they add will need to match this port range. Without the ability to specify a range,\nthey'd need to add the services one by one.",
+          "timestamp": "2024-03-18T02:14:02Z",
+          "tree_id": "d29caf619ed61b6ab5a7b61fb21d65f10339c28a",
+          "url": "https://github.com/maidsafe/safe_network/commit/75e125675b95107781135311479bc94ba4c56550"
+        },
+        "date": 1710730806926,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6211,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33609,
             "unit": "ms"
           },
           {
