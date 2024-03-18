@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710730804125,
+  "lastUpdate": 1710730805639,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1ea3cd2238a2a3fab664baf17ead8b54d77071ef",
-          "message": "refactor(node): using unsigned gossipsub msgs",
-          "timestamp": "2023-10-31T13:17:57Z",
-          "tree_id": "1cbe526b1ce1df42885ed7fc443fa8251ebadc2b",
-          "url": "https://github.com/maidsafe/safe_network/commit/1ea3cd2238a2a3fab664baf17ead8b54d77071ef"
-        },
-        "date": 1698761873942,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 160,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 40,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "75e125675b95107781135311479bc94ba4c56550",
+          "message": "feat: support a port range on the `add` command\n\nPreviously we would not allow a custom port to be specified if more than one service was being\nadded. However, without autonat, people still need to open ports manually on their router, so the\nnode services they add will need to match this port range. Without the ability to specify a range,\nthey'd need to add the services one by one.",
+          "timestamp": "2024-03-18T02:14:02Z",
+          "tree_id": "d29caf619ed61b6ab5a7b61fb21d65f10339c28a",
+          "url": "https://github.com/maidsafe/safe_network/commit/75e125675b95107781135311479bc94ba4c56550"
+        },
+        "date": 1710730805255,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
             "unit": "MB"
           },
           {
