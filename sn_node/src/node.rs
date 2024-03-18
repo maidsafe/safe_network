@@ -478,7 +478,7 @@ impl Node {
             Ok(peers) => peers,
             Err(err) => {
                 error!("Failed to finding closest_peers to {peer_id:?} client_get_closest_peers errored: {err:?}");
-                return true;
+                return false;
             }
         };
 
