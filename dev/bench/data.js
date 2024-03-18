@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710730807292,
+  "lastUpdate": 1710762951958,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc",
-          "message": "chore(networking): de/serialise directly to Bytes",
-          "timestamp": "2023-10-30T13:45:39Z",
-          "tree_id": "73e01c8deb5b26c0e47293e78e37b24e8f8ec85c",
-          "url": "https://github.com/maidsafe/safe_network/commit/4dcd8e99bb1753b0a5aa9c2912581bf5923e6afc"
-        },
-        "date": 1698676825831,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1877294723642522,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9132360676769442,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.366525736064588,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.14525794082793,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "75967394ebaed6ff2963934f95bf6c7bab3f42dd",
+          "message": "fix(node): get_closest error not trigger bad_node report",
+          "timestamp": "2024-03-18T10:55:00Z",
+          "tree_id": "69d6e87ea96a3fe95d150c6d0c463159f0d467af",
+          "url": "https://github.com/maidsafe/safe_network/commit/75967394ebaed6ff2963934f95bf6c7bab3f42dd"
+        },
+        "date": 1710762948654,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2910402218444712,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8458823644420446,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.70292604525289,
             "unit": "MiB/s"
           }
         ]
