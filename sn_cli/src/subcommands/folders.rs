@@ -102,7 +102,7 @@ pub(crate) async fn folders_cmds(
 ) -> Result<()> {
     match cmds {
         FoldersCmds::Init { path, folder_addr } => {
-            // init path as a fresh new folder
+            // initialise path as a fresh new Folder with a random network address if none was provided
             let root_folder_addr =
                 folder_addr.and_then(|hex_str| RegisterAddress::from_hex(&hex_str).ok());
             let acc_packet =
@@ -115,7 +115,7 @@ pub(crate) async fn folders_cmds(
             make_data_public,
             retry_strategy,
         } => {
-            // init path as a fresh new folder
+            // initialise path as a fresh new Folder with a random network address
             let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path, None)?;
 
             let options = FilesUploadOptions {
@@ -163,7 +163,6 @@ pub(crate) async fn folders_cmds(
         }
         FoldersCmds::Status { path } => {
             let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
-
             acc_packet.status()?;
         }
         FoldersCmds::Sync {
