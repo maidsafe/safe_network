@@ -43,9 +43,56 @@ use tokio::task::JoinSet;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-/// Object which allows a user to store and manage files, wallets, etc., with the ability
-/// and tools necessary to keep a local instance in sync with its remote version stored on the network.
+/// An `AccountPacket` object allows users to store and manage files, wallets, etc., with the ability
+/// and tools necessary to keep an instance tracking a local storage path, as well as keeping it in sync
+/// with its remote version stored on the network.
+/// A `Client` and a the location for a funded local hot-wallet are required by this object in order to be able to connect
+/// to the network, paying for data storage, and upload/retrieve information to/from the network.  
+///
 /// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
+/// TODO: currently the provided Client's key is used both for encrypting data and signing network operations.
+/// Be able to provide specific keys, and/or a way to derive keys for these operations is still pending.
+///
+/// The `AccountPacket` keeps a reference to the network address of the root Folder holding the user's
+/// files/folder hierarchy. All tracking information is kept under the `.safe` directory on disk, whose
+/// content is not uploaded to the network, but only kept locally in order to realise which files/dirs
+/// the user has made changes on compared to their last version retrieved from the network.
+///
+/// A subdirectory called `metadata` is kept under `.safe` directory with the following files:
+/// - A file named `root_folder.addr` which contains the network address where the root Folder is stored,
+/// which is the one holding the entire hierarchy of user's files/dirs to be kept in sync with local changes
+/// made by the user.
+/// - For each of the user's files/dirs, a serialised `MetadataTrackingInfo` instance is stored on using the
+/// file/dir metadata chunk xorname as filename. The information stored in these files are used to realise
+/// if changes were locally made by the user in comparison with the last version of such files/dirs retrieved
+/// from the network.
+/// Example of files generated within an account-packet to keep track of changes makde to user's files/dirs:
+///
+/// ./my-acc-packet
+/// ├── my-dir-1
+/// ├── my-file.txt
+/// ├── my-subdir-1
+/// │   ├── other-dir
+/// │   └── my-other-file.txt
+/// └── .safe
+///     ├── chunk_artifacts
+///     │   ├── ...
+///     │   ...
+///     ├── metadata
+///     │   ├── 082cc90c900fa08d36067246a1e6136a828f1aae4926268c4349c200d56e34b9
+///     │   ├── 102c5536a10682bc3cdd4a1915fe2ad5e839cb94d0d3f124d0c18aee1d49ce50
+///     │   ├── 31824937c47a979df64af591f2e43f76190e65af835c4b338cbe7a7ba3f7d3cb
+///     │   ├── 36778e471083140bc111677e2a86e49f4c0c20bc14ff2ad610e22615b72260b8
+///     │   ├── 3edd953cc320449e09b69b7b1b909a53874ee477f602f1a807dfd8057378367e
+///     │   └── root_folder.addr
+///     └── uploaded_files
+///         ├── ...
+///         ...
+///
+/// There are other files which are stored under `.safe/chunk_artifacts` and `.safe/uploaded_files` directories
+/// which are managed by the `ChunkManager` in order to locally cache chunked files, and a list of files
+/// already uploaded to the network, to prevent from chunking and/or uploading the same files again. For more
+/// details about these files, please refer to the `ChunkManager` module.
 pub struct AccountPacket {
     client: Client,
     wallet_dir: PathBuf,
