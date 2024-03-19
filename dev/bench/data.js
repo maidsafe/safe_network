@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710856703587,
+  "lastUpdate": 1710867355724,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "6f0273db992ad62f3d31e854ff5e13bad06be2d2",
-          "message": "fix: avoid access to the wallet files at the same time",
-          "timestamp": "2023-10-31T15:37:35Z",
-          "tree_id": "81bc6cc7c92179765c59dd60a17c25da6aed5b01",
-          "url": "https://github.com/maidsafe/safe_network/commit/6f0273db992ad62f3d31e854ff5e13bad06be2d2"
-        },
-        "date": 1698769967122,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.18264858065195463,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7988121252469096,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 19.14105457741816,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.54168801231375,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c10dac94df3126b24183b10516f461689dba316d",
+          "message": "fix(ci): include all targets and features during build test",
+          "timestamp": "2024-03-19T16:01:35Z",
+          "tree_id": "50eb2c97f802749bec400f1704450441bb8a1b33",
+          "url": "https://github.com/maidsafe/safe_network/commit/c10dac94df3126b24183b10516f461689dba316d"
+        },
+        "date": 1710867352716,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3176774232580544,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8510674479663751,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.612958185056904,
             "unit": "MiB/s"
           }
         ]
