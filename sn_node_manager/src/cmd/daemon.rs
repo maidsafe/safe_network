@@ -15,7 +15,10 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Result};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::{control::ServiceController, DaemonService, NodeRegistry};
+use sn_service_management::{
+    control::{ServiceControl, ServiceController},
+    DaemonService, NodeRegistry,
+};
 use std::{net::Ipv4Addr, path::PathBuf};
 
 pub async fn add(
@@ -36,6 +39,10 @@ pub async fn add(
         println!("              Add Daemon Service                 ");
         println!("=================================================");
     }
+
+    let service_user = "safe";
+    let service_manager = ServiceController {};
+    service_manager.create_service_user(service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
