@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710856594783,
+  "lastUpdate": 1710856699856,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "34291e409ad4b1f222a136af6a3d4ab27fb381ed",
-          "message": "feat(networking): finish query when stop tracking\n\nWhen we stop tracking a query ID, then we might as well call finish on\nthe query. This might result in less nodes being queried.",
-          "timestamp": "2023-11-01T13:46:52Z",
-          "tree_id": "8d21223a7dee9bd8aa8b1981e4e9f65c7bf57666",
-          "url": "https://github.com/maidsafe/safe_network/commit/34291e409ad4b1f222a136af6a3d4ab27fb381ed"
-        },
-        "date": 1698850085907,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 59,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "c6c3acc52e97109b6f95e8b6412b1f17b3b50213",
+          "message": "docs(cli): adding some high-level doc to acc-packet codebase",
+          "timestamp": "2024-03-19T13:08:52Z",
+          "tree_id": "60e41d638207fdfd56cbde57681cc16c193673b4",
+          "url": "https://github.com/maidsafe/safe_network/commit/c6c3acc52e97109b6f95e8b6412b1f17b3b50213"
+        },
+        "date": 1710856699453,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
