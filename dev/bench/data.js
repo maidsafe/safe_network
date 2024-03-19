@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710867460857,
+  "lastUpdate": 1710867462461,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4ca83b120e24f4de9609824cd2e8b99a7dbc8b18",
-          "message": "refactor(node): reduce the max number of events that can be queued in the NodeEventsChannel",
-          "timestamp": "2023-11-01T14:49:34Z",
-          "tree_id": "061100b6a9541b666c295f6c3c258154705bca09",
-          "url": "https://github.com/maidsafe/safe_network/commit/4ca83b120e24f4de9609824cd2e8b99a7dbc8b18"
-        },
-        "date": 1698853687609,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 163,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 42,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c10dac94df3126b24183b10516f461689dba316d",
+          "message": "fix(ci): include all targets and features during build test",
+          "timestamp": "2024-03-19T16:01:35Z",
+          "tree_id": "50eb2c97f802749bec400f1704450441bb8a1b33",
+          "url": "https://github.com/maidsafe/safe_network/commit/c10dac94df3126b24183b10516f461689dba316d"
+        },
+        "date": 1710867462163,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 206,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
