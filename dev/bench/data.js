@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710878074961,
+  "lastUpdate": 1710878076992,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39640,6 +39640,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37072,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5",
+          "message": "test(cli): adding automated test for metadata chunk encryption",
+          "timestamp": "2024-03-19T19:04:45Z",
+          "tree_id": "98606573d1da8fd5c5f7add05cda045f3f04a1ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5"
+        },
+        "date": 1710878076447,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6548,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36070,
             "unit": "ms"
           },
           {
