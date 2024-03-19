@@ -15,7 +15,7 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
 };
@@ -39,7 +39,7 @@ pub async fn join(
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
 
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     let faucet_path = get_bin_path(
         build,
         faucet_path,
@@ -136,7 +136,7 @@ pub async fn run(
         println!("=================================================");
     }
 
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     let faucet_path = get_bin_path(
         build,
         faucet_path,

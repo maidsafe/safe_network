@@ -15,7 +15,7 @@ use crate::helpers::download_and_extract_release;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::UpgradeResult;
 use std::{
     path::PathBuf,
@@ -37,7 +37,7 @@ pub async fn download_and_get_upgrade_bin_path(
     url: Option<String>,
     version: Option<String>,
 ) -> Result<(PathBuf, Version)> {
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     if let Some(version) = version {
         let (upgrade_bin_path, version) =
             download_and_extract_release(release_type, None, Some(version), &*release_repo).await?;
@@ -51,7 +51,6 @@ pub async fn download_and_get_upgrade_bin_path(
         let latest_version = release_repo
             .get_latest_version(&ReleaseType::Safenode)
             .await?;
-        let latest_version = Version::parse(&latest_version)?;
         println!("Latest version is {latest_version}");
         let (upgrade_bin_path, _) = download_and_extract_release(
             ReleaseType::Safenode,
@@ -97,7 +96,7 @@ pub async fn get_bin_path(
     path: Option<PathBuf>,
     release_type: ReleaseType,
     version: Option<String>,
-    release_repo: &dyn SafeReleaseRepositoryInterface,
+    release_repo: &dyn SafeReleaseRepoActions,
 ) -> Result<PathBuf> {
     if build {
         build_binary(&release_type)?;

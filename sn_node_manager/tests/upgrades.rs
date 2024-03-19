@@ -10,7 +10,7 @@ mod utils;
 
 use assert_cmd::Command;
 use color_eyre::Result;
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use utils::get_service_status;
 
 const CI_USER: &str = "runner";
@@ -45,7 +45,7 @@ async fn upgrade_to_latest_version() -> Result<()> {
         "Services were not correctly initialised"
     );
 
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     let latest_version = release_repo
         .get_latest_version(&ReleaseType::Safenode)
         .await?;
@@ -65,7 +65,10 @@ async fn upgrade_to_latest_version() -> Result<()> {
 
     let status = get_service_status().await?;
     assert!(
-        status.nodes.iter().all(|n| n.version == latest_version),
+        status
+            .nodes
+            .iter()
+            .all(|n| n.version == latest_version.to_string()),
         "Not all services were updated to the latest version"
     );
 
