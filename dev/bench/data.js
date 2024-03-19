@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710810976115,
+  "lastUpdate": 1710810978481,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "a119fd2771b1efbb904786028084703ab9b633a4",
-          "message": "chore(node): don't log the transfers events",
-          "timestamp": "2023-11-01T12:34:27Z",
-          "tree_id": "6950c5eebbbba947ee21c4877b534487b2aa8a29",
-          "url": "https://github.com/maidsafe/safe_network/commit/a119fd2771b1efbb904786028084703ab9b633a4"
-        },
-        "date": 1698846335450,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 163,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "421b42ef26525f7520ed8846f5cb85fd03d23b27",
+          "message": "refactor: remove churn example from node manager",
+          "timestamp": "2024-03-19T00:31:49Z",
+          "tree_id": "4d47c5becec325f4f42c3150a8a12316ecafa631",
+          "url": "https://github.com/maidsafe/safe_network/commit/421b42ef26525f7520ed8846f5cb85fd03d23b27"
+        },
+        "date": 1710810977656,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
