@@ -114,9 +114,14 @@ pub async fn add_node(
     let mut node_number = current_node_count + 1;
     let mut node_port = get_start_port_if_applicable(options.node_port);
     let mut metrics_port = get_start_port_if_applicable(options.metrics_port);
+    let mut rpc_port = get_start_port_if_applicable(options.rpc_port);
 
     while node_number <= target_node_count {
-        let rpc_free_port = service_control.get_available_port()?;
+        let rpc_free_port = if let Some(port) = rpc_port {
+            port
+        } else {
+            service_control.get_available_port()?
+        };
         let rpc_socket_addr = if let Some(addr) = options.rpc_address {
             SocketAddr::new(IpAddr::V4(addr), rpc_free_port)
         } else {
@@ -190,6 +195,7 @@ pub async fn add_node(
         node_number += 1;
         node_port = increment_port_option(node_port);
         metrics_port = increment_port_option(metrics_port);
+        rpc_port = increment_port_option(rpc_port);
     }
 
     std::fs::remove_file(options.safenode_src_path)?;

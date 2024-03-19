@@ -139,6 +139,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
             metrics_port: None,
             node_port: None,
             rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -234,6 +235,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             metrics_port: None,
             node_port: None,
             rpc_address: Some(custom_rpc_address),
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -280,8 +282,6 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
     let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
     safenode_download_path.write_binary(b"fake safenode bin")?;
 
-    let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
-
     let result = add_node(
         AddNodeServiceOptions {
             bootstrap_peers: vec![],
@@ -291,7 +291,8 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
             local: true,
             metrics_port: None,
             node_port: None,
-            rpc_address: Some(custom_rpc_address),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -447,6 +448,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
             metrics_port: None,
             node_port: None,
             rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -585,7 +587,8 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
             genesis: false,
             metrics_port: None,
             node_port: None,
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -698,7 +701,8 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
             local: false,
             metrics_port: None,
             node_port: None,
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -822,6 +826,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             metrics_port: None,
             node_port: None,
             rpc_address: None,
+            rpc_port: None,
             safenode_src_path: safenode_download_path.to_path_buf(),
             safenode_dir_path: temp_dir.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -925,7 +930,8 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Single(custom_port)),
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1135,7 +1141,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1188,7 +1195,8 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1247,7 +1255,8 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Single(12000)),
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1444,7 +1453,8 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             local: false,
             metrics_port: Some(PortRange::Range(12000, 12002)),
             node_port: None,
-            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            rpc_address: None,
+            rpc_port: None,
             safenode_dir_path: temp_dir.to_path_buf(),
             safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
@@ -1463,6 +1473,189 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
     node_logs_dir.assert(predicate::path::is_dir());
     assert_eq!(node_registry.nodes.len(), 3);
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let mut seq = Sequence::new();
+
+    // First service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:20000"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode1")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode1")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode1".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    // Second service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:20001"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode2")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode2")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode2".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode2")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    // Third service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:20002"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode3")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode3")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode3".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode3")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: Some(3),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: Some(PortRange::Range(20000, 20002)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    safenode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 3);
+    assert_eq!(
+        node_registry.nodes[0].rpc_socket_addr,
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20000)
+    );
+    assert_eq!(
+        node_registry.nodes[1].rpc_socket_addr,
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20001)
+    );
+    assert_eq!(
+        node_registry.nodes[2].rpc_socket_addr,
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20002)
+    );
     Ok(())
 }
 
