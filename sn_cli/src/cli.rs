@@ -52,7 +52,7 @@ pub(crate) struct Opt {
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
     #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "data-dir")]
-    pub log_output_dest: Option<LogOutputDest>,
+    pub log_output_dest: LogOutputDest,
 
     /// Specify the logging format.
     ///

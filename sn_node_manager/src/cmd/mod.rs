@@ -13,7 +13,10 @@ pub mod node;
 
 use crate::helpers::download_and_extract_release;
 use color_eyre::{eyre::eyre, Result};
+use colored::Colorize;
+use semver::Version;
 use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_service_management::UpgradeResult;
 use std::{
     path::PathBuf,
     process::{Command, Stdio},
@@ -27,6 +30,66 @@ pub fn is_running_as_root() -> bool {
 #[cfg(windows)]
 pub fn is_running_as_root() -> bool {
     true
+}
+
+pub async fn download_and_get_upgrade_bin_path(
+    release_type: ReleaseType,
+    url: Option<String>,
+    version: Option<String>,
+) -> Result<(PathBuf, Version)> {
+    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    if let Some(version) = version {
+        let (upgrade_bin_path, version) =
+            download_and_extract_release(release_type, None, Some(version), &*release_repo).await?;
+        Ok((upgrade_bin_path, Version::parse(&version)?))
+    } else if let Some(url) = url {
+        let (upgrade_bin_path, version) =
+            download_and_extract_release(release_type, Some(url), None, &*release_repo).await?;
+        Ok((upgrade_bin_path, Version::parse(&version)?))
+    } else {
+        println!("Retrieving latest version of safenode...");
+        let latest_version = release_repo
+            .get_latest_version(&ReleaseType::Safenode)
+            .await?;
+        let latest_version = Version::parse(&latest_version)?;
+        println!("Latest version is {latest_version}");
+        let (upgrade_bin_path, _) = download_and_extract_release(
+            ReleaseType::Safenode,
+            None,
+            Some(latest_version.to_string()),
+            &*release_repo,
+        )
+        .await?;
+        Ok((upgrade_bin_path, latest_version))
+    }
+}
+
+pub fn print_upgrade_summary(upgrade_summary: Vec<(String, UpgradeResult)>) {
+    println!("Upgrade summary:");
+    for (service_name, upgrade_result) in upgrade_summary {
+        match upgrade_result {
+            UpgradeResult::NotRequired => {
+                println!("- {} did not require an upgrade", service_name);
+            }
+            UpgradeResult::Upgraded(previous_version, new_version) => {
+                println!(
+                    "{} {} upgraded from {previous_version} to {new_version}",
+                    "✓".green(),
+                    service_name
+                );
+            }
+            UpgradeResult::Forced(previous_version, target_version) => {
+                println!(
+                    "{} Forced {} version change from {previous_version} to {target_version}.",
+                    "✓".green(),
+                    service_name
+                );
+            }
+            UpgradeResult::Error(msg) => {
+                println!("{} {} was not upgraded: {}", "✕".red(), service_name, msg);
+            }
+        }
+    }
 }
 
 pub async fn get_bin_path(

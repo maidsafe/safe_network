@@ -29,6 +29,10 @@ tracing-core = "0.1.30"
 tracing-opentelemetry = { version = "0.21", optional = true }
 tracing-subscriber = { version = "0.3.16", features=["json"] }
 
+[dev-dependencies]
+color-eyre = "~0.6"
+tracing-test = "0.2.4"
+
 [features]
 otlp = [
     "opentelemetry",

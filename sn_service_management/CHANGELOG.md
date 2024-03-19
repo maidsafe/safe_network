@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.1.0...sn_service_management-v0.1.1) - 2024-03-18
+
+### Fixed
+- *(ci)* build packages separately to bypass feature unification process
+
 ## [0.1.0](https://github.com/joshuef/safe_network/releases/tag/sn_service_management-v0.1.0) - 2024-03-14
 
 ### Added

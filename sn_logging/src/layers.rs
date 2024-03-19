@@ -16,14 +16,15 @@ use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::{Event, Level, Subscriber};
 use tracing_subscriber::{
     filter::Targets,
-    fmt as tracing_fmt,
     fmt::{
+        self as tracing_fmt,
         format::Writer,
         time::{FormatTime, SystemTime},
         FmtContext, FormatEvent, FormatFields,
     },
     layer::Filter,
     registry::LookupSpan,
+    reload::{self, Handle},
     Layer, Registry,
 };
 
@@ -35,9 +36,30 @@ const ALL_SN_LOGS: &str = "all";
 // Trace at nodes, clients, debug at networking layer
 const VERBOSE_SN_LOGS: &str = "v";
 
+/// Handle that implements functions to change the log level on the fly.
+pub struct ReloadHandle(pub(crate) Handle<Box<dyn Filter<Registry> + Send + Sync>, Registry>);
+
+impl ReloadHandle {
+    /// Modify the log level to the provided CSV value
+    /// Example input: `libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
+    /// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they will override some
+    /// of the value that you might have provided, `sn_client=ERROR` in the above example will be ignored and
+    /// instead will be set to `TRACE` since `all` keyword is provided.
+    pub fn modify_log_level(&self, logging_value: &str) -> Result<()> {
+        let targets: Vec<(String, Level)> = get_logging_targets(logging_value)?;
+        self.0.modify(|old_filter| {
+            let new_filter: Box<dyn Filter<Registry> + Send + Sync> =
+                Box::new(Targets::new().with_targets(targets));
+            *old_filter = new_filter;
+        })?;
+
+        Ok(())
+    }
+}
+
 #[derive(Default)]
 /// Tracing log formatter setup for easier span viewing
-struct LogFormatter;
+pub(crate) struct LogFormatter;
 
 impl<S, N> FormatEvent<S, N> for LogFormatter
 where
@@ -72,7 +94,7 @@ where
 #[derive(Default)]
 pub(crate) struct TracingLayers {
     pub(crate) layers: Vec<Box<dyn Layer<Registry> + Send + Sync>>,
-    pub(crate) guard: Option<WorkerGuard>,
+    pub(crate) log_appender_guard: Option<WorkerGuard>,
 }
 
 impl TracingLayers {
@@ -83,7 +105,7 @@ impl TracingLayers {
         format: LogFormat,
         max_uncompressed_log_files: Option<usize>,
         max_compressed_log_files: Option<usize>,
-    ) -> Result<()> {
+    ) -> Result<ReloadHandle> {
         let layer = match output_dest {
             LogOutputDest::Stdout => {
                 println!("Logging to stdout");
@@ -113,7 +135,7 @@ impl TracingLayers {
                     max_uncompressed_log_files,
                     max_log_files,
                 );
-                self.guard = Some(worker_guard);
+                self.log_appender_guard = Some(worker_guard);
 
                 match format {
                     LogFormat::Json => tracing_fmt::layer()
@@ -139,9 +161,13 @@ impl TracingLayers {
 
         let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
             Box::new(Targets::new().with_targets(targets));
-        let layer = layer.with_filter(target_filters);
+
+        let (filter, reload_handle) = reload::Layer::new(target_filters);
+
+        let layer = layer.with_filter(filter);
         self.layers.push(Box::new(layer));
-        Ok(())
+
+        Ok(ReloadHandle(reload_handle))
     }
 
     #[cfg(feature = "otlp")]
@@ -197,7 +223,7 @@ impl TracingLayers {
 
 /// Parses the logging targets from the env variable (SN_LOG). The crates should be given as a CSV, for e.g.,
 /// `export SN_LOG = libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
-/// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they might override some
+/// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they will override some
 /// of the value that you might have provided, `sn_client=ERROR` in the above example will be ignored and
 /// instead will be set to `TRACE` since `all` keyword is provided.
 fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> {

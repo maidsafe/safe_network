@@ -57,4 +57,7 @@ service SafeNode {
 
   // Update the node
   rpc Update (UpdateRequest) returns (UpdateResponse);
+
+  // Update the log level of the node
+  rpc UpdateLogLevel (UpdateLogLevelRequest) returns (UpdateLogLevelResponse);
 }

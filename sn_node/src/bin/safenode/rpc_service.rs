@@ -9,6 +9,7 @@
 use bls::{PublicKey, PK_SIZE};
 use bytes::Bytes;
 use eyre::{ErrReport, Result};
+use sn_logging::ReloadHandle;
 use sn_node::RunningNode;
 use sn_protocol::node_rpc::NodeCtrl;
 use sn_protocol::safenode_proto::{
@@ -19,7 +20,8 @@ use sn_protocol::safenode_proto::{
     KBucketsRequest, KBucketsResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
     NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
     RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
-    TransferNotifsFilterRequest, TransferNotifsFilterResponse, UpdateRequest, UpdateResponse,
+    TransferNotifsFilterRequest, TransferNotifsFilterResponse, UpdateLogLevelRequest,
+    UpdateLogLevelResponse, UpdateRequest, UpdateResponse,
 };
 use std::{
     collections::HashMap,
@@ -40,6 +42,7 @@ struct SafeNodeRpcService {
     running_node: RunningNode,
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
+    log_reload_handle: ReloadHandle,
 }
 
 // Implementing RPC interface for service defined in .proto
@@ -347,6 +350,28 @@ impl SafeNode for SafeNodeRpcService {
             )),
         }
     }
+
+    async fn update_log_level(
+        &self,
+        request: Request<UpdateLogLevelRequest>,
+    ) -> Result<Response<UpdateLogLevelResponse>, Status> {
+        debug!(
+            "RPC request received at {}: {:?}",
+            self.addr,
+            request.get_ref()
+        );
+
+        match self
+            .log_reload_handle
+            .modify_log_level(&request.get_ref().log_level)
+        {
+            Ok(()) => Ok(Response::new(UpdateLogLevelResponse {})),
+            Err(err) => Err(Status::new(
+                Code::Internal,
+                format!("Failed to update node's log level: {err:?}"),
+            )),
+        }
+    }
 }
 
 pub(crate) fn start_rpc_service(
@@ -355,6 +380,7 @@ pub(crate) fn start_rpc_service(
     running_node: RunningNode,
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
+    log_reload_handle: ReloadHandle,
 ) {
     // creating a service
     let service = SafeNodeRpcService {
@@ -363,6 +389,7 @@ pub(crate) fn start_rpc_service(
         running_node,
         ctrl_tx,
         started_instant,
+        log_reload_handle,
     };
     info!("RPC Server listening on {addr}");
     println!("RPC Server listening on {addr}");

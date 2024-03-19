@@ -21,6 +21,7 @@ use tracing_core::{dispatcher::DefaultGuard, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 pub use error::Error;
+pub use layers::ReloadHandle;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDest {
@@ -102,12 +103,11 @@ impl LogBuilder {
     /// This guard should be held for the life of the program.
     ///
     /// Logging should be instantiated only once.
-    pub fn initialize(self) -> Result<Option<WorkerGuard>> {
+    pub fn initialize(self) -> Result<(ReloadHandle, Option<WorkerGuard>)> {
         let mut layers = TracingLayers::default();
 
-        #[cfg(not(feature = "otlp"))]
-        layers.fmt_layer(
-            self.default_logging_targets,
+        let reload_handle = layers.fmt_layer(
+            self.default_logging_targets.clone(),
             &self.output_dest,
             self.format,
             self.max_uncompressed_log_files,
@@ -116,14 +116,6 @@ impl LogBuilder {
 
         #[cfg(feature = "otlp")]
         {
-            layers.fmt_layer(
-                self.default_logging_targets.clone(),
-                &self.output_dest,
-                self.format,
-                self.max_uncompressed_log_files,
-                self.max_compressed_log_files,
-            )?;
-
             match std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT") {
                 Ok(_) => layers.otlp_layer(self.default_logging_targets)?,
                 Err(_) => println!(
@@ -141,7 +133,7 @@ impl LogBuilder {
             println!("Tried to initialize and set global default subscriber more than once");
         }
 
-        Ok(layers.guard)
+        Ok((reload_handle, layers.log_appender_guard))
     }
 
     /// Logs to the data_dir. Should be called from a single threaded tokio/non-tokio context.
@@ -160,7 +152,7 @@ impl LogBuilder {
         if let Some(test_name) = std::thread::current().name() {
             info!("Running test: {test_name}");
         }
-        (layers.guard, log_guard)
+        (layers.log_appender_guard, log_guard)
     }
 
     /// Logs to the data_dir. Should be called from a multi threaded tokio context.
@@ -176,7 +168,7 @@ impl LogBuilder {
         .try_init()
         .expect("You have tried to init multi_threaded tokio logging twice\nRefer sn_logging::get_test_layers docs for more.");
 
-        layers.guard
+        layers.log_appender_guard
     }
 
     /// Initialize just the fmt_layer for testing purposes.
@@ -202,9 +194,89 @@ impl LogBuilder {
 
         let mut layers = TracingLayers::default();
 
-        layers
+        let _reload_handle = layers
             .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None)
             .expect("Failed to get TracingLayers");
         layers
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{layers::LogFormatter, ReloadHandle};
+    use color_eyre::Result;
+    use tracing::{trace, warn, Level};
+    use tracing_subscriber::{
+        filter::Targets,
+        fmt as tracing_fmt,
+        layer::{Filter, SubscriberExt},
+        reload,
+        util::SubscriberInitExt,
+        Layer, Registry,
+    };
+    use tracing_test::internal::GLOBAL_BUF;
+
+    #[test]
+    // todo: break down the TracingLayers so that we can plug in the writer without having to rewrite the whole function
+    // here.
+    fn reload_handle_should_change_log_levels() -> Result<()> {
+        // A mock write that writes to stdout + collects events to a global buffer. We can later read from this buffer.
+        let mock_writer = tracing_test::internal::MockWriter::new(&GLOBAL_BUF);
+
+        // Constructing the fmt layer manually.
+        let layer = tracing_fmt::layer()
+            .with_ansi(false)
+            .with_target(false)
+            .event_format(LogFormatter)
+            .with_writer(mock_writer)
+            .boxed();
+
+        let test_target = "sn_logging::tests".to_string();
+        // to enable logs just for the test.
+        let target_filters: Box<dyn Filter<Registry> + Send + Sync> =
+            Box::new(Targets::new().with_targets(vec![(test_target.clone(), Level::TRACE)]));
+
+        // add the reload layer
+        let (filter, handle) = reload::Layer::new(target_filters);
+        let reload_handle = ReloadHandle(handle);
+        let layer = layer.with_filter(filter);
+        tracing_subscriber::registry().with(layer).try_init()?;
+
+        // Span is not controlled by the ReloadHandle. So we can set any span here.
+        let _span = tracing::info_span!("info span");
+
+        trace!("First trace event");
+
+        {
+            let buf = GLOBAL_BUF.lock().unwrap();
+
+            let events: Vec<&str> = std::str::from_utf8(&buf)
+                .expect("Logs contain invalid UTF8")
+                .lines()
+                .collect();
+            assert_eq!(events.len(), 1);
+            assert!(events[0].contains("First trace event"));
+        }
+
+        reload_handle.modify_log_level("sn_logging::tests=WARN")?;
+
+        // trace should not be logged now.
+        trace!("Second trace event");
+        warn!("First warn event");
+
+        {
+            let buf = GLOBAL_BUF.lock().unwrap();
+
+            let events: Vec<&str> = std::str::from_utf8(&buf)
+                .expect("Logs contain invalid UTF8")
+                .lines()
+                .collect();
+
+            assert_eq!(events.len(), 2);
+            assert!(events[0].contains("First trace event"));
+            assert!(events[1].contains("First warn event"));
+        }
+
+        Ok(())
     }
 }

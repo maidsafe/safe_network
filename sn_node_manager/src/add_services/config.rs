@@ -6,14 +6,38 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use std::{
     ffi::OsString,
     net::{Ipv4Addr, SocketAddr},
     path::PathBuf,
+    str::FromStr,
 };
+
+#[derive(Clone, Debug)]
+pub enum PortRange {
+    Single(u16),
+    Range(u16, u16),
+}
+
+pub fn parse_port_range(s: &str) -> Result<PortRange> {
+    if let Ok(port) = u16::from_str(s) {
+        Ok(PortRange::Single(port))
+    } else {
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 2 {
+            return Err(eyre!("Port range must be in the format 'start-end'"));
+        }
+        let start = parts[0].parse::<u16>()?;
+        let end = parts[1].parse::<u16>()?;
+        if start >= end {
+            return Err(eyre!("End port must be greater than start port"));
+        }
+        Ok(PortRange::Range(start, end))
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct InstallNodeServiceCtxBuilder {
@@ -82,7 +106,7 @@ pub struct AddNodeServiceOptions {
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub local: bool,
-    pub node_port: Option<u16>,
+    pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
     pub safenode_bin_path: PathBuf,
     pub safenode_dir_path: PathBuf,

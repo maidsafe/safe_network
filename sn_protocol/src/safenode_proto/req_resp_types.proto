@@ -108,3 +108,9 @@ message UpdateRequest {
 
 message UpdateResponse {}
 
+// Set the node's log level
+message UpdateLogLevelRequest {
+    string log_level = 1;
+}
+
+message UpdateLogLevelResponse{}

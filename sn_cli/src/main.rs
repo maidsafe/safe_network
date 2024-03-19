@@ -45,27 +45,24 @@ const CLIENT_KEY: &str = "clientkey";
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
-    let _log_appender_guard = if let Some(log_output_dest) = opt.log_output_dest {
-        let logging_targets = vec![
-            // TODO: Reset to nice and clean defaults once we have a better idea of what we want
-            ("sn_networking".to_string(), Level::DEBUG),
-            ("safe".to_string(), Level::TRACE),
-            ("sn_build_info".to_string(), Level::TRACE),
-            ("sn_cli".to_string(), Level::TRACE),
-            ("sn_client".to_string(), Level::TRACE),
-            ("sn_logging".to_string(), Level::TRACE),
-            ("sn_peers_acquisition".to_string(), Level::TRACE),
-            ("sn_protocol".to_string(), Level::TRACE),
-            ("sn_registers".to_string(), Level::TRACE),
-            ("sn_transfers".to_string(), Level::TRACE),
-        ];
-        let mut log_builder = LogBuilder::new(logging_targets);
-        log_builder.output_dest(log_output_dest);
-        log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
-        log_builder.initialize()?
-    } else {
-        None
-    };
+    let logging_targets = vec![
+        // TODO: Reset to nice and clean defaults once we have a better idea of what we want
+        ("sn_networking".to_string(), Level::DEBUG),
+        ("safe".to_string(), Level::TRACE),
+        ("sn_build_info".to_string(), Level::TRACE),
+        ("sn_cli".to_string(), Level::TRACE),
+        ("sn_client".to_string(), Level::TRACE),
+        ("sn_logging".to_string(), Level::TRACE),
+        ("sn_peers_acquisition".to_string(), Level::TRACE),
+        ("sn_protocol".to_string(), Level::TRACE),
+        ("sn_registers".to_string(), Level::TRACE),
+        ("sn_transfers".to_string(), Level::TRACE),
+    ];
+    let mut log_builder = LogBuilder::new(logging_targets);
+    log_builder.output_dest(opt.log_output_dest);
+    log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
+    let _log_handles = log_builder.initialize()?;
+
     #[cfg(feature = "metrics")]
     tokio::spawn(init_metrics(std::process::id()));
 
