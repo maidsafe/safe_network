@@ -74,7 +74,7 @@ pub async fn add_node(
     }
 
     let safenode_file_name = options
-        .safenode_bin_path
+        .safenode_src_path
         .file_name()
         .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
         .to_string_lossy()
@@ -138,7 +138,7 @@ pub async fn add_node(
         create_owned_dir(service_log_dir_path.clone(), &options.user)?;
 
         std::fs::copy(
-            options.safenode_bin_path.clone(),
+            options.safenode_src_path.clone(),
             service_safenode_path.clone(),
         )?;
         let install_ctx = InstallNodeServiceCtxBuilder {
@@ -201,7 +201,7 @@ pub async fn add_node(
         };
     }
 
-    std::fs::remove_file(options.safenode_bin_path)?;
+    std::fs::remove_file(options.safenode_src_path)?;
 
     if !added_service_data.is_empty() {
         println!("Services Added:");
@@ -242,13 +242,11 @@ pub fn add_daemon(
     }
 
     std::fs::copy(
-        options.daemon_download_bin_path.clone(),
+        options.daemon_src_bin_path.clone(),
         options.daemon_install_bin_path.clone(),
     )?;
 
     let install_ctx = ServiceInstallCtx {
-        label: DAEMON_SERVICE_NAME.parse()?,
-        program: options.daemon_install_bin_path.clone(),
         args: vec![
             OsString::from("--port"),
             OsString::from(options.port.to_string()),
@@ -256,9 +254,11 @@ pub fn add_daemon(
             OsString::from(options.address.to_string()),
         ],
         contents: None,
-        username: None,
+        environment: options.env_variables,
+        label: DAEMON_SERVICE_NAME.parse()?,
+        program: options.daemon_install_bin_path.clone(),
+        username: Some(options.user),
         working_directory: None,
-        environment: None,
     };
 
     match service_control.install(install_ctx) {
@@ -275,7 +275,7 @@ pub fn add_daemon(
             println!("Daemon service added {}", "✓".green());
             println!("[!] Note: the service has not been started");
             node_registry.save()?;
-            std::fs::remove_file(options.daemon_download_bin_path)?;
+            std::fs::remove_file(options.daemon_src_bin_path)?;
             Ok(())
         }
         Err(e) => {
@@ -307,7 +307,7 @@ pub fn add_faucet(
     )?;
 
     std::fs::copy(
-        install_options.faucet_download_bin_path.clone(),
+        install_options.faucet_src_bin_path.clone(),
         install_options.faucet_install_bin_path.clone(),
     )?;
 
@@ -350,7 +350,7 @@ pub fn add_faucet(
                 );
             }
             println!("[!] Note: the service has not been started");
-            std::fs::remove_file(install_options.faucet_download_bin_path)?;
+            std::fs::remove_file(install_options.faucet_src_bin_path)?;
             node_registry.save()?;
             Ok(())
         }

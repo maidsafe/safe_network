@@ -22,6 +22,10 @@ use std::{
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
 /// Downloads and extracts a release binary to a temporary location.
+///
+/// If the URL is supplied, that will be downloaded and extracted, and the binary inside the
+/// archive will be used; if the version is supplied, a specific version will be downloaded and
+/// used; otherwise the latest version will be downloaded and used.
 pub async fn download_and_extract_release(
     release_type: ReleaseType,
     url: Option<String>,
