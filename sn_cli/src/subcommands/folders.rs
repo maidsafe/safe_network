@@ -40,7 +40,7 @@ pub enum FoldersCmds {
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
-        /// Should the file be made accessible to all. (This is irreversible)
+        /// Should the files be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
         make_data_public: bool,
         /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
@@ -82,7 +82,7 @@ pub enum FoldersCmds {
         /// during payment and upload processing.
         #[clap(long, default_value_t = BATCH_SIZE, short='b')]
         batch_size: usize,
-        /// Should the file be made accessible to all. (This is irreversible)
+        /// Should the files be made accessible to all. (This is irreversible)
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
         make_data_public: bool,
         /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.

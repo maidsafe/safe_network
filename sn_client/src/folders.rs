@@ -264,8 +264,11 @@ impl FoldersApi {
                                 .client
                                 .signer()
                                 .decrypt(&cipher)
-                                .ok_or(Error::FolderEntryDecryption)?;
-                            rmp_serde::from_slice(&data)?
+                                .ok_or(Error::FolderEntryDecryption(entry_hash))?;
+
+                            // if this fails, it's either the wrong key or unexpected data
+                            rmp_serde::from_slice(&data)
+                                .map_err(|_| Error::FolderEntryDecryption(entry_hash))?
                         }
                     };
                     self.metadata.insert(meta_xorname, (metadata.clone(), None));

@@ -50,6 +50,8 @@ use xor_name::XorName;
 /// to the network, paying for data storage, and upload/retrieve information to/from the network.  
 ///
 /// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
+/// TODO: allow to provide specific keys, and/or a way to derive keys, for encrypting and siging operations. Currently
+/// the provided Client's key is used for both encrypting data and signing network operations.
 ///
 /// The `AccountPacket` keeps a reference to the network address of the root Folder holding the user's
 /// files/folder hierarchy. All tracking information is kept under the `.safe` directory on disk, whose
@@ -874,7 +876,6 @@ mod tests {
         MetadataTrackingInfo,
     };
     use crate::subcommands::{acc_packet::Mutation, files::upload::FilesUploadOptions};
-    use bytes::Bytes;
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
         registers::{EntryHash, RegisterAddress},
@@ -883,6 +884,7 @@ mod tests {
     };
 
     use bls::SecretKey;
+    use bytes::Bytes;
     use eyre::{bail, eyre, Result};
     use std::{
         collections::{BTreeMap, BTreeSet},
@@ -1188,6 +1190,47 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn test_acc_packet_encryption() -> Result<()> {
+        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
+
+        let files_path = tmp_dir.path().join("myaccpacket-unencrypted-metadata");
+        let _ = create_test_files_on_disk(&files_path)?;
+
+        let mut acc_packet = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &files_path,
+            Some(root_folder_addr),
+        )?;
+        acc_packet.sync(SYNC_OPTS).await?;
+
+        // try to download Folder with a different Client should fail since it
+        // contains a different key than the one used for encrypting the metadata chunks
+        let (other_client, _) = get_client_and_folder_addr().await?;
+        let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
+
+        if AccountPacket::retrieve_folders(
+            &other_client,
+            wallet_dir,
+            root_folder_addr,
+            &download_files_path,
+            BATCH_SIZE,
+            RetryStrategy::Quick,
+        )
+        .await
+        .is_ok()
+        {
+            bail!("acc-packet retrieval succeeded unexpectedly");
+        }
+
+        Ok(())
+    }
+
     // Helpers functions to generate and verify test data
 
     // Build a new Client and a random address for a Folder (Register)
@@ -1274,7 +1317,7 @@ mod tests {
             .unwrap_or(false)
     }
 
-    // Collect list of files and non empty dirs, to be used for comparing in tests
+    // Collect list of files and empty dirs, to be used for comparing in tests
     fn list_of_files_and_empty_dirs(acc_packet: &AccountPacket) -> BTreeSet<PathBuf> {
         acc_packet
             .iter_only_files()
