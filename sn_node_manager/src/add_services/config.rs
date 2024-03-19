@@ -114,6 +114,7 @@ pub struct AddNodeServiceOptions {
     pub metrics_port: Option<PortRange>,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
+    pub rpc_port: Option<PortRange>,
     pub safenode_src_path: PathBuf,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,

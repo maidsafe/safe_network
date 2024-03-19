@@ -104,13 +104,22 @@ pub enum SubCmd {
         path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
-        #[clap(long)]
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
         /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
         ///
         /// If not set, the RPC server is run locally.
+        #[clap(long)]
         rpc_address: Option<Ipv4Addr>,
+        /// Specify a port for the RPC service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = parse_port_range)]
+        rpc_port: Option<PortRange>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -526,6 +535,7 @@ async fn main() -> Result<()> {
             path,
             peers,
             rpc_address,
+            rpc_port,
             url,
             user,
             version,
@@ -540,6 +550,7 @@ async fn main() -> Result<()> {
                 node_port,
                 peers,
                 rpc_address,
+                rpc_port,
                 path,
                 url,
                 user,
