@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710878073044,
+  "lastUpdate": 1710878074961,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d17034e7186a2ccecbd8dcab6e8ad6b9f229a701",
-          "message": "chore: log detailed intermediate errors",
-          "timestamp": "2023-11-01T14:59:03Z",
-          "tree_id": "58b1438adce3c6df1daaf4a787d0ecd03787c187",
-          "url": "https://github.com/maidsafe/safe_network/commit/d17034e7186a2ccecbd8dcab6e8ad6b9f229a701"
-        },
-        "date": 1698856882195,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 163,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5",
+          "message": "test(cli): adding automated test for metadata chunk encryption",
+          "timestamp": "2024-03-19T19:04:45Z",
+          "tree_id": "98606573d1da8fd5c5f7add05cda045f3f04a1ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5"
+        },
+        "date": 1710878074418,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 178,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
