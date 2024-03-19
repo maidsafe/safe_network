@@ -302,45 +302,17 @@ impl SwarmDriver {
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed && peer_is_agent {
-                            // only trigger the bad_node verification once have enough nodes in RT
-                            // currently set the trigger bar at 100
-                            let total_peers: usize = self
-                                .swarm
-                                .behaviour_mut()
-                                .kademlia
-                                .kbuckets()
-                                .map(|kbucket| kbucket.num_entries())
-                                .sum();
-                            if total_peers > 100 {
-                                let in_verification =
-                                    self.bad_nodes_ongoing_verifications.contains(&peer_id);
-                                let is_already_bad = self.bad_nodes.contains(&peer_id);
+                            self.remove_bootstrap_node_from_full_bucket(peer_id);
 
-                                if !(in_verification || is_already_bad) {
-                                    let _ = self.bad_nodes_ongoing_verifications.insert(peer_id);
-                                    // In case bad_node verification needs to be carried out,
-                                    // it shall be fired up to `node` level for the further handling
-                                    info!("We now having {total_peers} peers in RT, carry out bad_node verification against {peer_id:?}");
-                                    self.send_event(NetworkEvent::BadNodeVerification {
-                                        peer_id,
-                                        addrs,
-                                    });
-                                } else {
-                                    info!("Peer {peer_id:?} is considered as in verification {in_verification:?} or already bad {is_already_bad:?}");
-                                }
-                            } else {
-                                self.remove_bootstrap_from_full(peer_id);
+                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
-                                trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
-
-                                // Attempt to add the addresses to the routing table.
-                                for multiaddr in &addrs {
-                                    let _routing_update = self
-                                        .swarm
-                                        .behaviour_mut()
-                                        .kademlia
-                                        .add_address(&peer_id, multiaddr.clone());
-                                }
+                            // Attempt to add the addresses to the routing table.
+                            for multiaddr in &addrs {
+                                let _routing_update = self
+                                    .swarm
+                                    .behaviour_mut()
+                                    .kademlia
+                                    .add_address(&peer_id, multiaddr.clone());
                             }
                         }
                     }
@@ -1061,7 +1033,7 @@ impl SwarmDriver {
     }
 
     // if target bucket is full, remove a bootstrap node if presents.
-    fn remove_bootstrap_from_full(&mut self, peer_id: PeerId) {
+    fn remove_bootstrap_node_from_full_bucket(&mut self, peer_id: PeerId) {
         let mut shall_removed = None;
 
         if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
