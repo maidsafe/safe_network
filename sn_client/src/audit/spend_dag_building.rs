@@ -10,7 +10,7 @@ use super::{Client, SpendDag};
 use crate::{Error, Result};
 
 use futures::future::join_all;
-use sn_networking::GetRecordError;
+use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::BTreeSet;
 
@@ -20,19 +20,17 @@ impl Client {
     /// Once the DAG collected, verifies and records errors in the DAG
     pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
-        let mut dag = SpendDag::new();
+        let mut dag = SpendDag::new(spend_addr);
 
         // get first spend
         let first_spend = match self.get_spend_from_network(spend_addr).await {
             Ok(s) => s,
-            Err(Error::Network(sn_networking::NetworkError::GetRecordError(
-                GetRecordError::RecordNotFound,
-            ))) => {
+            Err(Error::Network(NetworkError::GetRecordError(GetRecordError::RecordNotFound))) => {
                 // the cashnote was not spent yet, so it's an UTXO
                 info!("UTXO at {spend_addr:?}");
                 return Ok(dag);
             }
-            Err(Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(s1, s2))) => {
+            Err(Error::Network(NetworkError::DoubleSpendAttempt(s1, s2))) => {
                 // the cashnote was spent twice, take it into account and continue
                 info!("Double spend at {spend_addr:?}");
                 dag.insert(spend_addr, *s2);
@@ -88,7 +86,7 @@ impl Client {
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
                     }
                     (
-                        Err(Error::Network(sn_networking::NetworkError::GetRecordError(
+                        Err(Error::Network(NetworkError::GetRecordError(
                             GetRecordError::RecordNotFound,
                         ))),
                         addr,
@@ -116,7 +114,7 @@ impl Client {
         // verify the DAG
         info!("Now verifying SpendDAG from {spend_addr:?} and recording errors...");
         let start = std::time::Instant::now();
-        if let Err(e) = dag.record_errors(&spend_addr) {
+        if let Err(e) = dag.record_faults(&dag.source()) {
             let s = format!(
                 "Collected DAG starting at {spend_addr:?} is invalid, this is probably a bug: {e}"
             );
@@ -130,9 +128,8 @@ impl Client {
 
     /// Extends an existing SpendDag with a new SignedSpend,
     /// tracing back the ancestors of that Spend all the way to a known Spend in the DAG or else back to Genesis
-    /// Verifies all transactions on the way, making sure only valid data is inserted in the DAG
+    /// Verifies the DAG and records faults if any
     /// This is useful to keep a partial SpendDag to be able to verify that new spends come from Genesis
-    /// Note that it does not record errors in the DAG as it returns on the first error
     ///
     /// ```text
     ///              ... --
@@ -155,11 +152,7 @@ impl Client {
         new_spend: SignedSpend,
     ) -> WalletResult<()> {
         // check existence of spend in dag
-        let is_new_spend = dag
-            .check_and_insert(spend_addr, new_spend.clone())
-            .map_err(|err| {
-                WalletError::CouldNotVerifyTransfer(format!("Failed to insert spend in DAG: {err}"))
-            })?;
+        let is_new_spend = dag.insert(spend_addr, new_spend.clone());
         if !is_new_spend {
             return Ok(());
         }
@@ -167,7 +160,7 @@ impl Client {
         // use iteration instead of recursion to avoid stack overflow
         let mut txs_to_verify = BTreeSet::from_iter([new_spend.spend.parent_tx]);
         let mut depth = 0;
-        let mut verified_tx = BTreeSet::new();
+        let mut known_txs = BTreeSet::new();
         let start = std::time::Instant::now();
 
         while !txs_to_verify.is_empty() {
@@ -177,7 +170,7 @@ impl Client {
                 let parent_tx_hash = parent_tx.hash();
                 let parent_keys = parent_tx.inputs.iter().map(|input| input.unique_pubkey);
                 let addrs_to_verify = parent_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Depth {depth} - Verifying parent Tx : {parent_tx_hash:?}");
+                debug!("Depth {depth} - checking parent Tx : {parent_tx_hash:?}");
 
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
@@ -187,7 +180,7 @@ impl Client {
                 let spends = join_all(tasks).await
                     .into_iter()
                     .collect::<Result<BTreeSet<_>>>()
-                    .map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spends from network for parent Tx {parent_tx_hash:?}: {err}")))?;
+                    .map_err(|err| WalletError::FailedToGetSpend(format!("at depth {depth} - Failed to get spends from network for parent Tx {parent_tx_hash:?}: {err}")))?;
                 debug!(
                     "Depth {depth} - Got {:?} spends for parent Tx: {parent_tx_hash:?}",
                     spends.len()
@@ -201,26 +194,18 @@ impl Client {
                         .all(|s| s.spend.unique_pubkey == sn_transfers::GENESIS_CASHNOTE.id)
                     && spends.len() == 1
                 {
-                    debug!("Depth {depth} - Reached genesis Tx on one branch: {parent_tx_hash:?}");
-                    verified_tx.insert(parent_tx_hash);
+                    debug!("Depth {depth} - reached genesis Tx on one branch: {parent_tx_hash:?}");
+                    known_txs.insert(parent_tx_hash);
                     continue;
                 }
 
-                // verify tx with those spends
-                parent_tx
-                    .verify_against_inputs_spent(&spends)
-                    .map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to verify parent Tx {parent_tx_hash:?}: {err}")))?;
-                verified_tx.insert(parent_tx_hash);
+                known_txs.insert(parent_tx_hash);
                 debug!("Depth {depth} - Verified parent Tx: {parent_tx_hash:?}");
 
                 // add spends to the dag
                 for (spend, addr) in spends.clone().into_iter().zip(addrs_to_verify) {
                     let spend_parent_tx = spend.spend.parent_tx.clone();
-                    let is_new_spend = dag.check_and_insert(addr, spend).map_err(|err| {
-                        WalletError::CouldNotVerifyTransfer(format!(
-                            "Failed to insert spend in DAG: {err}"
-                        ))
-                    })?;
+                    let is_new_spend = dag.insert(addr, spend);
 
                     // no need to check this spend's parents if it was already in the DAG
                     if is_new_spend {
@@ -232,18 +217,31 @@ impl Client {
             // only verify parents we haven't already verified
             txs_to_verify = next_gen_tx
                 .into_iter()
-                .filter(|tx| !verified_tx.contains(&tx.hash()))
+                .filter(|tx| !known_txs.contains(&tx.hash()))
                 .collect();
 
             depth += 1;
             let elapsed = start.elapsed();
-            let n = verified_tx.len();
-            info!("Now at depth {depth} - Verified {n} transactions in {elapsed:?}");
+            let n = known_txs.len();
+            info!("Now at depth {depth} - Collected spends from {n} transactions in {elapsed:?}");
         }
 
         let elapsed = start.elapsed();
-        let n = verified_tx.len();
-        info!("Verified all the way to known spends or genesis! Through {depth} generations, verifying {n} transactions in {elapsed:?}");
+        let n = known_txs.len();
+        info!("Collected the DAG branch all the way to known spends or genesis! Through {depth} generations, collecting spends from {n} transactions in {elapsed:?}");
+
+        // verify the DAG
+        info!("Now verifying SpendDAG extended at {spend_addr:?} and recording errors...");
+        let start = std::time::Instant::now();
+        if let Err(e) = dag.record_faults(&dag.source()) {
+            let s = format!(
+                "Collected DAG starting at {spend_addr:?} is invalid, this is probably a bug: {e}"
+            );
+            error!("{s}");
+            return Err(WalletError::Dag(s));
+        }
+        let elapsed = start.elapsed();
+        info!("Finished verifying SpendDAG extended from {spend_addr:?} in {elapsed:?}");
         Ok(())
     }
 
@@ -251,13 +249,13 @@ impl Client {
     /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
     /// Records errors in the new DAG branches if any
     pub async fn spend_dag_continue_from_utxos(&self, dag: &mut SpendDag) -> WalletResult<()> {
-        info!("Gathering spend DAG from utxos...");
+        trace!("Gathering spend DAG from utxos...");
         let utxos = dag.get_utxos();
 
         let tasks: Vec<_> = utxos
             .iter()
             .map(|utxo| {
-                info!("Launching task to gather DAG from utxo: {:?}", utxo);
+                debug!("Launching task to gather DAG from utxo: {:?}", utxo);
                 self.spend_dag_build_from(*utxo)
             })
             .collect();
@@ -266,7 +264,11 @@ impl Client {
         for res in sub_dags {
             dag.merge(res?);
         }
-        info!("Done gathering spend DAG from utxos");
+
+        dag.record_faults(&dag.source())
+            .map_err(|e| WalletError::Dag(e.to_string()))?;
+
+        trace!("Done gathering spend DAG from utxos");
         Ok(())
     }
 }
