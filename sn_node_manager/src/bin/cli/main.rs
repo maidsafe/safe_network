@@ -30,7 +30,10 @@ pub(crate) struct Cmd {
 
 #[derive(Subcommand, Debug)]
 pub enum SubCmd {
-    /// Add one or more new safenode services.
+    /// Add one or more safenode services.
+    ///
+    /// By default, the latest safenode binary will be downloaded; however, it is possible to
+    /// provide a binary either by specifying a URL, a local path, or a specific version number.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "add")]
@@ -51,6 +54,13 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\services
         #[clap(long, verbatim_doc_comment)]
         data_dir_path: Option<PathBuf>,
+        /// Provide environment variables for the safenode service.
+        ///
+        /// Useful to set log levels. Variables should be comma separated without spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
         /// Set this flag to launch safenode with the --local flag.
         ///
         /// This is useful for building a service-based local network.
@@ -66,6 +76,11 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
         /// Specify a port for the safenode service(s).
@@ -84,14 +99,6 @@ pub enum SubCmd {
         ///
         /// If not set, the RPC server is run locally.
         rpc_address: Option<Ipv4Addr>,
-        /// Provide environment variables for the safenode service.
-        ///
-        /// Useful to set safenode's log levels. Variables should be comma separated without
-        /// spaces.
-        ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
-        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
-        env_variables: Option<Vec<(String, String)>>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -108,7 +115,9 @@ pub enum SubCmd {
         /// On Windows this argument will have no effect.
         #[clap(long)]
         user: Option<String>,
-        /// The version of safenode
+        /// Provide a specific version of safenode to be installed.
+        ///
+        /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
     },
@@ -333,6 +342,9 @@ pub enum SubCmd {
 pub enum DaemonSubCmd {
     /// Add a daemon service for issuing commands via RPC.
     ///
+    /// By default, the latest safenodemand binary will be downloaded; however, it is possible to
+    /// provide a binary either by specifying a URL, a local path, or a specific version number.
+    ///
     /// This command must run as the root/administrative user.
     #[clap(name = "add")]
     Add {
@@ -343,12 +355,35 @@ pub enum DaemonSubCmd {
         /// If not set, the daemon listens locally.
         #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
         address: Ipv4Addr,
+        /// Provide environment variables for the daemon service.
+        ///
+        /// Useful to set log levels. Variables should be comma separated without spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
         /// Specify a port for the daemon to listen on.
         #[clap(long, default_value_t = 12500)]
         port: u16,
-        /// The path of the safenodemand binary
+        /// Provide a path for the daemon binary to be used by the service.
+        ///
+        /// Useful for creating the daemon service using a custom built binary.
         #[clap(long)]
-        path: PathBuf,
+        path: Option<PathBuf>,
+        /// Provide a faucet binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a faucet binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Provide a specific version of the daemon to be installed.
+        ///
+        /// The binary will be downloaded.
+        #[clap(long)]
+        version: Option<String>,
     },
     /// Start the daemon service.
     ///
@@ -368,6 +403,9 @@ pub enum DaemonSubCmd {
 pub enum FaucetSubCmd {
     /// Add a faucet service.
     ///
+    /// By default, the latest faucet binary will be downloaded; however, it is possible to provide
+    /// a binary either by specifying a URL, a local path, or a specific version number.
+    ///
     /// This command must run as the root/administrative user.
     ///
     /// Windows is not supported for running a faucet.
@@ -375,8 +413,7 @@ pub enum FaucetSubCmd {
     Add {
         /// Provide environment variables for the faucet service.
         ///
-        /// Useful for setting log levels. Each variable should be comma separated without any
-        /// space.
+        /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
@@ -386,6 +423,11 @@ pub enum FaucetSubCmd {
         /// If not provided, the default location /var/log/faucet.
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
+        /// Provide a path for the faucet binary to be used by the service.
+        ///
+        /// Useful for creating the faucet service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
         /// Provide a faucet binary using a URL.
@@ -397,7 +439,9 @@ pub enum FaucetSubCmd {
         /// a testnet to test some changes they have on a fork.
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
-        /// The version of the faucet
+        /// Provide a specific version of the faucet to be installed.
+        ///
+        /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
     },
@@ -434,8 +478,7 @@ pub enum FaucetSubCmd {
         ///
         /// Values set when the service was added will be overridden.
         ///
-        /// Useful to set safenode's log levels. Variables should be comma separated without
-        /// spaces.
+        /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
@@ -466,6 +509,7 @@ async fn main() -> Result<()> {
             env_variables,
             local,
             log_dir_path,
+            path,
             peers,
             port,
             rpc_address,
@@ -482,6 +526,7 @@ async fn main() -> Result<()> {
                 peers,
                 port,
                 rpc_address,
+                path,
                 url,
                 user,
                 version,
@@ -491,20 +536,33 @@ async fn main() -> Result<()> {
         }
         SubCmd::Daemon(DaemonSubCmd::Add {
             address,
+            env_variables,
             port,
             path,
-        }) => cmd::daemon::add(address, port, path, verbosity).await,
+            url,
+            version,
+        }) => cmd::daemon::add(address, env_variables, port, path, url, version, verbosity).await,
         SubCmd::Daemon(DaemonSubCmd::Start {}) => cmd::daemon::start(verbosity).await,
         SubCmd::Daemon(DaemonSubCmd::Stop {}) => cmd::daemon::stop(verbosity).await,
         SubCmd::Faucet(faucet_command) => match faucet_command {
             FaucetSubCmd::Add {
                 env_variables,
                 log_dir_path,
+                path,
                 peers,
                 url,
                 version,
             } => {
-                cmd::faucet::add(env_variables, log_dir_path, peers, url, version, verbosity).await
+                cmd::faucet::add(
+                    env_variables,
+                    log_dir_path,
+                    peers,
+                    path,
+                    url,
+                    version,
+                    verbosity,
+                )
+                .await
             }
             FaucetSubCmd::Start {} => cmd::faucet::start(verbosity).await,
             FaucetSubCmd::Stop {} => cmd::faucet::stop(verbosity).await,

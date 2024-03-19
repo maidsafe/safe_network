@@ -108,11 +108,10 @@ pub struct AddNodeServiceOptions {
     pub local: bool,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
-    pub safenode_bin_path: PathBuf,
+    pub safenode_src_path: PathBuf,
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
-    pub url: Option<String>,
     pub user: String,
     pub version: String,
 }
@@ -163,20 +162,21 @@ impl InstallFaucetServiceCtxBuilder {
 pub struct AddFaucetServiceOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
-    pub faucet_download_bin_path: PathBuf,
     pub faucet_install_bin_path: PathBuf,
+    pub faucet_src_bin_path: PathBuf,
     pub local: bool,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
-    pub url: Option<String>,
     pub user: String,
     pub version: String,
 }
 
 pub struct AddDaemonServiceOptions {
     pub address: Ipv4Addr,
-    pub port: u16,
-    pub daemon_download_bin_path: PathBuf,
+    pub env_variables: Option<Vec<(String, String)>>,
     pub daemon_install_bin_path: PathBuf,
+    pub daemon_src_bin_path: PathBuf,
+    pub port: u16,
+    pub user: String,
     pub version: String,
 }

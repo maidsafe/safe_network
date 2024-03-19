@@ -10,7 +10,7 @@ use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade
 use crate::{
     add_services::{add_faucet, config::AddFaucetServiceOptions},
     config,
-    helpers::download_and_extract_release,
+    helpers::{download_and_extract_release, get_bin_version},
     ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
@@ -29,6 +29,7 @@ pub async fn add(
     env_variables: Option<Vec<(String, String)>>,
     log_dir_path: Option<PathBuf>,
     peers: PeersArgs,
+    src_path: Option<PathBuf>,
     url: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
@@ -53,20 +54,23 @@ pub async fn add(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
 
-    let (faucet_download_path, version) =
+    let (faucet_src_bin_path, version) = if let Some(path) = src_path {
+        let version = get_bin_version(&path)?;
+        (path, version)
+    } else {
         download_and_extract_release(ReleaseType::Faucet, url.clone(), version, &*release_repo)
-            .await?;
+            .await?
+    };
 
     add_faucet(
         AddFaucetServiceOptions {
             bootstrap_peers: get_peers_from_args(peers).await?,
             env_variables,
-            faucet_download_bin_path: faucet_download_path,
+            faucet_src_bin_path,
             faucet_install_bin_path: PathBuf::from("/usr/local/bin/faucet"),
             local: false,
             service_data_dir_path: get_faucet_data_dir(),
             service_log_dir_path,
-            url,
             user: service_user.to_string(),
             version,
         },

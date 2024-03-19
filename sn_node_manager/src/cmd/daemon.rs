@@ -10,17 +10,24 @@ use super::is_running_as_root;
 use crate::{
     add_services::{add_daemon, config::AddDaemonServiceOptions},
     config,
-    helpers::get_bin_version,
+    helpers::{download_and_extract_release, get_bin_version},
     ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
-use sn_service_management::{control::ServiceController, DaemonService, NodeRegistry};
+use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_service_management::{
+    control::{ServiceControl, ServiceController},
+    DaemonService, NodeRegistry,
+};
 use std::{net::Ipv4Addr, path::PathBuf};
 
 pub async fn add(
     address: Ipv4Addr,
+    env_variables: Option<Vec<(String, String)>>,
     port: u16,
-    path: PathBuf,
+    src_path: Option<PathBuf>,
+    url: Option<String>,
+    version: Option<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if !is_running_as_root() {
@@ -33,15 +40,35 @@ pub async fn add(
         println!("=================================================");
     }
 
+    let service_user = "safe";
+    let service_manager = ServiceController {};
+    service_manager.create_service_user(service_user)?;
+
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+
+    let (daemon_src_bin_path, version) = if let Some(path) = src_path {
+        let version = get_bin_version(&path)?;
+        (path, version)
+    } else {
+        download_and_extract_release(
+            ReleaseType::SafenodeManagerDaemon,
+            url.clone(),
+            version,
+            &*release_repo,
+        )
+        .await?
+    };
+
     add_daemon(
         AddDaemonServiceOptions {
             address,
+            env_variables,
+            daemon_install_bin_path: config::get_daemon_install_path(),
+            daemon_src_bin_path,
             port,
-            daemon_download_bin_path: path.clone(),
-            // TODO: make this cross platform
-            daemon_install_bin_path: PathBuf::from("/usr/local/bin/safenodemand"),
-            version: get_bin_version(&path)?,
+            user: service_user.to_string(),
+            version,
         },
         &mut node_registry,
         &ServiceController {},

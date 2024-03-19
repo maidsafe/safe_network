@@ -15,7 +15,7 @@ use crate::{
         config::{AddNodeServiceOptions, PortRange},
     },
     config,
-    helpers::download_and_extract_release,
+    helpers::{download_and_extract_release, get_bin_version},
     status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
@@ -41,6 +41,7 @@ pub async fn add(
     peers: PeersArgs,
     port: Option<PortRange>,
     rpc_address: Option<Ipv4Addr>,
+    src_path: Option<PathBuf>,
     url: Option<String>,
     user: Option<String>,
     version: Option<String>,
@@ -68,9 +69,14 @@ pub async fn add(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
 
-    let (safenode_download_path, version) =
+    let (safenode_src_path, version) = if let Some(path) = src_path {
+        let version = get_bin_version(&path)?;
+        (path, version)
+    } else {
         download_and_extract_release(ReleaseType::Safenode, url.clone(), version, &*release_repo)
-            .await?;
+            .await?
+    };
+
     let options = AddNodeServiceOptions {
         local,
         genesis: peers.first,
@@ -78,11 +84,10 @@ pub async fn add(
         bootstrap_peers: get_peers_from_args(peers).await?,
         node_port: port,
         rpc_address,
-        safenode_bin_path: safenode_download_path,
+        safenode_src_path,
         safenode_dir_path: service_data_dir_path.clone(),
         service_data_dir_path,
         service_log_dir_path,
-        url,
         user: service_user,
         version,
         env_variables,
