@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710763060091,
+  "lastUpdate": 1710810869835,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "33b366c24794e06c0da9ad1d402c425a27f78aff",
-          "message": "feat(rpc-client): allow to set peers to connect to in order to validate decrypted transfers events",
-          "timestamp": "2023-10-31T08:55:16Z",
-          "tree_id": "9d81bb1e906579b0ed741fbcc85a3b003f22c040",
-          "url": "https://github.com/maidsafe/safe_network/commit/33b366c24794e06c0da9ad1d402c425a27f78aff"
-        },
-        "date": 1698745638020,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.20185614004752514,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8582564620662912,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.51727665752952,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.70292604525289,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "421b42ef26525f7520ed8846f5cb85fd03d23b27",
+          "message": "refactor: remove churn example from node manager",
+          "timestamp": "2024-03-19T00:31:49Z",
+          "tree_id": "4d47c5becec325f4f42c3150a8a12316ecafa631",
+          "url": "https://github.com/maidsafe/safe_network/commit/421b42ef26525f7520ed8846f5cb85fd03d23b27"
+        },
+        "date": 1710810866149,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2757657216490919,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8305074208840766,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.82440141900943,
             "unit": "MiB/s"
           }
         ]
