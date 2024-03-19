@@ -536,7 +536,7 @@ impl ClientRegister {
                     payment_info = Some((payment, payee));
                 }
 
-                self.publish_register(cmd, payment_info, verify_store)
+                Self::publish_register(self.client.clone(), cmd, payment_info, verify_store)
                     .await?;
                 self.register.clone()
             }
@@ -579,7 +579,9 @@ impl ClientRegister {
             while let Some(cmd) = self.ops.pop_back() {
                 // We don't need to send the payment proofs here since
                 // these are all Register mutation cmds which don't require payment.
-                let result = self.publish_register(cmd.clone(), None, verify_store).await;
+                let result =
+                    Self::publish_register(self.client.clone(), cmd.clone(), None, verify_store)
+                        .await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -749,16 +751,15 @@ impl ClientRegister {
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
     /// Optionally contains the Payment and the PeerId that we paid to.
-    async fn publish_register(
-        &self,
+    pub(crate) async fn publish_register(
+        client: Client,
         cmd: RegisterCmd,
         payment: Option<(Payment, PeerId)>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
-        let network_reg = self
-            .client
+        let network_reg = client
             .get_signed_register_from_network(cmd.dst(), false)
             .await;
 
@@ -810,8 +811,7 @@ impl ClientRegister {
         };
 
         let (record_to_verify, expected_holders) = if verify_store {
-            let expected_holders: HashSet<_> = self
-                .client
+            let expected_holders: HashSet<_> = client
                 .network
                 .get_closest_peers(&network_address, true)
                 .await?
@@ -845,7 +845,7 @@ impl ClientRegister {
         };
 
         // Register edits might exist, so we cannot be sure that just because we get a record back that this should fail
-        Ok(self.client.network.put_record(record, &put_cfg).await?)
+        Ok(client.network.put_record(record, &put_cfg).await?)
     }
 
     /// Retrieve a `Register` from the Network.
