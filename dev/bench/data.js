@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710882646959,
+  "lastUpdate": 1710882648561,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4c803c06302773457507fdcb458a3f8a2c55e0e0",
-          "message": "chore(node): updating verify_data_test",
-          "timestamp": "2023-11-01T19:33:40Z",
-          "tree_id": "ebc7c1614b4d5a15a75d04e5b04c59a640e0d804",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c803c06302773457507fdcb458a3f8a2c55e0e0"
-        },
-        "date": 1698870920127,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 165,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 38,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "329d326a0bb018d013572cb1ad71c8049e26f2f1",
+          "message": "chore: run `safenodemand` service as root\n\nCreating a user for running the `safenodemand` service doesn't make as much sense because the user\nmust have root access. We can leave it up to the user to create an account and set it up for\npasswordless sudo, then provide an optional `--user` argument. For now we don't have this, and just\ngo with root.",
+          "timestamp": "2024-03-19T20:55:22Z",
+          "tree_id": "fdab391fd92f016c55d0ab915dd795602eb8f4a8",
+          "url": "https://github.com/maidsafe/safe_network/commit/329d326a0bb018d013572cb1ad71c8049e26f2f1"
+        },
+        "date": 1710882648191,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
