@@ -11,7 +11,8 @@ use color_eyre::{
     Result,
 };
 use indicatif::{ProgressBar, ProgressStyle};
-use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepositoryInterface};
+use semver::Version;
+use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use std::{
     io::Read,
     path::PathBuf,
@@ -30,7 +31,7 @@ pub async fn download_and_extract_release(
     release_type: ReleaseType,
     url: Option<String>,
     version: Option<String>,
-    release_repo: &dyn SafeReleaseRepositoryInterface,
+    release_repo: &dyn SafeReleaseRepoActions,
 ) -> Result<(PathBuf, String)> {
     let pb = Arc::new(ProgressBar::new(0));
     pb.set_style(ProgressStyle::default_bar()
@@ -65,7 +66,7 @@ pub async fn download_and_extract_release(
             }
         } else {
             let version = if let Some(version) = version.clone() {
-                version
+                Version::parse(&version)?
             } else {
                 println!("Retrieving latest version for {release_type}...");
                 release_repo.get_latest_version(&release_type).await?

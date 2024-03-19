@@ -23,7 +23,7 @@ use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
     get_local_node_registry_path,
@@ -67,7 +67,7 @@ pub async fn add(
         config::get_service_log_dir_path(ReleaseType::Safenode, log_dir_path, &service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
     let (safenode_src_path, version) = if let Some(path) = src_path {
         let version = get_bin_version(&path)?;

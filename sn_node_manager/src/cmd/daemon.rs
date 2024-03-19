@@ -14,7 +14,7 @@ use crate::{
     ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
-use sn_releases::{ReleaseType, SafeReleaseRepositoryInterface};
+use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
     DaemonService, NodeRegistry,
@@ -45,7 +45,7 @@ pub async fn add(
     service_manager.create_service_user(service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    let release_repo = <dyn SafeReleaseRepositoryInterface>::default_config();
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
     let (daemon_src_bin_path, version) = if let Some(path) = src_path {
         let version = get_bin_version(&path)?;
