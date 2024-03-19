@@ -279,7 +279,7 @@ impl SwarmDriver {
                             };
 
                             if !kbucket_full {
-                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dail back to confirm external accesable", ilog2);
+                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dial back to confirm external accesable", ilog2);
                                 self.dialed_peers
                                     .push(peer_id)
                                     .map_err(|_| Error::CircularVecPopFrontError)?;
@@ -1085,15 +1085,15 @@ impl SwarmDriver {
 
         // Only remove outdated peer not in the RT
         for (connection_id, peer_id) in shall_removed {
-            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
-                if kbucket
-                    .iter()
-                    .any(|peer_entry| peer_id == *peer_entry.node.key.preimage())
-                {
-                    // Skip the connection as peer presents in the RT.
-                    continue;
-                }
-            }
+            // if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
+            //     if kbucket
+            //         .iter()
+            //         .any(|peer_entry| peer_id == *peer_entry.node.key.preimage())
+            //     {
+            //         // Skip the connection as peer presents in the RT.
+            //         continue;
+            //     }
+            // }
 
             trace!("Removing outdated connection {connection_id:?} to {peer_id:?}");
             let _result = self.swarm.close_connection(connection_id);
