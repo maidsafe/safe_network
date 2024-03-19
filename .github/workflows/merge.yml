@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[].name'); do
-            cargo build -p "$package"
+            cargo build -p "$package" --all-targets --all-features
           done
 
   unit:
