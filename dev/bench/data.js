@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710878076992,
+  "lastUpdate": 1710882544027,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "34291e409ad4b1f222a136af6a3d4ab27fb381ed",
-          "message": "feat(networking): finish query when stop tracking\n\nWhen we stop tracking a query ID, then we might as well call finish on\nthe query. This might result in less nodes being queried.",
-          "timestamp": "2023-11-01T13:46:52Z",
-          "tree_id": "8d21223a7dee9bd8aa8b1981e4e9f65c7bf57666",
-          "url": "https://github.com/maidsafe/safe_network/commit/34291e409ad4b1f222a136af6a3d4ab27fb381ed"
-        },
-        "date": 1698849770324,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.1906011953643607,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8164391502452917,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 13.613985521623148,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.34637428763278,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "329d326a0bb018d013572cb1ad71c8049e26f2f1",
+          "message": "chore: run `safenodemand` service as root\n\nCreating a user for running the `safenodemand` service doesn't make as much sense because the user\nmust have root access. We can leave it up to the user to create an account and set it up for\npasswordless sudo, then provide an optional `--user` argument. For now we don't have this, and just\ngo with root.",
+          "timestamp": "2024-03-19T20:55:22Z",
+          "tree_id": "fdab391fd92f016c55d0ab915dd795602eb8f4a8",
+          "url": "https://github.com/maidsafe/safe_network/commit/329d326a0bb018d013572cb1ad71c8049e26f2f1"
+        },
+        "date": 1710882540883,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3129254269758266,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8467536583204311,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.86358335310985,
             "unit": "MiB/s"
           }
         ]
