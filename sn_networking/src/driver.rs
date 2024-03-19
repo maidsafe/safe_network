@@ -10,7 +10,6 @@
 use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
-use crate::target_arch::{interval, spawn, Instant};
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -24,13 +23,25 @@ use crate::{
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
-    transport, Network, CLOSE_GROUP_SIZE,
+    Network, CLOSE_GROUP_SIZE,
 };
-
 use futures::StreamExt;
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
+use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+// default transports
+#[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
+use libp2p::quic::{tokio::Transport as TokioTransport, Config as TransportConfig};
 
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+use libp2p::websocket::WsConfig;
+
+use crate::target_arch::{interval, spawn, Instant};
+#[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+use libp2p::tcp::{tokio::Transport as TokioTransport, Config as TransportConfig};
+#[cfg(target_arch = "wasm32")]
+use libp2p::websocket_websys::Transport as WebSocketTransport;
 use libp2p::{
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
@@ -460,7 +471,36 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        let main_transport = transport::build_transport(&self.keypair);
+        // Default quic transport.
+        // cannot be built for wasm32
+        #[cfg(all(not(feature = "websockets"), not(target_arch = "wasm32")))]
+        let main_transport = TokioTransport::new(TransportConfig::new(&self.keypair))
+            .map(|(peer_id, muxer), _| (peer_id, StreamMuxerBox::new(muxer)))
+            .boxed();
+
+        #[cfg(target_arch = "wasm32")]
+        let main_transport = WebSocketTransport::default()
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .boxed();
+
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let tcp = TokioTransport::new(TransportConfig::default());
+
+        // tcp websocket transport for node builds
+        #[cfg(all(not(target_arch = "wasm32"), feature = "websockets"))]
+        let main_transport = WsConfig::new(tcp)
+            .upgrade(libp2p::core::upgrade::Version::V1)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .boxed();
 
         let gossipsub = if self.enable_gossip {
             // Gossipsub behaviour
