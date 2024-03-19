@@ -10,7 +10,7 @@ mod dag_error;
 mod spend_dag;
 mod spend_dag_building;
 
-pub use dag_error::DagError;
+pub use dag_error::{DagError, SpendFault};
 pub use spend_dag::{SpendDag, SpendDagGet};
 
 use super::{

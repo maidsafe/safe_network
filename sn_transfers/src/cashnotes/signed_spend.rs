@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::{DerivationIndex, Result, Signature, TransferError};
+use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,11 @@ impl SignedSpend {
     /// Get public key of input CashNote.
     pub fn unique_pubkey(&self) -> &UniquePubkey {
         &self.spend.unique_pubkey
+    }
+
+    /// Get the SpendAddress where this Spend shoud be
+    pub fn address(&self) -> SpendAddress {
+        SpendAddress::from_unique_pubkey(&self.spend.unique_pubkey)
     }
 
     /// Get the hash of the transaction this CashNote is spent in

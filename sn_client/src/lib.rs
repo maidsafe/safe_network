@@ -33,7 +33,7 @@ pub use sn_registers as registers;
 pub use sn_transfers as transfers;
 
 pub use self::{
-    audit::{DagError, SpendDag, SpendDagGet},
+    audit::{DagError, SpendDag, SpendDagGet, SpendFault},
     error::Error,
     event::{ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver},
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
