@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710867464124,
+  "lastUpdate": 1710877965730,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "a119fd2771b1efbb904786028084703ab9b633a4",
-          "message": "chore(node): don't log the transfers events",
-          "timestamp": "2023-11-01T12:34:27Z",
-          "tree_id": "6950c5eebbbba947ee21c4877b534487b2aa8a29",
-          "url": "https://github.com/maidsafe/safe_network/commit/a119fd2771b1efbb904786028084703ab9b633a4"
-        },
-        "date": 1698845986765,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.18085722671477655,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7188398168252415,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 18.10980075158133,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.612958185056904,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": true,
+          "id": "eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5",
+          "message": "test(cli): adding automated test for metadata chunk encryption",
+          "timestamp": "2024-03-19T19:04:45Z",
+          "tree_id": "98606573d1da8fd5c5f7add05cda045f3f04a1ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5"
+        },
+        "date": 1710877962469,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2706064984537873,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.805055771189661,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.34637428763278,
             "unit": "MiB/s"
           }
         ]
