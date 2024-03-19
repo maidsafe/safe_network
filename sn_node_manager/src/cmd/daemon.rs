@@ -15,10 +15,7 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Result};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::{
-    control::{ServiceControl, ServiceController},
-    DaemonService, NodeRegistry,
-};
+use sn_service_management::{control::ServiceController, DaemonService, NodeRegistry};
 use std::{net::Ipv4Addr, path::PathBuf};
 
 pub async fn add(
@@ -40,10 +37,6 @@ pub async fn add(
         println!("=================================================");
     }
 
-    let service_user = "safe";
-    let service_manager = ServiceController {};
-    service_manager.create_service_user(service_user)?;
-
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
@@ -60,6 +53,10 @@ pub async fn add(
         .await?
     };
 
+    // At the moment we don't have the option to provide a user for running the service. Since
+    // `safenodemand` requires manipulation of services, the user running it must either be root or
+    // have root access. For now we will just use the `root` user. The user option gets ignored on
+    // Windows anyway, so there shouldn't be a cross-platform issue here.
     add_daemon(
         AddDaemonServiceOptions {
             address,
@@ -67,7 +64,7 @@ pub async fn add(
             daemon_install_bin_path: config::get_daemon_install_path(),
             daemon_src_bin_path,
             port,
-            user: service_user.to_string(),
+            user: "root".to_string(),
             version,
         },
         &mut node_registry,
