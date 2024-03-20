@@ -30,10 +30,11 @@ use xor_name::XorName;
 /// Cached operations made to an offline Register instance are applied locally only,
 /// and accumulated until the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
-#[derive(Clone)]
+#[derive(Clone, custom_debug::Debug)]
 pub struct ClientRegister {
+    #[debug(skip)]
     client: Client,
-    register: Register,
+    pub(crate) register: Register,
     ops: LinkedList<RegisterCmd>, // Cached operations.
 }
 

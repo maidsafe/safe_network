@@ -110,8 +110,11 @@ pub enum Error {
     FailedToReadFromNotificationChannel,
 
     // ------ Upload Errors --------
-    #[error("Uploadable Item not found: {0:?}")]
+    #[error("Uploadable item not found: {0:?}")]
     UploadableItemNotFound(XorName),
+
+    #[error("Invalid upload item found")]
+    InvalidUploadItemFound,
 
     #[error("The state tracked by the uploader is empty")]
     UploadStateTrackerIsEmpty,
