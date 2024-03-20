@@ -46,14 +46,14 @@ pub enum UploadEvent {
     ChunkUploaded(ChunkAddress),
     /// Uploaded a Register to the network.
     /// The returned register is just the passed in register.
-    RegisterUploaded(Register),
+    RegisterUploaded(ClientRegister),
     ///
     /// The Chunk already exists in the network. No payments were made.
     ChunkAlreadyExistsInNetwork(ChunkAddress),
     /// The Register already exists in the network. The locally register changes were pushed to the network.
     /// No payments were made.
     /// The returned register contains the remote replica merged with the passed in register.
-    RegisterUpdated(Register),
+    RegisterUpdated(ClientRegister),
     /// Payment for a batch of records has been made.
     PaymentMade {
         storage_cost: NanoTokens,
@@ -74,7 +74,7 @@ enum UploadItem {
     },
     Register {
         address: RegisterAddress,
-        reg: Register,
+        reg: ClientRegister,
     },
 }
 
@@ -100,7 +100,9 @@ enum TaskResult {
         remote_register: Register,
     },
     GetRegisterFromNetworkErr(XorName),
-    PushRegisterOk(XorName),
+    PushRegisterOk {
+        updated_register: ClientRegister,
+    },
     PushRegisterErr(XorName),
     GetStoreCostOk {
         xorname: XorName,
@@ -313,7 +315,7 @@ impl Uploader {
     }
 
     /// Insert a list of registers to upload.
-    pub fn insert_register(&mut self, registers: impl Iterator<Item = Register>) {
+    pub fn insert_register(&mut self, registers: impl Iterator<Item = ClientRegister>) {
         self.all_upload_items.extend(registers.map(|reg| {
             let address = *reg.address();
             let item = UploadItem::Register { address, reg };
@@ -491,7 +493,7 @@ impl Uploader {
                         .get_mut(&xorname)
                         .ok_or(ClientError::UploadableItemNotFound(xorname))?;
                     if let UploadItem::Register { reg, .. } = reg {
-                        // reg.register.merge(remote_register);
+                        reg.register.merge(remote_register);
                         self.pending_to_push_register.push(xorname);
                     }
                 }
@@ -502,18 +504,20 @@ impl Uploader {
                     self.pending_to_get_store_cost
                         .push((xorname, GetStoreCostStrategy::Cheapest));
                 }
-                TaskResult::PushRegisterOk(xorname) => {
-                    // the register was successfully pushed. We can mark it as done.
+                TaskResult::PushRegisterOk { updated_register } => {
+                    // push modifies the register, so we return this instead of the one from all_upload_items
+                    // todo: keep track of these updated registers inside Uploader (if a flag is set). Because not
+                    // everyone will track the events.
+                    let xorname = updated_register.address().xorname();
                     let _ = self.on_going_push_register.remove(&xorname);
+                    self.skipped_count += 1;
 
-                    if let UploadItem::Register { reg, .. } = self
+                    let _old_register = self
                         .all_upload_items
                         .remove(&xorname)
-                        .ok_or(ClientError::UploadableItemNotFound(xorname))?
-                    {
-                        // self.skipped_count += 1;
-                        self.emit_upload_event(UploadEvent::RegisterUpdated(reg));
-                    }
+                        .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+
+                    self.emit_upload_event(UploadEvent::RegisterUpdated(updated_register));
                 }
                 TaskResult::PushRegisterErr(xorname) => {
                     // the register failed to be Pushed. Retry until failure.
@@ -840,13 +844,15 @@ impl Uploader {
         task_result_sender: mpsc::Sender<TaskResult>,
     ) {
         let xorname = upload_item.xorname();
+        let verify_store = self.verify_store;
         trace!("Spawning push_register for {xorname:?}");
-        let client = self.api.client.clone();
         let _handle = tokio::spawn(async move {
-            let task_result = match Self::push_register(client, upload_item).await {
-                Ok(_) => {
+            let task_result = match Self::push_register(upload_item, verify_store).await {
+                Ok(reg) => {
                     debug!("Register pushed: {xorname:?}");
-                    TaskResult::PushRegisterOk(xorname)
+                    TaskResult::PushRegisterOk {
+                        updated_register: reg,
+                    }
                 }
                 Err(err) => {
                     // todo match on error to only skip if GetRecordError
@@ -858,12 +864,14 @@ impl Uploader {
         });
     }
 
-    async fn push_register(client: Client, upload_item: UploadItem) -> Result<()> {
-        if let UploadItem::Register { address, reg } = upload_item {
+    async fn push_register(upload_item: UploadItem, verify_store: bool) -> Result<ClientRegister> {
+        let mut reg = if let UploadItem::Register { reg, .. } = upload_item {
+            reg
         } else {
-            // return ClientError::Upload;
-        }
-        Ok(())
+            return Err(ClientError::InvalidUploadItemFound);
+        };
+        reg.push(verify_store).await?;
+        Ok(reg)
     }
 
     fn spawn_get_store_cost(
@@ -1084,7 +1092,7 @@ impl Uploader {
             }
             UploadItem::Register { address, reg } => {
                 let network_address = NetworkAddress::from_register_address(*reg.address());
-                let signature = files_api.client.sign(reg.bytes()?);
+                let signature = files_api.client.sign(reg.register.bytes()?);
 
                 trace!(
                     "Client upload started for register: {:?}",
@@ -1102,7 +1110,7 @@ impl Uploader {
                 ClientRegister::publish_register(
                     files_api.client.clone(),
                     RegisterCmd::Create {
-                        register: reg,
+                        register: reg.register,
                         signature,
                     },
                     Some((payment, payee)),
