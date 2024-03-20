@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710958442356,
+  "lastUpdate": 1710958444594,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39796,6 +39796,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37181,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "56a70313a4a53f8ad07de1e1f76f14069021465d",
+          "message": "feat(cli): have CLI folders cmds to act on current directory by default",
+          "timestamp": "2024-03-20T17:22:17Z",
+          "tree_id": "da251f5611495bcfedc0e963b2d9471f3cbbf9ca",
+          "url": "https://github.com/maidsafe/safe_network/commit/56a70313a4a53f8ad07de1e1f76f14069021465d"
+        },
+        "date": 1710958443966,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7201,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 41088,
             "unit": "ms"
           },
           {
