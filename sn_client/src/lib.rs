@@ -42,7 +42,6 @@ pub use self::{
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
     files::{
         download::{FilesDownload, FilesDownloadEvent},
-        upload::{FileUploadEvent, FilesUpload},
         FilesApi, BATCH_SIZE,
     },
     folders::{FolderEntry, FoldersApi, Metadata},

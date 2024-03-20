@@ -16,7 +16,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, FilesApi, FilesDownload, FilesUpload, WalletClient};
+use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -409,15 +409,18 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
-            if let Err(err) = files_upload.upload_chunks(chunks).await {
-                bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
-            }
-            let royalties = files_upload.get_upload_royalty_fees();
-            let storage_cost = files_upload.get_upload_storage_cost();
-            let cost = royalties
-                .checked_add(storage_cost)
-                .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
+            let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
+            uploader.insert_chunks(chunks.into_iter());
+
+            let cost = match uploader.start_upload().await {
+                Ok(stats) => stats
+                    .royalty_fees
+                    .checked_add(stats.storage_cost)
+                    .ok_or(eyre!("Total storage cost exceed possible token amount"))?,
+                Err(err) => {
+                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
+                }
+            };
 
             println!(
                 "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
