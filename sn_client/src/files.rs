@@ -143,25 +143,6 @@ impl FilesApi {
         Ok(())
     }
 
-    /// Pay for a given set of chunks.
-    ///
-    /// Returns the cost and the resulting new balance of the local wallet.
-    pub async fn pay_for_chunks(&self, chunks: Vec<XorName>) -> Result<StoragePaymentResult> {
-        let mut wallet_client = self.wallet()?;
-        info!("Paying for and uploading {:?} chunks", chunks.len());
-
-        let res = wallet_client
-            .pay_for_storage(
-                chunks
-                    .iter()
-                    .map(|name| NetworkAddress::ChunkAddress(ChunkAddress::new(*name))),
-            )
-            .await?;
-
-        wallet_client.store_local_wallet()?;
-        Ok(res)
-    }
-
     // --------------------------------------------
     // ---------- Private helpers -----------------
     // --------------------------------------------
