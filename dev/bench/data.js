@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710958440253,
+  "lastUpdate": 1710958442356,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "705789380b31bfed998440f8f1b0cdf871d0385b",
-          "message": "test: e2e test for transfer notifs filtering",
-          "timestamp": "2023-11-03T08:22:37Z",
-          "tree_id": "78aa80af4f5fbcd1aa7f4d7ed6857caf0731464b",
-          "url": "https://github.com/maidsafe/safe_network/commit/705789380b31bfed998440f8f1b0cdf871d0385b"
-        },
-        "date": 1699003214222,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 159,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 40,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "293741+willief@users.noreply.github.com",
             "name": "Southside",
             "username": "willief"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "56a70313a4a53f8ad07de1e1f76f14069021465d",
+          "message": "feat(cli): have CLI folders cmds to act on current directory by default",
+          "timestamp": "2024-03-20T17:22:17Z",
+          "tree_id": "da251f5611495bcfedc0e963b2d9471f3cbbf9ca",
+          "url": "https://github.com/maidsafe/safe_network/commit/56a70313a4a53f8ad07de1e1f76f14069021465d"
+        },
+        "date": 1710958441731,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
             "unit": "MB"
           },
           {
