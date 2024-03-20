@@ -13,45 +13,49 @@ use std::{collections::BTreeSet, hash::Hash};
 /// Register permissions
 /// Everyone can read a Register, all data is public on safe network.
 /// The Default value is nobody can write.
-#[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug, Default)]
-pub struct Permissions {
+#[derive(Clone, Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Hash, Debug)]
+pub enum Permissions {
     /// Anyone can write to this Register
-    pub anyone_can_write: bool,
-    /// The owner of a register can always write to it
-    /// This is the list of users that the owner has allowed to write to this Register
-    pub writers: BTreeSet<PublicKey>,
+    AnyoneCanWrite,
+    /// This is the list of users allowed to write to this Register
+    Writers(BTreeSet<PublicKey>),
+}
+
+impl Default for Permissions {
+    fn default() -> Permissions {
+        Permissions::Writers(BTreeSet::default())
+    }
 }
 
 impl Permissions {
     /// Constructs a new set of permissions with a list of users allowed to write
-    /// Empty list means nobody (appart from the owner) can write
+    /// Empty list means nobody can write
     pub fn new_with(writers: impl IntoIterator<Item = PublicKey>) -> Self {
-        Self {
-            anyone_can_write: false,
-            writers: writers.into_iter().collect(),
-        }
+        Self::Writers(writers.into_iter().collect())
     }
 
     /// Constructs a new set of permissions where everyone can write
     pub fn new_anyone_can_write() -> Self {
-        Self {
-            anyone_can_write: true,
-            writers: Default::default(),
-        }
-    }
-
-    /// Constructs a new set of permissions where only the owner can write
-    pub fn new_owner_only() -> Self {
-        Default::default()
+        Self::AnyoneCanWrite
     }
 
     /// Checks is everyone can write to this Register
-    pub fn anyone_can_write(&self) -> bool {
-        self.anyone_can_write
+    pub fn can_anyone_write(&self) -> bool {
+        matches!(self, Self::AnyoneCanWrite)
     }
 
     /// Returns true if the given user can write to this Register
     pub fn can_write(&self, user: &PublicKey) -> bool {
-        self.anyone_can_write() || self.writers.contains(user)
+        match self {
+            Self::AnyoneCanWrite => true,
+            Self::Writers(writers) => writers.contains(user),
+        }
+    }
+
+    /// If this is restricted to a set of users, add a user to the list of users that can write to this Register
+    pub fn add_writer(&mut self, user: PublicKey) {
+        if let Self::Writers(writers) = self {
+            writers.insert(user);
+        }
     }
 }

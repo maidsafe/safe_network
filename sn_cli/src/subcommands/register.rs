@@ -97,7 +97,7 @@ async fn create_register(
     let meta = XorName::from_content(name.as_bytes());
     let perms = match public {
         true => Permissions::new_anyone_can_write(),
-        false => Permissions::new_owner_only(),
+        false => Permissions::default(),
     };
     let (register, storage_cost, royalties_fees) = client
         .create_and_pay_for_register(meta, &mut wallet_client, verify_store, perms)

@@ -394,12 +394,7 @@ async fn store_registers(client: Client, register_count: usize, wallet_dir: Path
         debug!("Creating Register at {addr:?}");
 
         let (mut register, ..) = client
-            .create_and_pay_for_register(
-                meta,
-                &mut wallet_client,
-                true,
-                Permissions::new_owner_only(),
-            )
+            .create_and_pay_for_register(meta, &mut wallet_client, true, Permissions::default())
             .await?;
 
         println!("Editing Register at {addr:?}");
