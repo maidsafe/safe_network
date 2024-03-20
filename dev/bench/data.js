@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710975175913,
+  "lastUpdate": 1710975177567,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "293741+willief@users.noreply.github.com",
-            "name": "Southside",
-            "username": "willief"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "25d24fd367a6a68e553be5ee8eb9b0537792fa04",
-          "message": "chore(cli): make file upload output cut n paste friendly\n\nnaive attempt to address issue from https://safenetforum.org/t/heapnet2-testnet-12-10-23/38749/460?u=southside",
-          "timestamp": "2023-11-03T08:33:17Z",
-          "tree_id": "3e8f204c9236d6c2d85f235b2cfa0541ac10bb5d",
-          "url": "https://github.com/maidsafe/safe_network/commit/25d24fd367a6a68e553be5ee8eb9b0537792fa04"
-        },
-        "date": 1699005717398,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 193,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e3d04a8dadd2cf0ebe3e609ba17147c4805ddf42",
+          "message": "chore(node): reduce bad_nodes check resource usage",
+          "timestamp": "2024-03-20T22:04:20Z",
+          "tree_id": "eeb9c05fc9c8f47dd22f6bc2386aa2079d515d2e",
+          "url": "https://github.com/maidsafe/safe_network/commit/e3d04a8dadd2cf0ebe3e609ba17147c4805ddf42"
+        },
+        "date": 1710975177256,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
             "unit": "MB"
           },
           {
