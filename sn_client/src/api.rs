@@ -530,7 +530,7 @@ impl Client {
     ///             xorname,
     ///             &mut wallet_client,
     ///             true,
-    ///             Permissions::new_owner_only(),
+    ///             Permissions::default(),
     ///         )
     ///         .await?;
     /// # Ok(())
@@ -553,10 +553,10 @@ impl Client {
         )
         .await?;
 
-        debug!("{address:?} Created in theorryyyyy");
+        debug!("{address:?} Created in theory");
         let reg_address = reg.address();
         if verify_store {
-            debug!("WE SHOULD VERRRRIFYING");
+            debug!("We should verify stored at {address:?}");
             let mut stored = self.verify_register_stored(*reg_address).await.is_ok();
 
             while !stored {

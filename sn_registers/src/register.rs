@@ -141,7 +141,7 @@ impl Register {
     /// Create a new Register
     pub fn new(owner: PublicKey, meta: XorName, mut permissions: Permissions) -> Self {
         let address = RegisterAddress { meta, owner };
-        permissions.writers.insert(owner);
+        permissions.add_writer(owner);
         Self {
             crdt: RegisterCrdt::new(address),
             permissions,
@@ -168,12 +168,6 @@ impl Register {
     pub fn into_signed(self, secret_key: &SecretKey) -> Result<SignedRegister> {
         let signature = self.sign(secret_key)?;
         Ok(SignedRegister::new(self, signature))
-    }
-
-    #[cfg(test)]
-    pub fn new_owned(owner: PublicKey, meta: XorName) -> Self {
-        let permissions = Default::default();
-        Self::new(owner, meta, permissions)
     }
 
     /// Return the address.
@@ -241,10 +235,6 @@ impl Register {
     /// Check if a register op is valid for our current register
     pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
         self.check_user_permissions(op.source)?;
-        if self.permissions.anyone_can_write() {
-            return Ok(()); // anyone can write, so no need to check the signature
-        }
-
         op.verify_signature(&op.source)
     }
 
@@ -254,7 +244,7 @@ impl Register {
     /// `Ok(())` if the user can write to this register
     /// `Err::AccessDenied` if the user cannot write to this register
     pub fn check_user_permissions(&self, requester: PublicKey) -> Result<()> {
-        if requester == self.owner() || self.permissions.can_write(&requester) {
+        if self.permissions.can_write(&requester) {
             Ok(())
         } else {
             Err(Error::AccessDenied(requester))
@@ -320,8 +310,8 @@ mod tests {
 
         let meta: XorName = xor_name::rand::random();
 
-        let mut replica1 = Register::new_owned(authority, meta);
-        let mut replica2 = Register::new_owned(authority, meta);
+        let mut replica1 = Register::new(authority, meta, Permissions::default());
+        let mut replica2 = Register::new(authority, meta, Permissions::default());
 
         // Different item from same replica's root shall having different entry_hash
         let item1 = random_register_entry();
@@ -342,6 +332,52 @@ mod tests {
         let (entry_hash1_1_3, _) = replica1.write(item3, &parents, &authority_sk)?;
         let (entry_hash2_1_4, _) = replica2.write(item4, &parents, &authority_sk)?;
         assert!(entry_hash1_1_3 != entry_hash2_1_4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn register_permissions() -> eyre::Result<()> {
+        let owner_sk = SecretKey::random();
+        let owner = owner_sk.public_key();
+        let other_user_sk = SecretKey::random();
+        let other_user = other_user_sk.public_key();
+
+        let meta: XorName = xor_name::rand::random();
+        let item = random_register_entry();
+
+        // create a Register with the owner as the only allowed to write
+        let mut replica = Register::new(owner, meta, Permissions::default());
+
+        // owner can write to it
+        let (_, op) = replica.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        replica.apply_op(op)?;
+
+        // other user cannot write to it
+        let (_, op) = replica.write(item.clone(), &BTreeSet::new(), &other_user_sk)?;
+        let res = replica.apply_op(op);
+        assert!(
+            matches!(&res, Err(err) if err == &Error::AccessDenied(other_user)),
+            "Unexpected result: {res:?}"
+        );
+
+        // create a Register allowing both the owner and other user to write to it
+        let mut replica2 = Register::new(owner, meta, Permissions::new_with([other_user]));
+
+        // owner and the other user can both write to it
+        let (_, op1) = replica2.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        let (_, op2) = replica2.write(item.clone(), &BTreeSet::new(), &other_user_sk)?;
+        replica2.apply_op(op1)?;
+        replica2.apply_op(op2)?;
+
+        // create a Register where anyone can write to it, including the owner ofc
+        let mut replica3 = Register::new(owner, meta, Permissions::new_anyone_can_write());
+
+        // owner and the other user can both write to it
+        let (_, op1) = replica3.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        let (_, op2) = replica3.write(item, &BTreeSet::new(), &other_user_sk)?;
+        replica3.apply_op(op1)?;
+        replica3.apply_op(op2)?;
 
         Ok(())
     }
@@ -912,7 +948,7 @@ mod tests {
             // set up a replica that has nothing to do with the rest, random xor... different owner...
             let xorname = xor_name::rand::random();
             let random_owner_sk = SecretKey::random();
-            let mut bogus_replica = Register::new_owned(random_owner_sk.public_key(), xorname);
+            let mut bogus_replica = Register::new(random_owner_sk.public_key(), xorname, Permissions::default());
 
             // add bogus ops from bogus replica + bogus data
             let mut children = BTreeSet::new();
