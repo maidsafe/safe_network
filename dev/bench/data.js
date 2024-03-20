@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710919360042,
+  "lastUpdate": 1710919361627,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "c23eb32eacb826636fadaf6107b984a8890edaa9",
-          "message": "feat: keep transfers in mem instead of heavy cashnotes",
-          "timestamp": "2023-11-02T08:28:23Z",
-          "tree_id": "206009e48bbd92dfc0e00f9a9c000a009a9cc793",
-          "url": "https://github.com/maidsafe/safe_network/commit/c23eb32eacb826636fadaf6107b984a8890edaa9"
-        },
-        "date": 1698916611943,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 161,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "501f05abaa2de0aa127bbe0f1673c2dacc7ce72b",
+          "message": "feat: improve parallelisation with buffered streams",
+          "timestamp": "2024-03-20T06:35:22Z",
+          "tree_id": "f1a4abf6e73a2973f19466b93d65e4afcf6cf3ff",
+          "url": "https://github.com/maidsafe/safe_network/commit/501f05abaa2de0aa127bbe0f1673c2dacc7ce72b"
+        },
+        "date": 1710919361247,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
             "unit": "MB"
           },
           {
