@@ -141,7 +141,7 @@ fn spawn_file_upload_events_handler(
                     upload_terminated_with_error = true;
                 }
                 UploadEvent::RegisterUploaded { .. }
-                | UploadEvent::RegisterAlreadyExistsInNetwork { .. }
+                | UploadEvent::RegisterUpdated { .. }
                 | UploadEvent::PaymentMade { .. } => {}
             }
         }

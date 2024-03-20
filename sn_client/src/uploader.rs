@@ -8,7 +8,7 @@
 
 #![allow(dead_code)]
 
-use crate::{ClientRegister, Error as ClientError, FilesApi, Result, BATCH_SIZE};
+use crate::{Client, ClientRegister, Error as ClientError, FilesApi, Result, BATCH_SIZE};
 use bytes::Bytes;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
@@ -42,14 +42,18 @@ const MAX_REPAYMENTS_PER_FAILED_ITEM: usize = 1;
 
 /// The events emitted from the upload process.
 pub enum UploadEvent {
-    /// Uploaded a record to the network
+    /// Uploaded a record to the network.
     ChunkUploaded(ChunkAddress),
-    /// Uploaded a Register to the network
+    /// Uploaded a Register to the network.
+    /// The returned register is just the passed in register.
     RegisterUploaded(Register),
-    /// The Chunk already exists in the network, skipping upload.
+    ///
+    /// The Chunk already exists in the network. No payments were made.
     ChunkAlreadyExistsInNetwork(ChunkAddress),
-    /// The Register already exists in the network, skipping upload.
-    RegisterAlreadyExistsInNetwork(Register),
+    /// The Register already exists in the network. The locally register changes were pushed to the network.
+    /// No payments were made.
+    /// The returned register contains the remote replica merged with the passed in register.
+    RegisterUpdated(Register),
     /// Payment for a batch of records has been made.
     PaymentMade {
         storage_cost: NanoTokens,
@@ -92,6 +96,12 @@ impl UploadItem {
 
 enum TaskResult {
     FailedToAccessWallet,
+    GetRegisterFromNetworkOk {
+        remote_register: Register,
+    },
+    GetRegisterFromNetworkErr(XorName),
+    PushRegisterOk(XorName),
+    PushRegisterErr(XorName),
     GetStoreCostOk {
         xorname: XorName,
         quote: Box<PayeeQuote>,
@@ -135,6 +145,8 @@ pub struct UploadStats {
 // invoked, don't do that.
 // 2. add more debug lines
 // 3. terminate early if there are not enough funds in the wallet and return that error.
+// 4. we cna just return address form pop_item_for_get_store_cost. we don't need the whole item.
+// 5. we dont need to track failed_to_pay, failed_to_upload and instead cna directly insert into pending_to_* for these 2. only get store cost needs failed_to_pay. Or does it? check.
 
 /// `Uploader` provides functionality for uploading both Chunks and Registers with support for retries and queuing.
 /// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.
@@ -153,6 +165,8 @@ pub struct Uploader {
 
     // states
     all_upload_items: HashMap<XorName, UploadItem>,
+    pending_to_verify_register: Vec<RegisterAddress>,
+    pending_to_push_register: Vec<XorName>,
     pending_to_get_store_cost: Vec<(XorName, GetStoreCostStrategy)>,
     pending_to_pay: Vec<(XorName, Box<PayeeQuote>)>,
     pending_to_upload: Vec<XorName>,
@@ -161,9 +175,13 @@ pub struct Uploader {
     failed_to_upload: Vec<XorName>,
 
     // trackers
+    on_going_verify_register: BTreeSet<XorName>,
+    on_going_push_register: BTreeSet<XorName>,
     on_going_get_cost: BTreeSet<XorName>,
     on_going_payments: BTreeSet<XorName>,
     on_going_uploads: BTreeSet<XorName>,
+
+    n_errors_during_push_register: BTreeMap<XorName, usize>,
     n_errors_during_get_cost: BTreeMap<XorName, usize>,
     n_errors_during_pay: BTreeMap<XorName, usize>,
     n_errors_during_uploads: BTreeMap<XorName, usize>,
@@ -199,18 +217,26 @@ impl Uploader {
             api: files_api,
 
             all_upload_items: Default::default(),
+            pending_to_verify_register: Default::default(),
+            pending_to_push_register: Default::default(),
             pending_to_get_store_cost: Default::default(),
             pending_to_pay: Default::default(),
             pending_to_upload: Default::default(),
             failed_to_get_store_cost: Default::default(),
             failed_to_pay: Default::default(),
             failed_to_upload: Default::default(),
+
+            on_going_verify_register: Default::default(),
+            on_going_push_register: Default::default(),
             on_going_get_cost: Default::default(),
             on_going_payments: Default::default(),
             on_going_uploads: Default::default(),
+
+            n_errors_during_push_register: Default::default(),
             n_errors_during_get_cost: Default::default(),
             n_errors_during_pay: Default::default(),
             n_errors_during_uploads: Default::default(),
+
             get_store_cost_errors: Default::default(),
             make_payments_errors: Default::default(),
             upload_storage_cost: NanoTokens::zero(),
@@ -312,18 +338,37 @@ impl Uploader {
     }
 
     async fn start_upload_inner(mut self) -> Result<UploadStats> {
-        let (task_result_sender, mut task_result_receiver) = mpsc::channel(self.batch_size * 3);
+        let (task_result_sender, mut task_result_receiver) = mpsc::channel(self.batch_size * 5);
         let (paying_work_sender, paying_work_receiver) = mpsc::channel(self.batch_size);
         self.spawn_paying_thread(
             paying_work_receiver,
             task_result_sender.clone(),
             self.batch_size,
         );
-        // populate initial pending_get_store_cost
+        // chunks can be pushed to pending_get_store_cost directly
         self.pending_to_get_store_cost = self
             .all_upload_items
-            .keys()
-            .map(|xorname| (*xorname, GetStoreCostStrategy::Cheapest))
+            .iter()
+            .filter_map(|(xorname, item)| {
+                if let UploadItem::Chunk { .. } = item {
+                    Some((*xorname, GetStoreCostStrategy::Cheapest))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // registers have to be verified + merged with remote replica, so we have to fetch it first.
+        self.pending_to_verify_register = self
+            .all_upload_items
+            .iter()
+            .filter_map(|(_xorname, item)| {
+                if let UploadItem::Register { address, .. } = item {
+                    Some(*address)
+                } else {
+                    None
+                }
+            })
             .collect();
 
         loop {
@@ -343,6 +388,33 @@ impl Uploader {
                     skipped_count: self.skipped_count,
                 };
                 return Ok(stats);
+            }
+
+            // try to verify register if we have enough buffer.
+            while !self.pending_to_verify_register.is_empty()
+                && self.on_going_verify_register.len() < self.batch_size
+            {
+                if let Some(reg_addr) = self.pending_to_verify_register.pop() {
+                    trace!(
+                        "Conditions met for verify registers {:?}",
+                        reg_addr.xorname()
+                    );
+                    let _ = self.on_going_verify_register.insert(reg_addr.xorname());
+                    self.spawn_verify_register(reg_addr, task_result_sender.clone());
+                }
+            }
+
+            // try to push register if we have enough buffer.
+            while !self.pending_to_push_register.is_empty()
+                && self.on_going_verify_register.len() < self.batch_size
+            {
+                let upload_item = self.pop_item_for_push_register()?;
+                trace!(
+                    "Conditions met for push registers {:?}",
+                    upload_item.xorname()
+                );
+                let _ = self.on_going_push_register.insert(upload_item.xorname());
+                self.spawn_push_register(upload_item, task_result_sender.clone());
             }
 
             // try to get store cost for an item if pending_to_pay needs items & if we have enough buffer.
@@ -409,11 +481,57 @@ impl Uploader {
                 .ok_or(ClientError::InternalTaskChannelDropped)?;
             match task_result {
                 TaskResult::FailedToAccessWallet => return Err(ClientError::FailedToAccessWallet),
-                TaskResult::GetStoreCostOk { xorname, quote } => {
-                    // reset error if Ok. We only throw error after 'n' sequential errors
-                    self.get_store_cost_errors = 0;
+                TaskResult::GetRegisterFromNetworkOk { remote_register } => {
+                    // if we got back the register, then merge & PUT it.
+                    let xorname = remote_register.address().xorname();
+                    let _ = self.on_going_verify_register.remove(&xorname);
 
+                    let reg = self
+                        .all_upload_items
+                        .get_mut(&xorname)
+                        .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+                    if let UploadItem::Register { reg, .. } = reg {
+                        // reg.register.merge(remote_register);
+                        self.pending_to_push_register.push(xorname);
+                    }
+                }
+                TaskResult::GetRegisterFromNetworkErr(xorname) => {
+                    // then the register is a new one. It can follow the same flow as chunks now.
+                    let _ = self.on_going_verify_register.remove(&xorname);
+
+                    self.pending_to_get_store_cost
+                        .push((xorname, GetStoreCostStrategy::Cheapest));
+                }
+                TaskResult::PushRegisterOk(xorname) => {
+                    // the register was successfully pushed. We can mark it as done.
+                    let _ = self.on_going_push_register.remove(&xorname);
+
+                    if let UploadItem::Register { reg, .. } = self
+                        .all_upload_items
+                        .remove(&xorname)
+                        .ok_or(ClientError::UploadableItemNotFound(xorname))?
+                    {
+                        // self.skipped_count += 1;
+                        self.emit_upload_event(UploadEvent::RegisterUpdated(reg));
+                    }
+                }
+                TaskResult::PushRegisterErr(xorname) => {
+                    // the register failed to be Pushed. Retry until failure.
+                    let _ = self.on_going_push_register.remove(&xorname);
+                    let n_errors = self
+                        .n_errors_during_push_register
+                        .entry(xorname)
+                        .or_insert(0);
+                    *n_errors += 1;
+                    if *n_errors > self.retry_strategy.get_count() {
+                        // todo: clear this up
+                        return Err(ClientError::AmountIsZero);
+                    }
+                }
+                TaskResult::GetStoreCostOk { xorname, quote } => {
                     let _ = self.on_going_get_cost.remove(&xorname);
+                    self.get_store_cost_errors = 0; // reset error if Ok. We only throw error after 'n' sequential errors
+
                     trace!("GetStoreCostOk for {xorname:?}'s store_cost {:?}", quote.2);
 
                     if quote.2.cost != NanoTokens::zero() {
@@ -434,6 +552,9 @@ impl Uploader {
                                 UploadItem::Chunk { address, .. } => {
                                     self.emit_upload_event(UploadEvent::ChunkUploaded(address));
                                 }
+                                // todo: this cannot happen? If this is a register and if exists in the network,
+                                // we should've merged + pushed it again. Maybe if this happens, mark it to be pushed
+                                // again?
                                 UploadItem::Register { reg, .. } => {
                                     self.emit_upload_event(UploadEvent::RegisterUploaded(reg));
                                 }
@@ -456,9 +577,7 @@ impl Uploader {
                                     );
                                 }
                                 UploadItem::Register { reg, .. } => {
-                                    self.emit_upload_event(
-                                        UploadEvent::RegisterAlreadyExistsInNetwork(reg),
-                                    );
+                                    self.emit_upload_event(UploadEvent::RegisterUpdated(reg));
                                 }
                             }
 
@@ -474,6 +593,9 @@ impl Uploader {
                     get_store_cost_strategy,
                     max_repayments_reached,
                 } => {
+                    let _ = self.on_going_get_cost.remove(&xorname);
+                    self.failed_to_get_store_cost
+                        .push((xorname, get_store_cost_strategy.clone()));
                     trace!("GetStoreCostErr for {xorname:?} , get_store_cost_strategy: {get_store_cost_strategy:?}, max_repayments_reached: {max_repayments_reached:?}");
 
                     // should we do something more here?
@@ -486,9 +608,7 @@ impl Uploader {
                         error!("Max sequential network failures reached during GetStoreCostErr.");
                         return Err(ClientError::SequentialNetworkErrors);
                     }
-                    let _ = self.on_going_get_cost.remove(&xorname);
-                    self.failed_to_get_store_cost
-                        .push((xorname, get_store_cost_strategy));
+
                     // keep track of the failure
                     *self.n_errors_during_get_cost.entry(xorname).or_insert(0) += 1;
                     // if error > threshold, then return from fn?
@@ -501,14 +621,11 @@ impl Uploader {
                 } => {
                     trace!("MakePaymentsOk for {} items: hash({:?}), with {storage_cost:?} store_cost and {royalty_fees:?} royalty_fees, and new_balance is {new_balance:?}",
                     paid_xornames.len(), Self::hash_of_xornames(paid_xornames.iter()));
-                    // reset sequential payment fail error if ok. We throw error if payment fails continuously more than
-                    // MAX_SEQUENTIAL_PAYMENT_FAILS errors.
-                    self.make_payments_errors = 0;
                     for xorname in paid_xornames.iter() {
                         let _ = self.on_going_payments.remove(xorname);
                     }
                     self.pending_to_upload.extend(paid_xornames);
-
+                    self.make_payments_errors = 0;
                     self.upload_final_balance = new_balance;
                     self.upload_storage_cost = self
                         .upload_storage_cost
@@ -519,6 +636,8 @@ impl Uploader {
                         .checked_add(royalty_fees)
                         .ok_or(ClientError::TotalPriceTooHigh)?;
 
+                    // reset sequential payment fail error if ok. We throw error if payment fails continuously more than
+                    // MAX_SEQUENTIAL_PAYMENT_FAILS errors.
                     self.emit_upload_event(UploadEvent::PaymentMade {
                         storage_cost,
                         royalty_fees,
@@ -531,16 +650,6 @@ impl Uploader {
                         xornames.len(),
                         Self::hash_of_xornames(xornames.iter().map(|(name, _)| name))
                     );
-
-                    self.make_payments_errors += 1;
-                    if self.make_payments_errors >= MAX_SEQUENTIAL_PAYMENT_FAILS {
-                        error!("Max sequential upload failures reached during MakePaymentsErr.");
-                        // Too many sequential overall payment failure indicating
-                        // unrecoverable failure of spend tx continuously rejected by network.
-                        // The entire upload process shall be terminated.
-                        return Err(ClientError::SequentialUploadPaymentError);
-                    }
-
                     for (xorname, quote) in xornames {
                         let _ = self.on_going_payments.remove(&xorname);
                         self.failed_to_pay.push((xorname, quote));
@@ -548,17 +657,26 @@ impl Uploader {
                         *self.n_errors_during_pay.entry(xorname).or_insert(0) += 1;
                         // if error > threshold, then return from fn? or should we select a different payee (i dont think so)
                     }
+                    self.make_payments_errors += 1;
+
+                    if self.make_payments_errors >= MAX_SEQUENTIAL_PAYMENT_FAILS {
+                        error!("Max sequential upload failures reached during MakePaymentsErr.");
+                        // Too many sequential overall payment failure indicating
+                        // unrecoverable failure of spend tx continuously rejected by network.
+                        // The entire upload process shall be terminated.
+                        return Err(ClientError::SequentialUploadPaymentError);
+                    }
                 }
                 TaskResult::UploadOk(xorname) => {
-                    trace!("UploadOk for {xorname:?}");
                     let _ = self.on_going_uploads.remove(&xorname);
                     self.uploaded_count += 1;
+                    trace!("UploadOk for {xorname:?}");
+
                     // remove the item since we have uploaded it.
                     let removed_item = self
                         .all_upload_items
                         .remove(&xorname)
                         .ok_or(ClientError::UploadableItemNotFound(xorname))?;
-
                     match removed_item {
                         UploadItem::Chunk { address, .. } => {
                             self.emit_upload_event(UploadEvent::ChunkUploaded(address));
@@ -569,9 +687,10 @@ impl Uploader {
                     }
                 }
                 TaskResult::UploadErr(xorname) => {
-                    trace!("UploadErr for {xorname:?}");
                     let _ = self.on_going_uploads.remove(&xorname);
                     self.failed_to_upload.push(xorname);
+                    trace!("UploadErr for {xorname:?}");
+
                     // keep track of the failure
                     let n_errors = self.n_errors_during_uploads.entry(xorname).or_insert(0);
                     *n_errors += 1;
@@ -587,6 +706,21 @@ impl Uploader {
                     }
                 }
             }
+        }
+    }
+
+    // helpers to pop items from the pending/failed states.
+    fn pop_item_for_push_register(&mut self) -> Result<UploadItem> {
+        if let Some(name) = self.pending_to_push_register.pop() {
+            let upload_item = self
+                .all_upload_items
+                .get(&name)
+                .cloned()
+                .ok_or(ClientError::UploadableItemNotFound(name))?;
+            Ok(upload_item)
+        } else {
+            // the caller will be making sure this does not happen.
+            Err(ClientError::UploadStateTrackerIsEmpty)
         }
     }
 
@@ -666,6 +800,70 @@ impl Uploader {
             info!("FilesUpload upload event sender is not set. Use get_upload_events() if you need to keep track of the progress");
             self.logged_event_sender_absence = true;
         }
+    }
+
+    fn spawn_verify_register(
+        &self,
+        reg_addr: RegisterAddress,
+        task_result_sender: mpsc::Sender<TaskResult>,
+    ) {
+        let xorname = reg_addr.xorname();
+        trace!("Spawning verify_register for {xorname:?}");
+        let client = self.api.client.clone();
+        let _handle = tokio::spawn(async move {
+            let task_result = match Self::verify_register(client, reg_addr).await {
+                Ok(register) => {
+                    debug!("Register retrieved for {xorname:?}");
+                    TaskResult::GetRegisterFromNetworkOk {
+                        remote_register: register,
+                    }
+                }
+                Err(err) => {
+                    // todo match on error to only skip if GetRecordError
+                    warn!("Encountered error {err:?} during verify_register. The register has to be PUT as it is a new one.");
+                    TaskResult::GetRegisterFromNetworkErr(xorname)
+                }
+            };
+            let _ = task_result_sender.send(task_result).await;
+        });
+    }
+
+    async fn verify_register(client: Client, reg_addr: RegisterAddress) -> Result<Register> {
+        let reg = client.verify_register_stored(reg_addr).await?;
+        let reg = reg.register()?;
+        Ok(reg)
+    }
+
+    fn spawn_push_register(
+        &self,
+        upload_item: UploadItem,
+        task_result_sender: mpsc::Sender<TaskResult>,
+    ) {
+        let xorname = upload_item.xorname();
+        trace!("Spawning push_register for {xorname:?}");
+        let client = self.api.client.clone();
+        let _handle = tokio::spawn(async move {
+            let task_result = match Self::push_register(client, upload_item).await {
+                Ok(_) => {
+                    debug!("Register pushed: {xorname:?}");
+                    TaskResult::PushRegisterOk(xorname)
+                }
+                Err(err) => {
+                    // todo match on error to only skip if GetRecordError
+                    error!("Encountered error {err:?} during push_register. The register might not be present in the network");
+                    TaskResult::PushRegisterErr(xorname)
+                }
+            };
+            let _ = task_result_sender.send(task_result).await;
+        });
+    }
+
+    async fn push_register(client: Client, upload_item: UploadItem) -> Result<()> {
+        if let UploadItem::Register { address, reg } = upload_item {
+        } else {
+            // return ClientError::Upload;
+        }
+        Ok(())
     }
 
     fn spawn_get_store_cost(
