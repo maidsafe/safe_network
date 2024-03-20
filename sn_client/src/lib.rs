@@ -32,6 +32,8 @@ pub use sn_protocol as protocol;
 pub use sn_registers as registers;
 pub use sn_transfers as transfers;
 
+const MAX_CONCURRENT_TASKS: usize = 1024;
+
 pub use self::{
     audit::{DagError, SpendDag, SpendDagGet, SpendFault},
     error::Error,
