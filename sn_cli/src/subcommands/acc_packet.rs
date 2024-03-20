@@ -209,7 +209,7 @@ impl AccountPacket {
 
     /// Generate a report with differences found in local files/folders in comparison with their versions stored on the network.
     pub fn status(&self) -> Result<()> {
-        println!("Looking for local changes made to files/folders...");
+        println!("Looking for local changes made to files/folders compared to version on network at: {} ...", self.root_folder_addr().to_hex());
         let changes = self.scan_files_and_folders_for_changes(false)?;
 
         if changes.mutations.is_empty() {
@@ -218,10 +218,8 @@ impl AccountPacket {
             println!("Local changes made to files/folders:");
             changes.mutations.iter().for_each(|m| println!("{m}"));
 
-            println!(
-                "\nChanges found to local files/folders: {}",
-                changes.mutations.len()
-            );
+            let num_of_changes = changes.mutations.len();
+            println!("\nChanges found to local files/folders: {num_of_changes}");
         }
         Ok(())
     }

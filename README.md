@@ -103,26 +103,29 @@ cargo run --bin safe --features local-discovery -- files download
 
 The folders storage capability can be demonstrated by uploading folders to the local network, making changes and syncing them with the stored version on the network, as well as downloading the entire folders hierarchy onto a local directory.
 
+All the following commands act on the current directory by default, but since we are building the CLI binary to run it, we will have to always provide the directory we want them to act as a path argument. 
+When otherwise running directly an already built CLI binary, we can simply make sure we are located at the directory we want to act on without the need of providing the path as argument.
+
 Upload a directory:
 ```bash
 cargo run --bin safe --features local-discovery -- folders upload <dir-path>
 ```
 
-After it finishes uploading the complete directory, with files and sub-directories, it will show the address where the main directory can be pulled from.
+After it finishes uploading the complete directory, with files and sub-directories, it will show the network address where the main directory can be pulled from.
 
-Now download the folders, optionally providing a target directory name:
+Now download the folders, providing a target directory path:
 ```bash
-cargo run --bin safe --features local-discovery -- folders download <address> [dir name]
+cargo run --bin safe --features local-discovery -- folders download <network address> <dir path>
 ```
 
-If any changes are now made to files or directories within this folder, before trying to push those changes to the network we can check the changes that has been made locally: 
+If any changes are now made to files or directories within this folder, before trying to push those changes to the network, we can get a report of the changes that have been made locally: 
 ```bash
-cargo run --bin safe --features local-discovery -- folders status [dir-path]
+cargo run --bin safe --features local-discovery -- folders status <dir-path>
 ```
 
 We can both push local changes made to files and directories to the network, as well as pull any changes that have been made to the version stored on the network since last time we synced with it:
 ```bash
-cargo run --bin safe --features local-discovery -- folders sync [dir-path]
+cargo run --bin safe --features local-discovery -- folders sync <dir-path>
 ```
 
 ### Token Transfers
