@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710957814322,
+  "lastUpdate": 1710958327478,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4c803c06302773457507fdcb458a3f8a2c55e0e0",
-          "message": "chore(node): updating verify_data_test",
-          "timestamp": "2023-11-01T19:33:40Z",
-          "tree_id": "ebc7c1614b4d5a15a75d04e5b04c59a640e0d804",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c803c06302773457507fdcb458a3f8a2c55e0e0"
-        },
-        "date": 1698870638413,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.18576455204761858,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8769767586744347,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 14.585084916399667,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.43009211921484,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "56a70313a4a53f8ad07de1e1f76f14069021465d",
+          "message": "feat(cli): have CLI folders cmds to act on current directory by default",
+          "timestamp": "2024-03-20T17:22:17Z",
+          "tree_id": "da251f5611495bcfedc0e963b2d9471f3cbbf9ca",
+          "url": "https://github.com/maidsafe/safe_network/commit/56a70313a4a53f8ad07de1e1f76f14069021465d"
+        },
+        "date": 1710958323949,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.223660310831171,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7753469430595397,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.3304051367836,
             "unit": "MiB/s"
           }
         ]
