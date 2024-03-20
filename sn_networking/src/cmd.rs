@@ -25,7 +25,7 @@ use sn_protocol::{
 };
 use sn_transfers::NanoTokens;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fmt::Debug,
 };
 use tokio::sync::oneshot;
@@ -165,7 +165,6 @@ pub enum SwarmCmd {
     /// Notify whether peer is in trouble
     SendNodeStatus {
         peer_id: PeerId,
-        addrs: HashSet<Multiaddr>,
         is_bad: bool,
     },
     // Whether peer is considered as `in trouble` by self
@@ -297,9 +296,7 @@ impl Debug for SwarmCmd {
             SwarmCmd::GossipHandler => {
                 write!(f, "SwarmCmd::GossipHandler")
             }
-            SwarmCmd::SendNodeStatus {
-                peer_id, is_bad, ..
-            } => {
+            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
                 write!(
                     f,
                     "SwarmCmd::SendNodeStatus peer {peer_id:?}, is_bad: {is_bad:?}"
@@ -740,14 +737,21 @@ impl SwarmDriver {
             SwarmCmd::GossipHandler => {
                 self.is_gossip_handler = true;
             }
-            SwarmCmd::SendNodeStatus {
-                peer_id,
-                addrs,
-                is_bad,
-            } => {
+            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
                 cmd_string = "SendNodeStatus";
                 let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
-                if is_bad {
+
+                // only trigger the bad_node verification once have enough nodes in RT
+                // currently set the trigger bar at 100
+                let total_peers: usize = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .kbuckets()
+                    .map(|kbucket| kbucket.num_entries())
+                    .sum();
+
+                if total_peers > 100 && is_bad {
                     info!("Peer {peer_id:?} is considered as bad");
                     let _ = self.bad_nodes.insert(peer_id);
 
@@ -762,16 +766,6 @@ impl SwarmDriver {
                         ));
                         self.log_kbuckets(&peer_id);
                         let _ = self.check_for_change_in_our_close_group();
-                    }
-                } else {
-                    trace!(%peer_id, ?addrs, "peer considered as active, attempting to add addresses to routing table");
-
-                    for multiaddr in &addrs {
-                        let _routing_update = self
-                            .swarm
-                            .behaviour_mut()
-                            .kademlia
-                            .add_address(&peer_id, multiaddr.clone());
                     }
                 }
             }
