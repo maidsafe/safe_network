@@ -99,7 +99,7 @@ impl ChunkManager {
         files_path: &Path,
         read_cache: bool,
         include_data_maps: bool,
-    ) -> Result<usize> {
+    ) -> Result<()> {
         self.chunk_with_iter(
             WalkDir::new(files_path).into_iter().flatten(),
             read_cache,
@@ -115,7 +115,7 @@ impl ChunkManager {
         entries_iter: impl Iterator<Item = DirEntry>,
         read_cache: bool,
         include_data_maps: bool,
-    ) -> Result<usize> {
+    ) -> Result<()> {
         let now = Instant::now();
         // clean up
         self.files_to_chunk = Default::default();
@@ -140,8 +140,9 @@ impl ChunkManager {
             }
         });
         let total_files = self.files_to_chunk.len();
+
         if total_files == 0 {
-            return Ok(0);
+            return Ok(());
         };
 
         // resume the chunks from the artifacts dir
@@ -187,7 +188,7 @@ impl ChunkManager {
                 "All files_to_chunk ({total_files:?}) were resumed. Returning the resumed chunks.",
             );
             debug!("It took {:?} to resume all the files", now.elapsed());
-            return Ok(total_files);
+            return Ok(());
         }
 
         let progress_bar = get_progress_bar(total_files as u64)?;
@@ -278,7 +279,7 @@ impl ChunkManager {
         debug!("It took {:?} to chunk {} files", now.elapsed(), total_files);
         self.chunks.extend(chunked_files);
 
-        Ok(total_files)
+        Ok(())
     }
 
     // Try to resume the chunks
