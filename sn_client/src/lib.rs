@@ -18,6 +18,7 @@ mod faucet;
 mod files;
 mod folders;
 mod register;
+mod uploader;
 mod wallet;
 
 /// Test utils
@@ -46,6 +47,7 @@ pub use self::{
     },
     folders::{FolderEntry, FoldersApi, Metadata},
     register::ClientRegister,
+    uploader::{UploadEvent, UploadStats, Uploader},
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
 pub(crate) use error::Result;

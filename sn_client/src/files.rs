@@ -128,10 +128,7 @@ impl FilesApi {
         let wallet_client = self.wallet()?;
         let (payment, payee) = wallet_client.get_non_expired_payment_for_addr(&chunk_addr)?;
 
-        debug!(
-            "{:?} payments for chunk: {chunk_addr:?} to {payee:?}:  {payment:?}",
-            payment
-        );
+        debug!("Payments for chunk: {chunk_addr:?} to {payee:?}:  {payment:?}");
 
         self.client
             .store_chunk(chunk, payee, payment, verify_store, retry_strategy)
