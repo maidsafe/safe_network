@@ -229,7 +229,7 @@ impl Node {
             let _ = replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
-            let bad_nodes_check_interval: u64 = rng.gen_range(
+            let bad_nodes_check_interval: u64 = 5 * rng.gen_range(
                 PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
             );
             let bad_nodes_check_time = Duration::from_secs(bad_nodes_check_interval);
@@ -237,6 +237,8 @@ impl Node {
 
             let mut bad_nodes_check_interval = tokio::time::interval(bad_nodes_check_time);
             let _ = bad_nodes_check_interval.tick().await; // first tick completes immediately
+
+            let mut rolling_index = 0;
 
             loop {
                 let peers_connected = &peers_connected;
@@ -279,9 +281,15 @@ impl Node {
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
 
                         let _handle = spawn(async move {
-                            Self::try_bad_nodes_check(network).await;
+                            Self::try_bad_nodes_check(network, rolling_index).await;
                             trace!("Periodic bad_nodes check took {:?}", start.elapsed());
                         });
+
+                        if rolling_index == 255 {
+                            rolling_index = 0;
+                        } else {
+                            rolling_index += 1;
+                        }
                     }
                     node_cmd = cmds_receiver.recv() => {
                         match node_cmd {
@@ -445,18 +453,18 @@ impl Node {
                 error!("Received notification from replication_fetcher, notifying {bad_nodes:?} failed to fetch replication copies from.");
                 let _handle = spawn(async move {
                     for peer_id in bad_nodes {
-                        network.notify_node_status(peer_id, Default::default(), true);
+                        network.notify_node_status(peer_id, true);
                     }
                 });
             }
-            NetworkEvent::BadNodeVerification { peer_id, addrs } => {
+            NetworkEvent::BadNodeVerification { peer_id } => {
                 event_header = "BadNodeVerification";
                 let network = self.network.clone();
 
                 trace!("Need to verify whether peer {peer_id:?} is a bad node");
                 let _handle = spawn(async move {
                     let is_bad = Self::is_peer_bad_node(&network, peer_id).await;
-                    network.notify_node_status(peer_id, addrs, is_bad);
+                    network.notify_node_status(peer_id, is_bad);
                 });
             }
         }
@@ -630,17 +638,36 @@ impl Node {
         Response::Query(resp)
     }
 
-    async fn try_bad_nodes_check(network: Network) {
-        if let Ok(peers) = network.get_all_local_peers().await {
-            if peers.len() > 100 {
-                for peer_id in peers {
-                    let network_clone = network.clone();
-                    let _handle = spawn(async move {
-                        let is_bad = Self::is_peer_bad_node(&network_clone, peer_id).await;
-                        if is_bad {
-                            network_clone.notify_node_status(peer_id, Default::default(), is_bad);
+    async fn try_bad_nodes_check(network: Network, rolling_index: usize) {
+        if let Ok(kbuckets) = network.get_kbuckets().await {
+            let total_peers: usize = kbuckets.values().map(|peers| peers.len()).sum();
+            if total_peers > 100 {
+                // The `rolling_index` is rotating among 0-255,
+                // meanwhile the returned `kbuckets` only holding non-empty buckets.
+                // Hence using the `remainder` calculate to achieve a rolling check.
+                let mut bucket_index = rolling_index % kbuckets.len();
+
+                for (distance, peers) in kbuckets.iter() {
+                    if bucket_index == 0 {
+                        debug!(
+                            "Undertake bad_nodes check against bucket {distance} having {} peers",
+                            peers.len()
+                        );
+                        for peer_id in peers {
+                            let peer_id_clone = *peer_id;
+                            let network_clone = network.clone();
+                            let _handle = spawn(async move {
+                                let is_bad =
+                                    Self::is_peer_bad_node(&network_clone, peer_id_clone).await;
+                                if is_bad {
+                                    network_clone.notify_node_status(peer_id_clone, is_bad);
+                                }
+                            });
                         }
-                    });
+                        break;
+                    } else {
+                        bucket_index = bucket_index.saturating_sub(1);
+                    }
                 }
             } else {
                 debug!("Skip bad_nodes check as not having too many nodes in RT");
