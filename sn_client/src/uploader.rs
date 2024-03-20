@@ -148,7 +148,6 @@ pub struct UploadStats {
 // 2. add more debug lines
 // 3. terminate early if there are not enough funds in the wallet and return that error.
 // 4. we cna just return address form pop_item_for_get_store_cost. we don't need the whole item.
-// 5. we dont need to track failed_to_pay, failed_to_upload and instead cna directly insert into pending_to_* for these 2. only get store cost needs failed_to_pay. Or does it? check.
 
 /// `Uploader` provides functionality for uploading both Chunks and Registers with support for retries and queuing.
 /// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.
@@ -172,9 +171,6 @@ pub struct Uploader {
     pending_to_get_store_cost: Vec<(XorName, GetStoreCostStrategy)>,
     pending_to_pay: Vec<(XorName, Box<PayeeQuote>)>,
     pending_to_upload: Vec<XorName>,
-    failed_to_get_store_cost: Vec<(XorName, GetStoreCostStrategy)>,
-    failed_to_pay: Vec<(XorName, Box<PayeeQuote>)>,
-    failed_to_upload: Vec<XorName>,
 
     // trackers
     on_going_verify_register: BTreeSet<XorName>,
@@ -224,9 +220,6 @@ impl Uploader {
             pending_to_get_store_cost: Default::default(),
             pending_to_pay: Default::default(),
             pending_to_upload: Default::default(),
-            failed_to_get_store_cost: Default::default(),
-            failed_to_pay: Default::default(),
-            failed_to_upload: Default::default(),
 
             on_going_verify_register: Default::default(),
             on_going_push_register: Default::default(),
@@ -420,8 +413,7 @@ impl Uploader {
             }
 
             // try to get store cost for an item if pending_to_pay needs items & if we have enough buffer.
-            while (!self.pending_to_get_store_cost.is_empty()
-                || !self.failed_to_get_store_cost.is_empty())
+            while !self.pending_to_get_store_cost.is_empty()
                 && self.on_going_get_cost.len() < self.batch_size
                 && self.pending_to_pay.len() < self.batch_size
             {
@@ -440,7 +432,7 @@ impl Uploader {
             }
 
             // try to make payment for an item if pending_to_upload needs items & if we have enough buffer.
-            while (!self.pending_to_pay.is_empty() || !self.failed_to_pay.is_empty())
+            while !self.pending_to_pay.is_empty()
                 && self.on_going_payments.len() < self.batch_size
                 && self.pending_to_upload.len() < self.batch_size
             {
@@ -459,7 +451,7 @@ impl Uploader {
             }
 
             // try to upload if we have enough buffer to upload.
-            while (!self.pending_to_upload.is_empty() || !self.failed_to_upload.is_empty())
+            while !self.pending_to_upload.is_empty()
                 && self.on_going_uploads.len() < self.batch_size
             {
                 let upload_item = self.pop_item_for_upload_item()?;
@@ -598,7 +590,8 @@ impl Uploader {
                     max_repayments_reached,
                 } => {
                     let _ = self.on_going_get_cost.remove(&xorname);
-                    self.failed_to_get_store_cost
+                    // use the same strategy. The repay different payee is set only if upload fails.
+                    self.pending_to_get_store_cost
                         .push((xorname, get_store_cost_strategy.clone()));
                     trace!("GetStoreCostErr for {xorname:?} , get_store_cost_strategy: {get_store_cost_strategy:?}, max_repayments_reached: {max_repayments_reached:?}");
 
@@ -656,7 +649,7 @@ impl Uploader {
                     );
                     for (xorname, quote) in xornames {
                         let _ = self.on_going_payments.remove(&xorname);
-                        self.failed_to_pay.push((xorname, quote));
+                        self.pending_to_pay.push((xorname, quote));
                         // keep track of the failure
                         *self.n_errors_during_pay.entry(xorname).or_insert(0) += 1;
                         // if error > threshold, then return from fn? or should we select a different payee (i dont think so)
@@ -692,13 +685,12 @@ impl Uploader {
                 }
                 TaskResult::UploadErr(xorname) => {
                     let _ = self.on_going_uploads.remove(&xorname);
-                    self.failed_to_upload.push(xorname);
                     trace!("UploadErr for {xorname:?}");
 
                     // keep track of the failure
                     let n_errors = self.n_errors_during_uploads.entry(xorname).or_insert(0);
                     *n_errors += 1;
-                    // if error > threshold, then select different payee.
+                    // if error > threshold, then select different payee. else retry again
                     if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
                         debug!("Max error during upload reached for {xorname:?}. Selecting a different payee.");
                         self.pending_to_get_store_cost.push((
@@ -707,6 +699,8 @@ impl Uploader {
                                 max_repayments: self.max_repayments_for_failed_data,
                             },
                         ));
+                    } else {
+                        self.pending_to_upload.push(xorname);
                     }
                 }
             }
@@ -737,13 +731,6 @@ impl Uploader {
                 .cloned()
                 .ok_or(ClientError::UploadableItemNotFound(name))?;
             Ok((upload_item, strategy))
-        } else if let Some((name, strategy)) = self.failed_to_get_store_cost.pop() {
-            let upload_item = self
-                .all_upload_items
-                .get(&name)
-                .cloned()
-                .ok_or(ClientError::UploadableItemNotFound(name))?;
-            Ok((upload_item, strategy))
         } else {
             // the caller will be making sure this does not happen.
             Err(ClientError::UploadStateTrackerIsEmpty)
@@ -758,13 +745,6 @@ impl Uploader {
                 .cloned()
                 .ok_or(ClientError::UploadableItemNotFound(name))?;
             Ok((upload_item, quote))
-        } else if let Some((name, quote)) = self.failed_to_pay.pop() {
-            let upload_item = self
-                .all_upload_items
-                .get(&name)
-                .cloned()
-                .ok_or(ClientError::UploadableItemNotFound(name))?;
-            Ok((upload_item, quote))
         } else {
             // the caller will be making sure this does not happen.
             Err(ClientError::UploadStateTrackerIsEmpty)
@@ -773,13 +753,6 @@ impl Uploader {
 
     fn pop_item_for_upload_item(&mut self) -> Result<UploadItem> {
         if let Some(name) = self.pending_to_upload.pop() {
-            let upload_item = self
-                .all_upload_items
-                .get(&name)
-                .cloned()
-                .ok_or(ClientError::UploadableItemNotFound(name))?;
-            Ok(upload_item)
-        } else if let Some(name) = self.failed_to_upload.pop() {
             let upload_item = self
                 .all_upload_items
                 .get(&name)
