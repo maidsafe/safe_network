@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710957810921,
+  "lastUpdate": 1710957812597,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9e3ed96e8e5d782ab41ca41785c90ee1a9848828",
-          "message": "refactor(networking): use Entry API for query task\n\nThis PR changes the old behavior where query tasks are removed from the\nlist and later reinserted. By using the Entry API, tasks are borrowed\nand later removed only if neccessary.",
-          "timestamp": "2023-11-02T08:41:50Z",
-          "tree_id": "460657a2f681da54bb695e806e9dd4eff28b3b29",
-          "url": "https://github.com/maidsafe/safe_network/commit/9e3ed96e8e5d782ab41ca41785c90ee1a9848828"
-        },
-        "date": 1698919290735,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 161,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 38,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "aedcd98fc808cc2e8837352f2fc6c921c90687fb",
+          "message": "chore(deps): bump actions/cache from 4.0.1 to 4.0.2\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.1 to 4.0.2.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.1...v4.0.2)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-03-20T17:07:39Z",
+          "tree_id": "9de943bc7da1d4adb50f56dd359ccf66ce97e0ca",
+          "url": "https://github.com/maidsafe/safe_network/commit/aedcd98fc808cc2e8837352f2fc6c921c90687fb"
+        },
+        "date": 1710957812216,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
