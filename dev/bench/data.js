@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710882650408,
+  "lastUpdate": 1710919255337,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4ca83b120e24f4de9609824cd2e8b99a7dbc8b18",
-          "message": "refactor(node): reduce the max number of events that can be queued in the NodeEventsChannel",
-          "timestamp": "2023-11-01T14:49:34Z",
-          "tree_id": "061100b6a9541b666c295f6c3c258154705bca09",
-          "url": "https://github.com/maidsafe/safe_network/commit/4ca83b120e24f4de9609824cd2e8b99a7dbc8b18"
-        },
-        "date": 1698853415101,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.19884816773503253,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8129803449611094,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 14.117447996437798,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.86358335310985,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "501f05abaa2de0aa127bbe0f1673c2dacc7ce72b",
+          "message": "feat: improve parallelisation with buffered streams",
+          "timestamp": "2024-03-20T06:35:22Z",
+          "tree_id": "f1a4abf6e73a2973f19466b93d65e4afcf6cf3ff",
+          "url": "https://github.com/maidsafe/safe_network/commit/501f05abaa2de0aa127bbe0f1673c2dacc7ce72b"
+        },
+        "date": 1710919252189,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2758853513984025,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8345027208803406,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.3880749763171,
             "unit": "MiB/s"
           }
         ]
