@@ -13,7 +13,7 @@ use assert_fs::TempDir;
 use eyre::{eyre, Result};
 use libp2p::PeerId;
 use rand::Rng;
-use sn_client::{Error as ClientError, FilesDownload, FilesUpload, WalletClient};
+use sn_client::{Error as ClientError, FilesDownload, Uploader, WalletClient};
 use sn_logging::LogBuilder;
 use sn_networking::{GetRecordError, NetworkError};
 use sn_protocol::{
@@ -197,8 +197,9 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    let mut files_upload = FilesUpload::new(files_api.clone()).set_show_holders(true);
-    files_upload.upload_chunks(chunks).await?;
+    let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
+    uploader.insert_chunks(chunks.into_iter());
+    let _upload_stats = uploader.start_upload().await?;
 
     let mut files_download = FilesDownload::new(files_api);
     let _ = files_download.download_file(file_addr, None).await?;

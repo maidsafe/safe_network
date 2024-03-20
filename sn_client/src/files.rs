@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub(crate) mod download;
-pub(crate) mod upload;
 
 use crate::{
     chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, Error,
