@@ -89,7 +89,7 @@ mod tests {
                 register_addr,
                 &mut wallet_client,
                 false,
-                Permissions::new_owner_only(),
+                Permissions::default(),
             )
             .await?;
         info!("Cost is {storage_cost:?}: {prev_rewards_balance:?}");
@@ -162,7 +162,7 @@ mod tests {
                 register_addr,
                 &mut wallet_client,
                 false,
-                Permissions::new_owner_only(),
+                Permissions::default(),
             )
             .await?;
         info!("Random Register created, paid {storage_cost}/{royalties_fees}");

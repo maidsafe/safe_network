@@ -94,22 +94,20 @@ impl SignedRegister {
     }
 
     /// Merge two SignedRegisters
-    pub fn merge(&mut self, other: SignedRegister) -> Result<()> {
-        if self.base_register != other.base_register {
-            return Err(Error::DifferentBaseRegister);
-        }
-        self.ops.extend(other.ops);
+    pub fn merge(&mut self, other: &Self) -> Result<()> {
+        self.base_register
+            .verify_is_mergeable(&other.base_register)?;
+        self.ops.extend(other.ops.clone());
         Ok(())
     }
 
     /// Merge two SignedRegisters but verify the incoming content
     /// Significantly slower than merge, use when you want to trust but verify the `other`
-    pub fn verified_merge(&mut self, other: SignedRegister) -> Result<()> {
-        if self.base_register != other.base_register {
-            return Err(Error::DifferentBaseRegister);
-        }
+    pub fn verified_merge(&mut self, other: &Self) -> Result<()> {
+        self.base_register
+            .verify_is_mergeable(&other.base_register)?;
         other.verify()?;
-        self.ops.extend(other.ops);
+        self.ops.extend(other.ops.clone());
         Ok(())
     }
 
@@ -141,7 +139,7 @@ impl Register {
     /// Create a new Register
     pub fn new(owner: PublicKey, meta: XorName, mut permissions: Permissions) -> Self {
         let address = RegisterAddress { meta, owner };
-        permissions.writers.insert(owner);
+        permissions.add_writer(owner);
         Self {
             crdt: RegisterCrdt::new(address),
             permissions,
@@ -170,12 +168,6 @@ impl Register {
         Ok(SignedRegister::new(self, signature))
     }
 
-    #[cfg(test)]
-    pub fn new_owned(owner: PublicKey, meta: XorName) -> Self {
-        let permissions = Default::default();
-        Self::new(owner, meta, permissions)
-    }
-
     /// Return the address.
     pub fn address(&self) -> &RegisterAddress {
         self.crdt.address()
@@ -194,11 +186,6 @@ impl Register {
     /// Return a value corresponding to the provided 'hash', if present.
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
         self.crdt.get(hash).ok_or(Error::NoSuchEntry(hash))
-    }
-
-    /// Return a value corresponding to the provided 'hash', if present.
-    pub fn get_cloned(&self, hash: EntryHash) -> Result<Entry> {
-        self.crdt.get(hash).cloned().ok_or(Error::NoSuchEntry(hash))
     }
 
     /// Read the last entry, or entries when there are branches, if the register is not empty.
@@ -221,6 +208,8 @@ impl Register {
         signer: &SecretKey,
     ) -> Result<(EntryHash, RegisterOp)> {
         self.check_entry_and_reg_sizes(&entry)?;
+        // check permissions before writing on the underlying CRDT
+        self.check_user_permissions(signer.public_key())?;
         let (hash, address, crdt_op) = self.crdt.write(entry, children)?;
         let op = RegisterOp::new(address, crdt_op, signer);
         Ok((hash, op))
@@ -234,17 +223,15 @@ impl Register {
     }
 
     /// Merge another Register into this one.
-    pub fn merge(&mut self, other: Self) {
-        self.crdt.merge(other.crdt);
+    pub fn merge(&mut self, other: &Self) -> Result<()> {
+        self.verify_is_mergeable(other)?;
+        self.crdt.merge(other.crdt.clone());
+        Ok(())
     }
 
     /// Check if a register op is valid for our current register
     pub fn check_register_op(&self, op: &RegisterOp) -> Result<()> {
         self.check_user_permissions(op.source)?;
-        if self.permissions.anyone_can_write() {
-            return Ok(()); // anyone can write, so no need to check the signature
-        }
-
         op.verify_signature(&op.source)
     }
 
@@ -254,7 +241,7 @@ impl Register {
     /// `Ok(())` if the user can write to this register
     /// `Err::AccessDenied` if the user cannot write to this register
     pub fn check_user_permissions(&self, requester: PublicKey) -> Result<()> {
-        if requester == self.owner() || self.permissions.can_write(&requester) {
+        if self.permissions.can_write(&requester) {
             Ok(())
         } else {
             Err(Error::AccessDenied(requester))
@@ -285,10 +272,20 @@ impl Register {
 
         Ok(())
     }
+
+    // Private helper to check if this Register is mergeable with another
+    fn verify_is_mergeable(&self, other: &Self) -> Result<()> {
+        if self.address() != other.address() || self.permissions != other.permissions {
+            return Err(Error::DifferentBaseRegister);
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::RegisterOp;
+
     use super::{
         EntryHash, Error, Permissions, Register, RegisterAddress, Result, MAX_REG_NUM_ENTRIES,
     };
@@ -320,8 +317,8 @@ mod tests {
 
         let meta: XorName = xor_name::rand::random();
 
-        let mut replica1 = Register::new_owned(authority, meta);
-        let mut replica2 = Register::new_owned(authority, meta);
+        let mut replica1 = Register::new(authority, meta, Permissions::default());
+        let mut replica2 = Register::new(authority, meta, Permissions::default());
 
         // Different item from same replica's root shall having different entry_hash
         let item1 = random_register_entry();
@@ -342,6 +339,87 @@ mod tests {
         let (entry_hash1_1_3, _) = replica1.write(item3, &parents, &authority_sk)?;
         let (entry_hash2_1_4, _) = replica2.write(item4, &parents, &authority_sk)?;
         assert!(entry_hash1_1_3 != entry_hash2_1_4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn register_permissions() -> eyre::Result<()> {
+        let owner_sk = SecretKey::random();
+        let owner = owner_sk.public_key();
+        let other_user_sk = SecretKey::random();
+        let other_user = other_user_sk.public_key();
+
+        let meta: XorName = xor_name::rand::random();
+        let item = random_register_entry();
+
+        // Create replicas where anyone can write to them, including the owner ofc
+        let mut replica1 = Register::new(owner, meta, Permissions::new_anyone_can_write());
+        let mut replica2 = replica1.clone();
+        let mut signed_replica3 = replica1.clone().into_signed(&owner_sk)?;
+        // ...owner and the other user can both write to them
+        let (_, op1) = replica1.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        let (_, op2) = replica1.write(item.clone(), &BTreeSet::new(), &other_user_sk)?;
+        replica2.apply_op(op1)?;
+        replica2.apply_op(op2)?;
+        signed_replica3.verified_merge(&replica2.into_signed(&owner_sk)?)?;
+
+        // Create replicas allowing both the owner and other user to write to them
+        let mut replica1 = Register::new(owner, meta, Permissions::new_with([other_user]));
+        let mut replica2 = replica1.clone();
+        let mut signed_replica3 = replica1.clone().into_signed(&owner_sk)?;
+        // ...owner and the other user can both write to them
+        let (_, op1) = replica1.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        let (_, op2) = replica1.write(item.clone(), &BTreeSet::new(), &other_user_sk)?;
+        replica2.apply_op(op1)?;
+        replica2.apply_op(op2)?;
+        signed_replica3.verified_merge(&replica2.into_signed(&owner_sk)?)?;
+
+        // Create replicas with the owner as the only allowed to write
+        let mut replica1 = Register::new(owner, meta, Permissions::default());
+        let mut replica2 = replica1.clone();
+        // ...owner can write to them
+        let (_, op) = replica1.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        replica2.apply_op(op.clone())?;
+        // ...whilst other user cannot write to them
+        let res = replica1.write(item.clone(), &BTreeSet::new(), &other_user_sk);
+        assert!(
+            matches!(&res, Err(err) if err == &Error::AccessDenied(other_user)),
+            "Unexpected result: {res:?}"
+        );
+        let (_, address, crdt_op) = replica1.crdt.write(item.clone(), &BTreeSet::new())?;
+        let op_signed_by_other_user = RegisterOp::new(address, crdt_op, &other_user_sk);
+        let res = replica2.apply_op(op_signed_by_other_user);
+        assert!(
+            matches!(&res, Err(err) if err == &Error::AccessDenied(other_user)),
+            "Unexpected result: {res:?}"
+        );
+
+        // Create Registers with different permissions to write
+        let mut reg1 = Register::new(owner, meta, Permissions::default());
+        let mut reg2 = Register::new(owner, meta, Permissions::new_with([other_user]));
+        // ...owner can write to both of them, the other user only to one of them
+        reg1.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        reg2.write(item.clone(), &BTreeSet::new(), &owner_sk)?;
+        reg2.write(item.clone(), &BTreeSet::new(), &other_user_sk)?;
+        // ...but they cannot be merged due to different permissions sets
+        let res1 = reg1.merge(&reg2);
+        let res2 = reg2.merge(&reg1);
+        assert!(
+            matches!(&res1, Err(err) if err == &Error::DifferentBaseRegister),
+            "Unexpected result: {res1:?}"
+        );
+        assert_eq!(res1, res2);
+
+        let mut signed_reg1 = reg1.into_signed(&owner_sk)?;
+        let mut signed_reg2 = reg2.into_signed(&owner_sk)?;
+        let res1 = signed_reg1.verified_merge(&signed_reg2);
+        let res2 = signed_reg2.verified_merge(&signed_reg1);
+        assert!(
+            matches!(&res1, Err(err) if err == &Error::DifferentBaseRegister),
+            "Unexpected result: {res1:?}"
+        );
+        assert_eq!(res1, res2);
 
         Ok(())
     }
@@ -912,7 +990,7 @@ mod tests {
             // set up a replica that has nothing to do with the rest, random xor... different owner...
             let xorname = xor_name::rand::random();
             let random_owner_sk = SecretKey::random();
-            let mut bogus_replica = Register::new_owned(random_owner_sk.public_key(), xorname);
+            let mut bogus_replica = Register::new(random_owner_sk.public_key(), xorname, Permissions::default());
 
             // add bogus ops from bogus replica + bogus data
             let mut children = BTreeSet::new();

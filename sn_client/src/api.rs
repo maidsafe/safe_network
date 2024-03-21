@@ -530,7 +530,7 @@ impl Client {
     ///             xorname,
     ///             &mut wallet_client,
     ///             true,
-    ///             Permissions::new_owner_only(),
+    ///             Permissions::default(),
     ///         )
     ///         .await?;
     /// # Ok(())
@@ -553,10 +553,10 @@ impl Client {
         )
         .await?;
 
-        debug!("{address:?} Created in theorryyyyy");
+        debug!("{address:?} Created in theory");
         let reg_address = reg.address();
         if verify_store {
-            debug!("WE SHOULD VERRRRIFYING");
+            debug!("We should verify stored at {address:?}");
             let mut stored = self.verify_register_stored(*reg_address).await.is_ok();
 
             while !stored {
@@ -1150,7 +1150,7 @@ fn merge_split_register_records(
 
     // merge it with the others if they are valid
     let register: SignedRegister = all_registers.into_iter().fold(one_valid_reg, |mut acc, r| {
-        if acc.verified_merge(r).is_err() {
+        if acc.verified_merge(&r).is_err() {
             warn!("Skipping register that failed to merge. Entry found for {key:?}");
         }
         acc
@@ -1225,7 +1225,7 @@ mod tests {
 
         // test with 2 valid records: should return the two merged
         let mut expected_merge = signed_register1.clone();
-        expected_merge.merge(signed_register2)?;
+        expected_merge.merge(&signed_register2)?;
         let map = HashMap::from_iter(vec![
             (xorname1, (record1.clone(), peers1.clone())),
             (xorname2, (record2, peers2.clone())),

@@ -26,16 +26,16 @@ pub struct DaemonServiceData {
     pub version: String,
 }
 
-pub struct DaemonService {
-    pub service_data: DaemonServiceData,
+pub struct DaemonService<'a> {
+    pub service_data: &'a mut DaemonServiceData,
     pub service_control: Box<dyn ServiceControl + Send>,
 }
 
-impl DaemonService {
+impl<'a> DaemonService<'a> {
     pub fn new(
-        service_data: DaemonServiceData,
+        service_data: &'a mut DaemonServiceData,
         service_control: Box<dyn ServiceControl + Send>,
-    ) -> DaemonService {
+    ) -> DaemonService<'a> {
         DaemonService {
             service_data,
             service_control,
@@ -44,7 +44,7 @@ impl DaemonService {
 }
 
 #[async_trait]
-impl ServiceStateActions for DaemonService {
+impl<'a> ServiceStateActions for DaemonService<'a> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.daemon_path.clone()
     }

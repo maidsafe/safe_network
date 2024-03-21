@@ -14,16 +14,16 @@ use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_protocol::get_port_from_multiaddr;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr};
 
-pub struct NodeService {
-    pub service_data: NodeServiceData,
+pub struct NodeService<'a> {
+    pub service_data: &'a mut NodeServiceData,
     pub rpc_actions: Box<dyn RpcActions + Send>,
 }
 
-impl NodeService {
+impl<'a> NodeService<'a> {
     pub fn new(
-        service_data: NodeServiceData,
+        service_data: &'a mut NodeServiceData,
         rpc_actions: Box<dyn RpcActions + Send>,
-    ) -> NodeService {
+    ) -> NodeService<'a> {
         NodeService {
             rpc_actions,
             service_data,
@@ -32,7 +32,7 @@ impl NodeService {
 }
 
 #[async_trait]
-impl ServiceStateActions for NodeService {
+impl<'a> ServiceStateActions for NodeService<'a> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.safenode_path.clone()
     }

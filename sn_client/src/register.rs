@@ -70,7 +70,7 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn create(client: Client, meta: XorName) -> Self {
-        Self::create_register(client, meta, Permissions::new_owner_only())
+        Self::create_register(client, meta, Permissions::default())
     }
 
     /// Create a new Register locally with a specific address.
@@ -95,7 +95,7 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn create_with_addr(client: Client, addr: RegisterAddress) -> Self {
-        let register = Register::new(addr.owner(), addr.meta(), Permissions::new_owner_only());
+        let register = Register::new(addr.owner(), addr.meta(), Permissions::default());
         Self {
             client,
             register,
@@ -541,7 +541,7 @@ impl ClientRegister {
                 self.register.clone()
             }
         };
-        self.register.merge(remote_replica);
+        self.register.merge(&remote_replica)?;
         self.push(verify_store).await?;
 
         Ok((storage_cost, royalties_fees))
