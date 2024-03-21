@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.24](https://github.com/joshuef/safe_network/compare/sn_logging-v0.2.23...sn_logging-v0.2.24) - 2024-03-21
+
+### Added
+- *(log)* set log levels on the fly
+
+### Other
+- *(log)* add test to verify log reload functionality
+
 ## [0.2.23](https://github.com/joshuef/safe_network/compare/sn_logging-v0.2.22...sn_logging-v0.2.23) - 2024-03-14
 
 ### Other

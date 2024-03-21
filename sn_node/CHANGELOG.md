@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.41](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.40...sn_node-v0.104.41) - 2024-03-21
+
+### Added
+- dag error recording
+- *(protocol)* add rpc to set node log level on the fly
+- *(log)* set log levels on the fly
+- refactor DAG, improve error management and security
+
+### Fixed
+- *(node)* get_closest error not trigger bad_node report
+
+### Other
+- *(node)* reduce bad_nodes check resource usage
+
 ## [0.104.39](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.38...sn_node-v0.104.39) - 2024-03-14
 
 ### Added

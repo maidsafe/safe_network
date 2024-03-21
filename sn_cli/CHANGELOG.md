@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.89.85](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.84...sn_cli-v0.89.85) - 2024-03-21
+
+### Added
+- *(cli)* have CLI folders cmds to act on current directory by default
+- *(folders)* folders APIs to accept an encryption key for metadata chunks
+- *(log)* set log levels on the fly
+- improve parallelisation with buffered streams
+- refactor DAG, improve error management and security
+- dag error recording
+- *(protocol)* add rpc to set node log level on the fly
+
+### Other
+- *(cli)* adding automated test for metadata chunk encryption
+- *(cli)* adding some high-level doc to acc-packet codebase
+- *(node)* reduce bad_nodes check resource usage
+
 ## [0.89.84](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.83...sn_cli-v0.89.84) - 2024-03-18
 
 ### Other

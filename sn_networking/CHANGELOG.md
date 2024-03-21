@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.35](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.34...sn_networking-v0.13.35) - 2024-03-21
+
+### Added
+- dag error recording
+
+### Other
+- *(node)* reduce bad_nodes check resource usage
+
 ## [0.13.34](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.33...sn_networking-v0.13.34) - 2024-03-18
 
 ### Added
