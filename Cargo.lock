@@ -4873,7 +4873,7 @@ checksum = "e6ecd384b10a64542d77071bd64bd7b231f4ed5940fba55e98c3de13824cf3d7"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -4937,7 +4937,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.89.84"
+version = "0.89.85"
 dependencies = [
  "base64 0.21.7",
  "bitcoin",
@@ -4976,7 +4976,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.104.30"
+version = "0.104.31"
 dependencies = [
  "async-trait",
  "backoff",
@@ -5023,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.3.84"
+version = "0.3.85"
 dependencies = [
  "assert_fs",
  "base64 0.21.7",
@@ -5050,7 +5050,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.23"
+version = "0.2.24"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -5089,7 +5089,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.13.34"
+version = "0.13.35"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5128,7 +5128,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.104.40"
+version = "0.104.41"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -5184,7 +5184,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5225,7 +5225,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.15.4"
+version = "0.15.5"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5269,7 +5269,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "dirs-next",
@@ -5293,7 +5293,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.16.4"
+version = "0.16.5"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -5708,7 +5708,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.44"
+version = "0.1.45"
 dependencies = [
  "dirs-next",
  "reqwest",

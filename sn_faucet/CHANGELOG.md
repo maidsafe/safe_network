@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.85](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.3.84...sn_faucet-v0.3.85) - 2024-03-21
+
+### Added
+- *(log)* set log levels on the fly
+
+### Other
+- *(release)* sn_cli-v0.89.84/sn_node-v0.104.40/sn_networking-v0.13.34/sn_service_management-v0.1.1/sn_client-v0.104.30
+
 ## [0.3.84](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.3.83...sn_faucet-v0.3.84) - 2024-03-14
 
 ### Other
