@@ -47,12 +47,35 @@ impl ServiceControl for ServiceController {
             return Ok(());
         }
 
-        let output = Command::new("useradd")
-            .arg("-m")
-            .arg("-s")
-            .arg("/bin/bash")
-            .arg(username)
-            .output()?;
+        let useradd_exists = Command::new("which")
+            .arg("useradd")
+            .output()?
+            .status
+            .success();
+        let adduser_exists = Command::new("which")
+            .arg("adduser")
+            .output()?
+            .status
+            .success();
+
+        let output = if useradd_exists {
+            Command::new("useradd")
+                .arg("-m")
+                .arg("-s")
+                .arg("/bin/bash")
+                .arg(username)
+                .output()?
+        } else if adduser_exists {
+            Command::new("adduser")
+                .arg("-s")
+                .arg("/bin/busybox")
+                .arg("-D")
+                .arg(username)
+                .output()?
+        } else {
+            return Err(Error::ServiceUserAccountCreationFailed);
+        };
+
         if !output.status.success() {
             return Err(Error::ServiceUserAccountCreationFailed);
         }
