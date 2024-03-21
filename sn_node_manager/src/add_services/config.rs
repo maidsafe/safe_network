@@ -41,17 +41,18 @@ pub fn parse_port_range(s: &str) -> Result<PortRange> {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallNodeServiceCtxBuilder {
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub data_dir_path: PathBuf,
+    pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub local: bool,
     pub log_dir_path: PathBuf,
     pub name: String,
+    pub metrics_port: Option<u16>,
     pub node_port: Option<u16>,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: String,
-    pub env_variables: Option<Vec<(String, String)>>,
 }
 
 impl InstallNodeServiceCtxBuilder {
@@ -75,6 +76,10 @@ impl InstallNodeServiceCtxBuilder {
         if let Some(node_port) = self.node_port {
             args.push(OsString::from("--port"));
             args.push(OsString::from(node_port.to_string()));
+        }
+        if let Some(metrics_port) = self.metrics_port {
+            args.push(OsString::from("--metrics-server-port"));
+            args.push(OsString::from(metrics_port.to_string()));
         }
 
         if !self.bootstrap_peers.is_empty() {
@@ -106,6 +111,7 @@ pub struct AddNodeServiceOptions {
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub local: bool,
+    pub metrics_port: Option<PortRange>,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
     pub safenode_src_path: PathBuf,

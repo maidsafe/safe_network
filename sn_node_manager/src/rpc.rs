@@ -55,17 +55,18 @@ pub async fn restart_node_service(
                 )
             })?;
         let install_ctx = InstallNodeServiceCtxBuilder {
-            local: current_node_clone.local,
+            bootstrap_peers: node_registry.bootstrap_peers.clone(),
             data_dir_path: current_node_clone.data_dir_path.clone(),
+            env_variables: node_registry.environment_variables.clone(),
             genesis: current_node_clone.genesis,
+            local: current_node_clone.local,
+            log_dir_path: current_node_clone.log_dir_path.clone(),
+            metrics_port: None,
             name: current_node_clone.service_name.clone(),
             node_port: current_node_clone.get_safenode_port(),
-            bootstrap_peers: node_registry.bootstrap_peers.clone(),
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            log_dir_path: current_node_clone.log_dir_path.clone(),
             safenode_path: current_node_clone.safenode_path.clone(),
             service_user: current_node_clone.user.clone(),
-            env_variables: node_registry.environment_variables.clone(),
         }
         .build()?;
         service_control.install(install_ctx).map_err(|err| {
@@ -139,6 +140,7 @@ pub async fn restart_node_service(
             genesis: current_node_clone.genesis,
             name: new_service_name.clone(),
             // don't re-use port
+            metrics_port: None,
             node_port: None,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             rpc_socket_addr: current_node_clone.rpc_socket_addr,

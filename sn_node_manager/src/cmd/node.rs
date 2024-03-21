@@ -38,8 +38,9 @@ pub async fn add(
     env_variables: Option<Vec<(String, String)>>,
     local: bool,
     log_dir_path: Option<PathBuf>,
+    metrics_port: Option<PortRange>,
+    node_port: Option<PortRange>,
     peers: PeersArgs,
-    port: Option<PortRange>,
     rpc_address: Option<Ipv4Addr>,
     src_path: Option<PathBuf>,
     url: Option<String>,
@@ -78,11 +79,12 @@ pub async fn add(
     };
 
     let options = AddNodeServiceOptions {
-        local,
-        genesis: peers.first,
         count,
-        bootstrap_peers: get_peers_from_args(peers).await?,
-        node_port: port,
+        env_variables,
+        genesis: peers.first,
+        local,
+        metrics_port,
+        node_port,
         rpc_address,
         safenode_src_path,
         safenode_dir_path: service_data_dir_path.clone(),
@@ -90,7 +92,7 @@ pub async fn add(
         service_log_dir_path,
         user: service_user,
         version,
-        env_variables,
+        bootstrap_peers: get_peers_from_args(peers).await?,
     };
 
     add_node(options, &mut node_registry, &service_manager, verbosity).await?;
