@@ -27,14 +27,15 @@ pub async fn restart_node_service(
     retain_peer_id: bool,
 ) -> Result<()> {
     let nodes_len = node_registry.nodes.len();
-    let current_node = node_registry
+    let current_node_mut = node_registry
         .nodes
         .iter_mut()
         .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
         .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
+    let current_node_clone = current_node_mut.clone();
 
-    let rpc_client = RpcClient::from_socket_addr(current_node.rpc_socket_addr);
-    let service = NodeService::new(current_node.clone(), Box::new(rpc_client));
+    let rpc_client = RpcClient::from_socket_addr(current_node_mut.rpc_socket_addr);
+    let service = NodeService::new(current_node_mut, Box::new(rpc_client));
     let mut service_manager = ServiceManager::new(
         service,
         Box::new(ServiceController {}),
@@ -46,31 +47,31 @@ pub async fn restart_node_service(
     if retain_peer_id {
         // reuse the same port and root dir to retain peer id.
         service_control
-            .uninstall(&current_node.service_name.clone())
+            .uninstall(&current_node_clone.service_name)
             .map_err(|err| {
                 eyre!(
                     "Error while uninstalling node {:?} with: {err:?}",
-                    current_node.service_name
+                    current_node_clone.service_name
                 )
             })?;
         let install_ctx = InstallNodeServiceCtxBuilder {
-            local: current_node.local,
-            data_dir_path: current_node.data_dir_path.clone(),
-            genesis: current_node.genesis,
-            name: current_node.service_name.clone(),
-            node_port: current_node.get_safenode_port(),
+            local: current_node_clone.local,
+            data_dir_path: current_node_clone.data_dir_path.clone(),
+            genesis: current_node_clone.genesis,
+            name: current_node_clone.service_name.clone(),
+            node_port: current_node_clone.get_safenode_port(),
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
-            rpc_socket_addr: current_node.rpc_socket_addr,
-            log_dir_path: current_node.log_dir_path.clone(),
-            safenode_path: current_node.safenode_path.clone(),
-            service_user: current_node.user.clone(),
+            rpc_socket_addr: current_node_clone.rpc_socket_addr,
+            log_dir_path: current_node_clone.log_dir_path.clone(),
+            safenode_path: current_node_clone.safenode_path.clone(),
+            service_user: current_node_clone.user.clone(),
             env_variables: node_registry.environment_variables.clone(),
         }
         .build()?;
         service_control.install(install_ctx).map_err(|err| {
             eyre!(
                 "Error while installing node {:?} with: {err:?}",
-                current_node.service_name
+                current_node_clone.service_name
             )
         })?;
         service_manager.start().await?;
@@ -82,31 +83,31 @@ pub async fn restart_node_service(
         // modify the paths & copy safenode binary
         // example path "log_dir_path":"/var/log/safenode/safenode18"
         let log_dir_path = {
-            let mut log_dir_path = current_node.log_dir_path.clone();
+            let mut log_dir_path = current_node_clone.log_dir_path.clone();
             log_dir_path.pop();
             log_dir_path.join(&new_service_name)
         };
         // example path "data_dir_path":"/var/safenode-manager/services/safenode18"
         let data_dir_path = {
-            let mut data_dir_path = current_node.data_dir_path.clone();
+            let mut data_dir_path = current_node_clone.data_dir_path.clone();
             data_dir_path.pop();
             data_dir_path.join(&new_service_name)
         };
-        create_owned_dir(log_dir_path.clone(), &current_node.user).map_err(|err| {
+        create_owned_dir(log_dir_path.clone(), &current_node_clone.user).map_err(|err| {
             eyre!(
                 "Error while creating owned dir for {:?}: {err:?}",
-                current_node.user
+                current_node_clone.user
             )
         })?;
-        create_owned_dir(data_dir_path.clone(), &current_node.user).map_err(|err| {
+        create_owned_dir(data_dir_path.clone(), &current_node_clone.user).map_err(|err| {
             eyre!(
                 "Error while creating owned dir for {:?}: {err:?}",
-                current_node.user
+                current_node_clone.user
             )
         })?;
         // example path "safenode_path":"/var/safenode-manager/services/safenode18/safenode"
         let safenode_path = {
-            let mut safenode_path = current_node.safenode_path.clone();
+            let mut safenode_path = current_node_clone.safenode_path.clone();
             let safenode_file_name = safenode_path
                 .file_name()
                 .ok_or_eyre("Could not get filename from the current node's safenode path")?
@@ -116,36 +117,36 @@ pub async fn restart_node_service(
             safenode_path.pop();
 
             let safenode_path = safenode_path.join(&new_service_name);
-            create_owned_dir(data_dir_path.clone(), &current_node.user).map_err(|err| {
+            create_owned_dir(data_dir_path.clone(), &current_node_clone.user).map_err(|err| {
                 eyre!(
                     "Error while creating owned dir for {:?}: {err:?}",
-                    current_node.user
+                    current_node_clone.user
                 )
             })?;
             let safenode_path = safenode_path.join(safenode_file_name);
 
-            std::fs::copy(&current_node.safenode_path, &safenode_path).map_err(|err| {
+            std::fs::copy(&current_node_clone.safenode_path, &safenode_path).map_err(|err| {
                 eyre!(
                     "Failed to copy safenode bin from {:?} to {safenode_path:?} with err: {err}",
-                    current_node.safenode_path
+                    current_node_clone.safenode_path
                 )
             })?;
             safenode_path
         };
 
         let install_ctx = InstallNodeServiceCtxBuilder {
-            local: current_node.local,
-            genesis: current_node.genesis,
+            local: current_node_clone.local,
+            genesis: current_node_clone.genesis,
             name: new_service_name.clone(),
             // don't re-use port
             node_port: None,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
-            rpc_socket_addr: current_node.rpc_socket_addr,
+            rpc_socket_addr: current_node_clone.rpc_socket_addr,
             // set new paths
             data_dir_path: data_dir_path.clone(),
             log_dir_path: log_dir_path.clone(),
             safenode_path: safenode_path.clone(),
-            service_user: current_node.user.clone(),
+            service_user: current_node_clone.user.clone(),
             env_variables: node_registry.environment_variables.clone(),
         }
         .build()?;
@@ -153,14 +154,14 @@ pub async fn restart_node_service(
             eyre!("Error while installing node {new_service_name:?} with: {err:?}",)
         })?;
 
-        let node = NodeServiceData {
-            genesis: current_node.genesis,
-            local: current_node.local,
+        let mut node = NodeServiceData {
+            genesis: current_node_clone.genesis,
+            local: current_node_clone.local,
             service_name: new_service_name.clone(),
-            user: current_node.user.clone(),
+            user: current_node_clone.user.clone(),
             number: new_node_number as u16,
-            rpc_socket_addr: current_node.rpc_socket_addr,
-            version: current_node.version.clone(),
+            rpc_socket_addr: current_node_clone.rpc_socket_addr,
+            version: current_node_clone.version.clone(),
             status: ServiceStatus::Added,
             listen_addr: None,
             pid: None,
@@ -172,7 +173,7 @@ pub async fn restart_node_service(
         };
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(&mut node, Box::new(rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(ServiceController {}),
@@ -181,12 +182,8 @@ pub async fn restart_node_service(
         service_manager.start().await?;
         node_registry
             .nodes
-            .push(service_manager.service.service_data);
+            .push(service_manager.service.service_data.clone());
     };
-
-    node_registry
-        .save()
-        .map_err(|err| eyre!("Error while saving node registry with: {err:?}"))?;
 
     Ok(())
 }

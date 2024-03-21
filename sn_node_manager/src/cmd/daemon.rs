@@ -79,14 +79,14 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(daemon) = node_registry.daemon.clone() {
+    if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Start Daemon Service                ");
             println!("=================================================");
         }
 
-        let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
+        let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.start().await?;
@@ -100,7 +100,6 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
                 .map_or("-".to_string(), |e| e.to_string())
         );
 
-        node_registry.daemon = Some(service_manager.service.service_data);
         node_registry.save()?;
         return Ok(());
     }
@@ -114,19 +113,18 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(daemon) = node_registry.daemon.clone() {
+    if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Stop Daemon Service                 ");
             println!("=================================================");
         }
 
-        let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
+        let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.stop().await?;
 
-        node_registry.daemon = Some(service_manager.service.service_data);
         node_registry.save()?;
 
         return Ok(());

@@ -126,11 +126,10 @@ pub async fn remove(
             .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.remove(keep_directories).await?;
-        node_registry.update_node(service_manager.service.service_data)?;
     } else if let Some(ref peer_id) = peer_id {
         let peer_id = PeerId::from_str(peer_id)?;
         let node = node_registry
@@ -144,11 +143,10 @@ pub async fn remove(
                 ))
             })?;
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.remove(keep_directories).await?;
-        node_registry.update_node(service_manager.service.service_data)?;
     }
 
     node_registry.save()?;
@@ -180,12 +178,11 @@ pub async fn start(
             .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.start().await?;
 
-        node_registry.update_node(service_manager.service.service_data)?;
         node_registry.save()?;
     } else if let Some(ref peer_id) = peer_id {
         let peer_id = PeerId::from_str(peer_id)?;
@@ -201,24 +198,22 @@ pub async fn start(
             })?;
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.start().await?;
 
-        node_registry.update_node(service_manager.service.service_data)?;
         node_registry.save()?;
     } else {
         let mut failed_services = Vec::new();
         let node_count = node_registry.nodes.len();
         for i in 0..node_count {
             let rpc_client = RpcClient::from_socket_addr(node_registry.nodes[i].rpc_socket_addr);
-            let service = NodeService::new(node_registry.nodes[i].clone(), Box::new(rpc_client));
+            let service = NodeService::new(&mut node_registry.nodes[i], Box::new(rpc_client));
             let mut service_manager =
                 ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
             match service_manager.start().await {
                 Ok(()) => {
-                    node_registry.update_node(service_manager.service.service_data)?;
                     node_registry.save()?;
                 }
                 Err(e) => {
@@ -305,12 +300,11 @@ pub async fn stop(
             .ok_or_else(|| eyre!("No service named '{name}'"))?;
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.stop().await?;
 
-        node_registry.update_node(service_manager.service.service_data)?;
         node_registry.save()?;
     } else if let Some(ref peer_id) = peer_id {
         let peer_id = PeerId::from_str(peer_id)?;
@@ -326,23 +320,21 @@ pub async fn stop(
             })?;
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.stop().await?;
 
-        node_registry.update_node(service_manager.service.service_data)?;
         node_registry.save()?;
     } else {
         let node_count = node_registry.nodes.len();
         for i in 0..node_count {
             let rpc_client = RpcClient::from_socket_addr(node_registry.nodes[i].rpc_socket_addr);
-            let service = NodeService::new(node_registry.nodes[i].clone(), Box::new(rpc_client));
+            let service = NodeService::new(&mut node_registry.nodes[i], Box::new(rpc_client));
             let mut service_manager =
                 ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
             service_manager.stop().await?;
 
-            node_registry.update_node(service_manager.service.service_data)?;
             node_registry.save()?;
         }
     }
@@ -412,16 +404,22 @@ pub async fn upgrade(
         };
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
-                upgrade_summary.push((service_manager.service.service_data, upgrade_result));
+                upgrade_summary.push((
+                    service_manager.service.service_data.service_name.clone(),
+                    upgrade_result,
+                ));
             }
             Err(e) => {
-                upgrade_summary.push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
+                upgrade_summary.push((
+                    node.service_name.clone(),
+                    UpgradeResult::Error(format!("Error: {}", e)),
+                ));
             }
         }
     } else if let Some(ref peer_id) = peer_id {
@@ -452,16 +450,22 @@ pub async fn upgrade(
         };
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node.clone(), Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
-                upgrade_summary.push((service_manager.service.service_data, upgrade_result));
+                upgrade_summary.push((
+                    service_manager.service.service_data.service_name.clone(),
+                    upgrade_result,
+                ));
             }
             Err(e) => {
-                upgrade_summary.push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
+                upgrade_summary.push((
+                    node.service_name.clone(),
+                    UpgradeResult::Error(format!("Error: {}", e)),
+                ));
             }
         }
     } else {
@@ -481,32 +485,28 @@ pub async fn upgrade(
             };
 
             let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-            let service = NodeService::new(node.clone(), Box::new(rpc_client));
+            let service = NodeService::new(node, Box::new(rpc_client));
             let mut service_manager =
                 ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
 
             match service_manager.upgrade(options).await {
                 Ok(upgrade_result) => {
-                    upgrade_summary.push((service_manager.service.service_data, upgrade_result));
+                    upgrade_summary.push((
+                        service_manager.service.service_data.service_name.clone(),
+                        upgrade_result,
+                    ));
                 }
                 Err(e) => {
-                    upgrade_summary
-                        .push((node.clone(), UpgradeResult::Error(format!("Error: {}", e))));
+                    upgrade_summary.push((
+                        node.service_name.clone(),
+                        UpgradeResult::Error(format!("Error: {}", e)),
+                    ));
                 }
             }
         }
     }
 
-    print_upgrade_summary(
-        upgrade_summary
-            .iter()
-            .map(|x| (x.0.service_name.clone(), x.1.clone()))
-            .collect::<Vec<(String, UpgradeResult)>>(),
-    );
-
-    for (node, _) in upgrade_summary {
-        node_registry.update_node(node.clone())?;
-    }
+    print_upgrade_summary(upgrade_summary);
 
     node_registry.save()?;
     Ok(())

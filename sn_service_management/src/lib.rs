@@ -141,18 +141,6 @@ impl NodeRegistry {
         Ok(registry)
     }
 
-    pub fn update_node(&mut self, new_data: NodeServiceData) -> Result<()> {
-        if let Some(node) = self
-            .nodes
-            .iter_mut()
-            .find(|n| n.service_name == new_data.service_name)
-        {
-            *node = new_data;
-            return Ok(());
-        }
-        Err(Error::NodeNotFound(new_data.service_name))
-    }
-
     pub fn to_status_summary(&self) -> StatusSummary {
         StatusSummary {
             nodes: self.nodes.clone(),

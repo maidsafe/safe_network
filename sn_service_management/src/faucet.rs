@@ -26,16 +26,16 @@ pub struct FaucetServiceData {
     pub version: String,
 }
 
-pub struct FaucetService {
-    pub service_data: FaucetServiceData,
+pub struct FaucetService<'a> {
+    pub service_data: &'a mut FaucetServiceData,
     pub service_control: Box<dyn ServiceControl + Send>,
 }
 
-impl FaucetService {
+impl<'a> FaucetService<'a> {
     pub fn new(
-        service_data: FaucetServiceData,
+        service_data: &'a mut FaucetServiceData,
         service_control: Box<dyn ServiceControl + Send>,
-    ) -> FaucetService {
+    ) -> FaucetService<'a> {
         FaucetService {
             service_data,
             service_control,
@@ -44,7 +44,7 @@ impl FaucetService {
 }
 
 #[async_trait]
-impl ServiceStateActions for FaucetService {
+impl<'a> ServiceStateActions for FaucetService<'a> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.faucet_path.clone()
     }
