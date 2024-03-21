@@ -110,7 +110,9 @@ impl SafeNodeManagerDaemon {
         let res = rpc::restart_node_service(&mut node_registry, peer_id, retain_peer_id).await;
 
         // make sure to save the state even if the above fn fails.
-        node_registry.save()?;
+        node_registry
+            .save()
+            .map_err(|err| eyre!("Error while saving node registry {err:?}"))?;
 
         res
     }
