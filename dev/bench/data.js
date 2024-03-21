@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1710975179247,
+  "lastUpdate": 1711010953226,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9e3ed96e8e5d782ab41ca41785c90ee1a9848828",
-          "message": "refactor(networking): use Entry API for query task\n\nThis PR changes the old behavior where query tasks are removed from the\nlist and later reinserted. By using the Entry API, tasks are borrowed\nand later removed only if neccessary.",
-          "timestamp": "2023-11-02T08:41:50Z",
-          "tree_id": "460657a2f681da54bb695e806e9dd4eff28b3b29",
-          "url": "https://github.com/maidsafe/safe_network/commit/9e3ed96e8e5d782ab41ca41785c90ee1a9848828"
-        },
-        "date": 1698919014728,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.18337508516065598,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8809951471892741,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 15.499366367230014,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 52.14838584084198,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "882c0a2656b18cc47d18e196e2ab87f004f3c3be",
+          "message": "chore: remove Cargo.lock",
+          "timestamp": "2024-03-21T07:59:48Z",
+          "tree_id": "725fa929e4cda5f193aaa652ebb6d8f08b9f7a59",
+          "url": "https://github.com/maidsafe/safe_network/commit/882c0a2656b18cc47d18e196e2ab87f004f3c3be"
+        },
+        "date": 1711010949108,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2847653734449973,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8330648619387586,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.265493801861986,
             "unit": "MiB/s"
           }
         ]
