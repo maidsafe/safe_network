@@ -541,7 +541,7 @@ impl ClientRegister {
                 self.register.clone()
             }
         };
-        self.register.merge(remote_replica);
+        self.register.merge(&remote_replica)?;
         self.push(verify_store).await?;
 
         Ok((storage_cost, royalties_fees))
