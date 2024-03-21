@@ -143,6 +143,7 @@ pub async fn remove(
 }
 
 pub async fn start(
+    interval: u64,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
@@ -167,6 +168,7 @@ pub async fn start(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+        std::thread::sleep(std::time::Duration::from_millis(interval));
         match service_manager.start().await {
             Ok(()) => {
                 node_registry.save()?;
