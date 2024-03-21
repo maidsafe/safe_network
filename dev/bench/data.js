@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711058735527,
+  "lastUpdate": 1711058737277,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39991,6 +39991,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33793,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "c0887b2162f5d247576ece7e16461fc8eb1611c6",
+          "message": "fix(register): permissions verification was not being made by some Register APIs",
+          "timestamp": "2024-03-21T21:10:12Z",
+          "tree_id": "e5fa9e35ee320495aeb43a0bd10f3b47630fb643",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0887b2162f5d247576ece7e16461fc8eb1611c6"
+        },
+        "date": 1711058736902,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6202,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34728,
             "unit": "ms"
           },
           {
