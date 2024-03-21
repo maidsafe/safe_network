@@ -278,6 +278,11 @@ pub enum SubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {
+        /// An interval applied between launching each service.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
         /// The peer ID of the service to start.
         ///
         /// The argument can be used multiple times to start many services.
@@ -677,9 +682,10 @@ async fn main() -> Result<()> {
             .await
         }
         SubCmd::Start {
+            interval,
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::start(peer_ids, service_names, verbosity).await,
+        } => cmd::node::start(interval, peer_ids, service_names, verbosity).await,
         SubCmd::Status {
             details,
             fail,
