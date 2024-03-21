@@ -18,6 +18,38 @@ name = "sn_client"
 changelog_update = true
 git_release_enable = false
 publish = true
+changelog_include = [
+    "sn_networking",
+    "sn_transfers",
+    "sn_registers",
+    "sn_peers_acquisition",
+    "sn_protocol",
+]
+
+[[package]]
+name = "sn_cli"
+changelog_update = true
+publish = true
+changelog_include = [
+    "sn_client",
+    "sn_networking",
+    "sn_transfers",
+    "sn_registers",
+    "sn_peers_acquisition",
+    "sn_protocol",
+]
+
+[[package]]
+name = "sn_node"
+changelog_update = true
+publish = true
+changelog_include = [
+    "sn_networking",
+    "sn_transfers",
+    "sn_registers",
+    "sn_peers_acquisition",
+    "sn_protocol",
+]
 
 [[package]]
 name = "sn_logging"
