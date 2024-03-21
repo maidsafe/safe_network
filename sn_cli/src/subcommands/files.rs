@@ -120,7 +120,7 @@ pub(crate) async fn files_cmds(
             retry_strategy,
             make_data_public,
         } => {
-            if file_count(&file_path) == 0 {
+            if count_files_in_path_recursively(&file_path) == 0 {
                 if file_path.is_dir() {
                     bail!(
                         "The directory specified for upload is empty. \
@@ -266,7 +266,7 @@ pub(crate) async fn files_cmds(
     Ok(())
 }
 
-fn file_count(file_path: &PathBuf) -> u32 {
+fn count_files_in_path_recursively(file_path: &PathBuf) -> u32 {
     let entries_iterator = WalkDir::new(file_path).into_iter().flatten();
     let mut count = 0;
 
