@@ -76,13 +76,18 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
-        /// Provide a path for the safenode binary to be used by the service.
+        /// Specify a port for the open metrics server.
         ///
-        /// Useful for creating the service using a custom built binary.
-        #[clap(long)]
-        path: Option<PathBuf>,
-        #[command(flatten)]
-        peers: PeersArgs,
+        /// This argument should only be used with a safenode binary that has the open-metrics
+        /// feature enabled.
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = parse_port_range)]
+        metrics_port: Option<PortRange>,
         /// Specify a port for the safenode service(s).
         ///
         /// If not used, ports will be selected at random.
@@ -91,7 +96,14 @@ pub enum SubCmd {
         /// range. For example, '12000-12004'. The length of the range must match the number of
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = parse_port_range)]
-        port: Option<PortRange>,
+        node_port: Option<PortRange>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
         #[clap(long)]
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
@@ -509,9 +521,10 @@ async fn main() -> Result<()> {
             env_variables,
             local,
             log_dir_path,
+            metrics_port,
+            node_port,
             path,
             peers,
-            port,
             rpc_address,
             url,
             user,
@@ -523,8 +536,9 @@ async fn main() -> Result<()> {
                 env_variables,
                 local,
                 log_dir_path,
+                metrics_port,
+                node_port,
                 peers,
-                port,
                 rpc_address,
                 path,
                 url,

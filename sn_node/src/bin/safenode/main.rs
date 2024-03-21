@@ -145,9 +145,9 @@ struct Opt {
     local: bool,
 
     #[cfg(feature = "open-metrics")]
-    /// Specify the port to start the OpenMetrics Server in.
+    /// Specify the port for the OpenMetrics server.
     ///
-    /// The special value `0` will cause the OS to assign a random port.
+    /// If not specified, a port will be selected at random.
     #[clap(long, default_value_t = 0)]
     metrics_server_port: u16,
 }

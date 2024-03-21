@@ -105,20 +105,21 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: true,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: None,
         genesis: true,
+        local: true,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
         name: "safenode1".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode1")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
     mock_service_control
@@ -130,19 +131,20 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
 
     add_node(
         AddNodeServiceOptions {
-            local: true,
-            genesis: true,
+            bootstrap_peers: vec![],
             count: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            env_variables: None,
+            genesis: true,
+            local: true,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: None,
             safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
-            node_port: None,
-            bootstrap_peers: vec![],
-            rpc_address: None,
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -224,19 +226,20 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
 
     let result = add_node(
         AddNodeServiceOptions {
-            local: true,
-            genesis: true,
+            bootstrap_peers: vec![],
             count: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            env_variables: None,
+            genesis: true,
+            local: true,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: Some(custom_rpc_address),
             safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
-            node_port: None,
-            bootstrap_peers: vec![],
-            rpc_address: Some(custom_rpc_address),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -281,19 +284,20 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
 
     let result = add_node(
         AddNodeServiceOptions {
-            local: true,
-            genesis: true,
+            bootstrap_peers: vec![],
             count: Some(3),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            env_variables: None,
+            genesis: true,
+            local: true,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: Some(custom_rpc_address),
             safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
-            node_port: None,
-            bootstrap_peers: vec![],
-            rpc_address: Some(custom_rpc_address),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -344,20 +348,21 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
         name: "safenode1".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode1")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
 
@@ -375,20 +380,21 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .returning(|| Ok(8083))
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+        metrics_port: None,
         name: "safenode2".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode2")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
 
@@ -406,20 +412,21 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .returning(|| Ok(8085))
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
+        bootstrap_peers: vec![],
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
+        metrics_port: None,
         name: "safenode3".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode3")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
 
@@ -432,19 +439,20 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
 
     add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: Some(3),
             bootstrap_peers: vec![],
+            count: Some(3),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: None,
             rpc_address: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
             safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -544,20 +552,21 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: new_peers.clone(),
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
         name: "safenode1".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode1")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-        bootstrap_peers: new_peers.clone(),
-        env_variables: None,
     }
     .build()?;
     mock_service_control
@@ -569,19 +578,20 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
 
     add_node(
         AddNodeServiceOptions {
+            bootstrap_peers: new_peers.clone(),
+            count: None,
+            env_variables: None,
             local: false,
             genesis: false,
-            count: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
-            bootstrap_peers: new_peers.clone(),
+            metrics_port: None,
             node_port: None,
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -655,20 +665,21 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         .returning(|| Ok(12001))
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: env_variables.clone(),
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
         name: "safenode1".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode1")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-        bootstrap_peers: vec![],
-        env_variables: env_variables.clone(),
     }
     .build()?;
     mock_service_control
@@ -680,19 +691,20 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
 
     add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
             bootstrap_peers: vec![],
+            count: None,
+            env_variables: env_variables.clone(),
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: None,
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: env_variables.clone(),
         },
         &mut node_registry,
         &mock_service_control,
@@ -775,20 +787,21 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         .returning(|| Ok(8083))
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+        metrics_port: None,
         name: "safenode2".to_string(),
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
+        node_port: None,
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode2")
             .join(SAFENODE_FILE_NAME),
-        node_port: None,
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
 
@@ -801,10 +814,12 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
 
     add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: None,
             bootstrap_peers: vec![],
+            count: None,
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: None,
             rpc_address: None,
             safenode_src_path: safenode_download_path.to_path_buf(),
@@ -813,7 +828,6 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -877,20 +891,21 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         .returning(|| Ok(12001))
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
-        local: false,
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: None,
         genesis: false,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
         name: "safenode1".to_string(),
+        node_port: Some(custom_port),
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         safenode_path: node_data_dir
             .to_path_buf()
             .join("safenode1")
             .join(SAFENODE_FILE_NAME),
-        node_port: Some(custom_port),
-        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
         service_user: get_username(),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
-        bootstrap_peers: vec![],
-        env_variables: None,
     }
     .build()?;
 
@@ -903,19 +918,20 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
 
     add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
             bootstrap_peers: vec![],
+            count: None,
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: Some(PortRange::Single(custom_port)),
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -1112,19 +1128,20 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
 
     add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: Some(3),
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
             bootstrap_peers: vec![],
+            count: Some(3),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &mock_service_control,
@@ -1164,19 +1181,20 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
 
     let result = add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: Some(2),
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
             bootstrap_peers: vec![],
+            count: Some(2),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &MockServiceControl::new(),
@@ -1222,19 +1240,20 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
 
     let result = add_node(
         AddNodeServiceOptions {
-            local: false,
-            genesis: false,
-            count: Some(2),
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            service_data_dir_path: node_data_dir.to_path_buf(),
-            service_log_dir_path: node_logs_dir.to_path_buf(),
             bootstrap_peers: vec![],
+            count: Some(2),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: None,
             node_port: Some(PortRange::Single(12000)),
             rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
             user: get_username(),
             version: latest_version.to_string(),
-            env_variables: None,
         },
         &mut node_registry,
         &MockServiceControl::new(),
@@ -1251,6 +1270,198 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             )
         }
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let mut seq = Sequence::new();
+
+    // First service
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15000))
+        .in_sequence(&mut seq);
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:15000"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode1")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode1")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--metrics-server-port"),
+                OsString::from("12000"),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode1".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode1")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    // Second service
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15001))
+        .in_sequence(&mut seq);
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:15001"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode2")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode2")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--metrics-server-port"),
+                OsString::from("12001"),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode2".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode2")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    // Third service
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15002))
+        .in_sequence(&mut seq);
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(ServiceInstallCtx {
+            args: vec![
+                OsString::from("--rpc"),
+                OsString::from("127.0.0.1:15002"),
+                OsString::from("--root-dir"),
+                OsString::from(
+                    node_data_dir
+                        .to_path_buf()
+                        .join("safenode3")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--log-output-dest"),
+                OsString::from(
+                    node_logs_dir
+                        .to_path_buf()
+                        .join("safenode3")
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                OsString::from("--metrics-server-port"),
+                OsString::from("12002"),
+            ],
+            contents: None,
+            environment: None,
+            label: "safenode3".parse()?,
+            program: node_data_dir
+                .to_path_buf()
+                .join("safenode3")
+                .join(SAFENODE_FILE_NAME),
+            username: Some(get_username()),
+            working_directory: None,
+        }))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: Some(3),
+            env_variables: None,
+            genesis: false,
+            local: false,
+            metrics_port: Some(PortRange::Range(12000, 12002)),
+            node_port: None,
+            rpc_address: Some(Ipv4Addr::new(127, 0, 0, 1)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    safenode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 3);
 
     Ok(())
 }
@@ -1336,6 +1547,7 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
 
     Ok(())
 }
+
 #[tokio::test]
 async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_created() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;

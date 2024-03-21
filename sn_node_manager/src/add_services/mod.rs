@@ -112,14 +112,8 @@ pub async fn add_node(
     let target_node_count = current_node_count + options.count.unwrap_or(1);
 
     let mut node_number = current_node_count + 1;
-    let mut port_number = if let Some(port) = options.node_port {
-        match port {
-            PortRange::Single(val) => Some(val),
-            PortRange::Range(start, _) => Some(start),
-        }
-    } else {
-        None
-    };
+    let mut node_port = get_start_port_if_applicable(options.node_port);
+    let mut metrics_port = get_start_port_if_applicable(options.metrics_port);
 
     while node_number <= target_node_count {
         let rpc_free_port = service_control.get_available_port()?;
@@ -148,8 +142,9 @@ pub async fn add_node(
             genesis: options.genesis,
             local: options.local,
             log_dir_path: service_log_dir_path.clone(),
+            metrics_port,
             name: service_name.clone(),
-            node_port: port_number,
+            node_port,
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
@@ -167,21 +162,21 @@ pub async fn add_node(
                 ));
 
                 node_registry.nodes.push(NodeServiceData {
+                    connected_peers: None,
+                    data_dir_path: service_data_dir_path.clone(),
                     genesis: options.genesis,
+                    listen_addr: None,
                     local: options.local,
-                    service_name,
-                    user: options.user.clone(),
+                    log_dir_path: service_log_dir_path.clone(),
                     number: node_number,
                     rpc_socket_addr,
-                    version: options.version.clone(),
-                    status: ServiceStatus::Added,
-                    listen_addr: None,
-                    pid: None,
                     peer_id: None,
-                    log_dir_path: service_log_dir_path.clone(),
-                    data_dir_path: service_data_dir_path.clone(),
+                    pid: None,
                     safenode_path: service_safenode_path,
-                    connected_peers: None,
+                    service_name,
+                    status: ServiceStatus::Added,
+                    user: options.user.clone(),
+                    version: options.version.clone(),
                 });
                 // We save the node registry for each service because it's possible any number of
                 // services could fail to be added.
@@ -193,12 +188,8 @@ pub async fn add_node(
         }
 
         node_number += 1;
-        port_number = if let Some(port) = port_number {
-            let incremented_port = port + 1;
-            Some(incremented_port)
-        } else {
-            None
-        };
+        node_port = increment_port_option(node_port);
+        metrics_port = increment_port_option(metrics_port);
     }
 
     std::fs::remove_file(options.safenode_src_path)?;
@@ -359,4 +350,22 @@ pub fn add_faucet(
             Err(e.into())
         }
     }
+}
+
+fn get_start_port_if_applicable(range: Option<PortRange>) -> Option<u16> {
+    if let Some(port) = range {
+        match port {
+            PortRange::Single(val) => return Some(val),
+            PortRange::Range(start, _) => return Some(start),
+        }
+    }
+    None
+}
+
+fn increment_port_option(port: Option<u16>) -> Option<u16> {
+    if let Some(port) = port {
+        let incremented_port = port + 1;
+        return Some(incremented_port);
+    }
+    None
 }
