@@ -141,10 +141,9 @@ pub enum NetworkEvent {
     TerminateNode,
     /// List of peer nodes that failed to fetch replication copy from.
     FailedToFetchHolders(BTreeSet<PeerId>),
-    /// New peer supposed to be verified.
+    /// A peer in RT that supposed to be verified.
     BadNodeVerification {
         peer_id: PeerId,
-        addrs: HashSet<Multiaddr>,
     },
 }
 
@@ -190,7 +189,7 @@ impl Debug for NetworkEvent {
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 write!(f, "NetworkEvent::FailedToFetchHolders({bad_nodes:?})")
             }
-            NetworkEvent::BadNodeVerification { peer_id, .. } => {
+            NetworkEvent::BadNodeVerification { peer_id } => {
                 write!(f, "NetworkEvent::BadNodeVerification({peer_id:?})")
             }
         }
@@ -311,23 +310,13 @@ impl SwarmDriver {
                                 .kbuckets()
                                 .map(|kbucket| kbucket.num_entries())
                                 .sum();
-                            if total_peers > 100 {
-                                let in_verification =
-                                    self.bad_nodes_ongoing_verifications.contains(&peer_id);
-                                let is_already_bad = self.bad_nodes.contains(&peer_id);
 
-                                if !(in_verification || is_already_bad) {
-                                    let _ = self.bad_nodes_ongoing_verifications.insert(peer_id);
-                                    // In case bad_node verification needs to be carried out,
-                                    // it shall be fired up to `node` level for the further handling
-                                    info!("We now having {total_peers} peers in RT, carry out bad_node verification against {peer_id:?}");
-                                    self.send_event(NetworkEvent::BadNodeVerification {
-                                        peer_id,
-                                        addrs,
-                                    });
-                                } else {
-                                    info!("Peer {peer_id:?} is considered as in verification {in_verification:?} or already bad {is_already_bad:?}");
-                                }
+                            // To reduce the bad_node check resource usage,
+                            // during the connection establish process, only check cached black_list
+                            // The periodical check, which involves network queries shall filter
+                            // out bad_nodes eventually.
+                            if total_peers > 100 && self.bad_nodes.contains(&peer_id) {
+                                info!("Peer {peer_id:?} is considered as bad, blocking it.");
                             } else {
                                 self.remove_bootstrap_from_full(peer_id);
 

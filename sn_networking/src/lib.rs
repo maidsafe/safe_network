@@ -60,7 +60,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     path::PathBuf,
 };
 use tokio::sync::{
@@ -743,12 +743,8 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
     }
 
-    pub fn notify_node_status(&self, peer_id: PeerId, addrs: HashSet<Multiaddr>, is_bad: bool) {
-        self.send_swarm_cmd(SwarmCmd::SendNodeStatus {
-            peer_id,
-            addrs,
-            is_bad,
-        });
+    pub fn notify_node_status(&self, peer_id: PeerId, is_bad: bool) {
+        self.send_swarm_cmd(SwarmCmd::SendNodeStatus { peer_id, is_bad });
     }
 
     // Helper to send SwarmCmd

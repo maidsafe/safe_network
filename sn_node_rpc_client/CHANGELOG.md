@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.5.0...sn_node_rpc_client-v0.5.1) - 2024-03-21
+
+### Added
+- *(protocol)* add rpc to set node log level on the fly
+
 ## [0.5.0](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.4.70...sn_node_rpc_client-v0.5.0) - 2024-03-14
 
 ### Fixed

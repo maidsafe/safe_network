@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.31](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.30...sn_client-v0.104.31) - 2024-03-21
+
+### Added
+- improve parallelisation with buffered streams
+- refactor DAG, improve error management and security
+- dag error recording
+- *(folders)* folders APIs to accept an encryption key for metadata chunks
+- *(protocol)* add rpc to set node log level on the fly
+
+### Other
+- *(cli)* adding automated test for metadata chunk encryption
+- *(node)* reduce bad_nodes check resource usage
+
 ## [0.104.30](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.29...sn_client-v0.104.30) - 2024-03-18
 
 ### Other

@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.6.0...sn-node-manager-v0.6.1) - 2024-03-21
+
+### Added
+- uniform behaviour for all `add` commands
+- *(protocol)* add rpc to set node log level on the fly
+
+### Other
+- run `safenodemand` service as root
+- upgrade `sn-releases` to new minor version
+- remove churn example from node manager
+
 ## [0.6.0](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.5.1...sn-node-manager-v0.6.0) - 2024-03-14
 
 ### Added
