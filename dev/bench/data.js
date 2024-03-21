@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711011062042,
+  "lastUpdate": 1711011065165,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39874,6 +39874,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 46554,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "882c0a2656b18cc47d18e196e2ab87f004f3c3be",
+          "message": "chore: remove Cargo.lock",
+          "timestamp": "2024-03-21T07:59:48Z",
+          "tree_id": "725fa929e4cda5f193aaa652ebb6d8f08b9f7a59",
+          "url": "https://github.com/maidsafe/safe_network/commit/882c0a2656b18cc47d18e196e2ab87f004f3c3be"
+        },
+        "date": 1711011063987,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6364,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37003,
             "unit": "ms"
           },
           {
