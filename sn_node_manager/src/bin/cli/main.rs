@@ -201,19 +201,23 @@ pub enum SubCmd {
         #[clap(long)]
         skip_validation: bool,
     },
-    /// Remove a safenode service.
+    /// Remove safenode service(s).
     ///
-    /// Either a peer ID or the service name must be supplied.
+    /// Either peer ID(s) or service name(s) must be supplied.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "remove")]
     Remove {
         /// The peer ID of the service to remove.
+        ///
+        /// The argument can be used multiple times to remove many services.
         #[clap(long)]
-        peer_id: Option<String>,
+        peer_id: Vec<String>,
         /// The name of the service to remove.
+        ///
+        /// The argument can be used multiple times to remove many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
         /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
         keep_directories: bool,
@@ -267,19 +271,23 @@ pub enum SubCmd {
         #[clap(long)]
         skip_validation: bool,
     },
-    /// Start a safenode service.
+    /// Start safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {
-        /// The peer ID of the service to start
+        /// The peer ID of the service to start.
+        ///
+        /// The argument can be used multiple times to start many services.
         #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to start
+        peer_id: Vec<String>,
+        /// The name of the service to start.
+        ///
+        /// The argument can be used multiple times to start many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
     },
     /// Get the status of services.
     #[clap(name = "status")]
@@ -294,19 +302,23 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "details")]
         json: bool,
     },
-    /// Stop a safenode service.
+    /// Stop safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be stopped.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
     Stop {
-        /// The peer ID of the service to stop
+        /// The peer ID of the service to stop.
+        ///
+        /// The argument can be used multiple times to stop many services.
         #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to stop
+        peer_id: Vec<String>,
+        /// The name of the service to stop.
+        ///
+        /// The argument can be used multiple times to stop many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
     },
     /// Upgrade safenode services.
     ///
@@ -323,18 +335,6 @@ pub enum SubCmd {
         /// Can be useful for testing scenarios.
         #[clap(long)]
         do_not_start: bool,
-        /// Set this flag to force the upgrade command to replace binaries without comparing any
-        /// version numbers.
-        ///
-        /// Required if we want to downgrade, or for testing purposes.
-        #[clap(long)]
-        force: bool,
-        /// The peer ID of the service to upgrade
-        #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to upgrade
-        #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
         /// Provide environment variables for the safenode service.
         ///
         /// Values set when the service was added will be overridden.
@@ -345,6 +345,18 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Set this flag to force the upgrade command to replace binaries without comparing any
+        /// version numbers.
+        ///
+        /// Required if we want to downgrade, or for testing purposes.
+        #[clap(long)]
+        force: bool,
+        /// The peer ID of the service to upgrade
+        #[clap(long)]
+        peer_id: Vec<String>,
+        /// The name of the service to upgrade
+        #[clap(long, conflicts_with = "peer_id")]
+        service_name: Vec<String>,
         /// Provide a binary to upgrade to using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -636,9 +648,9 @@ async fn main() -> Result<()> {
         SubCmd::Kill { keep_directories } => cmd::local::kill(keep_directories, verbosity),
         SubCmd::Remove {
             keep_directories,
-            peer_id,
-            service_name,
-        } => cmd::node::remove(keep_directories, peer_id, service_name, verbosity).await,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
         SubCmd::Run {
             build,
             clean,
@@ -665,23 +677,23 @@ async fn main() -> Result<()> {
             .await
         }
         SubCmd::Start {
-            peer_id,
-            service_name,
-        } => cmd::node::start(peer_id, service_name, verbosity).await,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::start(peer_ids, service_names, verbosity).await,
         SubCmd::Status {
             details,
             fail,
             json,
         } => cmd::node::status(details, fail, json).await,
         SubCmd::Stop {
-            peer_id,
-            service_name,
-        } => cmd::node::stop(peer_id, service_name, verbosity).await,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::stop(peer_ids, service_names, verbosity).await,
         SubCmd::Upgrade {
             do_not_start,
             force,
-            peer_id,
-            service_name,
+            peer_id: peer_ids,
+            service_name: service_names,
             env_variables: provided_env_variable,
             url,
             version,
@@ -689,9 +701,9 @@ async fn main() -> Result<()> {
             cmd::node::upgrade(
                 do_not_start,
                 force,
-                peer_id,
+                peer_ids,
                 provided_env_variable,
-                service_name,
+                service_names,
                 url,
                 version,
                 verbosity,

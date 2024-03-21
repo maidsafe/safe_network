@@ -133,11 +133,13 @@ fn cross_platform_service_install_and_control() {
     assert_eq!(start_status[2].status, "RUNNING");
     assert_eq!(start_status[2].peer_id, peer_ids[2]);
 
-    // Stop one node by peer ID.
+    // Stop two nodes by peer ID.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("stop")
         .arg("--peer-id")
-        .arg(start_status[1].peer_id.clone())
+        .arg(start_status[0].peer_id.clone())
+        .arg("--peer-id")
+        .arg(start_status[2].peer_id.clone())
         .assert()
         .success();
     let output = Command::cargo_bin("safenode-manager")
@@ -145,24 +147,26 @@ fn cross_platform_service_install_and_control() {
         .arg("status")
         .output()
         .expect("Could not retrieve service status");
-    let single_node_stop_status = parse_service_status(&output.stdout);
+    let stop_status = parse_service_status(&output.stdout);
 
     // Peer IDs again should be retained after restart.
-    assert_eq!(single_node_stop_status[0].name, "safenode1");
-    assert_eq!(single_node_stop_status[0].status, "RUNNING");
-    assert_eq!(single_node_stop_status[0].peer_id, peer_ids[0]);
-    assert_eq!(single_node_stop_status[1].name, "safenode2");
-    assert_eq!(single_node_stop_status[1].status, "STOPPED");
-    assert_eq!(single_node_stop_status[1].peer_id, peer_ids[1]);
-    assert_eq!(single_node_stop_status[2].name, "safenode3");
-    assert_eq!(single_node_stop_status[2].status, "RUNNING");
-    assert_eq!(single_node_stop_status[2].peer_id, peer_ids[2]);
+    assert_eq!(stop_status[0].name, "safenode1");
+    assert_eq!(stop_status[0].status, "STOPPED");
+    assert_eq!(stop_status[0].peer_id, peer_ids[0]);
+    assert_eq!(stop_status[1].name, "safenode2");
+    assert_eq!(stop_status[1].status, "RUNNING");
+    assert_eq!(stop_status[1].peer_id, peer_ids[1]);
+    assert_eq!(stop_status[2].name, "safenode3");
+    assert_eq!(stop_status[2].status, "STOPPED");
+    assert_eq!(stop_status[2].peer_id, peer_ids[2]);
 
-    // Now restart the single stopped node.
+    // Now restart the stopped nodes by service name.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("start")
-        .arg("--peer-id")
-        .arg(single_node_stop_status[1].peer_id.clone())
+        .arg("--service-name")
+        .arg(stop_status[0].name.clone())
+        .arg("--service-name")
+        .arg(stop_status[2].name.clone())
         .assert()
         .success();
     let output = Command::cargo_bin("safenode-manager")
@@ -172,7 +176,7 @@ fn cross_platform_service_install_and_control() {
         .expect("Could not retrieve service status");
     let single_node_start_status = parse_service_status(&output.stdout);
 
-    // The individually stopped node should now be running again.
+    // The stopped nodes should now be running again.
     assert_eq!(single_node_start_status[0].name, "safenode1");
     assert_eq!(single_node_start_status[0].status, "RUNNING");
     assert_eq!(single_node_start_status[0].peer_id, peer_ids[0]);
@@ -204,11 +208,13 @@ fn cross_platform_service_install_and_control() {
     assert_eq!(stop_status[2].status, "STOPPED");
     assert_eq!(stop_status[2].peer_id, peer_ids[2]);
 
-    // Remove a single node.
+    // Remove a two nodes.
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("remove")
-        .arg("--peer-id")
-        .arg(single_node_stop_status[0].peer_id.clone())
+        .arg("--service-name")
+        .arg(stop_status[0].name.clone())
+        .arg("--service-name")
+        .arg(stop_status[1].name.clone())
         .assert()
         .success();
     let output = Command::cargo_bin("safenode-manager")
@@ -217,7 +223,7 @@ fn cross_platform_service_install_and_control() {
         .output()
         .expect("Could not retrieve service status");
     let remove_status = parse_service_status(&output.stdout);
-    assert_eq!(remove_status.len(), 2);
+    assert_eq!(remove_status.len(), 1);
 }
 
 fn parse_service_status(output: &[u8]) -> Vec<ServiceStatus> {
