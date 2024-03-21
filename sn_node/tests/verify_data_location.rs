@@ -354,7 +354,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut uploader = Uploader::new(files_api.clone())
             .set_show_holders(true)
             .set_verify_store(false);
-        uploader.insert_chunks(chunks.into_iter());
+        uploader.insert_chunk_paths(chunks.into_iter());
         let _upload_stats = uploader.start_upload().await?;
 
         uploaded_chunks_count += 1;

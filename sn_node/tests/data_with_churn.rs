@@ -410,7 +410,7 @@ fn store_chunks_task(
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
             let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
-            uploader.insert_chunks(chunks.into_iter());
+            uploader.insert_chunk_paths(chunks.into_iter());
 
             let cost = match uploader.start_upload().await {
                 Ok(stats) => stats
