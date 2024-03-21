@@ -491,7 +491,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -508,7 +508,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -567,7 +567,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -586,7 +586,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -621,7 +621,7 @@ mod tests {
             .times(1)
             .returning(|_| true);
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -640,7 +640,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -704,7 +704,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -723,7 +723,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -762,7 +762,7 @@ mod tests {
             .times(1)
             .returning(|_| true);
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -781,7 +781,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -801,7 +801,7 @@ mod tests {
 
     #[tokio::test]
     async fn stop_should_not_return_error_for_attempt_to_stop_installed_service() -> Result<()> {
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -818,7 +818,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(MockServiceControl::new()),
@@ -838,7 +838,7 @@ mod tests {
     #[tokio::test]
     async fn stop_should_return_ok_when_attempting_to_stop_service_that_was_already_stopped(
     ) -> Result<()> {
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -857,7 +857,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(MockServiceControl::new()),
@@ -878,7 +878,7 @@ mod tests {
 
     #[tokio::test]
     async fn stop_should_return_ok_when_attempting_to_stop_a_removed_service() -> Result<()> {
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -895,7 +895,7 @@ mod tests {
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(MockServiceControl::new()),
@@ -986,7 +986,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -1005,7 +1005,7 @@ mod tests {
             user: "safe".to_string(),
             version: current_version.to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1063,7 +1063,7 @@ mod tests {
         let mock_service_control = MockServiceControl::new();
         let mock_rpc_client = MockRpcClient::new();
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -1082,7 +1082,7 @@ mod tests {
             user: "safe".to_string(),
             version: current_version.to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1177,7 +1177,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -1196,7 +1196,7 @@ mod tests {
             user: "safe".to_string(),
             version: current_version.to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1309,7 +1309,7 @@ mod tests {
                 })
             });
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: false,
@@ -1328,7 +1328,7 @@ mod tests {
             user: "safe".to_string(),
             version: current_version.to_string(),
         };
-        let service = NodeService::new(service_data, Box::new(mock_rpc_client));
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1390,7 +1390,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(()));
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             genesis: false,
             local: false,
             version: "0.98.1".to_string(),
@@ -1407,7 +1407,7 @@ mod tests {
             safenode_path: safenode_bin.to_path_buf(),
             connected_peers: None,
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1435,7 +1435,7 @@ mod tests {
             .times(1)
             .returning(|_| true);
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             genesis: false,
             local: false,
             version: "0.98.1".to_string(),
@@ -1454,7 +1454,7 @@ mod tests {
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1488,7 +1488,7 @@ mod tests {
             .times(1)
             .returning(|_| false);
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             genesis: false,
             local: false,
             version: "0.98.1".to_string(),
@@ -1507,7 +1507,7 @@ mod tests {
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             connected_peers: None,
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1543,7 +1543,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(()));
 
-        let service_data = NodeServiceData {
+        let mut service_data = NodeServiceData {
             genesis: false,
             local: false,
             version: "0.98.1".to_string(),
@@ -1560,7 +1560,7 @@ mod tests {
             safenode_path: safenode_bin.to_path_buf(),
             connected_peers: None,
         };
-        let service = NodeService::new(service_data, Box::new(MockRpcClient::new()));
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),

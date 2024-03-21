@@ -88,14 +88,14 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(faucet) = node_registry.faucet.clone() {
+    if let Some(faucet) = &mut node_registry.faucet {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Start Faucet Service                ");
             println!("=================================================");
         }
 
-        let service = FaucetService::new(faucet.clone(), Box::new(ServiceController {}));
+        let service = FaucetService::new(faucet, Box::new(ServiceController {}));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(ServiceController {}),
@@ -103,7 +103,6 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         );
         service_manager.start().await?;
 
-        node_registry.faucet = Some(service_manager.service.service_data);
         node_registry.save()?;
         return Ok(());
     }
@@ -117,19 +116,18 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(faucet) = node_registry.faucet.clone() {
+    if let Some(faucet) = &mut node_registry.faucet {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Stop Faucet Service                 ");
             println!("=================================================");
         }
 
-        let service = FaucetService::new(faucet.clone(), Box::new(ServiceController {}));
+        let service = FaucetService::new(faucet, Box::new(ServiceController {}));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.stop().await?;
 
-        node_registry.faucet = Some(service_manager.service.service_data);
         node_registry.save()?;
 
         return Ok(());
@@ -164,7 +162,7 @@ pub async fn upgrade(
 
     let (upgrade_bin_path, target_version) =
         download_and_get_upgrade_bin_path(ReleaseType::Faucet, url, version).await?;
-    let faucet = node_registry.faucet.clone().unwrap();
+    let faucet = node_registry.faucet.as_mut().unwrap();
 
     if !force {
         let current_version = Version::parse(&faucet.version)?;
@@ -190,13 +188,12 @@ pub async fn upgrade(
         target_bin_path: upgrade_bin_path.clone(),
         target_version: target_version.clone(),
     };
-    let service = FaucetService::new(faucet.clone(), Box::new(ServiceController {}));
+    let service = FaucetService::new(faucet, Box::new(ServiceController {}));
     let mut service_manager =
         ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
     match service_manager.upgrade(options).await {
         Ok(upgrade_result) => {
-            node_registry.faucet = Some(service_manager.service.service_data);
             print_upgrade_summary(vec![("faucet".to_string(), upgrade_result)]);
             node_registry.save()?;
             Ok(())
