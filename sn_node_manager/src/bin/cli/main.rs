@@ -76,13 +76,18 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
-        /// Provide a path for the safenode binary to be used by the service.
+        /// Specify a port for the open metrics server.
         ///
-        /// Useful for creating the service using a custom built binary.
-        #[clap(long)]
-        path: Option<PathBuf>,
-        #[command(flatten)]
-        peers: PeersArgs,
+        /// This argument should only be used with a safenode binary that has the open-metrics
+        /// feature enabled.
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = parse_port_range)]
+        metrics_port: Option<PortRange>,
         /// Specify a port for the safenode service(s).
         ///
         /// If not used, ports will be selected at random.
@@ -91,14 +96,30 @@ pub enum SubCmd {
         /// range. For example, '12000-12004'. The length of the range must match the number of
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = parse_port_range)]
-        port: Option<PortRange>,
+        node_port: Option<PortRange>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
         #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
         /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
         ///
         /// If not set, the RPC server is run locally.
+        #[clap(long)]
         rpc_address: Option<Ipv4Addr>,
+        /// Specify a port for the RPC service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = parse_port_range)]
+        rpc_port: Option<PortRange>,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -116,6 +137,8 @@ pub enum SubCmd {
         #[clap(long)]
         user: Option<String>,
         /// Provide a specific version of safenode to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The binary will be downloaded.
         #[clap(long)]
@@ -156,6 +179,8 @@ pub enum SubCmd {
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long)]
         faucet_version: Option<String>,
@@ -171,6 +196,8 @@ pub enum SubCmd {
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long)]
         node_version: Option<String>,
@@ -180,19 +207,23 @@ pub enum SubCmd {
         #[clap(long)]
         skip_validation: bool,
     },
-    /// Remove a safenode service.
+    /// Remove safenode service(s).
     ///
-    /// Either a peer ID or the service name must be supplied.
+    /// Either peer ID(s) or service name(s) must be supplied.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "remove")]
     Remove {
         /// The peer ID of the service to remove.
+        ///
+        /// The argument can be used multiple times to remove many services.
         #[clap(long)]
-        peer_id: Option<String>,
+        peer_id: Vec<String>,
         /// The name of the service to remove.
+        ///
+        /// The argument can be used multiple times to remove many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
         /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
         keep_directories: bool,
@@ -224,6 +255,8 @@ pub enum SubCmd {
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         faucet_version: Option<String>,
@@ -239,6 +272,8 @@ pub enum SubCmd {
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         node_version: Option<String>,
@@ -246,19 +281,28 @@ pub enum SubCmd {
         #[clap(long)]
         skip_validation: bool,
     },
-    /// Start a safenode service.
+    /// Start safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "start")]
     Start {
-        /// The peer ID of the service to start
+        /// An interval applied between launching each service.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
+        /// The peer ID of the service to start.
+        ///
+        /// The argument can be used multiple times to start many services.
         #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to start
+        peer_id: Vec<String>,
+        /// The name of the service to start.
+        ///
+        /// The argument can be used multiple times to start many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
     },
     /// Get the status of services.
     #[clap(name = "status")]
@@ -273,19 +317,23 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "details")]
         json: bool,
     },
-    /// Stop a safenode service.
+    /// Stop safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be stopped.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "stop")]
     Stop {
-        /// The peer ID of the service to stop
+        /// The peer ID of the service to stop.
+        ///
+        /// The argument can be used multiple times to stop many services.
         #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to stop
+        peer_id: Vec<String>,
+        /// The name of the service to stop.
+        ///
+        /// The argument can be used multiple times to stop many services.
         #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
+        service_name: Vec<String>,
     },
     /// Upgrade safenode services.
     ///
@@ -302,18 +350,6 @@ pub enum SubCmd {
         /// Can be useful for testing scenarios.
         #[clap(long)]
         do_not_start: bool,
-        /// Set this flag to force the upgrade command to replace binaries without comparing any
-        /// version numbers.
-        ///
-        /// Required if we want to downgrade, or for testing purposes.
-        #[clap(long)]
-        force: bool,
-        /// The peer ID of the service to upgrade
-        #[clap(long)]
-        peer_id: Option<String>,
-        /// The name of the service to upgrade
-        #[clap(long, conflicts_with = "peer_id")]
-        service_name: Option<String>,
         /// Provide environment variables for the safenode service.
         ///
         /// Values set when the service was added will be overridden.
@@ -324,6 +360,18 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Set this flag to force the upgrade command to replace binaries without comparing any
+        /// version numbers.
+        ///
+        /// Required if we want to downgrade, or for testing purposes.
+        #[clap(long)]
+        force: bool,
+        /// The peer ID of the service to upgrade
+        #[clap(long)]
+        peer_id: Vec<String>,
+        /// The name of the service to upgrade
+        #[clap(long, conflicts_with = "peer_id")]
+        service_name: Vec<String>,
         /// Provide a binary to upgrade to using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -332,6 +380,8 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Upgrade to a specific version rather than the latest version.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         #[clap(long)]
         version: Option<String>,
     },
@@ -380,6 +430,8 @@ pub enum DaemonSubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Provide a specific version of the daemon to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The binary will be downloaded.
         #[clap(long)]
@@ -441,6 +493,8 @@ pub enum FaucetSubCmd {
         url: Option<String>,
         /// Provide a specific version of the faucet to be installed.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
@@ -491,6 +545,8 @@ pub enum FaucetSubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Upgrade to a specific version rather than the latest version.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         #[clap(long)]
         version: Option<String>,
     },
@@ -509,10 +565,12 @@ async fn main() -> Result<()> {
             env_variables,
             local,
             log_dir_path,
+            metrics_port,
+            node_port,
             path,
             peers,
-            port,
             rpc_address,
+            rpc_port,
             url,
             user,
             version,
@@ -523,9 +581,11 @@ async fn main() -> Result<()> {
                 env_variables,
                 local,
                 log_dir_path,
+                metrics_port,
+                node_port,
                 peers,
-                port,
                 rpc_address,
+                rpc_port,
                 path,
                 url,
                 user,
@@ -611,9 +671,9 @@ async fn main() -> Result<()> {
         SubCmd::Kill { keep_directories } => cmd::local::kill(keep_directories, verbosity),
         SubCmd::Remove {
             keep_directories,
-            peer_id,
-            service_name,
-        } => cmd::node::remove(keep_directories, peer_id, service_name, verbosity).await,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
         SubCmd::Run {
             build,
             clean,
@@ -640,23 +700,24 @@ async fn main() -> Result<()> {
             .await
         }
         SubCmd::Start {
-            peer_id,
-            service_name,
-        } => cmd::node::start(peer_id, service_name, verbosity).await,
+            interval,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::start(interval, peer_ids, service_names, verbosity).await,
         SubCmd::Status {
             details,
             fail,
             json,
         } => cmd::node::status(details, fail, json).await,
         SubCmd::Stop {
-            peer_id,
-            service_name,
-        } => cmd::node::stop(peer_id, service_name, verbosity).await,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::stop(peer_ids, service_names, verbosity).await,
         SubCmd::Upgrade {
             do_not_start,
             force,
-            peer_id,
-            service_name,
+            peer_id: peer_ids,
+            service_name: service_names,
             env_variables: provided_env_variable,
             url,
             version,
@@ -664,9 +725,9 @@ async fn main() -> Result<()> {
             cmd::node::upgrade(
                 do_not_start,
                 force,
-                peer_id,
+                peer_ids,
                 provided_env_variable,
-                service_name,
+                service_names,
                 url,
                 version,
                 verbosity,

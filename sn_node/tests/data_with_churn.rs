@@ -349,12 +349,7 @@ fn create_registers_task(
             sleep(delay).await;
 
             match client
-                .create_and_pay_for_register(
-                    meta,
-                    &mut wallet_client,
-                    true,
-                    Permissions::new_owner_only(),
-                )
+                .create_and_pay_for_register(meta, &mut wallet_client, true, Permissions::default())
                 .await
             {
                 Ok(_) => content

@@ -15,7 +15,10 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Result};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::{control::ServiceController, DaemonService, NodeRegistry};
+use sn_service_management::{
+    control::{ServiceControl, ServiceController},
+    DaemonService, NodeRegistry,
+};
 use std::{net::Ipv4Addr, path::PathBuf};
 
 pub async fn add(
@@ -36,6 +39,10 @@ pub async fn add(
         println!("              Add Daemon Service                 ");
         println!("=================================================");
     }
+
+    let service_user = "safe";
+    let service_manager = ServiceController {};
+    service_manager.create_service_user(service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
@@ -79,14 +86,14 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(daemon) = node_registry.daemon.clone() {
+    if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Start Daemon Service                ");
             println!("=================================================");
         }
 
-        let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
+        let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.start().await?;
@@ -100,7 +107,6 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
                 .map_or("-".to_string(), |e| e.to_string())
         );
 
-        node_registry.daemon = Some(service_manager.service.service_data);
         node_registry.save()?;
         return Ok(());
     }
@@ -114,19 +120,18 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    if let Some(daemon) = node_registry.daemon.clone() {
+    if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
             println!("=================================================");
             println!("             Stop Daemon Service                 ");
             println!("=================================================");
         }
 
-        let service = DaemonService::new(daemon.clone(), Box::new(ServiceController {}));
+        let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         service_manager.stop().await?;
 
-        node_registry.daemon = Some(service_manager.service.service_data);
         node_registry.save()?;
 
         return Ok(());
