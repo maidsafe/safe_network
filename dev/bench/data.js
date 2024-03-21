@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711037984844,
+  "lastUpdate": 1711038090705,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2c390e3082c24858553a06a3959dbd24a3391506",
-          "message": "chore: using libp2p newly exposed API to avoid hash work",
-          "timestamp": "2023-11-06T12:39:53Z",
-          "tree_id": "975e06995343e1f036e280be1c480e2a5ba89224",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c390e3082c24858553a06a3959dbd24a3391506"
-        },
-        "date": 1699277022210,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 60,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2fae77fdf37757f8b06f866334eddbe4dcfdafa7",
+          "message": "fix(manager): store exclusive reference to service data instead of cloning",
+          "timestamp": "2024-03-21T15:28:18Z",
+          "tree_id": "a64e59d7d0a8b56c1e85c7da52013948161342c5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2fae77fdf37757f8b06f866334eddbe4dcfdafa7"
+        },
+        "date": 1711038090391,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
