@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711038094003,
+  "lastUpdate": 1711053173134,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "293741+willief@users.noreply.github.com",
-            "name": "Southside",
-            "username": "willief"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "25d24fd367a6a68e553be5ee8eb9b0537792fa04",
-          "message": "chore(cli): make file upload output cut n paste friendly\n\nnaive attempt to address issue from https://safenetforum.org/t/heapnet2-testnet-12-10-23/38749/460?u=southside",
-          "timestamp": "2023-11-03T08:33:17Z",
-          "tree_id": "3e8f204c9236d6c2d85f235b2cfa0541ac10bb5d",
-          "url": "https://github.com/maidsafe/safe_network/commit/25d24fd367a6a68e553be5ee8eb9b0537792fa04"
-        },
-        "date": 1699005411914,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.18604620540277553,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.7504699032721438,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 13.650957512767098,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.13967577341231,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "777a132479c24acd218fc0b8adbdb8ccdb5a797a",
+          "message": "docs: clarify version number usage\n\nThis was also requested by the community. People were attempting to use a 'v' prefix.",
+          "timestamp": "2024-03-21T19:43:45Z",
+          "tree_id": "8aa4a0b2e9a30468205a9987397a1d02837d394a",
+          "url": "https://github.com/maidsafe/safe_network/commit/777a132479c24acd218fc0b8adbdb8ccdb5a797a"
+        },
+        "date": 1711053169443,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2726753585986383,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.847205052616224,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.286452399830814,
             "unit": "MiB/s"
           }
         ]
