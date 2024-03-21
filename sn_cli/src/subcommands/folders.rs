@@ -205,12 +205,12 @@ fn status(client: &Client, root_dir: &Path, path: Option<PathBuf>) -> Result<()>
 async fn download(
     client: &Client,
     root_dir: &Path,
-    folder_addr: &String,
+    folder_addr: &str,
     path: Option<PathBuf>,
     batch_size: usize,
     retry_strategy: RetryStrategy,
 ) -> Result<()> {
-    let address = RegisterAddress::from_hex(&folder_addr)
+    let address = RegisterAddress::from_hex(folder_addr)
         .map_err(|err| eyre!("Failed to parse Folder address: {err}"))?;
 
     let addr_hex = address.to_hex();
