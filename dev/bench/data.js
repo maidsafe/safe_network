@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711011059143,
+  "lastUpdate": 1711011062042,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "4798b507d1ad5259ce60bd3c5d09528cc9874b9f",
-          "message": "feat(deps): upgrade libp2p to 0.53",
-          "timestamp": "2023-11-06T10:54:05Z",
-          "tree_id": "6b224ec80bcfc36e924a7846ec94fb0fc4c48d14",
-          "url": "https://github.com/maidsafe/safe_network/commit/4798b507d1ad5259ce60bd3c5d09528cc9874b9f"
-        },
-        "date": 1699271711205,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 173,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 40,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "882c0a2656b18cc47d18e196e2ab87f004f3c3be",
+          "message": "chore: remove Cargo.lock",
+          "timestamp": "2024-03-21T07:59:48Z",
+          "tree_id": "725fa929e4cda5f193aaa652ebb6d8f08b9f7a59",
+          "url": "https://github.com/maidsafe/safe_network/commit/882c0a2656b18cc47d18e196e2ab87f004f3c3be"
+        },
+        "date": 1711011060887,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
