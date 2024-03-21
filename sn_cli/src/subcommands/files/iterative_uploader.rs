@@ -91,7 +91,7 @@ impl IterativeUploader {
         chunks_to_upload: Vec<(XorName, PathBuf)>,
         mut uploader: Uploader,
     ) -> Result<UploadStats> {
-        uploader.insert_chunks(chunks_to_upload.into_iter());
+        uploader.insert_chunk_paths(chunks_to_upload.into_iter());
         match uploader.start_upload().await {
             Ok(stats) => Ok(stats),
             Err(ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(

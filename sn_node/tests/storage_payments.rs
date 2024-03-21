@@ -198,7 +198,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         .await?;
 
     let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
-    uploader.insert_chunks(chunks.into_iter());
+    uploader.insert_chunk_paths(chunks.into_iter());
     let _upload_stats = uploader.start_upload().await?;
 
     let mut files_download = FilesDownload::new(files_api);

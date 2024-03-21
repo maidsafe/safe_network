@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#![allow(dead_code)]
-
 use crate::{Client, ClientRegister, Error as ClientError, FilesApi, Result, BATCH_SIZE};
 use bytes::Bytes;
+use itertools::Either;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     messages::RegisterCmd,
@@ -70,7 +69,8 @@ pub enum UploadEvent {
 enum UploadItem {
     Chunk {
         address: ChunkAddress,
-        chunk_path: PathBuf,
+        // Either the actual chunk or the path to the chunk.
+        chunk: Either<Chunk, PathBuf>,
     },
     Register {
         address: RegisterAddress,
@@ -211,7 +211,7 @@ impl Uploader {
             verify_store: true,
             show_holders: false,
             retry_strategy: RetryStrategy::Balanced,
-            max_repayments_for_failed_data: 1,
+            max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
             api: files_api,
 
             all_upload_items: Default::default(),
@@ -296,12 +296,24 @@ impl Uploader {
         rx
     }
 
-    /// Insert a list of chunks to upload.
-    pub fn insert_chunks(&mut self, chunks: impl Iterator<Item = (XorName, PathBuf)>) {
+    /// Insert a list of chunk paths to upload to upload.
+    pub fn insert_chunk_paths(&mut self, chunks: impl Iterator<Item = (XorName, PathBuf)>) {
         self.all_upload_items.extend(chunks.map(|(xorname, path)| {
             let item = UploadItem::Chunk {
                 address: ChunkAddress::new(xorname),
-                chunk_path: path,
+                chunk: Either::Right(path),
+            };
+            (xorname, item)
+        }));
+    }
+
+    /// Insert a list of chunks to upload to upload.
+    pub fn insert_chunks(&mut self, chunks: impl Iterator<Item = Chunk>) {
+        self.all_upload_items.extend(chunks.map(|chunk| {
+            let xorname = *chunk.name();
+            let item = UploadItem::Chunk {
+                address: *chunk.address(),
+                chunk: Either::Left(chunk),
             };
             (xorname, item)
         }));
@@ -1042,22 +1054,16 @@ impl Uploader {
         retry_strategy: RetryStrategy,
     ) -> Result<()> {
         match upload_item {
-            UploadItem::Chunk {
-                address,
-                chunk_path,
-            } => {
-                let bytes = match std::fs::read(&chunk_path) {
-                    Ok(bytes) => Bytes::from(bytes),
-                    Err(error) => {
-                        warn!("Chunk {address:?} could not be read from the system from {chunk_path:?}. 
-                    Normally this happens if it has been uploaded, but the cleanup process was interrupted. Ignoring error: {error}");
-
-                        return Ok(());
+            UploadItem::Chunk { address, chunk } => {
+                let chunk = match chunk {
+                    Either::Left(chunk) => chunk,
+                    Either::Right(path) => {
+                        let bytes = std::fs::read(path)?;
+                        Chunk::new(Bytes::from(bytes))
                     }
                 };
 
                 trace!("Client upload started for chunk: {:?}", address.xorname());
-                let chunk = Chunk::new(bytes);
                 files_api
                     .get_local_payment_and_upload_chunk(chunk, verify_store, Some(retry_strategy))
                     .await?;
