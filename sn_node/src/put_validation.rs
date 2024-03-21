@@ -600,7 +600,7 @@ impl Node {
 
         // merge the two registers
         let mut merged_register = local_register.clone();
-        merged_register.verified_merge(register.to_owned())?;
+        merged_register.verified_merge(register)?;
         if merged_register == local_register {
             trace!("Register with addr {reg_addr:?} is the same as the local version");
             Ok(None)
