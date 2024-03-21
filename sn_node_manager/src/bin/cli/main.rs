@@ -138,6 +138,8 @@ pub enum SubCmd {
         user: Option<String>,
         /// Provide a specific version of safenode to be installed.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
@@ -177,6 +179,8 @@ pub enum SubCmd {
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long)]
         faucet_version: Option<String>,
@@ -191,6 +195,8 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "node_version")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long)]
@@ -249,6 +255,8 @@ pub enum SubCmd {
         faucet_path: Option<PathBuf>,
         /// The version of the faucet to use.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         faucet_version: Option<String>,
@@ -263,6 +271,8 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
         node_path: Option<PathBuf>,
         /// The version of safenode to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
@@ -370,6 +380,8 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Upgrade to a specific version rather than the latest version.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         #[clap(long)]
         version: Option<String>,
     },
@@ -418,6 +430,8 @@ pub enum DaemonSubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Provide a specific version of the daemon to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The binary will be downloaded.
         #[clap(long)]
@@ -479,6 +493,8 @@ pub enum FaucetSubCmd {
         url: Option<String>,
         /// Provide a specific version of the faucet to be installed.
         ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
         /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
@@ -529,6 +545,8 @@ pub enum FaucetSubCmd {
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
         /// Upgrade to a specific version rather than the latest version.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         #[clap(long)]
         version: Option<String>,
     },
