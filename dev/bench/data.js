@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711038092261,
+  "lastUpdate": 1711038094003,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -39913,6 +39913,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37003,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2fae77fdf37757f8b06f866334eddbe4dcfdafa7",
+          "message": "fix(manager): store exclusive reference to service data instead of cloning",
+          "timestamp": "2024-03-21T15:28:18Z",
+          "tree_id": "a64e59d7d0a8b56c1e85c7da52013948161342c5",
+          "url": "https://github.com/maidsafe/safe_network/commit/2fae77fdf37757f8b06f866334eddbe4dcfdafa7"
+        },
+        "date": 1711038093676,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6180,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33707,
             "unit": "ms"
           },
           {
