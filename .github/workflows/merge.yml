@@ -426,9 +426,9 @@ jobs:
       # (Folders) Upload and download.
       - name: Run basic upload and download folder procedure via Acc Pac
         run: |
-          cargo run --bin safe --release -- --log-output-dest=data-dir folders upload "./resources/testing/test_folders/Test_Folder_001"
+          cargo run --bin safe --release -- --log-output-dest=data-dir folders upload "./resources/testing/test_folders/test_folder_001"
           # todo: how do I find the network address and dir path for this test?
-          #cargo run --bin safe --release -- --log-output-dest=data-dir folders download <network address> <dir path>
+          cargo run --bin safe --release -- --log-output-dest=data-dir folders download <network address> <dir path>
           exit 1
         env:
           SN_LOG: "all"
