@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711053277648,
+  "lastUpdate": 1711053279662,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "d38477ff07d4eaefb4d5a045e1582a642d4aadc5",
-          "message": "test(protocol): use exposed hashed_bytes method",
-          "timestamp": "2023-11-06T15:45:52Z",
-          "tree_id": "667f121b71e6a59453bcb78d0e2c5654f1b0d945",
-          "url": "https://github.com/maidsafe/safe_network/commit/d38477ff07d4eaefb4d5a045e1582a642d4aadc5"
-        },
-        "date": 1699288179513,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 192,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "777a132479c24acd218fc0b8adbdb8ccdb5a797a",
+          "message": "docs: clarify version number usage\n\nThis was also requested by the community. People were attempting to use a 'v' prefix.",
+          "timestamp": "2024-03-21T19:43:45Z",
+          "tree_id": "8aa4a0b2e9a30468205a9987397a1d02837d394a",
+          "url": "https://github.com/maidsafe/safe_network/commit/777a132479c24acd218fc0b8adbdb8ccdb5a797a"
+        },
+        "date": 1711053279028,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
