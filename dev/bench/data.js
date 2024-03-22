@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711143533979,
+  "lastUpdate": 1711143535666,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40069,6 +40069,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36402,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "859fa367839ec88a59692aa9e0ea245270379796",
+          "message": "fix: attach binaries to node manager release\n\nThe crate name was specified as `sn_node_manager` rather than `sn-node-manager`.\n\nAlso disable the `sn_service_management` crate from being released on Github. At the same time I\narranged the crates in the config file alphabetically, just because it makes them a bit easier to\nfind.",
+          "timestamp": "2024-03-22T20:45:03Z",
+          "tree_id": "f755a9c36ecd60467aa7f1fccde5d934267ee790",
+          "url": "https://github.com/maidsafe/safe_network/commit/859fa367839ec88a59692aa9e0ea245270379796"
+        },
+        "date": 1711143535301,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6559,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36892,
             "unit": "ms"
           },
           {
