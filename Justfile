@@ -216,7 +216,7 @@ upload-github-release-assets:
   binary_crates=(
     "sn_cli"
     "sn_node"
-    "sn_node_manager"
+    "sn-node-manager"
     "sn_faucet"
     "sn_node_rpc_client"
   )
