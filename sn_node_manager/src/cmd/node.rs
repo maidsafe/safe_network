@@ -16,7 +16,7 @@ use crate::{
     },
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    status_report, ServiceManager, VerbosityLevel,
+    refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -122,6 +122,8 @@ pub async fn remove(
     println!("=================================================");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
@@ -164,6 +166,8 @@ pub async fn start(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
@@ -246,6 +250,8 @@ pub async fn stop(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
@@ -295,6 +301,8 @@ pub async fn upgrade(
         download_and_get_upgrade_bin_path(ReleaseType::Safenode, url, version).await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     if !force {
         let node_versions = node_registry
             .nodes
