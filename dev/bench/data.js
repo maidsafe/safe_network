@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711143532115,
+  "lastUpdate": 1711143533979,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20407,40 +20407,6 @@ window.BENCHMARK_DATA = {
         "commit": {
           "author": {
             "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "92c30a4a06d00b12c98a5b49a56e6f5b0747616d",
-          "message": "chore: change extension to small letters\n\n- causes error with the release flow",
-          "timestamp": "2023-11-07T11:26:16+01:00",
-          "tree_id": "3d8e206d9345b01cc5791b020255829f11ddda97",
-          "url": "https://github.com/maidsafe/safe_network/commit/92c30a4a06d00b12c98a5b49a56e6f5b0747616d"
-        },
-        "date": 1699354438042,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 157,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 37,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
           },
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "859fa367839ec88a59692aa9e0ea245270379796",
+          "message": "fix: attach binaries to node manager release\n\nThe crate name was specified as `sn_node_manager` rather than `sn-node-manager`.\n\nAlso disable the `sn_service_management` crate from being released on Github. At the same time I\narranged the crates in the config file alphabetically, just because it makes them a bit easier to\nfind.",
+          "timestamp": "2024-03-22T20:45:03Z",
+          "tree_id": "f755a9c36ecd60467aa7f1fccde5d934267ee790",
+          "url": "https://github.com/maidsafe/safe_network/commit/859fa367839ec88a59692aa9e0ea245270379796"
+        },
+        "date": 1711143533631,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
             "unit": "MB"
           },
           {
