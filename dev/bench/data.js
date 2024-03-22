@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711073623343,
+  "lastUpdate": 1711143422837,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman+github@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "d38477ff07d4eaefb4d5a045e1582a642d4aadc5",
-          "message": "test(protocol): use exposed hashed_bytes method",
-          "timestamp": "2023-11-06T15:45:52Z",
-          "tree_id": "667f121b71e6a59453bcb78d0e2c5654f1b0d945",
-          "url": "https://github.com/maidsafe/safe_network/commit/d38477ff07d4eaefb4d5a045e1582a642d4aadc5"
-        },
-        "date": 1699288022083,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.28195679012560687,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6059521310043812,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 93.20609727090653,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.5171704210816,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "859fa367839ec88a59692aa9e0ea245270379796",
+          "message": "fix: attach binaries to node manager release\n\nThe crate name was specified as `sn_node_manager` rather than `sn-node-manager`.\n\nAlso disable the `sn_service_management` crate from being released on Github. At the same time I\narranged the crates in the config file alphabetically, just because it makes them a bit easier to\nfind.",
+          "timestamp": "2024-03-22T20:45:03Z",
+          "tree_id": "f755a9c36ecd60467aa7f1fccde5d934267ee790",
+          "url": "https://github.com/maidsafe/safe_network/commit/859fa367839ec88a59692aa9e0ea245270379796"
+        },
+        "date": 1711143419554,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2967974545272734,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.817682808018521,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.79417001294233,
             "unit": "MiB/s"
           }
         ]
