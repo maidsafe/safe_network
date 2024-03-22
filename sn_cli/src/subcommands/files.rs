@@ -6,33 +6,23 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod chunk_manager;
-mod estimate;
+use autonomi::{
+    chunks_to_upload_with_iter, download_file, download_files, ChunkManager, Estimator,
+    FilesUploadOptions, IterativeUploader, UploadedFile, UPLOADED_FILES,
+};
 
-pub(crate) mod download;
-pub(crate) mod iterative_uploader;
-pub(crate) mod upload;
-
-pub(crate) use chunk_manager::ChunkManager;
-
-use crate::subcommands::files::iterative_uploader::IterativeUploader;
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre},
     Help, Result,
 };
-use indicatif::{ProgressBar, ProgressStyle};
-use rand::prelude::SliceRandom;
-use rand::thread_rng;
 use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
-use std::time::Duration;
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
 };
-use upload::{FilesUploadOptions, UploadedFile, UPLOADED_FILES};
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -110,7 +100,7 @@ pub(crate) async fn files_cmds(
             path,
             make_data_public,
         } => {
-            estimate::Estimator::new(chunk_manager, files_api)
+            Estimator::new(chunk_manager, files_api)
                 .estimate_cost(path, make_data_public, root_dir)
                 .await?
         }
@@ -238,7 +228,7 @@ pub(crate) async fn files_cmds(
                         }
                     };
 
-                    download::download_file(
+                    download_file(
                         files_api,
                         xor_name_provided,
                         (download_file_name, local_data_map),
@@ -251,7 +241,7 @@ pub(crate) async fn files_cmds(
                 }
                 _ => {
                     println!("Attempting to download all files uploaded by the current user...");
-                    download::download_files(
+                    download_files(
                         &files_api,
                         root_dir,
                         show_holders,
@@ -294,90 +284,4 @@ pub async fn chunks_to_upload(
         make_data_public,
     )
     .await
-}
-
-pub async fn chunks_to_upload_with_iter(
-    files_api: &FilesApi,
-    chunk_manager: &mut ChunkManager,
-    entries_iter: impl Iterator<Item = DirEntry>,
-    read_cache: bool,
-    batch_size: usize,
-    make_data_public: bool,
-) -> Result<Vec<(XorName, PathBuf)>> {
-    chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
-    let chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        let chunks = chunk_manager.get_chunks();
-
-        let failed_chunks = files_api
-            .client()
-            .verify_uploaded_chunks(&chunks, batch_size)
-            .await?;
-
-        chunk_manager.mark_completed(
-            chunks
-                .into_iter()
-                .filter(|c| !failed_chunks.contains(c))
-                .map(|(xor, _)| xor),
-        )?;
-
-        if failed_chunks.is_empty() {
-            msg_files_already_uploaded_verified();
-            if !make_data_public {
-                msg_not_public_by_default();
-            }
-            msg_star_line();
-            if chunk_manager.completed_files().is_empty() {
-                msg_chk_mgr_no_verified_file_nor_re_upload();
-            }
-            iterative_uploader::msg_chunk_manager_upload_complete(chunk_manager.clone());
-
-            return Ok(vec![]);
-        }
-        msg_unverified_chunks_reattempted(&failed_chunks.len());
-        failed_chunks
-    } else {
-        let mut chunks = chunk_manager.get_chunks();
-        let mut rng = thread_rng();
-        chunks.shuffle(&mut rng);
-        chunks
-    };
-    Ok(chunks_to_upload)
-}
-
-pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
-    let progress_bar = ProgressBar::new(length);
-    progress_bar.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len}")?
-            .progress_chars("#>-"),
-    );
-    progress_bar.enable_steady_tick(Duration::from_millis(100));
-    Ok(progress_bar)
-}
-
-fn msg_files_already_uploaded_verified() {
-    println!("All files were already uploaded and verified");
-    println!("**************************************");
-    println!("*          Uploaded Files            *");
-}
-
-fn msg_chk_mgr_no_verified_file_nor_re_upload() {
-    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
-}
-
-fn msg_not_public_by_default() {
-    println!("*                                    *");
-    println!("*  These are not public by default.  *");
-    println!("*     Reupload with `-p` option      *");
-    println!("*      to publish the datamaps.      *");
-}
-
-fn msg_star_line() {
-    println!("**************************************");
-}
-
-fn msg_unverified_chunks_reattempted(failed_amount: &usize) {
-    println!(
-        "{failed_amount} chunks were uploaded in the past but failed to verify. Will attempt to upload them again..."
-    );
 }

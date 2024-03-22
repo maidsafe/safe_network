@@ -1,3 +1,16 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+use super::{
+    get_progress_bar,
+    upload::{UploadedFile, UPLOADED_FILES},
+};
+
 use std::collections::BTreeSet;
 use std::ffi::OsString;
 use std::path::Path;
@@ -7,11 +20,11 @@ use indicatif::ProgressBar;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
-use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
-use sn_client::{FilesApi, FilesDownload, FilesDownloadEvent};
-
-use crate::subcommands::files;
-use crate::subcommands::files::upload::{UploadedFile, UPLOADED_FILES};
+use sn_client::{
+    protocol::storage::{Chunk, ChunkAddress, RetryStrategy},
+    FilesApi, FilesDownload, FilesDownloadEvent,
+};
+use tracing::{debug, error, info};
 
 /// The default folder to download files to.
 const DOWNLOAD_FOLDER: &str = "safe_files";
@@ -74,7 +87,7 @@ pub async fn download_files(
     Ok(())
 }
 
-pub(crate) async fn download_file(
+pub async fn download_file(
     files_api: FilesApi,
     xor_name: XorName,
     // original file name and optional datamap chunk
@@ -110,7 +123,7 @@ pub(crate) async fn download_file(
                     if let Some(progress_bar) = progress_bar {
                         progress_bar.finish_and_clear();
                     }
-                    progress_bar = files::get_progress_bar(count as u64).map_err(|err|{
+                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
                         println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
                         error!("Failed to obtain progress bar with err: {err:?}");
                         err
@@ -121,7 +134,7 @@ pub(crate) async fn download_file(
                     if let Some(progress_bar) = progress_bar {
                         progress_bar.finish_and_clear();
                     }
-                    progress_bar = files::get_progress_bar(count as u64).map_err(|err|{
+                    progress_bar = get_progress_bar(count as u64).map_err(|err|{
                         println!("Unable to initialize progress bar. The download process will continue without a progress bar.");
                         error!("Failed to obtain progress bar with err: {err:?}");
                         err

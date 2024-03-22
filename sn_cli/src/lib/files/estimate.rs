@@ -1,21 +1,30 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+use super::ChunkManager;
+
 use std::path::{Path, PathBuf};
 
 use color_eyre::Result;
 
-use sn_client::protocol::storage::ChunkAddress;
-use sn_client::protocol::NetworkAddress;
-use sn_client::transfers::NanoTokens;
-use sn_client::FilesApi;
+use sn_client::{
+    protocol::{storage::ChunkAddress, NetworkAddress},
+    transfers::NanoTokens,
+    FilesApi,
+};
 
-use crate::subcommands::files::ChunkManager;
-
-pub(crate) struct Estimator {
+pub struct Estimator {
     chunk_manager: ChunkManager,
     files_api: FilesApi,
 }
 
 impl Estimator {
-    pub(crate) fn new(chunk_manager: ChunkManager, files_api: FilesApi) -> Self {
+    pub fn new(chunk_manager: ChunkManager, files_api: FilesApi) -> Self {
         Self {
             chunk_manager,
             files_api,
@@ -23,7 +32,7 @@ impl Estimator {
     }
 
     /// Estimate the upload cost of a chosen file
-    pub(crate) async fn estimate_cost(
+    pub async fn estimate_cost(
         mut self,
         path: PathBuf,
         make_data_public: bool,
