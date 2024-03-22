@@ -39,6 +39,7 @@ use colored::Colorize;
 use semver::Version;
 use sn_service_management::{
     control::ServiceControl,
+    error::Error as ServiceError,
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
@@ -180,11 +181,29 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             );
         }
 
-        self.service_control.uninstall(&self.service.name())?;
+        match self.service_control.uninstall(&self.service.name()) {
+            Ok(()) => {}
+            Err(e) => match e {
+                ServiceError::ServiceRemovedManually(name) => {
+                    // The user has deleted the service definition file, which the service manager
+                    // crate treats as an error. We then return our own error type, which allows us
+                    // to handle it here and just proceed with removing the service from the
+                    // registry.
+                    println!("The user appears to have removed the {name} service manually");
+                }
+                _ => return Err(e.into()),
+            },
+        }
 
         if !keep_directories {
-            std::fs::remove_dir_all(self.service.data_dir_path())?;
-            std::fs::remove_dir_all(self.service.log_dir_path())?;
+            // It's possible the user deleted either of these directories manually.
+            // We can just proceed with removing the service from the registry.
+            if self.service.data_dir_path().exists() {
+                std::fs::remove_dir_all(self.service.data_dir_path())?;
+            }
+            if self.service.log_dir_path().exists() {
+                std::fs::remove_dir_all(self.service.log_dir_path())?;
+            }
         }
 
         self.service.on_remove();

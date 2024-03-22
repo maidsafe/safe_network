@@ -51,6 +51,8 @@ pub enum Error {
     RpcRecordAddressError(String),
     #[error("Could not find process '{0}'")]
     ServiceProcessNotFound(String),
+    #[error("The user may have removed the '{0}' service outwith the node manager")]
+    ServiceRemovedManually(String),
     #[error("Failed to create service user account")]
     ServiceUserAccountCreationFailed,
     #[error("Could not obtain user's data directory")]
