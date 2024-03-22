@@ -11,11 +11,9 @@ mod change_tracking;
 use bls::PublicKey;
 use change_tracking::*;
 
-use super::files::ChunkManager;
-
-use crate::subcommands::files::{
-    self, download::download_file, iterative_uploader::IterativeUploader,
-    upload::FilesUploadOptions,
+use super::{
+    files::{chunks_to_upload_with_iter, download_file, FilesUploadOptions, IterativeUploader},
+    ChunkManager,
 };
 
 use sn_client::{
@@ -40,6 +38,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use tokio::task::JoinSet;
+use tracing::trace;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
@@ -645,7 +644,7 @@ impl AccountPacket {
         let files_api = FilesApi::build(self.client.clone(), self.wallet_dir.clone())?;
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
 
-        let chunks_to_upload = files::chunks_to_upload_with_iter(
+        let chunks_to_upload = chunks_to_upload_with_iter(
             &files_api,
             &mut chunk_manager,
             self.iter_only_files(),
@@ -873,7 +872,7 @@ mod tests {
         read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
         MetadataTrackingInfo,
     };
-    use crate::subcommands::{acc_packet::Mutation, files::upload::FilesUploadOptions};
+    use super::{FilesUploadOptions, Mutation};
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
         registers::{EntryHash, RegisterAddress},

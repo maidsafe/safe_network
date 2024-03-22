@@ -6,16 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::subcommands::files::get_progress_bar;
-use crate::subcommands::files::upload::UploadedFile;
+use super::get_progress_bar;
+use super::upload::UploadedFile;
 use bytes::Bytes;
 use color_eyre::{
     eyre::{bail, eyre},
     Result,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::protocol::storage::{Chunk, ChunkAddress};
-use sn_client::FilesApi;
+use sn_client::{
+    protocol::storage::{Chunk, ChunkAddress},
+    FilesApi,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -24,6 +26,7 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
+use tracing::{debug, error, info, trace};
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
@@ -48,7 +51,7 @@ impl PathXorName {
 
 /// Info about a file that has been chunked
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub(crate) struct ChunkedFile {
+pub struct ChunkedFile {
     pub file_path: PathBuf,
     pub file_name: OsString,
     pub head_chunk_address: ChunkAddress,
@@ -59,7 +62,7 @@ pub(crate) struct ChunkedFile {
 /// Manages the chunking process by resuming pre-chunked files and chunking any
 /// file that has not been chunked yet.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub(crate) struct ChunkManager {
+pub struct ChunkManager {
     /// Whole client root dir
     root_dir: PathBuf,
     /// Dir for chunk artifacts
@@ -73,7 +76,7 @@ pub(crate) struct ChunkManager {
 
 impl ChunkManager {
     // Provide the root_dir. The function creates a sub-directory to store the SE chunks
-    pub(crate) fn new(root_dir: &Path) -> Self {
+    pub fn new(root_dir: &Path) -> Self {
         let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
         Self {
             root_dir: root_dir.to_path_buf(),
@@ -94,7 +97,7 @@ impl ChunkManager {
     /// * files_path - &[Path]
     /// * read_cache - Boolean. Set to true to resume the chunks from the artifacts dir.
     /// * include_data_maps - Boolean. If set to true, will append all the ChunkedFile.data_map chunks
-    pub(crate) fn chunk_path(
+    pub fn chunk_path(
         &mut self,
         files_path: &Path,
         read_cache: bool,
@@ -110,7 +113,7 @@ impl ChunkManager {
     /// Chunk all the files in the provided iterator
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account
-    pub(crate) fn chunk_with_iter(
+    pub fn chunk_with_iter(
         &mut self,
         entries_iter: impl Iterator<Item = DirEntry>,
         read_cache: bool,
@@ -308,7 +311,7 @@ impl ChunkManager {
 
     /// Get all the chunk name and their path.
     /// If include_data_maps is true, append all the ChunkedFile.data_map chunks to the vec
-    pub(crate) fn get_chunks(&self) -> Vec<(XorName, PathBuf)> {
+    pub fn get_chunks(&self) -> Vec<(XorName, PathBuf)> {
         self.chunks
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
@@ -316,7 +319,7 @@ impl ChunkManager {
             .collect::<Vec<(XorName, PathBuf)>>()
     }
 
-    pub(crate) fn is_chunks_empty(&self) -> bool {
+    pub fn is_chunks_empty(&self) -> bool {
         self.chunks
             .values()
             .flat_map(|chunked_file| &chunked_file.chunks)
@@ -327,7 +330,7 @@ impl ChunkManager {
     /// Mark all the chunks as completed. This removes the chunks from the CHUNK_ARTIFACTS_DIR.
     /// But keeps the folder and metadata file that denotes that the file has been already completed.
     #[allow(dead_code)]
-    pub(crate) fn mark_completed_all(&mut self) -> Result<()> {
+    pub fn mark_completed_all(&mut self) -> Result<()> {
         let all_chunks = self
             .chunks
             .values()
@@ -339,7 +342,7 @@ impl ChunkManager {
 
     /// Mark a set of chunks as completed and remove them from CHUNK_ARTIFACTS_DIR
     /// If the entire file is completed, keep the folder and metadata file
-    pub(crate) fn mark_completed(&mut self, chunks: impl Iterator<Item = XorName>) -> Result<()> {
+    pub fn mark_completed(&mut self, chunks: impl Iterator<Item = XorName>) -> Result<()> {
         let set_of_completed_chunks = chunks.collect::<BTreeSet<_>>();
         trace!("marking as completed: {set_of_completed_chunks:?}");
 

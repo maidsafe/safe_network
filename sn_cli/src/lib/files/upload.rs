@@ -1,3 +1,11 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 use std::ffi::OsString;
 use std::path::Path;
 
@@ -6,9 +14,10 @@ use color_eyre::Result;
 use serde::Deserialize;
 
 use sn_client::protocol::storage::{ChunkAddress, RetryStrategy};
+use tracing::{error, warn};
 
 /// Subdir for storing uploaded file into
-pub(crate) const UPLOADED_FILES: &str = "uploaded_files";
+pub const UPLOADED_FILES: &str = "uploaded_files";
 
 /// Options to configure different aspects of the logic to upload files
 #[derive(Clone)]

@@ -1,9 +1,18 @@
-use crate::subcommands::files::{self, ChunkManager, FilesUploadOptions};
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+use super::{get_progress_bar, ChunkManager, FilesUploadOptions};
+
 use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
 use sn_client::{
     transfers::{NanoTokens, TransferError, WalletError},
-    Client, Error as ClientError, UploadEvent, UploadSummary, Uploader,
+    {Client, Error as ClientError, UploadEvent, UploadSummary, Uploader},
 };
 use std::{
     path::PathBuf,
@@ -14,16 +23,17 @@ use std::{
     time::Instant,
 };
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
+use tracing::{debug, error, info};
 use xor_name::XorName;
 
-pub(crate) struct IterativeUploader {
+pub struct IterativeUploader {
     chunk_manager: ChunkManager,
     client: Client,
     wallet_dir: PathBuf,
 }
 
 impl IterativeUploader {
-    pub(crate) fn new(chunk_manager: ChunkManager, client: Client, wallet_dir: PathBuf) -> Self {
+    pub fn new(chunk_manager: ChunkManager, client: Client, wallet_dir: PathBuf) -> Self {
         Self {
             chunk_manager,
             client,
@@ -35,7 +45,7 @@ impl IterativeUploader {
 impl IterativeUploader {
     /// Given an iterator over files, upload them.
     /// Optionally verify if the data was stored successfully.
-    pub(crate) async fn iterate_upload(
+    pub async fn iterate_upload(
         self,
         chunks_to_upload: Vec<(XorName, PathBuf)>,
         files_path: &PathBuf,
@@ -52,7 +62,7 @@ impl IterativeUploader {
             .set_batch_size(batch_size)
             .set_verify_store(verify_store)
             .set_retry_strategy(retry_strategy);
-        let progress_bar = files::get_progress_bar(chunks_to_upload.len() as u64)?;
+        let progress_bar = get_progress_bar(chunks_to_upload.len() as u64)?;
         let total_existing_chunks = Arc::new(AtomicU64::new(0));
         let map_join_handle_that_contains_resulting_file_upload_events =
             spawn_file_upload_events_handler(
