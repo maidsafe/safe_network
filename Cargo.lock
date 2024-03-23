@@ -5084,6 +5084,7 @@ dependencies = [
 name = "sn_client"
 version = "0.104.31"
 dependencies = [
+ "assert_matches",
  "async-trait",
  "backoff",
  "blsttc",
@@ -5109,6 +5110,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sn_client",
+ "sn_logging",
  "sn_networking",
  "sn_peers_acquisition",
  "sn_protocol",

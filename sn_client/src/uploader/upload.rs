@@ -30,13 +30,22 @@ use xor_name::XorName;
 pub(super) const MAX_REPAYMENTS_PER_FAILED_ITEM: usize = 1;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
+#[cfg(not(test))]
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
+#[cfg(test)]
+const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 1;
 
 /// The maximum number of sequential network failures before aborting the upload process.
+#[cfg(not(test))]
 const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 5;
+#[cfg(test)]
+const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 1;
 
 /// The number of upload failures for a single data item before
+#[cfg(not(test))]
 const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 3;
+#[cfg(test)]
+const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 1;
 
 /// The main loop that performs the upload process.
 /// An interface is passed here for easy testing.
@@ -72,7 +81,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         .collect();
 
     // registers have to be verified + merged with remote replica, so we have to fetch it first.
-    uploader.pending_to_verify_register = uploader
+    uploader.pending_to_get_register = uploader
         .all_upload_items
         .iter()
         .filter_map(|(_xorname, item)| {
@@ -91,7 +100,8 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             debug!("Upload items are empty, exiting main upload loop.");
             // To avoid empty final_balance when all items are skipped.
             uploader.upload_final_balance = uploader.api.wallet()?.balance();
-            trace!("Uploader state: {uploader:?}");
+            #[cfg(test)]
+            trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
 
             let stats = UploadStats {
                 storage_cost: uploader.upload_storage_cost,
@@ -107,14 +117,12 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
         // Since the get store cost list is the init state, we don't have to check if it is not full.
         while !uploader.pending_to_get_register.is_empty()
+            && uploader.on_going_get_register.len() < uploader.batch_size
         {
-            if let Some(reg_addr) = uploader.pending_to_verify_register.pop() {
-                trace!(
-                    "Conditions met for verify registers {:?}",
-                    reg_addr.xorname()
-                );
-                let _ = uploader.on_going_verify_register.insert(reg_addr.xorname());
-                interface.spawn_verify_register(
+            if let Some(reg_addr) = uploader.pending_to_get_register.pop() {
+                trace!("Conditions met for GET registers {:?}", reg_addr.xorname());
+                let _ = uploader.on_going_get_register.insert(reg_addr.xorname());
+                interface.spawn_get_register(
                     uploader.api.client.clone(),
                     reg_addr,
                     task_result_sender.clone(),
@@ -125,7 +133,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         // try to push register if we have enough buffer.
         // No other checks for the same reason as the above step.
         while !uploader.pending_to_push_register.is_empty()
-            && uploader.on_going_verify_register.len() < uploader.batch_size
+            && uploader.on_going_get_register.len() < uploader.batch_size
         {
             let upload_item = uploader.pop_item_for_push_register()?;
             trace!(
@@ -200,20 +208,29 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             && !uploader.on_going_payments.is_empty()
             && uploader.on_going_payments.len() < uploader.batch_size
         {
+            #[cfg(test)]
+            trace!("UPLOADER STATE: make_payment (forced): {uploader:?}");
 
             debug!("There are not enough on going payments to trigger a batch Payment and no get_store_costs to fill the batch. Triggering forced round of payment");
             interface.spawn_make_payment(None, make_payment_sender.clone());
         }
+
+        #[cfg(test)]
+        trace!("UPLOADER STATE: before await task result: {uploader:?}");
+
+        trace!("Fetching task result");
         let task_result = task_result_receiver
             .recv()
             .await
             .ok_or(ClientError::InternalTaskChannelDropped)?;
+        trace!("Received task result: {task_result:?}");
         match task_result {
             TaskResult::FailedToAccessWallet => return Err(ClientError::FailedToAccessWallet),
             TaskResult::GetRegisterFromNetworkOk { remote_register } => {
                 // if we got back the register, then merge & PUT it.
                 let xorname = remote_register.address().xorname();
-                let _ = uploader.on_going_verify_register.remove(&xorname);
+                trace!("TaskResult::GetRegisterFromNetworkOk for remote register: {xorname:?} \n{remote_register:?}");
+                let _ = uploader.on_going_get_register.remove(&xorname);
 
                 let reg = uploader
                     .all_upload_items
@@ -227,7 +244,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             }
             TaskResult::GetRegisterFromNetworkErr(xorname) => {
                 // then the register is a new one. It can follow the same flow as chunks now.
-                let _ = uploader.on_going_verify_register.remove(&xorname);
+                let _ = uploader.on_going_get_register.remove(&xorname);
 
                 uploader
                     .pending_to_get_store_cost
@@ -275,7 +292,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                 // if cost is 0, then it already in the network.
                 else {
                     // check if it as item that has prior failures. This item has been successfully uploaded during
-                    // a retry.
+                    // a retry. TODO: This assumption was wrong, because the repay payee flow kicks in during upload failure.
                     let prior_failure = uploader.n_errors_during_uploads.contains_key(&xorname);
                     if prior_failure {
                         // remove the item since we have uploaded it.
@@ -457,7 +474,7 @@ impl UploaderInterface for Uploader {
     }
 
     fn spawn_get_store_cost(
-        &self,
+        &mut self,
         api: FilesApi,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
@@ -499,16 +516,16 @@ impl UploaderInterface for Uploader {
         });
     }
 
-    fn spawn_verify_register(
-        &self,
+    fn spawn_get_register(
+        &mut self,
         client: Client,
         reg_addr: RegisterAddress,
         task_result_sender: mpsc::Sender<TaskResult>,
     ) {
         let xorname = reg_addr.xorname();
-        trace!("Spawning verify_register for {xorname:?}");
+        trace!("Spawning get_register for {xorname:?}");
         let _handle = tokio::spawn(async move {
-            let task_result = match InnerUploader::verify_register(client, reg_addr).await {
+            let task_result = match InnerUploader::get_register(client, reg_addr).await {
                 Ok(register) => {
                     debug!("Register retrieved for {xorname:?}");
                     TaskResult::GetRegisterFromNetworkOk {
@@ -517,7 +534,7 @@ impl UploaderInterface for Uploader {
                 }
                 Err(err) => {
                     // todo match on error to only skip if GetRecordError
-                    warn!("Encountered error {err:?} during verify_register. The register has to be PUT as it is a new one.");
+                    warn!("Encountered error {err:?} during get_register. The register has to be PUT as it is a new one.");
                     TaskResult::GetRegisterFromNetworkErr(xorname)
                 }
             };
@@ -526,7 +543,7 @@ impl UploaderInterface for Uploader {
     }
 
     fn spawn_push_register(
-        &self,
+        &mut self,
         upload_item: UploadItem,
         verify_store: bool,
         task_result_sender: mpsc::Sender<TaskResult>,
@@ -552,6 +569,7 @@ impl UploaderInterface for Uploader {
     }
 
     fn spawn_make_payment(
+        &mut self,
         to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     ) {
@@ -561,7 +579,7 @@ impl UploaderInterface for Uploader {
     }
 
     fn spawn_upload_item(
-        &self,
+        &mut self,
         upload_item: UploadItem,
         api: FilesApi,
         verify_store: bool,
@@ -611,14 +629,14 @@ pub(super) struct InnerUploader {
 
     // states
     pub(super) all_upload_items: HashMap<XorName, UploadItem>,
-    pub(super) pending_to_verify_register: Vec<RegisterAddress>,
+    pub(super) pending_to_get_register: Vec<RegisterAddress>,
     pub(super) pending_to_push_register: Vec<XorName>,
     pub(super) pending_to_get_store_cost: Vec<(XorName, GetStoreCostStrategy)>,
     pub(super) pending_to_pay: Vec<(XorName, Box<PayeeQuote>)>,
     pub(super) pending_to_upload: Vec<XorName>,
 
     // trackers
-    pub(super) on_going_verify_register: BTreeSet<XorName>,
+    pub(super) on_going_get_register: BTreeSet<XorName>,
     pub(super) on_going_push_register: BTreeSet<XorName>,
     pub(super) on_going_get_cost: BTreeSet<XorName>,
     pub(super) on_going_payments: BTreeSet<XorName>,
@@ -662,13 +680,13 @@ impl InnerUploader {
             api: files_api,
 
             all_upload_items: Default::default(),
-            pending_to_verify_register: Default::default(),
+            pending_to_get_register: Default::default(),
             pending_to_push_register: Default::default(),
             pending_to_get_store_cost: Default::default(),
             pending_to_pay: Default::default(),
             pending_to_upload: Default::default(),
 
-            on_going_verify_register: Default::default(),
+            on_going_get_register: Default::default(),
             on_going_push_register: Default::default(),
             on_going_get_cost: Default::default(),
             on_going_payments: Default::default(),
@@ -764,7 +782,7 @@ impl InnerUploader {
         }
     }
 
-    async fn verify_register(client: Client, reg_addr: RegisterAddress) -> Result<Register> {
+    async fn get_register(client: Client, reg_addr: RegisterAddress) -> Result<Register> {
         let reg = client.verify_register_stored(reg_addr).await?;
         let reg = reg.register()?;
         Ok(reg)

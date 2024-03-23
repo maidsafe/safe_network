@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(test)]
+mod tests;
 mod upload;
 
 use self::upload::{start_upload, InnerUploader};
@@ -31,6 +33,7 @@ pub struct UploadStats {
     pub skipped_count: usize,
 }
 
+#[derive(Debug, Clone)]
 /// The events emitted from the upload process.
 pub enum UploadEvent {
     /// Uploaded a record to the network.
@@ -192,23 +195,23 @@ impl Uploader {
 trait UploaderInterface: Send + Sync {
     fn take_inner_uploader(&mut self) -> InnerUploader;
 
-    // gotta have self reference here to avoid some trait shenanigans
-    fn spawn_verify_register(
-        &self,
+    // Mutable reference is used in tests.
+    fn spawn_get_register(
+        &mut self,
         client: Client,
         reg_addr: RegisterAddress,
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
     fn spawn_push_register(
-        &self,
+        &mut self,
         upload_item: UploadItem,
         verify_store: bool,
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
     fn spawn_get_store_cost(
-        &self,
+        &mut self,
         api: FilesApi,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
@@ -216,12 +219,13 @@ trait UploaderInterface: Send + Sync {
     );
 
     fn spawn_make_payment(
+        &mut self,
         to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     );
 
     fn spawn_upload_item(
-        &self,
+        &mut self,
         upload_item: UploadItem,
         api: FilesApi,
         verify_store: bool,
@@ -323,6 +327,7 @@ impl UploadItem {
     }
 }
 
+#[derive(Debug)]
 enum TaskResult {
     FailedToAccessWallet,
     GetRegisterFromNetworkOk {

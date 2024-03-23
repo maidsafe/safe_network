@@ -283,6 +283,15 @@ impl Register {
         }
         Ok(())
     }
+
+    /// Used in tests.
+    #[cfg(feature = "test-utils")]
+    pub fn test_new_from_address(address: RegisterAddress) -> Self {
+        Register {
+            crdt: RegisterCrdt::new(address),
+            permissions: Permissions::AnyoneCanWrite,
+        }
+    }
 }
 
 #[cfg(test)]
