@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711205473303,
+  "lastUpdate": 1711205475176,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "72b3f1ed382fd896a8b8550b21c0057e89b4df83",
-          "message": "chore: rename test function and spell correction",
-          "timestamp": "2023-11-07T10:23:59Z",
-          "tree_id": "efc9af79abae81a77694b33acf456128949c887f",
-          "url": "https://github.com/maidsafe/safe_network/commit/72b3f1ed382fd896a8b8550b21c0057e89b4df83"
-        },
-        "date": 1699355948865,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 178,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 34,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 198,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "fd951287b557bc091c8e91278b59b0b98888a293",
+          "message": "fix(register): shortcut permissions check when anyone can write to Register",
+          "timestamp": "2024-03-23T13:49:24Z",
+          "tree_id": "82ecdc2d278dfed709ae91591139d28abab86dab",
+          "url": "https://github.com/maidsafe/safe_network/commit/fd951287b557bc091c8e91278b59b0b98888a293"
+        },
+        "date": 1711205474633,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
             "unit": "MB"
           },
           {
