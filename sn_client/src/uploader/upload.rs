@@ -103,9 +103,10 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             return Ok(stats);
         }
 
-        // try to verify register if we have enough buffer.
-        while !uploader.pending_to_verify_register.is_empty()
-            && uploader.on_going_verify_register.len() < uploader.batch_size
+        // try to GET register if we have enough buffer.
+        // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
+        // Since the get store cost list is the init state, we don't have to check if it is not full.
+        while !uploader.pending_to_get_register.is_empty()
         {
             if let Some(reg_addr) = uploader.pending_to_verify_register.pop() {
                 trace!(
@@ -122,6 +123,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         }
 
         // try to push register if we have enough buffer.
+        // No other checks for the same reason as the above step.
         while !uploader.pending_to_push_register.is_empty()
             && uploader.on_going_verify_register.len() < uploader.batch_size
         {
@@ -172,7 +174,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             );
             let _ = uploader.on_going_payments.insert(upload_item.xorname());
 
-            interface.spawn_make_payment(upload_item, quote, make_payment_sender.clone());
+            interface.spawn_make_payment(Some((upload_item, quote)), make_payment_sender.clone());
         }
 
         // try to upload if we have enough buffer to upload.
@@ -191,15 +193,17 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             );
         }
 
-        // Fire None to trigger a forced round of making leftover payments.
-        if uploader.pending_to_get_store_cost.is_empty() && !uploader.on_going_payments.is_empty() {
-            debug!("There are on going payments, but no get_store_costs to fill the buffer. Triggering forced round of payment");
-            let paying_work_sender_clone = make_payment_sender.clone();
-            let _handle = tokio::spawn(async move {
-                let _ = paying_work_sender_clone.send(None).await;
-            });
-        }
+        // Fire None to trigger a forced round of making leftover payments, if there are not enough store cost tasks
+        // to fill up the buffer.
+        if uploader.pending_to_get_store_cost.is_empty()
+            && uploader.on_going_get_cost.is_empty()
+            && !uploader.on_going_payments.is_empty()
+            && uploader.on_going_payments.len() < uploader.batch_size
+        {
 
+            debug!("There are not enough on going payments to trigger a batch Payment and no get_store_costs to fill the batch. Triggering forced round of payment");
+            interface.spawn_make_payment(None, make_payment_sender.clone());
+        }
         let task_result = task_result_receiver
             .recv()
             .await
@@ -216,7 +220,8 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     .get_mut(&xorname)
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
                 if let UploadItem::Register { reg, .. } = reg {
-                    reg.register.merge(remote_register);
+                    // todo: not error out here
+                    reg.register.merge(&remote_register)?;
                     uploader.pending_to_push_register.push(xorname);
                 }
             }
@@ -246,6 +251,8 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             TaskResult::PushRegisterErr(xorname) => {
                 // the register failed to be Pushed. Retry until failure.
                 let _ = uploader.on_going_push_register.remove(&xorname);
+                uploader.pending_to_push_register.push(xorname);
+
                 let n_errors = uploader
                     .n_errors_during_push_register
                     .entry(xorname)
@@ -545,13 +552,11 @@ impl UploaderInterface for Uploader {
     }
 
     fn spawn_make_payment(
-        &self,
-        upload_item: UploadItem,
-        quote: Box<PayeeQuote>,
+        to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     ) {
         let _handle = tokio::spawn(async move {
-            let _ = make_payment_sender.send(Some((upload_item, quote))).await;
+            let _ = make_payment_sender.send(to_send).await;
         });
     }
 

@@ -216,9 +216,7 @@ trait UploaderInterface: Send + Sync {
     );
 
     fn spawn_make_payment(
-        &self,
-        upload_item: UploadItem,
-        quote: Box<PayeeQuote>,
+        to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     );
 
