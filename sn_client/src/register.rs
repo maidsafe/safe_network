@@ -531,7 +531,8 @@ impl ClientRegister {
                     royalties_fees = payment_result.royalty_fees;
 
                     // Get payment proofs needed to publish the Register
-                    let (payment, payee) = wallet_client.get_recent_payment_for_addr(&net_addr)?;
+                    let (payment, payee) =
+                        wallet_client.get_non_expired_payment_for_addr(&net_addr)?;
                     debug!("payments found: {payment:?}");
                     payment_info = Some((payment, payee));
                 }

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_protocol::PrettyPrintRecordKey;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use sn_transfers::{NanoTokens, WalletError};
 use thiserror::Error;
 
@@ -55,8 +55,8 @@ pub enum Error {
     InvalidQuoteContent,
     #[error("The payment quote's signature is invalid")]
     InvalidQuoteSignature,
-    #[error("The payment quote expired")]
-    QuoteExpired,
+    #[error("The payment quote expired for {0:?}")]
+    QuoteExpired(NetworkAddress),
     /// Payment proof received has no inputs
     #[error(
         "Payment proof received with record:{0:?}. No payment for our node in its transaction"

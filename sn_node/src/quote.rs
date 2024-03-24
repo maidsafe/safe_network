@@ -11,9 +11,6 @@ use sn_networking::Network;
 use sn_protocol::{error::Error as ProtocolError, NetworkAddress};
 use sn_transfers::{NanoTokens, PaymentQuote};
 
-/// The time in seconds that a quote is valid for
-const QUOTE_EXPIRATION_SECS: u64 = 3600;
-
 impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
@@ -51,14 +48,9 @@ impl Node {
             return Err(Error::InvalidQuoteContent);
         }
 
-        // check time
-        let now = std::time::SystemTime::now();
-        let dur_s = match now.duration_since(quote.timestamp) {
-            Ok(t) => t.as_secs(),
-            Err(_) => return Err(Error::InvalidQuoteContent),
-        };
-        if dur_s > QUOTE_EXPIRATION_SECS {
-            return Err(Error::QuoteExpired);
+        // check if the quote has expired
+        if quote.has_expired() {
+            return Err(Error::QuoteExpired(address.clone()));
         }
 
         // check sig
