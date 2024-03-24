@@ -13,7 +13,7 @@ use crate::{
     },
     ClientRegister, UploadEvent,
 };
-use crate::{Client, FilesApi, Result as ClientResult, UploadStats};
+use crate::{Client, Result as ClientResult, UploadStats};
 use bls::SecretKey;
 use eyre::Result;
 use libp2p::PeerId;
@@ -23,7 +23,12 @@ use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::storage::RetryStrategy;
 use sn_registers::{Register, RegisterAddress};
 use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote};
-use std::{collections::VecDeque, env::temp_dir, path::PathBuf, sync::Arc};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    env::temp_dir,
+    path::PathBuf,
+    sync::Arc,
+};
 use tokio::{runtime::Handle, sync::mpsc, task::JoinHandle};
 use xor_name::XorName;
 
@@ -129,7 +134,8 @@ impl UploaderInterface for TestUploader {
 
     fn spawn_get_store_cost(
         &mut self,
-        _api: FilesApi,
+        _client: Client,
+        _wallet_dir: PathBuf,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
         _task_result_sender: mpsc::Sender<TaskResult>,
@@ -258,7 +264,8 @@ impl UploaderInterface for TestUploader {
     fn spawn_upload_item(
         &mut self,
         upload_item: UploadItem,
-        _api: FilesApi,
+        _client: Client,
+        _wallet_dir: PathBuf,
         _verify_store: bool,
         _retry_strategy: RetryStrategy,
         _task_result_sender: mpsc::Sender<TaskResult>,
@@ -312,9 +319,8 @@ pub enum TestSteps {
 
 pub fn get_inner_uploader() -> Result<(InnerUploader, mpsc::Sender<TaskResult>)> {
     let client = build_unconnected_client()?;
-    let files_api = FilesApi::new(client, temp_dir());
 
-    let mut inner = InnerUploader::new(files_api);
+    let mut inner = InnerUploader::new(client, temp_dir());
     let (task_result_sender, task_result_receiver) = mpsc::channel(100);
     inner.testing_task_channels = Some((task_result_sender.clone(), task_result_receiver));
 

@@ -197,7 +197,8 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
         )
         .await?;
 
-    let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
+    let mut uploader =
+        Uploader::new(client.clone(), paying_wallet_dir.to_path_buf()).set_show_holders(true);
     uploader.insert_chunk_paths(chunks);
     let _upload_stats = uploader.start_upload().await?;
 

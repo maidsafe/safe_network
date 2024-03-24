@@ -139,7 +139,7 @@ pub(crate) async fn files_cmds(
                 )
                 .await?;
 
-                IterativeUploader::new(chunk_manager, files_api)
+                IterativeUploader::new(chunk_manager, client.clone(), root_dir.to_path_buf())
                     .iterate_upload(
                         chunks_to_upload,
                         &file_path,

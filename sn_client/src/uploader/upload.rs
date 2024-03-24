@@ -9,7 +9,9 @@
 use super::{
     GetStoreCostStrategy, TaskResult, UploadEvent, UploadItem, UploadStats, UploaderInterface,
 };
-use crate::{Client, ClientRegister, Error as ClientError, FilesApi, Result, Uploader, BATCH_SIZE};
+use crate::{
+    Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient, BATCH_SIZE,
+};
 use bytes::Bytes;
 use itertools::Either;
 use sn_networking::PayeeQuote;
@@ -19,8 +21,11 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::NanoTokens;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use sn_transfers::{HotWallet, NanoTokens};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    path::PathBuf,
+};
 use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::mpsc;
 use xor_name::XorName;
@@ -65,7 +70,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         make_payment_receiver,
         task_result_sender.clone(),
         uploader.batch_size,
-    );
+    )?;
 
     // chunks can be pushed to pending_get_store_cost directly
     uploader.pending_to_get_store_cost = uploader
@@ -99,7 +104,9 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         if uploader.all_upload_items.is_empty() {
             debug!("Upload items are empty, exiting main upload loop.");
             // To avoid empty final_balance when all items are skipped.
-            uploader.upload_final_balance = uploader.api.wallet()?.balance();
+            uploader.upload_final_balance =
+                InnerUploader::load_wallet(uploader.client.clone(), uploader.wallet_dir.clone())?
+                    .balance();
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
 
@@ -123,7 +130,7 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                 trace!("Conditions met for GET registers {:?}", reg_addr.xorname());
                 let _ = uploader.on_going_get_register.insert(reg_addr.xorname());
                 interface.spawn_get_register(
-                    uploader.api.client.clone(),
+                    uploader.client.clone(),
                     reg_addr,
                     task_result_sender.clone(),
                 );
@@ -163,7 +170,8 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
 
             let _ = uploader.on_going_get_cost.insert(upload_item.xorname());
             interface.spawn_get_store_cost(
-                uploader.api.clone(),
+                uploader.client.clone(),
+                uploader.wallet_dir.clone(),
                 upload_item,
                 get_store_cost_strategy,
                 task_result_sender.clone(),
@@ -194,7 +202,8 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             let _ = uploader.on_going_uploads.insert(upload_item.xorname());
             interface.spawn_upload_item(
                 upload_item,
-                uploader.api.clone(),
+                uploader.client.clone(),
+                uploader.wallet_dir.clone(),
                 uploader.verify_store,
                 uploader.retry_strategy,
                 task_result_sender.clone(),
@@ -225,7 +234,6 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             .ok_or(ClientError::InternalTaskChannelDropped)?;
         trace!("Received task result: {task_result:?}");
         match task_result {
-            TaskResult::FailedToAccessWallet => return Err(ClientError::FailedToAccessWallet),
             TaskResult::GetRegisterFromNetworkOk { remote_register } => {
                 // if we got back the register, then merge & PUT it.
                 let xorname = remote_register.address().xorname();
@@ -475,7 +483,8 @@ impl UploaderInterface for Uploader {
 
     fn spawn_get_store_cost(
         &mut self,
-        api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
         task_result_sender: mpsc::Sender<TaskResult>,
@@ -485,7 +494,8 @@ impl UploaderInterface for Uploader {
             let xorname = upload_item.xorname();
 
             let task_result = match InnerUploader::get_store_cost(
-                api,
+                client,
+                wallet_dir,
                 upload_item,
                 get_store_cost_strategy.clone(),
             )
@@ -581,7 +591,8 @@ impl UploaderInterface for Uploader {
     fn spawn_upload_item(
         &mut self,
         upload_item: UploadItem,
-        api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         verify_store: bool,
         retry_strategy: RetryStrategy,
         task_result_sender: mpsc::Sender<TaskResult>,
@@ -590,8 +601,14 @@ impl UploaderInterface for Uploader {
 
         let _handle = tokio::spawn(async move {
             let xorname = upload_item.xorname();
-            let result =
-                InnerUploader::upload_item(api, upload_item, verify_store, retry_strategy).await;
+            let result = InnerUploader::upload_item(
+                client,
+                wallet_dir,
+                upload_item,
+                verify_store,
+                retry_strategy,
+            )
+            .await;
 
             trace!("Upload item {xorname:?} uploaded with result {result:?}");
             if result.is_ok() {
@@ -625,7 +642,8 @@ pub(super) struct InnerUploader {
     pub(super) max_repayments_for_failed_data: usize,
     // API
     #[debug(skip)]
-    pub(super) api: FilesApi,
+    pub(super) client: Client,
+    pub(super) wallet_dir: PathBuf,
 
     // states
     pub(super) all_upload_items: HashMap<XorName, UploadItem>,
@@ -670,14 +688,15 @@ pub(super) struct InnerUploader {
 }
 
 impl InnerUploader {
-    pub(super) fn new(files_api: FilesApi) -> Self {
+    pub(super) fn new(client: Client, wallet_dir: PathBuf) -> Self {
         Self {
             batch_size: BATCH_SIZE,
             verify_store: true,
             show_holders: false,
             retry_strategy: RetryStrategy::Balanced,
             max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
-            api: files_api,
+            client,
+            wallet_dir,
 
             all_upload_items: Default::default(),
             pending_to_get_register: Default::default(),
@@ -799,7 +818,8 @@ impl InnerUploader {
     }
 
     async fn get_store_cost(
-        files_api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
     ) -> Result<PayeeQuote> {
@@ -809,7 +829,7 @@ impl InnerUploader {
             GetStoreCostStrategy::Cheapest => vec![],
             GetStoreCostStrategy::SelectDifferentPayee { max_repayments } => {
                 // Check if we have already made payment for the provided xorname. If so filter out those payee
-                let wallet = files_api.wallet()?;
+                let wallet = Self::load_wallet(client.clone(), wallet_dir)?;
                 // todo: should we get non_expired here? maybe have a flag.
                 let all_payments = wallet.get_all_payments_for_addr(&address, true)?;
 
@@ -825,8 +845,7 @@ impl InnerUploader {
                 filter_list
             }
         };
-        let quote = files_api
-            .client
+        let quote = client
             .network
             .get_store_costs_from_network(address, filter_list)
             .await?;
@@ -840,21 +859,12 @@ impl InnerUploader {
         mut paying_work_receiver: mpsc::Receiver<Option<(UploadItem, Box<PayeeQuote>)>>,
         task_result_sender: mpsc::Sender<TaskResult>,
         batch_size: usize,
-    ) {
-        let files_api = self.api.clone();
+    ) -> Result<()> {
+        let mut wallet_client = Self::load_wallet(self.client.clone(), self.wallet_dir.clone())?;
         let verify_store = self.verify_store;
         let _handle = tokio::spawn(async move {
             debug!("Spawning the long running payment thread.");
-            let mut wallet_client = match files_api.wallet() {
-                Ok(wallet) => wallet,
-                Err(err) => {
-                    error!("Failed to open wallet when handling {err:?}");
-                    let _ = task_result_sender
-                        .send(TaskResult::FailedToAccessWallet)
-                        .await;
-                    return;
-                }
-            };
+
             let mut cost_map = BTreeMap::new();
             let mut current_batch = vec![];
 
@@ -915,16 +925,20 @@ impl InnerUploader {
             }
             debug!("Paying thread terminated");
         });
+        Ok(())
     }
 
     async fn upload_item(
-        files_api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         upload_item: UploadItem,
         verify_store: bool,
         retry_strategy: RetryStrategy,
     ) -> Result<()> {
+        let wallet_client = Self::load_wallet(client.clone(), wallet_dir)?;
+        let address = upload_item.address();
         match upload_item {
-            UploadItem::Chunk { address, chunk } => {
+            UploadItem::Chunk { address: _, chunk } => {
                 let chunk = match chunk {
                     Either::Left(chunk) => chunk,
                     Either::Right(path) => {
@@ -932,22 +946,26 @@ impl InnerUploader {
                         Chunk::new(Bytes::from(bytes))
                     }
                 };
+                let xorname = chunk.network_address();
+                trace!("Client upload started for chunk: {xorname:?}");
 
-                trace!("Client upload started for chunk: {:?}", address.xorname());
-                files_api
-                    .get_local_payment_and_upload_chunk(chunk, verify_store, Some(retry_strategy))
+                let (payment, payee) = wallet_client.get_recent_payment_for_addr(&xorname, true)?;
+                debug!("Payments for chunk: {xorname:?} to {payee:?}:  {payment:?}");
+
+                client
+                    .store_chunk(chunk, payee, payment, verify_store, Some(retry_strategy))
                     .await?;
-                Ok(())
+
+                trace!("Client upload completed for chunk: {xorname:?}");
             }
             UploadItem::Register { address, reg } => {
                 let network_address = NetworkAddress::from_register_address(*reg.address());
-                let signature = files_api.client.sign(reg.register.bytes()?);
+                let signature = client.sign(reg.register.bytes()?);
 
                 trace!(
                     "Client upload started for register: {:?}",
                     address.xorname()
                 );
-                let wallet_client = files_api.wallet()?;
                 let (payment, payee) =
                     wallet_client.get_recent_payment_for_addr(&network_address, true)?;
 
@@ -957,7 +975,7 @@ impl InnerUploader {
                 );
 
                 ClientRegister::publish_register(
-                    files_api.client.clone(),
+                    client,
                     RegisterCmd::Create {
                         register: reg.register,
                         signature,
@@ -966,10 +984,20 @@ impl InnerUploader {
                     verify_store,
                 )
                 .await?;
-
-                Ok(())
             }
         }
+        // remove the payment if the upload is successful.
+        wallet_client.remove_payment_for_addr(&address)?;
+
+        Ok(())
+    }
+
+    /// Create a new WalletClient for a given root directory.
+    fn load_wallet(client: Client, wallet_dir: PathBuf) -> Result<WalletClient> {
+        let wallet =
+            HotWallet::load_from(&wallet_dir).map_err(|_| ClientError::FailedToAccessWallet)?;
+
+        Ok(WalletClient::new(client, wallet))
     }
 
     // Used to debug a list of xornames.

@@ -320,7 +320,6 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
-    let files_api = FilesApi::new(client, wallet_dir);
 
     let mut uploaded_chunks_count = 0;
     loop {
@@ -351,7 +350,7 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let key =
             PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
 
-        let mut uploader = Uploader::new(files_api.clone())
+        let mut uploader = Uploader::new(client.clone(), wallet_dir.clone())
             .set_show_holders(true)
             .set_verify_store(false);
         uploader.insert_chunk_paths(chunks);
