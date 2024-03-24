@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711285720148,
+  "lastUpdate": 1711285839035,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "953f363a2d1157d51a74a498b3e19aead0b65d3d",
-          "message": "feat(ci): release faucet and rpc binaries",
-          "timestamp": "2023-11-07T11:02:38Z",
-          "tree_id": "f6b822acc52efd18347540461e2a2e6f0b667f57",
-          "url": "https://github.com/maidsafe/safe_network/commit/953f363a2d1157d51a74a498b3e19aead0b65d3d"
-        },
-        "date": 1699359491967,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rmctiernan@protonmail.com",
+            "name": "RMcTn",
+            "username": "RMcTn"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f9acc4ed69e64ca79a005836428b824563130c66",
+          "message": "docs: fix wrong command in usage example",
+          "timestamp": "2024-03-24T12:17:47Z",
+          "tree_id": "1698379e4d1b8887410827a87c3e5b34bf964d30",
+          "url": "https://github.com/maidsafe/safe_network/commit/f9acc4ed69e64ca79a005836428b824563130c66"
+        },
+        "date": 1711285837936,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
