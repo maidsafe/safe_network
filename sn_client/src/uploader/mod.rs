@@ -11,7 +11,7 @@ mod tests;
 mod upload;
 
 use self::upload::{start_upload, InnerUploader};
-use crate::{Client, ClientRegister, FilesApi, Result};
+use crate::{Client, ClientRegister, Result};
 use itertools::Either;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
@@ -88,9 +88,9 @@ impl Uploader {
 
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
-    pub fn new(files_api: FilesApi) -> Self {
+    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
         Self {
-            inner: Some(InnerUploader::new(files_api)),
+            inner: Some(InnerUploader::new(client, wallet_dir)),
         }
     }
 
@@ -212,7 +212,8 @@ trait UploaderInterface: Send + Sync {
 
     fn spawn_get_store_cost(
         &mut self,
-        api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         upload_item: UploadItem,
         get_store_cost_strategy: GetStoreCostStrategy,
         task_result_sender: mpsc::Sender<TaskResult>,
@@ -227,7 +228,8 @@ trait UploaderInterface: Send + Sync {
     fn spawn_upload_item(
         &mut self,
         upload_item: UploadItem,
-        api: FilesApi,
+        client: Client,
+        wallet_dir: PathBuf,
         verify_store: bool,
         retry_strategy: RetryStrategy,
         task_result_sender: mpsc::Sender<TaskResult>,
@@ -329,7 +331,6 @@ impl UploadItem {
 
 #[derive(Debug)]
 enum TaskResult {
-    FailedToAccessWallet,
     GetRegisterFromNetworkOk {
         remote_register: Register,
     },

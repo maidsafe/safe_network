@@ -3,7 +3,7 @@ use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
 use sn_client::{
     transfers::{NanoTokens, TransferError, WalletError},
-    Error as ClientError, FilesApi, UploadEvent, UploadStats, Uploader,
+    Client, Error as ClientError, UploadEvent, UploadStats, Uploader,
 };
 use std::{
     path::PathBuf,
@@ -18,14 +18,16 @@ use xor_name::XorName;
 
 pub(crate) struct IterativeUploader {
     chunk_manager: ChunkManager,
-    files_api: FilesApi,
+    client: Client,
+    wallet_dir: PathBuf,
 }
 
 impl IterativeUploader {
-    pub(crate) fn new(chunk_manager: ChunkManager, files_api: FilesApi) -> Self {
+    pub(crate) fn new(chunk_manager: ChunkManager, client: Client, wallet_dir: PathBuf) -> Self {
         Self {
             chunk_manager,
-            files_api,
+            client,
+            wallet_dir,
         }
     }
 }
@@ -46,7 +48,7 @@ impl IterativeUploader {
             batch_size,
             retry_strategy,
         } = options;
-        let mut uploader = Uploader::new(self.files_api)
+        let mut uploader = Uploader::new(self.client, self.wallet_dir)
             .set_batch_size(batch_size)
             .set_verify_store(verify_store)
             .set_retry_strategy(retry_strategy);

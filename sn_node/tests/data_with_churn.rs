@@ -377,7 +377,6 @@ fn store_chunks_task(
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
-        let files_api = FilesApi::new(client, paying_wallet_dir);
         let mut rng = OsRng;
 
         loop {
@@ -409,7 +408,8 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let mut uploader = Uploader::new(files_api.clone()).set_show_holders(true);
+            let mut uploader =
+                Uploader::new(client.clone(), paying_wallet_dir.clone()).set_show_holders(true);
             uploader.insert_chunk_paths(chunks);
 
             let cost = match uploader.start_upload().await {
