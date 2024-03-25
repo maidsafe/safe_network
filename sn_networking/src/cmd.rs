@@ -22,7 +22,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::NanoTokens;
+use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
@@ -120,7 +120,7 @@ pub enum SwarmCmd {
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
         key: RecordKey,
-        sender: oneshot::Sender<NanoTokens>,
+        sender: oneshot::Sender<(NanoTokens, QuotingMetrics)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
@@ -336,19 +336,13 @@ impl SwarmDriver {
             }
             SwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
-                let record_exists = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .contains(&key);
-                let cost = if record_exists {
-                    NanoTokens::zero()
-                } else {
-                    self.swarm.behaviour_mut().kademlia.store_mut().store_cost()
-                };
-
-                let _res = sender.send(cost);
+                let _res = sender.send(
+                    self.swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .store_mut()
+                        .store_cost(&key),
+                );
             }
             SwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";

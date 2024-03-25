@@ -57,7 +57,7 @@ use sn_protocol::{
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
+use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::PathBuf,
@@ -515,7 +515,10 @@ impl Network {
     }
 
     /// Get the cost of storing the next record from the network
-    pub async fn get_local_storecost(&self, key: RecordKey) -> Result<NanoTokens> {
+    pub async fn get_local_storecost(
+        &self,
+        key: RecordKey,
+    ) -> Result<(NanoTokens, QuotingMetrics)> {
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { key, sender });
 
