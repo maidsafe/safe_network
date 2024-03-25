@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711363768932,
+  "lastUpdate": 1711363771169,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40225,6 +40225,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36449,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5c26f7e23bbaba5c64e63ffaefca7b184513db4c",
+          "message": "feat(client): make publish register as an associated function",
+          "timestamp": "2024-03-25T10:03:04Z",
+          "tree_id": "ee7629657af8e37004b8b13bad579b82ef85b395",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c26f7e23bbaba5c64e63ffaefca7b184513db4c"
+        },
+        "date": 1711363770497,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6271,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36252,
             "unit": "ms"
           },
           {
