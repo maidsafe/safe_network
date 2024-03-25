@@ -41,6 +41,7 @@ const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 3;
 const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 1;
 
 /// The maximum number of sequential network failures before aborting the upload process.
+// todo: use uploader.retry_strategy.get_count() instead.
 #[cfg(not(test))]
 const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 5;
 #[cfg(test)]
@@ -197,7 +198,10 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
         while !uploader.pending_to_upload.is_empty()
             && uploader.on_going_uploads.len() < uploader.batch_size
         {
+            #[cfg(test)]
+            trace!("UPLOADER STATE: upload_item : {uploader:?}");
             let upload_item = uploader.pop_item_for_upload_item()?;
+
             trace!("Conditions met for uploading. {:?}", upload_item.xorname());
             let _ = uploader.on_going_uploads.insert(upload_item.xorname());
             interface.spawn_upload_item(
@@ -283,9 +287,10 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     .entry(xorname)
                     .or_insert(0);
                 *n_errors += 1;
-                if *n_errors > uploader.retry_strategy.get_count() {
-                    // todo: clear this up
-                    return Err(ClientError::AmountIsZero);
+
+                if *n_errors > MAX_SEQUENTIAL_NETWORK_ERRORS {
+                    error!("Max sequential network failures reached during PushRegisterErr.");
+                    return Err(ClientError::SequentialNetworkErrors);
                 }
             }
             TaskResult::GetStoreCostOk { xorname, quote } => {
@@ -855,7 +860,7 @@ impl InnerUploader {
                 let all_payments = wallet.get_all_payments_for_addr(&address, true)?;
 
                 // if we have already made initial + max_repayments, then we should error out.
-                if all_payments.len() > max_repayments + 1 {
+                if Self::have_we_reached_max_repayments(all_payments.len(), max_repayments) {
                     return Err(ClientError::MaximumRepaymentsReached(upload_item.xorname()));
                 }
                 let filter_list = all_payments
@@ -1011,6 +1016,17 @@ impl InnerUploader {
         wallet_client.remove_payment_for_addr(&address)?;
 
         Ok(())
+    }
+
+    /// If we have already made initial + max_repayments_allowed, then we should error out.
+    // separate function as it is used in test.
+    pub(super) fn have_we_reached_max_repayments(
+        payments_made: usize,
+        max_repayments_allowed: usize,
+    ) -> bool {
+        // if max_repayments_allowed = 1, then we have reached capacity = true if 2 payments have been made. i.e.,
+        // i.e., 1 initial + 1 repayment.
+        payments_made > max_repayments_allowed
     }
 
     /// Create a new WalletClient for a given root directory.
