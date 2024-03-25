@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711333471374,
+  "lastUpdate": 1711333580283,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6268f7deb0a123bdbf77b3fb187da3476c41ae5f",
-          "message": "feat(node): set custom msg id in order to deduplicate transfer notifs",
-          "timestamp": "2023-11-08T06:32:48Z",
-          "tree_id": "eb1ce6a726a30bf144332884bbe4794c434b9942",
-          "url": "https://github.com/maidsafe/safe_network/commit/6268f7deb0a123bdbf77b3fb187da3476c41ae5f"
-        },
-        "date": 1699427737929,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5",
+          "message": "feat: use Arc inside Client, Network to reduce clone cost",
+          "timestamp": "2024-03-25T01:42:02Z",
+          "tree_id": "b059d36220e9b7d6501cad5248d5a4b9be014e79",
+          "url": "https://github.com/maidsafe/safe_network/commit/eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5"
+        },
+        "date": 1711333579663,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
