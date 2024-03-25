@@ -10,7 +10,7 @@
 use clap::Parser;
 use color_eyre::eyre::Result;
 
-use sn_logging::LogBuilder;
+use sn_logging::{Level, LogBuilder};
 use sn_node::NodeEvent;
 
 use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest};
@@ -20,7 +20,6 @@ use sn_service_management::rpc::{RpcActions, RpcClient};
 use std::{net::SocketAddr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
-use tracing_core::Level;
 
 #[derive(Parser, Debug)]
 #[clap(name = "safenode RPC client")]
