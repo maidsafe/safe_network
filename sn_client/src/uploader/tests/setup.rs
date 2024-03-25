@@ -14,6 +14,7 @@ use crate::{
     ClientRegister, UploadEvent,
 };
 use crate::{Client, Result as ClientResult, UploadStats};
+use assert_matches::assert_matches;
 use bls::SecretKey;
 use eyre::Result;
 use libp2p::PeerId;
@@ -39,6 +40,7 @@ struct TestUploader {
 
     // test states
     make_payment_collector: Vec<(XorName, Box<PayeeQuote>)>,
+    payments_made_per_xorname: BTreeMap<XorName, usize>,
     batch_size: usize,
 }
 
@@ -150,10 +152,45 @@ impl UploaderInterface for TestUploader {
 
         println!("spawn_get_store_cost called for: {xorname:?}. Step to execute: {step:?}");
         info!("TEST: spawn_get_store_cost called for: {xorname:?}. Step to execute: {step:?}");
+
+        let has_max_payments_reached_closure =
+            |get_store_cost_strategy: &GetStoreCostStrategy| -> bool {
+                match get_store_cost_strategy {
+                    GetStoreCostStrategy::SelectDifferentPayee { max_repayments } => {
+                        if let Some(n_payments) = self.payments_made_per_xorname.get(&xorname) {
+                            InnerUploader::have_we_reached_max_repayments(
+                                *n_payments,
+                                *max_repayments,
+                            )
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                }
+            };
+
+        // if select different payee, then it can possibly error out if max_repayments have been reached.
+        // then the step should've been a GetStoreCostErr.
+        if has_max_payments_reached_closure(&get_store_cost_strategy) {
+            assert_matches!(step, TestSteps::GetStoreCostErr { .. }, "Max repayments have been reached, so we expect a GetStoreCostErr, not GetStoreCostOk");
+        }
+
         match step {
-            TestSteps::GetStoreCostOk { zero_cost } => {
+            TestSteps::GetStoreCostOk {
+                trigger_zero_cost,
+                assert_select_different_payee,
+            } => {
+                // Make sure that the received strategy is the one defined in the step.
+                assert!(match get_store_cost_strategy {
+                    // match here to not miss out on any new strategies.
+                    GetStoreCostStrategy::Cheapest => !assert_select_different_payee,
+                    GetStoreCostStrategy::SelectDifferentPayee { .. } =>
+                        assert_select_different_payee,
+                });
+
                 let mut quote = PaymentQuote::zero();
-                if !zero_cost {
+                if !trigger_zero_cost {
                     quote.cost = NanoTokens::from(10);
                 }
                 handle.spawn(async move {
@@ -171,8 +208,18 @@ impl UploaderInterface for TestUploader {
                 });
             }
             TestSteps::GetStoreCostErr {
-                max_repayments_reached,
+                assert_select_different_payee,
             } => {
+                // Make sure that the received strategy is the one defined in the step.
+                assert!(match get_store_cost_strategy {
+                    // match here to not miss out on any new strategies.
+                    GetStoreCostStrategy::Cheapest => !assert_select_different_payee,
+                    GetStoreCostStrategy::SelectDifferentPayee { .. } =>
+                        assert_select_different_payee,
+                });
+                let max_repayments_reached =
+                    has_max_payments_reached_closure(&get_store_cost_strategy);
+
                 handle.spawn(async move {
                     task_result_sender
                         .send(TaskResult::GetStoreCostErr {
@@ -219,20 +266,25 @@ impl UploaderInterface for TestUploader {
         }
 
         // gotta collect batch size before sending task result.
-        let make_payment = self.make_payment_collector.len() >= self.batch_size
+        let _make_payment = self.make_payment_collector.len() >= self.batch_size
             || (to_send.is_none() && !self.make_payment_collector.is_empty());
 
         match step {
-            TestSteps::MakePaymentJustCollectItem => {
-                // The test expected for us to just collect item, but if the logic wants us to make payment, then it as
-                // error
-                assert!(!make_payment);
-            }
+            // TestSteps::MakePaymentJustCollectItem => {
+            //     // The test expected for us to just collect item, but if the logic wants us to make payment, then it as
+            //     // error
+            //     assert!(!make_payment);
+            // }
             TestSteps::MakePaymentOk => {
                 let paid_xornames = std::mem::take(&mut self.make_payment_collector)
                     .into_iter()
                     .map(|(xorname, _)| xorname)
-                    .collect();
+                    .collect::<Vec<_>>();
+                // track the payments per xorname
+                for xorname in paid_xornames.iter() {
+                    let entry = self.payments_made_per_xorname.entry(*xorname).or_insert(0);
+                    *entry += 1;
+                }
                 let batch_size = self.batch_size;
 
                 handle.spawn(async move {
@@ -307,15 +359,20 @@ impl UploaderInterface for TestUploader {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum TestSteps {
     GetRegisterOk,
     GetRegisterErr,
     PushRegisterOk,
     PushRegisterErr,
-    GetStoreCostOk { zero_cost: bool },
-    GetStoreCostErr { max_repayments_reached: bool },
-    MakePaymentJustCollectItem,
+    GetStoreCostOk {
+        trigger_zero_cost: bool,
+        assert_select_different_payee: bool,
+    },
+    GetStoreCostErr {
+        assert_select_different_payee: bool,
+    },
+    // MakePaymentJustCollectItem,
     MakePaymentOk,
     MakePaymentErr,
     UploadItemOk,
@@ -352,6 +409,7 @@ pub fn start_uploading_with_steps(
         test_steps,
         task_result_sender,
         make_payment_collector: Default::default(),
+        payments_made_per_xorname: Default::default(),
         batch_size,
     })));
 

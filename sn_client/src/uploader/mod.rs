@@ -25,6 +25,7 @@ use tokio::sync::mpsc;
 use xor_name::XorName;
 
 /// The result of a successful upload.
+#[derive(Debug, Clone)]
 pub struct UploadStats {
     pub storage_cost: NanoTokens,
     pub royalty_fees: NanoTokens,
