@@ -496,9 +496,6 @@ impl Node {
 
         trace!("Received payment of {received_fee:?} for {pretty_key}");
 
-        // Notify `record_store` that the node received a payment.
-        self.network.notify_payment_received();
-
         // deposit the CashNotes in our wallet
         wallet.deposit_and_store_to_disk(&cash_notes)?;
         let new_balance = wallet.balance().as_nano();

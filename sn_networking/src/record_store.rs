@@ -61,8 +61,6 @@ pub struct NodeRecordStore {
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
-    /// Counting how many times got paid
-    received_payment_count: usize,
     /// Encyption cipher for the records, randomly generated at node startup
     /// Plus a 4 byte nonce starter
     encryption_details: (Aes256GcmSiv, [u8; 4]),
@@ -192,7 +190,6 @@ impl NodeRecordStore {
             distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
-            received_payment_count: 0,
             encryption_details,
         }
     }
@@ -425,21 +422,20 @@ impl NodeRecordStore {
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self) -> NanoTokens {
         let stored_records = self.records.len();
-        let cost = calculate_cost_for_records(
-            stored_records,
-            self.received_payment_count,
-            self.config.max_records,
-        );
+        let record_keys_as_hashset: HashSet<Key> = self.records.keys().cloned().collect();
 
-        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Cost is now {cost:?} for {stored_records:?} stored of {MAX_RECORDS_COUNT:?} max, {:?} times got paid.",
-            self.received_payment_count);
-        NanoTokens::from(cost)
-    }
-
-    /// Notify the node received a payment.
-    pub(crate) fn payment_received(&mut self) {
-        self.received_payment_count = self.received_payment_count.saturating_add(1);
+        if let Some(distance_range) = self.distance_range {
+            let relevant_records =
+                self.get_records_within_distance_range(&record_keys_as_hashset, distance_range);
+            let cost = calculate_cost_for_records(relevant_records, self.config.max_records);
+            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+            info!(
+                "Cost is now {cost:?} for {stored_records:?} close records stored of {MAX_RECORDS_COUNT:?} max."
+            );
+            NanoTokens::from(cost)
+        } else {
+            NanoTokens::from(10000)
+        }
     }
 
     /// Calculate how many records are stored within a distance range
@@ -661,18 +657,14 @@ impl RecordStore for ClientRecordStore {
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
 }
 
-// Using a linear growth function, and be tweaked by `received_payment_count` and `max_records`,
+// Using a linear growth function, and be tweaked by `relevant_records` and `max_records`,
 // to allow nodes receiving too many replication copies can still got paid,
 // and gives an exponential pricing curve when storage reaches high.
-fn calculate_cost_for_records(
-    records_stored: usize,
-    received_payment_count: usize,
-    max_records: usize,
-) -> u64 {
+fn calculate_cost_for_records(records_stored: usize, max_records: usize) -> u64 {
     use std::cmp::{max, min};
 
     let ori_cost = (10 * records_stored) as u64;
-    let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
+    let divider = max(1, records_stored) as u64;
 
     // 1.05.powf(200) = 18157
     // Given currently the max_records is set at 2048,
@@ -742,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_calculate_cost_for_records() {
-        let sut = calculate_cost_for_records(2049, 2050, 2048);
+        let sut = calculate_cost_for_records(2049, 2048);
         assert_eq!(sut, 474814770);
     }
 
@@ -1023,7 +1015,7 @@ mod tests {
 
     #[test]
     fn address_distribution_sim() {
-        // Map of peers and correspondent stats of `(num_of_records, Nano_earned, received_payment_count)`.
+        // Map of peers and correspondent stats of `(num_of_records, Nano_earned)`.
         let mut peers: HashMap<PeerId, (usize, u64, usize)> = Default::default();
         let mut peers_vec = vec![];
 
@@ -1037,7 +1029,6 @@ mod tests {
         }
 
         let mut iteration = 0;
-        let mut total_received_payment_count = 0;
 
         loop {
             for _ in 0..num_of_chunks_per_itr {
@@ -1067,8 +1058,7 @@ mod tests {
                         for peer in peers_in_replicate_range.iter() {
                             let entry = peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
-                                let cost =
-                                    calculate_cost_for_records(entry.0, entry.2, MAX_RECORDS_COUNT);
+                                let cost = calculate_cost_for_records(entry.0, MAX_RECORDS_COUNT);
                                 entry.1 += cost;
                                 entry.2 += 1;
                             }
@@ -1081,7 +1071,6 @@ mod tests {
                 }
             }
 
-            let mut received_payment_count = 0;
             let mut empty_earned_nodes = 0;
 
             let mut min_earned = u64::MAX;
@@ -1090,9 +1079,8 @@ mod tests {
             let mut max_store_cost = 0;
 
             for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
-                // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
-                received_payment_count += stats.2;
+                let cost = calculate_cost_for_records(stats.0, MAX_RECORDS_COUNT);
+
                 if stats.1 == 0 {
                     empty_earned_nodes += 1;
                 }
@@ -1110,9 +1098,6 @@ mod tests {
                     max_store_cost = cost;
                 }
             }
-
-            total_received_payment_count += num_of_chunks_per_itr;
-            assert_eq!(total_received_payment_count, received_payment_count);
 
             println!("After the completion of {iteration} with {num_of_chunks_per_itr} chunks, there is still {empty_earned_nodes} nodes earned nothing");
             println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");

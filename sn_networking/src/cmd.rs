@@ -113,8 +113,6 @@ pub enum SwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<NanoTokens>,
     },
-    /// Notify the node received a payment.
-    PaymentReceived,
     /// Get data from the local RecordStore
     GetLocalRecord {
         key: RecordKey,
@@ -258,9 +256,6 @@ impl Debug for SwarmCmd {
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
             }
-            SwarmCmd::PaymentReceived => {
-                write!(f, "SwarmCmd::PaymentReceived")
-            }
             SwarmCmd::GetLocalRecord { key, .. } => {
                 write!(
                     f,
@@ -368,14 +363,6 @@ impl SwarmDriver {
                 };
 
                 let _res = sender.send(cost);
-            }
-            SwarmCmd::PaymentReceived => {
-                cmd_string = "PaymentReceived";
-                self.swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .payment_received();
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
                 cmd_string = "GetLocalRecord";

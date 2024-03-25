@@ -525,11 +525,6 @@ impl Network {
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
-    /// Notify the node receicced a payment.
-    pub fn notify_payment_received(&self) {
-        self.send_swarm_cmd(SwarmCmd::PaymentReceived);
-    }
-
     /// Get `Record` from the local RecordStore
     pub async fn get_local_record(&self, key: &RecordKey) -> Result<Option<Record>> {
         let (sender, receiver) = oneshot::channel();
