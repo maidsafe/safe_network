@@ -449,18 +449,26 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     }
                 }
             }
-            TaskResult::UploadErr(xorname) => {
+            TaskResult::UploadErr {
+                xorname,
+                quote_expired,
+            } => {
                 let _ = uploader.on_going_uploads.remove(&xorname);
                 trace!("UploadErr for {xorname:?}");
 
                 // keep track of the failure
                 let n_errors = uploader.n_errors_during_uploads.entry(xorname).or_insert(0);
                 *n_errors += 1;
-                // if error > threshold, then select different payee. else retry again
-                if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
-                    debug!(
-                    "Max error during upload reached for {xorname:?}. Selecting a different payee."
-                );
+
+                // if quote has expired, don't retry the upload again. Instead get the cheapest quote again.
+                if quote_expired {
+                    uploader
+                        .pending_to_get_store_cost
+                        .push((xorname, GetStoreCostStrategy::Cheapest));
+                } else if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
+                    // if error > threshold, then select different payee. else retry again
+                    debug!("Max error during upload reached for {xorname:?}. Selecting a different payee.");
+
                     uploader.pending_to_get_store_cost.push((
                         xorname,
                         GetStoreCostStrategy::SelectDifferentPayee {
@@ -611,13 +619,23 @@ impl UploaderInterface for Uploader {
             .await;
 
             trace!("Upload item {xorname:?} uploaded with result {result:?}");
-            if result.is_ok() {
-                let _ = task_result_sender.send(TaskResult::UploadOk(xorname)).await;
-            } else {
-                let _ = task_result_sender
-                    .send(TaskResult::UploadErr(xorname))
-                    .await;
-            }
+            match result {
+                Ok(_) => {
+                    let _ = task_result_sender.send(TaskResult::UploadOk(xorname)).await;
+                }
+                Err(err) => {
+                    let quote_expired = matches!(
+                        err,
+                        ClientError::Wallet(sn_transfers::WalletError::QuoteExpired(_))
+                    );
+                    let _ = task_result_sender
+                        .send(TaskResult::UploadErr {
+                            xorname,
+                            quote_expired,
+                        })
+                        .await;
+                }
+            };
         });
     }
 }
@@ -628,6 +646,9 @@ impl UploaderInterface for Uploader {
 // 2. add more debug lines
 // 3. terminate early if there are not enough funds in the wallet and return that error.
 // 4. we cna just return address form pop_item_for_get_store_cost. we don't need the whole item.
+// 5. say after *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE , reset n_errors. This is because
+// now even if we get 1 upload failure with the new payee, then we should not be selecting another payee immediately.
+// check this everywhere we use n_errors. And also write tests.
 
 /// `Uploader` provides functionality for uploading both Chunks and Registers with support for retries and queuing.
 /// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.

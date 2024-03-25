@@ -356,7 +356,10 @@ enum TaskResult {
     },
     MakePaymentsErr(Vec<(XorName, Box<PayeeQuote>)>),
     UploadOk(XorName),
-    UploadErr(XorName),
+    UploadErr {
+        xorname: XorName,
+        quote_expired: bool,
+    },
 }
 
 #[derive(Debug, Clone)]
