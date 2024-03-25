@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     let signer = SecretKey::random();
 
     println!("Starting SAFE client...");
-    let client = Client::new(signer, None, false, None, None).await?;
+    let client = Client::new(signer, None, None, None).await?;
     println!("SAFE client signer public key: {:?}", client.signer_pk());
 
     // The address of the register to be displayed

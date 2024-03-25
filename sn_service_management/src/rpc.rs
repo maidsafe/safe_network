@@ -10,8 +10,7 @@ use crate::error::{Error, Result};
 use async_trait::async_trait;
 use libp2p::{kad::RecordKey, Multiaddr, PeerId};
 use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubPublishRequest, GossipsubSubscribeRequest,
-    GossipsubUnsubscribeRequest, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
+    safe_node_client::SafeNodeClient, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
     RestartRequest, StopRequest, UpdateLogLevelRequest, UpdateRequest,
 };
 use std::{net::SocketAddr, path::PathBuf, str::FromStr};
@@ -45,9 +44,6 @@ pub trait RpcActions: Sync {
     async fn node_info(&self) -> Result<NodeInfo>;
     async fn network_info(&self) -> Result<NetworkInfo>;
     async fn record_addresses(&self) -> Result<Vec<RecordAddress>>;
-    async fn gossipsub_subscribe(&self, topic: &str) -> Result<()>;
-    async fn gossipsub_unsubscribe(&self, topic: &str) -> Result<()>;
-    async fn gossipsub_publish(&self, topic: &str, message: &str) -> Result<()>;
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
@@ -163,49 +159,6 @@ impl RpcActions for RpcClient {
             record_addresses.push(RecordAddress { key });
         }
         Ok(record_addresses)
-    }
-
-    async fn gossipsub_subscribe(&self, topic: &str) -> Result<()> {
-        let mut client = self.connect_with_retry().await?;
-        let _response = client
-            .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
-                topic: topic.to_string(),
-            }))
-            .await
-            .map_err(|e| {
-                error!("Could not subscribe to gossip topic {topic:?} through RPC: {e:?}");
-                Error::RpcGossipSubscribeError(topic.to_string(), e.to_string())
-            })?;
-        Ok(())
-    }
-
-    async fn gossipsub_unsubscribe(&self, topic: &str) -> Result<()> {
-        let mut client = self.connect_with_retry().await?;
-        let _response = client
-            .unsubscribe_from_topic(Request::new(GossipsubUnsubscribeRequest {
-                topic: topic.to_string(),
-            }))
-            .await
-            .map_err(|e| {
-                error!("Could not unsubscribe from gossip topic {topic:?} through RPC: {e:?}");
-                Error::RpcGossipUnsubscribeError(topic.to_string(), e.to_string())
-            })?;
-        Ok(())
-    }
-
-    async fn gossipsub_publish(&self, topic: &str, msg: &str) -> Result<()> {
-        let mut client = self.connect_with_retry().await?;
-        let _response = client
-            .publish_on_topic(Request::new(GossipsubPublishRequest {
-                topic: topic.to_string(),
-                msg: msg.into(),
-            }))
-            .await
-            .map_err(|e| {
-                error!("Could not publish on topic {topic:?} through RPC: {e:?}");
-                Error::RpcGossipPublishError(topic.to_string(), e.to_string())
-            })?;
-        Ok(())
     }
 
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()> {

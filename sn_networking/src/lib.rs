@@ -43,7 +43,6 @@ pub use self::{
 
 use self::{cmd::SwarmCmd, error::Result};
 use backoff::{Error as BackoffError, ExponentialBackoff};
-use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
@@ -415,21 +414,6 @@ impl Network {
         get_fees_from_store_cost_responses(all_costs)
     }
 
-    /// Subscribe to given gossipsub topic
-    pub fn subscribe_to_topic(&self, topic_id: String) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id));
-    }
-
-    /// Unsubscribe from given gossipsub topic
-    pub fn unsubscribe_from_topic(&self, topic_id: String) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubUnsubscribe(topic_id));
-    }
-
-    /// Publish a msg on a given topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg });
-    }
-
     /// Get a record from the network
     /// This differs from non-wasm32 builds as no retries are applied
     #[cfg(target_arch = "wasm32")]
@@ -749,10 +733,6 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender));
         let state = receiver.await?;
         Ok(state)
-    }
-
-    pub fn start_handle_gossip(&self) {
-        self.send_swarm_cmd(SwarmCmd::GossipHandler)
     }
 
     pub fn trigger_interval_replication(&self) {

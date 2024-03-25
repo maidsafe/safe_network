@@ -550,8 +550,7 @@ mod tests {
             .cashnote_redemptions(&MainSecretKey::new(wallet_sk.clone()))
             .is_ok());
 
-        let receiver_client =
-            Client::new(bls::SecretKey::random(), None, false, None, None).await?;
+        let receiver_client = Client::new(bls::SecretKey::random(), None, None, None).await?;
         let tmp_path = TempDir::new()?.path().to_owned();
         let receiver_wallet =
             HotWallet::load_from_path(&tmp_path, Some(MainSecretKey::new(wallet_sk)))?;

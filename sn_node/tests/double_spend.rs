@@ -10,7 +10,7 @@ mod common;
 
 use assert_fs::TempDir;
 use assert_matches::assert_matches;
-use common::client::{get_gossip_client_and_funded_wallet, get_wallet};
+use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_transfers::{
@@ -27,8 +27,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     // create 1 wallet add money from faucet
     let first_wallet_dir = TempDir::new()?;
 
-    let (client, mut first_wallet) =
-        get_gossip_client_and_funded_wallet(first_wallet_dir.path()).await?;
+    let (client, mut first_wallet) = get_client_and_funded_wallet(first_wallet_dir.path()).await?;
     let first_wallet_balance = first_wallet.balance().as_nano();
 
     // create wallet 2 and 3 to receive money from 1
@@ -91,8 +90,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
 
     // create a client and an unused wallet to make sure some money already exists in the system
     let first_wallet_dir = TempDir::new()?;
-    let (client, mut first_wallet) =
-        get_gossip_client_and_funded_wallet(first_wallet_dir.path()).await?;
+    let (client, mut first_wallet) = get_client_and_funded_wallet(first_wallet_dir.path()).await?;
     let first_wallet_addr = first_wallet.address();
 
     // create a new genesis wallet with the intention to spend genesis again

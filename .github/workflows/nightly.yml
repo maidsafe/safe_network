@@ -179,56 +179,6 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Unit Test Run Failed"
 
-  gossipsub:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Gossipsub E2E tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin faucet
-        timeout-minutes: 30
-
-      - name: Build gossipsub testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test msgs_over_gossipsub --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
-
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
-
-      - name: Gossipsub - nodes to subscribe to topics, and publish messages
-        run: cargo test --release -p sn_node --features local-discovery --test msgs_over_gossipsub -- --nocapture
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 20
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_gossipsub_e2e
-          platform: ${{ matrix.os }}
-
   spend_test:
     name: spend tests against network
     runs-on: ${{ matrix.os }}
@@ -299,71 +249,6 @@ jobs:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Spend Test Run Failed"
-
-  royalty_reward_test:
-    name: royalty_reward tests against network
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      - name: Build binaries
-        run: cargo build --release --features=local-discovery,royalties-by-gossip --bin safenode --bin faucet
-        timeout-minutes: 30
-
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery,royalties-by-gossip --test nodes_rewards --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
-
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
-
-      # This should be first to avoid slow reward acceptance etc
-      - name: execute the nodes rewards tests
-        run: cargo test --release -p sn_node --features=local-discovery,royalties-by-gossip --test nodes_rewards -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_royalty_reward
-          platform: ${{ matrix.os }}
-
-      - name: post notification to slack on failure
-        if: ${{ failure() }}
-        uses: bryannice/gitactions-slack-notification@2.0.0
-        env:
-          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Nightly Royalty Reward Test Run Failed"
 
   token_distribution_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"

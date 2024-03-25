@@ -7,11 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
-use bls::PublicKey;
-use bytes::Bytes;
+
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::{CashNoteRedemption, UniquePubkey};
+use sn_transfers::UniquePubkey;
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 500;
@@ -67,21 +66,6 @@ pub enum NodeEvent {
     SpendStored(UniquePubkey),
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
-    /// Gossipsub message received
-    GossipsubMsg {
-        /// Topic the message was published on
-        topic: String,
-        /// The raw bytes of the received message
-        #[debug(skip)]
-        msg: Bytes,
-    },
-    /// Transfer notification message received for a public key
-    TransferNotif {
-        /// Public key the transfer notification is about
-        key: PublicKey,
-        /// The cashnote redemptions of the transfers
-        cashnote_redemptions: Vec<CashNoteRedemption>,
-    },
     /// Terminates the node
     TerminateNode,
 }

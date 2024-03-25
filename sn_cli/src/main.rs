@@ -17,7 +17,6 @@ use crate::{
     subcommands::{
         files::files_cmds,
         folders::folders_cmds,
-        gossipsub::gossipsub_cmds,
         register::register_cmds,
         wallet::{
             hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
@@ -115,12 +114,6 @@ async fn main() -> Result<()> {
         Some(bootstrap_peers)
     };
 
-    // use gossipsub only for the wallet cmd that requires it.
-    let joins_gossipsub = matches!(
-        opt.cmd,
-        SubCmd::WatchOnlyWallet(WatchOnlyWalletCmds::ReceiveOnline { .. })
-    );
-
     // get the broadcaster as we want to have our own progress bar.
     let broadcaster = ClientEventsBroadcaster::default();
     let progress_bar_handler = spawn_connection_progress_bar(broadcaster.subscribe());
@@ -128,7 +121,6 @@ async fn main() -> Result<()> {
     let result = Client::new(
         secret_key,
         bootstrap_peers,
-        joins_gossipsub,
         opt.connection_timeout,
         Some(broadcaster),
     )
@@ -158,7 +150,6 @@ async fn main() -> Result<()> {
         SubCmd::Register(cmds) => {
             register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
-        SubCmd::Gossipsub(cmds) => gossipsub_cmds(cmds, &client).await?,
     };
 
     Ok(())

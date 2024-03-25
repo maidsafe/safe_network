@@ -62,7 +62,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// // Here we create a ClientRegister
     /// let register = ClientRegister::create(client.clone(), address);
@@ -87,7 +87,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
     /// // Here we create a ClientRegister
     /// let register = ClientRegister::create_with_addr(client.clone(), address);
@@ -129,7 +129,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let permissions = Permissions::default();
@@ -185,7 +185,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -220,7 +220,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -255,7 +255,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let permissions = Permissions::default();
@@ -291,7 +291,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -326,7 +326,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// // Read as bytes into the ClientRegister instance
     /// let register = ClientRegister::create(client.clone(), address).read();
@@ -352,7 +352,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let entry = "Register entry";
     /// // Write as bytes into the ClientRegister instance
@@ -386,7 +386,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let entry = "entry_input_here";
     /// let mut mutable_register = ClientRegister::create(client.clone(), address);
@@ -424,7 +424,7 @@ impl ClientRegister {
     /// # async fn main() -> Result<(),Error>{
     /// # use std::collections::BTreeSet;
     /// let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let mut mutable_register = ClientRegister::create(client.clone(), address);
     /// let meta = "Register entry".as_bytes();
@@ -476,12 +476,12 @@ impl ClientRegister {
     /// # use sn_client::WalletClient;
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// // Run sync of a Client Register instance
     /// let mut register =
@@ -562,7 +562,7 @@ impl ClientRegister {
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Pass the boolean value to the Client Register instance via .Push()
     /// let mut binding = ClientRegister::create(client, address);
     /// let register = binding.push(false);
@@ -613,9 +613,9 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let meta = "Register entry".as_bytes();
     /// // Use of the 'write_online' example:
     /// let mut binding = ClientRegister::create(client, address);
@@ -645,9 +645,9 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let meta = "Entry".as_bytes();
     /// // Use of the 'write_merging_branches_online':
     /// let mut binding = ClientRegister::create(client, address);
@@ -686,7 +686,7 @@ impl ClientRegister {
     /// # use std::collections::BTreeSet;
     /// let mut rng = rand::thread_rng();
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let entry = "Entry".as_bytes();
     /// let tree_set = BTreeSet::new();
     /// // Use of the 'write_atop_online':
