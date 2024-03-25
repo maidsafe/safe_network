@@ -431,9 +431,6 @@ mod tests {
             async fn node_info(&self) -> ServiceControlResult<NodeInfo>;
             async fn network_info(&self) -> ServiceControlResult<NetworkInfo>;
             async fn record_addresses(&self) -> ServiceControlResult<Vec<RecordAddress>>;
-            async fn gossipsub_subscribe(&self, topic: &str) -> ServiceControlResult<()>;
-            async fn gossipsub_unsubscribe(&self, topic: &str) -> ServiceControlResult<()>;
-            async fn gossipsub_publish(&self, topic: &str, message: &str) -> ServiceControlResult<()>;
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;

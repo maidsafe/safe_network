@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
     let secret_key = bls::SecretKey::random();
     let broadcaster = ClientEventsBroadcaster::default();
     let handle = spawn_connection_progress_bar(broadcaster.subscribe());
-    let result = Client::new(secret_key, bootstrap_peers, false, None, Some(broadcaster)).await;
+    let result = Client::new(secret_key, bootstrap_peers, None, Some(broadcaster)).await;
 
     // await on the progress bar to complete before handling the client result. If client errors out, we would
     // want to make the progress bar clean up gracefully.

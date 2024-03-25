@@ -57,7 +57,7 @@ impl WalletClient {
     /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -77,7 +77,7 @@ impl WalletClient {
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -98,7 +98,7 @@ impl WalletClient {
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -119,7 +119,7 @@ impl WalletClient {
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -151,7 +151,7 @@ impl WalletClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// use libp2p_identity::PeerId;
@@ -201,7 +201,7 @@ impl WalletClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// use libp2p_identity::PeerId;
@@ -263,7 +263,7 @@ impl WalletClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// use libp2p_identity::PeerId;
@@ -308,7 +308,7 @@ impl WalletClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// use sn_transfers::NanoTokens;
@@ -424,7 +424,7 @@ impl WalletClient {
     /// use sn_protocol::NetworkAddress;
     /// use libp2p_identity::PeerId;
     /// use sn_registers::{Permissions, RegisterAddress};
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// # let mut rng = rand::thread_rng();
@@ -465,7 +465,7 @@ impl WalletClient {
     /// # use xor_name::XorName;
     /// use sn_protocol::NetworkAddress;
     /// use sn_registers::{Permissions, RegisterAddress};
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
@@ -599,7 +599,7 @@ impl WalletClient {
     /// # use std::collections::BTreeMap;
     /// use xor_name::XorName;
     /// use sn_transfers::{MainPubkey, Payment, PaymentQuote};
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -711,7 +711,7 @@ impl WalletClient {
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -736,7 +736,7 @@ impl WalletClient {
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
@@ -766,7 +766,7 @@ impl Client {
     /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// // An example of sending storage payment transfers over the network with validation
@@ -864,7 +864,7 @@ impl Client {
     /// # async fn main() -> Result<(),Error>{
     /// use tracing::error;
     /// use sn_transfers::Transfer;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let transfer = Transfer::from_hex("13abc").unwrap();
@@ -955,7 +955,7 @@ impl Client {
     /// # async fn main() -> Result<(),Error>{
     /// use tracing::error;
     /// use sn_transfers::Transfer;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let transfer = Transfer::from_hex("").unwrap();
@@ -1021,7 +1021,7 @@ impl Client {
 /// use tracing::error;
 /// use sn_client::send;
 /// use sn_transfers::Transfer;
-/// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+/// let client = Client::new(SecretKey::random(), None, None, None).await?;
 /// # let tmp_path = TempDir::new()?.path().to_owned();
 /// let mut first_wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
 /// let mut second_wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -1140,7 +1140,7 @@ pub async fn send(
 /// use std::collections::{BTreeMap, BTreeSet};
 /// use tracing::error;
 /// use sn_transfers::{Transaction, Transfer, UniquePubkey};
-/// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+/// let client = Client::new(SecretKey::random(), None, None, None).await?;
 /// # let tmp_path = TempDir::new()?.path().to_owned();
 /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
 /// let transaction = Transaction {inputs: Vec::new(),outputs: Vec::new(),};

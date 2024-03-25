@@ -49,7 +49,7 @@ pub async fn get_new_client(owner_sk: SecretKey) -> Result<Client> {
     };
 
     println!("Client bootstrap with peer {bootstrap_peers:?}");
-    let client = Client::new(owner_sk, bootstrap_peers, false, None, None).await?;
+    let client = Client::new(owner_sk, bootstrap_peers, None, None).await?;
     Ok(client)
 }
 

@@ -9,7 +9,6 @@
 mod acc_packet;
 pub(crate) mod files;
 pub(crate) mod folders;
-pub(crate) mod gossipsub;
 pub(crate) mod register;
 pub(crate) mod wallet;
 
@@ -35,7 +34,4 @@ pub(super) enum SubCmd {
     #[clap(name = "register", subcommand)]
     /// Commands for register management
     Register(register::RegisterCmds),
-    #[clap(name = "gossipsub", subcommand)]
-    /// Commands for gossipsub management
-    Gossipsub(gossipsub::GossipsubCmds),
 }

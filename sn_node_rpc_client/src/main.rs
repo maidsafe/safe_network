@@ -7,23 +7,17 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 //
 
-use assert_fs::TempDir;
-use bls::SecretKey;
 use clap::Parser;
-use color_eyre::eyre::{eyre, Result};
-use libp2p::Multiaddr;
-use sn_client::Client;
+use color_eyre::eyre::Result;
+
 use sn_logging::LogBuilder;
-use sn_node::{NodeEvent, ROYALTY_TRANSFER_NOTIF_TOPIC};
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, GossipsubSubscribeRequest, NodeEventsRequest,
-    TransferNotifsFilterRequest,
-};
-use sn_protocol::storage::SpendAddress;
+use sn_node::NodeEvent;
+
+use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest};
+
 use sn_service_management::rpc::{RpcActions, RpcClient};
-use sn_transfers::{MainPubkey, WatchOnlyWallet};
-use std::{fs, net::SocketAddr, path::PathBuf, time::Duration};
+
+use std::{net::SocketAddr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
 use tracing_core::Level;
@@ -50,43 +44,6 @@ enum Cmd {
     /// Note this blocks the app and it will print events as they are broadcasted by the node
     #[clap(name = "events")]
     Events,
-    /// Start listening for transfers events.
-    /// Note this blocks the app and it will print events as they are broadcasted by the node
-    #[clap(name = "transfers")]
-    TransfersEvents {
-        /// The hex-encoded BLS secret key to decrypt the transfers received and convert
-        /// them into spendable CashNotes.
-        sk: String,
-        /// Path where to store CashNotes received.
-        /// Each CashNote is written to a separate file in respective
-        /// recipient public address dir in the created cash_notes dir.
-        /// Each file is named after the CashNote id.
-        #[clap(name = "log-cash-notes")]
-        log_cash_notes: Option<PathBuf>,
-
-        #[command(flatten)]
-        peers: PeersArgs,
-    },
-    /// Subscribe to a given Gossipsub topic
-    #[clap(name = "subscribe")]
-    Subscribe {
-        /// Name of the topic
-        topic: String,
-    },
-    /// Unsubscribe from a given Gossipsub topic
-    #[clap(name = "unsubscribe")]
-    Unsubscribe {
-        /// Name of the topic
-        topic: String,
-    },
-    /// Publish a msg on a given Gossipsub topic
-    #[clap(name = "publish")]
-    Publish {
-        /// Name of the topic
-        topic: String,
-        /// Message to publish
-        msg: String,
-    },
     /// Restart the node after the specified delay
     #[clap(name = "restart")]
     Restart {
@@ -139,24 +96,6 @@ async fn main() -> Result<()> {
         Cmd::Info => node_info(addr).await,
         Cmd::Netinfo => network_info(addr).await,
         Cmd::Events => node_events(addr).await,
-        Cmd::TransfersEvents {
-            sk,
-            log_cash_notes,
-            peers,
-        } => {
-            let bootstrap_peers = get_peers_from_args(peers).await?;
-            let bootstrap_peers = if bootstrap_peers.is_empty() {
-                // empty vec is returned if `local-discovery` flag is provided
-                None
-            } else {
-                Some(bootstrap_peers)
-            };
-
-            transfers_events(addr, sk, log_cash_notes, bootstrap_peers).await
-        }
-        Cmd::Subscribe { topic } => gossipsub_subscribe(addr, topic).await,
-        Cmd::Unsubscribe { topic } => gossipsub_unsubscribe(addr, topic).await,
-        Cmd::Publish { topic, msg } => gossipsub_publish(addr, topic, msg).await,
         Cmd::Restart {
             delay_millis,
             retain_peer_id,
@@ -227,115 +166,6 @@ pub async fn node_events(addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-pub async fn transfers_events(
-    addr: SocketAddr,
-    sk: String,
-    log_cash_notes: Option<PathBuf>,
-    bootstrap_peers: Option<Vec<Multiaddr>>,
-) -> Result<()> {
-    let (client, mut wallet) = match MainPubkey::from_hex(&sk) {
-        Ok(main_pubkey) => {
-            let client =
-                Client::new(SecretKey::random(), bootstrap_peers, true, None, None).await?;
-            let wallet_dir = TempDir::new()?;
-            let wallet = WatchOnlyWallet::load_from(&wallet_dir, main_pubkey)?;
-            (client, wallet)
-        }
-        Err(err) => return Err(eyre!("Failed to parse hex-encoded PK: {err:?}")),
-    };
-    let endpoint = format!("https://{addr}");
-    let mut node_client = SafeNodeClient::connect(endpoint).await?;
-    let main_pk = wallet.address();
-    let pk = main_pk.public_key();
-    let _ = node_client
-        .transfer_notifs_filter(Request::new(TransferNotifsFilterRequest {
-            pk: pk.to_bytes().to_vec(),
-        }))
-        .await?;
-
-    let _ = node_client
-        .subscribe_to_topic(Request::new(GossipsubSubscribeRequest {
-            topic: ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(),
-        }))
-        .await?;
-
-    let response = node_client
-        .node_events(Request::new(NodeEventsRequest {}))
-        .await?;
-
-    println!("Listening to transfers notifications for {pk:?}... (press Ctrl+C to exit)");
-    if let Some(ref path) = log_cash_notes {
-        // create cash_notes dir
-        fs::create_dir_all(path)?;
-        println!("Writing cash notes to: {}", path.display());
-    }
-    println!();
-
-    let mut stream = response.into_inner();
-    while let Some(Ok(e)) = stream.next().await {
-        let cash_notes = match NodeEvent::from_bytes(&e.event) {
-            Ok(NodeEvent::TransferNotif {
-                key,
-                cashnote_redemptions,
-            }) => {
-                println!(
-                    "New transfer notification received for {key:?}, containing {} CashNoteRedemption/s.",
-                    cashnote_redemptions.len()
-                );
-
-                match client
-                    .verify_cash_notes_redemptions(main_pk, &cashnote_redemptions)
-                    .await
-                {
-                    Err(err) => {
-                        println!(
-                            "At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}"
-                        );
-                        continue;
-                    }
-                    Ok(cash_notes) => cash_notes,
-                }
-            }
-            Ok(_) => continue,
-            Err(_) => {
-                println!("Error while parsing received NodeEvent");
-                continue;
-            }
-        };
-
-        wallet.deposit(&cash_notes)?;
-
-        for cn in cash_notes {
-            println!(
-                "CashNote received with {:?}, value: {}",
-                cn.unique_pubkey(),
-                cn.value()?
-            );
-
-            if let Some(ref path) = log_cash_notes {
-                // create cash_notes dir
-                let unique_pubkey_name =
-                    *SpendAddress::from_unique_pubkey(&cn.unique_pubkey()).xorname();
-                let unique_pubkey_file_name =
-                    format!("{}.cash_note", hex::encode(unique_pubkey_name));
-
-                let cash_note_file_path = path.join(unique_pubkey_file_name);
-                println!("Writing cash note to: {}", cash_note_file_path.display());
-
-                let hex = cn.to_hex()?;
-                fs::write(cash_note_file_path, &hex)?;
-            }
-        }
-        println!(
-            "New balance after depositing received CashNote/s: {}",
-            wallet.balance()
-        );
-        println!();
-    }
-
-    Ok(())
-}
-
 pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
     let client = RpcClient::new(&endpoint);
@@ -346,30 +176,6 @@ pub async fn record_addresses(addr: SocketAddr) -> Result<()> {
         println!("Key: {:?}", address.key);
     }
 
-    Ok(())
-}
-
-pub async fn gossipsub_subscribe(addr: SocketAddr, topic: String) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let client = RpcClient::new(&endpoint);
-    client.gossipsub_subscribe(&topic).await?;
-    println!("Node successfully received the request to subscribe to topic '{topic}'");
-    Ok(())
-}
-
-pub async fn gossipsub_unsubscribe(addr: SocketAddr, topic: String) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let client = RpcClient::new(&endpoint);
-    client.gossipsub_unsubscribe(&topic).await?;
-    println!("Node successfully received the request to unsubscribe from topic '{topic}'");
-    Ok(())
-}
-
-pub async fn gossipsub_publish(addr: SocketAddr, topic: String, msg: String) -> Result<()> {
-    let endpoint = format!("https://{addr}");
-    let client = RpcClient::new(&endpoint);
-    client.gossipsub_publish(&topic, &msg).await?;
-    println!("Node successfully received the request to publish on topic '{topic}'");
     Ok(())
 }
 
