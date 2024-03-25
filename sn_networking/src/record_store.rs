@@ -8,6 +8,7 @@
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
 use crate::target_arch::{spawn, Instant};
+use crate::CLOSE_GROUP_SIZE;
 use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
@@ -28,7 +29,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::NanoTokens;
+use sn_transfers::{NanoTokens, TOTAL_SUPPLY};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -434,6 +435,8 @@ impl NodeRecordStore {
             );
             NanoTokens::from(cost)
         } else {
+            info!("No distance range of responsibility found, supplying arbitrary non-cheap cost");
+            // arbitrary non cheap cost until we have a distance range
             NanoTokens::from(10000)
         }
     }
@@ -660,26 +663,27 @@ impl RecordStore for ClientRecordStore {
 // Using a linear growth function, and be tweaked by `relevant_records` and `max_records`,
 // to allow nodes receiving too many replication copies can still got paid,
 // and gives an exponential pricing curve when storage reaches high.
-fn calculate_cost_for_records(records_stored: usize, max_records: usize) -> u64 {
+fn calculate_cost_for_records(close_records_stored: usize, max_records: usize) -> u64 {
     use std::cmp::{max, min};
 
-    let ori_cost = (10 * records_stored) as u64;
-    let divider = max(1, records_stored) as u64;
+    let ori_cost = (10 * close_records_stored) as u64;
 
     // 1.05.powf(200) = 18157
     // Given currently the max_records is set at 2048,
-    // hence setting the multiplier trigger at 90% of the max_records
-    let exponential_pricing_trigger = 9 * max_records / 10;
+    // hence setting the multiplier trigger at 60% of the max_records
+    // This should mean that we can have close to 40% of the max records capacity as buffer
+    let exponential_pricing_trigger = 6 * max_records / 10;
 
     let base_multiplier = 1.05_f32;
     let multiplier = max(
         1,
-        base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
+        base_multiplier
+            .powf(close_records_stored.saturating_sub(exponential_pricing_trigger) as f32)
             as u64,
     );
-    let charge = max(10, ori_cost * multiplier / divider);
+    let charge = max(10, ori_cost.saturating_mul(multiplier));
     // Deploy an upper cap safe_guard to the store_cost
-    min(3456788899, charge)
+    min(TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64, charge)
 }
 
 #[allow(trivial_casts)]
@@ -733,9 +737,63 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_cost_for_records() {
+    fn test_calculate_max_cost_for_records() {
         let sut = calculate_cost_for_records(2049, 2048);
-        assert_eq!(sut, 474814770);
+        // at this point we should be at max cost
+        assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
+    }
+
+    #[test]
+    fn test_calculate_50_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 50 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 10240);
+    }
+    #[test]
+    fn test_calculate_60_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 60 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 12280);
+    }
+
+    #[test]
+    fn test_calculate_65_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 65 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 2023120);
+    }
+
+    #[test]
+    fn test_calculate_70_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 70 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 316248770);
+    }
+
+    #[test]
+    fn test_calculate_80_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 80 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 7978447975680);
+    }
+
+    #[test]
+    fn test_calculate_90_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 90 / 100;
+        let sut = calculate_cost_for_records(percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 198121748221132800);
+    }
+
+    #[test]
+    fn test_calculate_min_cost_for_records() {
+        let sut = calculate_cost_for_records(0, 2048);
+        assert_eq!(sut, 10);
     }
 
     #[test]
@@ -1016,7 +1074,7 @@ mod tests {
     #[test]
     fn address_distribution_sim() {
         // Map of peers and correspondent stats of `(num_of_records, Nano_earned)`.
-        let mut peers: HashMap<PeerId, (usize, u64, usize)> = Default::default();
+        let mut peers: HashMap<PeerId, (usize, u64)> = Default::default();
         let mut peers_vec = vec![];
 
         let num_of_peers = 2000;
@@ -1024,7 +1082,7 @@ mod tests {
 
         for _ in 0..num_of_peers {
             let peer_id = PeerId::random();
-            let _ = peers.insert(peer_id, (0, 0, 0));
+            let _ = peers.insert(peer_id, (0, 0));
             peers_vec.push(peer_id);
         }
 
@@ -1056,11 +1114,10 @@ mod tests {
                         let payee = pick_cheapest_payee(&peers_in_close, &peers);
 
                         for peer in peers_in_replicate_range.iter() {
-                            let entry = peers.entry(*peer).or_insert((0, 0, 0));
+                            let entry = peers.entry(*peer).or_insert((0, 0));
                             if *peer == payee {
                                 let cost = calculate_cost_for_records(entry.0, MAX_RECORDS_COUNT);
                                 entry.1 += cost;
-                                entry.2 += 1;
                             }
                             entry.0 += 1;
                         }
@@ -1104,8 +1161,8 @@ mod tests {
 
             iteration += 1;
 
-            // Execute for 50 iterations, which allows the test can be executed in normal CI runs.
-            if iteration == 50 {
+            // Execute for 100 iterations, which allows the test can be executed in normal CI runs.
+            if iteration == 100 {
                 assert_eq!(0, empty_earned_nodes, "every node has earnt _something_");
                 assert!(
                     (max_store_cost / min_store_cost) < 100,
@@ -1159,14 +1216,15 @@ mod tests {
     // After the completion of 121 with 2000 chunks, there is still 56 nodes earned nothing
     fn pick_cheapest_payee(
         peers_in_close: &Vec<PeerId>,
-        peers: &HashMap<PeerId, (usize, u64, usize)>,
+        // peer -> (relevant records, cost)
+        peers: &HashMap<PeerId, (usize, u64)>,
     ) -> PeerId {
         let mut payee = None;
         let mut cheapest_cost = u64::MAX;
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
+                let store_cost = calculate_cost_for_records(stats.0, MAX_RECORDS_COUNT);
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);
