@@ -8,32 +8,10 @@
 
 use crate::subcommands::SubCmd;
 use clap::Parser;
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::Result;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
-use std::{path::PathBuf, time::Duration};
-
-pub fn parse_log_output(val: &str) -> Result<LogOutputDest> {
-    match val {
-        "stdout" => Ok(LogOutputDest::Stdout),
-        "data-dir" => {
-            // Get the current timestamp and format it to be human readable
-            let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-
-            // Get the data directory path and append the timestamp to the log file name
-            let dir = dirs_next::data_dir()
-                .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-                .join("safe")
-                .join("client")
-                .join("logs")
-                .join(format!("log_{timestamp}"));
-            Ok(LogOutputDest::Path(dir))
-        }
-        // The path should be a directory, but we can't use something like `is_dir` to check
-        // because the path doesn't need to exist. We can create it for the user.
-        value => Ok(LogOutputDest::Path(PathBuf::from(value))),
-    }
-}
+use std::time::Duration;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -51,7 +29,7 @@ pub(crate) struct Opt {
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
-    #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "data-dir")]
+    #[clap(long, value_parser = LogOutputDest::parse_from_str, verbatim_doc_comment, default_value = "data-dir")]
     pub log_output_dest: LogOutputDest,
 
     /// Specify the logging format.

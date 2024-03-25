@@ -19,13 +19,12 @@ use sn_client::{
     get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client, ClientEvent,
     ClientEventsBroadcaster, ClientEventsReceiver,
 };
-use sn_logging::{LogBuilder, LogOutputDest};
+use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{error, info};
-use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
