@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711371424973,
+  "lastUpdate": 1711371535763,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "81017468c2b189862a349bcbc6c21242f044dbfc",
-          "message": "refactor(networking): use internal libp2p method\n\nInstead of relying on `kbuckets` method and iterate over that, use the\nlibp2p native method that iterates over the kbuckets for us and sorts it\naccording to distance to our own key.",
-          "timestamp": "2023-11-08T12:35:32Z",
-          "tree_id": "69f69f9b1615dead72220e9de4f6c060274e6030",
-          "url": "https://github.com/maidsafe/safe_network/commit/81017468c2b189862a349bcbc6c21242f044dbfc"
-        },
-        "date": 1699450529090,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9a32e28ae10636842c374187155b6d332e3b13f0",
+          "message": "chore(node): optimization to reduce logging",
+          "timestamp": "2024-03-25T12:09:53Z",
+          "tree_id": "0d06f968f7da63f6b058e9de32d4a1ae922a09fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/9a32e28ae10636842c374187155b6d332e3b13f0"
+        },
+        "date": 1711371535133,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
