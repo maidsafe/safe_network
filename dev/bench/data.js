@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711363656435,
+  "lastUpdate": 1711363766994,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0484719a0215200887b0868c6918a4a7d2c05678",
-          "message": "fix(bench): update benchmark to account for de duplicated files",
-          "timestamp": "2023-11-08T08:30:06Z",
-          "tree_id": "95d94198126b7a5ba5b1c6d6782e98bce66e3900",
-          "url": "https://github.com/maidsafe/safe_network/commit/0484719a0215200887b0868c6918a4a7d2c05678"
-        },
-        "date": 1699436406456,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5c26f7e23bbaba5c64e63ffaefca7b184513db4c",
+          "message": "feat(client): make publish register as an associated function",
+          "timestamp": "2024-03-25T10:03:04Z",
+          "tree_id": "ee7629657af8e37004b8b13bad579b82ef85b395",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c26f7e23bbaba5c64e63ffaefca7b184513db4c"
+        },
+        "date": 1711363766414,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
