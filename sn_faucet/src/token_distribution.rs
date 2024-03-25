@@ -24,6 +24,10 @@ const CLAIMS_URL: &str =
     "https://github.com/maidsafe/safe_network/raw/main/sn_faucet/maid_address_claims.csv";
 const HTTP_STATUS_OK: i32 = 200;
 
+/// Namespace for the claims, wallet addresses should be prefixed with this before signing
+/// to prevent replay attacks from early testnets.
+const CLAIMS_NAMESPACE: &str = "beta1+";
+
 type MaidAddress = String; // base58 encoded
 type Snapshot = HashMap<MaidAddress, NanoTokens>;
 
@@ -95,8 +99,9 @@ impl MaidClaim {
         if !maid_pk_matches_address(&self.address, &self.pubkey) {
             return Err(eyre!("Claim public key does not match address"));
         }
+
         // check wallet is a valid bls pubkey
-        if MainPubkey::from_hex(&self.wallet).is_err() {
+        if MainPubkey::from_hex(&wallet).is_err() {
             return Err(eyre!("Invalid bls public key"));
         };
         // if all the checks are ok, it's valid
@@ -319,15 +324,17 @@ fn maid_pk_matches_address(address: &str, pk_hex: &str) -> bool {
     false
 }
 
+/// Verifies the signature is over a given address (which is namespaced), and from a valid key
 fn check_signature(address: &MaidAddress, msg: &str, signature: &str) -> Result<()> {
+    let namespaced_msg = format!("{}:{}", CLAIMS_NAMESPACE, msg);
     let secp = bitcoin::secp256k1::Secp256k1::new(); // DevSkim: ignore DS440100
-    let msg_hash = bitcoin::sign_message::signed_msg_hash(msg);
+    let msg_hash = bitcoin::sign_message::signed_msg_hash(&namespaced_msg);
     let sig = bitcoin::sign_message::MessageSignature::from_str(signature)?;
     // Signatures doesn't work with p2wpkh-p2sh so always use p2pkh addr.
     // This was double checked with electrum signature validation.
     let mut addr =
         bitcoin::Address::from_str(address)?.require_network(bitcoin::Network::Bitcoin)?;
-    let pubkey = pubkey_from_signature(msg, signature)?;
+    let pubkey = pubkey_from_signature(&namespaced_msg, signature)?;
     if address.starts_with('3') {
         addr = bitcoin::Address::p2pkh(&pubkey, bitcoin::Network::Bitcoin);
     }
@@ -396,6 +403,7 @@ pub async fn handle_distribution_req(
         .get("wallet")
         .ok_or(eyre!("Missing wallet in querystring"))?
         .to_string();
+
     let signature = query
         .get("signature")
         .ok_or(eyre!("Missing signature in querystring"))?
