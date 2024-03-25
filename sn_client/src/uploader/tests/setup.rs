@@ -289,10 +289,15 @@ impl UploaderInterface for TestUploader {
                         .expect("Failed to send task result");
                 });
             }
-            TestSteps::UploadItemErr => {
+            TestSteps::UploadItemErr {
+                trigger_quote_expired,
+            } => {
                 handle.spawn(async move {
                     task_result_sender
-                        .send(TaskResult::UploadErr(xorname))
+                        .send(TaskResult::UploadErr {
+                            xorname,
+                            quote_expired: trigger_quote_expired,
+                        })
                         .await
                         .expect("Failed to send task result");
                 });
@@ -314,7 +319,9 @@ pub enum TestSteps {
     MakePaymentOk,
     MakePaymentErr,
     UploadItemOk,
-    UploadItemErr,
+    UploadItemErr {
+        trigger_quote_expired: bool,
+    },
 }
 
 pub fn get_inner_uploader() -> Result<(InnerUploader, mpsc::Sender<TaskResult>)> {
