@@ -493,7 +493,7 @@ impl Node {
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
 
                 match store_cost {
-                    Ok(cost) => {
+                    Ok((cost, quoting_metrics)) => {
                         if cost == NanoTokens::zero() {
                             QueryResponse::GetStoreCost {
                                 quote: Err(ProtocolError::RecordExists(
@@ -504,7 +504,12 @@ impl Node {
                             }
                         } else {
                             QueryResponse::GetStoreCost {
-                                quote: Self::create_quote_for_storecost(network, cost, &address),
+                                quote: Self::create_quote_for_storecost(
+                                    network,
+                                    cost,
+                                    &address,
+                                    &quoting_metrics,
+                                ),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
                             }

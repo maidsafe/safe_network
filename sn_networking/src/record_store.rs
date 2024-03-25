@@ -8,6 +8,7 @@
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
 use crate::target_arch::{spawn, Instant};
+use crate::CLOSE_GROUP_SIZE;
 use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
@@ -28,7 +29,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::NanoTokens;
+use sn_transfers::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -66,6 +67,8 @@ pub struct NodeRecordStore {
     /// Encyption cipher for the records, randomly generated at node startup
     /// Plus a 4 byte nonce starter
     encryption_details: (Aes256GcmSiv, [u8; 4]),
+    /// Time that this record_store got started
+    timestamp: Instant,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -194,6 +197,7 @@ impl NodeRecordStore {
             record_count_metric: None,
             received_payment_count: 0,
             encryption_details,
+            timestamp: Instant::now(),
         }
     }
 
@@ -423,18 +427,28 @@ impl NodeRecordStore {
 
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn store_cost(&self) -> NanoTokens {
-        let stored_records = self.records.len();
-        let cost = calculate_cost_for_records(
-            stored_records,
-            self.received_payment_count,
-            self.config.max_records,
-        );
+    pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
+        let quoting_metrics = QuotingMetrics {
+            records_stored: self.records.len(),
+            max_records: self.config.max_records,
+            received_payment_count: self.received_payment_count,
+            live_time: self.timestamp.elapsed().as_secs(),
+        };
+
+        let cost = if self.contains(key) {
+            0
+        } else {
+            calculate_cost_for_records(
+                quoting_metrics.records_stored,
+                quoting_metrics.received_payment_count,
+                quoting_metrics.max_records,
+                quoting_metrics.live_time,
+            )
+        };
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Cost is now {cost:?} for {stored_records:?} stored of {MAX_RECORDS_COUNT:?} max, {:?} times got paid.",
-            self.received_payment_count);
-        NanoTokens::from(cost)
+        info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
+        (NanoTokens::from(cost), quoting_metrics)
     }
 
     /// Notify the node received a payment.
@@ -661,23 +675,31 @@ impl RecordStore for ClientRecordStore {
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
 }
 
-// Using a linear growth function, and be tweaked by `received_payment_count` and `max_records`,
+// Using a linear growth function, and be tweaked by `received_payment_count`,
+// `max_records` and `live_time`(in seconds),
 // to allow nodes receiving too many replication copies can still got paid,
 // and gives an exponential pricing curve when storage reaches high.
+// and give extra reward (lower the quoting price to gain a better chance) to long lived nodes.
 fn calculate_cost_for_records(
     records_stored: usize,
     received_payment_count: usize,
     max_records: usize,
+    live_time: u64,
 ) -> u64 {
     use std::cmp::{max, min};
 
     let ori_cost = (10 * records_stored) as u64;
     let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
 
-    // 1.05.powf(200) = 18157
+    // Gaining one step for every day that staying in the network
+    let reward_steps: u64 = live_time / (24 * 3600);
+    let base_multiplier = 1.1_f32;
+    let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
+
+    // 1.05.powf(800) = 9E+16
     // Given currently the max_records is set at 2048,
-    // hence setting the multiplier trigger at 90% of the max_records
-    let exponential_pricing_trigger = 9 * max_records / 10;
+    // hence setting the multiplier trigger at 60% of the max_records
+    let exponential_pricing_trigger = 6 * max_records / 10;
 
     let base_multiplier = 1.05_f32;
     let multiplier = max(
@@ -685,9 +707,10 @@ fn calculate_cost_for_records(
         base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
             as u64,
     );
-    let charge = max(10, ori_cost * multiplier / divider);
+
+    let charge = max(10, ori_cost.saturating_mul(multiplier) / divider / rewarder);
     // Deploy an upper cap safe_guard to the store_cost
-    min(3456788899, charge)
+    min(TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64, charge)
 }
 
 #[allow(trivial_casts)]
@@ -742,8 +765,8 @@ mod tests {
 
     #[test]
     fn test_calculate_cost_for_records() {
-        let sut = calculate_cost_for_records(2049, 2050, 2048);
-        assert_eq!(sut, 474814770);
+        let sut = calculate_cost_for_records(2049, 2050, 2048, 1);
+        assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
     }
 
     #[test]
@@ -771,13 +794,13 @@ mod tests {
             swarm_cmd_sender,
         );
 
-        let store_cost_before = store.store_cost();
+        let store_cost_before = store.store_cost(&r.key);
         // An initial unverified put should not write to disk
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
         // Store cost should not change if no PUT has been added
         assert_eq!(
-            store.store_cost(),
+            store.store_cost(&r.key),
             store_cost_before,
             "store cost should not change over unverified put"
         );
@@ -1073,8 +1096,12 @@ mod tests {
                         for peer in peers_in_replicate_range.iter() {
                             let entry = peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
-                                let cost =
-                                    calculate_cost_for_records(entry.0, entry.2, MAX_RECORDS_COUNT);
+                                let cost = calculate_cost_for_records(
+                                    entry.0,
+                                    entry.2,
+                                    MAX_RECORDS_COUNT,
+                                    0,
+                                );
                                 entry.1 += cost;
                                 entry.2 += 1;
                             }
@@ -1096,7 +1123,7 @@ mod tests {
             let mut max_store_cost = 0;
 
             for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
+                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
                 received_payment_count += stats.2;
                 if stats.1 == 0 {
@@ -1187,7 +1214,7 @@ mod tests {
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
+                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);

@@ -9,17 +9,18 @@
 use crate::{node::Node, Error, Result};
 use sn_networking::Network;
 use sn_protocol::{error::Error as ProtocolError, NetworkAddress};
-use sn_transfers::{NanoTokens, PaymentQuote};
+use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 
 impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
         cost: NanoTokens,
         address: &NetworkAddress,
+        quoting_metrics: &QuotingMetrics,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp);
+        let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp, quoting_metrics);
 
         let Ok(signature) = network.sign(&bytes) else {
             return Err(ProtocolError::QuoteGenerationFailed);
@@ -29,6 +30,7 @@ impl Node {
             content,
             cost,
             timestamp,
+            quoting_metrics: quoting_metrics.clone(),
             signature,
         };
 
@@ -54,7 +56,12 @@ impl Node {
         }
 
         // check sig
-        let bytes = PaymentQuote::bytes_for_signing(quote.content, quote.cost, quote.timestamp);
+        let bytes = PaymentQuote::bytes_for_signing(
+            quote.content,
+            quote.cost,
+            quote.timestamp,
+            &quote.quoting_metrics,
+        );
         let signature = quote.signature;
         if !self.network.verify(&bytes, &signature) {
             return Err(Error::InvalidQuoteSignature);
