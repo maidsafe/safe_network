@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711285844630,
+  "lastUpdate": 1711333471374,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "92c30a4a06d00b12c98a5b49a56e6f5b0747616d",
-          "message": "chore: change extension to small letters\n\n- causes error with the release flow",
-          "timestamp": "2023-11-07T11:26:16+01:00",
-          "tree_id": "3d8e206d9345b01cc5791b020255829f11ddda97",
-          "url": "https://github.com/maidsafe/safe_network/commit/92c30a4a06d00b12c98a5b49a56e6f5b0747616d"
-        },
-        "date": 1699354200055,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.2774585999593721,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.8672513744613928,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 73.38319978154944,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.910493765155984,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5",
+          "message": "feat: use Arc inside Client, Network to reduce clone cost",
+          "timestamp": "2024-03-25T01:42:02Z",
+          "tree_id": "b059d36220e9b7d6501cad5248d5a4b9be014e79",
+          "url": "https://github.com/maidsafe/safe_network/commit/eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5"
+        },
+        "date": 1711333467842,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2974364920630181,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8512183665723383,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.596509942888204,
             "unit": "MiB/s"
           }
         ]
