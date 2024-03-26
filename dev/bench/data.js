@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711495540254,
+  "lastUpdate": 1711495542059,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee",
-          "message": "fix(cli): failed to move chunk path shall not get deleted",
-          "timestamp": "2023-11-13T13:25:35Z",
-          "tree_id": "0d847c2ef0b4e23420b5db9182c8ee87023f8f52",
-          "url": "https://github.com/maidsafe/safe_network/commit/f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee"
-        },
-        "date": 1699885197529,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 188,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 77,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0f14fe5db3c76d56660fa3257d48d7c7414ef937",
+          "message": "chore: lower some networking log levels",
+          "timestamp": "2024-03-26T22:45:42Z",
+          "tree_id": "d5c50d160463b6c761cd00ad1e3b901e1b6d98c0",
+          "url": "https://github.com/maidsafe/safe_network/commit/0f14fe5db3c76d56660fa3257d48d7c7414ef937"
+        },
+        "date": 1711495541485,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
