@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711434523372,
+  "lastUpdate": 1711434525348,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "aa4a209ffafc2e306f459b4d0077aa934f8fcc0b",
-          "message": "chore: simplify when construct payess for storage",
-          "timestamp": "2023-11-09T12:30:08Z",
-          "tree_id": "db4a88bf9821cc4e3ea1450785c871ebf1d61cf2",
-          "url": "https://github.com/maidsafe/safe_network/commit/aa4a209ffafc2e306f459b4d0077aa934f8fcc0b"
-        },
-        "date": 1699536876957,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 234,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "8e780665d8b3758b151fc9029f112021690df835",
+          "message": "feat(transfers): enable client to check if a quote has expired",
+          "timestamp": "2024-03-26T05:48:28Z",
+          "tree_id": "dd4658ebc336632ea0903b184f1bb8538c0ce455",
+          "url": "https://github.com/maidsafe/safe_network/commit/8e780665d8b3758b151fc9029f112021690df835"
+        },
+        "date": 1711434524759,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 181,
             "unit": "MB"
           },
           {
