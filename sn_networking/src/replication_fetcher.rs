@@ -85,7 +85,7 @@ impl ReplicationFetcher {
             if let Entry::Vacant(entry) = self.on_going_fetches.entry(new_data_key.clone()) {
                 let (record_key, _record_type) = new_data_key;
                 keys_to_fetch.push((holder, record_key));
-                let _ = entry.insert((holder, Instant::now()));
+                let _ = entry.insert((holder, Instant::now() + FETCH_TIMEOUT));
             }
 
             // To avoid later on un-necessary actions.
