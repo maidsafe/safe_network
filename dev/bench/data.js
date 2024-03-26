@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711462150103,
+  "lastUpdate": 1711462152752,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40542,6 +40542,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "5556bbb1543970686e9925bc3873d2f3c1f4c8e4",
+          "message": "fix(cli): files should be chunked before checking if the chunks are empty",
+          "timestamp": "2024-03-26T13:29:04Z",
+          "tree_id": "bcb45120d53a42a8a2e88fc1f7844f5597d639e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/5556bbb1543970686e9925bc3873d2f3c1f4c8e4"
+        },
+        "date": 1711462151877,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3845,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 17221,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
