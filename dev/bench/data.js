@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711466924766,
+  "lastUpdate": 1711466926871,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40576,6 +40576,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 17221,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "56add190d3edc9ca9b88232054955067c4b5e872",
+          "message": "fix(test): use tempfile lib instead of stdlib to create temp dirs",
+          "timestamp": "2024-03-26T14:44:12Z",
+          "tree_id": "5e1e291d68c4289405fc85bc63f6264e459335bd",
+          "url": "https://github.com/maidsafe/safe_network/commit/56add190d3edc9ca9b88232054955067c4b5e872"
+        },
+        "date": 1711466926230,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3609,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 15906,
             "unit": "ms"
           },
           {
