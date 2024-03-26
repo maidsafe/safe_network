@@ -153,7 +153,7 @@ async fn startup_server(client: &Client) -> Result<()> {
         } else {
             // issue a fixed amount of tokens to the wallet key
             let key = url.path().trim_start_matches('/');
-            match send_tokens(client, "100", key).await {
+            match send_tokens(client, "1", key).await {
                 Ok(transfer) => {
                     println!("Sent tokens to {key}");
                     debug!("Sent tokens to {key}");
