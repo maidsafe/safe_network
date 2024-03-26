@@ -26,7 +26,6 @@ use sn_registers::{Register, RegisterAddress};
 use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote};
 use std::{
     collections::{BTreeMap, VecDeque},
-    env::temp_dir,
     path::PathBuf,
     sync::Arc,
 };
@@ -385,10 +384,10 @@ pub enum TestSteps {
     },
 }
 
-pub fn get_inner_uploader() -> Result<(InnerUploader, mpsc::Sender<TaskResult>)> {
-    let client = build_unconnected_client()?;
+pub fn get_inner_uploader(root_dir: PathBuf) -> Result<(InnerUploader, mpsc::Sender<TaskResult>)> {
+    let client = build_unconnected_client(root_dir.clone())?;
 
-    let mut inner = InnerUploader::new(client, temp_dir());
+    let mut inner = InnerUploader::new(client, root_dir);
     let (task_result_sender, task_result_receiver) = mpsc::channel(100);
     inner.testing_task_channels = Some((task_result_sender.clone(), task_result_receiver));
 
@@ -432,8 +431,8 @@ pub fn start_uploading_with_steps(
 
 // Build a very simple client struct for testing. This does not connect to any network.
 // The UploaderInterface eliminates the need for direct networking in tests.
-pub fn build_unconnected_client() -> Result<Client> {
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), true, temp_dir());
+pub fn build_unconnected_client(root_dir: PathBuf) -> Result<Client> {
+    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), true, root_dir);
     let (network, ..) = network_builder.build_client()?;
     let client = Client {
         network: network.clone(),
@@ -444,12 +443,11 @@ pub fn build_unconnected_client() -> Result<Client> {
 }
 
 // We don't perform any networking, so the paths can be dummy ones.
-pub fn get_dummy_chunk_paths(num: usize) -> Vec<(XorName, PathBuf)> {
-    let path = temp_dir();
+pub fn get_dummy_chunk_paths(num: usize, temp_dir: PathBuf) -> Vec<(XorName, PathBuf)> {
     let mut rng = thread_rng();
     let mut chunks = Vec::with_capacity(num);
     for _ in 0..num {
-        chunks.push((XorName::random(&mut rng), path.clone()));
+        chunks.push((XorName::random(&mut rng), temp_dir.clone()));
     }
     chunks
 }
