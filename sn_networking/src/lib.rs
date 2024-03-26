@@ -33,7 +33,7 @@ mod transport;
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
-    cmd::SwarmLocalState,
+    cmd::{NodeIssue, SwarmLocalState},
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
@@ -43,7 +43,6 @@ pub use self::{
 
 use self::{cmd::SwarmCmd, error::Result};
 use backoff::{Error as BackoffError, ExponentialBackoff};
-use bytes::Bytes;
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
@@ -60,8 +59,9 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     path::PathBuf,
+    sync::Arc,
 };
 use tokio::sync::{
     mpsc::{self, Sender},
@@ -154,9 +154,9 @@ pub fn sort_peers_by_key<'a, T>(
 /// API to interact with the underlying Swarm
 pub struct Network {
     pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    pub peer_id: PeerId,
-    pub root_dir_path: PathBuf,
-    keypair: Keypair,
+    pub peer_id: Arc<PeerId>,
+    pub root_dir_path: Arc<PathBuf>,
+    keypair: Arc<Keypair>,
 }
 
 impl Network {
@@ -343,9 +343,13 @@ impl Network {
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
     /// Record already exists will have a cost of zero to be returned.
+    ///
+    /// Ignore the quote from any peers from `ignore_peers`. This is useful if we want to repay a different PeerId
+    /// on failure.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
+        ignore_peers: Vec<PeerId>,
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
@@ -390,28 +394,24 @@ impl Network {
                 .distance(peer_address_a)
                 .cmp(&record_address.distance(peer_address_b))
         });
+        #[allow(clippy::mutable_key_type)]
+        let ignore_peers = ignore_peers
+            .into_iter()
+            .map(NetworkAddress::from_peer)
+            .collect::<BTreeSet<_>>();
 
         // Ensure we dont have any further out nodes than `close_group_majority()`
         // This should ensure that if we didnt get all responses from close nodes,
         // we're less likely to be paying a node that is not in the CLOSE_GROUP
-        let all_costs = all_costs.into_iter().take(close_group_majority()).collect();
+        //
+        // Also filter out the peers.
+        let all_costs = all_costs
+            .into_iter()
+            .filter(|(peer_address, ..)| !ignore_peers.contains(peer_address))
+            .take(close_group_majority())
+            .collect();
 
         get_fees_from_store_cost_responses(all_costs)
-    }
-
-    /// Subscribe to given gossipsub topic
-    pub fn subscribe_to_topic(&self, topic_id: String) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubSubscribe(topic_id));
-    }
-
-    /// Unsubscribe from given gossipsub topic
-    pub fn unsubscribe_from_topic(&self, topic_id: String) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubUnsubscribe(topic_id));
-    }
-
-    /// Publish a msg on a given topic
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
-        self.send_swarm_cmd(SwarmCmd::GossipsubPublish { topic_id, msg });
     }
 
     /// Get a record from the network
@@ -542,10 +542,10 @@ impl Network {
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
-    /// Whether the target peer is considered as `in trouble` by self
-    pub async fn is_peer_bad(&self, target: NetworkAddress) -> Result<bool> {
+    /// Whether the target peer is considered blacklisted by self
+    pub async fn is_peer_shunned(&self, target: NetworkAddress) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::IsPeerInTrouble { target, sender });
+        self.send_swarm_cmd(SwarmCmd::IsPeerShunned { target, sender });
 
         receiver
             .await
@@ -735,16 +735,12 @@ impl Network {
         Ok(state)
     }
 
-    pub fn start_handle_gossip(&self) {
-        self.send_swarm_cmd(SwarmCmd::GossipHandler)
-    }
-
     pub fn trigger_interval_replication(&self) {
         self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
     }
 
-    pub fn notify_node_status(&self, peer_id: PeerId, is_bad: bool) {
-        self.send_swarm_cmd(SwarmCmd::SendNodeStatus { peer_id, is_bad });
+    pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
+        self.send_swarm_cmd(SwarmCmd::RecordNodeIssue { peer_id, issue });
     }
 
     // Helper to send SwarmCmd
@@ -772,7 +768,7 @@ impl Network {
         // ensure we're not including self here
         if client {
             // remove our peer id from the calculations here:
-            closest_peers.retain(|&x| x != self.peer_id);
+            closest_peers.retain(|&x| x != *self.peer_id);
         }
         if tracing::level_enabled!(tracing::Level::TRACE) {
             let close_peers_pretty_print: Vec<_> = closest_peers

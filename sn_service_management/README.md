@@ -5,13 +5,11 @@ Provides utilities for dealing with services, which are mainly used by the node 
 ## RPC Actions
 
 The `RpcActions` trait defines the protocol that is currently available for interacting with `safenode`:
+
 ```
 node_info: Returns information about the node, such as its peer ID and version.
 network_info: Retrieves network-related information, such as the peers currently connected to the node.
 record_addresses: Provides a list of the node's record addresses.
-gossipsub_subscribe: Subscribes to a specific topic on the gossipsub network.
-gossipsub_unsubscribe: Unsubscribes from a given topic on the gossipsub network.
-gossipsub_publish: Publishes a message to a specified topic on the gossipsub network.
 restart_node: Requests the node to restart.
 stop_node: Requests the node to stop its operations.
 update_node: Updates the node with provided parameters.
@@ -20,6 +18,7 @@ update_node: Updates the node with provided parameters.
 Users of the crate can program against the trait rather than the `RpcClient` implementation.
 
 This can facilitate behaviour-based unit testing, like so:
+
 ```
 use mockall::mock;
 use mockall::predicate::*;

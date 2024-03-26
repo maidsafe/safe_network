@@ -18,7 +18,7 @@ As with other Safe-related components, Safenode Manager will shortly be availabl
   - `--log-dir-path`: Path for the log directory. Optional, with platform-specific defaults.
   - `--user`: User account under which the service should run. Optional. Default: `safe`.
   - `--version`: Version of `safenode` to add. Optional. Default: the latest version.
-- Usage: `safenode-manager install [OPTIONS]`
+- Usage: `safenode-manager add [OPTIONS]`
 
 This command must run as the root user on Linux/macOS and the Administrator user on Windows.
 

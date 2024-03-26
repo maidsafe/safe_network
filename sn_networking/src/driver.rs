@@ -11,6 +11,7 @@ use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::target_arch::{interval, spawn, Instant};
+use crate::NodeIssue;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -37,7 +38,6 @@ use libp2p::{
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
-        behaviour::toggle::Toggle,
         dial_opts::{DialOpts, PeerCondition},
         ConnectionId, DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
@@ -56,8 +56,8 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
+    sync::Arc,
 };
-use tiny_keccak::{Hasher, Sha3};
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
 use tracing::warn;
@@ -185,7 +185,6 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) gossipsub: Toggle<libp2p::gossipsub::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -194,7 +193,6 @@ pub struct NetworkBuilder {
     local: bool,
     root_dir: PathBuf,
     listen_addr: Option<SocketAddr>,
-    enable_gossip: bool,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
     #[cfg(feature = "open-metrics")]
@@ -210,7 +208,6 @@ impl NetworkBuilder {
             local,
             root_dir,
             listen_addr: None,
-            enable_gossip: false,
             request_timeout: None,
             concurrency_limit: None,
             #[cfg(feature = "open-metrics")]
@@ -222,11 +219,6 @@ impl NetworkBuilder {
 
     pub fn listen_addr(&mut self, listen_addr: SocketAddr) {
         self.listen_addr = Some(listen_addr);
-    }
-
-    /// Enable gossip for the network
-    pub fn enable_gossip(&mut self) {
-        self.enable_gossip = true;
     }
 
     pub fn request_timeout(&mut self, request_timeout: Duration) {
@@ -466,42 +458,6 @@ impl NetworkBuilder {
 
         let main_transport = transport::build_transport(&self.keypair);
 
-        let gossipsub = if self.enable_gossip {
-            // Gossipsub behaviour
-            let gossipsub_config = libp2p::gossipsub::ConfigBuilder::default()
-                // we don't currently require source peer id and/or signing
-                .validation_mode(libp2p::gossipsub::ValidationMode::Permissive)
-                // we use the hash of the msg content as the msg id to deduplicate them
-                .message_id_fn(|msg| {
-                    let mut sha3 = Sha3::v256();
-                    let mut msg_id = [0; 32];
-                    sha3.update(&msg.data);
-                    sha3.finalize(&mut msg_id);
-                    msg_id.into()
-                })
-                // set the heartbeat interval to be higher than default 1sec
-                .heartbeat_interval(Duration::from_secs(5))
-                // default is 3sec, increase to 10sec to avoid false alert
-                .iwant_followup_time(Duration::from_secs(10))
-                // default is 10sec, increase to 60sec to reduce the risk of looping
-                .published_message_ids_cache_time(Duration::from_secs(60))
-                .build()
-                .map_err(|err| NetworkError::GossipsubConfigError(err.to_string()))?;
-
-            // Set the message authenticity
-            let message_authenticity = libp2p::gossipsub::MessageAuthenticity::Anonymous;
-
-            // build a gossipsub network behaviour
-            let gossipsub: libp2p::gossipsub::Behaviour =
-                libp2p::gossipsub::Behaviour::new(message_authenticity, gossipsub_config)
-                    .expect("Failed to instantiate Gossipsub behaviour.");
-            Some(gossipsub)
-        } else {
-            None
-        };
-
-        let gossipsub = Toggle::from(gossipsub);
-
         let transport = if !self.local {
             debug!("Preventing non-global dials");
             // Wrap upper in a transport that prevents dialing local addresses.
@@ -516,7 +472,6 @@ impl NetworkBuilder {
             identify,
             #[cfg(feature = "local-discovery")]
             mdns,
-            gossipsub,
         };
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -550,7 +505,6 @@ impl NetworkBuilder {
             // We use 255 here which allows covering a network larger than 64k without any rotating.
             // This is based on the libp2p kad::kBuckets peers distribution.
             dialed_peers: CircularVec::new(255),
-            is_gossip_handler: false,
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
             live_connected_peers: Default::default(),
@@ -564,9 +518,9 @@ impl NetworkBuilder {
         Ok((
             Network {
                 swarm_cmd_sender,
-                peer_id,
-                root_dir_path: self.root_dir,
-                keypair: self.keypair,
+                peer_id: Arc::new(peer_id),
+                root_dir_path: Arc::new(self.root_dir),
+                keypair: Arc::new(self.keypair),
             },
             network_event_receiver,
             swarm_driver,
@@ -598,10 +552,6 @@ pub struct SwarmDriver {
     pub(crate) pending_get_record: PendingGetRecord,
     /// A list of the most recent peers we have dialed ourselves.
     pub(crate) dialed_peers: CircularVec<PeerId>,
-    // For normal nodes, though they subscribe to the gossip topic
-    // (to ensure no miss-up by carrying out libp2p low level gossip forwarding),
-    // they are not supposed to process the gossip msg that received from libp2p.
-    pub(crate) is_gossip_handler: bool,
     // A list of random `PeerId` candidates that falls into kbuckets,
     // This is to ensure a more accurate network discovery.
     pub(crate) network_discovery: NetworkDiscovery,
@@ -613,7 +563,7 @@ pub struct SwarmDriver {
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
-    pub(crate) bad_nodes: BTreeSet<PeerId>,
+    pub(crate) bad_nodes: BTreeMap<PeerId, Vec<NodeIssue>>, // 10 is the max number of issues we track to avoid mem leaks
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
 }
 

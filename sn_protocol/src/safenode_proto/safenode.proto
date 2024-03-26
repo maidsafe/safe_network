@@ -31,23 +31,11 @@ service SafeNode {
   // Returns a stream of events as triggered by this node
   rpc NodeEvents (NodeEventsRequest) returns (stream NodeEvent);
 
-  // Set a PublicKey to start decoding and accepting Transfer notifications received over gossipsub.
-  rpc TransferNotifsFilter (TransferNotifsFilterRequest) returns (TransferNotifsFilterResponse);
-
   // Returns the Addresses of all the Records stored by this node
   rpc RecordAddresses (RecordAddressesRequest) returns (RecordAddressesResponse);
 
   // Returns the entire Kbucket of this node
   rpc KBuckets (KBucketsRequest) returns (KBucketsResponse);
-
-  // Subscribe to a Gossipsub topic
-  rpc SubscribeToTopic (GossipsubSubscribeRequest) returns (GossipsubSubscribeResponse);
-
-  // Unsubscribe from a Gossipsub topic
-  rpc UnsubscribeFromTopic (GossipsubUnsubscribeRequest) returns (GossipsubUnsubscribeResponse);
-
-  // Publish a msg on a Gossipsub topic
-  rpc PublishOnTopic (GossipsubPublishRequest) returns (GossipsubPublishResponse);
 
   // Stop the execution of this node
   rpc Stop (StopRequest) returns (StopResponse);

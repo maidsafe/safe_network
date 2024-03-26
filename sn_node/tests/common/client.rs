@@ -108,21 +108,11 @@ pub fn get_all_rpc_addresses(skip_genesis_for_droplet: bool) -> Result<Vec<Socke
     }
 }
 
-/// Get a new Client.
-/// If SN_INVENTORY flag is passed, the client is bootstrapped to the droplet network
-/// Else to the local network.
-pub async fn get_gossip_client() -> Client {
-    match DeploymentInventory::load() {
-        Ok(inventory) => Droplet::get_gossip_client(&inventory).await,
-        Err(_) => NonDroplet::get_gossip_client().await,
-    }
-}
-
 /// Adds funds to the provided to_wallet_dir
 /// If SN_INVENTORY flag is passed, the amount is retrieved from the faucet url
 /// else obtain it from the provided faucet HotWallet
 ///
-/// We obtain 100 SNT from the network per call. Use `get_gossip_client_and_wallet` during the initial setup which would
+/// We obtain 100 SNT from the network per call. Use `get_client_and_wallet` during the initial setup which would
 /// obtain 10*100 SNT
 pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Result<HotWallet> {
     match DeploymentInventory::load() {
@@ -139,17 +129,17 @@ pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Resul
 ///
 /// We get a maximum of 10*100 SNT from the network. This is hardcoded as the Droplet tests have the fetch the
 /// coins from the faucet and each request is limited to 100 SNT.
-pub async fn get_gossip_client_and_funded_wallet(root_dir: &Path) -> Result<(Client, HotWallet)> {
+pub async fn get_client_and_funded_wallet(root_dir: &Path) -> Result<(Client, HotWallet)> {
     match DeploymentInventory::load() {
         Ok(inventory) => {
-            let client = Droplet::get_gossip_client(&inventory).await;
+            let client = Droplet::get_client(&inventory).await;
             let local_wallet =
                 Droplet::get_funded_wallet(&client, root_dir, inventory.faucet_address, true)
                     .await?;
             Ok((client, local_wallet))
         }
         Err(_) => {
-            let client = NonDroplet::get_gossip_client().await;
+            let client = NonDroplet::get_client().await;
             let local_wallet = NonDroplet::get_funded_wallet(&client, root_dir, true).await?;
 
             Ok((client, local_wallet))
@@ -160,7 +150,7 @@ pub async fn get_gossip_client_and_funded_wallet(root_dir: &Path) -> Result<(Cli
 pub struct NonDroplet;
 impl NonDroplet {
     ///  Get a new Client for testing
-    pub async fn get_gossip_client() -> Client {
+    pub async fn get_client() -> Client {
         let secret_key = bls::SecretKey::random();
 
         let bootstrap_peers = if !cfg!(feature = "local-discovery") {
@@ -177,7 +167,7 @@ impl NonDroplet {
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
         info!("Client bootstrap with peer {bootstrap_peers:?}");
-        Client::new(secret_key, bootstrap_peers, true, None, None)
+        Client::new(secret_key, bootstrap_peers, None, None)
             .await
             .expect("Client shall be successfully created.")
     }
@@ -280,7 +270,7 @@ impl NonDroplet {
 pub struct Droplet;
 impl Droplet {
     /// Create a new client and bootstrap from the provided safe_peers
-    pub async fn get_gossip_client(inventory: &DeploymentInventory) -> Client {
+    pub async fn get_client(inventory: &DeploymentInventory) -> Client {
         let secret_key = bls::SecretKey::random();
 
         let mut bootstrap_peers = Vec::new();
@@ -300,7 +290,7 @@ impl Droplet {
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
         info!("Client bootstrap with peer {bootstrap_peers:?}");
-        Client::new(secret_key, Some(bootstrap_peers), true, None, None)
+        Client::new(secret_key, Some(bootstrap_peers), None, None)
             .await
             .expect("Client shall be successfully created.")
     }

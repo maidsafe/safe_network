@@ -10,7 +10,7 @@
 mod common;
 
 use crate::common::{
-    client::{get_all_rpc_addresses, get_gossip_client_and_funded_wallet},
+    client::{get_all_rpc_addresses, get_client_and_funded_wallet},
     get_all_peer_ids, get_safenode_rpc_client, NodeRestart,
 };
 use assert_fs::TempDir;
@@ -108,8 +108,7 @@ async fn verify_data_location() -> Result<()> {
 
     let paying_wallet_dir = TempDir::new()?;
 
-    let (client, _paying_wallet) =
-        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
     store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;

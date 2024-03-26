@@ -51,6 +51,7 @@ pub use self::{
 pub(crate) use error::Result;
 
 use sn_networking::Network;
+use std::sync::Arc;
 
 #[cfg(target_arch = "wasm32")]
 use console_error_panic_hook;
@@ -121,5 +122,5 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
 pub struct Client {
     network: Network,
     events_broadcaster: ClientEventsBroadcaster,
-    signer: bls::SecretKey,
+    signer: Arc<bls::SecretKey>,
 }

@@ -12,7 +12,6 @@ use crate::{
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
 };
-use bytes::Bytes;
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
 use itertools::Itertools;
@@ -55,7 +54,6 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
-    Gossipsub(Box<libp2p::gossipsub::Event>),
 }
 
 impl From<request_response::Event<Request, Response>> for NodeEvent {
@@ -80,12 +78,6 @@ impl From<mdns::Event> for NodeEvent {
 impl From<libp2p::identify::Event> for NodeEvent {
     fn from(event: libp2p::identify::Event) -> Self {
         NodeEvent::Identify(Box::new(event))
-    }
-}
-
-impl From<libp2p::gossipsub::Event> for NodeEvent {
-    fn from(event: libp2p::gossipsub::Event) -> Self {
-        NodeEvent::Gossipsub(Box::new(event))
     }
 }
 
@@ -123,20 +115,6 @@ pub enum NetworkEvent {
     NewListenAddr(Multiaddr),
     /// Report unverified record
     UnverifiedRecord(Record),
-    /// Gossipsub message received
-    GossipsubMsgReceived {
-        /// Topic the message was published on
-        topic: String,
-        /// The raw bytes of the received message
-        msg: Bytes,
-    },
-    /// The Gossipsub message that we published
-    GossipsubMsgPublished {
-        /// Topic the message was published on
-        topic: String,
-        /// The raw bytes of the sent message
-        msg: Bytes,
-    },
     /// Terminate Node on HDD write erros
     TerminateNode,
     /// List of peer nodes that failed to fetch replication copy from.
@@ -176,12 +154,6 @@ impl Debug for NetworkEvent {
             NetworkEvent::UnverifiedRecord(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
-            }
-            NetworkEvent::GossipsubMsgReceived { topic, .. } => {
-                write!(f, "NetworkEvent::GossipsubMsgReceived({topic})")
-            }
-            NetworkEvent::GossipsubMsgPublished { topic, .. } => {
-                write!(f, "NetworkEvent::GossipsubMsgPublished({topic})")
             }
             NetworkEvent::TerminateNode => {
                 write!(f, "NetworkEvent::TerminateNode")
@@ -315,7 +287,7 @@ impl SwarmDriver {
                             // during the connection establish process, only check cached black_list
                             // The periodical check, which involves network queries shall filter
                             // out bad_nodes eventually.
-                            if total_peers > 100 && self.bad_nodes.contains(&peer_id) {
+                            if total_peers > 100 && self.bad_nodes.get(&peer_id).is_some() {
                                 info!("Peer {peer_id:?} is considered as bad, blocking it.");
                             } else {
                                 self.remove_bootstrap_from_full(peer_id);
@@ -362,25 +334,7 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmEvent::Behaviour(NodeEvent::Gossipsub(event)) => {
-                event_string = "gossip";
 
-                if self.is_gossip_handler {
-                    match *event {
-                        libp2p::gossipsub::Event::Message {
-                            message,
-                            message_id,
-                            ..
-                        } => {
-                            info!("Gossipsub message received, id: {message_id:?}");
-                            let topic = message.topic.into_string();
-                            let msg = Bytes::from(message.data);
-                            self.send_event(NetworkEvent::GossipsubMsgReceived { topic, msg });
-                        }
-                        other => trace!("Gossipsub Event has been ignored: {other:?}"),
-                    }
-                }
-            }
             SwarmEvent::NewListenAddr { address, .. } => {
                 event_string = "new listen addr";
 

@@ -42,14 +42,13 @@ libp2p = { version = "0.53", features = [
     "noise",
     "tcp",
     "yamux",
-    "gossipsub",
     "websocket",
 ] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
-serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_protocol = { path = "../sn_protocol", version = "0.15.5" }
 sn_transfers = { path = "../sn_transfers", version = "0.16.5" }
 sn_registers = { path = "../sn_registers", version = "0.3.9" }
@@ -98,7 +97,6 @@ libp2p = { version = "0.53", features = [
     "identify",
     "noise",
     "yamux",
-    "gossipsub",
     "websocket-websys",
     "wasm-bindgen",
 ] }

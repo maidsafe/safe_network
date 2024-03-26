@@ -8,7 +8,7 @@
 
 mod common;
 
-use crate::common::client::{add_funds_to_wallet, get_gossip_client_and_funded_wallet};
+use crate::common::client::{add_funds_to_wallet, get_client_and_funded_wallet};
 use assert_fs::TempDir;
 use common::{
     client::{get_node_count, get_wallet},
@@ -124,8 +124,7 @@ async fn data_availability_during_churn() -> Result<()> {
 
     info!("Creating a client and paying wallet...");
     let paying_wallet_dir = TempDir::new()?;
-    let (client, _paying_wallet) =
-        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     // Waiting for the paying_wallet funded.
     sleep(std::time::Duration::from_secs(10)).await;

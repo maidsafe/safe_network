@@ -59,26 +59,32 @@ impl WatchOnlyWallet {
         }
     }
 
-    pub fn get_payment_transaction(&self, chunk_name: &XorName) -> Result<PaymentDetails> {
+    /// Return all the payments made to the provided xorname if it
+    pub fn get_payment_transactions(&self, name: &XorName) -> Result<Vec<PaymentDetails>> {
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let unique_file_name = format!("{}.payment", hex::encode(*name));
         let payment_file_path = created_payments_dir.join(unique_file_name);
 
         debug!("Getting payment from {payment_file_path:?}");
         let file = fs::File::open(&payment_file_path)?;
-        let payment = rmp_serde::from_read(&file)?;
+        let payments = rmp_serde::from_read(&file)?;
 
-        Ok(payment)
+        Ok(payments)
     }
 
-    pub fn insert_payment_transaction(
-        &self,
-        chunk_name: XorName,
-        payment: PaymentDetails,
-    ) -> Result<()> {
+    /// Insert a payment and write it to the `payments` dir.
+    /// If a prior payment has been made to the same xorname, then the new payment is pushed to the end of the list.
+    pub fn insert_payment_transaction(&self, name: XorName, payment: PaymentDetails) -> Result<()> {
+        // try to read the previous payments and push the new payment at the end
+        let payments = match self.get_payment_transactions(&name) {
+            Ok(mut stored_payments) => {
+                stored_payments.push(payment);
+                stored_payments
+            }
+            Err(_) => vec![payment],
+        };
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(chunk_name));
-
+        let unique_file_name = format!("{}.payment", hex::encode(name));
         fs::create_dir_all(&created_payments_dir)?;
 
         let payment_file_path = created_payments_dir.join(unique_file_name);
@@ -86,13 +92,13 @@ impl WatchOnlyWallet {
 
         let mut file = fs::File::create(payment_file_path)?;
         let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
-        payment.serialize(&mut serialiser)?;
+        payments.serialize(&mut serialiser)?;
         Ok(())
     }
 
-    pub fn remove_payment_transaction(&self, chunk_name: &XorName) {
+    pub fn remove_payment_transaction(&self, name: &XorName) {
         let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*chunk_name));
+        let unique_file_name = format!("{}.payment", hex::encode(*name));
         let payment_file_path = created_payments_dir.join(unique_file_name);
 
         debug!("Removing payment from {payment_file_path:?}");

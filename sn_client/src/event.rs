@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bytes::Bytes;
 use serde::Serialize;
 use tokio::sync::broadcast::{self, error::RecvError};
 
@@ -48,14 +47,6 @@ pub enum ClientEvent {
     /// No network activity has been received for a given duration
     /// we should error out
     InactiveClient(tokio::time::Duration),
-    /// Gossipsub message received on a topic the client has subscribed to
-    GossipsubMsg {
-        /// Topic the message was published on
-        topic: String,
-        /// The raw bytes of the received message
-        #[debug(skip)]
-        msg: Bytes,
-    },
 }
 
 /// Receiver Channel where users of the public API can listen to events broadcasted by the client.

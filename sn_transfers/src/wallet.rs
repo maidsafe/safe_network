@@ -63,7 +63,7 @@ use crate::{NanoTokens, UniquePubkey};
 use wallet_file::wallet_file_name;
 
 pub use self::{
-    data_payments::{Payment, PaymentQuote},
+    data_payments::{Payment, PaymentQuote, QUOTE_EXPIRATION_SECS},
     error::{Error, Result},
     hot_wallet::HotWallet,
     keys::bls_secret_from_hex,
