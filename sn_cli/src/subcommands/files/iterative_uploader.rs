@@ -3,7 +3,7 @@ use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
 use sn_client::{
     transfers::{NanoTokens, TransferError, WalletError},
-    Client, Error as ClientError, UploadEvent, UploadStats, Uploader,
+    Client, Error as ClientError, UploadEvent, UploadSummary, Uploader,
 };
 use std::{
     path::PathBuf,
@@ -72,7 +72,7 @@ impl IterativeUploader {
             &chunks_to_upload.len(),
         );
 
-        let upload_stats =
+        let upload_summary =
             IterativeUploader::upload_chunk_vector(chunks_to_upload.clone(), uploader).await?;
 
         map_join_handle_that_contains_resulting_file_upload_events
@@ -83,7 +83,7 @@ impl IterativeUploader {
             chunks_to_upload.len(),
             current_instant,
             total_existing_chunks,
-            upload_stats,
+            upload_summary,
         );
 
         Ok(())
@@ -92,10 +92,10 @@ impl IterativeUploader {
     async fn upload_chunk_vector(
         chunks_to_upload: Vec<(XorName, PathBuf)>,
         mut uploader: Uploader,
-    ) -> Result<UploadStats> {
+    ) -> Result<UploadSummary> {
         uploader.insert_chunk_paths(chunks_to_upload);
         match uploader.start_upload().await {
-            Ok(stats) => Ok(stats),
+            Ok(summary) => Ok(summary),
             Err(ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(
                 available,
                 required,
@@ -219,7 +219,7 @@ fn msg_end_messages(
     chunks_to_upload_amount: usize,
     time_since_mark: Instant,
     total_existing_chunks: Arc<AtomicU64>,
-    upload_stats: UploadStats,
+    upload_summary: UploadSummary,
 ) {
     let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
     let uploaded_chunks = chunks_to_upload_amount - total_existing_chunks as usize;
@@ -237,11 +237,11 @@ fn msg_end_messages(
         total_existing_chunks,
         uploaded_chunks,
     );
-    let storage_cost = upload_stats.storage_cost;
+    let storage_cost = upload_summary.storage_cost;
     msg_payment_details(
         storage_cost,
-        upload_stats.royalty_fees,
-        upload_stats.final_balance,
+        upload_summary.royalty_fees,
+        upload_summary.final_balance,
         uploaded_chunks,
     );
 

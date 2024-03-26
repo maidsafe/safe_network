@@ -26,12 +26,13 @@ use xor_name::XorName;
 
 /// The result of a successful upload.
 #[derive(Debug, Clone)]
-pub struct UploadStats {
+pub struct UploadSummary {
     pub storage_cost: NanoTokens,
     pub royalty_fees: NanoTokens,
     pub final_balance: NanoTokens,
     pub uploaded_count: usize,
     pub skipped_count: usize,
+    pub uploaded_registers: Vec<ClientRegister>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,7 +69,7 @@ pub struct Uploader {
 
 impl Uploader {
     /// Start the upload process.
-    pub async fn start_upload(mut self) -> Result<UploadStats> {
+    pub async fn start_upload(mut self) -> Result<UploadSummary> {
         let event_sender = self
             .inner
             .as_mut()
@@ -84,7 +85,7 @@ impl Uploader {
                 }
                 Err(err)
             }
-            Ok(stats) => Ok(stats),
+            Ok(summary) => Ok(summary),
         }
     }
 
@@ -155,6 +156,19 @@ impl Uploader {
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_max_repayments_for_failed_data(retries);
+        self
+    }
+
+    /// Enables the uploader to return all the registers that were Uploaded or Updated.
+    /// The registers are emitted through the event channel whenever they're completed, but this returns them
+    /// through the UploadSummary when the whole upload process completes.
+    ///
+    /// By default, this option is set to False
+    pub fn set_collect_registers(mut self, collect_registers: bool) -> Self {
+        self.inner
+            .as_mut()
+            .expect("Uploader::new makes sure inner is present")
+            .set_collect_registers(collect_registers);
         self
     }
 
@@ -267,6 +281,10 @@ impl InnerUploader {
         let (tx, rx) = mpsc::channel(100);
         self.event_sender = Some(tx);
         rx
+    }
+
+    pub(super) fn set_collect_registers(&mut self, collect_registers: bool) {
+        self.collect_registers = collect_registers;
     }
 
     pub(super) fn insert_chunk_paths(

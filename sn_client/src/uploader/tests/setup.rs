@@ -13,7 +13,7 @@ use crate::{
     },
     ClientRegister, UploadEvent,
 };
-use crate::{Client, Result as ClientResult, UploadStats};
+use crate::{Client, Result as ClientResult, UploadSummary};
 use assert_matches::assert_matches;
 use bls::SecretKey;
 use eyre::Result;
@@ -402,7 +402,7 @@ pub fn start_uploading_with_steps(
     test_steps: VecDeque<TestSteps>,
     task_result_sender: mpsc::Sender<TaskResult>,
 ) -> (
-    JoinHandle<ClientResult<UploadStats>>,
+    JoinHandle<ClientResult<UploadSummary>>,
     JoinHandle<Vec<UploadEvent>>,
 ) {
     let batch_size = inner_uploader.batch_size;
