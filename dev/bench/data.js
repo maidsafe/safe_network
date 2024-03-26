@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711425517280,
+  "lastUpdate": 1711425519787,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40342,6 +40342,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 38525,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
+          "message": "feat(networking): add NodeIssue for tracking bad node shunning",
+          "timestamp": "2024-03-26T03:18:38Z",
+          "tree_id": "143854e787c3b32755e1824e332498d636fa81db",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
+        },
+        "date": 1711425518909,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5970,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33922,
             "unit": "ms"
           },
           {
