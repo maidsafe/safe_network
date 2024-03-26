@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711493089057,
+  "lastUpdate": 1711493191209,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11715,35 +11715,6 @@ window.BENCHMARK_DATA = {
             "name": "maqi",
             "username": "maqi"
           },
-          "distinct": true,
-          "id": "5b9de9bce5966c45b09f2ec934ec606689058a50",
-          "message": "fix: avoid infinite looping on verification during upload",
-          "timestamp": "2023-11-13T11:28:42Z",
-          "tree_id": "fcaf21e20da80604c028699e5219d8e8a4c3298f",
-          "url": "https://github.com/maidsafe/safe_network/commit/5b9de9bce5966c45b09f2ec934ec606689058a50"
-        },
-        "date": 1699878331728,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 221,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
           "distinct": false,
           "id": "f58306f5fa3c7d85ae779e7d4ff40cafc21eeaee",
           "message": "fix(cli): failed to move chunk path shall not get deleted",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 46,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3d62ab0c64801730a7c1445dfe70ae5a4f5183aa",
+          "message": "fix(node): fetching new data shall not cause timed_out immediately",
+          "timestamp": "2024-03-26T22:07:00Z",
+          "tree_id": "7ec78f8ef8efcaa330fd62813575533fc210aa3e",
+          "url": "https://github.com/maidsafe/safe_network/commit/3d62ab0c64801730a7c1445dfe70ae5a4f5183aa"
+        },
+        "date": 1711493190816,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
