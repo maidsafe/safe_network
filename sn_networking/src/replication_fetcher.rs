@@ -22,7 +22,9 @@ const MAX_PARALLEL_FETCH: usize = K_VALUE.get();
 
 // The duration after which a peer will be considered failed to fetch data from,
 // if no response got from that peer.
-const FETCH_TIMEOUT: Duration = Duration::from_secs(10);
+// Note this will also cover the period that node self write the fetched copy to disk.
+// Hence shall give a longer time as allowance.
+const FETCH_TIMEOUT: Duration = Duration::from_secs(20);
 
 // The duration after which a pending entry shall be cleared from the `to_be_fetch` list.
 // This is to avoid holding too many outdated entries when the fetching speed is slow.

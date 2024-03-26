@@ -563,7 +563,9 @@ pub struct SwarmDriver {
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
-    pub(crate) bad_nodes: BTreeMap<PeerId, Vec<NodeIssue>>, // 10 is the max number of issues we track to avoid mem leaks
+    // 10 is the max number of issues per node we track to avoid mem leaks
+    // the boolean flag to indicate whether the node is considered as bad or not
+    pub(crate) bad_nodes: BTreeMap<PeerId, (Vec<(NodeIssue, Instant)>, bool)>,
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
 }
 

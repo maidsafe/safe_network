@@ -34,7 +34,7 @@ use crate::target_arch::Instant;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
     /// Connection issues observed
     ConnectionIssue,
@@ -692,19 +692,13 @@ impl SwarmDriver {
                 cmd_string = "RecordNodeIssues";
                 let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
 
-                // only trigger the bad_node verification once have enough nodes in RT
-                // currently set the trigger bar at 100
-                let total_peers: usize = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .kbuckets()
-                    .map(|kbucket| kbucket.num_entries())
-                    .sum();
+                info!("Peer {peer_id:?} is reported as having issue {issue:?}");
+                let (issue_vec, is_bad) = self.bad_nodes.entry(peer_id).or_default();
 
-                if total_peers > 100 {
-                    info!("Peer {peer_id:?} is considered as bad");
-                    let issue_vec = self.bad_nodes.entry(peer_id).or_default();
+                // If being considered as bad already, skip certain operations
+                if !(*is_bad) {
+                    // Remove outdated entries
+                    issue_vec.retain(|(_, timestamp)| timestamp.elapsed().as_secs() < 300);
 
                     // check if vec is already 10 long, if so, remove the oldest issue
                     // we only track 10 issues to avoid mem leaks
@@ -712,8 +706,35 @@ impl SwarmDriver {
                         issue_vec.remove(0);
                     }
 
-                    issue_vec.push(issue);
+                    // To avoid being too sensitive, only consider as a new issue
+                    // when after certain while since the last one
+                    let is_new_issue = if let Some((_issue, timestamp)) = issue_vec.last() {
+                        timestamp.elapsed().as_secs() > 10
+                    } else {
+                        true
+                    };
 
+                    if is_new_issue {
+                        issue_vec.push((issue, Instant::now()));
+                    }
+
+                    // Only consider candidate as a bad node when:
+                    //   accumulated THREE same kind issues within certain period
+                    for (issue, _timestamp) in issue_vec.iter() {
+                        let issue_counts = issue_vec
+                            .iter()
+                            .filter(|(i, _timestamp)| *issue == *i)
+                            .count();
+                        if issue_counts >= 3 {
+                            *is_bad = true;
+                            info!("Peer {peer_id:?} accumulated {issue_counts} times of issue {issue:?}. Consider it as a bad node now.");
+                            // Once a bad behaviour detected, no point to continue
+                            break;
+                        }
+                    }
+                }
+
+                if *is_bad {
                     warn!("Cleaning out bad_peer {peer_id:?}");
                     if let Some(dead_peer) =
                         self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
@@ -730,16 +751,16 @@ impl SwarmDriver {
             }
             SwarmCmd::IsPeerShunned { target, sender } => {
                 cmd_string = "IsPeerInTrouble";
-                if let Some(peer_id) = target.as_peer_id() {
-                    if let Some(_issues) = self.bad_nodes.get(&peer_id) {
-                        // TODO: expand on the criteria here...
-                        let _ = sender.send(true);
+                let is_bad = if let Some(peer_id) = target.as_peer_id() {
+                    if let Some((_issues, is_bad)) = self.bad_nodes.get(&peer_id) {
+                        *is_bad
                     } else {
-                        let _ = sender.send(false);
+                        false
                     }
                 } else {
-                    let _ = sender.send(false);
-                }
+                    false
+                };
+                let _ = sender.send(is_bad);
             }
         }
 

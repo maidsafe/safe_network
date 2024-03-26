@@ -273,21 +273,11 @@ impl SwarmDriver {
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed && peer_is_agent {
-                            // only trigger the bad_node verification once have enough nodes in RT
-                            // currently set the trigger bar at 100
-                            let total_peers: usize = self
-                                .swarm
-                                .behaviour_mut()
-                                .kademlia
-                                .kbuckets()
-                                .map(|kbucket| kbucket.num_entries())
-                                .sum();
-
                             // To reduce the bad_node check resource usage,
                             // during the connection establish process, only check cached black_list
                             // The periodical check, which involves network queries shall filter
                             // out bad_nodes eventually.
-                            if total_peers > 100 && self.bad_nodes.get(&peer_id).is_some() {
+                            if let Some((_issues, true)) = self.bad_nodes.get(&peer_id) {
                                 info!("Peer {peer_id:?} is considered as bad, blocking it.");
                             } else {
                                 self.remove_bootstrap_from_full(peer_id);
