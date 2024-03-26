@@ -19,6 +19,7 @@ use assert_matches::assert_matches;
 use eyre::Result;
 use sn_logging::LogBuilder;
 use std::collections::VecDeque;
+use tempfile::tempdir;
 
 // ===== HAPPY PATH =======
 
@@ -26,11 +27,12 @@ use std::collections::VecDeque;
 #[tokio::test]
 async fn chunk_that_already_exists_in_the_network_should_return_zero_store_cost() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![TestSteps::GetStoreCostOk {
@@ -53,11 +55,12 @@ async fn chunk_that_already_exists_in_the_network_should_return_zero_store_cost(
 #[tokio::test]
 async fn chunk_should_be_paid_for_and_uploaded_if_cost_is_not_zero() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
@@ -85,7 +88,8 @@ async fn chunk_should_be_paid_for_and_uploaded_if_cost_is_not_zero() -> Result<(
 #[tokio::test]
 async fn register_should_be_merged_and_pushed_if_it_already_exists_in_the_network() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -109,7 +113,8 @@ async fn register_should_be_merged_and_pushed_if_it_already_exists_in_the_networ
 #[tokio::test]
 async fn register_should_be_paid_and_uploaded_if_it_does_not_exists() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -146,11 +151,12 @@ async fn register_should_be_paid_and_uploaded_if_it_does_not_exists() -> Result<
 #[tokio::test]
 async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
@@ -191,7 +197,8 @@ async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() ->
 #[tokio::test]
 async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -237,11 +244,12 @@ async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times()
 #[tokio::test]
 async fn chunk_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
@@ -279,7 +287,8 @@ async fn chunk_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired() ->
 #[tokio::test]
 async fn register_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -322,7 +331,8 @@ async fn register_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired()
 #[tokio::test]
 async fn register_upload_should_error_out_if_there_are_multiple_push_failures() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -353,11 +363,12 @@ async fn register_upload_should_error_out_if_there_are_multiple_push_failures() 
 #[tokio::test]
 async fn chunk_should_error_out_if_there_are_multiple_errors_during_get_store_cost() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
@@ -388,7 +399,8 @@ async fn chunk_should_error_out_if_there_are_multiple_errors_during_get_store_co
 async fn register_should_error_out_if_there_are_multiple_errors_during_get_store_cost() -> Result<()>
 {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -423,11 +435,12 @@ async fn register_should_error_out_if_there_are_multiple_errors_during_get_store
 #[tokio::test]
 async fn chunk_should_error_out_if_there_are_multiple_errors_during_make_payment() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
@@ -458,7 +471,8 @@ async fn chunk_should_error_out_if_there_are_multiple_errors_during_make_payment
 async fn register_should_error_out_if_there_are_multiple_errors_during_make_payment() -> Result<()>
 {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
@@ -493,11 +507,12 @@ async fn register_should_error_out_if_there_are_multiple_errors_during_make_paym
 #[tokio::test]
 async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
     // cfg
     inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1));
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
 
     // the path to test
     let steps = vec![
