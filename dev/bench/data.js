@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711425514919,
+  "lastUpdate": 1711425517280,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20411,40 +20411,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "e31d4cc33327ba3f68dc26e046d04a6710e1e849",
-          "message": "chore: increase periodic bootstrap interval by reducing stepping",
-          "timestamp": "2023-11-09T11:00:01Z",
-          "tree_id": "d1b9d1d741db9703b81a09e798e74e7e3acca863",
-          "url": "https://github.com/maidsafe/safe_network/commit/e31d4cc33327ba3f68dc26e046d04a6710e1e849"
-        },
-        "date": 1699531012799,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 207,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
+          "message": "feat(networking): add NodeIssue for tracking bad node shunning",
+          "timestamp": "2024-03-26T03:18:38Z",
+          "tree_id": "143854e787c3b32755e1824e332498d636fa81db",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
+        },
+        "date": 1711425516413,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
             "unit": "MB"
           },
           {
