@@ -52,6 +52,7 @@
 //! which eventually clears from the mempool and becomes spendable again.
 //!
 
+mod api;
 mod data_payments;
 mod error;
 mod hot_wallet;
@@ -60,6 +61,7 @@ mod wallet_file;
 mod watch_only;
 
 pub use self::{
+    api::WalletApi,
     data_payments::{Payment, PaymentQuote, QuotingMetrics, QUOTE_EXPIRATION_SECS},
     error::{Error, Result},
     hot_wallet::HotWallet,

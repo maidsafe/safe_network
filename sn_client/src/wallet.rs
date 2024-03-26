@@ -172,14 +172,10 @@ impl WalletClient {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let payment_detail = self
-            .wallet
-            .get_recent_cached_payment_for_xorname(&xorname)
-            .ok_or(WalletError::NoPaymentForAddress(xorname))?;
+        let payment_detail = self.wallet.api().get_payment(&xorname)?;
 
         let payment = payment_detail.to_payment();
-        debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
-        info!("Payment retrieved for {xorname:?} from wallet");
+        trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
         let peer_id = PeerId::from_bytes(&payment_detail.peer_id_bytes)
             .map_err(|_| WalletError::NoPaymentForAddress(xorname))?;
 
@@ -220,28 +216,11 @@ impl WalletClient {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let mut payment_details = self
-            .wallet
-            .get_all_cached_payment_for_xorname(&xorname)
-            .ok_or(WalletError::NoPaymentForAddress(xorname))?;
 
-        // find a non expired quote
-        let payment_detail = loop {
-            if let Some(payment_detail) = payment_details.pop() {
-                if payment_detail.quote.has_expired() {
-                    continue;
-                } else {
-                    break payment_detail;
-                }
-            } else {
-                return Err(WalletError::QuoteExpired(xorname));
-            }
-        };
-
-        let payment = payment_detail.to_payment();
-        debug!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
-        info!("Payment retrieved for {xorname:?} from wallet");
-        let peer_id = PeerId::from_bytes(&payment_detail.peer_id_bytes)
+        let payment_details = self.wallet.api().get_non_expired_payment(&xorname)?;
+        let payment = payment_details.to_payment();
+        trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
+        let peer_id = PeerId::from_bytes(&payment_details.peer_id_bytes)
             .map_err(|_| WalletError::NoPaymentForAddress(xorname))?;
 
         Ok((payment, peer_id))
@@ -281,10 +260,7 @@ impl WalletClient {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let payment_details = self
-            .wallet
-            .get_all_cached_payment_for_xorname(&xorname)
-            .ok_or(WalletError::NoPaymentForAddress(xorname))?;
+        let payment_details = self.wallet.api().get_all_payments(&xorname)?;
 
         let payments = payment_details
             .into_iter()
@@ -298,12 +274,8 @@ impl WalletClient {
             })
             .collect::<WalletResult<Vec<_>>>()?;
 
-        debug!(
+        trace!(
             "{} Payment retrieved for {xorname:?} from wallet: {payments:?}",
-            payments.len()
-        );
-        info!(
-            "{} Payment retrieved for {xorname:?} from wallet",
             payments.len()
         );
 
@@ -344,36 +316,22 @@ impl WalletClient {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let payment_details = self
-            .wallet
-            .get_all_cached_payment_for_xorname(&xorname)
-            .ok_or(WalletError::NoPaymentForAddress(xorname))?;
+        let payment_details = self.wallet.api().get_all_non_expired_payments(&xorname)?;
 
         let payments = payment_details
             .into_iter()
-            .filter_map(|details| {
-                if details.quote.has_expired() {
-                    return None;
-                }
+            .map(|details| {
                 let payment = details.to_payment();
 
                 match PeerId::from_bytes(&details.peer_id_bytes) {
-                    Ok(peer_id) => Some(Ok((payment, peer_id))),
-                    Err(_) => Some(Err(WalletError::NoPaymentForAddress(xorname))),
+                    Ok(peer_id) => Ok((payment, peer_id)),
+                    Err(_) => Err(WalletError::NoPaymentForAddress(xorname)),
                 }
             })
             .collect::<WalletResult<Vec<_>>>()?;
 
-        if payments.is_empty() {
-            return Err(WalletError::QuoteExpired(xorname));
-        }
-
-        debug!(
+        trace!(
             "{} Payment retrieved for {xorname:?} from wallet: {payments:?}",
-            payments.len()
-        );
-        info!(
-            "{} Payment retrieved for {xorname:?} from wallet",
             payments.len()
         );
 
@@ -410,7 +368,7 @@ impl WalletClient {
     pub fn remove_payment_for_addr(&self, address: &NetworkAddress) -> WalletResult<()> {
         match &address.as_xorname() {
             Some(xorname) => {
-                self.wallet.remove_payment_for_xorname(xorname);
+                self.wallet.api().remove_payment_transaction(xorname);
                 Ok(())
             }
             None => Err(WalletError::InvalidAddressType),

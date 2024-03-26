@@ -7,9 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::error::{Error, Result};
-
 use crate::{MainPubkey, MainSecretKey};
-
 use hex::{decode, encode};
 use std::path::Path;
 
