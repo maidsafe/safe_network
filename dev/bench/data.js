@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711453717792,
+  "lastUpdate": 1711453719398,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "c4eac8f5176d5e4d1911c26bc248c8152daf4756",
-          "message": "fix(test): use client API to listen for gossipsub msgs when checking transfer notifs",
-          "timestamp": "2023-11-09T12:38:48Z",
-          "tree_id": "0a9b1d8b1592e60dcaea0f5de938b3e69d328d19",
-          "url": "https://github.com/maidsafe/safe_network/commit/c4eac8f5176d5e4d1911c26bc248c8152daf4756"
-        },
-        "date": 1699538276433,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 249,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 88,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "3312d7686b22cc76f71ded373eb90ab82a6cc8ab",
+          "message": "fix(test): generate unique temp dir to avoid read outdated data",
+          "timestamp": "2024-03-26T10:59:54Z",
+          "tree_id": "46b5508ccc1d03281c413bc8833f39a1cd86d75b",
+          "url": "https://github.com/maidsafe/safe_network/commit/3312d7686b22cc76f71ded373eb90ab82a6cc8ab"
+        },
+        "date": 1711453719032,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 173,
             "unit": "MB"
           },
           {
