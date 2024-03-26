@@ -31,6 +31,7 @@ use libp2p::{
 
 use crate::target_arch::Instant;
 
+use rand::{rngs::OsRng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Query, Request, Response},
     storage::RecordType,
@@ -129,6 +130,11 @@ pub enum NetworkEvent {
     QuoteVerification {
         quotes: Vec<(PeerId, PaymentQuote)>,
     },
+    /// Carry out chunk proof check against the specified record and peer
+    ChunkProofVerification {
+        peer_id: PeerId,
+        keys_to_verify: Vec<NetworkAddress>,
+    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -175,6 +181,15 @@ impl Debug for NetworkEvent {
                     f,
                     "NetworkEvent::QuoteVerification({} quotes)",
                     quotes.len()
+                )
+            }
+            NetworkEvent::ChunkProofVerification {
+                peer_id,
+                keys_to_verify,
+            } => {
+                write!(
+                    f,
+                    "NetworkEvent::ChunkProofVerification({peer_id:?} {keys_to_verify:?})"
                 )
             }
         }
@@ -1133,28 +1148,48 @@ impl SwarmDriver {
             return;
         }
 
-        // Only handle those non-exist and in close range keys
+        // On receive a replication_list from a close_group peer, we undertake two tasks:
+        //   1, For those keys that we don't have:
+        //        fetch them if close enough to us
+        //   2, For those keys that we have and supposed to be held by the sender as well:
+        //        start chunk_proof check against a randomly selected chunk type record to the sender
+
+        // For fetching, only handle those non-exist and in close range keys
         let keys_to_store =
             self.select_non_existent_records_for_replications(&incoming_keys, &closest_k_peers);
+
         if keys_to_store.is_empty() {
             debug!("Empty keys to store after adding to");
-            return;
+        } else {
+            #[allow(clippy::mutable_key_type)]
+            let all_keys = self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .record_addresses_ref();
+            let keys_to_fetch = self
+                .replication_fetcher
+                .add_keys(holder, keys_to_store, all_keys);
+            if keys_to_fetch.is_empty() {
+                trace!("no waiting keys to fetch from the network");
+            } else {
+                self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
+            }
         }
 
-        #[allow(clippy::mutable_key_type)]
-        let all_keys = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses_ref();
-        let keys_to_fetch = self
-            .replication_fetcher
-            .add_keys(holder, keys_to_store, all_keys);
-        if !keys_to_fetch.is_empty() {
-            self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
-        } else {
-            trace!("no waiting keys to fetch from the network");
+        // Only trigger chunk_proof check when received a periodical replication request.
+        if incoming_keys.len() > 1 {
+            let keys_to_verify = self.select_verification_data_candidates(sender);
+
+            if keys_to_verify.is_empty() {
+                debug!("No valid candidate to be checked against peer {holder:?}");
+            } else {
+                self.send_event(NetworkEvent::ChunkProofVerification {
+                    peer_id: holder,
+                    keys_to_verify,
+                });
+            }
         }
     }
 
@@ -1224,6 +1259,72 @@ impl SwarmDriver {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true
             }
+        }
+    }
+
+    /// Check among all chunk type records that we have, select those close to the peer,
+    /// and randomly pick one as the verification candidate.
+    #[allow(clippy::mutable_key_type)]
+    fn select_verification_data_candidates(&mut self, peer: NetworkAddress) -> Vec<NetworkAddress> {
+        let mut closest_peers = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&self.self_peer_id.into())
+            .map(|peer| peer.into_preimage())
+            .take(20)
+            .collect_vec();
+        closest_peers.push(self.self_peer_id);
+
+        let target_peer = if let Some(peer_id) = peer.as_peer_id() {
+            peer_id
+        } else {
+            error!("Target {peer:?} is not a valid PeerId");
+            return vec![];
+        };
+
+        #[allow(clippy::mutable_key_type)]
+        let all_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+
+        // Targeted chunk type record shall be expected within the close range from our perspective.
+        let mut verify_candidates: Vec<NetworkAddress> = all_keys
+            .values()
+            .filter_map(|(addr, record_type)| {
+                if RecordType::Chunk == *record_type {
+                    match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
+                        Ok(close_group) => {
+                            if close_group.contains(&&target_peer) {
+                                Some(addr.clone())
+                            } else {
+                                None
+                            }
+                        }
+                        Err(err) => {
+                            warn!("Could not get sorted peers for {addr:?} with error {err:?}");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        verify_candidates.sort_by_key(|a| peer.distance(a));
+
+        // To ensure the candidate mush have to be held by the peer,
+        // we only carry out check when there are already certain amount of chunks uploaded
+        // AND choose candidate from certain reduced range.
+        if verify_candidates.len() > 50 {
+            let index: usize = OsRng.gen_range(0..(verify_candidates.len() / 2));
+            vec![verify_candidates[index].clone()]
+        } else {
+            vec![]
         }
     }
 }
