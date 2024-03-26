@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711371539903,
+  "lastUpdate": 1711415432999,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "295f3a058eb2d05ee107fb340ecc7e5fa17ca137",
-          "message": "chore: const instead of magic num in code for wait time",
-          "timestamp": "2023-11-09T09:46:41Z",
-          "tree_id": "43d7461f1b12d45b36609928bf27aff4be74ef14",
-          "url": "https://github.com/maidsafe/safe_network/commit/295f3a058eb2d05ee107fb340ecc7e5fa17ca137"
-        },
-        "date": 1699526710870,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 2.386155750637811,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.168211786813223,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 30.467697990676246,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.5879804392801,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a86a49a182c52b4b58aec502163a104b7178eee1",
+          "message": "feat: remove gossip code\n\nBREAKING CHANGE: remove gossip as royalties will be collected via DAG",
+          "timestamp": "2024-03-26T09:59:09+09:00",
+          "tree_id": "94cf54d1548132205579ff0bebf1d2e574f0a8d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/a86a49a182c52b4b58aec502163a104b7178eee1"
+        },
+        "date": 1711415429777,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2647206254504963,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8171621606690627,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.50152283860998,
             "unit": "MiB/s"
           }
         ]
