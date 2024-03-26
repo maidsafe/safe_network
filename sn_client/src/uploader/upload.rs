@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    GetStoreCostStrategy, TaskResult, UploadEvent, UploadItem, UploadStats, UploaderInterface,
+    GetStoreCostStrategy, TaskResult, UploadEvent, UploadItem, UploadSummary, UploaderInterface,
 };
 use crate::{
     transfers::{TransferError, WalletError},
@@ -56,7 +56,9 @@ const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 1;
 
 /// The main loop that performs the upload process.
 /// An interface is passed here for easy testing.
-pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> Result<UploadStats> {
+pub(super) async fn start_upload(
+    mut interface: Box<dyn UploaderInterface>,
+) -> Result<UploadSummary> {
     let mut uploader = interface.take_inner_uploader();
     // Take out the testing task senders if any. This is only set for tests.
     let (task_result_sender, mut task_result_receiver) =
@@ -112,14 +114,15 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
 
-            let stats = UploadStats {
+            let summary = UploadSummary {
                 storage_cost: uploader.upload_storage_cost,
                 royalty_fees: uploader.upload_royalty_fees,
                 final_balance: uploader.upload_final_balance,
                 uploaded_count: uploader.uploaded_count,
                 skipped_count: uploader.skipped_count,
+                uploaded_registers: uploader.uploaded_registers,
             };
-            return Ok(stats);
+            return Ok(summary);
         }
 
         // try to GET register if we have enough buffer.
@@ -265,8 +268,6 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             }
             TaskResult::PushRegisterOk { updated_register } => {
                 // push modifies the register, so we return this instead of the one from all_upload_items
-                // todo: keep track of these updated registers inside Uploader (if a flag is set). Because not
-                // everyone will track the events.
                 let xorname = updated_register.address().xorname();
                 let _ = uploader.on_going_push_register.remove(&xorname);
                 uploader.skipped_count += 1;
@@ -276,6 +277,9 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     .remove(&xorname)
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
 
+                if uploader.collect_registers {
+                    uploader.uploaded_registers.push(updated_register.clone());
+                }
                 uploader.emit_upload_event(UploadEvent::RegisterUpdated(updated_register));
             }
             TaskResult::PushRegisterErr(xorname) => {
@@ -322,6 +326,9 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                             // we should've merged + pushed it again. Maybe if this happens, mark it to be pushed
                             // again?
                             UploadItem::Register { reg, .. } => {
+                                if uploader.collect_registers {
+                                    uploader.uploaded_registers.push(reg.clone());
+                                }
                                 uploader.emit_upload_event(UploadEvent::RegisterUploaded(reg));
                             }
                         }
@@ -340,7 +347,11 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                                     UploadEvent::ChunkAlreadyExistsInNetwork(address),
                                 );
                             }
+
                             UploadItem::Register { reg, .. } => {
+                                if uploader.collect_registers {
+                                    uploader.uploaded_registers.push(reg.clone());
+                                }
                                 uploader.emit_upload_event(UploadEvent::RegisterUpdated(reg));
                             }
                         }
@@ -461,6 +472,9 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                         uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
                     }
                     UploadItem::Register { reg, .. } => {
+                        if uploader.collect_registers {
+                            uploader.uploaded_registers.push(reg.clone());
+                        }
                         uploader.emit_upload_event(UploadEvent::RegisterUploaded(reg));
                     }
                 }
@@ -674,6 +688,7 @@ pub(super) struct InnerUploader {
     pub(super) show_holders: bool,
     pub(super) retry_strategy: RetryStrategy,
     pub(super) max_repayments_for_failed_data: usize, // we want people to specify an explicit limit here.
+    pub(super) collect_registers: bool,
     // API
     #[debug(skip)]
     pub(super) client: Client,
@@ -703,12 +718,13 @@ pub(super) struct InnerUploader {
     pub(super) get_store_cost_errors: usize,
     pub(super) make_payments_errors: usize,
 
-    // Upload stats
+    // Upload summary
     pub(super) upload_storage_cost: NanoTokens,
     pub(super) upload_royalty_fees: NanoTokens,
     pub(super) upload_final_balance: NanoTokens,
     pub(super) uploaded_count: usize,
     pub(super) skipped_count: usize,
+    pub(super) uploaded_registers: Vec<ClientRegister>,
 
     // Task channels for testing. Not used in actual code.
     pub(super) testing_task_channels:
@@ -729,6 +745,8 @@ impl InnerUploader {
             show_holders: false,
             retry_strategy: RetryStrategy::Balanced,
             max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
+            collect_registers: false,
+
             client,
             wallet_dir,
 
@@ -757,6 +775,8 @@ impl InnerUploader {
             upload_final_balance: NanoTokens::zero(),
             uploaded_count: Default::default(),
             skipped_count: Default::default(),
+            uploaded_registers: Default::default(),
+
             testing_task_channels: None,
             logged_event_sender_absence: Default::default(),
             event_sender: Default::default(),
