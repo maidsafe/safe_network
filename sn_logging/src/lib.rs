@@ -38,8 +38,9 @@ fn curent_exe_name() -> String {
         .and_then(|arg| {
             std::path::Path::new(&arg).file_name().map(|s| {
                 let mut name = s.to_string_lossy().into_owned();
+                name = name.strip_prefix("sn_").unwrap_or(&name).to_owned();
                 if cfg!(windows) && name.to_lowercase().ends_with(".exe") {
-                    name.truncate(name.len() - 4); // Remove the last 4 characters (.exe)
+                    name = name.strip_suffix(".exe").unwrap_or(&name).to_owned();
                 }
                 name
             })
