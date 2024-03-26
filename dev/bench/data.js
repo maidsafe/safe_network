@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711415538327,
+  "lastUpdate": 1711415539959,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "295f3a058eb2d05ee107fb340ecc7e5fa17ca137",
-          "message": "chore: const instead of magic num in code for wait time",
-          "timestamp": "2023-11-09T09:46:41Z",
-          "tree_id": "43d7461f1b12d45b36609928bf27aff4be74ef14",
-          "url": "https://github.com/maidsafe/safe_network/commit/295f3a058eb2d05ee107fb340ecc7e5fa17ca137"
-        },
-        "date": 1699527233714,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 194,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 78,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a86a49a182c52b4b58aec502163a104b7178eee1",
+          "message": "feat: remove gossip code\n\nBREAKING CHANGE: remove gossip as royalties will be collected via DAG",
+          "timestamp": "2024-03-26T09:59:09+09:00",
+          "tree_id": "94cf54d1548132205579ff0bebf1d2e574f0a8d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/a86a49a182c52b4b58aec502163a104b7178eee1"
+        },
+        "date": 1711415539596,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
