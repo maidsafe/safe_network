@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711462047241,
+  "lastUpdate": 1711462147690,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "ab54f0894d1d080703647a3ff86f2148b81a29c3",
-          "message": "docs(cli): minor improvement to help docs",
-          "timestamp": "2023-11-10T15:37:07Z",
-          "tree_id": "af9085d941605ab7958987b616fbc5e5107ddaf1",
-          "url": "https://github.com/maidsafe/safe_network/commit/ab54f0894d1d080703647a3ff86f2148b81a29c3"
-        },
-        "date": 1699633885050,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 131,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "5556bbb1543970686e9925bc3873d2f3c1f4c8e4",
+          "message": "fix(cli): files should be chunked before checking if the chunks are empty",
+          "timestamp": "2024-03-26T13:29:04Z",
+          "tree_id": "bcb45120d53a42a8a2e88fc1f7844f5597d639e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/5556bbb1543970686e9925bc3873d2f3c1f4c8e4"
+        },
+        "date": 1711462146835,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
