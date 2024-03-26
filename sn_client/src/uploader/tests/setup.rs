@@ -21,7 +21,7 @@ use libp2p::PeerId;
 use libp2p_identity::Keypair;
 use rand::thread_rng;
 use sn_networking::{NetworkBuilder, PayeeQuote};
-use sn_protocol::storage::RetryStrategy;
+use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 use sn_registers::{Register, RegisterAddress};
 use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote};
 use std::{
@@ -138,11 +138,12 @@ impl UploaderInterface for TestUploader {
         &mut self,
         _client: Client,
         _wallet_dir: PathBuf,
-        upload_item: UploadItem,
+        xorname: XorName,
+        _address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
+        max_repayments_for_failed_data: usize,
         _task_result_sender: mpsc::Sender<TaskResult>,
     ) {
-        let xorname = upload_item.xorname();
         let step = self
             .test_steps
             .pop_front()
@@ -156,11 +157,11 @@ impl UploaderInterface for TestUploader {
         let has_max_payments_reached_closure =
             |get_store_cost_strategy: &GetStoreCostStrategy| -> bool {
                 match get_store_cost_strategy {
-                    GetStoreCostStrategy::SelectDifferentPayee { max_repayments } => {
+                    GetStoreCostStrategy::SelectDifferentPayee => {
                         if let Some(n_payments) = self.payments_made_per_xorname.get(&xorname) {
                             InnerUploader::have_we_reached_max_repayments(
                                 *n_payments,
-                                *max_repayments,
+                                max_repayments_for_failed_data,
                             )
                         } else {
                             false
@@ -300,11 +301,14 @@ impl UploaderInterface for TestUploader {
                 });
             }
             TestSteps::MakePaymentErr => {
-                let failed_list = std::mem::take(&mut self.make_payment_collector);
+                let failed_xornames = std::mem::take(&mut self.make_payment_collector);
 
                 handle.spawn(async move {
                     task_result_sender
-                        .send(TaskResult::MakePaymentsErr(failed_list))
+                        .send(TaskResult::MakePaymentsErr {
+                            failed_xornames,
+                            insufficient_balance: None,
+                        })
                         .await
                         .expect("Failed to send task result");
                 });

@@ -62,6 +62,7 @@ pub enum UploadEvent {
 }
 
 pub struct Uploader {
+    // Has to be stored as an Option as we have to take ownership of inner during the upload.
     inner: Option<InnerUploader>,
 }
 
@@ -71,7 +72,7 @@ impl Uploader {
         let event_sender = self
             .inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .event_sender
             .clone();
         match start_upload(Box::new(self)).await {
@@ -89,6 +90,7 @@ impl Uploader {
 
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
+    // NOTE: Self has to be constructed only using this method. We expect `Self::inner` is present everywhere.
     pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
         Self {
             inner: Some(InnerUploader::new(client, wallet_dir)),
@@ -103,7 +105,7 @@ impl Uploader {
         // So it is okay to call unwrap here.
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .set_batch_size(batch_size);
         self
     }
@@ -114,7 +116,7 @@ impl Uploader {
     pub fn set_verify_store(mut self, verify_store: bool) -> Self {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .set_verify_store(verify_store);
         self
     }
@@ -125,7 +127,7 @@ impl Uploader {
     pub fn set_show_holders(mut self, show_holders: bool) -> Self {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .set_show_holders(show_holders);
         self
     }
@@ -138,7 +140,7 @@ impl Uploader {
     pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .set_retry_strategy(retry_strategy);
         self
     }
@@ -151,7 +153,7 @@ impl Uploader {
     pub fn set_max_repayments_for_failed_data(mut self, retries: usize) -> Self {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .set_max_repayments_for_failed_data(retries);
         self
     }
@@ -161,7 +163,7 @@ impl Uploader {
     pub fn get_event_receiver(&mut self) -> mpsc::Receiver<UploadEvent> {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .get_event_receiver()
     }
 
@@ -169,7 +171,7 @@ impl Uploader {
     pub fn insert_chunk_paths(&mut self, chunks: impl IntoIterator<Item = (XorName, PathBuf)>) {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .insert_chunk_paths(chunks);
     }
 
@@ -177,7 +179,7 @@ impl Uploader {
     pub fn insert_chunks(&mut self, chunks: impl IntoIterator<Item = Chunk>) {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .insert_chunks(chunks);
     }
 
@@ -185,7 +187,7 @@ impl Uploader {
     pub fn insert_register(&mut self, registers: impl IntoIterator<Item = ClientRegister>) {
         self.inner
             .as_mut()
-            .expect("Inner exists")
+            .expect("Uploader::new makes sure inner is present")
             .insert_register(registers);
     }
 }
@@ -215,8 +217,10 @@ trait UploaderInterface: Send + Sync {
         &mut self,
         client: Client,
         wallet_dir: PathBuf,
-        upload_item: UploadItem,
+        xorname: XorName,
+        address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
+        max_repayments_for_failed_data: usize,
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
@@ -355,7 +359,10 @@ enum TaskResult {
         royalty_fees: NanoTokens,
         new_balance: NanoTokens,
     },
-    MakePaymentsErr(Vec<(XorName, Box<PayeeQuote>)>),
+    MakePaymentsErr {
+        failed_xornames: Vec<(XorName, Box<PayeeQuote>)>,
+        insufficient_balance: Option<(NanoTokens, NanoTokens)>,
+    },
     UploadOk(XorName),
     UploadErr {
         xorname: XorName,
@@ -368,6 +375,5 @@ enum GetStoreCostStrategy {
     /// Selects the PeerId with the lowest quote
     Cheapest,
     /// Selects the cheapest PeerId that we have not made payment to.
-    /// Also contains the max repayments that we cna perform per data item.
-    SelectDifferentPayee { max_repayments: usize },
+    SelectDifferentPayee,
 }
