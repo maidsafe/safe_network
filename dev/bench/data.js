@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711462152752,
+  "lastUpdate": 1711466819953,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d8af522a73bf901e19aa269876c2aba470e22bc5",
-          "message": "chore(cli): disable silent ignoring of wallet errors",
-          "timestamp": "2023-11-13T09:32:38Z",
-          "tree_id": "7c51596b95179b5d5e423cfa80d60824e2700b39",
-          "url": "https://github.com/maidsafe/safe_network/commit/d8af522a73bf901e19aa269876c2aba470e22bc5"
-        },
-        "date": 1699871119015,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 3.8217769863413538,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 16.946230422002305,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 37.01360644188822,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.964904759904535,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "56add190d3edc9ca9b88232054955067c4b5e872",
+          "message": "fix(test): use tempfile lib instead of stdlib to create temp dirs",
+          "timestamp": "2024-03-26T14:44:12Z",
+          "tree_id": "5e1e291d68c4289405fc85bc63f6264e459335bd",
+          "url": "https://github.com/maidsafe/safe_network/commit/56add190d3edc9ca9b88232054955067c4b5e872"
+        },
+        "date": 1711466816339,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.8262819791078555,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.2731864771278514,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.67158214483376,
             "unit": "MiB/s"
           }
         ]
