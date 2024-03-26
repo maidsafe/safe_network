@@ -251,7 +251,7 @@ impl Node {
                             trace!("Periodic bad_nodes check took {:?}", start.elapsed());
                         });
 
-                        if rolling_index == 255 {
+                        if rolling_index == 511 {
                             rolling_index = 0;
                         } else {
                             rolling_index += 1;
@@ -576,18 +576,33 @@ impl Node {
         if let Ok(kbuckets) = network.get_kbuckets().await {
             let total_peers: usize = kbuckets.values().map(|peers| peers.len()).sum();
             if total_peers > 100 {
-                // The `rolling_index` is rotating among 0-255,
+                // The `rolling_index` is rotating among 0-511,
                 // meanwhile the returned `kbuckets` only holding non-empty buckets.
                 // Hence using the `remainder` calculate to achieve a rolling check.
-                let mut bucket_index = rolling_index % kbuckets.len();
+                // A further `divide by 2` is used to allow `upper or lower part` index within
+                // a bucket, to further reduce the concurrent queries.
+                let mut bucket_index = (rolling_index / 2) % kbuckets.len();
+                let part_index = rolling_index / 2;
 
                 for (distance, peers) in kbuckets.iter() {
                     if bucket_index == 0 {
+                        let peers_to_query = if peers.len() > 10 {
+                            let split_index = peers.len() / 2;
+                            let (left, right) = peers.split_at(split_index);
+                            if part_index == 0 {
+                                left
+                            } else {
+                                right
+                            }
+                        } else {
+                            peers
+                        };
+
                         debug!(
-                            "Undertake bad_nodes check against bucket {distance} having {} peers",
-                            peers.len()
+                            "Undertake bad_nodes check against bucket {distance} having {} peers, {} candidates to be queried",
+                            peers.len(), peers_to_query.len()
                         );
-                        for peer_id in peers {
+                        for peer_id in peers_to_query {
                             let peer_id_clone = *peer_id;
                             let network_clone = network.clone();
                             let _handle = spawn(async move {
