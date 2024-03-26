@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711434419283,
+  "lastUpdate": 1711434523372,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "aa4a209ffafc2e306f459b4d0077aa934f8fcc0b",
-          "message": "chore: simplify when construct payess for storage",
-          "timestamp": "2023-11-09T12:30:08Z",
-          "tree_id": "db4a88bf9821cc4e3ea1450785c871ebf1d61cf2",
-          "url": "https://github.com/maidsafe/safe_network/commit/aa4a209ffafc2e306f459b4d0077aa934f8fcc0b"
-        },
-        "date": 1699536875288,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
         },
         "date": 1711425514047,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "8e780665d8b3758b151fc9029f112021690df835",
+          "message": "feat(transfers): enable client to check if a quote has expired",
+          "timestamp": "2024-03-26T05:48:28Z",
+          "tree_id": "dd4658ebc336632ea0903b184f1bb8538c0ce455",
+          "url": "https://github.com/maidsafe/safe_network/commit/8e780665d8b3758b151fc9029f112021690df835"
+        },
+        "date": 1711434522829,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
