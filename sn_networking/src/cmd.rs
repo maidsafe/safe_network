@@ -34,6 +34,16 @@ use crate::target_arch::Instant;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
+#[derive(Debug)]
+pub enum NodeIssue {
+    /// Connection issues observed
+    ConnectionIssue,
+    /// Data Replication failed
+    ReplicationFailure,
+    /// Close nodes have reported this peer as bad
+    CloseNodesShunning,
+}
+
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
 pub enum SwarmCmd {
@@ -150,12 +160,12 @@ pub enum SwarmCmd {
     /// Triggers interval repliation
     TriggerIntervalReplication,
     /// Notify whether peer is in trouble
-    SendNodeStatus {
+    RecordNodeIssue {
         peer_id: PeerId,
-        is_bad: bool,
+        issue: NodeIssue,
     },
     // Whether peer is considered as `in trouble` by self
-    IsPeerInTrouble {
+    IsPeerShunned {
         target: NetworkAddress,
         sender: oneshot::Sender<bool>,
     },
@@ -267,13 +277,13 @@ impl Debug for SwarmCmd {
             SwarmCmd::SendRequest { req, peer, .. } => {
                 write!(f, "SwarmCmd::SendRequest req: {req:?}, peer: {peer:?}")
             }
-            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
+            SwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 write!(
                     f,
-                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, is_bad: {is_bad:?}"
+                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, issue: {issue:?}"
                 )
             }
-            SwarmCmd::IsPeerInTrouble { target, .. } => {
+            SwarmCmd::IsPeerShunned { target, .. } => {
                 write!(f, "SwarmCmd::IsPeerInTrouble target: {target:?}")
             }
         }
@@ -678,8 +688,8 @@ impl SwarmDriver {
                     .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
 
-            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
-                cmd_string = "SendNodeStatus";
+            SwarmCmd::RecordNodeIssue { peer_id, issue } => {
+                cmd_string = "RecordNodeIssues";
                 let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
 
                 // only trigger the bad_node verification once have enough nodes in RT
@@ -692,9 +702,17 @@ impl SwarmDriver {
                     .map(|kbucket| kbucket.num_entries())
                     .sum();
 
-                if total_peers > 100 && is_bad {
+                if total_peers > 100 {
                     info!("Peer {peer_id:?} is considered as bad");
-                    let _ = self.bad_nodes.insert(peer_id);
+                    let issue_vec = self.bad_nodes.entry(peer_id).or_default();
+
+                    // check if vec is already 10 long, if so, remove the oldest issue
+                    // we only track 10 issues to avoid mem leaks
+                    if issue_vec.len() == 10 {
+                        issue_vec.remove(0);
+                    }
+
+                    issue_vec.push(issue);
 
                     warn!("Cleaning out bad_peer {peer_id:?}");
                     if let Some(dead_peer) =
@@ -710,10 +728,15 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmCmd::IsPeerInTrouble { target, sender } => {
+            SwarmCmd::IsPeerShunned { target, sender } => {
                 cmd_string = "IsPeerInTrouble";
                 if let Some(peer_id) = target.as_peer_id() {
-                    let _ = sender.send(self.bad_nodes.contains(&peer_id));
+                    if let Some(_issues) = self.bad_nodes.get(&peer_id) {
+                        // TODO: expand on the criteria here...
+                        let _ = sender.send(true);
+                    } else {
+                        let _ = sender.send(false);
+                    }
                 } else {
                     let _ = sender.send(false);
                 }

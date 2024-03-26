@@ -33,7 +33,7 @@ mod transport;
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
-    cmd::SwarmLocalState,
+    cmd::{NodeIssue, SwarmLocalState},
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
@@ -542,10 +542,10 @@ impl Network {
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
-    /// Whether the target peer is considered as `in trouble` by self
-    pub async fn is_peer_bad(&self, target: NetworkAddress) -> Result<bool> {
+    /// Whether the target peer is considered blacklisted by self
+    pub async fn is_peer_shunned(&self, target: NetworkAddress) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::IsPeerInTrouble { target, sender });
+        self.send_swarm_cmd(SwarmCmd::IsPeerShunned { target, sender });
 
         receiver
             .await
@@ -739,8 +739,8 @@ impl Network {
         self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
     }
 
-    pub fn notify_node_status(&self, peer_id: PeerId, is_bad: bool) {
-        self.send_swarm_cmd(SwarmCmd::SendNodeStatus { peer_id, is_bad });
+    pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
+        self.send_swarm_cmd(SwarmCmd::RecordNodeIssue { peer_id, issue });
     }
 
     // Helper to send SwarmCmd
