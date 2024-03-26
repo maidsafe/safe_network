@@ -519,7 +519,9 @@ async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> 
             assert_select_different_payee: true,
         },
         TestSteps::MakePaymentOk,
-        // todo: if *n_errors is reset after select different payee, then we should have another 2 upload errors here.
+        TestSteps::UploadItemErr {
+            trigger_quote_expired: false,
+        },
         TestSteps::UploadItemErr {
             trigger_quote_expired: false,
         },

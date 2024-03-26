@@ -287,13 +287,8 @@ pub(super) async fn start_upload(
                 let _ = uploader.on_going_push_register.remove(&xorname);
                 uploader.pending_to_push_register.push(xorname);
 
-                let n_errors = uploader
-                    .n_errors_during_push_register
-                    .entry(xorname)
-                    .or_insert(0);
-                *n_errors += 1;
-
-                if *n_errors > MAX_SEQUENTIAL_NETWORK_ERRORS {
+                uploader.push_register_errors += 1;
+                if uploader.push_register_errors > MAX_SEQUENTIAL_NETWORK_ERRORS {
                     error!("Max sequential network failures reached during PushRegisterErr.");
                     return Err(ClientError::SequentialNetworkErrors);
                 }
@@ -385,13 +380,6 @@ pub(super) async fn start_upload(
                     error!("Max sequential network failures reached during GetStoreCostErr.");
                     return Err(ClientError::SequentialNetworkErrors);
                 }
-
-                // keep track of the failure
-                *uploader
-                    .n_errors_during_get_cost
-                    .entry(xorname)
-                    .or_insert(0) += 1;
-                // if error > threshold, then return from fn?
             }
             TaskResult::MakePaymentsOk {
                 paid_xornames,
@@ -443,9 +431,6 @@ pub(super) async fn start_upload(
                 for (xorname, quote) in failed_xornames {
                     let _ = uploader.on_going_payments.remove(&xorname);
                     uploader.pending_to_pay.push((xorname, quote));
-                    // keep track of the failure
-                    *uploader.n_errors_during_pay.entry(xorname).or_insert(0) += 1;
-                    // if error > threshold, then return from fn? or should we select a different payee (i dont think so)
                 }
                 uploader.make_payments_errors += 1;
 
@@ -497,6 +482,8 @@ pub(super) async fn start_upload(
                         .push((xorname, GetStoreCostStrategy::Cheapest));
                 } else if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
                     // if error > threshold, then select different payee. else retry again
+                    // Also reset n_errors as we want to enable retries for the new payee.
+                    *n_errors = 0;
                     debug!("Max error during upload reached for {xorname:?}. Selecting a different payee.");
 
                     uploader
@@ -673,9 +660,6 @@ impl UploaderInterface for Uploader {
 // TODO:
 // 1. each call to files_api::wallet() tries to load a lot of file. in our code during each upload/get store cost, it is
 // invoked, don't do that.
-// 5. say after *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE , reset n_errors. This is because
-// now even if we get 1 upload failure with the new payee, then we should not be selecting another payee immediately.
-// check this everywhere we use n_errors. And also write tests.
 
 /// `Uploader` provides functionality for uploading both Chunks and Registers with support for retries and queuing.
 /// This struct is not cloneable. To create a new instance with default configuration, use the `new` function.
@@ -709,12 +693,9 @@ pub(super) struct InnerUploader {
     pub(super) on_going_payments: BTreeSet<XorName>,
     pub(super) on_going_uploads: BTreeSet<XorName>,
 
-    pub(super) n_errors_during_push_register: BTreeMap<XorName, usize>,
-    pub(super) n_errors_during_get_cost: BTreeMap<XorName, usize>,
-    pub(super) n_errors_during_pay: BTreeMap<XorName, usize>,
-    pub(super) n_errors_during_uploads: BTreeMap<XorName, usize>,
-
     // error trackers
+    pub(super) n_errors_during_uploads: BTreeMap<XorName, usize>,
+    pub(super) push_register_errors: usize,
     pub(super) get_store_cost_errors: usize,
     pub(super) make_payments_errors: usize,
 
@@ -763,13 +744,11 @@ impl InnerUploader {
             on_going_payments: Default::default(),
             on_going_uploads: Default::default(),
 
-            n_errors_during_push_register: Default::default(),
-            n_errors_during_get_cost: Default::default(),
-            n_errors_during_pay: Default::default(),
             n_errors_during_uploads: Default::default(),
-
+            push_register_errors: Default::default(),
             get_store_cost_errors: Default::default(),
             make_payments_errors: Default::default(),
+
             upload_storage_cost: NanoTokens::zero(),
             upload_royalty_fees: NanoTokens::zero(),
             upload_final_balance: NanoTokens::zero(),
@@ -886,7 +865,7 @@ impl InnerUploader {
                 // Check if we have already made payment for the provided xorname. If so filter out those payee
                 let wallet = Self::load_wallet(client.clone(), wallet_dir)?;
                 // todo: should we get non_expired here? maybe have a flag.
-                let all_payments = wallet.get_all_payments_for_addr(&address, true)?;
+                let all_payments = wallet.get_all_non_expired_payments_for_addr(&address)?;
 
                 // if we have already made initial + max_repayments, then we should error out.
                 if Self::have_we_reached_max_repayments(
@@ -1020,7 +999,7 @@ impl InnerUploader {
                 let xorname = chunk.network_address();
                 trace!("Client upload started for chunk: {xorname:?}");
 
-                let (payment, payee) = wallet_client.get_recent_payment_for_addr(&xorname, true)?;
+                let (payment, payee) = wallet_client.get_non_expired_payment_for_addr(&xorname)?;
                 debug!("Payments for chunk: {xorname:?} to {payee:?}:  {payment:?}");
 
                 client
@@ -1038,7 +1017,7 @@ impl InnerUploader {
                     address.xorname()
                 );
                 let (payment, payee) =
-                    wallet_client.get_recent_payment_for_addr(&network_address, true)?;
+                    wallet_client.get_non_expired_payment_for_addr(&network_address)?;
 
                 trace!(
                     "Payments for register: {:?} to {payee:?}:  {payment:?}. Now uploading it.",
