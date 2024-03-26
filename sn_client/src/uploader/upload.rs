@@ -304,58 +304,29 @@ pub(super) async fn start_upload(
                 }
                 // if cost is 0, then it already in the network.
                 else {
-                    // check if it as item that has prior failures. This item has been successfully uploaded during
-                    // a retry. TODO: This assumption was wrong, because the repay payee flow kicks in during upload failure.
-                    let prior_failure = uploader.n_errors_during_uploads.contains_key(&xorname);
-                    if prior_failure {
-                        // remove the item since we have uploaded it.
-                        let removed_item = uploader
-                            .all_upload_items
-                            .remove(&xorname)
-                            .ok_or(ClientError::UploadableItemNotFound(xorname))?;
-                        match removed_item {
-                            UploadItem::Chunk { address, .. } => {
-                                uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
-                            }
-                            // todo: this cannot happen? If this is a register and if exists in the network,
-                            // we should've merged + pushed it again. Maybe if this happens, mark it to be pushed
-                            // again?
-                            UploadItem::Register { reg, .. } => {
-                                if uploader.collect_registers {
-                                    uploader.uploaded_registers.push(reg.clone());
-                                }
-                                uploader.emit_upload_event(UploadEvent::RegisterUploaded(reg));
-                            }
-                        }
-                        trace!("{xorname:?} has store cost of 0. It has been uploaded on a retry");
-                        uploader.uploaded_count += 1;
-                    } else {
-                        // remove the item since we have uploaded it.
-                        let removed_item = uploader
-                            .all_upload_items
-                            .remove(&xorname)
-                            .ok_or(ClientError::UploadableItemNotFound(xorname))?;
-                        // if during the first try we skip the item, then it is already present in the network.
-                        match removed_item {
-                            UploadItem::Chunk { address, .. } => {
-                                uploader.emit_upload_event(
-                                    UploadEvent::ChunkAlreadyExistsInNetwork(address),
-                                );
-                            }
-
-                            UploadItem::Register { reg, .. } => {
-                                if uploader.collect_registers {
-                                    uploader.uploaded_registers.push(reg.clone());
-                                }
-                                uploader.emit_upload_event(UploadEvent::RegisterUpdated(reg));
-                            }
+                    // remove the item since we have uploaded it.
+                    let removed_item = uploader
+                        .all_upload_items
+                        .remove(&xorname)
+                        .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+                    // if during the first try we skip the item, then it is already present in the network.
+                    match removed_item {
+                        UploadItem::Chunk { address, .. } => {
+                            uploader.emit_upload_event(UploadEvent::ChunkAlreadyExistsInNetwork(
+                                address,
+                            ));
                         }
 
-                        trace!(
-                            "{xorname:?} has store cost of 0 and it already exists on the network"
-                        );
-                        uploader.skipped_count += 1;
+                        UploadItem::Register { reg, .. } => {
+                            if uploader.collect_registers {
+                                uploader.uploaded_registers.push(reg.clone());
+                            }
+                            uploader.emit_upload_event(UploadEvent::RegisterUpdated(reg));
+                        }
                     }
+
+                    trace!("{xorname:?} has store cost of 0 and it already exists on the network");
+                    uploader.skipped_count += 1;
                 }
             }
             TaskResult::GetStoreCostErr {
