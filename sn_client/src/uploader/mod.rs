@@ -227,6 +227,7 @@ trait UploaderInterface: Send + Sync {
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
+    #[allow(clippy::too_many_arguments)]
     fn spawn_get_store_cost(
         &mut self,
         client: Client,
