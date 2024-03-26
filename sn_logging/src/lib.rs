@@ -32,7 +32,7 @@ pub enum LogOutputDest {
     Path(PathBuf),
 }
 
-fn curent_exe_name() -> String {
+fn current_exe_name() -> String {
     std::env::args()
         .next()
         .and_then(|arg| {
@@ -68,7 +68,7 @@ impl LogOutputDest {
                 let dir = match dirs_next::data_dir() {
                     Some(dir) => dir
                         .join("safe")
-                        .join(curent_exe_name())
+                        .join(current_exe_name())
                         .join("logs")
                         .join(format!("log_{timestamp}")),
                     None => {
