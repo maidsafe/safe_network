@@ -21,7 +21,8 @@ use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sn_networking::{
-    close_group_majority, Network, NetworkBuilder, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    close_group_majority, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -385,7 +386,7 @@ impl Node {
                 error!("Received notification from replication_fetcher, notifying {bad_nodes:?} failed to fetch replication copies from.");
                 let _handle = spawn(async move {
                     for peer_id in bad_nodes {
-                        network.notify_node_status(peer_id, true);
+                        network.record_node_issues(peer_id, NodeIssue::ReplicationFailure);
                     }
                 });
             }
@@ -395,8 +396,9 @@ impl Node {
 
                 trace!("Need to verify whether peer {peer_id:?} is a bad node");
                 let _handle = spawn(async move {
-                    let is_bad = Self::is_peer_bad_node(&network, peer_id).await;
-                    network.notify_node_status(peer_id, is_bad);
+                    if Self::close_nodes_shunning_peer(&network, peer_id).await {
+                        network.record_node_issues(peer_id, NodeIssue::CloseNodesShunning);
+                    }
                 });
             }
         }
@@ -409,7 +411,7 @@ impl Node {
 
     // Query close_group peers to the target to verifify whether the target is bad_node
     // Returns true when it is a bad_node, otherwise false
-    async fn is_peer_bad_node(network: &Network, peer_id: PeerId) -> bool {
+    async fn close_nodes_shunning_peer(network: &Network, peer_id: PeerId) -> bool {
         // using `client` to exclude self
         let closest_peers = match network
             .client_get_closest_peers(&NetworkAddress::from_peer(peer_id))
@@ -553,7 +555,7 @@ impl Node {
                 trace!("Got CheckNodeInProblem for peer {target_address:?}");
 
                 let is_in_trouble =
-                    if let Ok(result) = network.is_peer_bad(target_address.clone()).await {
+                    if let Ok(result) = network.is_peer_shunned(target_address.clone()).await {
                         result
                     } else {
                         trace!("Could not get status of {target_address:?}.");
@@ -590,9 +592,13 @@ impl Node {
                             let network_clone = network.clone();
                             let _handle = spawn(async move {
                                 let is_bad =
-                                    Self::is_peer_bad_node(&network_clone, peer_id_clone).await;
+                                    Self::close_nodes_shunning_peer(&network_clone, peer_id_clone)
+                                        .await;
                                 if is_bad {
-                                    network_clone.notify_node_status(peer_id_clone, is_bad);
+                                    network_clone.record_node_issues(
+                                        peer_id_clone,
+                                        NodeIssue::CloseNodesShunning,
+                                    );
                                 }
                             });
                         }

@@ -287,7 +287,7 @@ impl SwarmDriver {
                             // during the connection establish process, only check cached black_list
                             // The periodical check, which involves network queries shall filter
                             // out bad_nodes eventually.
-                            if total_peers > 100 && self.bad_nodes.contains(&peer_id) {
+                            if total_peers > 100 && self.bad_nodes.get(&peer_id).is_some() {
                                 info!("Peer {peer_id:?} is considered as bad, blocking it.");
                             } else {
                                 self.remove_bootstrap_from_full(peer_id);

@@ -11,6 +11,7 @@ use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::target_arch::{interval, spawn, Instant};
+use crate::NodeIssue;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -562,7 +563,7 @@ pub struct SwarmDriver {
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
-    pub(crate) bad_nodes: BTreeSet<PeerId>,
+    pub(crate) bad_nodes: BTreeMap<PeerId, Vec<NodeIssue>>, // 10 is the max number of issues we track to avoid mem leaks
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
 }
 
