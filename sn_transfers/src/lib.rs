@@ -34,8 +34,8 @@ pub use genesis::{
 };
 pub use wallet::{
     bls_secret_from_hex, wallet_lockfile_name, Error as WalletError, HotWallet, Payment,
-    PaymentQuote, QuotingMetrics, Result as WalletResult, WatchOnlyWallet, QUOTE_EXPIRATION_SECS,
-    WALLET_DIR_NAME,
+    PaymentQuote, QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet,
+    QUOTE_EXPIRATION_SECS, WALLET_DIR_NAME,
 };
 
 // re-export crates used in our public API

@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
+    api::WalletApi,
     error::{Error, Result},
     hot_wallet::WalletExclusiveAccess,
     keys::{get_main_pubkey, store_new_pubkey},
@@ -16,22 +17,18 @@ use super::{
     },
     KeyLessWallet,
 };
-
 use crate::{
     transfers::create_unsigned_transfer, wallet::data_payments::PaymentDetails, CashNote,
     DerivationIndex, Hash, MainPubkey, NanoTokens, UniquePubkey, UnsignedTransfer,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
-use serde::Serialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs::{self, OpenOptions},
+    fs::OpenOptions,
     path::{Path, PathBuf},
 };
 use xor_name::XorName;
-
-const PAYMENTS_DIR_NAME: &str = "payments";
 
 #[derive(serde::Serialize, serde::Deserialize)]
 /// This assumes the CashNotes are stored on disk
@@ -40,6 +37,8 @@ pub struct WatchOnlyWallet {
     main_pubkey: MainPubkey,
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: PathBuf,
+    /// Wallet APIs
+    api: WalletApi,
     /// The wallet containing all data, cash notes & transactions data that gets serialised and stored on disk.
     keyless_wallet: KeyLessWallet,
 }
@@ -54,55 +53,20 @@ impl WatchOnlyWallet {
     ) -> Self {
         Self {
             main_pubkey,
+            api: WalletApi::new(wallet_dir),
             wallet_dir: wallet_dir.to_path_buf(),
             keyless_wallet,
         }
     }
 
-    /// Return all the payments made to the provided xorname if it
-    pub fn get_payment_transactions(&self, name: &XorName) -> Result<Vec<PaymentDetails>> {
-        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*name));
-        let payment_file_path = created_payments_dir.join(unique_file_name);
-
-        debug!("Getting payment from {payment_file_path:?}");
-        let file = fs::File::open(&payment_file_path)?;
-        let payments = rmp_serde::from_read(&file)?;
-
-        Ok(payments)
-    }
-
     /// Insert a payment and write it to the `payments` dir.
     /// If a prior payment has been made to the same xorname, then the new payment is pushed to the end of the list.
     pub fn insert_payment_transaction(&self, name: XorName, payment: PaymentDetails) -> Result<()> {
-        // try to read the previous payments and push the new payment at the end
-        let payments = match self.get_payment_transactions(&name) {
-            Ok(mut stored_payments) => {
-                stored_payments.push(payment);
-                stored_payments
-            }
-            Err(_) => vec![payment],
-        };
-        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(name));
-        fs::create_dir_all(&created_payments_dir)?;
-
-        let payment_file_path = created_payments_dir.join(unique_file_name);
-        debug!("Writing payment to {payment_file_path:?}");
-
-        let mut file = fs::File::create(payment_file_path)?;
-        let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
-        payments.serialize(&mut serialiser)?;
-        Ok(())
+        self.api.insert_payment_transaction(name, payment)
     }
 
     pub fn remove_payment_transaction(&self, name: &XorName) {
-        let created_payments_dir = self.wallet_dir.join(PAYMENTS_DIR_NAME);
-        let unique_file_name = format!("{}.payment", hex::encode(*name));
-        let payment_file_path = created_payments_dir.join(unique_file_name);
-
-        debug!("Removing payment from {payment_file_path:?}");
-        let _ = fs::remove_file(payment_file_path);
+        self.api.remove_payment_transaction(name)
     }
 
     /// Try to load any new cash_notes from the `cash_notes` dir in the wallet dir.
@@ -156,6 +120,10 @@ impl WatchOnlyWallet {
 
     pub fn wallet_dir(&self) -> &Path {
         &self.wallet_dir
+    }
+
+    pub fn api(&self) -> &WalletApi {
+        &self.api
     }
 
     /// Deposit the given cash_notes onto the wallet (without storing them to disk).
@@ -260,7 +228,7 @@ impl WatchOnlyWallet {
 
         // get the available cash_notes
         let mut available_cash_notes = vec![];
-        let wallet_dir = self.wallet_dir().to_path_buf();
+        let wallet_dir = self.wallet_dir.to_path_buf();
         for (id, _token) in self.available_cash_notes().iter() {
             if let Some(cash_note) = load_created_cash_note(id, &wallet_dir) {
                 available_cash_notes.push((cash_note.clone(), None));
@@ -309,6 +277,7 @@ impl WatchOnlyWallet {
 
         Ok(Self {
             main_pubkey,
+            api: WalletApi::new(wallet_dir),
             wallet_dir: wallet_dir.to_path_buf(),
             keyless_wallet,
         })

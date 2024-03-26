@@ -5,7 +5,9 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
+
 use super::{
+    api::WalletApi,
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
@@ -16,7 +18,6 @@ use super::{
     watch_only::WatchOnlyWallet,
     Error, Result,
 };
-
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -25,14 +26,13 @@ use crate::{
     MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
     WalletError, NETWORK_ROYALTIES_PK,
 };
-use xor_name::XorName;
-
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
     path::{Path, PathBuf},
     time::Instant,
 };
+use xor_name::XorName;
 
 pub const WALLET_DIR_NAME: &str = "wallet";
 
@@ -52,6 +52,10 @@ pub struct HotWallet {
 }
 
 impl HotWallet {
+    pub fn api(&self) -> &WalletApi {
+        self.watchonly_wallet.api()
+    }
+
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
@@ -291,36 +295,9 @@ impl HotWallet {
         Ok((available_cash_notes, exclusive_access))
     }
 
-    /// Return the last payment_details for the given XorName if cached.
-    /// If multiple payments have been made to the same xor_name, then we pick the last one as it is the most recent.
-    pub fn get_recent_cached_payment_for_xorname(&self, name: &XorName) -> Option<PaymentDetails> {
-        match self.watchonly_wallet.get_payment_transactions(name) {
-            Ok(mut payments) => payments.pop(),
-            Err(err) => {
-                error!("Failed to fetch payment_detail of {name:?} with error {err:?}");
-                None
-            }
-        }
-    }
-
-    /// Return all the payment_details for the given XorName if cached.
-    /// Multiple payments to the same XorName can result in many payment details
-    pub fn get_all_cached_payment_for_xorname(
-        &self,
-        name: &XorName,
-    ) -> Option<Vec<PaymentDetails>> {
-        match self.watchonly_wallet.get_payment_transactions(name) {
-            Ok(payments) => Some(payments),
-            Err(err) => {
-                error!("Failed to fetch payment_detail of {name:?} with error {err:?}");
-                None
-            }
-        }
-    }
-
     /// Remove the payment_details of the given XorName from disk.
     pub fn remove_payment_for_xorname(&self, name: &XorName) {
-        self.watchonly_wallet.remove_payment_transaction(name)
+        self.api().remove_payment_transaction(name)
     }
 
     pub fn build_unsigned_transaction(
