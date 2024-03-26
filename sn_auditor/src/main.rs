@@ -57,7 +57,8 @@ struct Opt {
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
-    logging_init(opt.log_output_dest, opt.log_format)?;
+    let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
+    let _log_handles = log_builder.initialize()?;
     let client = connect_to_network(opt.peers).await?;
     let dag = initialize_background_spend_dag_collection(
         client.clone(),
@@ -68,21 +69,23 @@ async fn main() -> Result<()> {
     start_server(dag).await
 }
 
-fn logging_init(log_output_dest: LogOutputDest, log_format: Option<LogFormat>) -> Result<()> {
+fn logging_init(
+    log_output_dest: LogOutputDest,
+    log_format: Option<LogFormat>,
+) -> Result<LogBuilder> {
     color_eyre::install()?;
     let logging_targets = vec![
         ("sn_transfers".to_string(), Level::TRACE),
         ("sn_networking".to_string(), Level::DEBUG),
         ("sn_client".to_string(), Level::TRACE),
-        ("sn_logging".to_string(), Level::DEBUG),
-        ("sn_peers_acquisition".to_string(), Level::DEBUG),
-        ("sn_protocol".to_string(), Level::DEBUG),
+        ("sn_logging".to_string(), Level::TRACE),
+        ("sn_peers_acquisition".to_string(), Level::TRACE),
+        ("sn_protocol".to_string(), Level::TRACE),
     ];
     let mut log_builder = LogBuilder::new(logging_targets);
     log_builder.output_dest(log_output_dest);
     log_builder.format(log_format.unwrap_or(LogFormat::Default));
-    let _log_handles = log_builder.initialize()?;
-    Ok(())
+    Ok(log_builder)
 }
 
 async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
