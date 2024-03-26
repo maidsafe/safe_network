@@ -1043,11 +1043,11 @@ impl SwarmDriver {
             });
 
         if !shall_removed.is_empty() {
-            info!(
+            trace!(
                 "Current libp2p peers pool stats is {:?}",
                 self.swarm.network_info()
             );
-            info!(
+            trace!(
                 "Removing {} outdated live connections, still have {} left.",
                 shall_removed.len(),
                 self.live_connected_peers.len()
