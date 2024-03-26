@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711415539959,
+  "lastUpdate": 1711415541701,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40303,6 +40303,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 38953,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a86a49a182c52b4b58aec502163a104b7178eee1",
+          "message": "feat: remove gossip code\n\nBREAKING CHANGE: remove gossip as royalties will be collected via DAG",
+          "timestamp": "2024-03-26T09:59:09+09:00",
+          "tree_id": "94cf54d1548132205579ff0bebf1d2e574f0a8d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/a86a49a182c52b4b58aec502163a104b7178eee1"
+        },
+        "date": 1711415541339,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6736,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38525,
             "unit": "ms"
           },
           {
