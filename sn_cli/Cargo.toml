@@ -33,6 +33,8 @@ open-metrics = ["sn_client/open-metrics"]
 [dependencies]
 aes="0.7.5"
 base64 = { version = "0.22.0", optional = true }
+bip39 = "2.0.0"
+curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = ["num-bigint"] }
 bitcoin = { version = "0.31.0", optional = true}
 block-modes="0.8.1"
 bls = { package = "blsttc", version = "8.0.1" }
@@ -43,6 +45,7 @@ clap = { version = "4.2.1", features = ["derive"]}
 color-eyre = "~0.6"
 dialoguer = "~0.11.0"
 dirs-next = "~2.0.0"
+eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 futures = "~0.3.13"
 hex = "~0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
