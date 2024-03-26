@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711456585313,
+  "lastUpdate": 1711457426631,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "31354d7a37cde2d9978560abc0b2de2bc7a2ed04",
-          "message": "chore: fix typo",
-          "timestamp": "2023-11-10T10:07:03Z",
-          "tree_id": "9cae35f9a5c9e3e8e635cb811afdd44c74dbde83",
-          "url": "https://github.com/maidsafe/safe_network/commit/31354d7a37cde2d9978560abc0b2de2bc7a2ed04"
-        },
-        "date": 1699614038597,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 3.553324153267084,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 16.163214075898424,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 35.812044058551336,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.112936601855196,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9fc56fbb0e0a4ce18c649ac9cd18d0b7f59310f1",
+          "message": "chore: refresh node registry before commands\n\nThe node registry is updated to the best of our ability before we run the `start`, `stop`, `remove`\nor `upgrade` commands.\n\nHere is an example of why this should apply. If we start a service, the node registry now stores the\nPID for the process that is started by the service. It's possible for a user to kill the process\noutside of both the node manager and the OS service infrastructure. However, our service definitions\nhave a restart policy, meaning when the user kills the process, the service infrastructure will\nstart another one. In this scenario, the node registry now has a PID for a dead process. So if we\nthen use the node manager to try and stop the service, it determines there is no process with the\ndead PID, and declares the service has already been stopped.\n\nThe solution is to refresh the registry and get the most up-to-date status before running any of the\ncontrol commands.",
+          "timestamp": "2024-03-26T12:09:06Z",
+          "tree_id": "7d94347c525c29aa26163421c6e884489bbac400",
+          "url": "https://github.com/maidsafe/safe_network/commit/9fc56fbb0e0a4ce18c649ac9cd18d0b7f59310f1"
+        },
+        "date": 1711457423337,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2553458379185465,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7952745507417318,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.484587900703325,
             "unit": "MiB/s"
           }
         ]
