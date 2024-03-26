@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711415541701,
+  "lastUpdate": 1711425407592,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "e31d4cc33327ba3f68dc26e046d04a6710e1e849",
-          "message": "chore: increase periodic bootstrap interval by reducing stepping",
-          "timestamp": "2023-11-09T11:00:01Z",
-          "tree_id": "d1b9d1d741db9703b81a09e798e74e7e3acca863",
-          "url": "https://github.com/maidsafe/safe_network/commit/e31d4cc33327ba3f68dc26e046d04a6710e1e849"
-        },
-        "date": 1699530471556,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 2.359473593688018,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 6.225670691194613,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 30.539005551120457,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.50152283860998,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
+          "message": "feat(networking): add NodeIssue for tracking bad node shunning",
+          "timestamp": "2024-03-26T03:18:38Z",
+          "tree_id": "143854e787c3b32755e1824e332498d636fa81db",
+          "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
+        },
+        "date": 1711425403339,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.316759948549704,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.8661103904206364,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.43862827942358,
             "unit": "MiB/s"
           }
         ]
