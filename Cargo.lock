@@ -5149,10 +5149,10 @@ dependencies = [
  "sn_logging",
  "sn_peers_acquisition",
  "sn_transfers",
- "tiny_http",
  "tokio",
  "tracing",
  "url",
+ "warp",
 ]
 
 [[package]]
