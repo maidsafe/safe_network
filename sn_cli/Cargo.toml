@@ -11,11 +11,11 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.89.85"
 
 [[bin]]
-path="src/main.rs"
+path="src/bin/main.rs"
 name="safe"
 
 [lib]
-path="src/lib/lib.rs"
+path="src/lib.rs"
 name="autonomi"
 
 [[bench]]

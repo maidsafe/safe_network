@@ -6,8 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::subcommands::SubCmd;
+pub(crate) mod files;
+pub(crate) mod folders;
+pub(crate) mod register;
+pub(crate) mod wallet;
+
 use clap::Parser;
+use clap::Subcommand;
 use color_eyre::Result;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
@@ -56,4 +61,26 @@ pub(crate) struct Opt {
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, long = "no-verify", short = 'x')]
     pub no_verify: bool,
+}
+
+#[derive(Subcommand, Debug)]
+pub(super) enum SubCmd {
+    #[clap(name = "wallet", subcommand)]
+    /// Commands for a hot-wallet management.
+    /// A hot-wallet holds the secret key, thus it can be used for signing transfers/transactions.
+    Wallet(wallet::hot_wallet::WalletCmds),
+    #[clap(name = "wowallet", subcommand)]
+    /// Commands for watch-only wallet management
+    /// A watch-only wallet holds only the public key, thus it cannot be used for signing
+    /// transfers/transactions, but only to query balances and broadcast offline signed transactions.
+    WatchOnlyWallet(wallet::wo_wallet::WatchOnlyWalletCmds),
+    #[clap(name = "files", subcommand)]
+    /// Commands for file management
+    Files(files::FilesCmds),
+    #[clap(name = "folders", subcommand)]
+    /// Commands for folders management
+    Folders(folders::FoldersCmds),
+    #[clap(name = "register", subcommand)]
+    /// Commands for register management
+    Register(register::RegisterCmds),
 }

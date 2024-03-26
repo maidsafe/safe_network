@@ -9,22 +9,19 @@
 #[macro_use]
 extern crate tracing;
 
-mod cli;
 mod subcommands;
 
-use crate::{
-    cli::Opt,
-    subcommands::{
-        files::files_cmds,
-        folders::folders_cmds,
-        register::register_cmds,
-        wallet::{
-            hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
-            wo_wallet::{wo_wallet_cmds, wo_wallet_cmds_without_client, WatchOnlyWalletCmds},
-        },
-        SubCmd,
+use subcommands::{
+    files::files_cmds,
+    folders::folders_cmds,
+    register::register_cmds,
+    wallet::{
+        hot_wallet::{wallet_cmds, wallet_cmds_without_client, WalletCmds},
+        wo_wallet::{wo_wallet_cmds, wo_wallet_cmds_without_client, WatchOnlyWalletCmds},
     },
+    Opt, SubCmd,
 };
+
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::Result;
