@@ -10,6 +10,7 @@ use super::{
     GetStoreCostStrategy, TaskResult, UploadEvent, UploadItem, UploadStats, UploaderInterface,
 };
 use crate::{
+    transfers::{TransferError, WalletError},
     Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient, BATCH_SIZE,
 };
 use bytes::Bytes;
@@ -163,18 +164,18 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
             && uploader.on_going_get_cost.len() < uploader.batch_size
             && uploader.pending_to_pay.len() < uploader.batch_size
         {
-            let (upload_item, get_store_cost_strategy) = uploader.pop_item_for_get_store_cost()?;
-            trace!(
-                "Conditions met for get store cost. {:?} {get_store_cost_strategy:?}",
-                upload_item.xorname()
-            );
+            let (xorname, address, get_store_cost_strategy) =
+                uploader.pop_item_for_get_store_cost()?;
+            trace!("Conditions met for get store cost. {xorname:?} {get_store_cost_strategy:?}",);
 
-            let _ = uploader.on_going_get_cost.insert(upload_item.xorname());
+            let _ = uploader.on_going_get_cost.insert(xorname);
             interface.spawn_get_store_cost(
                 uploader.client.clone(),
                 uploader.wallet_dir.clone(),
-                upload_item,
+                xorname,
+                address,
                 get_store_cost_strategy,
+                uploader.max_repayments_for_failed_data,
                 task_result_sender.clone(),
             );
         }
@@ -412,13 +413,23 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     new_balance,
                 });
             }
-            TaskResult::MakePaymentsErr(xornames) => {
+            TaskResult::MakePaymentsErr {
+                failed_xornames,
+                insufficient_balance,
+            } => {
                 trace!(
                     "MakePaymentsErr for {:?} items: hash({:?})",
-                    xornames.len(),
-                    InnerUploader::hash_of_xornames(xornames.iter().map(|(name, _)| name))
+                    failed_xornames.len(),
+                    InnerUploader::hash_of_xornames(failed_xornames.iter().map(|(name, _)| name))
                 );
-                for (xorname, quote) in xornames {
+                if let Some((available, required)) = insufficient_balance {
+                    error!("Wallet does not have enough funds. This error is not recoverable");
+                    return Err(ClientError::Wallet(WalletError::Transfer(
+                        TransferError::NotEnoughBalance(available, required),
+                    )));
+                }
+
+                for (xorname, quote) in failed_xornames {
                     let _ = uploader.on_going_payments.remove(&xorname);
                     uploader.pending_to_pay.push((xorname, quote));
                     // keep track of the failure
@@ -474,12 +485,9 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
                     // if error > threshold, then select different payee. else retry again
                     debug!("Max error during upload reached for {xorname:?}. Selecting a different payee.");
 
-                    uploader.pending_to_get_store_cost.push((
-                        xorname,
-                        GetStoreCostStrategy::SelectDifferentPayee {
-                            max_repayments: uploader.max_repayments_for_failed_data,
-                        },
-                    ));
+                    uploader
+                        .pending_to_get_store_cost
+                        .push((xorname, GetStoreCostStrategy::SelectDifferentPayee));
                 } else {
                     uploader.pending_to_upload.push(xorname);
                 }
@@ -490,27 +498,30 @@ pub(super) async fn start_upload(mut interface: Box<dyn UploaderInterface>) -> R
 
 impl UploaderInterface for Uploader {
     fn take_inner_uploader(&mut self) -> InnerUploader {
-        // todo: make this an error
-        self.inner.take().expect("Uploader should be present")
+        self.inner
+            .take()
+            .expect("Uploader::new makes sure inner is present")
     }
 
     fn spawn_get_store_cost(
         &mut self,
         client: Client,
         wallet_dir: PathBuf,
-        upload_item: UploadItem,
+        xorname: XorName,
+        address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
+        max_repayments_for_failed_data: usize,
         task_result_sender: mpsc::Sender<TaskResult>,
     ) {
-        trace!("Spawning get_store_cost for {:?}", upload_item.xorname());
+        trace!("Spawning get_store_cost for {xorname:?}");
         let _handle = tokio::spawn(async move {
-            let xorname = upload_item.xorname();
-
             let task_result = match InnerUploader::get_store_cost(
                 client,
                 wallet_dir,
-                upload_item,
+                xorname,
+                address,
                 get_store_cost_strategy.clone(),
+                max_repayments_for_failed_data,
             )
             .await
             {
@@ -648,9 +659,6 @@ impl UploaderInterface for Uploader {
 // TODO:
 // 1. each call to files_api::wallet() tries to load a lot of file. in our code during each upload/get store cost, it is
 // invoked, don't do that.
-// 2. add more debug lines
-// 3. terminate early if there are not enough funds in the wallet and return that error.
-// 4. we cna just return address form pop_item_for_get_store_cost. we don't need the whole item.
 // 5. say after *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE , reset n_errors. This is because
 // now even if we get 1 upload failure with the new payee, then we should not be selecting another payee immediately.
 // check this everywhere we use n_errors. And also write tests.
@@ -665,7 +673,7 @@ pub(super) struct InnerUploader {
     pub(super) verify_store: bool,
     pub(super) show_holders: bool,
     pub(super) retry_strategy: RetryStrategy,
-    pub(super) max_repayments_for_failed_data: usize,
+    pub(super) max_repayments_for_failed_data: usize, // we want people to specify an explicit limit here.
     // API
     #[debug(skip)]
     pub(super) client: Client,
@@ -771,18 +779,19 @@ impl InnerUploader {
     }
 
     // helpers to pop items from the pending/failed states.
-    fn pop_item_for_get_store_cost(&mut self) -> Result<(UploadItem, GetStoreCostStrategy)> {
-        if let Some((name, strategy)) = self.pending_to_get_store_cost.pop() {
-            let upload_item = self
-                .all_upload_items
-                .get(&name)
-                .cloned()
-                .ok_or(ClientError::UploadableItemNotFound(name))?;
-            Ok((upload_item, strategy))
-        } else {
-            // the caller will be making sure this does not happen.
-            Err(ClientError::UploadStateTrackerIsEmpty)
-        }
+    fn pop_item_for_get_store_cost(
+        &mut self,
+    ) -> Result<(XorName, NetworkAddress, GetStoreCostStrategy)> {
+        let (xorname, strategy) = self
+            .pending_to_get_store_cost
+            .pop()
+            .ok_or(ClientError::UploadStateTrackerIsEmpty)?;
+        let address = self
+            .all_upload_items
+            .get(&xorname)
+            .map(|item| item.address())
+            .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+        Ok((xorname, address, strategy))
     }
 
     fn pop_item_for_make_payment(&mut self) -> Result<(UploadItem, Box<PayeeQuote>)> {
@@ -846,22 +855,25 @@ impl InnerUploader {
     async fn get_store_cost(
         client: Client,
         wallet_dir: PathBuf,
-        upload_item: UploadItem,
+        xorname: XorName,
+        address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
+        max_repayments_for_failed_data: usize,
     ) -> Result<PayeeQuote> {
-        let address = upload_item.address();
-
         let filter_list = match get_store_cost_strategy {
             GetStoreCostStrategy::Cheapest => vec![],
-            GetStoreCostStrategy::SelectDifferentPayee { max_repayments } => {
+            GetStoreCostStrategy::SelectDifferentPayee => {
                 // Check if we have already made payment for the provided xorname. If so filter out those payee
                 let wallet = Self::load_wallet(client.clone(), wallet_dir)?;
                 // todo: should we get non_expired here? maybe have a flag.
                 let all_payments = wallet.get_all_payments_for_addr(&address, true)?;
 
                 // if we have already made initial + max_repayments, then we should error out.
-                if Self::have_we_reached_max_repayments(all_payments.len(), max_repayments) {
-                    return Err(ClientError::MaximumRepaymentsReached(upload_item.xorname()));
+                if Self::have_we_reached_max_repayments(
+                    all_payments.len(),
+                    max_repayments_for_failed_data,
+                ) {
+                    return Err(ClientError::MaximumRepaymentsReached(xorname));
                 }
                 let filter_list = all_payments
                     .into_iter()
@@ -931,14 +943,27 @@ impl InnerUploader {
                             }
                         }
                         Err(err) => {
-                            let paid_xornames = std::mem::take(&mut current_batch);
+                            let failed_xornames = std::mem::take(&mut current_batch);
                             error!(
                                 "When paying {} data: hash({:?}) got error {err:?}",
-                                paid_xornames.len(),
-                                Self::hash_of_xornames(paid_xornames.iter().map(|(name, _)| name))
+                                failed_xornames.len(),
+                                Self::hash_of_xornames(
+                                    failed_xornames.iter().map(|(name, _)| name)
+                                )
                             );
-
-                            TaskResult::MakePaymentsErr(paid_xornames)
+                            match err {
+                                WalletError::Transfer(TransferError::NotEnoughBalance(
+                                    available,
+                                    required,
+                                )) => TaskResult::MakePaymentsErr {
+                                    failed_xornames,
+                                    insufficient_balance: Some((available, required)),
+                                },
+                                _ => TaskResult::MakePaymentsErr {
+                                    failed_xornames,
+                                    insufficient_balance: None,
+                                },
+                            }
                         }
                     };
                     let pay_for_chunk_sender_clone = task_result_sender.clone();
