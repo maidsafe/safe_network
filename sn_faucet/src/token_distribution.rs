@@ -16,7 +16,6 @@ use sn_transfers::{MainPubkey, NanoTokens};
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
-use url::Url;
 
 const SNAPSHOT_FILENAME: &str = "snapshot.json";
 const SNAPSHOT_URL: &str = "https://api.omniexplorer.info/ask.aspx?api=getpropertybalances&prop=3";
@@ -384,10 +383,9 @@ pub async fn distribute_from_maid_to_tokens(
 
 pub async fn handle_distribution_req(
     client: &Client,
-    url: Url,
+    query: HashMap<String, String>,
     balances: Snapshot,
 ) -> Result<String> {
-    let query: HashMap<String, String> = url.query_pairs().into_owned().collect();
     let address = query
         .get("address")
         .ok_or(eyre!("Missing address in querystring"))?

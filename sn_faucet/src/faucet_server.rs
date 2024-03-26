@@ -9,14 +9,13 @@
 #[cfg(feature = "distribution")]
 use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use sn_client::Client;
 use sn_transfers::{get_faucet_data_dir, HotWallet, NanoTokens};
 use std::collections::HashMap;
 use std::path::Path;
-use tiny_http::{Response, Server};
-use tracing::{debug, error, trace};
-use url::Url;
+use tracing::{debug, error};
+use warp::{http::Response, Filter, Reply};
 
 /// Run the faucet server.
 ///
@@ -43,7 +42,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
         error!("Faucet Server couldn't start as we failed to claim Genesis");
         err
     })?;
-    startup_server(client).await
+    startup_server(client.clone()).await
 }
 
 pub async fn restart_faucet_server(client: &Client) -> Result<()> {
@@ -56,10 +55,48 @@ pub async fn restart_faucet_server(client: &Client) -> Result<()> {
     println!("Previous wallet loaded");
     debug!("Previous wallet loaded");
 
-    startup_server(client).await
+    startup_server(client.clone()).await
 }
 
-async fn startup_server(client: &Client) -> Result<()> {
+#[cfg(feature = "distribution")]
+async fn respond_to_distribution_request(
+    client: Client,
+    query: HashMap<String, String>,
+    balances: HashMap<String, NanoTokens>,
+) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let r =
+        match token_distribution::handle_distribution_req(&client, query, balances.clone()).await {
+            Ok(distribution) => Response::new(distribution.to_string()),
+            Err(err) => {
+                eprintln!("Failed to get distribution: {err}");
+                error!("Failed to get distribution: {err}");
+                Response::new(format!("Failed to get distribution: {err}"))
+            }
+        };
+
+    Ok(r)
+}
+
+async fn respond_to_gift_request(
+    client: Client,
+    key: String,
+) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    const GIFT_AMOUNT_SNT: &str = "1";
+    match send_tokens(&client, GIFT_AMOUNT_SNT, &key).await {
+        Ok(transfer) => {
+            println!("Sent tokens to {key}");
+            debug!("Sent tokens to {key}");
+            Ok(Response::new(transfer.to_string()))
+        }
+        Err(err) => {
+            eprintln!("Failed to send tokens to {key}: {err}");
+            error!("Failed to send tokens to {key}: {err}");
+            Ok(Response::new(format!("Failed to send tokens: {err}")))
+        }
+    }
+}
+
+async fn startup_server(client: Client) -> Result<()> {
     #[allow(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
@@ -75,105 +112,47 @@ async fn startup_server(client: &Client) -> Result<()> {
             keys,
         ));
     }
-    let server =
-        Server::http("0.0.0.0:8000").map_err(|err| eyre!("Failed to start server: {err}"))?;
 
-    // This println is used in sn_testnet to wait for the faucet to start.
+    let gift_client = client.clone();
+    // GET /distribution/address=address&wallet=wallet&signature=signature
+    #[cfg(feature = "distribution")]
+    let distribution_route = warp::get()
+        .and(warp::path("distribution"))
+        .and(warp::query::<HashMap<String, String>>())
+        .map(|query| {
+            debug!("Received distribution request: {query:?}");
+            query
+        })
+        .and_then(move |query| {
+            let client = client.clone();
+            respond_to_distribution_request(client, query, balances.clone())
+        });
+
+    // GET /key
+    let gift_route = warp::get()
+        .and(warp::path!(String))
+        .map(|query| {
+            debug!("Gift distribution request: {query}");
+            query
+        })
+        .and_then(move |key| {
+            let client = gift_client.clone();
+
+            respond_to_gift_request(client, key)
+        });
+
     println!("Starting http server listening on port 8000...");
     debug!("Starting http server listening on port 8000...");
-    for request in server.incoming_requests() {
-        println!(
-            "received request! method: {:?}, url: {:?}, headers: {:?}",
-            request.method(),
-            request.url(),
-            request.headers()
-        );
-        trace!(
-            "received request! method: {:?}, url: {:?}, headers: {:?}",
-            request.method(),
-            request.url(),
-            request.headers()
-        );
-        // There are two paths available in the faucet.
-        //
-        // http://<ip>/<wallet_hex_key>
-        // which sends a fixed amount to that key.
-        //
-        // http://<ip>/distribution?address=<addr>&publickey=<pkhex>
-        // which returns the distribution for that maid address
-        //
-        // tiny_http request.url() excludes host, ie is only the path.
-        // https://docs.rs/tiny_http/latest/tiny_http/struct.Request.html#method.url
-        // Returns the resource requested by the client.
-        let request_url = format!("http://127.0.0.1:8000{}", request.url());
-        let url = match Url::parse(&request_url) {
-            Ok(u) => u,
-            Err(err) => {
-                let response = Response::from_string(format!("Invalid url: {err}"));
-                let _ = request
-                    .respond(response.with_status_code(400))
-                    .map_err(|err| eprintln!("Failed to get distribution: {err}"));
-                continue;
-            }
-        };
-        if url.path() == "/distribution" {
-            // if distribution feature is enabled, return the distribution for
-            // this address
-            #[cfg(feature = "distribution")]
-            {
-                match token_distribution::handle_distribution_req(client, url, balances.clone())
-                    .await
-                {
-                    Ok(distribution) => {
-                        let response = Response::from_string(distribution);
-                        let _ = request.respond(response).map_err(|err| {
-                            eprintln!("Failed to send response: {err}");
-                            error!("Failed to send response: {err}");
-                        });
-                    }
-                    Err(err) => {
-                        eprintln!("Failed to get distribution: {err}");
-                        error!("Failed to get distribution: {err}");
-                        let response =
-                            Response::from_string(format!("Failed to get distribution: {err}"));
-                        let _ = request
-                            .respond(response.with_status_code(500))
-                            .map_err(|err| eprintln!("Failed to get distribution: {err}"));
-                    }
-                }
-            }
-            // if distribution feature not enabled then return an error
-            #[cfg(not(feature = "distribution"))]
-            {
-                let response = Response::from_string("Distribution feature disabled".to_string());
-                let _ = request
-                    .respond(response.with_status_code(500))
-                    .map_err(|err| eprintln!("Failed to send response: {err}"));
-            }
-        } else {
-            // issue a fixed amount of tokens to the wallet key
-            let key = url.path().trim_start_matches('/');
-            match send_tokens(client, "1", key).await {
-                Ok(transfer) => {
-                    println!("Sent tokens to {key}");
-                    debug!("Sent tokens to {key}");
-                    let response = Response::from_string(transfer);
-                    let _ = request.respond(response).map_err(|err| {
-                        eprintln!("Failed to send response: {err}");
-                        error!("Failed to send response: {err}");
-                    });
-                }
-                Err(err) => {
-                    eprintln!("Failed to send tokens to {key}: {err}");
-                    error!("Failed to send tokens to {key}: {err}");
-                    let response = Response::from_string(format!("Failed to send tokens: {err}"));
-                    let _ = request
-                        .respond(response.with_status_code(500))
-                        .map_err(|err| eprintln!("Failed to send response: {err}"));
-                }
-            }
-        }
-    }
+
+    #[cfg(feature = "distribution")]
+    warp::serve(distribution_route.or(gift_route))
+        // warp::serve(gift_route)
+        .run(([127, 0, 0, 1], 8000))
+        .await;
+
+    #[cfg(not(feature = "distribution"))]
+    warp::serve(gift_route).run(([127, 0, 0, 1], 8000)).await;
+
     Ok(())
 }
 
