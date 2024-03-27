@@ -27,8 +27,9 @@ use crate::{
     replication_fetcher::ReplicationFetcher,
     transport, Network, CLOSE_GROUP_SIZE,
 };
-
 use futures::StreamExt;
+use itertools::Itertools;
+use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 
@@ -61,6 +62,10 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
 use tracing::warn;
+
+/// Interval over which we check for the farthest record we _should_ be holding
+/// based upon our knowledge of the CLOSE_GROUP
+pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -579,6 +584,8 @@ impl SwarmDriver {
     /// asynchronous tasks.
     pub async fn run(mut self) {
         let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
+        let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
+
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
@@ -605,6 +612,21 @@ impl SwarmDriver {
                         bootstrap_interval = new_interval;
                     }
                 }
+                _ = set_farthest_record_interval.tick() => {
+                    let closest_peers = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&self.self_peer_id.into())
+                    .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
+                    .collect_vec();
+
+                    if let Some(distance) = self.get_farthest_relevant_record(&closest_peers).await {
+                        // set any new distance to fathest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                    }
+                }
             }
         }
     }
@@ -612,6 +634,38 @@ impl SwarmDriver {
     // --------------------------------------------
     // ---------- Crate helpers -------------------
     // --------------------------------------------
+
+    /// Return the record we hold that is farthest and relevant to us
+    async fn get_farthest_relevant_record(
+        &mut self,
+        closest_k_peers: &Vec<PeerId>,
+    ) -> Option<Distance> {
+        let mut farthest_distance = None;
+        #[allow(clippy::mutable_key_type)]
+        let locally_stored_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+
+        for (_key, (address, _r_type)) in locally_stored_keys.iter() {
+            if Self::is_in_close_range(&self.self_peer_id, address, closest_k_peers) {
+                let distance = our_address.distance(&address);
+
+                if let Some(current_closest) = farthest_distance {
+                    if distance > current_closest {
+                        farthest_distance = Some(distance);
+                    }
+                } else {
+                    farthest_distance = Some(distance);
+                }
+            }
+        }
+
+        farthest_distance
+    }
 
     /// Sends an event after pushing it off thread so as to be non-blocking
     /// this is a wrapper around the `mpsc::Sender::send` call
