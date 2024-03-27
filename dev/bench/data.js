@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711579000115,
+  "lastUpdate": 1711579001553,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "f79e451896cfc39ae0c379dd79681982bebe7316",
-          "message": "feat(test): read the DeploymentInventory from SN_INVENTORY",
-          "timestamp": "2023-11-14T16:42:33Z",
-          "tree_id": "f15ed4e8190ad62c58e41a8fe493f1ee3f8a4500",
-          "url": "https://github.com/maidsafe/safe_network/commit/f79e451896cfc39ae0c379dd79681982bebe7316"
-        },
-        "date": 1699982719090,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 205,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 70,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c49ff0e0561b8ee607c3b6ad457f488bd81338ae",
+          "message": "fix(uploader): clarify the use of root and wallet dirs",
+          "timestamp": "2024-03-27T21:55:16Z",
+          "tree_id": "2e361fb570c0a61a5868571eff4d2c9aeede1b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c49ff0e0561b8ee607c3b6ad457f488bd81338ae"
+        },
+        "date": 1711579001229,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
