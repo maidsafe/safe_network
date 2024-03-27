@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.105.0](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.41...sn_node-v0.105.0) - 2024-03-27
+
+### Added
+- *(uploader)* allow either chunk or chunk path to be used
+- *(client)* use the new Uploader insetead of FilesUpload
+- make logging simpler to use
+- *(transfers)* enable client to check if a quote has expired
+- *(networking)* add NodeIssue for tracking bad node shunning
+- [**breaking**] remove gossip code
+- *(transfers)* [**breaking**] support multiple payments for the same xorname
+- use Arc inside Client, Network to reduce clone cost
+- provide `--metrics-port` arg for `add` cmd
+- *(network)* filter out peers when returning store cost
+- *(faucet)* rate limit based upon wallet locks
+
+### Fixed
+- *(register)* permissions verification was not being made by some Register APIs
+- *(node)* fetching new data shall not cause timed_out immediately
+- *(test)* generate unique temp dir to avoid read outdated data
+- *(register)* shortcut permissions check when anyone can write to Register
+
+### Other
+- *(node)* refactor pricing metrics
+- *(node)* reduce bad_node check concureent queries
+- *(uploader)* remove FilesApi dependency
+- *(uploader)* implement UploaderInterface for easier testing
+- *(register)* minor simplification in Register Permissions implementation
+- lower some networking log levels
+- *(node)* loose bad node detection criteria
+- *(node)* optimization to reduce logging
+- *(uploader)* initial test setup for uploader
+
 ## [0.104.41](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.40...sn_node-v0.104.41) - 2024-03-21
 
 ### Added

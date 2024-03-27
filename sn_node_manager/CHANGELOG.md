@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.6.1...sn-node-manager-v0.7.0) - 2024-03-27
+
+### Added
+- [**breaking**] remove gossip code
+- add `--interval` arg to `start` command
+- arguments can be used multiple times
+- provide `--rpc-port` arg for `add` cmd
+- provide `--metrics-port` arg for `add` cmd
+- uniform behaviour for all `add` commands
+
+### Fixed
+- preclude removed services from ops
+- permit removal of manually removed services
+- *(manager)* store exclusive reference to service data instead of cloning
+
+### Other
+- refresh node registry before commands
+- fix wrong command in usage example
+- clarify version number usage
+
 ## [0.6.1](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.6.0...sn-node-manager-v0.6.1) - 2024-03-21
 
 ### Added

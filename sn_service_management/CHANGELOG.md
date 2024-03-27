@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.1.2...sn_service_management-v0.2.0) - 2024-03-27
+
+### Added
+- [**breaking**] remove gossip code
+
+### Fixed
+- permit removal of manually removed services
+- adding service user on alpine
+- *(manager)* store exclusive reference to service data instead of cloning
+
 ## [0.1.2](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.1.1...sn_service_management-v0.1.2) - 2024-03-21
 
 ### Added

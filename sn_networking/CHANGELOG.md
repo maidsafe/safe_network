@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.35...sn_networking-v0.14.0) - 2024-03-27
+
+### Added
+- *(networking)* add NodeIssue for tracking bad node shunning
+- [**breaking**] remove gossip code
+- *(network)* filter out peers when returning store cost
+- use Arc inside Client, Network to reduce clone cost
+
+### Fixed
+- *(node)* fetching new data shall not cause timed_out immediately
+- *(test)* generate unique temp dir to avoid read outdated data
+
+### Other
+- *(node)* refactor pricing metrics
+- lower some networking log levels
+- *(node)* loose bad node detection criteria
+- *(node)* optimization to reduce logging
+
 ## [0.13.35](https://github.com/joshuef/safe_network/compare/sn_networking-v0.13.34...sn_networking-v0.13.35) - 2024-03-21
 
 ### Added

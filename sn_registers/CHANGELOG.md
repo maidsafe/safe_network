@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12](https://github.com/joshuef/safe_network/compare/sn_registers-v0.3.11...sn_registers-v0.3.12) - 2024-03-27
+
+### Fixed
+- *(register)* shortcut permissions check when anyone can write to Register
+- *(register)* permissions verification was not being made by some Register APIs
+
+### Other
+- *(uploader)* initial test setup for uploader
+- *(register)* minor simplification in Register Permissions implementation
+
 ## [0.3.10](https://github.com/maidsafe/safe_network/compare/sn_registers-v0.3.9...sn_registers-v0.3.10) - 2024-02-20
 
 ### Added
