@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711547486917,
+  "lastUpdate": 1711547488431,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40849,6 +40849,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 14450,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "0c564fa5644d1dd57c4a95fa804de0f942b2ad08",
+          "message": "feat(faucet): rate limit based upon wallet locks",
+          "timestamp": "2024-03-27T13:07:03Z",
+          "tree_id": "8b15a85318f4ff1f35faf761e2cc8853f0a606be",
+          "url": "https://github.com/maidsafe/safe_network/commit/0c564fa5644d1dd57c4a95fa804de0f942b2ad08"
+        },
+        "date": 1711547488100,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3643,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 16571,
             "unit": "ms"
           },
           {
