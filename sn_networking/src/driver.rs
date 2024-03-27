@@ -67,6 +67,10 @@ use tracing::warn;
 /// based upon our knowledge of the CLOSE_GROUP
 pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
+/// The number of local peers to consider while we check for the farthest record.
+/// This will be multiplied with CLOSE_GROUP.
+pub(crate) const PEER_SAMPLE_MULTIPLIER_DURING_CLOSEST_RECORD_CHECK: usize = 6;
+
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
     /// The network discovery method is present at the networking layer
@@ -613,19 +617,21 @@ impl SwarmDriver {
                     }
                 }
                 _ = set_farthest_record_interval.tick() => {
+                    let now = Instant::now();
                     let closest_peers = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .get_closest_local_peers(&self.self_peer_id.into())
                     .map(|peer| peer.into_preimage())
-                    .take(CLOSE_GROUP_SIZE)
+                    .take(CLOSE_GROUP_SIZE * PEER_SAMPLE_MULTIPLIER_DURING_CLOSEST_RECORD_CHECK)
                     .collect_vec();
 
                     if let Some(distance) = self.get_farthest_relevant_record(&closest_peers) {
                         // set any new distance to fathest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                     }
+                    trace!("Farthest record check took: {:?}", now.elapsed());
                 }
             }
         }
