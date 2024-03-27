@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[macro_use]
+extern crate tracing;
+
 mod dag_db;
 mod routes;
 
@@ -44,14 +47,14 @@ struct Opt {
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
     #[allow(rustdoc::invalid_html_tags)]
     #[clap(long, value_parser = LogOutputDest::parse_from_str, verbatim_doc_comment, default_value = "data-dir")]
-    pub log_output_dest: LogOutputDest,
+    log_output_dest: LogOutputDest,
     /// Specify the logging format.
     ///
     /// Valid values are "default" or "json".
     ///
     /// If the argument is not used, the default format will be applied.
     #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
-    pub log_format: Option<LogFormat>,
+    log_format: Option<LogFormat>,
 }
 
 #[tokio::main]
@@ -75,12 +78,13 @@ fn logging_init(
 ) -> Result<LogBuilder> {
     color_eyre::install()?;
     let logging_targets = vec![
+        ("sn_auditor".to_string(), Level::TRACE),
+        ("sn_client".to_string(), Level::DEBUG),
         ("sn_transfers".to_string(), Level::TRACE),
-        ("sn_networking".to_string(), Level::DEBUG),
-        ("sn_client".to_string(), Level::TRACE),
-        ("sn_logging".to_string(), Level::TRACE),
-        ("sn_peers_acquisition".to_string(), Level::TRACE),
-        ("sn_protocol".to_string(), Level::TRACE),
+        ("sn_logging".to_string(), Level::INFO),
+        ("sn_peers_acquisition".to_string(), Level::INFO),
+        ("sn_protocol".to_string(), Level::INFO),
+        ("sn_networking".to_string(), Level::WARN),
     ];
     let mut log_builder = LogBuilder::new(logging_targets);
     log_builder.output_dest(log_output_dest);
@@ -104,6 +108,7 @@ async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
         .await
         .map_err(|err| eyre!("Failed to connect to the network: {err}"))?;
 
+    println!("Connected to the network");
     Ok(client)
 }
 
@@ -115,7 +120,7 @@ async fn initialize_background_spend_dag_collection(
     force_from_genesis: bool,
     clean: bool,
 ) -> Result<SpendDagDb> {
-    println!("Gather Spend DAG...");
+    println!("Initialize spend dag...");
     let path = dirs_next::data_dir()
         .ok_or(eyre!("Could not obtain data directory path"))?
         .join("safe")
@@ -150,6 +155,10 @@ async fn initialize_background_spend_dag_collection(
                 .map_err(|e| eprintln!("Failed to merge from genesis DAG into our DAG: {e}"));
         });
     }
+
+    // initialize svg
+    println!("Initialize visualization...");
+    dag.dump_dag_svg()?;
 
     // background thread to update DAG
     println!("Starting background DAG collection thread...");
