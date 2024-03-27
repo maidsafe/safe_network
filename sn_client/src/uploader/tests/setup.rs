@@ -23,7 +23,7 @@ use rand::thread_rng;
 use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote};
+use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote, WalletApi};
 use std::{
     collections::{BTreeMap, VecDeque},
     path::PathBuf,
@@ -48,7 +48,7 @@ impl UploaderInterface for TestUploader {
         self.inner.take().unwrap()
     }
 
-    fn spawn_get_register(
+    fn submit_get_register_task(
         &mut self,
         _client: Client,
         reg_addr: RegisterAddress,
@@ -89,7 +89,7 @@ impl UploaderInterface for TestUploader {
         }
     }
 
-    fn spawn_push_register(
+    fn submit_push_register_task(
         &mut self,
         upload_item: UploadItem,
         _verify_store: bool,
@@ -133,10 +133,10 @@ impl UploaderInterface for TestUploader {
         }
     }
 
-    fn spawn_get_store_cost(
+    fn submit_get_store_cost_task(
         &mut self,
         _client: Client,
-        _wallet_dir: PathBuf,
+        _wallet_api: WalletApi,
         xorname: XorName,
         _address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
@@ -235,7 +235,7 @@ impl UploaderInterface for TestUploader {
         }
     }
 
-    fn spawn_make_payment(
+    fn submit_make_payment_task(
         &mut self,
         to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         _make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
@@ -316,11 +316,11 @@ impl UploaderInterface for TestUploader {
         }
     }
 
-    fn spawn_upload_item(
+    fn submit_upload_item_task(
         &mut self,
         upload_item: UploadItem,
         _client: Client,
-        _wallet_dir: PathBuf,
+        _wallet_api: WalletApi,
         _verify_store: bool,
         _retry_strategy: RetryStrategy,
         _task_result_sender: mpsc::Sender<TaskResult>,
