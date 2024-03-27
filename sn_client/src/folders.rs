@@ -6,27 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Error, FilesApi};
-
 use super::{error::Result, Client, ClientRegister, WalletClient};
-
+use crate::{Error, FilesApi};
 use bls::{Ciphertext, PublicKey};
+use bytes::{BufMut, BytesMut};
 use self_encryption::MAX_CHUNK_SIZE;
+use serde::{Deserialize, Serialize};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RegisterAddress, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash};
 use sn_transfers::HotWallet;
-use xor_name::{XorName, XOR_NAME_LEN};
-
-use bytes::{BufMut, BytesMut};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     path::{Path, PathBuf},
 };
+use xor_name::{XorName, XOR_NAME_LEN};
 
 /// Folder Entry representing either a file or subfolder.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -49,7 +46,7 @@ const REMOVED_ENTRY_MARK: XorName = XorName([0; XOR_NAME_LEN]);
 #[derive(Clone)]
 pub struct FoldersApi {
     client: Client,
-    wallet_dir: PathBuf,
+    root_dir: PathBuf,
     register: ClientRegister,
     files_api: FilesApi,
     // Cache of metadata chunks. We keep the Chunk itself till we upload it to the network.
@@ -58,11 +55,7 @@ pub struct FoldersApi {
 
 impl FoldersApi {
     /// Create FoldersApi instance.
-    pub fn new(
-        client: Client,
-        wallet_dir: &Path,
-        address: Option<RegisterAddress>,
-    ) -> Result<Self> {
+    pub fn new(client: Client, root_dir: &Path, address: Option<RegisterAddress>) -> Result<Self> {
         let register = if let Some(addr) = address {
             ClientRegister::create_with_addr(client.clone(), addr)
         } else {
@@ -70,7 +63,7 @@ impl FoldersApi {
             ClientRegister::create(client.clone(), XorName::random(&mut rng))
         };
 
-        Self::create(client, wallet_dir, register)
+        Self::create(client, root_dir, register)
     }
 
     /// Return the address of the Folder (Register address) on the network
@@ -99,9 +92,7 @@ impl FoldersApi {
 
     /// Create a new WalletClient from the directory set.
     pub fn wallet(&self) -> Result<WalletClient> {
-        let path = self.wallet_dir.as_path();
-        let wallet = HotWallet::load_from(path)?;
-
+        let wallet = HotWallet::load_from(&self.root_dir)?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
@@ -199,11 +190,11 @@ impl FoldersApi {
     /// Download a copy of the Folder from the network.
     pub async fn retrieve(
         client: Client,
-        wallet_dir: &Path,
+        root_dir: &Path,
         address: RegisterAddress,
     ) -> Result<Self> {
         let register = ClientRegister::retrieve(client.clone(), address).await?;
-        Self::create(client, wallet_dir, register)
+        Self::create(client, root_dir, register)
     }
 
     /// Returns true if there is a file/folder which matches the given entry hash
@@ -283,12 +274,12 @@ impl FoldersApi {
     // Private helpers
 
     // Create a new FoldersApi instance with given register.
-    fn create(client: Client, wallet_dir: &Path, register: ClientRegister) -> Result<Self> {
-        let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
+    fn create(client: Client, root_dir: &Path, register: ClientRegister) -> Result<Self> {
+        let files_api = FilesApi::new(client.clone(), root_dir.to_path_buf());
 
         Ok(Self {
             client,
-            wallet_dir: wallet_dir.to_path_buf(),
+            root_dir: root_dir.to_path_buf(),
             register,
             files_api,
             metadata: BTreeMap::new(),
