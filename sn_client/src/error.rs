@@ -15,6 +15,7 @@ use sn_transfers::{SignedSpend, SpendAddress};
 use std::collections::BTreeSet;
 use thiserror::Error;
 use tokio::time::Duration;
+use xor_name::XorName;
 
 /// Internal error.
 #[derive(Debug, Error)]
@@ -93,9 +94,6 @@ pub enum Error {
     #[error("Could not connect to the network in {0:?}")]
     ConnectionTimeout(Duration),
 
-    #[error("Too many sequential upload payment failures")]
-    SequentialUploadPaymentError,
-
     #[error("Could not send files event")]
     CouldNotSendFilesEvent,
 
@@ -108,9 +106,31 @@ pub enum Error {
     #[error("Error occurred while assembling the downloaded chunks")]
     FailedToAssembleDownloadedChunks,
 
-    #[error("Error occurred when access wallet file")]
-    FailedToAccessWallet,
-
     #[error("Task completion notification channel is done")]
     FailedToReadFromNotificationChannel,
+
+    // ------ Upload Errors --------
+    #[error("Uploadable item not found: {0:?}")]
+    UploadableItemNotFound(XorName),
+
+    #[error("Invalid upload item found")]
+    InvalidUploadItemFound,
+
+    #[error("The state tracked by the uploader is empty")]
+    UploadStateTrackerIsEmpty,
+
+    #[error("Internal task channel dropped")]
+    InternalTaskChannelDropped,
+
+    #[error("Multiple consecutive network errors reported during upload")]
+    SequentialNetworkErrors,
+
+    #[error("Too many sequential payment errors reported during upload")]
+    SequentialUploadPaymentError,
+
+    #[error("The maximum specified repayments were made for the address: {0:?}")]
+    MaximumRepaymentsReached(XorName),
+
+    #[error("Error occurred when access wallet file")]
+    FailedToAccessWallet,
 }

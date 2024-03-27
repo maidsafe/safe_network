@@ -230,7 +230,7 @@ fn parse_service_status(output: &[u8]) -> Vec<ServiceStatus> {
     let output_str = String::from_utf8_lossy(output);
     output_str
         .split('\n')
-        .skip(4) // Skip header lines
+        .skip(5) // Skip header lines
         .filter(|line| !line.is_empty())
         .map(|line| {
             let columns: Vec<&str> = line.split_whitespace().collect();

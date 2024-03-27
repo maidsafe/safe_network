@@ -139,7 +139,7 @@ pub(crate) async fn files_cmds(
                 )
                 .await?;
 
-                IterativeUploader::new(chunk_manager, files_api)
+                IterativeUploader::new(chunk_manager, client.clone(), root_dir.to_path_buf())
                     .iterate_upload(
                         chunks_to_upload,
                         &file_path,
@@ -304,9 +304,8 @@ pub async fn chunks_to_upload_with_iter(
     batch_size: usize,
     make_data_public: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
+    chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
     let chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
-
         let chunks = chunk_manager.get_chunks();
 
         let failed_chunks = files_api

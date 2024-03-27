@@ -61,7 +61,7 @@ const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 impl Client {
     /// A quick client that only takes some peers to connect to
     pub async fn quick_start(peers: Option<Vec<Multiaddr>>) -> Result<Self> {
-        Self::new(SecretKey::random(), peers, false, None, None).await
+        Self::new(SecretKey::random(), peers, None, None).await
     }
 
     /// Instantiate a new client.
@@ -72,7 +72,6 @@ impl Client {
     /// # Arguments
     /// * 'signer' - [SecretKey]
     /// * 'peers' - [Option]<[Vec]<[Multiaddr]>>
-    /// * 'enable_gossip' - Boolean: Signifies whether the client should attempt to join the gossip layer in the network. i.e to monitor network royalties.
     /// * 'connection_timeout' - [Option]<[Duration]> : Specification for client connection timeout set via Optional
     /// * 'client_event_broadcaster' - [Option]<[ClientEventsBroadcaster]>
     ///
@@ -82,14 +81,13 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # Ok(())
     /// # }
     /// ```
     pub async fn new(
         signer: SecretKey,
         peers: Option<Vec<Multiaddr>>,
-        enable_gossip: bool,
         connection_timeout: Option<Duration>,
         client_event_broadcaster: Option<ClientEventsBroadcaster>,
     ) -> Result<Self> {
@@ -108,12 +106,11 @@ impl Client {
         let root_dir = std::env::temp_dir();
         trace!("Starting Kad swarm in client mode..{root_dir:?}.");
 
+        #[cfg(not(feature = "open-metrics"))]
+        let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
+
+        #[cfg(feature = "open-metrics")]
         let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
-
-        if enable_gossip {
-            network_builder.enable_gossip();
-        }
-
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
 
@@ -256,11 +253,6 @@ impl Client {
                     debug!("{peers_added}/{CLOSE_GROUP_SIZE} initial peers found.",);
                 }
             }
-            NetworkEvent::GossipsubMsgReceived { topic, msg }
-            | NetworkEvent::GossipsubMsgPublished { topic, msg } => {
-                self.events_broadcaster
-                    .broadcast(ClientEvent::GossipsubMsg { topic, msg });
-            }
             _other => {}
         }
 
@@ -279,15 +271,13 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Using client.events_channel() to publish messages
     /// let mut events_channel = client.events_channel();
     /// while let Ok(event) = events_channel.recv().await {
-    ///     if let ClientEvent::GossipsubMsg { msg, .. } = event {
-    ///     let msg = String::from_utf8(msg.to_vec()).unwrap();
-    ///     println!("New message published: {msg}");
-    ///     }
-    /// }
+    /// // Handle the event
+    ///  }
+    ///
     /// # Ok(())
     /// # }
     /// ```
@@ -315,7 +305,7 @@ impl Client {
     /// use xor_name::XorName;
     /// use sn_registers::Register;
     /// use sn_protocol::messages::RegisterCmd;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     ///
     /// // Set up register prerequisites
     /// let mut rng = rand::thread_rng();
@@ -351,7 +341,7 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let secret_key_reference = client.signer();
     /// # Ok(())
     /// # }
@@ -372,7 +362,7 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let public_key_reference = client.signer_pk();
     /// # Ok(())
     /// # }
@@ -400,7 +390,7 @@ impl Client {
     /// use xor_name::XorName;
     /// use sn_registers::RegisterAddress;
     /// // Set up a client
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
@@ -474,7 +464,7 @@ impl Client {
     /// use xor_name::XorName;
     /// use sn_registers::RegisterAddress;
     /// // Set up a client
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
@@ -516,7 +506,7 @@ impl Client {
     /// // Set up Client, Wallet, etc
     /// use sn_registers::Permissions;
     /// use sn_transfers::HotWallet;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
@@ -673,7 +663,7 @@ impl Client {
     /// use xor_name::XorName;
     /// use sn_protocol::storage::ChunkAddress;
     /// // client
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // chunk address
     /// let mut rng = rand::thread_rng();
     /// let xorname = XorName::random(&mut rng);
@@ -766,7 +756,7 @@ impl Client {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// // Set up Client
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Set up an address
     /// let mut rng = rand::thread_rng();
     /// let owner = SecretKey::random().public_key();
@@ -852,7 +842,7 @@ impl Client {
     /// use sn_transfers::SpendAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Create a SpendAddress
     /// let mut rng = rand::thread_rng();
     /// let xorname = XorName::random(&mut rng);
@@ -913,75 +903,6 @@ impl Client {
         }
     }
 
-    /// Subscribe to given gossipsub topic
-    ///
-    /// # Arguments
-    /// * 'topic_id' - [String]
-    ///
-    /// # Example
-    /// ```no_run
-    /// use sn_client::{Client, Error};
-    /// use bls::SecretKey;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// // Subscribing to the gossipsub topic "Royalty Transfer Notification"
-    /// client.subscribe_to_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn subscribe_to_topic(&self, topic_id: String) {
-        info!("Subscribing to topic id: {topic_id}");
-        self.network.subscribe_to_topic(topic_id);
-        self.network.start_handle_gossip();
-    }
-
-    /// Unsubscribe from given gossipsub topic
-    ///
-    /// # Arguments
-    /// * 'topic_id' - [String]
-    ///
-    /// # Example
-    /// ```no_run
-    /// use sn_client::{Client, Error};
-    /// use bls::SecretKey;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// // Unsubscribing to the gossipsub topic "Royalty Transfer Notification"
-    /// client.unsubscribe_from_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"));
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn unsubscribe_from_topic(&self, topic_id: String) {
-        info!("Unsubscribing from topic id: {topic_id}");
-        self.network.unsubscribe_from_topic(topic_id);
-    }
-
-    /// Publish message on given topic
-    ///
-    /// # Arguments
-    /// * 'topic_id' - [String]
-    /// * 'msg' - [Bytes]
-    ///
-    /// # Example
-    /// ```no_run
-    /// use sn_client::{Client, Error};
-    /// use bls::SecretKey;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
-    /// let msg = String::from("Transfer Successful.");
-    /// // Note the use of .into() to set the argument as bytes
-    /// client.publish_on_topic(String::from("ROYALTY_TRANSFER_NOTIFICATION"), msg.into());
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn publish_on_topic(&self, topic_id: String, msg: Bytes) {
-        info!("Publishing msg on topic id: {topic_id}");
-        self.network.publish_on_topic(topic_id, msg);
-    }
-
     /// This function is used to receive a Vector of CashNoteRedemptions and turn them back into spendable CashNotes.
     /// For this we need a network connection.
     /// Verify CashNoteRedemptions and rebuild spendable currency from them.
@@ -1003,7 +924,7 @@ impl Client {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey};
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Create a main public key
     /// let pk = SecretKey::random().public_key();
     /// let main_pub_key = MainPubkey::new(pk);
@@ -1048,7 +969,7 @@ impl Client {
     /// # async fn main() -> Result<(),Error>{
     /// use std::path::PathBuf;
     /// use xor_name::XorName;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Setup for chunk_path
     /// let mut chunk_path = PathBuf::from("/");
     /// // Setup an XorName

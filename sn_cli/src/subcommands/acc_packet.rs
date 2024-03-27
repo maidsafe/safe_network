@@ -655,7 +655,7 @@ impl AccountPacket {
         )
         .await?;
 
-        IterativeUploader::new(chunk_manager, files_api)
+        IterativeUploader::new(chunk_manager, self.client.clone(), self.wallet_dir.clone())
             .iterate_upload(chunks_to_upload, &self.files_dir, options.clone())
             .await?;
 

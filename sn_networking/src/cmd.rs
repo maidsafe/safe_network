@@ -12,7 +12,6 @@ use crate::{
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATE_RANGE,
 };
-use bytes::Bytes;
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
     swarm::dial_opts::DialOpts,
@@ -34,6 +33,16 @@ use xor_name::XorName;
 use crate::target_arch::Instant;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum NodeIssue {
+    /// Connection issues observed
+    ConnectionIssue,
+    /// Data Replication failed
+    ReplicationFailure,
+    /// Close nodes have reported this peer as bad
+    CloseNodesShunning,
+}
 
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
@@ -148,25 +157,13 @@ pub enum SwarmCmd {
     },
     /// Triggers interval repliation
     TriggerIntervalReplication,
-    /// Subscribe to a given Gossipsub topic
-    GossipsubSubscribe(String),
-    /// Unsubscribe from a given Gossipsub topic
-    GossipsubUnsubscribe(String),
-    /// Publish a message through Gossipsub protocol
-    GossipsubPublish {
-        /// Topic to publish on
-        topic_id: String,
-        /// Raw bytes of the message to publish
-        msg: Bytes,
-    },
-    GossipHandler,
     /// Notify whether peer is in trouble
-    SendNodeStatus {
+    RecordNodeIssue {
         peer_id: PeerId,
-        is_bad: bool,
+        issue: NodeIssue,
     },
     // Whether peer is considered as `in trouble` by self
-    IsPeerInTrouble {
+    IsPeerShunned {
         target: NetworkAddress,
         sender: oneshot::Sender<bool>,
     },
@@ -228,19 +225,6 @@ impl Debug for SwarmCmd {
             SwarmCmd::TriggerIntervalReplication => {
                 write!(f, "SwarmCmd::TriggerIntervalReplication")
             }
-            SwarmCmd::GossipsubSubscribe(topic) => {
-                write!(f, "SwarmCmd::GossipsubSubscribe({topic:?})")
-            }
-            SwarmCmd::GossipsubUnsubscribe(topic) => {
-                write!(f, "SwarmCmd::GossipsubUnsubscribe({topic:?})")
-            }
-            SwarmCmd::GossipsubPublish { topic_id, msg } => {
-                write!(
-                    f,
-                    "SwarmCmd::GossipsubPublish {{ topic_id: {topic_id:?}, msg len: {:?} }}",
-                    msg.len()
-                )
-            }
             SwarmCmd::DialWithOpts { opts, .. } => {
                 write!(f, "SwarmCmd::DialWithOpts {{ opts: {opts:?} }}")
             }
@@ -288,16 +272,13 @@ impl Debug for SwarmCmd {
             SwarmCmd::SendRequest { req, peer, .. } => {
                 write!(f, "SwarmCmd::SendRequest req: {req:?}, peer: {peer:?}")
             }
-            SwarmCmd::GossipHandler => {
-                write!(f, "SwarmCmd::GossipHandler")
-            }
-            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
+            SwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 write!(
                     f,
-                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, is_bad: {is_bad:?}"
+                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, issue: {issue:?}"
                 )
             }
-            SwarmCmd::IsPeerInTrouble { target, .. } => {
+            SwarmCmd::IsPeerShunned { target, .. } => {
                 write!(f, "SwarmCmd::IsPeerInTrouble target: {target:?}")
             }
         }
@@ -315,7 +296,7 @@ pub struct SwarmLocalState {
 impl SwarmDriver {
     pub(crate) fn handle_cmd(&mut self, cmd: SwarmCmd) -> Result<(), NetworkError> {
         let start = Instant::now();
-        let mut cmd_string = "";
+        let mut cmd_string;
         match cmd {
             SwarmCmd::TriggerIntervalReplication => {
                 cmd_string = "TriggerIntervalReplication";
@@ -693,55 +674,54 @@ impl SwarmDriver {
                     .send(current_state)
                     .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
-            SwarmCmd::GossipsubSubscribe(topic_id) => {
-                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
-                    gossip.subscribe(&topic_id)?;
-                }
-            }
-            SwarmCmd::GossipsubUnsubscribe(topic_id) => {
-                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
 
-                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
-                    gossip.unsubscribe(&topic_id)?;
-                }
-            }
-            SwarmCmd::GossipsubPublish { topic_id, msg } => {
-                cmd_string = "GossipsubPublish";
-                // If we publish a Gossipsub message, we might not receive the same message on our side.
-                // Hence push an event to notify that we've published a message
-                if self.is_gossip_handler {
-                    self.send_event(NetworkEvent::GossipsubMsgPublished {
-                        topic: topic_id.clone(),
-                        msg: msg.clone(),
-                    });
-                }
-                let topic_id = libp2p::gossipsub::IdentTopic::new(topic_id);
-                if let Some(gossip) = self.swarm.behaviour_mut().gossipsub.as_mut() {
-                    gossip.publish(topic_id, msg)?;
-                }
-            }
-            SwarmCmd::GossipHandler => {
-                self.is_gossip_handler = true;
-            }
-            SwarmCmd::SendNodeStatus { peer_id, is_bad } => {
-                cmd_string = "SendNodeStatus";
+            SwarmCmd::RecordNodeIssue { peer_id, issue } => {
+                cmd_string = "RecordNodeIssues";
                 let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
 
-                // only trigger the bad_node verification once have enough nodes in RT
-                // currently set the trigger bar at 100
-                let total_peers: usize = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .kbuckets()
-                    .map(|kbucket| kbucket.num_entries())
-                    .sum();
+                info!("Peer {peer_id:?} is reported as having issue {issue:?}");
+                let (issue_vec, is_bad) = self.bad_nodes.entry(peer_id).or_default();
 
-                if total_peers > 100 && is_bad {
-                    info!("Peer {peer_id:?} is considered as bad");
-                    let _ = self.bad_nodes.insert(peer_id);
+                // If being considered as bad already, skip certain operations
+                if !(*is_bad) {
+                    // Remove outdated entries
+                    issue_vec.retain(|(_, timestamp)| timestamp.elapsed().as_secs() < 300);
 
+                    // check if vec is already 10 long, if so, remove the oldest issue
+                    // we only track 10 issues to avoid mem leaks
+                    if issue_vec.len() == 10 {
+                        issue_vec.remove(0);
+                    }
+
+                    // To avoid being too sensitive, only consider as a new issue
+                    // when after certain while since the last one
+                    let is_new_issue = if let Some((_issue, timestamp)) = issue_vec.last() {
+                        timestamp.elapsed().as_secs() > 10
+                    } else {
+                        true
+                    };
+
+                    if is_new_issue {
+                        issue_vec.push((issue, Instant::now()));
+                    }
+
+                    // Only consider candidate as a bad node when:
+                    //   accumulated THREE same kind issues within certain period
+                    for (issue, _timestamp) in issue_vec.iter() {
+                        let issue_counts = issue_vec
+                            .iter()
+                            .filter(|(i, _timestamp)| *issue == *i)
+                            .count();
+                        if issue_counts >= 3 {
+                            *is_bad = true;
+                            info!("Peer {peer_id:?} accumulated {issue_counts} times of issue {issue:?}. Consider it as a bad node now.");
+                            // Once a bad behaviour detected, no point to continue
+                            break;
+                        }
+                    }
+                }
+
+                if *is_bad {
                     warn!("Cleaning out bad_peer {peer_id:?}");
                     if let Some(dead_peer) =
                         self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
@@ -756,13 +736,18 @@ impl SwarmDriver {
                     }
                 }
             }
-            SwarmCmd::IsPeerInTrouble { target, sender } => {
+            SwarmCmd::IsPeerShunned { target, sender } => {
                 cmd_string = "IsPeerInTrouble";
-                if let Some(peer_id) = target.as_peer_id() {
-                    let _ = sender.send(self.bad_nodes.contains(&peer_id));
+                let is_bad = if let Some(peer_id) = target.as_peer_id() {
+                    if let Some((_issues, is_bad)) = self.bad_nodes.get(&peer_id) {
+                        *is_bad
+                    } else {
+                        false
+                    }
                 } else {
-                    let _ = sender.send(false);
-                }
+                    false
+                };
+                let _ = sender.send(is_bad);
             }
         }
 

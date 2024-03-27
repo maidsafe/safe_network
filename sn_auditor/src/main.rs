@@ -15,6 +15,7 @@ use bls::SecretKey;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
 use sn_client::Client;
+use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_peers_acquisition::PeersArgs;
 use tiny_http::{Response, Server};
@@ -30,12 +31,34 @@ struct Opt {
     /// Clear the local spend DAG and start from scratch
     #[clap(short, long)]
     clean: bool,
+
+    /// Specify the logging output destination.
+    ///
+    /// Valid values are "stdout", "data-dir", or a custom path.
+    ///
+    /// `data-dir` is the default value.
+    ///
+    /// The data directory location is platform specific:
+    ///  - Linux: $HOME/.local/share/safe/client/logs
+    ///  - macOS: $HOME/Library/Application Support/safe/client/logs
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
+    #[allow(rustdoc::invalid_html_tags)]
+    #[clap(long, value_parser = LogOutputDest::parse_from_str, verbatim_doc_comment, default_value = "data-dir")]
+    pub log_output_dest: LogOutputDest,
+    /// Specify the logging format.
+    ///
+    /// Valid values are "default" or "json".
+    ///
+    /// If the argument is not used, the default format will be applied.
+    #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
+    pub log_format: Option<LogFormat>,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    color_eyre::install()?;
     let opt = Opt::parse();
+    let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
+    let _log_handles = log_builder.initialize()?;
     let client = connect_to_network(opt.peers).await?;
     let dag = initialize_background_spend_dag_collection(
         client.clone(),
@@ -44,6 +67,25 @@ async fn main() -> Result<()> {
     )
     .await?;
     start_server(dag).await
+}
+
+fn logging_init(
+    log_output_dest: LogOutputDest,
+    log_format: Option<LogFormat>,
+) -> Result<LogBuilder> {
+    color_eyre::install()?;
+    let logging_targets = vec![
+        ("sn_transfers".to_string(), Level::TRACE),
+        ("sn_networking".to_string(), Level::DEBUG),
+        ("sn_client".to_string(), Level::TRACE),
+        ("sn_logging".to_string(), Level::TRACE),
+        ("sn_peers_acquisition".to_string(), Level::TRACE),
+        ("sn_protocol".to_string(), Level::TRACE),
+    ];
+    let mut log_builder = LogBuilder::new(logging_targets);
+    log_builder.output_dest(log_output_dest);
+    log_builder.format(log_format.unwrap_or(LogFormat::Default));
+    Ok(log_builder)
 }
 
 async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
@@ -58,7 +100,7 @@ async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
     } else {
         Some(bootstrap_peers)
     };
-    let client = Client::new(SecretKey::random(), bootstrap_peers, false, None, None)
+    let client = Client::new(SecretKey::random(), bootstrap_peers, None, None)
         .await
         .map_err(|err| eyre!("Failed to connect to the network: {err}"))?;
 

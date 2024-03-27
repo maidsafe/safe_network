@@ -67,6 +67,9 @@ pub enum Error {
     /// No cached payment found for address
     #[error("No ongoing payment found for address {0:?}")]
     NoPaymentForAddress(XorName),
+    /// The payment Quote has expired.
+    #[error("The payment quote made for {0:?} has expired")]
+    QuoteExpired(XorName),
 
     /// DAG error
     #[error("DAG error: {0}")]

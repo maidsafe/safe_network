@@ -2,7 +2,7 @@ name: Nightly -- Full WAN Network Tests
 
 on:
   schedule:
-    - cron:  '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 env:
@@ -24,7 +24,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
-          
+
       - name: Build safe
         run: cargo build --release --bin safe
         timeout-minutes: 30
@@ -154,105 +154,6 @@ jobs:
       #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
       #     SLACK_TITLE: "Nightly E2E Test Run Failed"
 
-  gossipsub:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')" 
-    name: Gossipsub E2E tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Build gossipsub testing executable
-        run: cargo test --release -p sn_node --test msgs_over_gossipsub --no-run
-        timeout-minutes: 30
-
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyGossipSubE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
-
-      - name: Check env variables
-        shell: bash
-        run: |
-          echo "Peer is $SAFE_PEERS"
-          echo "Deployment inventory is $SN_INVENTORY"
-
-      - name: Gossipsub - nodes to subscribe to topics, and publish messages 
-        run: cargo test --release -p sn_node --test msgs_over_gossipsub -- --nocapture
-        timeout-minutes: 20
-
-      - name: Fetch network logs
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: logs
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyGossipSubE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
-
-      - name: Upload local logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: local_logs_NightlyGossipSubE2E
-          path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
-
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyGossipSubE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
-
   spend_test:
     name: Spend tests against network
     runs-on: ${{ matrix.os }}
@@ -306,7 +207,7 @@ jobs:
         timeout-minutes: 45
 
       - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1          
+        run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
         timeout-minutes: 45
@@ -314,7 +215,7 @@ jobs:
       - name: Small wait to allow reward receipt
         run: sleep 30
         timeout-minutes: 1
-      
+
       - name: Fetch network logs
         if: always()
         uses: maidsafe/sn-testnet-action@main
@@ -400,7 +301,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         continue-on-error: true
 
-      - name: Build churn tests 
+      - name: Build churn tests
         run: cargo test --release -p sn_node --test data_with_churn --no-run
         timeout-minutes: 30
 
@@ -492,9 +393,9 @@ jobs:
           testnet-name: NightlyChurnTest
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
-      
-      # TODO: re-enable the below scripts once we have proper way to restart nodes. 
-      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
+
+      # TODO: re-enable the below scripts once we have proper way to restart nodes.
+      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
       # log location and the logs are over written. Hence the scripts might give false outputs.
 
       # - name: Verify restart of nodes using rg
@@ -550,9 +451,9 @@ jobs:
             echo "We are logging an extremely large data"
             exit 1
           fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
           #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }' 
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -563,9 +464,9 @@ jobs:
           then
             echo "Sanity check pass for local safe path"
           fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
           #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }' 
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
           then
             echo "Sanity check pass for wan logs path"
           fi
@@ -577,7 +478,6 @@ jobs:
       #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
       #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
       #     SLACK_TITLE: "Nightly Churn Test Run Failed"
-
 
   verify_data_location_routing_table:
     name: Verify data location and Routing Table
@@ -648,7 +548,7 @@ jobs:
         timeout-minutes: 90
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture 
+        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
         timeout-minutes: 5
 
       - name: Fetch network logs
@@ -701,8 +601,8 @@ jobs:
           custom-node-bin-org-name: maidsafe
           custom-node-bin-branch-name: main
 
-      # TODO: re-enable the below scripts once we have proper way to restart nodes. 
-      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same 
+      # TODO: re-enable the below scripts once we have proper way to restart nodes.
+      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
       # log location and the logs are over written. Hence the scripts might give false outputs.
 
       # - name: Verify restart of nodes using rg
@@ -742,9 +642,9 @@ jobs:
             echo "We are logging an extremely large data"
             exit 1
           fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
           #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }' 
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -755,9 +655,9 @@ jobs:
           then
             echo "Sanity check pass for local safe path"
           fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log 
+          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
           #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }' 
+          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
           then
             echo echo "Sanity check pass for wan logs path"
           fi

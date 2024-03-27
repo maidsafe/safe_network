@@ -1,27 +1,33 @@
-use crate::subcommands::files;
-use crate::subcommands::files::{ChunkManager, FilesUploadOptions};
+use crate::subcommands::files::{self, ChunkManager, FilesUploadOptions};
 use color_eyre::{eyre::eyre, Result};
 use indicatif::ProgressBar;
-use sn_client::transfers::{NanoTokens, TransferError, WalletError};
-use sn_client::{Error as ClientError, Error, FileUploadEvent, FilesApi, FilesUpload};
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use std::time::Instant;
-use tokio::sync::mpsc::Receiver;
-use tokio::task::JoinHandle;
+use sn_client::{
+    transfers::{NanoTokens, TransferError, WalletError},
+    Client, Error as ClientError, UploadEvent, UploadSummary, Uploader,
+};
+use std::{
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::Instant,
+};
+use tokio::{sync::mpsc::Receiver, task::JoinHandle};
 use xor_name::XorName;
 
 pub(crate) struct IterativeUploader {
     chunk_manager: ChunkManager,
-    files_api: FilesApi,
+    client: Client,
+    wallet_dir: PathBuf,
 }
 
 impl IterativeUploader {
-    pub(crate) fn new(chunk_manager: ChunkManager, files_api: FilesApi) -> Self {
+    pub(crate) fn new(chunk_manager: ChunkManager, client: Client, wallet_dir: PathBuf) -> Self {
         Self {
             chunk_manager,
-            files_api,
+            client,
+            wallet_dir,
         }
     }
 }
@@ -42,7 +48,7 @@ impl IterativeUploader {
             batch_size,
             retry_strategy,
         } = options;
-        let mut files_upload = FilesUpload::new(self.files_api)
+        let mut uploader = Uploader::new(self.client, self.wallet_dir)
             .set_batch_size(batch_size)
             .set_verify_store(verify_store)
             .set_retry_strategy(retry_strategy);
@@ -53,7 +59,7 @@ impl IterativeUploader {
                 self.chunk_manager,
                 make_data_public,
                 progress_bar,
-                files_upload.get_upload_events(),
+                uploader.get_event_receiver(),
                 total_existing_chunks.clone(),
             );
         let current_instant = Instant::now();
@@ -66,7 +72,8 @@ impl IterativeUploader {
             &chunks_to_upload.len(),
         );
 
-        IterativeUploader::upload_chunk_vector(chunks_to_upload.clone(), &mut files_upload).await?;
+        let upload_summary =
+            IterativeUploader::upload_chunk_vector(chunks_to_upload.clone(), uploader).await?;
 
         map_join_handle_that_contains_resulting_file_upload_events
             .await?
@@ -76,7 +83,7 @@ impl IterativeUploader {
             chunks_to_upload.len(),
             current_instant,
             total_existing_chunks,
-            files_upload,
+            upload_summary,
         );
 
         Ok(())
@@ -84,10 +91,11 @@ impl IterativeUploader {
 
     async fn upload_chunk_vector(
         chunks_to_upload: Vec<(XorName, PathBuf)>,
-        files_upload: &mut FilesUpload,
-    ) -> Result<()> {
-        match files_upload.upload_chunks(chunks_to_upload).await {
-            Ok(()) => Ok(()),
+        mut uploader: Uploader,
+    ) -> Result<UploadSummary> {
+        uploader.insert_chunk_paths(chunks_to_upload);
+        match uploader.start_upload().await {
+            Ok(summary) => Ok(summary),
             Err(ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(
                 available,
                 required,
@@ -106,23 +114,24 @@ fn spawn_file_upload_events_handler(
     mut chunk_manager: ChunkManager,
     make_data_public: bool,
     progress_bar: ProgressBar,
-    mut upload_event_rx: Receiver<FileUploadEvent>,
+    mut upload_event_rx: Receiver<UploadEvent>,
     total_existing_chunks: Arc<AtomicU64>,
-) -> JoinHandle<Result<(), Error>> {
+) -> JoinHandle<Result<(), ClientError>> {
     tokio::spawn(async move {
         let mut upload_terminated_with_error = false;
         // The loop is guaranteed to end, as the channel will be
         // closed when the upload completes or errors out.
         while let Some(event) = upload_event_rx.recv().await {
             match event {
-                FileUploadEvent::Uploaded(addr) => {
+                UploadEvent::ChunkUploaded(addr) => {
                     progress_bar.clone().inc(1);
+
                     if let Err(err) = chunk_manager.mark_completed(std::iter::once(*addr.xorname()))
                     {
                         error!("Failed to mark chunk {addr:?} as completed: {err:?}");
                     }
                 }
-                FileUploadEvent::AlreadyExistsInNetwork(addr) => {
+                UploadEvent::ChunkAlreadyExistsInNetwork(addr) => {
                     let _ = total_existing_chunks.fetch_add(1, Ordering::Relaxed);
                     progress_bar.clone().inc(1);
                     if let Err(err) = chunk_manager.mark_completed(std::iter::once(*addr.xorname()))
@@ -130,13 +139,12 @@ fn spawn_file_upload_events_handler(
                         error!("Failed to mark chunk {addr:?} as completed: {err:?}");
                     }
                 }
-                FileUploadEvent::PayedForChunks { .. } => {}
-                // Do not increment the progress bar of a chunk upload failure as the event can be emitted multiple
-                // times for a single chunk if retries are enabled.
-                FileUploadEvent::FailedToUpload(_) => {}
-                FileUploadEvent::Error => {
+                UploadEvent::Error => {
                     upload_terminated_with_error = true;
                 }
+                UploadEvent::RegisterUploaded { .. }
+                | UploadEvent::RegisterUpdated { .. }
+                | UploadEvent::PaymentMade { .. } => {}
             }
         }
         progress_bar.finish_and_clear();
@@ -211,7 +219,7 @@ fn msg_end_messages(
     chunks_to_upload_amount: usize,
     time_since_mark: Instant,
     total_existing_chunks: Arc<AtomicU64>,
-    files_upload: FilesUpload,
+    upload_summary: UploadSummary,
 ) {
     let total_existing_chunks = total_existing_chunks.load(Ordering::Relaxed);
     let uploaded_chunks = chunks_to_upload_amount - total_existing_chunks as usize;
@@ -229,14 +237,15 @@ fn msg_end_messages(
         total_existing_chunks,
         uploaded_chunks,
     );
+    let storage_cost = upload_summary.storage_cost;
     msg_payment_details(
-        files_upload.get_upload_storage_cost(),
-        files_upload.get_upload_royalty_fees(),
-        files_upload.get_upload_final_balance(),
+        storage_cost,
+        upload_summary.royalty_fees,
+        upload_summary.final_balance,
         uploaded_chunks,
     );
 
-    msg_made_payment_info(files_upload.get_upload_storage_cost(), uploaded_chunks);
+    msg_made_payment_info(storage_cost, uploaded_chunks);
 }
 
 pub fn msg_chunk_manager_upload_complete(chunk_manager: ChunkManager) {

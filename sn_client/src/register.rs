@@ -30,10 +30,11 @@ use xor_name::XorName;
 /// Cached operations made to an offline Register instance are applied locally only,
 /// and accumulated until the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
-#[derive(Clone)]
+#[derive(Clone, custom_debug::Debug)]
 pub struct ClientRegister {
+    #[debug(skip)]
     client: Client,
-    register: Register,
+    pub(crate) register: Register,
     ops: LinkedList<RegisterCmd>, // Cached operations.
 }
 
@@ -62,7 +63,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// // Here we create a ClientRegister
     /// let register = ClientRegister::create(client.clone(), address);
@@ -87,7 +88,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = RegisterAddress::new(XorName::random(&mut rng), client.signer_pk());
     /// // Here we create a ClientRegister
     /// let register = ClientRegister::create_with_addr(client.clone(), address);
@@ -129,7 +130,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let permissions = Permissions::default();
@@ -185,7 +186,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -220,7 +221,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -255,7 +256,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// let permissions = Permissions::default();
@@ -291,7 +292,7 @@ impl ClientRegister {
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let address = XorName::random(&mut rng);
     /// # let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// # let permissions = Permissions::default();
@@ -326,7 +327,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// // Read as bytes into the ClientRegister instance
     /// let register = ClientRegister::create(client.clone(), address).read();
@@ -352,7 +353,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let entry = "Register entry";
     /// // Write as bytes into the ClientRegister instance
@@ -386,7 +387,7 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let entry = "entry_input_here";
     /// let mut mutable_register = ClientRegister::create(client.clone(), address);
@@ -424,7 +425,7 @@ impl ClientRegister {
     /// # async fn main() -> Result<(),Error>{
     /// # use std::collections::BTreeSet;
     /// let mut rng = rand::thread_rng();
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// let mut mutable_register = ClientRegister::create(client.clone(), address);
     /// let meta = "Register entry".as_bytes();
@@ -476,12 +477,12 @@ impl ClientRegister {
     /// # use sn_client::WalletClient;
     /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
     /// # let temporary_path = TempDir::new()?.path().to_owned();
     /// # let main_secret_key = Some(MainSecretKey::new(SecretKey::random()));
     /// # let mut wallet = HotWallet::load_from_path(&temporary_path,main_secret_key)?;
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let mut wallet_client = WalletClient::new(client.clone(), wallet);
     /// // Run sync of a Client Register instance
     /// let mut register =
@@ -531,12 +532,13 @@ impl ClientRegister {
                     royalties_fees = payment_result.royalty_fees;
 
                     // Get payment proofs needed to publish the Register
-                    let (payment, payee) = wallet_client.get_payment_for_addr(&net_addr)?;
+                    let (payment, payee) =
+                        wallet_client.get_non_expired_payment_for_addr(&net_addr)?;
                     debug!("payments found: {payment:?}");
                     payment_info = Some((payment, payee));
                 }
 
-                self.publish_register(cmd, payment_info, verify_store)
+                Self::publish_register(self.client.clone(), cmd, payment_info, verify_store)
                     .await?;
                 self.register.clone()
             }
@@ -562,7 +564,7 @@ impl ClientRegister {
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Pass the boolean value to the Client Register instance via .Push()
     /// let mut binding = ClientRegister::create(client, address);
     /// let register = binding.push(false);
@@ -579,7 +581,9 @@ impl ClientRegister {
             while let Some(cmd) = self.ops.pop_back() {
                 // We don't need to send the payment proofs here since
                 // these are all Register mutation cmds which don't require payment.
-                let result = self.publish_register(cmd.clone(), None, verify_store).await;
+                let result =
+                    Self::publish_register(self.client.clone(), cmd.clone(), None, verify_store)
+                        .await;
 
                 if let Err(err) = result {
                     warn!("Did not push Register cmd on all nodes in the close group!: {err}");
@@ -611,9 +615,9 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let meta = "Register entry".as_bytes();
     /// // Use of the 'write_online' example:
     /// let mut binding = ClientRegister::create(client, address);
@@ -643,9 +647,9 @@ impl ClientRegister {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
-    /// # let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let meta = "Entry".as_bytes();
     /// // Use of the 'write_merging_branches_online':
     /// let mut binding = ClientRegister::create(client, address);
@@ -684,7 +688,7 @@ impl ClientRegister {
     /// # use std::collections::BTreeSet;
     /// let mut rng = rand::thread_rng();
     /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, false, None, None).await?;
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let entry = "Entry".as_bytes();
     /// let tree_set = BTreeSet::new();
     /// // Use of the 'write_atop_online':
@@ -749,16 +753,15 @@ impl ClientRegister {
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
     /// Optionally contains the Payment and the PeerId that we paid to.
-    async fn publish_register(
-        &self,
+    pub(crate) async fn publish_register(
+        client: Client,
         cmd: RegisterCmd,
         payment: Option<(Payment, PeerId)>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
-        let network_reg = self
-            .client
+        let network_reg = client
             .get_signed_register_from_network(cmd.dst(), false)
             .await;
 
@@ -810,8 +813,7 @@ impl ClientRegister {
         };
 
         let (record_to_verify, expected_holders) = if verify_store {
-            let expected_holders: HashSet<_> = self
-                .client
+            let expected_holders: HashSet<_> = client
                 .network
                 .get_closest_peers(&network_address, true)
                 .await?
@@ -845,7 +847,7 @@ impl ClientRegister {
         };
 
         // Register edits might exist, so we cannot be sure that just because we get a record back that this should fail
-        Ok(self.client.network.put_record(record, &put_cfg).await?)
+        Ok(client.network.put_record(record, &put_cfg).await?)
     }
 
     /// Retrieve a `Register` from the Network.

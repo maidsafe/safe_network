@@ -15,30 +15,32 @@ default = []
 distribution = ["base64", "bitcoin", "minreq"]
 
 [[bin]]
-path="src/main.rs"
-name="faucet"
+path = "src/main.rs"
+name = "faucet"
 
 [dependencies]
+warp = "0.3"
 assert_fs = "1.0.0"
 base64 = { version = "0.21.7", optional = true }
-bitcoin = { version = "0.31.0", features = ["rand-std", "base64"], optional = true }
+bitcoin = { version = "0.31.0", features = [
+    "rand-std",
+    "base64",
+], optional = true }
 bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "0.6.2"
 dirs-next = "~2.0.0"
 hex = "0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
-minreq = { version = "2.11.0", features = ["https-rustls"], optional = true}
+minreq = { version = "2.11.0", features = ["https-rustls"], optional = true }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 sn_client = { path = "../sn_client", version = "0.104.31" }
 sn_logging = { path = "../sn_logging", version = "0.2.24" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.8" }
 sn_transfers = { path = "../sn_transfers", version = "0.16.5" }
-tiny_http = { version="0.12", features = ["ssl-rustls"] }
 tokio = { version = "1.32.0", features = ["parking_lot", "rt"] }
 tracing = { version = "~0.1.26" }
-tracing-core = "0.1.30"
 url = "2.5.0"
 
 [lints]

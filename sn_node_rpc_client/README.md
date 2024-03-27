@@ -12,9 +12,6 @@ Run `cargo run -- <ADDR> <command>` to connect to a node. Provide the address of
 - `netinfo`: Retrieve information about the node's connections to the network
 - `events`: Start listening for node events
 - `transfers`: Start listening for transfers events
-- `subscribe`: Subscribe to a given Gossipsub topic
-- `unsubscribe`: Unsubscribe from a given Gossipsub topic
-- `publish`: Publish a msg on a given Gossipsub topic
 - `restart`: Restart the node after the specified delay
 - `stop`: Stop the node after the specified delay
 - `update`: Update to latest `safenode` released version, and restart it

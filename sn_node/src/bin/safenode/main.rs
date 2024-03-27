@@ -16,7 +16,7 @@ use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
-use sn_logging::{LogFormat, LogOutputDest, ReloadHandle};
+use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
@@ -34,7 +34,6 @@ use tokio::{
     time::sleep,
 };
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_core::Level;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {

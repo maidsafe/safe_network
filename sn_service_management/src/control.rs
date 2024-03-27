@@ -47,12 +47,35 @@ impl ServiceControl for ServiceController {
             return Ok(());
         }
 
-        let output = Command::new("useradd")
-            .arg("-m")
-            .arg("-s")
-            .arg("/bin/bash")
-            .arg(username)
-            .output()?;
+        let useradd_exists = Command::new("which")
+            .arg("useradd")
+            .output()?
+            .status
+            .success();
+        let adduser_exists = Command::new("which")
+            .arg("adduser")
+            .output()?
+            .status
+            .success();
+
+        let output = if useradd_exists {
+            Command::new("useradd")
+                .arg("-m")
+                .arg("-s")
+                .arg("/bin/bash")
+                .arg(username)
+                .output()?
+        } else if adduser_exists {
+            Command::new("adduser")
+                .arg("-s")
+                .arg("/bin/busybox")
+                .arg("-D")
+                .arg(username)
+                .output()?
+        } else {
+            return Err(Error::ServiceUserAccountCreationFailed);
+        };
+
         if !output.status.success() {
             return Err(Error::ServiceUserAccountCreationFailed);
         }
@@ -174,8 +197,19 @@ impl ServiceControl for ServiceController {
     fn uninstall(&self, service_name: &str) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
         let manager = <dyn ServiceManager>::native()?;
-        manager.uninstall(ServiceUninstallCtx { label })?;
-        Ok(())
+        match manager.uninstall(ServiceUninstallCtx { label }) {
+            Ok(()) => Ok(()),
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    // In this case the user has removed the service definition file manually,
+                    // which the service manager crate treats as an error. We can propagate the
+                    // it to the caller and they can decide how to handle it.
+                    Err(Error::ServiceRemovedManually(service_name.to_string()))
+                }
+                _ => Err(e.into()),
+            },
+        }
+        // Ok(())
     }
 
     /// Provide a delay for the service to start or stop.

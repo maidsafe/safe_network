@@ -291,10 +291,26 @@ impl HotWallet {
         Ok((available_cash_notes, exclusive_access))
     }
 
-    /// Return the payment_details for the given XorName if cached.
-    pub fn get_cached_payment_for_xorname(&self, name: &XorName) -> Option<PaymentDetails> {
-        match self.watchonly_wallet.get_payment_transaction(name) {
-            Ok(payment_detail) => Some(payment_detail),
+    /// Return the last payment_details for the given XorName if cached.
+    /// If multiple payments have been made to the same xor_name, then we pick the last one as it is the most recent.
+    pub fn get_recent_cached_payment_for_xorname(&self, name: &XorName) -> Option<PaymentDetails> {
+        match self.watchonly_wallet.get_payment_transactions(name) {
+            Ok(mut payments) => payments.pop(),
+            Err(err) => {
+                error!("Failed to fetch payment_detail of {name:?} with error {err:?}");
+                None
+            }
+        }
+    }
+
+    /// Return all the payment_details for the given XorName if cached.
+    /// Multiple payments to the same XorName can result in many payment details
+    pub fn get_all_cached_payment_for_xorname(
+        &self,
+        name: &XorName,
+    ) -> Option<Vec<PaymentDetails>> {
+        match self.watchonly_wallet.get_payment_transactions(name) {
+            Ok(payments) => Some(payments),
             Err(err) => {
                 error!("Failed to fetch payment_detail of {name:?} with error {err:?}");
                 None

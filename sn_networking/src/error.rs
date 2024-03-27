@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::{
-    gossipsub::{PublishError, SubscriptionError},
     kad::{self, QueryId, Record},
     request_response::{OutboundFailure, OutboundRequestId},
     swarm::DialError,
@@ -151,16 +150,6 @@ pub enum NetworkError {
         path: PathBuf,
         source: std::io::Error,
     },
-
-    // ---------- GossipSub Errors
-    #[error("Could ont build the gossipsub config: {0}")]
-    GossipsubConfigError(String),
-
-    #[error("Gossipsub publish Error: {0}")]
-    GossipsubPublishError(#[from] PublishError),
-
-    #[error("Gossipsub subscribe Error: {0}")]
-    GossipsubSubscriptionError(#[from] SubscriptionError),
 
     // ---------- Internal Network Errors
     #[error("Could not get enough peers ({required}) to satisfy the request, found {found}")]

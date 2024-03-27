@@ -19,13 +19,12 @@ use sn_client::{
     get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client, ClientEvent,
     ClientEventsBroadcaster, ClientEventsReceiver,
 };
-use sn_logging::{LogBuilder, LogOutputDest};
+use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{error, info};
-use tracing_core::Level;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -60,7 +59,7 @@ async fn main() -> Result<()> {
     let secret_key = bls::SecretKey::random();
     let broadcaster = ClientEventsBroadcaster::default();
     let handle = spawn_connection_progress_bar(broadcaster.subscribe());
-    let result = Client::new(secret_key, bootstrap_peers, false, None, Some(broadcaster)).await;
+    let result = Client::new(secret_key, bootstrap_peers, None, Some(broadcaster)).await;
 
     // await on the progress bar to complete before handling the client result. If client errors out, we would
     // want to make the progress bar clean up gracefully.

@@ -8,7 +8,7 @@
 
 use super::{helpers::verify_spend_at, watch_only_wallet_from_pk, WalletApiHelper};
 
-use bls::{PublicKey, PK_SIZE};
+use bls::PublicKey;
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -16,19 +16,16 @@ use color_eyre::{
 };
 use dialoguer::Confirm;
 use sn_client::transfers::{
-    CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend,
-    UniquePubkey, WalletError, WatchOnlyWallet,
+    DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend, UniquePubkey,
+    WatchOnlyWallet,
 };
-use sn_client::{Client, ClientEvent};
+use sn_client::Client;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    path::{Path, PathBuf},
+    path::Path,
     str::FromStr,
 };
 use walkdir::WalkDir;
-
-const DEFAULT_RECEIVE_ONLINE_WALLET_DIR: &str = "receive_online";
-const ROYALTY_TRANSFER_NOTIF_TOPIC: &str = "ROYALTY_TRANSFER_NOTIFICATION";
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
@@ -93,20 +90,6 @@ pub enum WatchOnlyWalletCmds {
         /// Avoid prompts by assuming `yes` as the answer.
         #[clap(long, name = "force", default_value = "false")]
         force: bool,
-    },
-    /// Listen for transfer notifications from the network over gossipsub protocol.
-    ///
-    /// Transfers will be deposited to the watch-only wallet.
-    ///
-    /// Only cash notes owned by the provided public key will be accepted, verified to be valid
-    /// against the network, and deposited onto a locally stored watch-only wallet.
-    ReceiveOnline {
-        /// Hex-encoded main public key
-        #[clap(name = "public key")]
-        pk: String,
-        /// Optional path where to store the wallet
-        #[clap(name = "path")]
-        path: Option<PathBuf>,
     },
     /// Verify a spend on the Network.
     Verify {
@@ -192,16 +175,12 @@ pub(crate) async fn wo_wallet_cmds_without_client(
 pub(crate) async fn wo_wallet_cmds(
     cmds: WatchOnlyWalletCmds,
     client: &Client,
-    root_dir: &Path,
+    _root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
     match cmds {
         WatchOnlyWalletCmds::Broadcast { signed_tx, force } => {
             broadcast_signed_spends(signed_tx, client, verify_store, force).await
-        }
-        WatchOnlyWalletCmds::ReceiveOnline { pk, path } => {
-            let wallet_dir = path.unwrap_or(root_dir.join(DEFAULT_RECEIVE_ONLINE_WALLET_DIR));
-            listen_notifs_and_deposit(&wallet_dir, client, pk).await
         }
         WatchOnlyWalletCmds::Verify {
             spend_address,
@@ -354,96 +333,4 @@ async fn broadcast_signed_spends(
     }
 
     Ok(())
-}
-
-async fn listen_notifs_and_deposit(root_dir: &Path, client: &Client, pk_hex: String) -> Result<()> {
-    let mut wallet = match MainPubkey::from_hex(&pk_hex) {
-        Ok(main_pk) => watch_only_wallet_from_pk(main_pk, root_dir)?,
-        Err(err) => return Err(eyre!("Failed to parse hex-encoded public key: {err:?}")),
-    };
-
-    let main_pk = wallet.address();
-    let pk = main_pk.public_key();
-
-    client.subscribe_to_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string());
-    let mut events_receiver = client.events_channel();
-
-    println!("Current balance in local wallet: {}", wallet.balance());
-    println!("Listening to transfers notifications for {pk:?}... (press Ctrl+C to exit)");
-    println!();
-
-    while let Ok(event) = events_receiver.recv().await {
-        let cash_notes = match event {
-            ClientEvent::GossipsubMsg { topic, msg } => {
-                // we assume it's a notification of a transfer as that's the only topic we've subscribed to
-                match try_decode_transfer_notif(&msg) {
-                    Err(err) => {
-                        println!("GossipsubMsg received on topic '{topic}' couldn't be decoded as transfer notif: {err:?}");
-                        continue;
-                    }
-                    Ok((key, _)) if key != pk => continue,
-                    Ok((key, cashnote_redemptions)) => {
-                        println!("New transfer notification received for {key:?}, containing {} CashNoteRedemption/s.", cashnote_redemptions.len());
-                        match client
-                            .verify_cash_notes_redemptions(main_pk, &cashnote_redemptions)
-                            .await
-                        {
-                            Err(err) => {
-                                println!("At least one of the CashNoteRedemptions received is invalid, dropping them: {err:?}");
-                                continue;
-                            }
-                            Ok(cash_notes) => cash_notes,
-                        }
-                    }
-                }
-            }
-            _other_event => continue,
-        };
-
-        cash_notes.iter().for_each(|cn| {
-            let value = match cn.value() {
-                Ok(value) => value.to_string(),
-                Err(err) => {
-                    println!("Failed to obtain cash note value: {err}");
-                    "unknown".to_string()
-                }
-            };
-            println!(
-                "CashNote received with {:?}, value: {value}",
-                cn.unique_pubkey(),
-            );
-        });
-
-        match wallet.deposit_and_store_to_disk(&cash_notes) {
-            Ok(()) => {}
-            Err(err @ WalletError::Io(_)) => {
-                println!("ERROR: Failed to deposit the received cash notes: {err}");
-                println!();
-                println!("WARNING: we'll try to reload/recreate the local wallet now, but if it was corrupted there could have been lost funds.");
-                println!();
-                wallet.reload_from_disk_or_recreate()?;
-                wallet.deposit_and_store_to_disk(&cash_notes)?;
-            }
-            Err(other_err) => return Err(other_err.into()),
-        }
-
-        println!(
-            "New balance after depositing received CashNote/s: {}",
-            wallet.balance()
-        );
-        println!();
-    }
-
-    Ok(())
-}
-
-fn try_decode_transfer_notif(msg: &[u8]) -> Result<(PublicKey, Vec<CashNoteRedemption>)> {
-    let mut key_bytes = [0u8; PK_SIZE];
-    key_bytes.copy_from_slice(
-        msg.get(0..PK_SIZE)
-            .ok_or_else(|| eyre!("msg doesn't have enough bytes"))?,
-    );
-    let key = PublicKey::from_bytes(key_bytes)?;
-    let cashnote_redemptions: Vec<CashNoteRedemption> = rmp_serde::from_slice(&msg[PK_SIZE..])?;
-    Ok((key, cashnote_redemptions))
 }

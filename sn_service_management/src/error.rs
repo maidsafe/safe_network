@@ -31,12 +31,6 @@ pub enum Error {
     PeerIdParseError(#[from] libp2p_identity::ParseError),
     #[error("Could not connect to RPC endpoint '{0}'")]
     RpcConnectionError(String),
-    #[error("Could not publish on topic {0} through RPC: {1}")]
-    RpcGossipPublishError(String, String),
-    #[error("Could not subscribe to gossip topic {0} through RPC: {1}")]
-    RpcGossipSubscribeError(String, String),
-    #[error("Could not unsubscribe from gossip topic {0} through RPC: {1}")]
-    RpcGossipUnsubscribeError(String, String),
     #[error("Could not obtain node info through RPC: {0}")]
     RpcNodeInfoError(String),
     #[error("Could not obtain network info through RPC: {0}")]
@@ -51,6 +45,8 @@ pub enum Error {
     RpcRecordAddressError(String),
     #[error("Could not find process '{0}'")]
     ServiceProcessNotFound(String),
+    #[error("The user may have removed the '{0}' service outwith the node manager")]
+    ServiceRemovedManually(String),
     #[error("Failed to create service user account")]
     ServiceUserAccountCreationFailed,
     #[error("Could not obtain user's data directory")]

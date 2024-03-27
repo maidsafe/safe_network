@@ -6,14 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#[cfg(feature = "royalties-by-gossip")]
-use crate::node::ROYALTY_TRANSFER_NOTIF_TOPIC;
 use crate::{node::Node, Error, Marker, Result};
-#[cfg(feature = "royalties-by-gossip")]
-use bytes::{BufMut, BytesMut};
 use libp2p::kad::{Record, RecordKey};
-#[cfg(feature = "royalties-by-gossip")]
-use serde::Serialize;
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     messages::CmdOk,
@@ -513,28 +507,6 @@ impl Node {
         if royalties_cash_notes_r.is_empty() {
             warn!("No network royalties payment found for record {pretty_key}");
             return Err(Error::NoNetworkRoyaltiesPayment(pretty_key.into_owned()));
-        }
-
-        // Feature guard network_royalty payment publish
-        #[cfg(feature = "royalties-by-gossip")]
-        {
-            // publish a notification over gossipsub topic ROYALTY_TRANSFER_NOTIF_TOPIC
-            // for the network royalties payment.
-            let royalties_pk = *NETWORK_ROYALTIES_PK;
-            trace!("Publishing a royalties transfer notification over gossipsub for record {pretty_key} and beneficiary {royalties_pk:?}");
-            let royalties_pk_bytes = royalties_pk.to_bytes();
-
-            let mut msg = BytesMut::with_capacity(royalties_pk_bytes.len());
-            msg.extend_from_slice(&royalties_pk_bytes);
-            let mut msg = msg.writer();
-            let mut serialiser = rmp_serde::Serializer::new(&mut msg);
-            match royalties_cash_notes_r.serialize(&mut serialiser) {
-                Ok(()) => {
-                    let msg = msg.into_inner().freeze();
-                    self.network.publish_on_topic(ROYALTY_TRANSFER_NOTIF_TOPIC.to_string(), msg);
-                }
-                Err(err) => warn!("Failed to serialise network royalties payment data to publish a notification over gossipsub for record {pretty_key}: {err:?}"),
-            }
         }
 
         // check if the quote is valid

@@ -887,11 +887,17 @@ mod tests {
         let max_iterations = 10;
         let max_records = 50;
 
+        let temp_dir = std::env::temp_dir();
+        let unique_dir_name = uuid::Uuid::new_v4().to_string();
+        let storage_dir = temp_dir.join(unique_dir_name);
+        fs::create_dir_all(&storage_dir).expect("Failed to create directory");
+
         // Set the config::max_record to be 50, then generate 100 records
         // On storing the 51st to 100th record,
         // check there is an expected pruning behaviour got carried out.
         let store_config = NodeRecordStoreConfig {
             max_records,
+            storage_dir,
             ..Default::default()
         };
         let self_id = PeerId::random();

@@ -16,7 +16,7 @@ use crate::{
     },
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    status_report, ServiceManager, VerbosityLevel,
+    refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -28,7 +28,7 @@ use sn_service_management::{
     control::{ServiceControl, ServiceController},
     get_local_node_registry_path,
     rpc::RpcClient,
-    NodeRegistry, NodeService, UpgradeOptions, UpgradeResult,
+    NodeRegistry, NodeService, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
 
@@ -122,7 +122,14 @@ pub async fn remove(
     println!("=================================================");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    if service_indices.is_empty() {
+        // This could be the case if all services are at `Removed` status.
+        println!("No services were eligible for removal");
+        return Ok(());
+    }
 
     let mut failed_services = Vec::new();
     for &index in &service_indices {
@@ -159,7 +166,14 @@ pub async fn start(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    if service_indices.is_empty() {
+        // This could be the case if all services are at `Removed` status.
+        println!("No services were eligible to be started");
+        return Ok(());
+    }
 
     let mut failed_services = Vec::new();
     for &index in &service_indices {
@@ -236,7 +250,14 @@ pub async fn stop(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    if service_indices.is_empty() {
+        // This could be the case if all services are at `Removed` status.
+        println!("No services were eligible to be stopped");
+        return Ok(());
+    }
 
     let mut failed_services = Vec::new();
     for &index in &service_indices {
@@ -280,6 +301,8 @@ pub async fn upgrade(
         download_and_get_upgrade_bin_path(ReleaseType::Safenode, url, version).await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
     if !force {
         let node_versions = node_registry
             .nodes
@@ -349,13 +372,19 @@ fn get_services_to_update(
     let mut service_indices = Vec::new();
 
     if service_names.is_empty() && peer_ids.is_empty() {
-        service_indices = (0..node_registry.nodes.len()).collect();
+        for node in node_registry.nodes.iter() {
+            if let Some(index) = node_registry.nodes.iter().position(|x| {
+                x.service_name == node.service_name && x.status != ServiceStatus::Removed
+            }) {
+                service_indices.push(index);
+            }
+        }
     } else {
         for name in &service_names {
             if let Some(index) = node_registry
                 .nodes
                 .iter()
-                .position(|x| x.service_name == *name)
+                .position(|x| x.service_name == *name && x.status != ServiceStatus::Removed)
             {
                 service_indices.push(index);
             } else {
@@ -368,7 +397,7 @@ fn get_services_to_update(
             if let Some(index) = node_registry
                 .nodes
                 .iter()
-                .position(|x| x.peer_id == Some(peer_id))
+                .position(|x| x.peer_id == Some(peer_id) && x.status != ServiceStatus::Removed)
             {
                 service_indices.push(index);
             } else {

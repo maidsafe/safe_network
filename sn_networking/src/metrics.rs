@@ -96,12 +96,6 @@ impl NetworkMetrics {
     }
 }
 
-impl Recorder<libp2p::gossipsub::Event> for NetworkMetrics {
-    fn record(&self, event: &libp2p::gossipsub::Event) {
-        self.libp2p_metrics.record(event)
-    }
-}
-
 impl Recorder<libp2p::kad::Event> for NetworkMetrics {
     fn record(&self, event: &libp2p::kad::Event) {
         self.libp2p_metrics.record(event)

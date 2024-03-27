@@ -53,7 +53,6 @@ sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.8" }
 tempfile = "3.6.0"
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time", "fs"] }
 tracing = { version = "~0.1.26" }
-tracing-core = "0.1.30"
 url = "2.4.0"
 walkdir = "~2.4.0"
 xor_name = "5.0.0"

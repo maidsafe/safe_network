@@ -18,6 +18,7 @@ mod faucet;
 mod files;
 mod folders;
 mod register;
+mod uploader;
 mod wallet;
 
 /// Test utils
@@ -41,11 +42,11 @@ pub use self::{
     faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
     files::{
         download::{FilesDownload, FilesDownloadEvent},
-        upload::{FileUploadEvent, FilesUpload},
         FilesApi, BATCH_SIZE,
     },
     folders::{FolderEntry, FoldersApi, Metadata},
     register::ClientRegister,
+    uploader::{UploadEvent, UploadSummary, Uploader},
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
 pub(crate) use error::Result;

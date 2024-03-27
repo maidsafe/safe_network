@@ -10,7 +10,7 @@
 mod common;
 
 use crate::common::{
-    client::{get_all_rpc_addresses, get_gossip_client_and_funded_wallet},
+    client::{get_all_rpc_addresses, get_client_and_funded_wallet},
     get_all_peer_ids, get_safenode_rpc_client, NodeRestart,
 };
 use assert_fs::TempDir;
@@ -21,7 +21,7 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, FilesApi, FilesUpload, WalletClient};
+use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
@@ -108,8 +108,7 @@ async fn verify_data_location() -> Result<()> {
 
     let paying_wallet_dir = TempDir::new()?;
 
-    let (client, _paying_wallet) =
-        get_gossip_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
     store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;
@@ -321,10 +320,6 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
-    let files_api = FilesApi::new(client, wallet_dir);
-    let mut file_upload = FilesUpload::new(files_api)
-        .set_show_holders(true)
-        .set_verify_store(false);
 
     let mut uploaded_chunks_count = 0;
     loop {
@@ -354,7 +349,13 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
 
         let key =
             PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
-        file_upload.upload_chunks(chunks).await?;
+
+        let mut uploader = Uploader::new(client.clone(), wallet_dir.clone())
+            .set_show_holders(true)
+            .set_verify_store(false);
+        uploader.insert_chunk_paths(chunks);
+        let _upload_stats = uploader.start_upload().await?;
+
         uploaded_chunks_count += 1;
 
         println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");

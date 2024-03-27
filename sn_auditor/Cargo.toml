@@ -23,7 +23,8 @@ dirs-next = "~2.0.0"
 graphviz-rust = "0.7.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 serde_json = "1.0.108"
-sn_client = "0.104.31"
-sn_peers_acquisition = "0.2.6"
+sn_client = { path = "../sn_client", version = "0.104.31" }
+sn_logging = { path = "../sn_logging", version = "0.2.24" }
+sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.8" }
 tiny_http = { version="0.12", features = ["ssl-rustls"] }
 tokio = { version = "1.32.0", features = ["io-util", "macros", "parking_lot", "rt", "sync", "time", "fs"] }

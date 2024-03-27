@@ -39,6 +39,7 @@ use colored::Colorize;
 use semver::Version;
 use sn_service_management::{
     control::ServiceControl,
+    error::Error as ServiceError,
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
@@ -180,11 +181,29 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             );
         }
 
-        self.service_control.uninstall(&self.service.name())?;
+        match self.service_control.uninstall(&self.service.name()) {
+            Ok(()) => {}
+            Err(e) => match e {
+                ServiceError::ServiceRemovedManually(name) => {
+                    // The user has deleted the service definition file, which the service manager
+                    // crate treats as an error. We then return our own error type, which allows us
+                    // to handle it here and just proceed with removing the service from the
+                    // registry.
+                    println!("The user appears to have removed the {name} service manually");
+                }
+                _ => return Err(e.into()),
+            },
+        }
 
         if !keep_directories {
-            std::fs::remove_dir_all(self.service.data_dir_path())?;
-            std::fs::remove_dir_all(self.service.log_dir_path())?;
+            // It's possible the user deleted either of these directories manually.
+            // We can just proceed with removing the service from the registry.
+            if self.service.data_dir_path().exists() {
+                std::fs::remove_dir_all(self.service.data_dir_path())?;
+            }
+            if self.service.log_dir_path().exists() {
+                std::fs::remove_dir_all(self.service.log_dir_path())?;
+            }
         }
 
         self.service.on_remove();
@@ -242,51 +261,7 @@ pub async fn status_report(
     output_json: bool,
     fail: bool,
 ) -> Result<()> {
-    // Again confirm that services which are marked running are still actually running.
-    // If they aren't we'll mark them as stopped.
-    for node in &mut node_registry.nodes {
-        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        if let ServiceStatus::Running = node.status {
-            if let Some(pid) = node.pid {
-                // First we can try the PID we have now. If there is still a process running with
-                // that PID, we know the node is still running.
-                if service_control.is_service_process_running(pid) {
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
-                    }
-                } else {
-                    // The process with the PID we had has died at some point. However, if the
-                    // service has been configured to restart on failures, it's possible that a new
-                    // process has been launched and hence we would have a new PID. We can use the
-                    // RPC service to try and retrieve it.
-                    match rpc_client.node_info().await {
-                        Ok(info) => {
-                            node.pid = Some(info.pid);
-                        }
-                        Err(_) => {
-                            // Finally, if there was an error communicating with the RPC client, we
-                            // can assume that this node is actually stopped.
-                            node.status = ServiceStatus::Stopped;
-                            node.pid = None;
-                        }
-                    }
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    refresh_node_registry(node_registry, service_control, !output_json).await?;
 
     if output_json {
         let json = serde_json::to_string_pretty(&node_registry.to_status_summary())?;
@@ -385,6 +360,62 @@ pub async fn status_report(
     Ok(())
 }
 
+pub async fn refresh_node_registry(
+    node_registry: &mut NodeRegistry,
+    service_control: &dyn ServiceControl,
+    print_refresh_message: bool,
+) -> Result<()> {
+    // This message is useful for users, but needs to be suppressed when a JSON output is requested.
+    if print_refresh_message {
+        println!("Refreshing the node registry...");
+    }
+
+    for node in &mut node_registry.nodes {
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+        if let ServiceStatus::Running = node.status {
+            if let Some(pid) = node.pid {
+                // First we can try the PID we have now. If there is still a process running with
+                // that PID, we know the node is still running.
+                if service_control.is_service_process_running(pid) {
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
+                } else {
+                    // The process with the PID we had has died at some point. However, if the
+                    // service has been configured to restart on failures, it's possible that a new
+                    // process has been launched and hence we would have a new PID. We can use the
+                    // RPC service to try and retrieve it.
+                    match rpc_client.node_info().await {
+                        Ok(info) => {
+                            node.pid = Some(info.pid);
+                        }
+                        Err(_) => {
+                            // Finally, if there was an error communicating with the RPC client, we
+                            // can assume that this node is actually stopped.
+                            node.status = ServiceStatus::Stopped;
+                            node.pid = None;
+                        }
+                    }
+                    match rpc_client.network_info().await {
+                        Ok(info) => {
+                            node.connected_peers = Some(info.connected_peers);
+                        }
+                        Err(_) => {
+                            node.connected_peers = None;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 fn format_status(status: &ServiceStatus) -> String {
     match status {
         ServiceStatus::Running => "RUNNING".green().to_string(),
@@ -431,9 +462,6 @@ mod tests {
             async fn node_info(&self) -> ServiceControlResult<NodeInfo>;
             async fn network_info(&self) -> ServiceControlResult<NetworkInfo>;
             async fn record_addresses(&self) -> ServiceControlResult<Vec<RecordAddress>>;
-            async fn gossipsub_subscribe(&self, topic: &str) -> ServiceControlResult<()>;
-            async fn gossipsub_unsubscribe(&self, topic: &str) -> ServiceControlResult<()>;
-            async fn gossipsub_publish(&self, topic: &str, message: &str) -> ServiceControlResult<()>;
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;
