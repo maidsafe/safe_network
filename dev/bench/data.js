@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711495544115,
+  "lastUpdate": 1711541251121,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "916f8d4de998f0fceaf892f4b19e880ddc2050bf",
-          "message": "fix(cli): repay unpaid chunks due to transfer failures",
-          "timestamp": "2023-11-14T07:03:57Z",
-          "tree_id": "c8c079b810bd17a573a18bb9a388da6911539b37",
-          "url": "https://github.com/maidsafe/safe_network/commit/916f8d4de998f0fceaf892f4b19e880ddc2050bf"
-        },
-        "date": 1699948206046,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 3.093680617198205,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 11.10216271861696,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 32.10352231578467,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.06124701607927,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "176848ebf94f17e9119e1e2fd06647a890bae55a",
+          "message": "refactor(cli): moving binary target related files onto src/bin dir",
+          "timestamp": "2024-03-27T11:15:07Z",
+          "tree_id": "7ee77d05e9528cc02d34cb8fb8d89c618a318251",
+          "url": "https://github.com/maidsafe/safe_network/commit/176848ebf94f17e9119e1e2fd06647a890bae55a"
+        },
+        "date": 1711541247423,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.8601529794944358,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.294599644180543,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.05089283696509,
             "unit": "MiB/s"
           }
         ]
