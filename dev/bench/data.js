@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711541251121,
+  "lastUpdate": 1711541355969,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "916f8d4de998f0fceaf892f4b19e880ddc2050bf",
-          "message": "fix(cli): repay unpaid chunks due to transfer failures",
-          "timestamp": "2023-11-14T07:03:57Z",
-          "tree_id": "c8c079b810bd17a573a18bb9a388da6911539b37",
-          "url": "https://github.com/maidsafe/safe_network/commit/916f8d4de998f0fceaf892f4b19e880ddc2050bf"
-        },
-        "date": 1699948568833,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 145,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "176848ebf94f17e9119e1e2fd06647a890bae55a",
+          "message": "refactor(cli): moving binary target related files onto src/bin dir",
+          "timestamp": "2024-03-27T11:15:07Z",
+          "tree_id": "7ee77d05e9528cc02d34cb8fb8d89c618a318251",
+          "url": "https://github.com/maidsafe/safe_network/commit/176848ebf94f17e9119e1e2fd06647a890bae55a"
+        },
+        "date": 1711541355397,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
