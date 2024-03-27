@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711579001553,
+  "lastUpdate": 1711579003260,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40927,6 +40927,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 16279,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c49ff0e0561b8ee607c3b6ad457f488bd81338ae",
+          "message": "fix(uploader): clarify the use of root and wallet dirs",
+          "timestamp": "2024-03-27T21:55:16Z",
+          "tree_id": "2e361fb570c0a61a5868571eff4d2c9aeede1b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c49ff0e0561b8ee607c3b6ad457f488bd81338ae"
+        },
+        "date": 1711579002941,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3510,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 16575,
             "unit": "ms"
           },
           {
