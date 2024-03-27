@@ -55,6 +55,9 @@ const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 3;
 #[cfg(test)]
 const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 1;
 
+// TODO:
+// 1. log whenever we insert/remove items. i.e., don't ignore values with `let _`
+
 /// The main loop that performs the upload process.
 /// An interface is passed here for easy testing.
 pub(super) async fn start_upload(
@@ -119,6 +122,7 @@ pub(super) async fn start_upload(
                 storage_cost: uploader.upload_storage_cost,
                 royalty_fees: uploader.upload_royalty_fees,
                 final_balance: uploader.upload_final_balance,
+                uploaded_addresses: uploader.uploaded_addresses,
                 uploaded_count: uploader.uploaded_count,
                 skipped_count: uploader.skipped_count,
                 uploaded_registers: uploader.uploaded_registers,
@@ -273,6 +277,11 @@ pub(super) async fn start_upload(
                 let xorname = updated_register.address().xorname();
                 let _ = uploader.on_going_push_register.remove(&xorname);
                 uploader.skipped_count += 1;
+                let _ = uploader
+                    .uploaded_addresses
+                    .insert(NetworkAddress::from_register_address(
+                        *updated_register.address(),
+                    ));
 
                 let _old_register = uploader
                     .all_upload_items
@@ -280,7 +289,9 @@ pub(super) async fn start_upload(
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
 
                 if uploader.collect_registers {
-                    uploader.uploaded_registers.push(updated_register.clone());
+                    let _ = uploader
+                        .uploaded_registers
+                        .insert(*updated_register.address(), updated_register.clone());
                 }
                 uploader.emit_upload_event(UploadEvent::RegisterUpdated(updated_register));
             }
@@ -311,6 +322,10 @@ pub(super) async fn start_upload(
                         .all_upload_items
                         .remove(&xorname)
                         .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+                    let _ = uploader.uploaded_addresses.insert(removed_item.address());
+                    trace!("{xorname:?} has store cost of 0 and it already exists on the network");
+                    uploader.skipped_count += 1;
+
                     // if during the first try we skip the item, then it is already present in the network.
                     match removed_item {
                         UploadItem::Chunk { address, .. } => {
@@ -321,14 +336,13 @@ pub(super) async fn start_upload(
 
                         UploadItem::Register { reg, .. } => {
                             if uploader.collect_registers {
-                                uploader.uploaded_registers.push(reg.clone());
+                                let _ = uploader
+                                    .uploaded_registers
+                                    .insert(*reg.address(), reg.clone());
                             }
                             uploader.emit_upload_event(UploadEvent::RegisterUpdated(reg));
                         }
                     }
-
-                    trace!("{xorname:?} has store cost of 0 and it already exists on the network");
-                    uploader.skipped_count += 1;
                 }
             }
             TaskResult::GetStoreCostErr {
@@ -419,19 +433,22 @@ pub(super) async fn start_upload(
                 let _ = uploader.on_going_uploads.remove(&xorname);
                 uploader.uploaded_count += 1;
                 trace!("UploadOk for {xorname:?}");
-
                 // remove the item since we have uploaded it.
                 let removed_item = uploader
                     .all_upload_items
                     .remove(&xorname)
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
+                let _ = uploader.uploaded_addresses.insert(removed_item.address());
+
                 match removed_item {
                     UploadItem::Chunk { address, .. } => {
                         uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
                     }
                     UploadItem::Register { reg, .. } => {
                         if uploader.collect_registers {
-                            uploader.uploaded_registers.push(reg.clone());
+                            let _ = uploader
+                                .uploaded_registers
+                                .insert(*reg.address(), reg.clone());
                         }
                         uploader.emit_upload_event(UploadEvent::RegisterUploaded(reg));
                     }
@@ -674,9 +691,10 @@ pub(super) struct InnerUploader {
     pub(super) upload_storage_cost: NanoTokens,
     pub(super) upload_royalty_fees: NanoTokens,
     pub(super) upload_final_balance: NanoTokens,
+    pub(super) uploaded_addresses: BTreeSet<NetworkAddress>,
+    pub(super) uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
     pub(super) uploaded_count: usize,
     pub(super) skipped_count: usize,
-    pub(super) uploaded_registers: Vec<ClientRegister>,
 
     // Task channels for testing. Not used in actual code.
     pub(super) testing_task_channels:
@@ -724,9 +742,10 @@ impl InnerUploader {
             upload_storage_cost: NanoTokens::zero(),
             upload_royalty_fees: NanoTokens::zero(),
             upload_final_balance: NanoTokens::zero(),
+            uploaded_addresses: Default::default(),
+            uploaded_registers: Default::default(),
             uploaded_count: Default::default(),
             skipped_count: Default::default(),
-            uploaded_registers: Default::default(),
 
             testing_task_channels: None,
             logged_event_sender_absence: Default::default(),
