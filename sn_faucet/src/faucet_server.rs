@@ -10,12 +10,18 @@
 use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::Result;
+use fs2::FileExt;
 use sn_client::Client;
-use sn_transfers::{get_faucet_data_dir, HotWallet, NanoTokens};
+use sn_transfers::{
+    get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, WALLET_DIR_NAME,
+};
 use std::collections::HashMap;
 use std::path::Path;
-use tracing::{debug, error};
-use warp::{http::Response, Filter, Reply};
+use tracing::{debug, error, info, warn};
+use warp::{
+    http::{Response, StatusCode},
+    Filter, Reply,
+};
 
 /// Run the faucet server.
 ///
@@ -64,6 +70,17 @@ async fn respond_to_distribution_request(
     query: HashMap<String, String>,
     balances: HashMap<String, NanoTokens>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    // some rate limiting
+    if is_wallet_locked() {
+        warn!("Rate limited request due to locked wallet");
+
+        let mut response = Response::new("Rate limited".to_string());
+        *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
+
+        // Either opening the file or locking it failed, indicating rate limiting should occur
+        return Ok(response);
+    }
+
     let r =
         match token_distribution::handle_distribution_req(&client, query, balances.clone()).await {
             Ok(distribution) => Response::new(distribution.to_string()),
@@ -77,10 +94,42 @@ async fn respond_to_distribution_request(
     Ok(r)
 }
 
+fn is_wallet_locked() -> bool {
+    info!("Checking if wallet is locked");
+    let root_dir = get_faucet_data_dir();
+
+    let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+    let wallet_lockfile_name = wallet_lockfile_name(&wallet_dir);
+    let file_result = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(wallet_lockfile_name)
+        .and_then(|file| file.try_lock_exclusive());
+    info!("After if wallet is locked");
+
+    if file_result.is_err() {
+        // Either opening the file or locking it failed, indicating rate limiting should occur
+        return true;
+    }
+
+    false
+}
+
 async fn respond_to_gift_request(
     client: Client,
     key: String,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    // some rate limiting
+    if is_wallet_locked() {
+        warn!("Rate limited request due to locked wallet");
+        let mut response = Response::new("Rate limited".to_string());
+        *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
+
+        // Either opening the file or locking it failed, indicating rate limiting should occur
+        return Ok(response);
+    }
+
     const GIFT_AMOUNT_SNT: &str = "1";
     match send_tokens(&client, GIFT_AMOUNT_SNT, &key).await {
         Ok(transfer) => {
