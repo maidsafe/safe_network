@@ -167,6 +167,11 @@ impl DerivedSecretKey {
         UniquePubkey(self.0.public_key())
     }
 
+    /// Return the inner secret key
+    pub fn secret_key(&self) -> SecretKey {
+        self.0.inner().to_owned()
+    }
+
     pub(crate) fn sign(&self, msg: &[u8]) -> bls::Signature {
         self.0.sign(msg)
     }

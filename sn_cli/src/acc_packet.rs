@@ -8,20 +8,24 @@
 
 mod change_tracking;
 
+use change_tracking::*;
+
 use super::{
     files::{download_file, FilesUploader},
     ChunkManager,
 };
-use bls::PublicKey;
-use change_tracking::*;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+
 use sn_client::{
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
+    transfers::{DerivationIndex, MainSecretKey},
     Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg,
+};
+
+use bls::PublicKey;
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
 };
 use std::{
     collections::{
@@ -38,6 +42,18 @@ use tracing::trace;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
+/// Derivation index used to obtain the account packet root folder xorname
+// TODO: use eip2333 path for deriving keys
+const ACC_PACKET_ADDR_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0x0; 32]);
+
+/// Derivation index used to obtain the owner key of the account packet root folder.
+/// The derived key pair is used to:
+/// - Sign all data operations sent to the network.
+/// - Set it as the owner of all Folders (Registers) created on the network.
+/// - Encrypt all the Folders entries metadata chunks.
+// TODO: use eip2333 path for deriving keys
+const ACC_PACKET_OWNER_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0x1; 32]);
+
 /// An `AccountPacket` object allows users to store and manage files, wallets, etc., with the ability
 /// and tools necessary to keep an instance tracking a local storage path, as well as keeping it in sync
 /// with its remote version stored on the network.
@@ -45,8 +61,9 @@ use xor_name::XorName;
 /// to the network, paying for data storage, and upload/retrieve information to/from the network.  
 ///
 /// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
-/// TODO: allow to provide specific keys, and/or a way to derive keys, for encrypting and siging operations. Currently
-/// the provided Client's key is used for both encrypting data and signing network operations.
+///
+/// TODO: make use of eip2333 paths for deriving keys. Currently keys used for encrypting and signing
+/// operations are derived from the root key provided using index derivation.
 ///
 /// The `AccountPacket` keeps a reference to the network address of the root Folder holding the user's
 /// files/folder hierarchy. All tracking information is kept under the `.safe` directory on disk, whose
@@ -100,18 +117,26 @@ pub struct AccountPacket {
 }
 
 impl AccountPacket {
-    /// Initialise directory as a fresh new packet with the given/random address for its root Folder.
-    /// The client's key will be used for encrypting the files/folders metadata chunks. Currently,
-    /// when the user requests to encrypt data, the provided Client's signer key is used.
+    /// Initialise directory as a fresh new packet.
+    /// All keys used for encrypting the files/folders metadata chunks and signing
+    /// operations are derived from the root key provided using index derivation.
+    /// The root Folder address and owner are also derived from the root SK.
     pub fn init(
-        client: Client,
+        mut client: Client,
         wallet_dir: &Path,
         path: &Path,
-        root_folder_addr: Option<RegisterAddress>,
+        root_sk: MainSecretKey,
     ) -> Result<Self> {
+        // Set the client signer SK as a derived key from the root key. This will
+        // be used for signing operations and also for encrypting metadata chunks.
+        let signer_sk = root_sk
+            .derive_key(&ACC_PACKET_OWNER_DERIVATION_INDEX)
+            .secret_key();
+        client.set_signer_key(signer_sk);
+
         let (_, _, meta_dir) = build_tracking_info_paths(path)?;
 
-        // if there is already some tracking info we bail out as this is meant ot be a fresh new packet.
+        // If there is already some tracking info we bail out as this is meant ot be a fresh new packet.
         if let Ok((addr, _)) = read_root_folder_addr(&meta_dir) {
             bail!(
                 "The local path {path:?} is already being tracked with Folder address: {}",
@@ -119,9 +144,16 @@ impl AccountPacket {
             );
         }
 
-        let mut rng = rand::thread_rng();
-        let root_folder_addr = root_folder_addr
-            .unwrap_or_else(|| RegisterAddress::new(XorName::random(&mut rng), client.signer_pk()));
+        // Derive a key from the root key to generate the root Folder xorname, and use
+        // the client signer's corresponding PK as the owner of it.
+        let derived_pk = root_sk
+            .main_pubkey()
+            .new_unique_pubkey(&ACC_PACKET_ADDR_DERIVATION_INDEX);
+        let root_folder_addr = RegisterAddress::new(
+            XorName::from_content(&derived_pk.to_bytes()),
+            client.signer_pk(),
+        );
+
         store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
         Self::from_path(client, wallet_dir, path)
     }
@@ -829,6 +861,7 @@ mod tests {
         read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
         MetadataTrackingInfo,
     };
+    use sn_client::transfers::MainSecretKey;
     use sn_client::UploadCfg;
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
@@ -864,18 +897,14 @@ mod tests {
     #[tokio::test]
     async fn test_acc_packet_private_helpers() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
         let files_path = tmp_dir.path().join("myfiles");
         create_dir_all(&files_path)?;
 
-        let acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &files_path,
-            Some(root_folder_addr),
-        )?;
+        let acc_packet = AccountPacket::init(client.clone(), wallet_dir, &files_path, root_sk)?;
 
         assert_eq!(acc_packet.root_folder_addr(), root_folder_addr);
 
@@ -924,6 +953,7 @@ mod tests {
     #[tokio::test]
     async fn test_acc_packet_from_empty_dir() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -932,12 +962,8 @@ mod tests {
         let src_files_path = tmp_dir.path().join("myaccpacketempty");
         create_dir_all(&src_files_path)?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &src_files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet =
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, root_sk)?;
 
         // let's sync up with the network from the original empty account packet
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
@@ -963,6 +989,7 @@ mod tests {
     #[tokio::test]
     async fn test_acc_packet_upload_download() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -971,12 +998,8 @@ mod tests {
         let src_files_path = tmp_dir.path().join("myaccpacket");
         let expected_files = create_test_files_on_disk(&src_files_path)?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &src_files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet =
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, root_sk)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1000,7 +1023,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_acc_packet_scan_files_and_folders_changes() -> Result<()> {
-        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let (client, _) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -1010,12 +1034,7 @@ mod tests {
         let mut test_files = create_test_files_on_disk(&files_path)?;
         let files_path = files_path.canonicalize()?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet = AccountPacket::init(client.clone(), wallet_dir, &files_path, root_sk)?;
 
         let changes = acc_packet.scan_files_and_folders_for_changes(false)?;
         // verify changes detected
@@ -1052,6 +1071,7 @@ mod tests {
     #[tokio::test]
     async fn test_acc_packet_sync_mutations() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -1060,12 +1080,8 @@ mod tests {
         let src_files_path = tmp_dir.path().join("myaccpackettosync");
         let mut expected_files = create_test_files_on_disk(&src_files_path)?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &src_files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet =
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, root_sk)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1102,7 +1118,8 @@ mod tests {
     #[cfg(any(target_os = "linux", target_os = "linux"))]
     #[tokio::test]
     async fn test_acc_packet_moved_folder() -> Result<()> {
-        let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let (client, _) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -1111,12 +1128,8 @@ mod tests {
         let src_files_path = tmp_dir.path().join("myaccpacket-to-move");
         let mut test_files = create_test_files_on_disk(&src_files_path)?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &src_files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet =
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, root_sk)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1153,6 +1166,7 @@ mod tests {
     #[tokio::test]
     async fn test_acc_packet_encryption() -> Result<()> {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
+        let root_sk = MainSecretKey::random();
 
         let tmp_dir = tempfile::tempdir()?;
         let wallet_dir = tmp_dir.path();
@@ -1161,12 +1175,7 @@ mod tests {
         let files_path = tmp_dir.path().join("myaccpacket-unencrypted-metadata");
         let _ = create_test_files_on_disk(&files_path)?;
 
-        let mut acc_packet = AccountPacket::init(
-            client.clone(),
-            wallet_dir,
-            &files_path,
-            Some(root_folder_addr),
-        )?;
+        let mut acc_packet = AccountPacket::init(client.clone(), wallet_dir, &files_path, root_sk)?;
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // try to download Folder with a different Client should fail since it
