@@ -59,9 +59,6 @@ mod keys;
 mod wallet_file;
 mod watch_only;
 
-use crate::{NanoTokens, UniquePubkey};
-use wallet_file::wallet_file_name;
-
 pub use self::{
     data_payments::{Payment, PaymentQuote, QuotingMetrics, QUOTE_EXPIRATION_SECS},
     error::{Error, Result},
@@ -69,7 +66,11 @@ pub use self::{
     keys::bls_secret_from_hex,
     watch_only::WatchOnlyWallet,
 };
+use crate::{NanoTokens, UniquePubkey};
+pub use hot_wallet::WALLET_DIR_NAME;
 pub(crate) use keys::store_new_keypair;
+use wallet_file::wallet_file_name;
+pub use wallet_file::wallet_lockfile_name;
 
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, path::Path};

@@ -39,7 +39,7 @@ pub(super) fn wallet_file_name(wallet_dir: &Path) -> PathBuf {
 }
 
 /// Returns the wallet lockfile filename
-pub(super) fn wallet_lockfile_name(wallet_dir: &Path) -> PathBuf {
+pub fn wallet_lockfile_name(wallet_dir: &Path) -> PathBuf {
     wallet_dir.join(WALLET_LOCK_FILE_NAME)
 }
 

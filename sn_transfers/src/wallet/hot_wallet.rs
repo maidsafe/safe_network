@@ -34,7 +34,7 @@ use std::{
     time::Instant,
 };
 
-const WALLET_DIR_NAME: &str = "wallet";
+pub const WALLET_DIR_NAME: &str = "wallet";
 
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
