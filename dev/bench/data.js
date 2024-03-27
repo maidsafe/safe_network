@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711542008739,
+  "lastUpdate": 1711542117298,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355",
-          "message": "fix(cli): marking chunks as verified should mark them as paid too",
-          "timestamp": "2023-11-14T09:02:39Z",
-          "tree_id": "ec46e5a95f6c4fc7504d95ce31725f0e20933551",
-          "url": "https://github.com/maidsafe/safe_network/commit/9b173bb09ea35c6ba78ae4c8c3edd2d4895b2355"
-        },
-        "date": 1699955958140,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 116,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "279e8d79fb08112402472d487f7c527fbfa05d75",
+          "message": "chore(node): refactor pricing metrics",
+          "timestamp": "2024-03-27T11:33:17Z",
+          "tree_id": "513fd9a64967713dd4bf354f8500ba641fa5355e",
+          "url": "https://github.com/maidsafe/safe_network/commit/279e8d79fb08112402472d487f7c527fbfa05d75"
+        },
+        "date": 1711542116913,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
