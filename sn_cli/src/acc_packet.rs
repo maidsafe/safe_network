@@ -21,8 +21,7 @@ use color_eyre::{
 use sn_client::{
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
-    transfers::HotWallet,
-    Client, FilesApi, FolderEntry, FoldersApi, Metadata, WalletClient,
+    Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadSummary,
 };
 use std::{
     collections::{
@@ -34,7 +33,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use tokio::task::JoinSet;
 use tracing::trace;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
@@ -223,8 +221,10 @@ impl AccountPacket {
     /// Sync local changes made to files and folder with their version on the network,
     /// both pushing and pulling changes to/form the network.
     pub async fn sync(&mut self, options: FilesUploadOptions) -> Result<()> {
-        let ChangesToApply { folders, mutations } =
-            self.scan_files_and_folders_for_changes(options.make_data_public)?;
+        let ChangesToApply {
+            mut folders,
+            mutations,
+        } = self.scan_files_and_folders_for_changes(options.make_data_public)?;
 
         if mutations.is_empty() {
             println!("No local changes made to files/folders to be pushed to network.");
@@ -234,7 +234,7 @@ impl AccountPacket {
         }
 
         println!("Paying for folders hierarchy and uploading...");
-        let synced_folders = self.pay_and_sync_folders(folders, options.clone()).await?;
+        let _synced_folders = self.pay_and_sync(&mut folders, options.clone()).await?;
 
         // mark root folder as created if it wasn't already
         if !self.root_folder_created {
@@ -264,7 +264,7 @@ impl AccountPacket {
         }
 
         // download files/folders which are new in the synced folders
-        let folders_to_download: Vec<_> = synced_folders
+        let folders_to_download: Vec<_> = folders
             .iter()
             .map(|(path, (folders_api, _))| {
                 let folder_name: OsString = path.file_name().unwrap_or_default().into();
@@ -631,13 +631,13 @@ impl AccountPacket {
             .filter(|e| e.file_type().is_file())
     }
 
-    // Make a single payment for all Folders (Registers) and metadata chunks, and upload them
-    // to the network along with all new files.
-    async fn pay_and_sync_folders(
+    // Pay and upload all the files and their metadata along with the folders (registers).
+    // This also merged the folder with the one from the network.
+    async fn pay_and_sync(
         &self,
-        folders: Folders,
+        folders: &mut Folders,
         options: FilesUploadOptions,
-    ) -> Result<Folders> {
+    ) -> Result<UploadSummary> {
         let files_api = FilesApi::build(self.client.clone(), self.root_dir.clone())?;
         let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
 
@@ -655,75 +655,10 @@ impl AccountPacket {
             .iterate_upload(chunks_to_upload, &self.files_dir, options.clone())
             .await?;
 
-        // Let's make the storage payment for Folders
-        let mut wallet_client =
-            WalletClient::new(self.client.clone(), HotWallet::load_from(&self.root_dir)?);
-        let mut net_addresses = vec![];
-        let mut new_folders = 0;
-        // let's collect list of addresses we need to pay for
-        folders.iter().for_each(|(_, (folder, folder_change))| {
-            if folder_change.is_new_folder() {
-                net_addresses.push(folder.as_net_addr());
-                new_folders += 1;
-            }
-            net_addresses.extend(folder.meta_addrs_to_pay());
-        });
-
-        let payment_result = wallet_client
-            .pay_for_storage(net_addresses.into_iter())
-            .await?;
-        match payment_result
-            .storage_cost
-            .checked_add(payment_result.royalty_fees)
-        {
-            Some(cost) => {
-                let balance = wallet_client.balance();
-                println!("Made payment of {cost} for {new_folders} Folders. New balance: {balance}",)
-            }
-            None => bail!("Failed to calculate total payment cost"),
-        }
-
-        // sync Folders concurrently now that payments have been made
-        let mut tasks = JoinSet::new();
-        for (path, (mut folder, folder_change)) in folders {
-            let op = if folder_change.is_new_folder() {
-                "Creation"
-            } else {
-                "Syncing"
-            };
-
-            tasks.spawn(async move {
-                match folder
-                    .sync(options.verify_store, Some(options.retry_strategy))
-                    .await
-                {
-                    Ok(()) => {
-                        println!(
-                            "{op} of Folder (for {path:?}) succeeded. Address: {}",
-                            folder.address().to_hex()
-                        );
-                    }
-                    Err(err) => {
-                        println!("{op} of Folder (for {path:?}) failed: {err}")
-                    }
-                }
-                (path, folder, folder_change)
-            });
-        }
-
-        let mut synced_folders = Folders::new();
-        while let Some(res) = tasks.join_next().await {
-            match res {
-                Ok((path, folder, c)) => {
-                    synced_folders.insert(path, (folder, c));
-                }
-                Err(err) => {
-                    println!("Failed to sync/create a Folder with/on the network: {err:?}");
-                }
-            }
-        }
-
-        Ok(synced_folders)
+        // batch sync the folders
+        let summary =
+            FoldersApi::sync_multiple(folders.iter_mut().map(|(_, (folder, _))| folder)).await?;
+        Ok(summary)
     }
 
     // Download a Folders and their files from the network and generate tracking info
