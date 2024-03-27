@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.5...sn_transfers-v0.17.0) - 2024-03-27
+
+### Added
+- *(faucet)* rate limit based upon wallet locks
+- *(transfers)* enable client to check if a quote has expired
+- *(transfers)* [**breaking**] support multiple payments for the same xorname
+- use Arc inside Client, Network to reduce clone cost
+
+### Other
+- *(node)* refactor pricing metrics
+
 ## [0.16.5](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.4...sn_transfers-v0.16.5) - 2024-03-21
 
 ### Added

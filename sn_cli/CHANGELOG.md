@@ -6,6 +6,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.0](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.85...sn_cli-v0.90.0) - 2024-03-27
+
+### Added
+- *(cli)* expose AccountPacket APIs from a lib so it can be used by other apps
+- *(uploader)* collect all the uploaded registers
+- *(uploader)* allow either chunk or chunk path to be used
+- *(uploader)* register existence should be checked before going with payment flow
+- *(client)* use the new Uploader insetead of FilesUpload
+- make logging simpler to use
+- [**breaking**] remove gossip code
+- svg caching, fault tolerance during DAG collection
+- *(uploader)* repay immediately if the quote has expired
+- *(uploader)* use ClientRegister instead of Registers
+- *(client)* implement a generic uploader with repay ability
+- *(transfers)* enable client to check if a quote has expired
+- *(client)* make publish register as an associated function
+- *(network)* filter out peers when returning store cost
+- *(transfers)* [**breaking**] support multiple payments for the same xorname
+- use Arc inside Client, Network to reduce clone cost
+- *(networking)* add NodeIssue for tracking bad node shunning
+- *(faucet)* rate limit based upon wallet locks
+
+### Fixed
+- *(cli)* files should be chunked before checking if the chunks are empty
+- *(test)* use tempfile lib instead of stdlib to create temp dirs
+- *(clippy)* allow too many arguments as it is a private function
+- *(uploader)* remove unused error tracking and allow retries for new payee
+- *(uploader)* make the internals more clean
+- *(uploader)* update force make payment logic
+- *(register)* permissions verification was not being made by some Register APIs
+- *(node)* fetching new data shall not cause timed_out immediately
+- *(test)* generate unique temp dir to avoid read outdated data
+- *(register)* shortcut permissions check when anyone can write to Register
+
+### Other
+- *(cli)* moving binary target related files onto src/bin dir
+- *(uploader)* remove FilesApi dependency
+- *(uploader)* implement UploaderInterface for easier testing
+- rename of function to be more descriptive
+- remove counter run through several functions and replace with simple counter
+- *(register)* minor simplification in Register Permissions implementation
+- *(uploader)* remove unused code path when store cost is 0
+- *(uploader)* implement tests to test the basic pipeline logic
+- *(uploader)* initial test setup for uploader
+- *(uploader)* remove failed_to states
+- *(node)* refactor pricing metrics
+- lower some networking log levels
+- *(node)* loose bad node detection criteria
+- *(node)* optimization to reduce logging
+
 ## [0.89.85](https://github.com/joshuef/safe_network/compare/sn_cli-v0.89.84...sn_cli-v0.89.85) - 2024-03-21
 
 ### Added
