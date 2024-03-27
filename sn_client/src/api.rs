@@ -369,6 +369,26 @@ impl Client {
         self.signer.public_key()
     }
 
+    /// Set the signing key for this client.
+    ///
+    /// # Arguments
+    /// * 'sk' - [SecretKey]
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// let mut client = Client::new(SecretKey::random(), None, None, None).await?;
+    /// client.set_signer_key(SecretKey::random());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn set_signer_key(&mut self, sk: SecretKey) {
+        self.signer = Arc::new(sk);
+    }
+
     /// Get a register from network
     ///
     /// # Arguments
