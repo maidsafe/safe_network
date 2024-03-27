@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711542497926,
+  "lastUpdate": 1711542499680,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40815,6 +40815,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "700f647c28d78b2c3e9a2f42267aa8d25cd7ffa0",
+          "message": "feat: svg caching, fault tolerance during DAG collection",
+          "timestamp": "2024-03-27T11:38:12Z",
+          "tree_id": "93efa8c6ba4ccd0f2a7ac817a2cad2aae9127dfe",
+          "url": "https://github.com/maidsafe/safe_network/commit/700f647c28d78b2c3e9a2f42267aa8d25cd7ffa0"
+        },
+        "date": 1711542499312,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3174,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 14450,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
