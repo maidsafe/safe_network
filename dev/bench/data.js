@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711566161871,
+  "lastUpdate": 1711566163393,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4f4a87489b4ce4c1ec24557d0b5f188b12299890",
-          "message": "test(royalties): verify royalties fees amounts",
-          "timestamp": "2023-11-14T14:25:26Z",
-          "tree_id": "4e7f7517a56979eba71786844483dbe0b96fc872",
-          "url": "https://github.com/maidsafe/safe_network/commit/4f4a87489b4ce4c1ec24557d0b5f188b12299890"
-        },
-        "date": 1699974324314,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 211,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 67,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "213deb8aece3c03a52a52cafae72b380cf9faf88",
+          "message": "ci: fix references to node manager crate",
+          "timestamp": "2024-03-27T18:50:29Z",
+          "tree_id": "857a59ea86ac0fd9efcfcf7823e87114d5ec7f22",
+          "url": "https://github.com/maidsafe/safe_network/commit/213deb8aece3c03a52a52cafae72b380cf9faf88"
+        },
+        "date": 1711566163019,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
