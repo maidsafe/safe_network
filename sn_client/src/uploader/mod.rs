@@ -92,9 +92,9 @@ impl Uploader {
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
     // NOTE: Self has to be constructed only using this method. We expect `Self::inner` is present everywhere.
-    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
+    pub fn new(client: Client, root_dir: PathBuf) -> Self {
         Self {
-            inner: Some(InnerUploader::new(client, wallet_dir)),
+            inner: Some(InnerUploader::new(client, root_dir)),
         }
     }
 

@@ -17,19 +17,29 @@ use std::{
 use xor_name::XorName;
 
 const PAYMENTS_DIR_NAME: &str = "payments";
+pub const WALLET_DIR_NAME: &str = "wallet";
 
 /// Contains some common API's used by wallet implementations.
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct WalletApi {
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: Arc<PathBuf>,
-    /// Cached version of `wallet_dir/payment`
+    /// Cached version of `root_dir/wallet_dir/payments`
     payment_dir: Arc<PathBuf>,
 }
 
 impl WalletApi {
-    /// Create a new instance of the StateLessWallet
-    pub fn new(wallet_dir: &Path) -> Self {
+    /// Create a new instance give the root dir.
+    pub fn new_from_root_dir(root_dir: &Path) -> Self {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        Self {
+            payment_dir: Arc::new(wallet_dir.join(PAYMENTS_DIR_NAME)),
+            wallet_dir: Arc::new(wallet_dir),
+        }
+    }
+
+    /// Create a new instance give the root dir.
+    pub fn new_from_wallet_dir(wallet_dir: &Path) -> Self {
         Self {
             wallet_dir: Arc::new(wallet_dir.to_path_buf()),
             payment_dir: Arc::new(wallet_dir.join(PAYMENTS_DIR_NAME)),

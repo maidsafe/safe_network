@@ -109,11 +109,9 @@ pub(super) async fn start_upload(
         if uploader.all_upload_items.is_empty() {
             debug!("Upload items are empty, exiting main upload loop.");
             // To avoid empty final_balance when all items are skipped.
-            uploader.upload_final_balance = InnerUploader::load_wallet_client(
-                uploader.client.clone(),
-                uploader.wallet_api.wallet_dir(),
-            )?
-            .balance();
+            uploader.upload_final_balance =
+                InnerUploader::load_wallet_client(uploader.client.clone(), &uploader.root_dir)?
+                    .balance();
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
 
@@ -649,6 +647,7 @@ pub(super) struct InnerUploader {
     pub(super) client: Client,
     #[debug(skip)]
     pub(super) wallet_api: WalletApi,
+    pub(super) root_dir: PathBuf,
 
     // states
     pub(super) all_upload_items: HashMap<XorName, UploadItem>,
@@ -691,7 +690,7 @@ pub(super) struct InnerUploader {
 }
 
 impl InnerUploader {
-    pub(super) fn new(client: Client, wallet_dir: PathBuf) -> Self {
+    pub(super) fn new(client: Client, root_dir: PathBuf) -> Self {
         Self {
             batch_size: BATCH_SIZE,
             verify_store: true,
@@ -701,7 +700,8 @@ impl InnerUploader {
             collect_registers: false,
 
             client,
-            wallet_api: WalletApi::new(&wallet_dir),
+            wallet_api: WalletApi::new_from_root_dir(&root_dir),
+            root_dir,
 
             all_upload_items: Default::default(),
             pending_to_get_register: Default::default(),
@@ -803,8 +803,7 @@ impl InnerUploader {
         task_result_sender: mpsc::Sender<TaskResult>,
         batch_size: usize,
     ) -> Result<()> {
-        let mut wallet_client =
-            Self::load_wallet_client(self.client.clone(), self.wallet_api.wallet_dir())?;
+        let mut wallet_client = Self::load_wallet_client(self.client.clone(), &self.root_dir)?;
         let verify_store = self.verify_store;
         let _handle = tokio::spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
@@ -1035,9 +1034,9 @@ impl InnerUploader {
     }
 
     /// Create a new WalletClient for a given root directory.
-    fn load_wallet_client(client: Client, wallet_dir: &Path) -> Result<WalletClient> {
+    fn load_wallet_client(client: Client, root_dir: &Path) -> Result<WalletClient> {
         let wallet =
-            HotWallet::load_from(wallet_dir).map_err(|_| ClientError::FailedToAccessWallet)?;
+            HotWallet::load_from(root_dir).map_err(|_| ClientError::FailedToAccessWallet)?;
 
         Ok(WalletClient::new(client, wallet))
     }
