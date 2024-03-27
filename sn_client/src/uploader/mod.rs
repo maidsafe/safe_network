@@ -20,7 +20,11 @@ use sn_protocol::{
 };
 use sn_registers::{Register, RegisterAddress};
 use sn_transfers::{NanoTokens, WalletApi};
-use std::{fmt::Debug, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Debug,
+    path::PathBuf,
+};
 use tokio::sync::mpsc;
 use xor_name::XorName;
 
@@ -30,9 +34,10 @@ pub struct UploadSummary {
     pub storage_cost: NanoTokens,
     pub royalty_fees: NanoTokens,
     pub final_balance: NanoTokens,
+    pub uploaded_addresses: BTreeSet<NetworkAddress>,
+    pub uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
     pub uploaded_count: usize,
     pub skipped_count: usize,
-    pub uploaded_registers: Vec<ClientRegister>,
 }
 
 #[derive(Debug, Clone)]
