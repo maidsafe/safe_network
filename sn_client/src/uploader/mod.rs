@@ -134,7 +134,7 @@ impl Uploader {
     }
 
     /// Sets the RetryStrategy to increase the re-try during the GetStoreCost & Upload tasks.
-    /// This does not affect the the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
+    /// This does not affect the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
     /// configure the re-payment attempts.
     ///
     /// By default, this option is set to RetryStrategy::Balanced
@@ -146,11 +146,10 @@ impl Uploader {
         self
     }
 
-    /// Sets the RetryStrategy to increase the re-try during the GetStoreCost & Upload tasks.
-    /// This does not affect the the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
-    /// configure the re-payment attempts.
+    /// Sets the maximum number of repayments to perform if the initial payment failed.
+    /// NOTE: This creates an extra Spend and uses the wallet funds.
     ///
-    /// By default, this option is set to RetryStrategy::Balanced
+    /// By default, this option is set to 1 retry.
     pub fn set_max_repayments_for_failed_data(mut self, retries: usize) -> Self {
         self.inner
             .as_mut()
