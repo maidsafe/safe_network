@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711541358821,
+  "lastUpdate": 1711541360840,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40732,6 +40732,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 15029,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "176848ebf94f17e9119e1e2fd06647a890bae55a",
+          "message": "refactor(cli): moving binary target related files onto src/bin dir",
+          "timestamp": "2024-03-27T11:15:07Z",
+          "tree_id": "7ee77d05e9528cc02d34cb8fb8d89c618a318251",
+          "url": "https://github.com/maidsafe/safe_network/commit/176848ebf94f17e9119e1e2fd06647a890bae55a"
+        },
+        "date": 1711541360237,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3133,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 13877,
             "unit": "ms"
           },
           {
