@@ -516,10 +516,6 @@ impl SpendDag {
         let ancestor_spends = match self.get_ancestor_spends(spend) {
             Ok(a) => a,
             Err(e) => {
-                println!(
-                    "Error is_genesis({:?}): {e} {spend:#?}",
-                    is_genesis_spend(spend)
-                );
                 debug!("Failed to get ancestor spends of: {addr:?} {e}");
                 recorded_faults.insert(e);
                 return Ok(recorded_faults);

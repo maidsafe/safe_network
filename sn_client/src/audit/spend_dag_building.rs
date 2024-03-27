@@ -36,7 +36,10 @@ impl Client {
                 dag.insert(spend_addr, *s2);
                 *s1
             }
-            Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
+            Err(e) => {
+                warn!("Failed to get spend at {spend_addr:?}: {e}");
+                return Err(WalletError::FailedToGetSpend(e.to_string()));
+            }
         };
         dag.insert(spend_addr, first_spend.clone());
 
@@ -245,14 +248,17 @@ impl Client {
         let utxos = dag.get_utxos();
 
         let mut stream = futures::stream::iter(utxos.into_iter())
-            .map(|utxo| {
+            .map(|utxo| async move {
                 debug!("Queuing task to gather DAG from utxo: {:?}", utxo);
-                self.spend_dag_build_from(utxo)
+                (self.spend_dag_build_from(utxo).await, utxo)
             })
             .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
 
-        while let Some(res) = stream.next().await {
-            dag.merge(res?);
+        while let Some((res, addr)) = stream.next().await {
+            match res {
+                Ok(d) => dag.merge(d),
+                Err(e) => warn!("Failed to gather sub dag from {addr:?}: {e}"),
+            }
         }
 
         dag.record_faults(&dag.source())

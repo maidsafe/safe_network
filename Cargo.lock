@@ -5033,6 +5033,7 @@ dependencies = [
  "sn_peers_acquisition",
  "tiny_http",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

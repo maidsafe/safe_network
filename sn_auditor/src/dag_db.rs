@@ -9,7 +9,9 @@
 use color_eyre::eyre::{eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
+use sn_client::networking::NetworkError;
 use sn_client::transfers::{SignedSpend, SpendAddress, GENESIS_CASHNOTE};
+use sn_client::Error as ClientError;
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::fmt::Write;
 use std::{
@@ -18,6 +20,7 @@ use std::{
 };
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
+pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 
 /// Abstraction for the Spend DAG database
 /// Currently in memory, with disk backup, but should probably be a real DB at scale
@@ -107,13 +110,26 @@ impl SpendDagDb {
         Ok(())
     }
 
-    /// Get the current DAG as SVG
-    pub fn svg(&self) -> Result<Vec<u8>> {
+    /// Load current DAG svg from disk
+    pub fn load_svg(&self) -> Result<Vec<u8>> {
+        let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
+        let svg = std::fs::read(svg_path)?;
+        Ok(svg)
+    }
+
+    /// Dump current DAG as svg to disk
+    pub fn dump_dag_svg(&self) -> Result<()> {
+        info!("Dumping DAG to svg...");
+        std::fs::create_dir_all(&self.path)?;
+        let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
         let dag_ref = self.dag.clone();
         let r_handle = dag_ref
             .read()
             .map_err(|e| eyre!("Failed to get read lock: {e}"))?;
-        dag_to_svg(&r_handle)
+        let svg = dag_to_svg(&r_handle)?;
+        std::fs::write(svg_path.clone(), svg)?;
+        info!("Successfully dumped DAG to {svg_path:?}...");
+        Ok(())
     }
 
     /// Update DAG from Network
@@ -136,6 +152,15 @@ impl SpendDagDb {
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
         *w_handle = dag;
+        std::mem::drop(w_handle);
+
+        // update and save svg to file in a background thread so we don't block
+        let self_clone = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = self_clone.dump_dag_svg() {
+                error!("Failed to dump DAG svg: {e}");
+            }
+        });
 
         Ok(())
     }
@@ -158,7 +183,9 @@ pub async fn new_dag_with_genesis_only(client: &Client) -> Result<SpendDag> {
     let mut dag = SpendDag::new(genesis_addr);
     let genesis_spend = match client.get_spend_from_network(genesis_addr).await {
         Ok(s) => s,
-        Err(sn_client::Error::DoubleSpend(addr, spend1, spend2)) => {
+        Err(ClientError::Network(NetworkError::DoubleSpendAttempt(spend1, spend2)))
+        | Err(ClientError::DoubleSpend(_, spend1, spend2)) => {
+            let addr = spend1.address();
             println!("Double spend detected at Genesis: {addr:?}");
             dag.insert(genesis_addr, *spend2);
             dag.record_faults(&dag.source())?;

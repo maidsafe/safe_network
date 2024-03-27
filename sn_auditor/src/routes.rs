@@ -14,7 +14,9 @@ use tiny_http::{Request, Response};
 use crate::dag_db::SpendDagDb;
 
 pub(crate) fn spend_dag_svg(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
-    let svg = dag.svg().map_err(|e| eyre!("Failed to get SVG: {e}"))?;
+    let svg = dag
+        .load_svg()
+        .map_err(|e| eyre!("Failed to get SVG: {e}"))?;
     let response = Response::from_data(svg);
     Ok(response)
 }
