@@ -931,6 +931,7 @@ impl InnerUploader {
                     filter_list.len(),
                     max_repayments_for_failed_data,
                 ) {
+                    // error is used by the caller.
                     return Err(ClientError::MaximumRepaymentsReached(xorname));
                 }
 
@@ -942,6 +943,12 @@ impl InnerUploader {
             .network
             .get_store_costs_from_network(address, filter_list)
             .await?;
+        // check if the quote has expired
+        // todo: should this be a part of get_store_costs_from_network?
+        // todo: if this keep happening, the node is misbehaving. Track the peer and filter him out.
+        if quote.2.has_expired() {
+            return Err(ClientError::Wallet(WalletError::QuoteExpired(xorname)));
+        }
         Ok(quote)
     }
 
