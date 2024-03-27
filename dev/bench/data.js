@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711566163393,
+  "lastUpdate": 1711566165262,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -40888,6 +40888,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 16571,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "213deb8aece3c03a52a52cafae72b380cf9faf88",
+          "message": "ci: fix references to node manager crate",
+          "timestamp": "2024-03-27T18:50:29Z",
+          "tree_id": "857a59ea86ac0fd9efcfcf7823e87114d5ec7f22",
+          "url": "https://github.com/maidsafe/safe_network/commit/213deb8aece3c03a52a52cafae72b380cf9faf88"
+        },
+        "date": 1711566164875,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 3684,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 16279,
             "unit": "ms"
           },
           {
