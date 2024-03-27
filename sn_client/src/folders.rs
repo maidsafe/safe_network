@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, Client, ClientRegister, WalletClient};
-use crate::{Error, FilesApi};
+use crate::{Error, FilesApi, UploadSummary, Uploader};
 use bls::{Ciphertext, PublicKey};
 use bytes::{BufMut, BytesMut};
 use self_encryption::MAX_CHUNK_SIZE;
@@ -66,6 +66,11 @@ impl FoldersApi {
         Self::create(client, root_dir, register)
     }
 
+    /// Clones the register instance. Any change made to one instance will not be reflected on the other register.
+    pub fn register(&self) -> ClientRegister {
+        self.register.clone()
+    }
+
     /// Return the address of the Folder (Register address) on the network
     pub fn address(&self) -> &RegisterAddress {
         self.register.address()
@@ -87,6 +92,15 @@ impl FoldersApi {
                     .as_ref()
                     .map(|_| NetworkAddress::ChunkAddress(ChunkAddress::new(*meta_xorname)))
             })
+            .collect()
+    }
+
+    /// Return the list of metadata chunks.
+    #[allow(clippy::mutable_key_type)]
+    pub fn meta_chunks(&self) -> BTreeSet<Chunk> {
+        self.metadata
+            .iter()
+            .filter_map(|(_, (_, chunk))| chunk.clone())
             .collect()
     }
 
@@ -185,6 +199,45 @@ impl FoldersApi {
             .await?;
 
         Ok(())
+    }
+
+    /// Sync multiple Folders with the network.
+    pub async fn sync_multiple(
+        folders: impl IntoIterator<Item = &mut Self>,
+    ) -> Result<UploadSummary> {
+        let folders_vec = folders.into_iter().collect::<Vec<_>>();
+        // Ensure there's only one unique root_dir across all folders
+        let unique_root_dirs: BTreeSet<&Path> = folders_vec
+            .iter()
+            .map(|folder| folder.root_dir.as_path())
+            .collect();
+        let root_dir = match unique_root_dirs.iter().next() {
+            Some(&dir) if unique_root_dirs.len() == 1 => dir,
+            _ => return Err(Error::InconsistentBatchSyncState),
+        };
+        let client = folders_vec
+            .first()
+            .ok_or(Error::BatchSyncEmptyList)?
+            .client
+            .clone();
+
+        let mut uploader =
+            Uploader::new(client, root_dir.to_path_buf()).set_collect_registers(true);
+        uploader.insert_chunks(folders_vec.iter().flat_map(|folder| folder.meta_chunks()));
+        uploader.insert_register(folders_vec.iter().map(|folder| folder.register()));
+        let mut upload_summary = uploader.start_upload().await?;
+
+        // now update the registers
+        for folder in folders_vec {
+            let address = folder.address();
+            let updated_register = upload_summary
+                .uploaded_registers
+                .remove(address)
+                .ok_or(Error::RegisterNotFoundAfterUpload(address.xorname()))?;
+            folder.register = updated_register;
+        }
+
+        Ok(upload_summary)
     }
 
     /// Download a copy of the Folder from the network.
