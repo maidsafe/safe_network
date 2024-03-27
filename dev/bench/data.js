@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711542392176,
+  "lastUpdate": 1711542496365,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11715,35 +11715,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "3fd17c54e1264a3d6a87a5c2cf7a616433f6f882",
-          "message": "chore(networking): calm down replication",
-          "timestamp": "2023-11-14T11:45:06Z",
-          "tree_id": "c6755c85d7816acccbf0cd5affd03ed8e3f67421",
-          "url": "https://github.com/maidsafe/safe_network/commit/3fd17c54e1264a3d6a87a5c2cf7a616433f6f882"
-        },
-        "date": 1699965163922,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "f79a81793c2d56c9129311a64a0d81c3f9039879",
           "message": "feat(networking): drop excessive AddKeysToReplicationFetcher cmds",
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "700f647c28d78b2c3e9a2f42267aa8d25cd7ffa0",
+          "message": "feat: svg caching, fault tolerance during DAG collection",
+          "timestamp": "2024-03-27T11:38:12Z",
+          "tree_id": "93efa8c6ba4ccd0f2a7ac817a2cad2aae9127dfe",
+          "url": "https://github.com/maidsafe/safe_network/commit/700f647c28d78b2c3e9a2f42267aa8d25cd7ffa0"
+        },
+        "date": 1711542495987,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
