@@ -173,10 +173,10 @@ package-release-assets bin version="":
       crate="sn_node"
       ;;
     safenode-manager)
-      crate="sn_node_manager"
+      crate="sn-node-manager"
       ;;
     safenodemand)
-      crate="sn_node_manager"
+      crate="sn-node-manager"
       ;;
     faucet)
       crate="sn_faucet"
@@ -243,7 +243,7 @@ upload-github-release-assets:
             bin_name="safenode"
             bucket="sn-node"
             ;;
-          sn_node_manager)
+          sn-node-manager)
             bin_name="safenode-manager"
             bucket="sn-node-manager"
             ;;
@@ -256,7 +256,7 @@ upload-github-release-assets:
             bucket="sn-node-rpc-client"
             ;;
           *)
-            echo "The $crate is not supported"
+            echo "The $crate crate is not supported"
             exit 1
             ;;
         esac
@@ -267,7 +267,7 @@ upload-github-release-assets:
           if [[ $crate_with_version == $crate-v* ]]; then
             (
               cd deploy/$bin_name
-              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn_node_manager" ]]; then
+              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
                 echo "Uploading $bin_name assets to $crate_with_version release..."
                 ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               fi
