@@ -312,13 +312,6 @@ impl NodeRecordStore {
                 .cmp(&self.local_address.distance(&b))
         });
 
-        let distance_range = self
-            .local_address
-            .distance(&NetworkAddress::from_record_key(
-                &sorted_records[sorted_records.len() - 10],
-            ));
-
-        self.distance_range = Some(distance_range);
         // sorting will be costly, hence pruning in a batch of 10
         (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
             info!(
@@ -395,14 +388,6 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        let new_distance = self
-            .local_address
-            .distance(&NetworkAddress::from_record_key(&r.key));
-
-        // set's the local distance range to be further if the new record is further
-        // This assumes the verified record is to be held by _us_...
-        self.distance_range = self.distance_range.map(|range| range.max(new_distance));
-
         self.prune_storage_if_needed_for_record();
 
         let filename = Self::generate_filename(&r.key);
@@ -442,7 +427,7 @@ impl NodeRecordStore {
 
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn store_cost(&self, _key: &Key) -> (NanoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
@@ -462,13 +447,17 @@ impl NodeRecordStore {
             info!("Basing cost of _total_ records stored.");
         };
 
-        // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        let cost = calculate_cost_for_records(
-            quoting_metrics.records_stored,
-            quoting_metrics.received_payment_count,
-            quoting_metrics.max_records,
-            quoting_metrics.live_time,
-        );
+        let cost = if self.contains(key) {
+            0
+        } else {
+            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
+            calculate_cost_for_records(
+                quoting_metrics.records_stored,
+                quoting_metrics.received_payment_count,
+                quoting_metrics.max_records,
+                quoting_metrics.live_time,
+            )
+        };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
         (NanoTokens::from(cost), quoting_metrics)
