@@ -312,13 +312,6 @@ impl NodeRecordStore {
                 .cmp(&self.local_address.distance(&b))
         });
 
-        let distance_range = self
-            .local_address
-            .distance(&NetworkAddress::from_record_key(
-                &sorted_records[sorted_records.len() - 10],
-            ));
-
-        self.distance_range = Some(distance_range);
         // sorting will be costly, hence pruning in a batch of 10
         (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
             info!(
@@ -394,14 +387,6 @@ impl NodeRecordStore {
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
-
-        let new_distance = self
-            .local_address
-            .distance(&NetworkAddress::from_record_key(&r.key));
-
-        // set's the local distance range to be further if the new record is further
-        // This assumes the verified record is to be held by _us_...
-        self.distance_range = self.distance_range.map(|range| range.max(new_distance));
 
         self.prune_storage_if_needed_for_record();
 

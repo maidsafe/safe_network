@@ -622,7 +622,7 @@ impl SwarmDriver {
                     .take(CLOSE_GROUP_SIZE)
                     .collect_vec();
 
-                    if let Some(distance) = self.get_farthest_relevant_record(&closest_peers).await {
+                    if let Some(distance) = self.get_farthest_relevant_record(&closest_peers) {
                         // set any new distance to fathest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                     }
@@ -636,10 +636,7 @@ impl SwarmDriver {
     // --------------------------------------------
 
     /// Return the record we hold that is farthest and relevant to us
-    async fn get_farthest_relevant_record(
-        &mut self,
-        closest_k_peers: &Vec<PeerId>,
-    ) -> Option<Distance> {
+    fn get_farthest_relevant_record(&mut self, closest_k_peers: &Vec<PeerId>) -> Option<Distance> {
         let mut farthest_distance = None;
         #[allow(clippy::mutable_key_type)]
         let locally_stored_keys = self
@@ -652,7 +649,7 @@ impl SwarmDriver {
 
         for (_key, (address, _r_type)) in locally_stored_keys.iter() {
             if Self::is_in_close_range(&self.self_peer_id, address, closest_k_peers) {
-                let distance = our_address.distance(&address);
+                let distance = our_address.distance(address);
 
                 if let Some(current_closest) = farthest_distance {
                     if distance > current_closest {
