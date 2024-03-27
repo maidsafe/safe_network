@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711578894119,
+  "lastUpdate": 1711579000115,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "f79e451896cfc39ae0c379dd79681982bebe7316",
-          "message": "feat(test): read the DeploymentInventory from SN_INVENTORY",
-          "timestamp": "2023-11-14T16:42:33Z",
-          "tree_id": "f15ed4e8190ad62c58e41a8fe493f1ee3f8a4500",
-          "url": "https://github.com/maidsafe/safe_network/commit/f79e451896cfc39ae0c379dd79681982bebe7316"
-        },
-        "date": 1699982716440,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 90,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/213deb8aece3c03a52a52cafae72b380cf9faf88"
         },
         "date": 1711566161482,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c49ff0e0561b8ee607c3b6ad457f488bd81338ae",
+          "message": "fix(uploader): clarify the use of root and wallet dirs",
+          "timestamp": "2024-03-27T21:55:16Z",
+          "tree_id": "2e361fb570c0a61a5868571eff4d2c9aeede1b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c49ff0e0561b8ee607c3b6ad457f488bd81338ae"
+        },
+        "date": 1711578999782,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
