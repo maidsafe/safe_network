@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711542499680,
+  "lastUpdate": 1711547378713,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f79a81793c2d56c9129311a64a0d81c3f9039879",
-          "message": "feat(networking): drop excessive AddKeysToReplicationFetcher cmds",
-          "timestamp": "2023-11-14T13:16:48Z",
-          "tree_id": "0705b203682afd26460a5ff3b060ea9830fe6145",
-          "url": "https://github.com/maidsafe/safe_network/commit/f79a81793c2d56c9129311a64a0d81c3f9039879"
-        },
-        "date": 1699970441824,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 4.380641230430724,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 19.053662419309095,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 50.67459520858406,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.54014468358687,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "0c564fa5644d1dd57c4a95fa804de0f942b2ad08",
+          "message": "feat(faucet): rate limit based upon wallet locks",
+          "timestamp": "2024-03-27T13:07:03Z",
+          "tree_id": "8b15a85318f4ff1f35faf761e2cc8853f0a606be",
+          "url": "https://github.com/maidsafe/safe_network/commit/0c564fa5644d1dd57c4a95fa804de0f942b2ad08"
+        },
+        "date": 1711547375385,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.8347968810524875,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 3.194899896030478,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.373953826223804,
             "unit": "MiB/s"
           }
         ]
