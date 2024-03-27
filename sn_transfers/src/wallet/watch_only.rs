@@ -53,7 +53,7 @@ impl WatchOnlyWallet {
     ) -> Self {
         Self {
             main_pubkey,
-            api: WalletApi::new(wallet_dir),
+            api: WalletApi::new_from_wallet_dir(wallet_dir),
             wallet_dir: wallet_dir.to_path_buf(),
             keyless_wallet,
         }
@@ -277,7 +277,7 @@ impl WatchOnlyWallet {
 
         Ok(Self {
             main_pubkey,
-            api: WalletApi::new(wallet_dir),
+            api: WalletApi::new_from_wallet_dir(wallet_dir),
             wallet_dir: wallet_dir.to_path_buf(),
             keyless_wallet,
         })

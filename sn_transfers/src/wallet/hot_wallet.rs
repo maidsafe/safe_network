@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    api::WalletApi,
+    api::{WalletApi, WALLET_DIR_NAME},
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key, store_new_keypair},
     wallet_file::{
@@ -33,8 +33,6 @@ use std::{
     time::Instant,
 };
 use xor_name::XorName;
-
-pub const WALLET_DIR_NAME: &str = "wallet";
 
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
