@@ -45,7 +45,7 @@ const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 1;
 /// The maximum number of sequential network failures before aborting the upload process.
 // todo: use uploader.retry_strategy.get_count() instead.
 #[cfg(not(test))]
-const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 5;
+const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 32;
 #[cfg(test)]
 const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 32;
 
@@ -955,7 +955,7 @@ impl InnerUploader {
         // todo: should this be a part of get_store_costs_from_network?
         // todo: if this keep happening, the node is misbehaving. Track the peer and filter him out.
         if quote.2.has_expired() {
-            return Err(ClientError::Wallet(WalletError::QuoteExpired(xorname)));
+            warn!("The quote during get_store_cost for {xorname:?} {quote:?} has expired. Ignoring the result for now.");
         }
         Ok(quote)
     }
