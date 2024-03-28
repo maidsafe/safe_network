@@ -5019,7 +5019,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "blsttc",
  "clap 4.5.4",
@@ -5045,7 +5045,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.90.1"
+version = "0.90.2"
 dependencies = [
  "base64 0.21.7",
  "bitcoin",
@@ -5083,7 +5083,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.105.1"
+version = "0.105.2"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -5132,7 +5132,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "assert_fs",
  "base64 0.21.7",
@@ -5238,7 +5238,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.105.2"
+version = "0.105.3"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -5293,7 +5293,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "assert_fs",
  "async-trait",

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.90.2](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.90.1...sn_cli-v0.90.2) - 2024-03-28
+
+### Fixed
+- *(cli)* read from cache during initial chunking process
+- *(uploader)* do not error out on quote expiry during get store cost
+
 ## [0.90.1](https://github.com/joshuef/safe_network/compare/sn_cli-v0.90.0...sn_cli-v0.90.1) - 2024-03-28
 
 ### Added
