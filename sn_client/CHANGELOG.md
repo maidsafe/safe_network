@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.105.1](https://github.com/joshuef/safe_network/compare/sn_client-v0.105.0...sn_client-v0.105.1) - 2024-03-28
+
+### Added
+- *(uploader)* error out if the quote has expired during get store_cost
+- *(uploader)* use WalletApi to prevent loading client wallet during each operation
+- *(transfers)* implement WalletApi to expose common methods
+
+### Fixed
+- *(uploader)* clarify the use of root and wallet dirs
+
+### Other
+- *(uploader)* update docs
+
 ## [0.105.0](https://github.com/joshuef/safe_network/compare/sn_client-v0.104.31...sn_client-v0.105.0) - 2024-03-27
 
 ### Added

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.0...sn_faucet-v0.4.1) - 2024-03-28
+
+### Fixed
+- *(faucet)* add build info)
+
 ## [0.4.0](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.3.85...sn_faucet-v0.4.0) - 2024-03-27
 
 ### Added
