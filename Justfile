@@ -162,31 +162,30 @@ package-release-assets bin version="":
 
   bin="{{bin}}"
 
-  supported_bins=("safe" "safenode" "safenode-manager" "sn-node-manager" "safenodemand" "faucet" "safenode_rpc_client")
-  crate=""
+  supported_bins=("safe" "safenode" "safenode-manager" "safenodemand" "faucet" "safenode_rpc_client")
+  crate_dir_name=""
 
+  # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
+  # directory it's in is `sn_node_manager`.
   bin="{{bin}}"
   case "$bin" in
     safe)
-      crate="sn_cli"
+      crate_dir_name="sn_cli"
       ;;
     safenode)
-      crate="sn_node"
+      crate_dir_name="sn_node"
       ;;
     safenode-manager)
-      crate="sn-node-manager"
-      ;;
-    sn-node-manager)
-      crate="sn-node-manager"
+      crate_dir_name="sn_node_manager"
       ;;
     safenodemand)
-      crate="sn-node-manager"
+      crate_dir_name="sn_node_manager"
       ;;
     faucet)
-      crate="sn_faucet"
+      crate_dir_name="sn_faucet"
       ;;
     safenode_rpc_client)
-      crate="sn_node_rpc_client"
+      crate_dir_name="sn_node_rpc_client"
       ;;
     *)
       echo "The $bin binary is not supported"
@@ -195,9 +194,15 @@ package-release-assets bin version="":
   esac
 
   if [[ -z "{{version}}" ]]; then
-    version=$(grep "^version" < $crate/Cargo.toml | head -n 1 | awk '{ print $3 }' | sed 's/\"//g')
+    version=$(grep "^version" < $crate_dir_name/Cargo.toml | \
+        head -n 1 | awk '{ print $3 }' | sed 's/\"//g')
   else
     version="{{version}}"
+  fi
+
+  if [[ -z "$version" ]]; then
+    echo "Error packaging $bin. The version number was not retrieved."
+    exit 1
   fi
 
   rm -rf deploy/$bin
