@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.17.0...sn_transfers-v0.17.1) - 2024-03-28
+
+### Added
+- *(transfers)* implement WalletApi to expose common methods
+
+### Fixed
+- *(uploader)* clarify the use of root and wallet dirs
+
 ## [0.17.0](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.16.5...sn_transfers-v0.17.0) - 2024-03-27
 
 ### Added

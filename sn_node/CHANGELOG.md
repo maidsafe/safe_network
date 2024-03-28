@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.105.1](https://github.com/joshuef/safe_network/compare/sn_node-v0.105.0...sn_node-v0.105.1) - 2024-03-28
+
+### Added
+- *(transfers)* implement WalletApi to expose common methods
+
+### Fixed
+- *(uploader)* clarify the use of root and wallet dirs
+
 ## [0.105.0](https://github.com/joshuef/safe_network/compare/sn_node-v0.104.41...sn_node-v0.105.0) - 2024-03-27
 
 ### Added

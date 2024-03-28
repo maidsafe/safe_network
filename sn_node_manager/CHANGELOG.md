@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.7.0...sn-node-manager-v0.7.1) - 2024-03-28
+
+### Other
+- updated the following local packages: sn_transfers
+
 ## [0.7.0](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.6.1...sn-node-manager-v0.7.0) - 2024-03-27
 
 ### Added
