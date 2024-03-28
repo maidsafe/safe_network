@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use autonomi::{AccountPacket, FilesUploadOptions};
-
+use autonomi::AccountPacket;
 use sn_client::{
     protocol::storage::{RegisterAddress, RetryStrategy},
-    Client, BATCH_SIZE,
+    Client, UploadCfg, BATCH_SIZE,
 };
 
 use clap::Parser;
@@ -121,13 +120,13 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path, None)?;
 
-            let options = FilesUploadOptions {
-                make_data_public,
+            let options = UploadCfg {
                 verify_store,
                 batch_size,
                 retry_strategy,
+                ..Default::default()
             };
-            acc_packet.sync(options).await?;
+            acc_packet.sync(options, make_data_public).await?;
 
             println!(
                 "\nFolder hierarchy from {path:?} uploaded successfully at {}",
@@ -178,13 +177,13 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
 
-            let options = FilesUploadOptions {
-                make_data_public,
+            let options = UploadCfg {
                 verify_store,
                 batch_size,
                 retry_strategy,
+                ..Default::default()
             };
-            acc_packet.sync(options).await?;
+            acc_packet.sync(options, make_data_public).await?;
         }
     }
     Ok(())

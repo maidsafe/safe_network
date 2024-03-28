@@ -39,6 +39,8 @@ use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{
     CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
 };
+#[cfg(target_arch = "wasm32")]
+use std::path::PathBuf;
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,

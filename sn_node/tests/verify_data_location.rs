@@ -350,9 +350,9 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let key =
             PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
 
-        let mut uploader = Uploader::new(client.clone(), wallet_dir.clone())
-            .set_show_holders(true)
-            .set_verify_store(false);
+        let mut uploader = Uploader::new(client.clone(), wallet_dir.clone());
+        uploader.set_show_holders(true);
+        uploader.set_verify_store(false);
         uploader.insert_chunk_paths(chunks);
         let _upload_stats = uploader.start_upload().await?;
 

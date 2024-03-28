@@ -14,9 +14,9 @@ use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use sn_client::{
     transfers::{TransferError, WalletError},
-    Client, Error as ClientError, UploadEvent, UploadSummary, Uploader, BATCH_SIZE,
+    Client, Error as ClientError, UploadCfg, UploadEvent, UploadSummary, Uploader,
 };
-use sn_protocol::storage::{Chunk, RetryStrategy};
+use sn_protocol::storage::Chunk;
 use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
@@ -39,10 +39,8 @@ pub struct FilesUploader {
     file_paths_to_print: Vec<PathBuf>,
 
     // config
-    verify_store: bool,
     make_data_public: bool,
-    batch_size: usize,
-    retry_strategy: RetryStrategy,
+    upload_cfg: UploadCfg,
 }
 
 impl FilesUploader {
@@ -54,25 +52,13 @@ impl FilesUploader {
             entries_to_upload: Default::default(),
             file_paths_to_print: Default::default(),
 
-            verify_store: true,
             make_data_public: false,
-            batch_size: BATCH_SIZE,
-            retry_strategy: RetryStrategy::Balanced,
+            upload_cfg: Default::default(),
         }
     }
 
-    pub fn set_batch_size(mut self, batch_size: usize) -> Self {
-        self.batch_size = batch_size;
-        self
-    }
-
-    pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
-        self.retry_strategy = retry_strategy;
-        self
-    }
-
-    pub fn set_verify_store(mut self, verify_store: bool) -> Self {
-        self.verify_store = verify_store;
+    pub fn set_upload_cfg(mut self, cfg: UploadCfg) -> Self {
+        self.upload_cfg = cfg;
         self
     }
 
@@ -100,10 +86,8 @@ impl FilesUploader {
 
         let now = Instant::now();
 
-        let mut uploader = Uploader::new(self.client, self.root_dir)
-            .set_batch_size(self.batch_size)
-            .set_verify_store(self.verify_store)
-            .set_retry_strategy(self.retry_strategy);
+        let mut uploader = Uploader::new(self.client, self.root_dir);
+        uploader.set_upload_cfg(self.upload_cfg.clone());
         uploader.insert_chunk_paths(chunks_to_upload);
 
         let events_handle = Self::spawn_upload_events_handler(
@@ -116,7 +100,7 @@ impl FilesUploader {
         for path in self.file_paths_to_print.iter() {
             debug!(
                 "Uploading file(s) from {path:?} batch size {:?} will verify?: {}",
-                self.batch_size, self.verify_store
+                self.upload_cfg.batch_size, self.upload_cfg.verify_store
             );
             if self.make_data_public {
                 info!("{path:?} will be made public and linkable");
@@ -243,7 +227,7 @@ impl FilesUploader {
                 let res = self.client.verify_chunk_stored(&chunk).await;
                 Ok::<_, Report>((xorname, path.clone(), res.is_err()))
             })
-            .buffer_unordered(self.batch_size);
+            .buffer_unordered(self.upload_cfg.batch_size);
         let mut failed_chunks = Vec::new();
 
         while let Some(result) = stream.next().await {

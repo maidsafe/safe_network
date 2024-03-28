@@ -408,8 +408,8 @@ fn store_chunks_task(
             let chunks_len = chunks.len();
             let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
 
-            let mut uploader =
-                Uploader::new(client.clone(), paying_wallet_dir.clone()).set_show_holders(true);
+            let mut uploader = Uploader::new(client.clone(), paying_wallet_dir.clone());
+            uploader.set_show_holders(true);
             uploader.insert_chunk_paths(chunks);
 
             let cost = match uploader.start_upload().await {

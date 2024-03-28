@@ -404,7 +404,7 @@ pub fn start_uploading_with_steps(
     JoinHandle<ClientResult<UploadSummary>>,
     JoinHandle<Vec<UploadEvent>>,
 ) {
-    let batch_size = inner_uploader.batch_size;
+    let batch_size = inner_uploader.cfg.batch_size;
     let mut upload_event_rx = inner_uploader.get_event_receiver();
 
     let upload_handle = tokio::spawn(start_upload(Box::new(TestUploader {

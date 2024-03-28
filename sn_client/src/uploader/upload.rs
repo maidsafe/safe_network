@@ -7,11 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    GetStoreCostStrategy, TaskResult, UploadEvent, UploadItem, UploadSummary, UploaderInterface,
+    GetStoreCostStrategy, TaskResult, UploadCfg, UploadEvent, UploadItem, UploadSummary,
+    UploaderInterface,
 };
 use crate::{
     transfers::{TransferError, WalletError},
-    Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient, BATCH_SIZE,
+    Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient,
 };
 use bytes::Bytes;
 use itertools::Either;
@@ -70,14 +71,14 @@ pub(super) async fn start_upload(
             channels
         } else {
             // 6 because of the 6 pipelines, 1 for redundancy.
-            mpsc::channel(uploader.batch_size * 6 + 1)
+            mpsc::channel(uploader.cfg.batch_size * 6 + 1)
         };
-    let (make_payment_sender, make_payment_receiver) = mpsc::channel(uploader.batch_size);
+    let (make_payment_sender, make_payment_receiver) = mpsc::channel(uploader.cfg.batch_size);
 
     uploader.start_make_payment_processing_loop(
         make_payment_receiver,
         task_result_sender.clone(),
-        uploader.batch_size,
+        uploader.cfg.batch_size,
     )?;
 
     // chunks can be pushed to pending_get_store_cost directly
@@ -134,7 +135,7 @@ pub(super) async fn start_upload(
         // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
         // Since the get store cost list is the init state, we don't have to check if it is not full.
         while !uploader.pending_to_get_register.is_empty()
-            && uploader.on_going_get_register.len() < uploader.batch_size
+            && uploader.on_going_get_register.len() < uploader.cfg.batch_size
         {
             if let Some(reg_addr) = uploader.pending_to_get_register.pop() {
                 trace!("Conditions met for GET registers {:?}", reg_addr.xorname());
@@ -150,7 +151,7 @@ pub(super) async fn start_upload(
         // try to push register if we have enough buffer.
         // No other checks for the same reason as the above step.
         while !uploader.pending_to_push_register.is_empty()
-            && uploader.on_going_get_register.len() < uploader.batch_size
+            && uploader.on_going_get_register.len() < uploader.cfg.batch_size
         {
             let upload_item = uploader.pop_item_for_push_register()?;
             trace!(
@@ -162,15 +163,15 @@ pub(super) async fn start_upload(
                 .insert(upload_item.xorname());
             interface.submit_push_register_task(
                 upload_item,
-                uploader.verify_store,
+                uploader.cfg.verify_store,
                 task_result_sender.clone(),
             );
         }
 
         // try to get store cost for an item if pending_to_pay needs items & if we have enough buffer.
         while !uploader.pending_to_get_store_cost.is_empty()
-            && uploader.on_going_get_cost.len() < uploader.batch_size
-            && uploader.pending_to_pay.len() < uploader.batch_size
+            && uploader.on_going_get_cost.len() < uploader.cfg.batch_size
+            && uploader.pending_to_pay.len() < uploader.cfg.batch_size
         {
             let (xorname, address, get_store_cost_strategy) =
                 uploader.pop_item_for_get_store_cost()?;
@@ -183,15 +184,15 @@ pub(super) async fn start_upload(
                 xorname,
                 address,
                 get_store_cost_strategy,
-                uploader.max_repayments_for_failed_data,
+                uploader.cfg.max_repayments_for_failed_data,
                 task_result_sender.clone(),
             );
         }
 
         // try to make payment for an item if pending_to_upload needs items & if we have enough buffer.
         while !uploader.pending_to_pay.is_empty()
-            && uploader.on_going_payments.len() < uploader.batch_size
-            && uploader.pending_to_upload.len() < uploader.batch_size
+            && uploader.on_going_payments.len() < uploader.cfg.batch_size
+            && uploader.pending_to_upload.len() < uploader.cfg.batch_size
         {
             let (upload_item, quote) = uploader.pop_item_for_make_payment()?;
             trace!(
@@ -206,7 +207,7 @@ pub(super) async fn start_upload(
 
         // try to upload if we have enough buffer to upload.
         while !uploader.pending_to_upload.is_empty()
-            && uploader.on_going_uploads.len() < uploader.batch_size
+            && uploader.on_going_uploads.len() < uploader.cfg.batch_size
         {
             #[cfg(test)]
             trace!("UPLOADER STATE: upload_item : {uploader:?}");
@@ -218,8 +219,8 @@ pub(super) async fn start_upload(
                 upload_item,
                 uploader.client.clone(),
                 uploader.wallet_api.clone(),
-                uploader.verify_store,
-                uploader.retry_strategy,
+                uploader.cfg.verify_store,
+                uploader.cfg.retry_strategy,
                 task_result_sender.clone(),
             );
         }
@@ -229,7 +230,7 @@ pub(super) async fn start_upload(
         if uploader.pending_to_get_store_cost.is_empty()
             && uploader.on_going_get_cost.is_empty()
             && !uploader.on_going_payments.is_empty()
-            && uploader.on_going_payments.len() < uploader.batch_size
+            && uploader.on_going_payments.len() < uploader.cfg.batch_size
         {
             #[cfg(test)]
             trace!("UPLOADER STATE: make_payment (forced): {uploader:?}");
@@ -288,7 +289,7 @@ pub(super) async fn start_upload(
                     .remove(&xorname)
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
 
-                if uploader.collect_registers {
+                if uploader.cfg.collect_registers {
                     let _ = uploader
                         .uploaded_registers
                         .insert(*updated_register.address(), updated_register.clone());
@@ -335,7 +336,7 @@ pub(super) async fn start_upload(
                         }
 
                         UploadItem::Register { reg, .. } => {
-                            if uploader.collect_registers {
+                            if uploader.cfg.collect_registers {
                                 let _ = uploader
                                     .uploaded_registers
                                     .insert(*reg.address(), reg.clone());
@@ -445,7 +446,7 @@ pub(super) async fn start_upload(
                         uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
                     }
                     UploadItem::Register { reg, .. } => {
-                        if uploader.collect_registers {
+                        if uploader.cfg.collect_registers {
                             let _ = uploader
                                 .uploaded_registers
                                 .insert(*reg.address(), reg.clone());
@@ -652,14 +653,7 @@ impl UploaderInterface for Uploader {
 /// To modify the configuration, use the provided setter methods (`set_...` functions).
 #[derive(custom_debug::Debug)]
 pub(super) struct InnerUploader {
-    // Configurations
-    pub(super) batch_size: usize,
-    pub(super) verify_store: bool,
-    pub(super) show_holders: bool,
-    pub(super) retry_strategy: RetryStrategy,
-    pub(super) max_repayments_for_failed_data: usize, // we want people to specify an explicit limit here.
-    pub(super) collect_registers: bool,
-    // API
+    pub(super) cfg: UploadCfg,
     #[debug(skip)]
     pub(super) client: Client,
     #[debug(skip)]
@@ -710,13 +704,7 @@ pub(super) struct InnerUploader {
 impl InnerUploader {
     pub(super) fn new(client: Client, root_dir: PathBuf) -> Self {
         Self {
-            batch_size: BATCH_SIZE,
-            verify_store: true,
-            show_holders: false,
-            retry_strategy: RetryStrategy::Balanced,
-            max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
-            collect_registers: false,
-
+            cfg: Default::default(),
             client,
             wallet_api: WalletApi::new_from_root_dir(&root_dir),
             root_dir,
@@ -823,7 +811,7 @@ impl InnerUploader {
         batch_size: usize,
     ) -> Result<()> {
         let mut wallet_client = Self::load_wallet_client(self.client.clone(), &self.root_dir)?;
-        let verify_store = self.verify_store;
+        let verify_store = self.cfg.verify_store;
         let _handle = tokio::spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
 

@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, Client, ClientRegister, WalletClient};
-use crate::{Error, FilesApi, UploadSummary, Uploader};
+use crate::{uploader::UploadCfg, Error, FilesApi, UploadSummary, Uploader};
 use bls::{Ciphertext, PublicKey};
 use bytes::{BufMut, BytesMut};
 use self_encryption::MAX_CHUNK_SIZE;
@@ -204,6 +204,7 @@ impl FoldersApi {
     /// Sync multiple Folders with the network.
     pub async fn sync_multiple(
         folders: impl IntoIterator<Item = &mut Self>,
+        upload_cfg: UploadCfg,
     ) -> Result<UploadSummary> {
         let folders_vec = folders.into_iter().collect::<Vec<_>>();
         // Ensure there's only one unique root_dir across all folders
@@ -221,8 +222,9 @@ impl FoldersApi {
             .client
             .clone();
 
-        let mut uploader =
-            Uploader::new(client, root_dir.to_path_buf()).set_collect_registers(true);
+        let mut uploader = Uploader::new(client, root_dir.to_path_buf());
+        uploader.set_upload_cfg(upload_cfg);
+        uploader.set_collect_registers(true); // override upload cfg to collect all registers
         uploader.insert_chunks(folders_vec.iter().flat_map(|folder| folder.meta_chunks()));
         uploader.insert_register(folders_vec.iter().map(|folder| folder.register()));
         let mut upload_summary = uploader.start_upload().await?;
