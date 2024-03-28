@@ -48,6 +48,8 @@ const MAX_RECORDS_COUNT: usize = 2048;
 pub struct NodeRecordStore {
     /// The identity of the peer owning the store.
     local_key: KBucketKey<PeerId>,
+    /// The address of the peer owning the store
+    local_address: NetworkAddress,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
@@ -188,6 +190,7 @@ impl NodeRecordStore {
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
         NodeRecordStore {
             local_key: KBucketKey::from(local_id),
+            local_address: NetworkAddress::from_peer(local_id),
             config,
             records,
             network_event_sender,
@@ -301,18 +304,15 @@ impl NodeRecordStore {
 
         // sort records by distance to our local key
         let mut sorted_records: Vec<_> = self.records.keys().cloned().collect();
-        let self_address = NetworkAddress::from_peer(self.local_key.clone().into_preimage());
         sorted_records.sort_by(|key_a, key_b| {
             let a = NetworkAddress::from_record_key(key_a);
             let b = NetworkAddress::from_record_key(key_b);
-            self_address.distance(&a).cmp(&self_address.distance(&b))
+            self.local_address
+                .distance(&a)
+                .cmp(&self.local_address.distance(&b))
         });
 
-        let distance_range = self_address.distance(&NetworkAddress::from_record_key(
-            &sorted_records[sorted_records.len() - 10],
-        ));
-        self.distance_range = Some(distance_range);
-        // sorting will be costive, hence pruning in a batch of 10
+        // sorting will be costly, hence pruning in a batch of 10
         (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
             info!(
                 "Record {i} {:?} will be pruned to free up space for new records",
@@ -428,27 +428,41 @@ impl NodeRecordStore {
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
-        let quoting_metrics = QuotingMetrics {
-            records_stored: self.records.len(),
-            max_records: self.config.max_records,
-            received_payment_count: self.received_payment_count,
-            live_time: self.timestamp.elapsed().as_secs(),
-        };
+        let live_time = self.timestamp.elapsed().as_secs();
+        let mut records_stored = self.config.max_records;
 
         let cost = if self.contains(key) {
-            0
+            NanoTokens::zero()
+        } else if let Some(distance_range) = self.distance_range {
+            let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
+            let relevant_records =
+                self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
+            // set records_stored to the relevant_record len
+            records_stored = relevant_records;
+            let cost = calculate_cost_for_records(
+                relevant_records,
+                self.received_payment_count,
+                self.config.max_records,
+                live_time,
+            );
+            NanoTokens::from(cost)
         } else {
-            calculate_cost_for_records(
-                quoting_metrics.records_stored,
-                quoting_metrics.received_payment_count,
-                quoting_metrics.max_records,
-                quoting_metrics.live_time,
-            )
+            info!("Arbitrary cost supplied");
+
+            // arbitrary cost for when no distance range yet set
+            NanoTokens::from(11111)
+        };
+
+        let quoting_metrics = QuotingMetrics {
+            records_stored,
+            max_records: self.config.max_records,
+            received_payment_count: self.received_payment_count,
+            live_time,
         };
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
-        (NanoTokens::from(cost), quoting_metrics)
+        (cost, quoting_metrics)
     }
 
     /// Notify the node received a payment.
@@ -460,7 +474,7 @@ impl NodeRecordStore {
     #[allow(clippy::mutable_key_type)]
     pub fn get_records_within_distance_range(
         &self,
-        records: &HashSet<Key>,
+        records: HashSet<&Key>,
         distance_range: Distance,
     ) -> usize {
         debug!(
@@ -481,7 +495,6 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    #[cfg(test)]
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
@@ -1039,11 +1052,11 @@ mod tests {
 
         store.set_distance_range(distance);
 
-        let record_keys: HashSet<_> = store.records.keys().cloned().collect();
+        let record_keys = store.records.keys().collect();
 
         // check that the number of records returned is correct
         assert_eq!(
-            store.get_records_within_distance_range(&record_keys, distance),
+            store.get_records_within_distance_range(record_keys, distance),
             stored_records.len() / 2
         );
 

@@ -1143,7 +1143,7 @@ impl SwarmDriver {
         non_existent_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
-                if self.is_in_close_range(key, closest_k_peers) {
+                if Self::is_in_close_range(&self.self_peer_id, key, closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
                     // Reduce the log level as there will always be around 40% records being
@@ -1165,14 +1165,18 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &Vec<PeerId>) -> bool {
+    pub(crate) fn is_in_close_range(
+        our_peer_id: &PeerId,
+        target: &NetworkAddress,
+        all_peers: &Vec<PeerId>,
+    ) -> bool {
         if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
         match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
-            Ok(close_group) => close_group.contains(&&self.self_peer_id),
+            Ok(close_group) => close_group.contains(&our_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true
