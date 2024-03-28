@@ -45,6 +45,11 @@ pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk
     Ok((data_map_chunk, encrypted_chunks))
 }
 
+/// Encrypts a [`LargeFile`] and returns the resulting address and all chunk names.
+/// Correspondent encrypted chunks are written in the specified output folder.
+/// Does not store anything to the network.
+///
+/// Returns data map as a chunk, and the resulting chunks
 #[allow(unused_assignments)]
 pub(crate) fn encrypt_large(
     file_path: &Path,
