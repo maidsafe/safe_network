@@ -110,6 +110,17 @@ impl ChunkManager {
         )
     }
 
+    /// Return the filename and the file's Xor address if all their chunks has been marked as
+    /// verified
+    pub(crate) fn already_put_chunks(
+        &mut self,
+        entries_iter: impl Iterator<Item = DirEntry>,
+        make_files_public: bool,
+    ) -> Result<Vec<(XorName, PathBuf)>> {
+        self.chunk_with_iter(entries_iter, false, make_files_public)?;
+        Ok(self.get_chunks())
+    }
+
     /// Chunk all the files in the provided iterator
     /// These are stored to the CHUNK_ARTIFACTS_DIR
     /// if read_cache is true, will take cache from previous runs into account

@@ -1021,10 +1021,6 @@ impl Client {
             }
         }
 
-        println!(
-            "Files upload attempted previously, verifying {} chunks",
-            failed_chunks.len()
-        );
         Ok(failed_chunks)
     }
 }
