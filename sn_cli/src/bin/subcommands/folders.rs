@@ -8,17 +8,12 @@
 
 use autonomi::AccountPacket;
 use sn_client::{
-    protocol::storage::{RegisterAddress, RetryStrategy},
-    transfers::MainSecretKey,
-    Client, UploadCfg, BATCH_SIZE,
+    protocol::storage::RetryStrategy, transfers::MainSecretKey, Client, UploadCfg, BATCH_SIZE,
 };
 
 use bls::{SecretKey, SK_SIZE};
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::bail, Result};
 use dialoguer::Password;
 use std::{
     env::current_dir,
@@ -56,13 +51,13 @@ pub enum FoldersCmds {
         retry_strategy: RetryStrategy,
     },
     Download {
-        /// The hex address of a folder.
-        #[clap(name = "address")]
-        folder_addr: String,
         /// The full local path where to download the folder. By default the current path is assumed,
         /// and the main Folder's network address will be used as the folder name.
         #[clap(name = "target folder path")]
         path: Option<PathBuf>,
+        /// The hex-encoded recovery secret key for deriving addresses, encryption and signing keys, to be used by this account packet.
+        #[clap(name = "recovery key")]
+        root_sk: Option<String>,
         /// The batch_size for parallel downloading
         #[clap(long, default_value_t = BATCH_SIZE , short='b')]
         batch_size: usize,
@@ -110,8 +105,8 @@ pub(crate) async fn folders_cmds(
         FoldersCmds::Init { path, root_sk } => {
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from the root SK
-            let root_sk = get_or_generate_root_sk(root_sk)?;
-            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, root_sk)?;
+            let root_sk = get_recovery_secret_sk(root_sk, true)?;
+            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk)?;
             println!("Directoy at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
         }
         FoldersCmds::Upload {
@@ -122,8 +117,8 @@ pub(crate) async fn folders_cmds(
         } => {
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from a random SK
-            let root_sk = get_or_generate_root_sk(None)?;
-            let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path, root_sk)?;
+            let root_sk = get_recovery_secret_sk(None, true)?;
+            let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk)?;
 
             let options = UploadCfg {
                 verify_store,
@@ -139,29 +134,26 @@ pub(crate) async fn folders_cmds(
             );
         }
         FoldersCmds::Download {
-            folder_addr,
             path,
+            root_sk,
             batch_size,
             retry_strategy,
         } => {
-            let address = RegisterAddress::from_hex(&folder_addr)
-                .map_err(|err| eyre!("Failed to parse Folder address: {err}"))?;
-
-            let addr_hex = address.to_hex();
-            let folder_name = format!(
+            let root_sk = get_recovery_secret_sk(root_sk, false)?;
+            let root_sk_hex = root_sk.main_pubkey().to_hex();
+            let download_folder_name = format!(
                 "folder_{}_{}",
-                &addr_hex[..6],
-                &addr_hex[addr_hex.len() - 6..]
+                &root_sk_hex[..6],
+                &root_sk_hex[root_sk_hex.len() - 6..]
             );
-            let download_folder_path = get_path(path, Some(&folder_name))?;
-            println!(
-                "Downloading onto {download_folder_path:?}, with batch-size {batch_size}, from {addr_hex}"            );
-            debug!("Downloading onto {download_folder_path:?} from {addr_hex}");
+            let download_folder_path = get_path(path, Some(&download_folder_name))?;
+            println!("Downloading onto {download_folder_path:?}, with batch-size {batch_size}");
+            debug!("Downloading onto {download_folder_path:?}");
 
             let _ = AccountPacket::retrieve_folders(
                 client,
                 root_dir,
-                address,
+                &root_sk,
                 &download_folder_path,
                 batch_size,
                 retry_strategy,
@@ -206,50 +198,64 @@ fn get_path(path: Option<PathBuf>, to_join: Option<&str>) -> Result<PathBuf> {
     Ok(path)
 }
 
-// Either get a hex-encoded SK entered by the user, or we generate a new one
+// Either get a hex-encoded SK entered by the user, or generate a new one
 // TODO: get/generate a mnemonic instead
-fn get_or_generate_root_sk(root_sk: Option<String>) -> Result<MainSecretKey> {
-    let result = match root_sk {
-        Some(str) => SecretKey::from_hex(&str),
-        None => {
-            println!();
-            println!("A recovery secret is used to derive signing/ecnryption keys and network addresses used by an Account Packet.");
-            println!("The recovery secret used to initialise an Account Packet, can be used to retrieve a new replica/clone from the network even from another device or disk location.");
-            println!("Thefore, please make sure you don't loose you recovery secret, and always make sure you sync up your changes with the replica on the network to not loose them.");
-            println!();
+fn get_recovery_secret_sk(
+    root_sk: Option<String>,
+    gen_new_recovery_secret: bool,
+) -> Result<MainSecretKey> {
+    let result = if let Some(str) = root_sk {
+        SecretKey::from_hex(&str)
+    } else {
+        let prompt_msg = if gen_new_recovery_secret {
+            println!(
+                "\n\nA recovery secret is required to derive signing/encryption keys, and network addresses, \
+                used by an Account Packet."
+            );
+            println!(
+                "The recovery secret used to initialise an Account Packet, can be used to retrieve and restore \
+                a new replica/clone from the network, onto any local path and even onto another device.\n"
+            );
 
-            let err_msg = format!("Hex-encoded recovery secret must be {} long", 2 * SK_SIZE);
-            let sk_hex = Password::new()
-                .with_prompt(
-                    "Please enter your recovery secret, if you don't have one, press Enter to generate one",
-                )
-                .allow_empty_password(true)
-                .validate_with(|input: &String| -> Result<(), &str> {
-                    let len = input.chars().count();
-                    if len == 0 || len == 2 * SK_SIZE {
-                        Ok(())
-                    } else {
-                        Err(&err_msg)
-                    }
-                })
-                .interact()?;
+            "Please enter your recovery secret for this new Account Packet,\nif you don't have one, \
+            press [Enter] to generate one"
+        } else {
+            "Please enter your recovery secret"
+        };
 
-            if sk_hex.is_empty() {
-                println!("Generating your recovery secret...");
-                // TODO: encrypt the recovery secret before storing it on disk, using a user provided password
-                Ok(SecretKey::random())
-            } else {
-                SecretKey::from_hex(&sk_hex)
-            }
+        let err_msg = format!("Hex-encoded recovery secret must be {} long", 2 * SK_SIZE);
+        let sk_hex = Password::new()
+            .with_prompt(prompt_msg)
+            .allow_empty_password(gen_new_recovery_secret)
+            .validate_with(|input: &String| -> Result<(), &str> {
+                let len = input.chars().count();
+                if len == 0 || len == 2 * SK_SIZE {
+                    Ok(())
+                } else {
+                    Err(&err_msg)
+                }
+            })
+            .interact()?;
+
+        println!();
+        if sk_hex.is_empty() {
+            println!("Generating your recovery secret...");
+            let sk = SecretKey::random();
+            println!("\n*** Recovery secret generated ***\n{}", sk.to_hex());
+            println!();
+            println!(
+                "Please *MAKE SURE YOU DON'T LOOSE YOU RECOVERY SECRET*, and always sync up local changes \
+                made to your Account Packet with the remote replica on the network to not loose them either.\n"
+            );
+
+            Ok(sk)
+        } else {
+            SecretKey::from_hex(&sk_hex)
         }
     };
 
     match result {
-        Ok(sk) => {
-            println!("Recovery secret decoded successfully!");
-            // TODO: store it on disk so the user doesn't have to enter it with every cmd
-            Ok(MainSecretKey::new(sk))
-        }
-        Err(err) => bail!("Failed to decode the recovery secret provided: {err:?}"),
+        Ok(sk) => Ok(MainSecretKey::new(sk)),
+        Err(err) => bail!("Failed to decode the recovery secret: {err:?}"),
     }
 }
