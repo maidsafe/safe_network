@@ -161,7 +161,8 @@ package-release-assets bin version="":
   )
 
   bin="{{bin}}"
-  supported_bins=("safe" "safenode" "safenode-manager" "safenodemand" "faucet" "safenode_rpc_client")
+
+  supported_bins=("safe" "safenode" "safenode-manager" "sn-node-manager" "safenodemand" "faucet" "safenode_rpc_client")
   crate=""
 
   bin="{{bin}}"
@@ -173,6 +174,9 @@ package-release-assets bin version="":
       crate="sn_node"
       ;;
     safenode-manager)
+      crate="sn-node-manager"
+      ;;
+    sn-node-manager)
       crate="sn-node-manager"
       ;;
     safenodemand)
