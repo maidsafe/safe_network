@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711622813791,
+  "lastUpdate": 1711622921542,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "3a729d92727a25743514e2815029ed662824343c",
-          "message": "feat(royalties): make royalties payment to be 15% of the total storage cost",
-          "timestamp": "2023-11-15T04:55:19Z",
-          "tree_id": "2215baeda5ae1aa6dd97edd3f2c6379d62a37556",
-          "url": "https://github.com/maidsafe/safe_network/commit/3a729d92727a25743514e2815029ed662824343c"
-        },
-        "date": 1700026940488,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 71,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "fa158d5ea0112b5f2884913ca8914b97ae8ff239",
+          "message": "fix(cli): read from cache during initial chunking process",
+          "timestamp": "2024-03-28T10:03:51Z",
+          "tree_id": "0aeb01e110c891dd526601bc34c8f0c9c1d1d2e5",
+          "url": "https://github.com/maidsafe/safe_network/commit/fa158d5ea0112b5f2884913ca8914b97ae8ff239"
+        },
+        "date": 1711622920693,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
