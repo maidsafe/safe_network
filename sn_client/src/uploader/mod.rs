@@ -384,7 +384,6 @@ enum TaskResult {
     UploadOk(XorName),
     UploadErr {
         xorname: XorName,
-        quote_expired: bool,
     },
 }
 
