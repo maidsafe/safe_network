@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711657828438,
+  "lastUpdate": 1711657830640,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41083,6 +41083,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35441,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb",
+          "message": "ci: fix node manager binary packaging\n\nIn the packaging process, the crate name for the node manager was incorrectly renamed to\n`sn-node-manager`. Confusingly, this is the correct name for the crate, but the directory and crate\nname are mismatched. For clarity, I've changed the name of the variable to `crate_dir_name`.\n\nAlso, the `sn-node-manager` string was removed from the supported binary array, because that's the\nname of the crate, not the binary.",
+          "timestamp": "2024-03-28T20:17:04Z",
+          "tree_id": "8397e35a688dbb4967dc02e4ea70d7d94720a124",
+          "url": "https://github.com/maidsafe/safe_network/commit/d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb"
+        },
+        "date": 1711657829995,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6215,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35622,
             "unit": "ms"
           },
           {
