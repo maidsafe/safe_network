@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711657826314,
+  "lastUpdate": 1711657828438,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "d77f38e321384573e46dc664e4daf4dc9274c341",
-          "message": "fix: wrong royaltie amount",
-          "timestamp": "2023-11-16T12:10:22Z",
-          "tree_id": "2634e056a186165a0966ebf06a83d08a5e58be8f",
-          "url": "https://github.com/maidsafe/safe_network/commit/d77f38e321384573e46dc664e4daf4dc9274c341"
-        },
-        "date": 1700139238927,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 225,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 72,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb",
+          "message": "ci: fix node manager binary packaging\n\nIn the packaging process, the crate name for the node manager was incorrectly renamed to\n`sn-node-manager`. Confusingly, this is the correct name for the crate, but the directory and crate\nname are mismatched. For clarity, I've changed the name of the variable to `crate_dir_name`.\n\nAlso, the `sn-node-manager` string was removed from the supported binary array, because that's the\nname of the crate, not the binary.",
+          "timestamp": "2024-03-28T20:17:04Z",
+          "tree_id": "8397e35a688dbb4967dc02e4ea70d7d94720a124",
+          "url": "https://github.com/maidsafe/safe_network/commit/d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb"
+        },
+        "date": 1711657827810,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
