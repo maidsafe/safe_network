@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.2.0...sn_service_management-v0.2.1) - 2024-03-28
+
+### Other
+- *(release)* sn_client-v0.105.1/sn_transfers-v0.17.1/sn_cli-v0.90.1/sn_faucet-v0.4.1/sn_node-v0.105.1/sn_auditor-v0.1.1/sn_networking-v0.14.1/sn_protocol-v0.16.1/sn-node-manager-v0.7.1/sn_node_rpc_client-v0.6.1
+
 ## [0.2.0](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.1.2...sn_service_management-v0.2.0) - 2024-03-27
 
 ### Added

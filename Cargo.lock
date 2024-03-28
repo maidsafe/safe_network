@@ -4962,7 +4962,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -5132,7 +5132,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "assert_fs",
  "base64 0.21.7",
@@ -5238,7 +5238,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.105.1"
+version = "0.105.2"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -5293,7 +5293,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5378,7 +5378,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "dirs-next",
