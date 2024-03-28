@@ -83,6 +83,12 @@ impl FilesApi {
         let file_size = metadata.len();
 
         let (head_address, data_map_chunk, mut chunks_paths) =
+
+            // todo: below we need to redesign the process to match three types of file.
+            // 1. empty file: write into the data_map the string EMPTY. On decrypt, we detect this and just create an empty file.
+            // 2. A small file: The whole content of those can be in the data_map. Just in SE lib we write the < MIN_SIZE to the data map.
+            // 3. a qualified file: Same as below (no change)
+
             if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
                 Err(ChunksError::FileTooSmall)?
             } else {
