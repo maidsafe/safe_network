@@ -6,19 +6,11 @@ set -e
 # Suffix to append to the version. Passed as an argument to this script.
 SUFFIX="$1"
 
-# if there's _any_ suffix, ensure cargo set-version is installed
-if [ -n "$SUFFIX" ]; then
-    # If 'main' is passed as a suffix, treat it as if no suffix was provided
-    if [ "$SUFFIX" == "main" ]; then
-        SUFFIX=""
-    fi
-
-    # Check if the 'cargo set-version' command is available
-  if ! cargo set-version --help > /dev/null 2>&1; then
-      echo "cargo set-version command not found."
-      echo "Please install cargo-edit with the command: cargo install cargo-edit --features vendored-openssl"
-      exit 1
-  fi
+# Ensure cargo set-version is installed
+if ! cargo set-version --help > /dev/null 2>&1; then
+    echo "cargo set-version command not found."
+    echo "Please install cargo-edit with the command: cargo install cargo-edit --features vendored-openssl"
+    exit 1
 fi
 
 # Ensure the suffix is either alpha or beta
