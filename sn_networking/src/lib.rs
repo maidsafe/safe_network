@@ -37,7 +37,7 @@ pub use self::{
     driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
-    record_store::NodeRecordStore,
+    record_store::{calculate_cost_for_records, NodeRecordStore},
     transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
 };
 
@@ -53,7 +53,7 @@ use libp2p::{
 use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
@@ -362,6 +362,7 @@ impl Network {
 
         // loop over responses, generating an average fee and storing all responses along side
         let mut all_costs = vec![];
+        let mut all_quotes = vec![];
         for response in responses.into_values().flatten() {
             debug!(
                 "StoreCostReq for {record_address:?} received response: {:?}",
@@ -373,7 +374,8 @@ impl Network {
                     payment_address,
                     peer_address,
                 }) => {
-                    all_costs.push((peer_address, payment_address, quote));
+                    all_costs.push((peer_address.clone(), payment_address, quote.clone()));
+                    all_quotes.push((peer_address, quote));
                 }
                 Response::Query(QueryResponse::GetStoreCost {
                     quote: Err(ProtocolError::RecordExists(_)),
@@ -386,6 +388,15 @@ impl Network {
                     error!("Non store cost response received,  was {:?}", response);
                 }
             }
+        }
+
+        for peer_id in close_nodes.iter() {
+            let request = Request::Cmd(Cmd::QuoteVerification {
+                target: NetworkAddress::from_peer(*peer_id),
+                quotes: all_quotes.clone(),
+            });
+
+            self.send_req_ignore_reply(request, *peer_id);
         }
 
         // Sort all_costs by the NetworkAddress proximity to record_address
@@ -744,6 +755,10 @@ impl Network {
 
     pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
         self.send_swarm_cmd(SwarmCmd::RecordNodeIssue { peer_id, issue });
+    }
+
+    pub fn historical_verify_quotes(&self, quotes: Vec<(PeerId, PaymentQuote)>) {
+        self.send_swarm_cmd(SwarmCmd::QuoteVerification { quotes });
     }
 
     // Helper to send SwarmCmd
