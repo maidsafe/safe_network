@@ -8,16 +8,12 @@
 
 // All tests require a network running so Clients can be instantiated.
 
-use sn_client::test_utils::{
-    get_funded_wallet, get_new_client, pay_for_storage, random_file_chunk,
-};
-
+use bls::SecretKey;
+use eyre::Result;
+use sn_client::test_utils::{get_funded_wallet, get_new_client, random_file_chunk};
 use sn_client::{FolderEntry, FoldersApi, Metadata};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 use sn_registers::{EntryHash, RegisterAddress};
-
-use bls::SecretKey;
-use eyre::Result;
 use xor_name::XorName;
 
 #[tokio::test]
@@ -212,14 +208,8 @@ async fn test_folder_retrieve() -> Result<()> {
     let (file2_entry_hash, file2_meta_xorname, file2_metadata) =
         subfolder.add_file("file2.txt".into(), file2_chunk.clone(), None)?;
 
-    // let's pay for storage
-    let mut addrs2pay = vec![folder.as_net_addr(), subfolder.as_net_addr()];
-    addrs2pay.extend(folder.meta_addrs_to_pay());
-    addrs2pay.extend(subfolder.meta_addrs_to_pay());
-    pay_for_storage(&client, wallet_dir, addrs2pay).await?;
-
-    folder.sync(false, None).await?;
-    subfolder.sync(false, None).await?;
+    folder.sync(Default::default()).await?;
+    subfolder.sync(Default::default()).await?;
 
     let mut retrieved_folder =
         FoldersApi::retrieve(client.clone(), wallet_dir, *folder.address()).await?;
@@ -304,20 +294,12 @@ async fn test_folder_merge_changes() -> Result<()> {
     let (file_b2_entry_hash, file_b2_meta_xorname, file_b2_metadata) =
         subfolder_b.add_file("fileB2.txt".into(), file_b2_chunk.clone(), None)?;
 
-    // let's pay for storage
-    let mut addrs2pay = vec![folder_a.as_net_addr(), subfolder_a.as_net_addr()];
-    addrs2pay.extend(folder_a.meta_addrs_to_pay());
-    addrs2pay.extend(subfolder_a.meta_addrs_to_pay());
-    addrs2pay.extend(folder_b.meta_addrs_to_pay());
-    addrs2pay.extend(subfolder_b.meta_addrs_to_pay());
-    pay_for_storage(&client, wallet_dir, addrs2pay).await?;
-
-    folder_a.sync(false, None).await?;
-    subfolder_a.sync(false, None).await?;
-    folder_b.sync(false, None).await?;
-    subfolder_b.sync(false, None).await?;
-    folder_a.sync(false, None).await?;
-    subfolder_a.sync(false, None).await?;
+    folder_a.sync(Default::default()).await?;
+    subfolder_a.sync(Default::default()).await?;
+    folder_b.sync(Default::default()).await?;
+    subfolder_b.sync(Default::default()).await?;
+    folder_a.sync(Default::default()).await?;
+    subfolder_a.sync(Default::default()).await?;
 
     let folder_a_entries = folder_a.entries().await?;
     let folder_b_entries = folder_b.entries().await?;

@@ -109,13 +109,6 @@ pub enum Error {
     #[error("Task completion notification channel is done")]
     FailedToReadFromNotificationChannel,
 
-    // ------ Batch Sync ------
-    #[error("Inconsistent wallet directory during batch sync")]
-    InconsistentBatchSyncState,
-
-    #[error("Batch sync encountered an empty list")]
-    BatchSyncEmptyList,
-
     #[error("Could not find register after batch sync: {0:?}")]
     RegisterNotFoundAfterUpload(XorName),
 

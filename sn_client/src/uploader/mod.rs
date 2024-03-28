@@ -29,7 +29,7 @@ use tokio::sync::mpsc;
 use xor_name::XorName;
 
 /// The set of options to pass into the `Uploader`
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct UploadCfg {
     pub batch_size: usize,
     pub verify_store: bool,
