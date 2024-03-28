@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711631935406,
+  "lastUpdate": 1711631937191,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41044,6 +41044,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34912,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c78d10ab1e2f3731dd1122cacdd48279bf11db97",
+          "message": "chore: make sure cargo set-version is installed",
+          "timestamp": "2024-03-28T12:32:06Z",
+          "tree_id": "452539e5ac6e7f64e078e16b42a81cf243b9afbb",
+          "url": "https://github.com/maidsafe/safe_network/commit/c78d10ab1e2f3731dd1122cacdd48279bf11db97"
+        },
+        "date": 1711631936849,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6381,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35441,
             "unit": "ms"
           },
           {
