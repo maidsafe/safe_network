@@ -46,7 +46,7 @@ const REMOVED_ENTRY_MARK: XorName = XorName([0; XOR_NAME_LEN]);
 #[derive(Clone)]
 pub struct FoldersApi {
     client: Client,
-    root_dir: PathBuf,
+    wallet_dir: PathBuf,
     register: ClientRegister,
     files_api: FilesApi,
     // Cache of metadata chunks. We keep the Chunk itself till we upload it to the network.
@@ -55,7 +55,11 @@ pub struct FoldersApi {
 
 impl FoldersApi {
     /// Create FoldersApi instance.
-    pub fn new(client: Client, root_dir: &Path, address: Option<RegisterAddress>) -> Result<Self> {
+    pub fn new(
+        client: Client,
+        wallet_dir: &Path,
+        address: Option<RegisterAddress>,
+    ) -> Result<Self> {
         let register = if let Some(addr) = address {
             ClientRegister::create_with_addr(client.clone(), addr)
         } else {
@@ -63,7 +67,7 @@ impl FoldersApi {
             ClientRegister::create(client.clone(), XorName::random(&mut rng))
         };
 
-        Self::create(client, root_dir, register)
+        Self::create(client, wallet_dir, register)
     }
 
     /// Clones the register instance. Any change made to one instance will not be reflected on the other register.
@@ -106,7 +110,7 @@ impl FoldersApi {
 
     /// Create a new WalletClient from the directory set.
     pub fn wallet(&self) -> Result<WalletClient> {
-        let wallet = HotWallet::load_from(&self.root_dir)?;
+        let wallet = HotWallet::load_from(&self.wallet_dir)?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 
@@ -210,7 +214,7 @@ impl FoldersApi {
         // Ensure there's only one unique root_dir across all folders
         let unique_root_dirs: BTreeSet<&Path> = folders_vec
             .iter()
-            .map(|folder| folder.root_dir.as_path())
+            .map(|folder| folder.wallet_dir.as_path())
             .collect();
         let root_dir = match unique_root_dirs.iter().next() {
             Some(&dir) if unique_root_dirs.len() == 1 => dir,
@@ -245,11 +249,11 @@ impl FoldersApi {
     /// Download a copy of the Folder from the network.
     pub async fn retrieve(
         client: Client,
-        root_dir: &Path,
+        wallet_dir: &Path,
         address: RegisterAddress,
     ) -> Result<Self> {
         let register = ClientRegister::retrieve(client.clone(), address).await?;
-        Self::create(client, root_dir, register)
+        Self::create(client, wallet_dir, register)
     }
 
     /// Returns true if there is a file/folder which matches the given entry hash
@@ -329,12 +333,12 @@ impl FoldersApi {
     // Private helpers
 
     // Create a new FoldersApi instance with given register.
-    fn create(client: Client, root_dir: &Path, register: ClientRegister) -> Result<Self> {
-        let files_api = FilesApi::new(client.clone(), root_dir.to_path_buf());
+    fn create(client: Client, wallet_dir: &Path, register: ClientRegister) -> Result<Self> {
+        let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
 
         Ok(Self {
             client,
-            root_dir: root_dir.to_path_buf(),
+            wallet_dir: wallet_dir.to_path_buf(),
             register,
             files_api,
             metadata: BTreeMap::new(),

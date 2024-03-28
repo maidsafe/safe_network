@@ -89,7 +89,7 @@ use xor_name::XorName;
 /// details about these files, please refer to the `ChunkManager` module.
 pub struct AccountPacket {
     client: Client,
-    root_dir: PathBuf,
+    wallet_dir: PathBuf,
     files_dir: PathBuf,
     meta_dir: PathBuf,
     tracking_info_dir: PathBuf,
@@ -104,7 +104,7 @@ impl AccountPacket {
     /// when the user requests to encrypt data, the provided Client's signer key is used.
     pub fn init(
         client: Client,
-        root_dir: &Path,
+        wallet_dir: &Path,
         path: &Path,
         root_folder_addr: Option<RegisterAddress>,
     ) -> Result<Self> {
@@ -122,11 +122,11 @@ impl AccountPacket {
         let root_folder_addr = root_folder_addr
             .unwrap_or_else(|| RegisterAddress::new(XorName::random(&mut rng), client.signer_pk()));
         store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
-        Self::from_path(client, root_dir, path)
+        Self::from_path(client, wallet_dir, path)
     }
 
     /// Create AccountPacket instance from a directory which has been already initialised.
-    pub fn from_path(client: Client, root_dir: &Path, path: &Path) -> Result<Self> {
+    pub fn from_path(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
         // this will fail if the directory was not previously initialised with 'init'.
@@ -136,7 +136,7 @@ impl AccountPacket {
 
         Ok(Self {
             client,
-            root_dir: root_dir.to_path_buf(),
+            wallet_dir: wallet_dir.to_path_buf(),
             files_dir,
             meta_dir,
             tracking_info_dir,
@@ -154,7 +154,7 @@ impl AccountPacket {
     /// Retrieve and store entire Folders hierarchy from the network, generating tracking info.
     pub async fn retrieve_folders(
         client: &Client,
-        root_dir: &Path,
+        wallet_dir: &Path,
         address: RegisterAddress,
         download_path: &Path,
         batch_size: usize,
@@ -179,7 +179,7 @@ impl AccountPacket {
 
         let mut acc_packet = Self {
             client: client.clone(),
-            root_dir: root_dir.to_path_buf(),
+            wallet_dir: wallet_dir.to_path_buf(),
             files_dir,
             meta_dir,
             tracking_info_dir,
@@ -189,7 +189,7 @@ impl AccountPacket {
         };
 
         let folder_name: OsString = download_path.file_name().unwrap_or_default().into();
-        let folders_api = FoldersApi::retrieve(client.clone(), root_dir, address).await?;
+        let folders_api = FoldersApi::retrieve(client.clone(), wallet_dir, address).await?;
         let folders_to_download = vec![(folder_name, folders_api, download_path.to_path_buf())];
 
         let _ = acc_packet
@@ -612,7 +612,7 @@ impl AccountPacket {
             })
         };
 
-        let folders_api = FoldersApi::new(self.client.clone(), &self.root_dir, address)?;
+        let folders_api = FoldersApi::new(self.client.clone(), &self.wallet_dir, address)?;
         Ok((folders_api, folder_change))
     }
 
@@ -641,7 +641,7 @@ impl AccountPacket {
         upload_cfg: UploadCfg,
         make_data_public: bool,
     ) -> Result<UploadSummary> {
-        let files_uploader = FilesUploader::new(self.client.clone(), self.root_dir.clone())
+        let files_uploader = FilesUploader::new(self.client.clone(), self.wallet_dir.clone())
             .set_upload_cfg(upload_cfg.clone())
             .set_make_data_public(make_data_public)
             .insert_entries(self.iter_only_files());
@@ -731,9 +731,12 @@ impl AccountPacket {
                     let _ = File::create(&item_path)?;
                 }
                 FolderEntry::Folder(subfolder_addr) => {
-                    let folders_api =
-                        FoldersApi::retrieve(self.client.clone(), &self.root_dir, *subfolder_addr)
-                            .await?;
+                    let folders_api = FoldersApi::retrieve(
+                        self.client.clone(),
+                        &self.wallet_dir,
+                        *subfolder_addr,
+                    )
+                    .await?;
 
                     folders_to_download.push((name.clone().into(), folders_api, item_path.clone()));
                     create_dir_all(&item_path)?;
@@ -835,13 +838,13 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
+        let wallet_dir = tmp_dir.path();
         let files_path = tmp_dir.path().join("myfiles");
         create_dir_all(&files_path)?;
 
         let acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &files_path,
             Some(root_folder_addr),
         )?;
@@ -895,15 +898,15 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpacketempty");
         create_dir_all(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &src_files_path,
             Some(root_folder_addr),
         )?;
@@ -914,7 +917,7 @@ mod tests {
         let clone_files_path = tmp_dir.path().join("myaccpacketempty-clone");
         let cloned_acc_packet = AccountPacket::retrieve_folders(
             &client,
-            root_dir,
+            wallet_dir,
             root_folder_addr,
             &clone_files_path,
             BATCH_SIZE,
@@ -934,15 +937,15 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpacket");
         let expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &src_files_path,
             Some(root_folder_addr),
         )?;
@@ -953,7 +956,7 @@ mod tests {
 
         let downloaded_acc_packet = AccountPacket::retrieve_folders(
             &client,
-            root_dir,
+            wallet_dir,
             root_folder_addr,
             &download_files_path,
             BATCH_SIZE,
@@ -972,8 +975,8 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let files_path = tmp_dir.path().join("myaccpacket-to-scan");
         let mut test_files = create_test_files_on_disk(&files_path)?;
@@ -981,7 +984,7 @@ mod tests {
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &files_path,
             Some(root_folder_addr),
         )?;
@@ -1023,15 +1026,15 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpackettosync");
         let mut expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &src_files_path,
             Some(root_folder_addr),
         )?;
@@ -1041,7 +1044,7 @@ mod tests {
         let clone_files_path = tmp_dir.path().join("myaccpackettosync-clone");
         let mut cloned_acc_packet = AccountPacket::retrieve_folders(
             &client,
-            root_dir,
+            wallet_dir,
             root_folder_addr,
             &clone_files_path,
             BATCH_SIZE,
@@ -1074,15 +1077,15 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let src_files_path = tmp_dir.path().join("myaccpacket-to-move");
         let mut test_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &src_files_path,
             Some(root_folder_addr),
         )?;
@@ -1105,7 +1108,7 @@ mod tests {
         let moved_files_path = moved_files_path.canonicalize()?;
 
         let moved_acc_packet =
-            AccountPacket::from_path(client.clone(), root_dir, &moved_files_path)?;
+            AccountPacket::from_path(client.clone(), wallet_dir, &moved_files_path)?;
 
         // verify only one change is detected still after moved to another location on disk
         let changes = moved_acc_packet.scan_files_and_folders_for_changes(false)?;
@@ -1124,15 +1127,15 @@ mod tests {
         let (client, root_folder_addr) = get_client_and_folder_addr().await?;
 
         let tmp_dir = tempfile::tempdir()?;
-        let root_dir = tmp_dir.path();
-        let _ = get_funded_wallet(&client, root_dir).await?;
+        let wallet_dir = tmp_dir.path();
+        let _ = get_funded_wallet(&client, wallet_dir).await?;
 
         let files_path = tmp_dir.path().join("myaccpacket-unencrypted-metadata");
         let _ = create_test_files_on_disk(&files_path)?;
 
         let mut acc_packet = AccountPacket::init(
             client.clone(),
-            root_dir,
+            wallet_dir,
             &files_path,
             Some(root_folder_addr),
         )?;
@@ -1145,7 +1148,7 @@ mod tests {
 
         if AccountPacket::retrieve_folders(
             &other_client,
-            root_dir,
+            wallet_dir,
             root_folder_addr,
             &download_files_path,
             BATCH_SIZE,
