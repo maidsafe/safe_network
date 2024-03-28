@@ -9,6 +9,7 @@
 use super::{
     error::{Error, Result},
     event::NodeEventsChannel,
+    quote::quotes_verification,
     Marker, NodeEvent,
 };
 #[cfg(feature = "open-metrics")]
@@ -399,6 +400,14 @@ impl Node {
                     if Self::close_nodes_shunning_peer(&network, peer_id).await {
                         network.record_node_issues(peer_id, NodeIssue::CloseNodesShunning);
                     }
+                });
+            }
+            NetworkEvent::QuoteVerification { quotes } => {
+                event_header = "QuoteVerification";
+                let network = self.network.clone();
+
+                let _handle = spawn(async move {
+                    quotes_verification(&network, quotes).await;
                 });
             }
         }

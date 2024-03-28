@@ -22,7 +22,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics};
+use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
@@ -42,6 +42,8 @@ pub enum NodeIssue {
     ReplicationFailure,
     /// Close nodes have reported this peer as bad
     CloseNodesShunning,
+    /// Provided a bad quote
+    BadQuoting,
 }
 
 /// Commands to send to the Swarm
@@ -169,6 +171,10 @@ pub enum SwarmCmd {
         target: NetworkAddress,
         sender: oneshot::Sender<bool>,
     },
+    // Quote verification agaisnt historical collected quotes
+    QuoteVerification {
+        quotes: Vec<(PeerId, PaymentQuote)>,
+    },
 }
 
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
@@ -285,6 +291,9 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::IsPeerShunned { target, .. } => {
                 write!(f, "SwarmCmd::IsPeerInTrouble target: {target:?}")
+            }
+            SwarmCmd::QuoteVerification { quotes } => {
+                write!(f, "SwarmCmd::QuoteVerification of {} quotes", quotes.len())
             }
         }
     }
@@ -685,63 +694,7 @@ impl SwarmDriver {
             SwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 cmd_string = "RecordNodeIssues";
                 let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
-
-                info!("Peer {peer_id:?} is reported as having issue {issue:?}");
-                let (issue_vec, is_bad) = self.bad_nodes.entry(peer_id).or_default();
-
-                // If being considered as bad already, skip certain operations
-                if !(*is_bad) {
-                    // Remove outdated entries
-                    issue_vec.retain(|(_, timestamp)| timestamp.elapsed().as_secs() < 300);
-
-                    // check if vec is already 10 long, if so, remove the oldest issue
-                    // we only track 10 issues to avoid mem leaks
-                    if issue_vec.len() == 10 {
-                        issue_vec.remove(0);
-                    }
-
-                    // To avoid being too sensitive, only consider as a new issue
-                    // when after certain while since the last one
-                    let is_new_issue = if let Some((_issue, timestamp)) = issue_vec.last() {
-                        timestamp.elapsed().as_secs() > 10
-                    } else {
-                        true
-                    };
-
-                    if is_new_issue {
-                        issue_vec.push((issue, Instant::now()));
-                    }
-
-                    // Only consider candidate as a bad node when:
-                    //   accumulated THREE same kind issues within certain period
-                    for (issue, _timestamp) in issue_vec.iter() {
-                        let issue_counts = issue_vec
-                            .iter()
-                            .filter(|(i, _timestamp)| *issue == *i)
-                            .count();
-                        if issue_counts >= 3 {
-                            *is_bad = true;
-                            info!("Peer {peer_id:?} accumulated {issue_counts} times of issue {issue:?}. Consider it as a bad node now.");
-                            // Once a bad behaviour detected, no point to continue
-                            break;
-                        }
-                    }
-                }
-
-                if *is_bad {
-                    warn!("Cleaning out bad_peer {peer_id:?}");
-                    if let Some(dead_peer) =
-                        self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
-                    {
-                        self.connected_peers = self.connected_peers.saturating_sub(1);
-                        self.send_event(NetworkEvent::PeerRemoved(
-                            *dead_peer.node.key.preimage(),
-                            self.connected_peers,
-                        ));
-                        self.log_kbuckets(&peer_id);
-                        let _ = self.check_for_change_in_our_close_group();
-                    }
-                }
+                self.record_node_issue(peer_id, issue);
             }
             SwarmCmd::IsPeerShunned { target, sender } => {
                 cmd_string = "IsPeerInTrouble";
@@ -756,11 +709,96 @@ impl SwarmDriver {
                 };
                 let _ = sender.send(is_bad);
             }
+            SwarmCmd::QuoteVerification { quotes } => {
+                cmd_string = "QuoteVerification";
+                for (peer_id, quote) in quotes {
+                    // Do nothing if already being bad
+                    if let Some((_issues, is_bad)) = self.bad_nodes.get(&peer_id) {
+                        if *is_bad {
+                            continue;
+                        }
+                    }
+                    self.verify_peer_quote(peer_id, quote);
+                }
+            }
         }
 
         self.log_handling(cmd_string.to_string(), start.elapsed());
 
         Ok(())
+    }
+
+    fn record_node_issue(&mut self, peer_id: PeerId, issue: NodeIssue) {
+        info!("Peer {peer_id:?} is reported as having issue {issue:?}");
+        let (issue_vec, is_bad) = self.bad_nodes.entry(peer_id).or_default();
+
+        // If being considered as bad already, skip certain operations
+        if !(*is_bad) {
+            // Remove outdated entries
+            issue_vec.retain(|(_, timestamp)| timestamp.elapsed().as_secs() < 300);
+
+            // check if vec is already 10 long, if so, remove the oldest issue
+            // we only track 10 issues to avoid mem leaks
+            if issue_vec.len() == 10 {
+                issue_vec.remove(0);
+            }
+
+            // To avoid being too sensitive, only consider as a new issue
+            // when after certain while since the last one
+            let is_new_issue = if let Some((_issue, timestamp)) = issue_vec.last() {
+                timestamp.elapsed().as_secs() > 10
+            } else {
+                true
+            };
+
+            if is_new_issue {
+                issue_vec.push((issue, Instant::now()));
+            }
+
+            // Only consider candidate as a bad node when:
+            //   accumulated THREE same kind issues within certain period
+            for (issue, _timestamp) in issue_vec.iter() {
+                let issue_counts = issue_vec
+                    .iter()
+                    .filter(|(i, _timestamp)| *issue == *i)
+                    .count();
+                if issue_counts >= 3 {
+                    *is_bad = true;
+                    info!("Peer {peer_id:?} accumulated {issue_counts} times of issue {issue:?}. Consider it as a bad node now.");
+                    // Once a bad behaviour detected, no point to continue
+                    break;
+                }
+            }
+        }
+
+        if *is_bad {
+            warn!("Cleaning out bad_peer {peer_id:?}");
+            if let Some(dead_peer) = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id) {
+                self.connected_peers = self.connected_peers.saturating_sub(1);
+                self.send_event(NetworkEvent::PeerRemoved(
+                    *dead_peer.node.key.preimage(),
+                    self.connected_peers,
+                ));
+                self.log_kbuckets(&peer_id);
+                let _ = self.check_for_change_in_our_close_group();
+            }
+        }
+    }
+
+    fn verify_peer_quote(&mut self, peer_id: PeerId, quote: PaymentQuote) {
+        if let Some(history_quote) = self.quotes_history.get(&peer_id) {
+            if !history_quote.historical_verify(&quote) {
+                info!("From {peer_id:?}, detected a bad quote {quote:?} against history_quote {history_quote:?}");
+                self.record_node_issue(peer_id, NodeIssue::BadQuoting);
+                return;
+            }
+
+            if history_quote.is_newer_than(&quote) {
+                return;
+            }
+        }
+
+        let _ = self.quotes_history.insert(peer_id, quote);
     }
 
     fn try_interval_replication(&mut self) -> Result<()> {

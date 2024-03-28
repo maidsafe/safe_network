@@ -50,6 +50,7 @@ use sn_protocol::{
     storage::RetryStrategy,
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
+use sn_transfers::PaymentQuote;
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     fmt::Debug,
@@ -513,6 +514,7 @@ impl NetworkBuilder {
             hard_disk_write_error: 0,
             bad_nodes: Default::default(),
             bad_nodes_ongoing_verifications: Default::default(),
+            quotes_history: Default::default(),
         };
 
         Ok((
@@ -567,6 +569,7 @@ pub struct SwarmDriver {
     // the boolean flag to indicate whether the node is considered as bad or not
     pub(crate) bad_nodes: BTreeMap<PeerId, (Vec<(NodeIssue, Instant)>, bool)>,
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
+    pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
 }
 
 impl SwarmDriver {
