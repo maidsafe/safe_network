@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711661860709,
+  "lastUpdate": 1711661862550,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "2b372f8a759a6c21798bcc1c6ea1462a4bc51b12",
-          "message": "chore: reduce AddKeysToReplicationFetcher processing time",
-          "timestamp": "2023-11-16T16:01:21Z",
-          "tree_id": "92a58f5f61a47d7e68b260a6aedd49179e892624",
-          "url": "https://github.com/maidsafe/safe_network/commit/2b372f8a759a6c21798bcc1c6ea1462a4bc51b12"
-        },
-        "date": 1700153397676,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 195,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 68,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "6b4c3748093237bb9ccd25077f064b5be363e9fb",
+          "message": "fix(client): remove sync_multiple methods",
+          "timestamp": "2024-03-28T20:55:53Z",
+          "tree_id": "792c44a16cb6e999415f49f6b3377a93882bea05",
+          "url": "https://github.com/maidsafe/safe_network/commit/6b4c3748093237bb9ccd25077f064b5be363e9fb"
+        },
+        "date": 1711661861925,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 187,
             "unit": "MB"
           },
           {
