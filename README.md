@@ -26,6 +26,15 @@ The Data on the Safe Network is Decentralised, Autonomous, and built atop of Kad
 - [Faucet](https://github.com/maidsafe/safe_network/blob/main/sn_faucet/README.md) The local faucet server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The RPC server used by the nodes to expose API calls to the outside world.
 
+#### Releases
+
+` ./resources/scripts/bump_version.sh` will bump the version of the crates in the `Cargo.toml` files. And generate a `chore(release):` commit, which if pushed
+to main will result in CI doing a full release run.
+
+` ./resources/scripts/bump_version.sh` can also be namespaced for other release
+channels. eg `./resources/scripts/bump_version.sh beta` will bump the version to
+a `beta` release on any changed crates.
+
 #### Transport Protocols and Architectures
 
 The Safe Network uses `quic` as the default transport protocol.
@@ -68,15 +77,21 @@ Run all the commands from the root of this repository.
 ### Run the Network
 
 Follow these steps to create a local network:
+
 1. Create the test network: <br>
+
 ```bash
 cargo run --bin safenode-manager --features local-discovery -- run --build
 ```
+
 2. Verify node status: <br>
+
 ```bash
 cargo run --bin safenode-manager --features local-discovery -- status
 ```
+
 3. Build a tokenized wallet: <br>
+
 ```bash
 cargo run --bin safe --features local-discovery -- wallet get-faucet 127.0.0.1:8000
 ```
@@ -88,6 +103,7 @@ The node manager's `run` command starts the node processes and a faucet process,
 The file storage capability can be demonstrated by uploading files to the local network, then retrieving them.
 
 Upload a file or a directory:
+
 ```bash
 cargo run --bin safe --features local-discovery -- files upload <path>
 ```
@@ -95,6 +111,7 @@ cargo run --bin safe --features local-discovery -- files upload <path>
 The output will show that the upload costs some tokens.
 
 Now download the files again:
+
 ```bash
 cargo run --bin safe --features local-discovery -- files download
 ```
@@ -103,10 +120,11 @@ cargo run --bin safe --features local-discovery -- files download
 
 The folders storage capability can be demonstrated by uploading folders to the local network, making changes and syncing them with the stored version on the network, as well as downloading the entire folders hierarchy onto a local directory.
 
-All the following commands act on the current directory by default, but since we are building the CLI binary to run it, we will have to always provide the directory we want them to act as a path argument. 
+All the following commands act on the current directory by default, but since we are building the CLI binary to run it, we will have to always provide the directory we want them to act as a path argument.
 When otherwise running directly an already built CLI binary, we can simply make sure we are located at the directory we want to act on without the need of providing the path as argument.
 
 Upload a directory:
+
 ```bash
 cargo run --bin safe --features local-discovery -- folders upload <dir-path>
 ```
@@ -114,16 +132,19 @@ cargo run --bin safe --features local-discovery -- folders upload <dir-path>
 After it finishes uploading the complete directory, with files and sub-directories, it will show the network address where the main directory can be pulled from.
 
 Now download the folders, providing a target directory path:
+
 ```bash
 cargo run --bin safe --features local-discovery -- folders download <network address> <dir path>
 ```
 
-If any changes are now made to files or directories within this folder, before trying to push those changes to the network, we can get a report of the changes that have been made locally: 
+If any changes are now made to files or directories within this folder, before trying to push those changes to the network, we can get a report of the changes that have been made locally:
+
 ```bash
 cargo run --bin safe --features local-discovery -- folders status <dir-path>
 ```
 
 We can both push local changes made to files and directories to the network, as well as pull any changes that have been made to the version stored on the network since last time we synced with it:
+
 ```bash
 cargo run --bin safe --features local-discovery -- folders sync <dir-path>
 ```
@@ -133,11 +154,13 @@ cargo run --bin safe --features local-discovery -- folders sync <dir-path>
 Use your local wallet to demonstrate sending tokens and receiving transfers.
 
 First, get your wallet address:
+
 ```
 cargo run --bin safe -- wallet address
 ```
 
 Now send some tokens to that address:
+
 ```
 cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 ```
@@ -145,6 +168,7 @@ cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 This will output a transfer as a hex string, which should be sent to the recipient out-of-band.
 
 For demonstration purposes, copy the transfer string and use it to receive the transfer in your own wallet:
+
 ```
 cargo run --bin safe --features local-discovery -- wallet receive [transfer]
 ```
@@ -155,45 +179,48 @@ When you want to transfer tokens from a cold storage or hardware wallet, you can
 For this type of scenarios you can create a watch-only wallet (it holds only a public key) on the online device, while using a hot-wallet (which holds the secret key) on a device that is offline. The following steps are a simple guide for performing such an operation.
 
 Steps on the online device/computer with a watch-only wallet:
+
 1. Create a watch-only wallet using the hex-encoded public key:
-  `cargo run --release --bin safe -- wowallet create <hex-encoded public key>`
+   `cargo run --release --bin safe -- wowallet create <hex-encoded public key>`
 
 2. Deposit a cash-note, owned by the public key used above when creating, into the watch-only wallet:
-  `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> --cash-note <hex-encoded cash-note>`
+   `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> --cash-note <hex-encoded cash-note>`
 
 3. Build an unsigned transaction:
-  `cargo run --release --bin safe -- wowallet transaction <hex-encoded public key> <amount> <recipient's hex-encoded public key>`
+   `cargo run --release --bin safe -- wowallet transaction <hex-encoded public key> <amount> <recipient's hex-encoded public key>`
 
 4. Copy the built unsigned Tx generated by the above command, and send it out-of-band to the desired device where the hot-wallet can be loaded.
 
 Steps on the offline device/computer with the corresponding hot-wallet:
 
 5. If you still don't have a hot-wallet created, which owns the cash-notes used to build the unsigned transaction, create it with the corresponding secret key:
-  `cargo run --release --bin safe -- wallet create <hex-encoded secret key>`
+   `cargo run --release --bin safe -- wallet create <hex-encoded secret key>`
 
 6. Use the hot-wallet to sign the built transaction:
-  `cargo run --release --bin safe -- wallet sign <unsigned transaction>`
+   `cargo run --release --bin safe -- wallet sign <unsigned transaction>`
 
 7. Copy the signed Tx generated by the above command, and send it out-of-band back to the online device.
 
 Steps on the online device/computer with the watch-only wallet:
 
 8. Broadcast the signed transaction to the network using the watch-only wallet:
-  `cargo run --release --bin safe -- wowallet broadcast <signed transaction>`
+   `cargo run --release --bin safe -- wowallet broadcast <signed transaction>`
 
 9. Deposit the change cash-note to the watch-only wallet:
-  `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> <change cash-note>`
+   `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> <change cash-note>`
 
 10. Send/share the output cash-note generated by the above command at step #8 to/with the recipient.
 
 ### Auditing
 
 We can verify a spend, optionally going back to the genesis transaction:
+
 ```
 cargo run --bin safe --features local-discovery -- wallet verify [--genesis] [spend address]
 ```
 
 All spends from genesis can be audited:
+
 ```
 cargo run --bin safe --features local-discovery -- wallet audit
 ```
@@ -258,6 +285,7 @@ Latest value (more than one if concurrent writes were made):
 Enter a blank line to receive updates, or some text to be written.
 hi Alice, this is Bob!
 ```
+
 Alice will see Bob's message when she either enters a blank line or writes another message herself.
 
 ### Inspect a Register
@@ -267,6 +295,7 @@ A second example, `register_inspect` allows you to view its structure and conten
 ```
 cargo run --example register_inspect --features=local-discovery -- --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
 ```
+
 After printing a summary of the register, this example will display
 the structure of the register each time you press Enter, including the following:
 
@@ -292,6 +321,7 @@ Register Structure:
       [ 2] Node("7693eb"..) Entry("[alice]: hello this is alice")
 ======================
 ```
+
 Each increase in indentation shows the children of the node above.
 The numbers in square brackets are just to make it easier to see
 where a node occurs more than once.
@@ -301,6 +331,7 @@ where a node occurs more than once.
 The node manager launches each node process with a remote procedure call (RPC) service. The workspace has a client binary that can be used to run commands against these services.
 
 Run the `status` command with the `--details` flag to get the RPC port for each node:
+
 ```
 $ cargo run --bin safenode-manager -- status --details
 ...
@@ -322,6 +353,7 @@ Connected peers: 24
 Now you can run RPC commands against any node.
 
 The `info` command will retrieve basic information about the node:
+
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 info
 Node info:
@@ -335,6 +367,7 @@ Time since last restart: 1614s
 ```
 
 The `netinfo` command will return connected peers and listeners:
+
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 netinfo
 Node's connections to the Network:
@@ -361,6 +394,7 @@ Listener: /ip4/172.20.0.1/udp/38835/quic-v1
 ```
 
 Node control commands:
+
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 restart 5000
 Node successfully received the request to restart in 5s
@@ -375,6 +409,7 @@ Node successfully received the request to try to update in 7s
 NOTE: it is preferable to use the node manager to control the node rather than RPC commands.
 
 Listening to royalty payment events:
+
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
 Listening to transfers notifications... (press Ctrl+C to exit)
@@ -387,6 +422,7 @@ CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
 ```
 
 The `transfers` command can provide a path for royalty payment cash notes:
+
 ```
 $ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
 Listening to transfers notifications... (press Ctrl+C to exit)
@@ -398,6 +434,7 @@ Each received cash note is written to a file in the directory above, under anoth
 ### Tear Down
 
 When you're finished experimenting, tear down the network:
+
 ```
 cargo run --bin safenode-manager -- kill
 ```
@@ -411,7 +448,6 @@ The metrics can then be collected using a collector (for e.g. Prometheus) and th
 ## Contributing
 
 Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit **[The MaidSafe Forum](https://safenetforum.org/)** for discussion or if you would like to join our online community.
-
 
 ### Pull Request Process
 
