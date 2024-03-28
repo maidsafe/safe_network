@@ -704,14 +704,27 @@ impl WalletClient {
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         // Before wallet progress, there shall be no `unconfirmed_spend_requests`
         // Here, just re-upload again. The caller shall carry out a re-try later on.
-        if self.wallet.unconfirmed_spend_requests_exist() {
-            info!("Pre-Unconfirmed transactions exist. Resending in 1 second...");
+        let mut did_error = false;
+        // Wallet shall be all clear to progress forward.
+        let mut attempts = 0;
+        while self.wallet.unconfirmed_spend_requests_exist() {
+            info!("Pre-Unconfirmed transactions exist, sending again after 1 second...");
             sleep(Duration::from_secs(1)).await;
             self.resend_pending_transactions(verify_store).await;
 
-            return Err(WalletError::CouldNotSendMoney(
-                "Wallet has pre-unconfirmed transactions. Resend, and try again.".to_string(),
-            ));
+            if attempts > 10 {
+                // save the error state, but break out of the loop so we can save
+                did_error = true;
+                break;
+            }
+
+            attempts += 1;
+        }
+
+        if did_error {
+            error!("Wallet has pre-unconfirmed transactions, can't progress further.");
+            println!("Wallet has pre-unconfirmed transactions, can't progress further.");
+            return Err(WalletError::UnconfirmedTxAfterRetries);
         }
 
         let start = Instant::now();
