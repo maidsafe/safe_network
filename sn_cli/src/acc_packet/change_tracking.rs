@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{protocol::storage::RegisterAddress, registers::EntryHash, FoldersApi, Metadata};
+use bls::{SecretKey, SK_SIZE};
+use sn_client::{
+    protocol::storage::RegisterAddress, registers::EntryHash, transfers::MainSecretKey, FoldersApi,
+    Metadata,
+};
 
 use color_eyre::{eyre::eyre, Result};
 use serde::{Deserialize, Serialize};
@@ -20,14 +24,17 @@ use std::{
 use walkdir::WalkDir;
 use xor_name::XorName;
 
-// Name of hidden folder where tracking information and metadata is locally kept.
+// Name of hidden folder where tracking information and metadata is locally stored.
 pub(super) const SAFE_TRACKING_CHANGES_DIR: &str = ".safe";
 
 // Subfolder where files metadata will be cached
 pub(super) const METADATA_CACHE_DIR: &str = "metadata";
 
-// Name of the file where metadata about root folder is locally kept.
+// Name of the file where metadata about root folder is locally cached.
 pub(super) const ROOT_FOLDER_METADATA_FILENAME: &str = "root_folder.addr";
+
+// Name of the file where the recovery secret/seed is locally cached.
+pub(crate) const RECOVERY_SEED_FILENAME: &str = "recovery_seed";
 
 // Container to keep track in memory what changes are detected in local Folders hierarchy and files.
 pub(super) type Folders = BTreeMap<PathBuf, (FoldersApi, FolderChange)>;
@@ -144,6 +151,31 @@ pub(super) fn store_root_folder_tracking_info(
     meta_file.write_all(&rmp_serde::to_vec(&(root_folder_addr, created))?)?;
 
     Ok(())
+}
+
+// Store the given root seed/SK on disk
+// TODO: encrypt the SK with a password
+pub(super) fn store_root_sk(dir: &Path, root_sk: &MainSecretKey) -> Result<()> {
+    let path = dir.join(RECOVERY_SEED_FILENAME);
+    let mut secret_file = File::create(path)?;
+    secret_file.write_all(&root_sk.to_bytes())?;
+
+    Ok(())
+}
+
+// Read the root seed/SK from disk
+// TODO: decrypt the SK with a password
+pub(super) fn read_root_sk(dir: &Path) -> Result<MainSecretKey> {
+    let path = dir.join(RECOVERY_SEED_FILENAME);
+    let bytes = std::fs::read(&path).map_err(|err| {
+        eyre!("Error while reading the recovery seed/secret from {path:?}: {err:?}")
+    })?;
+
+    let mut buffer = [0u8; SK_SIZE];
+    buffer[..SK_SIZE].copy_from_slice(&bytes);
+    let sk = MainSecretKey::new(SecretKey::from_bytes(buffer)?);
+
+    Ok(sk)
 }
 
 // Read the tracking info about the root folder
