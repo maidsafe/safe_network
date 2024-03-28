@@ -455,10 +455,7 @@ pub(super) async fn start_upload(
                     }
                 }
             }
-            TaskResult::UploadErr {
-                xorname,
-                quote_expired,
-            } => {
+            TaskResult::UploadErr { xorname } => {
                 let _ = uploader.on_going_uploads.remove(&xorname);
                 trace!("UploadErr for {xorname:?}");
 
@@ -467,11 +464,7 @@ pub(super) async fn start_upload(
                 *n_errors += 1;
 
                 // if quote has expired, don't retry the upload again. Instead get the cheapest quote again.
-                if quote_expired {
-                    uploader
-                        .pending_to_get_store_cost
-                        .push((xorname, GetStoreCostStrategy::Cheapest));
-                } else if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
+                if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
                     // if error > threshold, then select different payee. else retry again
                     // Also reset n_errors as we want to enable retries for the new payee.
                     *n_errors = 0;
@@ -631,16 +624,9 @@ impl UploaderInterface for Uploader {
                 Ok(_) => {
                     let _ = task_result_sender.send(TaskResult::UploadOk(xorname)).await;
                 }
-                Err(err) => {
-                    let quote_expired = matches!(
-                        err,
-                        ClientError::Wallet(sn_transfers::WalletError::QuoteExpired(_))
-                    );
+                Err(_) => {
                     let _ = task_result_sender
-                        .send(TaskResult::UploadErr {
-                            xorname,
-                            quote_expired,
-                        })
+                        .send(TaskResult::UploadErr { xorname })
                         .await;
                 }
             };
@@ -921,9 +907,8 @@ impl InnerUploader {
             GetStoreCostStrategy::Cheapest => vec![],
             GetStoreCostStrategy::SelectDifferentPayee => {
                 // Check if we have already made payment for the provided xorname. If so filter out those payee
-                // todo: should we get non_expired here? maybe have a flag.
                 let filter_list = wallet_api
-                    .get_all_non_expired_payments(&xorname)?
+                    .get_all_payments(&xorname)?
                     .into_iter()
                     .map(|details| {
                         PeerId::from_bytes(&details.peer_id_bytes).map_err(|_| {
@@ -949,12 +934,6 @@ impl InnerUploader {
             .network
             .get_store_costs_from_network(address, filter_list)
             .await?;
-        // check if the quote has expired
-        // todo: should this be a part of get_store_costs_from_network?
-        // todo: if this keep happening, the node is misbehaving. Track the peer and filter him out.
-        if quote.2.has_expired() {
-            warn!("The quote during get_store_cost for {xorname:?} {quote:?} has expired. Ignoring the result for now.");
-        }
         Ok(quote)
     }
 
@@ -967,7 +946,7 @@ impl InnerUploader {
     ) -> Result<()> {
         let xorname = upload_item.xorname();
 
-        let payment_details = wallet_api.get_non_expired_payment(&xorname)?;
+        let payment_details = wallet_api.get_recent_payment(&xorname)?;
         let payment = payment_details.to_payment();
         let payee = PeerId::from_bytes(&payment_details.peer_id_bytes)
             .map_err(|_| ClientError::Wallet(WalletError::NoPaymentForAddress(xorname)))?;
