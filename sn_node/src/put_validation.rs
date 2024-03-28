@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{node::Node, Error, Marker, Result};
+use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
@@ -514,7 +514,7 @@ impl Node {
 
         // check if the quote is valid
         let storecost = payment.quote.cost;
-        self.verify_quote_for_storecost(payment.quote, address)?;
+        verify_quote_for_storecost(&self.network, payment.quote, address)?;
         trace!("Payment quote valid for record {pretty_key}");
 
         // Let's check payment is sufficient both for our store cost and for network royalties

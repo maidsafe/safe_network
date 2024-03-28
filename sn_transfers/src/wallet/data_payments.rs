@@ -163,4 +163,67 @@ impl PaymentQuote {
             signature: vec![],
         }
     }
+
+    /// Check whether self is newer than the target quote.
+    pub fn is_newer_than(&self, other: &Self) -> bool {
+        self.timestamp > other.timestamp
+    }
+
+    /// Check against a new quote, verify whether it is a valid one from self perspective.
+    /// Returns `true` to flag the `other` quote is valid, from self perspective.
+    pub fn historical_verify(&self, other: &Self) -> bool {
+        // There is a chance that an old quote got used later than a new quote
+        let self_is_newer = self.is_newer_than(other);
+        let (old_quote, new_quote) = if self_is_newer {
+            (other, self)
+        } else {
+            (self, other)
+        };
+
+        if new_quote.quoting_metrics.live_time < old_quote.quoting_metrics.live_time {
+            info!("Claimed live_time out of sequence");
+            return false;
+        }
+
+        let old_elapsed = if let Ok(elapsed) = old_quote.timestamp.elapsed() {
+            elapsed
+        } else {
+            info!("timestamp failure");
+            return false;
+        };
+        let new_elapsed = if let Ok(elapsed) = new_quote.timestamp.elapsed() {
+            elapsed
+        } else {
+            info!("timestamp failure");
+            return false;
+        };
+
+        let time_diff = old_elapsed.as_secs().saturating_sub(new_elapsed.as_secs());
+        let live_time_diff =
+            new_quote.quoting_metrics.live_time - old_quote.quoting_metrics.live_time;
+        // In theory, these two shall match, give it a margin of 10 to avoid system glitch
+        if live_time_diff > time_diff + 10 {
+            info!("claimed live_time out of sync with the timestamp");
+            return false;
+        }
+
+        // There could be pruning to be undertaken,
+        // hence the `increasement` check only valid when not being too full.
+        if new_quote.quoting_metrics.records_stored + 20 < new_quote.quoting_metrics.max_records
+            && new_quote.quoting_metrics.records_stored < old_quote.quoting_metrics.records_stored
+        {
+            info!("claimed records_stored out of sequence");
+            return false;
+        }
+
+        // TODO: Double check if this applies, as this will prevent a node restart with same ID
+        if new_quote.quoting_metrics.received_payment_count
+            < old_quote.quoting_metrics.received_payment_count
+        {
+            info!("claimed received_payment_count out of sequence");
+            return false;
+        }
+
+        true
+    }
 }

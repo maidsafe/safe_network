@@ -680,7 +680,7 @@ impl RecordStore for ClientRecordStore {
 // to allow nodes receiving too many replication copies can still got paid,
 // and gives an exponential pricing curve when storage reaches high.
 // and give extra reward (lower the quoting price to gain a better chance) to long lived nodes.
-fn calculate_cost_for_records(
+pub fn calculate_cost_for_records(
     records_stored: usize,
     received_payment_count: usize,
     max_records: usize,

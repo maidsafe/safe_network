@@ -35,6 +35,7 @@ use sn_protocol::{
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::PaymentQuote;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashSet},
     fmt::{Debug, Formatter},
@@ -123,6 +124,10 @@ pub enum NetworkEvent {
     BadNodeVerification {
         peer_id: PeerId,
     },
+    /// Quotes to be verified
+    QuoteVerification {
+        quotes: Vec<(PeerId, PaymentQuote)>,
+    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -163,6 +168,13 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::BadNodeVerification { peer_id } => {
                 write!(f, "NetworkEvent::BadNodeVerification({peer_id:?})")
+            }
+            NetworkEvent::QuoteVerification { quotes } => {
+                write!(
+                    f,
+                    "NetworkEvent::QuoteVerification({} quotes)",
+                    quotes.len()
+                )
             }
         }
     }
@@ -566,8 +578,9 @@ impl SwarmDriver {
                     ..
                 } => {
                     trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
-                    // if the request is replication, we can handle it and send the OK response here,
-                    // as we send that regardless of how we handle the request as its unimportant to the sender.
+                    // If the request is replication or quote verification,
+                    // we can handle it and send the OK response here.
+                    // As the handle result is unimportant to the sender.
                     match request {
                         Request::Cmd(sn_protocol::messages::Cmd::Replicate { holder, keys }) => {
                             let response = Response::Cmd(
@@ -580,6 +593,31 @@ impl SwarmDriver {
                                 .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
 
                             self.add_keys_to_replication_fetcher(holder, keys);
+                        }
+                        Request::Cmd(sn_protocol::messages::Cmd::QuoteVerification {
+                            quotes,
+                            ..
+                        }) => {
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::QuoteVerification(Ok(())),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            // The keypair is required to verify the quotes,
+                            // hence throw it up to Network layer for further actions.
+                            let quotes = quotes
+                                .iter()
+                                .filter_map(|(peer_address, quote)| {
+                                    peer_address
+                                        .as_peer_id()
+                                        .map(|peer_id| (peer_id, quote.clone()))
+                                })
+                                .collect();
+                            self.send_event(NetworkEvent::QuoteVerification { quotes })
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {
