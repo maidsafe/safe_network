@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711630508678,
+  "lastUpdate": 1711630510223,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": true,
-          "id": "a68961f43472abd24d4983aee914bdde1a9e55c5",
-          "message": "feat(client)!: error out if we cannot connect to the network in\nspecified time",
-          "timestamp": "2023-11-15T06:20:18Z",
-          "tree_id": "2945514af55a0f012a410195455ca7f6390b5663",
-          "url": "https://github.com/maidsafe/safe_network/commit/a68961f43472abd24d4983aee914bdde1a9e55c5"
-        },
-        "date": 1700031814733,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 195,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 71,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": false,
           "id": "a593dbd05d16115d35bd40c7cfbc8ca22259913d",
           "message": "chore: include RPC endpoints field to DeploymentInventory",
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "6129c7a4db90018c7c68a1b9ec9b04e2a8298b50",
+          "message": "docs: add release commit generation docs",
+          "timestamp": "2024-03-28T12:03:01Z",
+          "tree_id": "9f9087b218521915881069163f6d6e64efeecb12",
+          "url": "https://github.com/maidsafe/safe_network/commit/6129c7a4db90018c7c68a1b9ec9b04e2a8298b50"
+        },
+        "date": 1711630509820,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
             "unit": "MB"
           },
           {
