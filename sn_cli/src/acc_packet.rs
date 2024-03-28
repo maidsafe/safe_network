@@ -9,7 +9,7 @@
 mod change_tracking;
 
 use super::{
-    files::{chunks_to_upload_with_iter, download_file, FilesUploadOptions, IterativeUploader},
+    files::{download_file, FilesUploadOptions, FilesUploader},
     ChunkManager,
 };
 use bls::PublicKey;
@@ -638,27 +638,17 @@ impl AccountPacket {
         folders: &mut Folders,
         options: FilesUploadOptions,
     ) -> Result<UploadSummary> {
-        let files_api = FilesApi::build(self.client.clone(), self.root_dir.clone())?;
-        let mut chunk_manager = ChunkManager::new(&self.tracking_info_dir.clone());
+        let files_uploader = FilesUploader::new(self.client.clone(), self.root_dir.clone())
+            .set_make_data_public(options.make_data_public)
+            .set_batch_size(options.batch_size)
+            .insert_entries(self.iter_only_files());
 
-        let chunks_to_upload = chunks_to_upload_with_iter(
-            &files_api,
-            &mut chunk_manager,
-            self.iter_only_files(),
-            true,
-            options.batch_size,
-            options.make_data_public,
-        )
-        .await?;
-
-        IterativeUploader::new(chunk_manager, self.client.clone(), self.root_dir.clone())
-            .iterate_upload(chunks_to_upload, &self.files_dir, options.clone())
-            .await?;
+        let files_summary = files_uploader.start_upload().await?;
 
         // batch sync the folders
-        let summary =
+        let folder_summary =
             FoldersApi::sync_multiple(folders.iter_mut().map(|(_, (folder, _))| folder)).await?;
-        Ok(summary)
+        Ok(files_summary.merge(folder_summary)?)
     }
 
     // Download a Folders and their files from the network and generate tracking info

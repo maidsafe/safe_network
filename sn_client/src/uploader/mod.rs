@@ -11,7 +11,7 @@ mod tests;
 mod upload;
 
 use self::upload::{start_upload, InnerUploader};
-use crate::{Client, ClientRegister, Result};
+use crate::{Client, ClientRegister, Error, Result};
 use itertools::Either;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
@@ -38,6 +38,35 @@ pub struct UploadSummary {
     pub uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
     pub uploaded_count: usize,
     pub skipped_count: usize,
+}
+
+impl UploadSummary {
+    /// Merge two UploadSummary together.
+    pub fn merge(mut self, other: Self) -> Result<Self> {
+        self.uploaded_addresses.extend(other.uploaded_addresses);
+        self.uploaded_registers
+            .extend(other.uploaded_registers.into_iter());
+
+        let summary = Self {
+            storage_cost: self
+                .storage_cost
+                .checked_add(other.storage_cost)
+                .ok_or(Error::NumericOverflow)?,
+            royalty_fees: self
+                .royalty_fees
+                .checked_add(other.royalty_fees)
+                .ok_or(Error::NumericOverflow)?,
+            final_balance: self
+                .final_balance
+                .checked_add(other.final_balance)
+                .ok_or(Error::NumericOverflow)?,
+            uploaded_addresses: self.uploaded_addresses,
+            uploaded_registers: self.uploaded_registers,
+            uploaded_count: self.uploaded_count + other.uploaded_count,
+            skipped_count: self.skipped_count + other.skipped_count,
+        };
+        Ok(summary)
+    }
 }
 
 #[derive(Debug, Clone)]

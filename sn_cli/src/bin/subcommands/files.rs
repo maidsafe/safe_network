@@ -7,10 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::{
-    chunks_to_upload_with_iter, download_file, download_files, ChunkManager, Estimator,
-    FilesUploadOptions, IterativeUploader, UploadedFile, UPLOADED_FILES,
+    download_file, download_files, ChunkManager, Estimator, FilesUploader, UploadedFile,
+    UPLOADED_FILES,
 };
-
 use clap::Parser;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -92,14 +91,13 @@ pub(crate) async fn files_cmds(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
-    let mut chunk_manager = ChunkManager::new(root_dir);
-
     match cmds {
         FilesCmds::Estimate {
             path,
             make_data_public,
         } => {
+            let files_api = FilesApi::build(client.clone(), root_dir.to_path_buf())?;
+            let chunk_manager = ChunkManager::new(root_dir);
             Estimator::new(chunk_manager, files_api)
                 .estimate_cost(path, make_data_public, root_dir)
                 .await?
@@ -122,27 +120,14 @@ pub(crate) async fn files_cmds(
                     bail!("The provided file path is invalid. Please verify the path.");
                 }
             }
-            let chunks_to_upload = chunks_to_upload(
-                &files_api,
-                &mut chunk_manager,
-                &file_path,
-                batch_size,
-                make_data_public,
-            )
-            .await?;
+            let files_uploader = FilesUploader::new(client.clone(), root_dir.to_path_buf())
+                .set_make_data_public(make_data_public)
+                .set_batch_size(batch_size)
+                .set_verify_store(verify_store)
+                .set_retry_strategy(retry_strategy)
+                .insert_path(&file_path);
 
-            IterativeUploader::new(chunk_manager, client.clone(), root_dir.to_path_buf())
-                .iterate_upload(
-                    chunks_to_upload,
-                    &file_path,
-                    FilesUploadOptions {
-                        make_data_public,
-                        verify_store,
-                        batch_size,
-                        retry_strategy,
-                    },
-                )
-                .await?;
+            let _summary = files_uploader.start_upload().await?;
         }
         FilesCmds::Download {
             file_name,
@@ -267,22 +252,4 @@ fn count_files_in_path_recursively(file_path: &PathBuf) -> u32 {
         }
     });
     count
-}
-
-pub async fn chunks_to_upload(
-    files_api: &FilesApi,
-    chunk_manager: &mut ChunkManager,
-    files_path: &Path,
-    batch_size: usize,
-    make_data_public: bool,
-) -> Result<Vec<(XorName, PathBuf)>> {
-    chunks_to_upload_with_iter(
-        files_api,
-        chunk_manager,
-        WalkDir::new(files_path).into_iter().flatten(),
-        true,
-        batch_size,
-        make_data_public,
-    )
-    .await
 }

@@ -120,6 +120,9 @@ pub enum Error {
     RegisterNotFoundAfterUpload(XorName),
 
     // ------ Upload Errors --------
+    #[error("Overflow occurred while adding values")]
+    NumericOverflow,
+
     #[error("Uploadable item not found: {0:?}")]
     UploadableItemNotFound(XorName),
 
