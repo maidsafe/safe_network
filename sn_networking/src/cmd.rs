@@ -42,6 +42,8 @@ pub enum NodeIssue {
     ReplicationFailure,
     /// Close nodes have reported this peer as bad
     CloseNodesShunning,
+    /// Peer failed to pass the chunk proof verification
+    FailedChunkProofCheck,
 }
 
 /// Commands to send to the Swarm
