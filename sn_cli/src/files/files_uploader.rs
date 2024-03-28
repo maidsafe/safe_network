@@ -87,7 +87,7 @@ impl FilesUploader {
         let now = Instant::now();
 
         let mut uploader = Uploader::new(self.client, self.root_dir);
-        uploader.set_upload_cfg(self.upload_cfg.clone());
+        uploader.set_upload_cfg(self.upload_cfg);
         uploader.insert_chunk_paths(chunks_to_upload);
 
         let events_handle = Self::spawn_upload_events_handler(

@@ -6,12 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    wallet::StoragePaymentResult, Client, Error, Result, UploadCfg, UploadSummary, Uploader,
-    WalletClient,
-};
-
+use crate::{wallet::StoragePaymentResult, Client, Error, Result, WalletClient};
 use bls::PublicKey;
+use crdts::merkle_reg::MerkleReg;
 use libp2p::{
     kad::{Quorum, Record},
     PeerId,
@@ -23,14 +20,9 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy},
     NetworkAddress,
 };
-
-use crdts::merkle_reg::MerkleReg;
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
 use sn_transfers::{NanoTokens, Payment};
-use std::{
-    collections::{BTreeSet, HashSet, LinkedList},
-    path::PathBuf,
-};
+use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
 /// Cached operations made to an offline Register instance are applied locally only,
@@ -553,38 +545,6 @@ impl ClientRegister {
         self.push(verify_store).await?;
 
         Ok((storage_cost, royalties_fees))
-    }
-
-    /// Sync multiple Registers with the network.
-    pub async fn sync_multiple(
-        registers: impl IntoIterator<Item = &mut Self>,
-        root_dir: PathBuf,
-        upload_cfg: UploadCfg,
-    ) -> Result<UploadSummary> {
-        let registers_vec = registers.into_iter().collect::<Vec<_>>();
-        let client = registers_vec
-            .first()
-            .ok_or(Error::BatchSyncEmptyList)?
-            .client
-            .clone();
-
-        let mut uploader = Uploader::new(client, root_dir);
-        uploader.set_upload_cfg(upload_cfg);
-        uploader.set_collect_registers(true); // override cfg to collect all the registers
-        uploader.insert_register(registers_vec.iter().map(|reg| (*reg).clone()));
-        let mut upload_summary = uploader.start_upload().await?;
-
-        // now update the registers
-        for current_register in registers_vec {
-            let address = current_register.address();
-            let updated_register = upload_summary
-                .uploaded_registers
-                .remove(address)
-                .ok_or(Error::RegisterNotFoundAfterUpload(address.xorname()))?;
-            *current_register = updated_register;
-        }
-
-        Ok(upload_summary)
     }
 
     /// Push all operations made locally to the replicas of this Register on the network.
