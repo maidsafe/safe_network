@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711631825864,
+  "lastUpdate": 1711631933959,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "a593dbd05d16115d35bd40c7cfbc8ca22259913d",
-          "message": "chore: include RPC endpoints field to DeploymentInventory",
-          "timestamp": "2023-11-15T08:45:28Z",
-          "tree_id": "c77f822bde3732cd2e84f4059a32c1aa653de7fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/a593dbd05d16115d35bd40c7cfbc8ca22259913d"
-        },
-        "date": 1700040885767,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 72,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c78d10ab1e2f3731dd1122cacdd48279bf11db97",
+          "message": "chore: make sure cargo set-version is installed",
+          "timestamp": "2024-03-28T12:32:06Z",
+          "tree_id": "452539e5ac6e7f64e078e16b42a81cf243b9afbb",
+          "url": "https://github.com/maidsafe/safe_network/commit/c78d10ab1e2f3731dd1122cacdd48279bf11db97"
+        },
+        "date": 1711631933638,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
