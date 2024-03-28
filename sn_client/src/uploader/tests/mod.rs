@@ -165,12 +165,8 @@ async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() ->
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
+        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr,
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
@@ -212,102 +208,11 @@ async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times()
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
+        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr,
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
-        },
-        TestSteps::MakePaymentOk,
-        TestSteps::UploadItemOk,
-    ];
-
-    let (upload_handle, events_handle) =
-        start_uploading_with_steps(inner_uploader, VecDeque::from(steps), task_result_rx);
-
-    let _stats = upload_handle.await??;
-    let events = events_handle.await?;
-
-    assert_eq!(events.len(), 3);
-    assert_matches!(events[0], UploadEvent::PaymentMade { .. });
-    assert_matches!(events[1], UploadEvent::PaymentMade { .. });
-    assert_matches!(events[2], UploadEvent::RegisterUploaded(..));
-    Ok(())
-}
-
-/// 3. Chunks: if quote has expired, then we should repay to the cheapest peer immediately without waiting for
-/// multiple payment failures.
-#[tokio::test]
-async fn chunk_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let temp_dir = tempdir()?;
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
-
-    // cfg
-    inner_uploader.set_batch_size(1);
-    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
-
-    // the path to test
-    let steps = vec![
-        TestSteps::GetStoreCostOk {
-            trigger_zero_cost: false,
-            assert_select_different_payee: false,
-        },
-        TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: true,
-        },
-        TestSteps::GetStoreCostOk {
-            trigger_zero_cost: false,
-            assert_select_different_payee: false,
-        },
-        TestSteps::MakePaymentOk,
-        TestSteps::UploadItemOk,
-    ];
-
-    let (upload_handle, events_handle) =
-        start_uploading_with_steps(inner_uploader, VecDeque::from(steps), task_result_rx);
-
-    let _stats = upload_handle.await??;
-    let events = events_handle.await?;
-
-    assert_eq!(events.len(), 3);
-    assert_matches!(events[0], UploadEvent::PaymentMade { .. });
-    assert_matches!(events[1], UploadEvent::PaymentMade { .. });
-    assert_matches!(events[2], UploadEvent::ChunkUploaded(..));
-    Ok(())
-}
-
-/// 4. Register: if quote has expired, then we should repay to the cheapest peer immediately without waiting for
-/// multiple payment failures.
-#[tokio::test]
-async fn register_should_be_repaid_to_cheapest_peer_again_if_quote_has_expired() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
-    let temp_dir = tempdir()?;
-    let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
-
-    // cfg
-    inner_uploader.set_batch_size(1);
-    inner_uploader.insert_register(get_dummy_registers(1, inner_uploader.client.clone()));
-
-    // the path to test
-    let steps = vec![
-        TestSteps::GetRegisterErr,
-        TestSteps::GetStoreCostOk {
-            trigger_zero_cost: false,
-            assert_select_different_payee: false,
-        },
-        TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: true,
-        },
-        TestSteps::GetStoreCostOk {
-            trigger_zero_cost: false,
-            assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
         TestSteps::UploadItemOk,
@@ -522,24 +427,16 @@ async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> 
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
+        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr,
         // first repayment
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
-        TestSteps::UploadItemErr {
-            trigger_quote_expired: false,
-        },
+        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr,
         // thus after reaching max repayments, we should error out during get store cost.
         TestSteps::GetStoreCostErr {
             assert_select_different_payee: true,

@@ -48,9 +48,7 @@ impl WalletApi {
 
     /// Returns the most recent PaymentDetails for the given xorname if cached.
     /// If multiple payments have been made to the same xorname, then we pick the last one as it is the most recent.
-    ///
-    /// This does not check if the quote for the payment has expired.
-    pub fn get_payment(&self, xorname: &XorName) -> Result<PaymentDetails> {
+    pub fn get_recent_payment(&self, xorname: &XorName) -> Result<PaymentDetails> {
         let mut payments = self.read_payment_transactions(xorname)?;
         let payment = payments
             .pop()
@@ -60,34 +58,8 @@ impl WalletApi {
         Ok(payment)
     }
 
-    /// Returns the latest non-expired PaymentDetails for the given xorname.
-    /// If multiple payments have been made to the same xorname, then we pick the last one which has not yet expired.
-    ///
-    /// If all the payments have expired, we return an error.
-    pub fn get_non_expired_payment(&self, xorname: &XorName) -> Result<PaymentDetails> {
-        let mut payment_details = self.get_all_payments(xorname)?;
-        // find a non expired quote
-        let payment_detail = loop {
-            if let Some(payment_detail) = payment_details.pop() {
-                if payment_detail.quote.has_expired() {
-                    continue;
-                } else {
-                    break payment_detail;
-                }
-            } else {
-                return Err(WalletError::QuoteExpired(*xorname));
-            }
-        };
-
-        info!("Non-expired payment retrieved for {xorname:?} from wallet");
-
-        Ok(payment_detail)
-    }
-
     /// Return all the PaymentDetails for the given xorname if cached.
     /// Multiple payments to the same XorName can result in many payment details
-    ///
-    /// This does not check if the quote for the payments have expired.
     pub fn get_all_payments(&self, xorname: &XorName) -> Result<Vec<PaymentDetails>> {
         let payments = self.read_payment_transactions(xorname)?;
         if payments.is_empty() {
@@ -95,30 +67,6 @@ impl WalletApi {
         }
         info!(
             "All {} payments retrieved for {xorname:?} from wallet",
-            payments.len()
-        );
-
-        Ok(payments)
-    }
-
-    /// Return all the non-expired PaymentDetails for the given xorname if cached.
-    /// Multiple payments to the same xorname can result in many payment details
-    ///
-    /// If all the payments have expired, we return an error.
-    pub fn get_all_non_expired_payments(&self, xorname: &XorName) -> Result<Vec<PaymentDetails>> {
-        let payment_details = self.get_all_payments(xorname)?;
-
-        let payments = payment_details
-            .into_iter()
-            .filter(|details| !details.quote.has_expired())
-            .collect::<Vec<_>>();
-
-        if payments.is_empty() {
-            return Err(WalletError::QuoteExpired(*xorname));
-        }
-
-        info!(
-            "All {} non-expired payments retrieved for {xorname:?} from wallet",
             payments.len()
         );
 
