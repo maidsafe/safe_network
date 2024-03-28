@@ -47,7 +47,7 @@ const MAX_SEQUENTIAL_PAYMENT_FAILS: usize = 1;
 #[cfg(not(test))]
 const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 5;
 #[cfg(test)]
-const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 1;
+const MAX_SEQUENTIAL_NETWORK_ERRORS: usize = 32;
 
 /// The number of upload failures for a single data item before
 #[cfg(not(test))]
@@ -335,6 +335,7 @@ pub(super) async fn start_upload(
                 xorname,
                 get_store_cost_strategy,
                 max_repayments_reached,
+                expired,
             } => {
                 let _ = uploader.on_going_get_cost.remove(&xorname);
                 // use the same strategy. The repay different payee is set only if upload fails.
@@ -348,8 +349,15 @@ pub(super) async fn start_upload(
                     error!("Max repayments reached for {xorname:?}");
                     return Err(ClientError::MaximumRepaymentsReached(xorname));
                 }
-                uploader.get_store_cost_errors += 1;
-                if uploader.get_store_cost_errors > MAX_SEQUENTIAL_NETWORK_ERRORS {
+                if !expired {
+                    // only log error if it wasnt expired. That's a local state issue
+                    // and if we were reuploading older chunks with older quotes, we'd initially see errors for
+                    // every single chunk, eg. So we must check for a higher number of errors than chunks we're
+                    // processing in a batch.
+                    uploader.get_store_cost_errors += 1;
+                }
+
+                if uploader.get_store_cost_errors > uploader.batch_size * 2 {
                     error!("Max sequential network failures reached during GetStoreCostErr.");
                     return Err(ClientError::SequentialNetworkErrors);
                 }
@@ -516,6 +524,7 @@ impl UploaderInterface for Uploader {
                         xorname,
                         get_store_cost_strategy,
                         max_repayments_reached,
+                        expired: false,
                     }
                 }
             };

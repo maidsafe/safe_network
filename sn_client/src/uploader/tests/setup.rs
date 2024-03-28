@@ -226,6 +226,7 @@ impl UploaderInterface for TestUploader {
                             xorname,
                             get_store_cost_strategy,
                             max_repayments_reached,
+                            expired: false,
                         })
                         .await
                         .expect("Failed to send task result");

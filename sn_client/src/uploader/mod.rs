@@ -370,6 +370,7 @@ enum TaskResult {
         xorname: XorName,
         get_store_cost_strategy: GetStoreCostStrategy,
         max_repayments_reached: bool,
+        expired: bool,
     },
     MakePaymentsOk {
         paid_xornames: Vec<XorName>,
