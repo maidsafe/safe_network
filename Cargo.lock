@@ -5147,6 +5147,7 @@ dependencies = [
  "minreq",
  "serde",
  "serde_json",
+ "sn_build_info",
  "sn_client",
  "sn_logging",
  "sn_peers_acquisition",
