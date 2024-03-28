@@ -10,8 +10,8 @@
 mod tests;
 mod upload;
 
-use self::upload::{start_upload, InnerUploader};
-use crate::{Client, ClientRegister, Error, Result};
+use self::upload::{start_upload, InnerUploader, MAX_REPAYMENTS_PER_FAILED_ITEM};
+use crate::{Client, ClientRegister, Error, Result, BATCH_SIZE};
 use itertools::Either;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
@@ -27,6 +27,30 @@ use std::{
 };
 use tokio::sync::mpsc;
 use xor_name::XorName;
+
+/// The set of options to pass into the `Uploader`
+#[derive(Debug, Clone)]
+pub struct UploadCfg {
+    pub batch_size: usize,
+    pub verify_store: bool,
+    pub show_holders: bool,
+    pub retry_strategy: RetryStrategy,
+    pub max_repayments_for_failed_data: usize, // we want people to specify an explicit limit here.
+    pub collect_registers: bool,
+}
+
+impl Default for UploadCfg {
+    fn default() -> Self {
+        Self {
+            batch_size: BATCH_SIZE,
+            verify_store: true,
+            show_holders: false,
+            retry_strategy: RetryStrategy::Balanced,
+            max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
+            collect_registers: false,
+        }
+    }
+}
 
 /// The result of a successful upload.
 #[derive(Debug, Clone)]
@@ -44,8 +68,7 @@ impl UploadSummary {
     /// Merge two UploadSummary together.
     pub fn merge(mut self, other: Self) -> Result<Self> {
         self.uploaded_addresses.extend(other.uploaded_addresses);
-        self.uploaded_registers
-            .extend(other.uploaded_registers.into_iter());
+        self.uploaded_registers.extend(other.uploaded_registers);
 
         let summary = Self {
             storage_cost: self
@@ -132,39 +155,46 @@ impl Uploader {
         }
     }
 
+    /// Update all the configurations by passing the `UploadCfg` struct
+    pub fn set_upload_cfg(&mut self, cfg: UploadCfg) {
+        // Self can only be constructed with new(), which will set inner to InnerUploader always.
+        // So it is okay to call unwrap here.
+        self.inner
+            .as_mut()
+            .expect("Uploader::new makes sure inner is present")
+            .set_cfg(cfg);
+    }
+
     /// Sets the default batch size that determines the number of data that are processed in parallel.
     ///
     /// By default, this option is set to the constant `BATCH_SIZE: usize = 16`.
-    pub fn set_batch_size(mut self, batch_size: usize) -> Self {
+    pub fn set_batch_size(&mut self, batch_size: usize) {
         // Self can only be constructed with new(), which will set inner to InnerUploader always.
         // So it is okay to call unwrap here.
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_batch_size(batch_size);
-        self
     }
 
     /// Sets the option to verify the data after they have been uploaded.
     ///
     /// By default, this option is set to true.
-    pub fn set_verify_store(mut self, verify_store: bool) -> Self {
+    pub fn set_verify_store(&mut self, verify_store: bool) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_verify_store(verify_store);
-        self
     }
 
     /// Sets the option to display the holders that are expected to be holding the data during verification.
     ///
     /// By default, this option is set to false.
-    pub fn set_show_holders(mut self, show_holders: bool) -> Self {
+    pub fn set_show_holders(&mut self, show_holders: bool) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_show_holders(show_holders);
-        self
     }
 
     /// Sets the RetryStrategy to increase the re-try during the GetStoreCost & Upload tasks.
@@ -172,24 +202,22 @@ impl Uploader {
     /// configure the re-payment attempts.
     ///
     /// By default, this option is set to RetryStrategy::Balanced
-    pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
+    pub fn set_retry_strategy(&mut self, retry_strategy: RetryStrategy) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_retry_strategy(retry_strategy);
-        self
     }
 
     /// Sets the maximum number of repayments to perform if the initial payment failed.
     /// NOTE: This creates an extra Spend and uses the wallet funds.
     ///
     /// By default, this option is set to 1 retry.
-    pub fn set_max_repayments_for_failed_data(mut self, retries: usize) -> Self {
+    pub fn set_max_repayments_for_failed_data(&mut self, retries: usize) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_max_repayments_for_failed_data(retries);
-        self
     }
 
     /// Enables the uploader to return all the registers that were Uploaded or Updated.
@@ -197,12 +225,11 @@ impl Uploader {
     /// through the UploadSummary when the whole upload process completes.
     ///
     /// By default, this option is set to False
-    pub fn set_collect_registers(mut self, collect_registers: bool) -> Self {
+    pub fn set_collect_registers(&mut self, collect_registers: bool) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
             .set_collect_registers(collect_registers);
-        self
     }
 
     /// Returns a receiver for UploadEvent.
@@ -291,34 +318,38 @@ trait UploaderInterface: Send + Sync {
 
 // Configuration functions are used in tests. So these are defined here and re-used inside `Uploader`
 impl InnerUploader {
+    pub(super) fn set_cfg(&mut self, cfg: UploadCfg) {
+        self.cfg = cfg;
+    }
+
     pub(super) fn set_batch_size(&mut self, batch_size: usize) {
-        self.batch_size = batch_size;
+        self.cfg.batch_size = batch_size;
     }
 
     pub(super) fn set_verify_store(&mut self, verify_store: bool) {
-        self.verify_store = verify_store;
+        self.cfg.verify_store = verify_store;
     }
 
     pub(super) fn set_show_holders(&mut self, show_holders: bool) {
-        self.show_holders = show_holders;
+        self.cfg.show_holders = show_holders;
     }
 
     pub(super) fn set_retry_strategy(&mut self, retry_strategy: RetryStrategy) {
-        self.retry_strategy = retry_strategy;
+        self.cfg.retry_strategy = retry_strategy;
     }
 
     pub(super) fn set_max_repayments_for_failed_data(&mut self, retries: usize) {
-        self.max_repayments_for_failed_data = retries;
+        self.cfg.max_repayments_for_failed_data = retries;
+    }
+
+    pub(super) fn set_collect_registers(&mut self, collect_registers: bool) {
+        self.cfg.collect_registers = collect_registers;
     }
 
     pub(super) fn get_event_receiver(&mut self) -> mpsc::Receiver<UploadEvent> {
         let (tx, rx) = mpsc::channel(100);
         self.event_sender = Some(tx);
         rx
-    }
-
-    pub(super) fn set_collect_registers(&mut self, collect_registers: bool) {
-        self.collect_registers = collect_registers;
     }
 
     pub(super) fn insert_chunk_paths(

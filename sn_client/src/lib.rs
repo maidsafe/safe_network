@@ -46,7 +46,7 @@ pub use self::{
     },
     folders::{FolderEntry, FoldersApi, Metadata},
     register::ClientRegister,
-    uploader::{UploadEvent, UploadSummary, Uploader},
+    uploader::{UploadCfg, UploadEvent, UploadSummary, Uploader},
     wallet::{broadcast_signed_spends, send, StoragePaymentResult, WalletClient},
 };
 pub(crate) use error::Result;

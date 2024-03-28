@@ -15,7 +15,10 @@ use color_eyre::{
     eyre::{bail, eyre},
     Help, Result,
 };
-use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
+use sn_client::{
+    protocol::storage::{Chunk, ChunkAddress, RetryStrategy},
+    UploadCfg,
+};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
 use std::{
     ffi::OsString,
@@ -120,11 +123,15 @@ pub(crate) async fn files_cmds(
                     bail!("The provided file path is invalid. Please verify the path.");
                 }
             }
+            let upload_cfg = UploadCfg {
+                batch_size,
+                verify_store,
+                retry_strategy,
+                ..Default::default()
+            };
             let files_uploader = FilesUploader::new(client.clone(), root_dir.to_path_buf())
                 .set_make_data_public(make_data_public)
-                .set_batch_size(batch_size)
-                .set_verify_store(verify_store)
-                .set_retry_strategy(retry_strategy)
+                .set_upload_cfg(upload_cfg)
                 .insert_path(&file_path);
 
             let _summary = files_uploader.start_upload().await?;

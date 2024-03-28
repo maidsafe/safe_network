@@ -6,27 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::ffi::OsString;
-use std::path::Path;
-
 use bytes::Bytes;
 use color_eyre::Result;
 use serde::Deserialize;
-
-use sn_client::protocol::storage::{ChunkAddress, RetryStrategy};
+use sn_client::protocol::storage::ChunkAddress;
+use std::{ffi::OsString, path::Path};
 use tracing::{error, warn};
 
 /// Subdir for storing uploaded file into
 pub const UPLOADED_FILES: &str = "uploaded_files";
-
-/// Options to configure different aspects of the logic to upload files
-#[derive(Clone)]
-pub struct FilesUploadOptions {
-    pub make_data_public: bool,
-    pub verify_store: bool,
-    pub batch_size: usize,
-    pub retry_strategy: RetryStrategy,
-}
 
 /// The metadata related to file that has been uploaded.
 /// This is written during upload and read during downloads.

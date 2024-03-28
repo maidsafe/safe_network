@@ -9,7 +9,7 @@
 mod change_tracking;
 
 use super::{
-    files::{download_file, FilesUploadOptions, FilesUploader},
+    files::{download_file, FilesUploader},
     ChunkManager,
 };
 use bls::PublicKey;
@@ -21,7 +21,7 @@ use color_eyre::{
 use sn_client::{
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
-    Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadSummary,
+    Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg, UploadSummary,
 };
 use std::{
     collections::{
@@ -220,11 +220,11 @@ impl AccountPacket {
 
     /// Sync local changes made to files and folder with their version on the network,
     /// both pushing and pulling changes to/form the network.
-    pub async fn sync(&mut self, options: FilesUploadOptions) -> Result<()> {
+    pub async fn sync(&mut self, upload_cfg: UploadCfg, make_data_public: bool) -> Result<()> {
         let ChangesToApply {
             mut folders,
             mutations,
-        } = self.scan_files_and_folders_for_changes(options.make_data_public)?;
+        } = self.scan_files_and_folders_for_changes(make_data_public)?;
 
         if mutations.is_empty() {
             println!("No local changes made to files/folders to be pushed to network.");
@@ -234,7 +234,9 @@ impl AccountPacket {
         }
 
         println!("Paying for folders hierarchy and uploading...");
-        let _synced_folders = self.pay_and_sync(&mut folders, options.clone()).await?;
+        let _synced_folders = self
+            .pay_and_sync(&mut folders, upload_cfg.clone(), make_data_public)
+            .await?;
 
         // mark root folder as created if it wasn't already
         if !self.root_folder_created {
@@ -274,8 +276,8 @@ impl AccountPacket {
         let mut updated_folders = self
             .download_folders_and_files(
                 folders_to_download,
-                options.batch_size,
-                options.retry_strategy,
+                upload_cfg.batch_size,
+                upload_cfg.retry_strategy,
             )
             .await?;
 
@@ -636,18 +638,22 @@ impl AccountPacket {
     async fn pay_and_sync(
         &self,
         folders: &mut Folders,
-        options: FilesUploadOptions,
+        upload_cfg: UploadCfg,
+        make_data_public: bool,
     ) -> Result<UploadSummary> {
         let files_uploader = FilesUploader::new(self.client.clone(), self.root_dir.clone())
-            .set_make_data_public(options.make_data_public)
-            .set_batch_size(options.batch_size)
+            .set_upload_cfg(upload_cfg.clone())
+            .set_make_data_public(make_data_public)
             .insert_entries(self.iter_only_files());
 
         let files_summary = files_uploader.start_upload().await?;
 
         // batch sync the folders
-        let folder_summary =
-            FoldersApi::sync_multiple(folders.iter_mut().map(|(_, (folder, _))| folder)).await?;
+        let folder_summary = FoldersApi::sync_multiple(
+            folders.iter_mut().map(|(_, (folder, _))| folder),
+            upload_cfg,
+        )
+        .await?;
         Ok(files_summary.merge(folder_summary)?)
     }
 
@@ -787,11 +793,12 @@ fn find_by_name_in_parent_folder(name: &str, path: &Path, folders: &Folders) -> 
 mod tests {
     // All tests require a network running so Clients can be instantiated.
 
+    use super::Mutation;
     use super::{
         read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
         MetadataTrackingInfo,
     };
-    use super::{FilesUploadOptions, Mutation};
+    use sn_client::UploadCfg;
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
         registers::{EntryHash, RegisterAddress},
@@ -810,11 +817,17 @@ mod tests {
     };
     use xor_name::XorName;
 
-    const SYNC_OPTS: FilesUploadOptions = FilesUploadOptions {
-        make_data_public: false,
-        verify_store: true,
-        batch_size: BATCH_SIZE,
-        retry_strategy: RetryStrategy::Quick,
+    const SYNC_OPTS: (UploadCfg, bool) = {
+        let cfg = UploadCfg {
+            verify_store: true,
+            batch_size: BATCH_SIZE,
+            retry_strategy: RetryStrategy::Quick,
+            show_holders: false,
+            max_repayments_for_failed_data: 1,
+            collect_registers: false,
+        };
+        let make_data_public = false;
+        (cfg, make_data_public)
     };
 
     #[tokio::test]
@@ -896,7 +909,7 @@ mod tests {
         )?;
 
         // let's sync up with the network from the original empty account packet
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         let clone_files_path = tmp_dir.path().join("myaccpacketempty-clone");
         let cloned_acc_packet = AccountPacket::retrieve_folders(
@@ -934,7 +947,7 @@ mod tests {
             Some(root_folder_addr),
         )?;
 
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         let download_files_path = tmp_dir.path().join("myaccpacket-downloaded");
 
@@ -983,7 +996,7 @@ mod tests {
             || matches!(mutation, Mutation::NewFolder(i) if i.file_path == files_path.join("dir2"))
         }), "at least one of the mutations detected was unexpected/incorrect");
 
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // let's make some mutations/changes
         mutate_test_files_on_disk(&files_path, &mut test_files)?;
@@ -1023,7 +1036,7 @@ mod tests {
             Some(root_folder_addr),
         )?;
 
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         let clone_files_path = tmp_dir.path().join("myaccpackettosync-clone");
         let mut cloned_acc_packet = AccountPacket::retrieve_folders(
@@ -1040,11 +1053,11 @@ mod tests {
         mutate_test_files_on_disk(&clone_files_path, &mut expected_files)?;
 
         // and finally, sync the clone up with the network
-        cloned_acc_packet.sync(SYNC_OPTS).await?;
+        cloned_acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // let's sync up with the network from the original account packet to merge
         // changes made earlier from the cloned version
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // let's verify both the original and cloned packets contain the same content
         check_files_and_dirs_match(&acc_packet, &cloned_acc_packet, expected_files.clone())?;
@@ -1074,7 +1087,7 @@ mod tests {
             Some(root_folder_addr),
         )?;
 
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // let's make just one mutation before moving the dir to another disk location
         let new_chunk = random_file_chunk();
@@ -1123,7 +1136,7 @@ mod tests {
             &files_path,
             Some(root_folder_addr),
         )?;
-        acc_packet.sync(SYNC_OPTS).await?;
+        acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // try to download Folder with a different Client should fail since it
         // contains a different key than the one used for encrypting the metadata chunks

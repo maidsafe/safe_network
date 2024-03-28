@@ -16,7 +16,7 @@ pub use chunk_manager::ChunkManager;
 pub use download::{download_file, download_files};
 pub use estimate::Estimator;
 pub use files_uploader::FilesUploader;
-pub use upload::{FilesUploadOptions, UploadedFile, UPLOADED_FILES};
+pub use upload::{UploadedFile, UPLOADED_FILES};
 
 use color_eyre::Result;
 use indicatif::{ProgressBar, ProgressStyle};

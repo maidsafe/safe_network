@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    wallet::StoragePaymentResult, Client, Error, Result, UploadSummary, Uploader, WalletClient,
+    wallet::StoragePaymentResult, Client, Error, Result, UploadCfg, UploadSummary, Uploader,
+    WalletClient,
 };
 
 use bls::PublicKey;
@@ -558,6 +559,7 @@ impl ClientRegister {
     pub async fn sync_multiple(
         registers: impl IntoIterator<Item = &mut Self>,
         root_dir: PathBuf,
+        upload_cfg: UploadCfg,
     ) -> Result<UploadSummary> {
         let registers_vec = registers.into_iter().collect::<Vec<_>>();
         let client = registers_vec
@@ -566,7 +568,9 @@ impl ClientRegister {
             .client
             .clone();
 
-        let mut uploader = Uploader::new(client, root_dir).set_collect_registers(true);
+        let mut uploader = Uploader::new(client, root_dir);
+        uploader.set_upload_cfg(upload_cfg);
+        uploader.set_collect_registers(true); // override cfg to collect all the registers
         uploader.insert_register(registers_vec.iter().map(|reg| (*reg).clone()));
         let mut upload_summary = uploader.start_upload().await?;
 
