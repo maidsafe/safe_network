@@ -8,10 +8,7 @@
 
 pub(crate) mod download;
 
-use crate::{
-    chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, Error,
-    WalletClient,
-};
+use crate::{error::Result, wallet::StoragePaymentResult, Client, Error, WalletClient};
 use bytes::Bytes;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
 use sn_protocol::{
@@ -19,6 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::HotWallet;
+use std::io::Read;
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -78,17 +76,22 @@ impl FilesApi {
         chunk_dir: &Path,
         include_data_map_in_chunks: bool,
     ) -> ChunkFileResult {
-        let file = File::open(file_path)?;
-        let metadata = file.metadata()?;
-        let file_size = metadata.len();
+        let mut file = File::open(file_path)?;
+        let file_size = file.metadata()?.len();
 
-        let (head_address, data_map_chunk, mut chunks_paths) =
-            if file_size < MIN_ENCRYPTABLE_BYTES as u64 {
-                Err(ChunksError::FileTooSmall)?
-            } else {
-                let (data_map_chunk, chunks) = encrypt_large(file_path, chunk_dir)?;
-                (*data_map_chunk.name(), data_map_chunk, chunks)
-            };
+        let (data_map_chunk, chunk_vec) = match file_size {
+            file_size if Self::zero_file_size(file_size) => EmptyFile {}.chunk_by_size(),
+            file_size if Self::small_file_size(file_size) => {
+                let mut buffer = Vec::new();
+                match file.read(&mut buffer) {
+                    Ok(..) => SmallFile { buffer }.chunk_by_size(),
+                    Err(_error) => panic!("Problem opening the file: {_error:?}"),
+                }
+            }
+            _ => encrypt_large(file_path, chunk_dir)?,
+        };
+
+        let mut chunks_paths = chunk_vec;
 
         debug!("include_data_map_in_chunks {include_data_map_in_chunks:?}");
 
@@ -104,11 +107,19 @@ impl FilesApi {
         }
 
         Ok((
-            ChunkAddress::new(head_address),
+            ChunkAddress::new(*data_map_chunk.name()),
             data_map_chunk,
             file_size,
             chunks_paths,
         ))
+    }
+
+    fn small_file_size(file_size: u64) -> bool {
+        file_size < MIN_ENCRYPTABLE_BYTES as u64
+    }
+
+    fn zero_file_size(file_size: u64) -> bool {
+        file_size == 0
     }
 
     /// Directly writes Chunks to the network in the
@@ -185,11 +196,31 @@ impl FilesApi {
     }
 }
 
-/// Encrypts a [`LargeFile`] and returns the resulting address and all chunk names.
-/// Correspondent encrypted chunks are written in the specified output folder.
-/// Does not store anything to the network.
-///
-/// Returns data map as a chunk, and the resulting chunks
+struct EmptyFile {}
+
+struct SmallFile {
+    buffer: Vec<u8>,
+}
+
+trait ChunkBySize {
+    fn chunk_by_size(self) -> (Chunk, Vec<(XorName, PathBuf)>);
+}
+
+impl ChunkBySize for EmptyFile {
+    fn chunk_by_size(self) -> (Chunk, Vec<(XorName, PathBuf)>) {
+        let bytes: Bytes = Default::default();
+        let chunk = Chunk::new(bytes);
+        (chunk, vec![])
+    }
+}
+
+impl ChunkBySize for SmallFile {
+    fn chunk_by_size(self) -> (Chunk, Vec<(XorName, PathBuf)>) {
+        let chunk = Chunk::new(Bytes::from(self.buffer));
+        (chunk, vec![])
+    }
+}
+
 fn encrypt_large(file_path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<(XorName, PathBuf)>)> {
     Ok(crate::chunks::encrypt_large(file_path, output_dir)?)
 }
