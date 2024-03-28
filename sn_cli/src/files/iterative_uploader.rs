@@ -29,15 +29,15 @@ use xor_name::XorName;
 pub struct IterativeUploader {
     chunk_manager: ChunkManager,
     client: Client,
-    wallet_dir: PathBuf,
+    root_dir: PathBuf,
 }
 
 impl IterativeUploader {
-    pub fn new(chunk_manager: ChunkManager, client: Client, wallet_dir: PathBuf) -> Self {
+    pub fn new(chunk_manager: ChunkManager, client: Client, root_dir: PathBuf) -> Self {
         Self {
             chunk_manager,
             client,
-            wallet_dir,
+            root_dir,
         }
     }
 }
@@ -58,7 +58,7 @@ impl IterativeUploader {
             batch_size,
             retry_strategy,
         } = options;
-        let mut uploader = Uploader::new(self.client, self.wallet_dir)
+        let mut uploader = Uploader::new(self.client, self.root_dir)
             .set_batch_size(batch_size)
             .set_verify_store(verify_store)
             .set_retry_strategy(retry_strategy);

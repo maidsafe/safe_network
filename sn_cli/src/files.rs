@@ -36,10 +36,16 @@ pub async fn chunks_to_upload_with_iter(
     batch_size: usize,
     make_data_public: bool,
 ) -> Result<Vec<(XorName, PathBuf)>> {
-    chunk_manager.chunk_with_iter(entries_iter, read_cache, make_data_public)?;
+    let entries_iter = entries_iter.into_iter().collect::<Vec<_>>();
+    chunk_manager.chunk_with_iter(entries_iter.iter().cloned(), read_cache, make_data_public)?;
     let chunks_to_upload = if chunk_manager.is_chunks_empty() {
-        let chunks = chunk_manager.get_chunks();
+        let chunks =
+            chunk_manager.already_put_chunks(entries_iter.into_iter(), make_data_public)?;
 
+        println!(
+            "Files upload attempted previously, verifying {} chunks",
+            chunks.len()
+        );
         let failed_chunks = files_api
             .client()
             .verify_uploaded_chunks(&chunks, batch_size)

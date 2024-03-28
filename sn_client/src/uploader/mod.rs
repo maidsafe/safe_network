@@ -19,7 +19,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::NanoTokens;
+use sn_transfers::{NanoTokens, WalletApi};
 use std::{fmt::Debug, path::PathBuf};
 use tokio::sync::mpsc;
 use xor_name::XorName;
@@ -92,9 +92,9 @@ impl Uploader {
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
     // NOTE: Self has to be constructed only using this method. We expect `Self::inner` is present everywhere.
-    pub fn new(client: Client, wallet_dir: PathBuf) -> Self {
+    pub fn new(client: Client, root_dir: PathBuf) -> Self {
         Self {
-            inner: Some(InnerUploader::new(client, wallet_dir)),
+            inner: Some(InnerUploader::new(client, root_dir)),
         }
     }
 
@@ -134,7 +134,7 @@ impl Uploader {
     }
 
     /// Sets the RetryStrategy to increase the re-try during the GetStoreCost & Upload tasks.
-    /// This does not affect the the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
+    /// This does not affect the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
     /// configure the re-payment attempts.
     ///
     /// By default, this option is set to RetryStrategy::Balanced
@@ -146,11 +146,10 @@ impl Uploader {
         self
     }
 
-    /// Sets the RetryStrategy to increase the re-try during the GetStoreCost & Upload tasks.
-    /// This does not affect the the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
-    /// configure the re-payment attempts.
+    /// Sets the maximum number of repayments to perform if the initial payment failed.
+    /// NOTE: This creates an extra Spend and uses the wallet funds.
     ///
-    /// By default, this option is set to RetryStrategy::Balanced
+    /// By default, this option is set to 1 retry.
     pub fn set_max_repayments_for_failed_data(mut self, retries: usize) -> Self {
         self.inner
             .as_mut()
@@ -213,14 +212,14 @@ trait UploaderInterface: Send + Sync {
     fn take_inner_uploader(&mut self) -> InnerUploader;
 
     // Mutable reference is used in tests.
-    fn spawn_get_register(
+    fn submit_get_register_task(
         &mut self,
         client: Client,
         reg_addr: RegisterAddress,
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
-    fn spawn_push_register(
+    fn submit_push_register_task(
         &mut self,
         upload_item: UploadItem,
         verify_store: bool,
@@ -228,10 +227,10 @@ trait UploaderInterface: Send + Sync {
     );
 
     #[allow(clippy::too_many_arguments)]
-    fn spawn_get_store_cost(
+    fn submit_get_store_cost_task(
         &mut self,
         client: Client,
-        wallet_dir: PathBuf,
+        wallet_api: WalletApi,
         xorname: XorName,
         address: NetworkAddress,
         get_store_cost_strategy: GetStoreCostStrategy,
@@ -239,17 +238,17 @@ trait UploaderInterface: Send + Sync {
         task_result_sender: mpsc::Sender<TaskResult>,
     );
 
-    fn spawn_make_payment(
+    fn submit_make_payment_task(
         &mut self,
         to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     );
 
-    fn spawn_upload_item(
+    fn submit_upload_item_task(
         &mut self,
         upload_item: UploadItem,
         client: Client,
-        wallet_dir: PathBuf,
+        wallet_api: WalletApi,
         verify_store: bool,
         retry_strategy: RetryStrategy,
         task_result_sender: mpsc::Sender<TaskResult>,

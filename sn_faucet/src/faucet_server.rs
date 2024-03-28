@@ -196,12 +196,13 @@ async fn startup_server(client: Client) -> Result<()> {
     #[cfg(feature = "distribution")]
     warp::serve(distribution_route.or(gift_route))
         // warp::serve(gift_route)
-        .run(([127, 0, 0, 1], 8000))
+        .run(([0, 0, 0, 0], 8000))
         .await;
 
     #[cfg(not(feature = "distribution"))]
-    warp::serve(gift_route).run(([127, 0, 0, 1], 8000)).await;
+    warp::serve(gift_route).run(([0, 0, 0, 0], 8000)).await;
 
+    debug!("Server closed");
     Ok(())
 }
 

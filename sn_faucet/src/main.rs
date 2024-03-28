@@ -24,7 +24,7 @@ use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -50,10 +50,12 @@ async fn main() -> Result<()> {
         ("sn_registers".to_string(), Level::TRACE),
         ("sn_transfers".to_string(), Level::TRACE),
     ];
+
     let mut log_builder = LogBuilder::new(logging_targets);
     log_builder.output_dest(opt.log_output_dest);
     let _log_handles = log_builder.initialize()?;
 
+    debug!("Built with git version: {}", sn_build_info::git_info());
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();

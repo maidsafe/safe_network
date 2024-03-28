@@ -52,6 +52,7 @@
 //! which eventually clears from the mempool and becomes spendable again.
 //!
 
+mod api;
 mod data_payments;
 mod error;
 mod hot_wallet;
@@ -60,20 +61,20 @@ mod wallet_file;
 mod watch_only;
 
 pub use self::{
+    api::{WalletApi, WALLET_DIR_NAME},
     data_payments::{Payment, PaymentQuote, QuotingMetrics, QUOTE_EXPIRATION_SECS},
     error::{Error, Result},
     hot_wallet::HotWallet,
     keys::bls_secret_from_hex,
+    wallet_file::wallet_lockfile_name,
     watch_only::WatchOnlyWallet,
 };
-use crate::{NanoTokens, UniquePubkey};
-pub use hot_wallet::WALLET_DIR_NAME;
 pub(crate) use keys::store_new_keypair;
-use wallet_file::wallet_file_name;
-pub use wallet_file::wallet_lockfile_name;
 
+use crate::{NanoTokens, UniquePubkey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, path::Path};
+use wallet_file::wallet_file_name;
 
 #[derive(Default, Serialize, Deserialize)]
 pub(super) struct KeyLessWallet {

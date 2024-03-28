@@ -6,11 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::UniquePubkey;
 use std::collections::BTreeSet;
 use thiserror::Error;
 use xor_name::XorName;
-
-use crate::UniquePubkey;
 
 /// Specialisation of `std::Result`.
 pub type Result<T, E = Error> = std::result::Result<T, E>;

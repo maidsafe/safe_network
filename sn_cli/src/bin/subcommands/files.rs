@@ -110,7 +110,9 @@ pub(crate) async fn files_cmds(
             retry_strategy,
             make_data_public,
         } => {
-            if count_files_in_path_recursively(&file_path) == 0 {
+            let files_count = count_files_in_path_recursively(&file_path);
+
+            if files_count == 0 {
                 if file_path.is_dir() {
                     bail!(
                         "The directory specified for upload is empty. \
@@ -119,29 +121,28 @@ pub(crate) async fn files_cmds(
                 } else {
                     bail!("The provided file path is invalid. Please verify the path.");
                 }
-            } else {
-                let chunks_to_upload = chunks_to_upload(
-                    &files_api,
-                    &mut chunk_manager,
+            }
+            let chunks_to_upload = chunks_to_upload(
+                &files_api,
+                &mut chunk_manager,
+                &file_path,
+                batch_size,
+                make_data_public,
+            )
+            .await?;
+
+            IterativeUploader::new(chunk_manager, client.clone(), root_dir.to_path_buf())
+                .iterate_upload(
+                    chunks_to_upload,
                     &file_path,
-                    batch_size,
-                    make_data_public,
+                    FilesUploadOptions {
+                        make_data_public,
+                        verify_store,
+                        batch_size,
+                        retry_strategy,
+                    },
                 )
                 .await?;
-
-                IterativeUploader::new(chunk_manager, client.clone(), root_dir.to_path_buf())
-                    .iterate_upload(
-                        chunks_to_upload,
-                        &file_path,
-                        FilesUploadOptions {
-                            make_data_public,
-                            verify_store,
-                            batch_size,
-                            retry_strategy,
-                        },
-                    )
-                    .await?;
-            }
         }
         FilesCmds::Download {
             file_name,
@@ -279,7 +280,7 @@ pub async fn chunks_to_upload(
         files_api,
         chunk_manager,
         WalkDir::new(files_path).into_iter().flatten(),
-        false,
+        true,
         batch_size,
         make_data_public,
     )

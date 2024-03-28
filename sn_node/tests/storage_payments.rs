@@ -145,8 +145,9 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .iter()
         .take(subset_len)
         .all(|name| paying_wallet
-            .get_recent_cached_payment_for_xorname(&name.as_xorname().unwrap())
-            .is_some()));
+            .api()
+            .get_payment(&name.as_xorname().unwrap())
+            .is_ok()));
 
     // now let's request to pay for all addresses, even that we've already paid for a subset of them
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
