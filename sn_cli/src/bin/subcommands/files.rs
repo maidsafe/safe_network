@@ -7,24 +7,16 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::{
-    download_file, download_files, ChunkManager, Estimator, FilesUploader, UploadedFile,
-    UPLOADED_FILES,
+    download_file, download_files, ChunkManager, Estimator, UploadedFile, UPLOADED_FILES,
 };
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Help, Result,
-};
-use sn_client::{
-    protocol::storage::{Chunk, ChunkAddress, RetryStrategy},
-    UploadCfg,
-};
+use color_eyre::{eyre::eyre, Help, Result};
+use sn_client::protocol::storage::{Chunk, ChunkAddress, RetryStrategy};
 use sn_client::{Client, FilesApi, BATCH_SIZE};
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
 };
-use walkdir::WalkDir;
 use xor_name::XorName;
 
 #[derive(Parser, Debug)]
@@ -37,26 +29,7 @@ pub enum FilesCmds {
         #[clap(long, name = "make_public", default_value = "false", short = 'p')]
         make_data_public: bool,
     },
-    Upload {
-        /// The location of the file(s) to upload.
-        ///
-        /// Can be a file or a directory.
-        #[clap(name = "path", value_name = "PATH")]
-        file_path: PathBuf,
-        /// The batch_size to split chunks into parallel handling batches
-        /// during payment and upload processing.
-        #[clap(long, default_value_t = BATCH_SIZE, short='b')]
-        batch_size: usize,
-        /// Should the file be made accessible to all. (This is irreversible)
-        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
-        make_data_public: bool,
-        /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
-        ///
-        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
-        /// to 'persistent' (most effort).
-        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
-        retry_strategy: RetryStrategy,
-    },
+
     Download {
         /// The name to apply to the downloaded file.
         ///
@@ -88,12 +61,7 @@ pub enum FilesCmds {
     },
 }
 
-pub(crate) async fn files_cmds(
-    cmds: FilesCmds,
-    client: &Client,
-    root_dir: &Path,
-    verify_store: bool,
-) -> Result<()> {
+pub(crate) async fn files_cmds(cmds: FilesCmds, client: &Client, root_dir: &Path) -> Result<()> {
     match cmds {
         FilesCmds::Estimate {
             path,
@@ -105,37 +73,7 @@ pub(crate) async fn files_cmds(
                 .estimate_cost(path, make_data_public, root_dir)
                 .await?
         }
-        FilesCmds::Upload {
-            file_path,
-            batch_size,
-            retry_strategy,
-            make_data_public,
-        } => {
-            let files_count = count_files_in_path_recursively(&file_path);
 
-            if files_count == 0 {
-                if file_path.is_dir() {
-                    bail!(
-                        "The directory specified for upload is empty. \
-                    Please verify the provided path."
-                    );
-                } else {
-                    bail!("The provided file path is invalid. Please verify the path.");
-                }
-            }
-            let upload_cfg = UploadCfg {
-                batch_size,
-                verify_store,
-                retry_strategy,
-                ..Default::default()
-            };
-            let files_uploader = FilesUploader::new(client.clone(), root_dir.to_path_buf())
-                .set_make_data_public(make_data_public)
-                .set_upload_cfg(upload_cfg)
-                .insert_path(&file_path);
-
-            let _summary = files_uploader.start_upload().await?;
-        }
         FilesCmds::Download {
             file_name,
             file_addr,
@@ -247,16 +185,4 @@ pub(crate) async fn files_cmds(
         }
     }
     Ok(())
-}
-
-fn count_files_in_path_recursively(file_path: &PathBuf) -> u32 {
-    let entries_iterator = WalkDir::new(file_path).into_iter().flatten();
-    let mut count = 0;
-
-    entries_iterator.for_each(|entry| {
-        if entry.file_type().is_file() {
-            count += 1;
-        }
-    });
-    count
 }

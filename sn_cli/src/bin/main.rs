@@ -142,9 +142,7 @@ async fn main() -> Result<()> {
         SubCmd::WatchOnlyWallet(cmds) => {
             wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
-        SubCmd::Files(cmds) => {
-            files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
-        }
+        SubCmd::Files(cmds) => files_cmds(cmds, &client, &client_data_dir_path).await?,
         SubCmd::Folders(cmds) => {
             folders_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
         }
