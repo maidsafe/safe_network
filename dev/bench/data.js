@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711675799459,
+  "lastUpdate": 1711675802551,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d275b13ce2ec28425f32ef48e200ca1a68235e34",
-          "message": "test(CI): collect swarm_driver handling statistics",
-          "timestamp": "2023-11-17T11:22:07Z",
-          "tree_id": "402bdc36417eb5c0b0ca6ff3f2cfba1e7e6f6c3f",
-          "url": "https://github.com/maidsafe/safe_network/commit/d275b13ce2ec28425f32ef48e200ca1a68235e34"
-        },
-        "date": 1700222651745,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 221,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 74,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0",
+          "message": "feat(acc-packet): cache the root seed on a file to prevent user to re-entering it for each op",
+          "timestamp": "2024-03-29T00:47:53Z",
+          "tree_id": "509255f4e57b3579bb2e369c358427e81c8b9e8c",
+          "url": "https://github.com/maidsafe/safe_network/commit/a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0"
+        },
+        "date": 1711675801231,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
