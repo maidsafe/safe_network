@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711674836671,
+  "lastUpdate": 1711674838267,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fd4bcffabd2a79ffbb8daacdaf00501530a1cd90",
-          "message": "fix(node): increase timeout for reward waits\n\nWith longer verifications this can take longer",
-          "timestamp": "2023-11-17T09:05:31Z",
-          "tree_id": "80cc95fce698d93f0844f01bd9718a1032ff4697",
-          "url": "https://github.com/maidsafe/safe_network/commit/fd4bcffabd2a79ffbb8daacdaf00501530a1cd90"
-        },
-        "date": 1700214478124,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 195,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 74,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "dcb4dc96d0bbf5f109ce5a443e293e93677fa409",
+          "message": "refactor(client): move retry pending tx into its own method",
+          "timestamp": "2024-03-29T00:28:57Z",
+          "tree_id": "c9584f2999a00c03f7294dedf9712640cef54a11",
+          "url": "https://github.com/maidsafe/safe_network/commit/dcb4dc96d0bbf5f109ce5a443e293e93677fa409"
+        },
+        "date": 1711674837891,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
