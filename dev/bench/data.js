@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711661864578,
+  "lastUpdate": 1711674731380,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fd4bcffabd2a79ffbb8daacdaf00501530a1cd90",
-          "message": "fix(node): increase timeout for reward waits\n\nWith longer verifications this can take longer",
-          "timestamp": "2023-11-17T09:05:31Z",
-          "tree_id": "80cc95fce698d93f0844f01bd9718a1032ff4697",
-          "url": "https://github.com/maidsafe/safe_network/commit/fd4bcffabd2a79ffbb8daacdaf00501530a1cd90"
-        },
-        "date": 1700214242584,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.016235413354566,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 23.241802035870784,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 52.338605130575964,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.585146615375784,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "dcb4dc96d0bbf5f109ce5a443e293e93677fa409",
+          "message": "refactor(client): move retry pending tx into its own method",
+          "timestamp": "2024-03-29T00:28:57Z",
+          "tree_id": "c9584f2999a00c03f7294dedf9712640cef54a11",
+          "url": "https://github.com/maidsafe/safe_network/commit/dcb4dc96d0bbf5f109ce5a443e293e93677fa409"
+        },
+        "date": 1711674727963,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.24495873630083,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.684791616803953,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.78612093356697,
             "unit": "MiB/s"
           }
         ]
