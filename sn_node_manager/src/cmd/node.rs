@@ -79,10 +79,29 @@ pub async fn add(
             .await?
     };
 
+    // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
+    // manager.
+    //
+    // Since we don't use the `network-contacts` feature in the node manager, the `PeersNotObtained`
+    // error should occur when no `--peer` arguments were used. If the `safenode` binary we're using
+    // has `network-contacts` enabled (which is the case for released binaries), it's fine if the
+    // service definition doesn't call `safenode` with a `--peer` argument.
+    //
+    // It's simpler to not use the `network-contacts` feature in the node manager, because it can
+    // return a huge peer list, and that's been problematic for service definition files.
+    let is_first = peers.first;
+    let bootstrap_peers = match get_peers_from_args(peers).await {
+        Ok(p) => p,
+        Err(e) => match e {
+            sn_peers_acquisition::error::Error::PeersNotObtained => Vec::new(),
+            _ => return Err(e.into()),
+        },
+    };
+
     let options = AddNodeServiceOptions {
         count,
         env_variables,
-        genesis: peers.first,
+        genesis: is_first,
         local,
         metrics_port,
         node_port,
@@ -94,7 +113,7 @@ pub async fn add(
         service_log_dir_path,
         user: service_user,
         version,
-        bootstrap_peers: get_peers_from_args(peers).await?,
+        bootstrap_peers,
     };
 
     add_node(options, &mut node_registry, &service_manager, verbosity).await?;
