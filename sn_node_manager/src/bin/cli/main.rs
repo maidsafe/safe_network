@@ -162,65 +162,8 @@ pub enum SubCmd {
     Daemon(DaemonSubCmd),
     #[clap(subcommand)]
     Faucet(FaucetSubCmd),
-    /// Kill the running local network.
-    #[clap(name = "kill")]
-    Kill {
-        /// Set this flag to keep the node's data and log directories.
-        #[clap(long)]
-        keep_directories: bool,
-    },
-    /// Join an existing local network.
-    ///
-    /// The existing network can be managed outwith the node manager. If this is the case, use the
-    /// `--peer` argument to specify an initial peer to connect to.
-    ///
-    /// If no `--peer` argument is supplied, the nodes will be added to the existing local network
-    /// being managed by the node manager.
-    #[clap(name = "join")]
-    Join {
-        /// Set to build the safenode and faucet binaries.
-        ///
-        /// This option requires the command run from the root of the safe_network repository.
-        #[clap(long)]
-        build: bool,
-        /// The number of nodes to run.
-        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
-        count: u16,
-        /// Path to a faucet binary
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version")]
-        faucet_path: Option<PathBuf>,
-        /// The version of the faucet to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
-        faucet_version: Option<String>,
-        /// An interval applied between launching each node.
-        ///
-        /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
-        /// Path to a safenode binary
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "node_version")]
-        node_path: Option<PathBuf>,
-        /// The version of safenode to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
-        node_version: Option<String>,
-        #[command(flatten)]
-        peers: PeersArgs,
-        /// Set to skip the network validation process
-        #[clap(long)]
-        skip_validation: bool,
-    },
+    #[clap(subcommand)]
+    Local(LocalSubCmd),
     /// Remove safenode service(s).
     ///
     /// Either peer ID(s) or service name(s) must be supplied.
@@ -241,59 +184,6 @@ pub enum SubCmd {
         /// Set this flag to keep the node's data and log directories.
         #[clap(long)]
         keep_directories: bool,
-    },
-    /// Run a local network.
-    ///
-    /// This will run safenode processes on the current machine to form a local network. A faucet
-    /// service will also run for dispensing tokens.
-    ///
-    /// Paths can be supplied for safenode and faucet binaries, but otherwise, the latest versions
-    /// will be downloaded.
-    #[clap(name = "run")]
-    Run {
-        /// Set to build the safenode and faucet binaries.
-        ///
-        /// This option requires the command run from the root of the safe_network repository.
-        #[clap(long)]
-        build: bool,
-        /// Set to remove the client data directory and kill any existing local network.
-        #[clap(long)]
-        clean: bool,
-        /// The number of nodes to run.
-        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
-        count: u16,
-        /// Path to a faucet binary.
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version", conflicts_with = "build")]
-        faucet_path: Option<PathBuf>,
-        /// The version of the faucet to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "build")]
-        faucet_version: Option<String>,
-        /// An interval applied between launching each node.
-        ///
-        /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
-        /// Path to a safenode binary
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
-        node_path: Option<PathBuf>,
-        /// The version of safenode to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "build")]
-        node_version: Option<String>,
-        /// Set to skip the network validation process
-        #[clap(long)]
-        skip_validation: bool,
     },
     /// Start safenode service(s).
     ///
@@ -401,7 +291,7 @@ pub enum SubCmd {
     },
 }
 
-/// Manage Daemon service.
+/// Manage the RPC service.
 #[derive(Subcommand, Debug)]
 pub enum DaemonSubCmd {
     /// Add a daemon service for issuing commands via RPC.
@@ -463,7 +353,7 @@ pub enum DaemonSubCmd {
     Stop {},
 }
 
-/// Manage faucet services.
+/// Manage the faucet service.
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 pub enum FaucetSubCmd {
@@ -566,6 +456,124 @@ pub enum FaucetSubCmd {
     },
 }
 
+/// Manage local networks.
+#[allow(clippy::large_enum_variant)]
+#[derive(Subcommand, Debug)]
+pub enum LocalSubCmd {
+    /// Kill the running local network.
+    #[clap(name = "kill")]
+    Kill {
+        /// Set this flag to keep the node's data and log directories.
+        #[clap(long)]
+        keep_directories: bool,
+    },
+    /// Join an existing local network.
+    ///
+    /// The existing network can be managed outwith the node manager. If this is the case, use the
+    /// `--peer` argument to specify an initial peer to connect to.
+    ///
+    /// If no `--peer` argument is supplied, the nodes will be added to the existing local network
+    /// being managed by the node manager.
+    #[clap(name = "join")]
+    Join {
+        /// Set to build the safenode and faucet binaries.
+        ///
+        /// This option requires the command run from the root of the safe_network repository.
+        #[clap(long)]
+        build: bool,
+        /// The number of nodes to run.
+        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
+        count: u16,
+        /// Path to a faucet binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "faucet_version")]
+        faucet_path: Option<PathBuf>,
+        /// The version of the faucet to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long)]
+        faucet_version: Option<String>,
+        /// An interval applied between launching each node.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
+        /// Path to a safenode binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "node_version")]
+        node_path: Option<PathBuf>,
+        /// The version of safenode to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long)]
+        node_version: Option<String>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Set to skip the network validation process
+        #[clap(long)]
+        skip_validation: bool,
+    },
+    /// Run a local network.
+    ///
+    /// This will run safenode processes on the current machine to form a local network. A faucet
+    /// service will also run for dispensing tokens.
+    ///
+    /// Paths can be supplied for safenode and faucet binaries, but otherwise, the latest versions
+    /// will be downloaded.
+    #[clap(name = "run")]
+    Run {
+        /// Set to build the safenode and faucet binaries.
+        ///
+        /// This option requires the command run from the root of the safe_network repository.
+        #[clap(long)]
+        build: bool,
+        /// Set to remove the client data directory and kill any existing local network.
+        #[clap(long)]
+        clean: bool,
+        /// The number of nodes to run.
+        #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
+        count: u16,
+        /// Path to a faucet binary.
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "faucet_version", conflicts_with = "build")]
+        faucet_path: Option<PathBuf>,
+        /// The version of the faucet to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "build")]
+        faucet_version: Option<String>,
+        /// An interval applied between launching each node.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
+        /// Path to a safenode binary
+        ///
+        /// The path and version arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
+        node_path: Option<PathBuf>,
+        /// The version of safenode to use.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The version and path arguments are mutually exclusive.
+        #[clap(long, conflicts_with = "build")]
+        node_version: Option<String>,
+        /// Set to skip the network validation process
+        #[clap(long)]
+        skip_validation: bool,
+    },
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     color_eyre::install()?;
@@ -662,18 +670,8 @@ async fn main() -> Result<()> {
                 .await
             }
         },
-        SubCmd::Join {
-            build,
-            count,
-            faucet_path,
-            faucet_version,
-            interval,
-            node_path,
-            node_version,
-            peers,
-            skip_validation: _,
-        } => {
-            cmd::local::join(
+        SubCmd::Local(local_command) => match local_command {
+            LocalSubCmd::Join {
                 build,
                 count,
                 faucet_path,
@@ -682,28 +680,23 @@ async fn main() -> Result<()> {
                 node_path,
                 node_version,
                 peers,
-                true,
-            )
-            .await
-        }
-        SubCmd::Kill { keep_directories } => cmd::local::kill(keep_directories, verbosity),
-        SubCmd::Remove {
-            keep_directories,
-            peer_id: peer_ids,
-            service_name: service_names,
-        } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
-        SubCmd::Run {
-            build,
-            clean,
-            count,
-            faucet_path,
-            faucet_version,
-            interval,
-            node_path,
-            node_version,
-            skip_validation: _,
-        } => {
-            cmd::local::run(
+                skip_validation: _,
+            } => {
+                cmd::local::join(
+                    build,
+                    count,
+                    faucet_path,
+                    faucet_version,
+                    interval,
+                    node_path,
+                    node_version,
+                    peers,
+                    true,
+                )
+                .await
+            }
+            LocalSubCmd::Kill { keep_directories } => cmd::local::kill(keep_directories, verbosity),
+            LocalSubCmd::Run {
                 build,
                 clean,
                 count,
@@ -712,11 +705,28 @@ async fn main() -> Result<()> {
                 interval,
                 node_path,
                 node_version,
-                true,
-                verbosity,
-            )
-            .await
-        }
+                skip_validation: _,
+            } => {
+                cmd::local::run(
+                    build,
+                    clean,
+                    count,
+                    faucet_path,
+                    faucet_version,
+                    interval,
+                    node_path,
+                    node_version,
+                    true,
+                    verbosity,
+                )
+                .await
+            }
+        },
+        SubCmd::Remove {
+            keep_directories,
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
         SubCmd::Start {
             interval,
             peer_id: peer_ids,
