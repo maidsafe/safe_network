@@ -144,6 +144,20 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
+    /// Get node reward balances.
+    #[clap(name = "balance")]
+    Balance {
+        /// Display the balance for a specific service using its peer ID.
+        ///
+        /// The argument can be used multiple times.
+        #[clap(long)]
+        peer_id: Vec<String>,
+        /// Display the balance for a specific service using its name.
+        ///
+        /// The argument can be used multiple times.
+        #[clap(long, conflicts_with = "peer_id")]
+        service_name: Vec<String>,
+    },
     #[clap(subcommand)]
     Daemon(DaemonSubCmd),
     #[clap(subcommand)]
@@ -594,6 +608,10 @@ async fn main() -> Result<()> {
             )
             .await
         }
+        SubCmd::Balance {
+            peer_id: peer_ids,
+            service_name: service_names,
+        } => cmd::node::balance(peer_ids, service_names, verbosity).await,
         SubCmd::Daemon(DaemonSubCmd::Add {
             address,
             env_variables,

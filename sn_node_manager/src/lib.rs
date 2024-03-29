@@ -44,6 +44,7 @@ use sn_service_management::{
     NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
+use sn_transfers::HotWallet;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -326,6 +327,8 @@ pub async fn status_report(
                     .as_ref()
                     .map_or("-".to_string(), |p| p.len().to_string())
             );
+            let wallet = HotWallet::load_from(&node.data_dir_path)?;
+            println!("Reward balance: {}", wallet.balance());
             println!();
         }
 
