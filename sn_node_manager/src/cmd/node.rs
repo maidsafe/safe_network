@@ -30,6 +30,7 @@ use sn_service_management::{
     rpc::RpcClient,
     NodeRegistry, NodeService, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
+use sn_transfers::HotWallet;
 use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
 
 pub async fn add(
@@ -123,6 +124,41 @@ pub async fn add(
     Ok(())
 }
 
+pub async fn balance(
+    peer_ids: Vec<String>,
+    service_names: Vec<String>,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
+    if verbosity != VerbosityLevel::Minimal {
+        println!("=================================================");
+        println!("                 Reward Balances                 ");
+        println!("=================================================");
+    }
+
+    let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+
+    let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
+    if service_indices.is_empty() {
+        // This could be the case if all services are at `Removed` status.
+        println!("No balances to display");
+        return Ok(());
+    }
+
+    for &index in &service_indices {
+        let node = &mut node_registry.nodes[index];
+        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+        let service = NodeService::new(node, Box::new(rpc_client));
+        let wallet = HotWallet::load_from(&service.service_data.data_dir_path)?;
+        println!(
+            "{}: {}",
+            service.service_data.service_name,
+            wallet.balance()
+        );
+    }
+    Ok(())
+}
+
 pub async fn remove(
     keep_directories: bool,
     peer_ids: Vec<String>,
@@ -143,7 +179,7 @@ pub async fn remove(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
 
-    let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
         println!("No services were eligible for removal");
@@ -187,7 +223,7 @@ pub async fn start(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
 
-    let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
         println!("No services were eligible to be started");
@@ -271,7 +307,7 @@ pub async fn stop(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
 
-    let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
         println!("No services were eligible to be stopped");
@@ -337,7 +373,7 @@ pub async fn upgrade(
         }
     }
 
-    let service_indices = get_services_to_update(&node_registry, peer_ids, service_names)?;
+    let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     let mut upgrade_summary = Vec::new();
 
     for &index in &service_indices {
@@ -392,7 +428,7 @@ pub async fn upgrade(
     Ok(())
 }
 
-fn get_services_to_update(
+fn get_services_for_ops(
     node_registry: &NodeRegistry,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
