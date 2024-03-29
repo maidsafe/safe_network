@@ -31,7 +31,7 @@ use sn_service_management::{
     NodeRegistry, NodeService, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
 
 pub async fn add(
     count: Option<u16>,
@@ -199,6 +199,36 @@ pub async fn remove(
     }
 
     summarise_any_failed_ops(failed_services, "remove")
+}
+
+pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
+    if !is_running_as_root() {
+        return Err(eyre!("The reset command must run as the root user"));
+    }
+
+    println!("=================================================");
+    println!("           Reset Safenode Services               ");
+    println!("=================================================");
+
+    if !force {
+        println!("WARNING: all safenode services, data, and logs will be removed.");
+        println!("Do you wish to proceed? [y/n]");
+        std::io::stdout().flush()?;
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        if input.trim().to_lowercase() != "y" {
+            println!("Reset aborted");
+            return Ok(());
+        }
+    }
+
+    stop(vec![], vec![], verbosity.clone()).await?;
+    remove(false, vec![], vec![], verbosity).await?;
+
+    let node_registry_path = config::get_node_registry_path()?;
+    std::fs::remove_file(node_registry_path)?;
+
+    Ok(())
 }
 
 pub async fn start(
