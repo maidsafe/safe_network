@@ -166,7 +166,9 @@ pub enum SubCmd {
     Local(LocalSubCmd),
     /// Remove safenode service(s).
     ///
-    /// Either peer ID(s) or service name(s) must be supplied.
+    /// If no peer ID(s) or service name(s) are supplied, all services will be removed.
+    ///
+    /// Services must be stopped before they can be removed.
     ///
     /// This command must run as the root/administrative user.
     #[clap(name = "remove")]
