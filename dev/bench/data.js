@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711675806302,
+  "lastUpdate": 1711675946513,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "9f55149a29ae037dfb284bd58493e429e7a311b5",
-          "message": "fix: adapt register updates",
-          "timestamp": "2023-11-20T10:45:52Z",
-          "tree_id": "389a8d04fe4ed5b625ad62a4a9367c8b9ae95cd5",
-          "url": "https://github.com/maidsafe/safe_network/commit/9f55149a29ae037dfb284bd58493e429e7a311b5"
-        },
-        "date": 1700479718111,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.048898793078036,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.12834089663099,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 48.286941737829245,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.12633907921777,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f377a15f9dbae45dbec5d55242547fa0b292a472",
+          "message": "docs: turn node manager readme into a guide\n\nThe README for the node manager was initially generated mostly by ChatGPT, just to flesh it out for\nfirst publish. It was based on the UI, so it quickly became out of date.\n\nSome users in the most recent testnet wanted to refer to it to help them with the node manager, so\nit has now been turned into a guide.",
+          "timestamp": "2024-03-29T00:49:48Z",
+          "tree_id": "875933765c655923bb2bfdc9364b347764a54ec7",
+          "url": "https://github.com/maidsafe/safe_network/commit/f377a15f9dbae45dbec5d55242547fa0b292a472"
+        },
+        "date": 1711675943192,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2449431535000293,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6727410117490764,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.60511258022519,
             "unit": "MiB/s"
           }
         ]
