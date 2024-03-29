@@ -187,6 +187,18 @@ pub enum SubCmd {
         #[clap(long)]
         keep_directories: bool,
     },
+    /// Reset back to a clean base state.
+    ///
+    /// Stop and remove all services and delete the node registry, which will set the service
+    /// counter back to zero.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "reset")]
+    Reset {
+        /// Set to suppress the confirmation prompt.
+        #[clap(long, short)]
+        force: bool,
+    },
     /// Start safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
@@ -729,6 +741,7 @@ async fn main() -> Result<()> {
             peer_id: peer_ids,
             service_name: service_names,
         } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
+        SubCmd::Reset { force } => cmd::node::reset(force, verbosity).await,
         SubCmd::Start {
             interval,
             peer_id: peer_ids,
