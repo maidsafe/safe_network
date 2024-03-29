@@ -168,9 +168,6 @@ pub async fn remove(
     if !is_running_as_root() {
         return Err(eyre!("The remove command must run as the root user"));
     }
-    if peer_ids.is_empty() && service_names.is_empty() {
-        return Err(eyre!("Either a peer ID or a service name must be supplied"));
-    }
 
     println!("=================================================");
     println!("           Remove Safenode Services              ");
