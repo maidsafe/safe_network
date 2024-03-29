@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711674840005,
+  "lastUpdate": 1711675694847,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d275b13ce2ec28425f32ef48e200ca1a68235e34",
-          "message": "test(CI): collect swarm_driver handling statistics",
-          "timestamp": "2023-11-17T11:22:07Z",
-          "tree_id": "402bdc36417eb5c0b0ca6ff3f2cfba1e7e6f6c3f",
-          "url": "https://github.com/maidsafe/safe_network/commit/d275b13ce2ec28425f32ef48e200ca1a68235e34"
-        },
-        "date": 1700222429514,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 4.995313988360827,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 23.570293665408308,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 49.960214598063644,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.78612093356697,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "Gabriel Viganotti",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0",
+          "message": "feat(acc-packet): cache the root seed on a file to prevent user to re-entering it for each op",
+          "timestamp": "2024-03-29T00:47:53Z",
+          "tree_id": "509255f4e57b3579bb2e369c358427e81c8b9e8c",
+          "url": "https://github.com/maidsafe/safe_network/commit/a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0"
+        },
+        "date": 1711675690361,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2571853497562417,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6998055551332685,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.12633907921777,
             "unit": "MiB/s"
           }
         ]
