@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711674838267,
+  "lastUpdate": 1711674840005,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41161,6 +41161,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 28100,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "dcb4dc96d0bbf5f109ce5a443e293e93677fa409",
+          "message": "refactor(client): move retry pending tx into its own method",
+          "timestamp": "2024-03-29T00:28:57Z",
+          "tree_id": "c9584f2999a00c03f7294dedf9712640cef54a11",
+          "url": "https://github.com/maidsafe/safe_network/commit/dcb4dc96d0bbf5f109ce5a443e293e93677fa409"
+        },
+        "date": 1711674839648,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5535,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 27119,
             "unit": "ms"
           },
           {
