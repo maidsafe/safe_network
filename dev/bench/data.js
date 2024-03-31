@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711926054133,
+  "lastUpdate": 1711926057265,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41322,6 +41322,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cbc0e73307ad76683e3841d2c1229e27aa41be29",
+          "message": "fix(client): do not check quote expiry from the client",
+          "timestamp": "2024-03-31T22:08:49Z",
+          "tree_id": "92f7e8eb069d9739f05c6afbdc3e1bca9cad240f",
+          "url": "https://github.com/maidsafe/safe_network/commit/cbc0e73307ad76683e3841d2c1229e27aa41be29"
+        },
+        "date": 1711926056020,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5922,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 28747,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
