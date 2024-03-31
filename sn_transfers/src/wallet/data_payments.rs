@@ -59,7 +59,7 @@ pub type QuoteSignature = Vec<u8>;
 )]
 pub struct QuotingMetrics {
     /// the records stored
-    pub records_stored: usize,
+    pub close_records_stored: usize,
     /// the max_records configured
     pub max_records: usize,
     /// number of times that got paid
@@ -73,7 +73,7 @@ impl QuotingMetrics {
     /// construct an empty QuotingMetrics
     pub fn new() -> Self {
         Self {
-            records_stored: 0,
+            close_records_stored: 0,
             max_records: 0,
             received_payment_count: 0,
             live_time: 0,
@@ -209,8 +209,10 @@ impl PaymentQuote {
 
         // There could be pruning to be undertaken,
         // hence the `increasement` check only valid when not being too full.
-        if new_quote.quoting_metrics.records_stored + 20 < new_quote.quoting_metrics.max_records
-            && new_quote.quoting_metrics.records_stored < old_quote.quoting_metrics.records_stored
+        if new_quote.quoting_metrics.close_records_stored + 20
+            < new_quote.quoting_metrics.max_records
+            && new_quote.quoting_metrics.close_records_stored
+                < old_quote.quoting_metrics.close_records_stored
         {
             info!("claimed records_stored out of sequence");
             return false;
