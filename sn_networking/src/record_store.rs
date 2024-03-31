@@ -432,7 +432,7 @@ impl NodeRecordStore {
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
         let mut quoting_metrics = QuotingMetrics {
-            records_stored,
+            close_records_stored: records_stored,
             max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
             live_time: self.timestamp.elapsed().as_secs(),
@@ -442,7 +442,7 @@ impl NodeRecordStore {
             let relevant_records =
                 self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
 
-            quoting_metrics.records_stored = relevant_records;
+            quoting_metrics.close_records_stored = relevant_records;
         } else {
             info!("Basing cost of _total_ records stored.");
         };
@@ -452,7 +452,7 @@ impl NodeRecordStore {
         } else {
             // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
             calculate_cost_for_records(
-                quoting_metrics.records_stored,
+                quoting_metrics.close_records_stored,
                 quoting_metrics.received_payment_count,
                 quoting_metrics.max_records,
                 quoting_metrics.live_time,
