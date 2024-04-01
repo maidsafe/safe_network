@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711971664479,
+  "lastUpdate": 1711971770416,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
-          "message": "ci: increase mem usage limits for new batch size",
-          "timestamp": "2023-11-20T15:06:51Z",
-          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
-          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
-        },
-        "date": 1700495213837,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 148,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c198dc62923a8cede8479f656b009c83095c9892",
+          "message": "fix(node): add only the external addresses with the configured port",
+          "timestamp": "2024-04-01T10:53:19Z",
+          "tree_id": "6bad1fc570c6506e2a04797c620500a04d7b7d98",
+          "url": "https://github.com/maidsafe/safe_network/commit/c198dc62923a8cede8479f656b009c83095c9892"
+        },
+        "date": 1711971770082,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
