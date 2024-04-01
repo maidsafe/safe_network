@@ -28,7 +28,6 @@ use crate::{
     transport, Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
-use itertools::Itertools;
 use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -619,16 +618,10 @@ impl SwarmDriver {
                     }
                 }
                 _ = set_farthest_record_interval.tick() => {
-                    let closest_peers = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_closest_local_peers(&self.self_peer_id.into())
-                    .map(|peer| peer.into_preimage())
-                    .take(CLOSE_GROUP_SIZE)
-                    .collect_vec();
+                    let closest_k_peers = self
+                        .get_closest_k_value_local_peers();
 
-                    if let Some(distance) = self.get_farthest_relevant_record(&closest_peers) {
+                    if let Some(distance) = self.get_farthest_relevant_record(&closest_k_peers) {
                         // set any new distance to fathest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                     }
