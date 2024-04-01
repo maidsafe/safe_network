@@ -621,7 +621,7 @@ impl SwarmDriver {
                     let closest_k_peers = self
                         .get_closest_k_value_local_peers();
 
-                    if let Some(distance) = self.get_farthest_relevant_record(&closest_k_peers) {
+                    if let Some(distance) = self.get_farthest_relevant_address_estimate(&closest_k_peers) {
                         // set any new distance to fathest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                     }
@@ -634,30 +634,24 @@ impl SwarmDriver {
     // ---------- Crate helpers -------------------
     // --------------------------------------------
 
-    /// Return the record we hold that is farthest and relevant to us
-    fn get_farthest_relevant_record(&mut self, closest_k_peers: &Vec<PeerId>) -> Option<Distance> {
+    /// Return a far address, close to but probably farther than our responsibilty range.
+    /// This simply uses the closest k peers to estimate the farthest address as CLOSE_GROUP_SIZE + 1 peer's
+    /// address distance.
+    fn get_farthest_relevant_address_estimate(
+        &mut self,
+        // Sorted list of closest k peers to our peer id.
+        closest_k_peers: &[PeerId],
+    ) -> Option<Distance> {
+        // if we don't have enough peers we don't set the distance range yet.
         let mut farthest_distance = None;
-        #[allow(clippy::mutable_key_type)]
-        let locally_stored_keys = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses_ref();
+
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        for (_key, (address, _r_type)) in locally_stored_keys.iter() {
-            if Self::is_in_close_range(&self.self_peer_id, address, closest_k_peers) {
-                let distance = our_address.distance(address);
-
-                if let Some(current_closest) = farthest_distance {
-                    if distance > current_closest {
-                        farthest_distance = Some(distance);
-                    }
-                } else {
-                    farthest_distance = Some(distance);
-                }
-            }
+        // get CLOSES_PEERS_COUNT + 1 peer's address distance
+        if let Some(peer) = closest_k_peers.get(CLOSE_GROUP_SIZE + 1) {
+            let address = NetworkAddress::from_peer(*peer);
+            let distance = our_address.distance(&address);
+            farthest_distance = Some(distance);
         }
 
         farthest_distance
