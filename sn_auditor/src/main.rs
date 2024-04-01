@@ -147,7 +147,7 @@ async fn initialize_background_spend_dag_collection(
             .map_err(|e| eyre!("Could not create new DAG from genesis: {e}"))?;
         tokio::spawn(async move {
             let _ = client
-                .spend_dag_continue_from_utxos(&mut genesis_dag)
+                .spend_dag_continue_from_utxos(&mut genesis_dag, None)
                 .await
                 .map_err(|e| eprintln!("Could not update DAG from genesis: {e}"));
             let _ = d
