@@ -18,8 +18,8 @@ use super::{
 use sn_client::{
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
-    transfers::{DerivationIndex, MainSecretKey},
-    Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg,
+    transfers::{DerivationIndex, HotWallet, MainSecretKey},
+    Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg, WalletClient,
 };
 
 use bls::PublicKey;
@@ -682,7 +682,35 @@ impl AccountPacket {
             .insert_entries(self.iter_only_files());
         let _summary = files_uploader.start_upload().await?;
 
-        // Sync the folders. The payment is made inside sync() if required.
+        // Let's make the storage payment for Folders
+        let mut wallet_client =
+            WalletClient::new(self.client.clone(), HotWallet::load_from(&self.wallet_dir)?);
+        let mut net_addresses = vec![];
+        let mut new_folders = 0;
+        // let's collect list of addresses we need to pay for
+        folders.iter().for_each(|(_, (folder, folder_change))| {
+            if folder_change.is_new_folder() {
+                net_addresses.push(folder.as_net_addr());
+                new_folders += 1;
+            }
+            net_addresses.extend(folder.meta_addrs_to_pay());
+        });
+
+        let payment_result = wallet_client
+            .pay_for_storage(net_addresses.into_iter())
+            .await?;
+        match payment_result
+            .storage_cost
+            .checked_add(payment_result.royalty_fees)
+        {
+            Some(cost) => {
+                let balance = wallet_client.balance();
+                println!("Made payment of {cost} for {new_folders} Folders. New balance: {balance}",)
+            }
+            None => bail!("Failed to calculate total payment cost"),
+        }
+
+        // Sync Folders concurrently now that payments have been made.
         let mut tasks = JoinSet::new();
         for (path, (mut folder, folder_change)) in folders {
             let op = if folder_change.is_new_folder() {
