@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711970718233,
+  "lastUpdate": 1711971664479,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
-          "message": "ci: increase mem usage limits for new batch size",
-          "timestamp": "2023-11-20T15:06:51Z",
-          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
-          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
-        },
-        "date": 1700495029085,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.379309032461676,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.291657603696233,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 15.510637512687158,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.407524010532,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c198dc62923a8cede8479f656b009c83095c9892",
+          "message": "fix(node): add only the external addresses with the configured port",
+          "timestamp": "2024-04-01T10:53:19Z",
+          "tree_id": "6bad1fc570c6506e2a04797c620500a04d7b7d98",
+          "url": "https://github.com/maidsafe/safe_network/commit/c198dc62923a8cede8479f656b009c83095c9892"
+        },
+        "date": 1711971661128,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2380227995713637,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6637441330293607,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.71057201518929,
             "unit": "MiB/s"
           }
         ]
