@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711973895950,
+  "lastUpdate": 1711973897607,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08",
-          "message": "fix(logs): enable faucet logs",
-          "timestamp": "2023-11-21T09:01:41+01:00",
-          "tree_id": "8e46ae14a49a2448ebbc685105ee95e48c9bcabc",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca49e1ec2559c9e5d14a4f054682ec0d5ae01f08"
-        },
-        "date": 1700554563214,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 668,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 146,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30592,6 +30558,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 182,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "3d231c6b34af8f8e80006b8236a9ef0d2aa97068",
+          "message": "chore: make a constant",
+          "timestamp": "2024-04-01T11:35:28Z",
+          "tree_id": "32cbb25cdb6f4de5353f2a89128ee7fece2bbdbb",
+          "url": "https://github.com/maidsafe/safe_network/commit/3d231c6b34af8f8e80006b8236a9ef0d2aa97068"
+        },
+        "date": 1711973897246,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 183,
             "unit": "MB"
           },
           {
