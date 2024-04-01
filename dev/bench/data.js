@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711953006812,
+  "lastUpdate": 1711953117477,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8428c6c71525eb4acb224bda90f40b9193339605",
-          "message": "chore: be more specific for Request matching.\n\nThis should avoid issues if that enum grows",
-          "timestamp": "2023-11-20T13:28:18Z",
-          "tree_id": "b5ac2115c55744882d69bccc1310b94ca0ffb552",
-          "url": "https://github.com/maidsafe/safe_network/commit/8428c6c71525eb4acb224bda90f40b9193339605"
-        },
-        "date": 1700489336624,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 67,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/cbc0e73307ad76683e3841d2c1229e27aa41be29"
         },
         "date": 1711926049801,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "873469bee8ce53bf97c58da146f116067ed2b210",
+          "message": "fix(node): record problematic connection issues for bad nodes",
+          "timestamp": "2024-04-01T05:45:53Z",
+          "tree_id": "e31ab38b946b9d95b5b16622c90146a88a50e1f7",
+          "url": "https://github.com/maidsafe/safe_network/commit/873469bee8ce53bf97c58da146f116067ed2b210"
+        },
+        "date": 1711953117164,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
