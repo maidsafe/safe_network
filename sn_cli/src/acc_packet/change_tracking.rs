@@ -6,13 +6,19 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bls::{SecretKey, SK_SIZE};
 use sn_client::{
     protocol::storage::RegisterAddress, registers::EntryHash, transfers::MainSecretKey, FoldersApi,
     Metadata,
 };
 
-use color_eyre::{eyre::eyre, Result};
+use aes::Aes256;
+use block_modes::{block_padding::Pkcs7, BlockMode, Cbc};
+use bls::{SecretKey, SK_SIZE};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -21,8 +27,18 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
+use tiny_keccak::{Hasher, Sha3};
 use walkdir::WalkDir;
 use xor_name::XorName;
+
+// AES used to encrypt/decrypt the cached recovery seed.
+type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+
+// AES Initialisation Vector length used.
+const IV_LENGTH: usize = 16;
+
+// Length of buffers used for AES encryption/decryption.
+const AES_BUFFER_LENGTH: usize = 48;
 
 // Name of hidden folder where tracking information and metadata is locally stored.
 pub(super) const SAFE_TRACKING_CHANGES_DIR: &str = ".safe";
@@ -153,29 +169,90 @@ pub(super) fn store_root_folder_tracking_info(
     Ok(())
 }
 
-// Store the given root seed/SK on disk
-// TODO: encrypt the SK with a password
-pub(super) fn store_root_sk(dir: &Path, root_sk: &MainSecretKey) -> Result<()> {
+// Store the given root seed/SK on disk, (optionally) encrypted with a password
+pub(super) fn store_root_sk(
+    dir: &Path,
+    root_sk: &MainSecretKey,
+    password: Option<&[u8]>,
+) -> Result<()> {
     let path = dir.join(RECOVERY_SEED_FILENAME);
     let mut secret_file = File::create(path)?;
-    secret_file.write_all(&root_sk.to_bytes())?;
+    let seed_bytes = root_sk.to_bytes();
+
+    if let Some(pwd) = password {
+        // encrypt the SK with the (hashed) password
+        let key = encryption_key_from_hashed_password(pwd);
+
+        let pos = seed_bytes.len();
+        let mut buffer = [0u8; AES_BUFFER_LENGTH];
+        buffer[..pos].copy_from_slice(&seed_bytes);
+
+        // IV is randomly chosen and prefixed it to cipher
+        let mut rng = rand::thread_rng();
+        let random_iv: [u8; IV_LENGTH] = rng.gen();
+        let mut iv_with_cipher = vec![];
+        iv_with_cipher.extend(random_iv);
+
+        let cipher = Aes256Cbc::new_from_slices(&key, &random_iv)?;
+        let ciphertext = cipher.encrypt(&mut buffer, pos)?;
+        iv_with_cipher.extend(ciphertext);
+
+        secret_file.write_all(&iv_with_cipher)?;
+    } else {
+        secret_file.write_all(&seed_bytes)?;
+    }
 
     Ok(())
 }
 
-// Read the root seed/SK from disk
-// TODO: decrypt the SK with a password
-pub(super) fn read_root_sk(dir: &Path) -> Result<MainSecretKey> {
+// Read the root seed/SK from disk, (optionally) decrypting it with a password
+pub(super) fn read_root_sk(dir: &Path, password: Option<&[u8]>) -> Result<MainSecretKey> {
     let path = dir.join(RECOVERY_SEED_FILENAME);
-    let bytes = std::fs::read(&path).map_err(|err| {
+    let mut bytes = std::fs::read(&path).map_err(|err| {
         eyre!("Error while reading the recovery seed/secret from {path:?}: {err:?}")
     })?;
 
-    let mut buffer = [0u8; SK_SIZE];
-    buffer[..SK_SIZE].copy_from_slice(&bytes);
-    let sk = MainSecretKey::new(SecretKey::from_bytes(buffer)?);
+    if let Some(pwd) = password {
+        // decrypt the SK with the (hashed) password
+        if bytes.len() < IV_LENGTH + AES_BUFFER_LENGTH {
+            bail!(
+                "Not enough bytes found on disk ({}) to decrypt the recovery seed",
+                bytes.len()
+            );
+        }
+
+        // the IV is prefixed
+        let mut iv = [0u8; IV_LENGTH];
+        iv[..IV_LENGTH].copy_from_slice(&bytes[..IV_LENGTH]);
+
+        let mut buffer = [0u8; AES_BUFFER_LENGTH];
+        buffer[..48].copy_from_slice(&bytes[IV_LENGTH..]);
+
+        let key = encryption_key_from_hashed_password(pwd);
+        let cipher = Aes256Cbc::new_from_slices(&key, &iv)?;
+        bytes = cipher
+            .decrypt_vec(&buffer)
+            .map_err(|_| eyre!("Failed to decrypt the recovery seed with the provided password"))?;
+    }
+
+    if bytes.len() != SK_SIZE {
+        bail!(
+            "The length of bytes read from disk ({}) doesn't match a recovery seed's length ({SK_SIZE})", bytes.len()
+        );
+    }
+    let mut seed_bytes = [0u8; SK_SIZE];
+    seed_bytes[..SK_SIZE].copy_from_slice(&bytes);
+    let sk = MainSecretKey::new(SecretKey::from_bytes(seed_bytes)?);
 
     Ok(sk)
+}
+
+fn encryption_key_from_hashed_password(password: &[u8]) -> [u8; 32] {
+    let mut key = [0; 32];
+    let mut hasher = Sha3::v256();
+    hasher.update(password);
+    hasher.finalize(&mut key);
+    key
 }
 
 // Read the tracking info about the root folder
