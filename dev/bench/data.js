@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711979626762,
+  "lastUpdate": 1711979629498,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "c20f0945537257a6520bad8f68b03328180e4421",
-          "message": "chore: not using seen_cache when add replication list",
-          "timestamp": "2023-11-21T13:52:37Z",
-          "tree_id": "f87091ec7c817463f3f5710f5ee320bbad57cfbc",
-          "url": "https://github.com/maidsafe/safe_network/commit/c20f0945537257a6520bad8f68b03328180e4421"
-        },
-        "date": 1700576792472,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 839,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 152,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "6a7389b322874b4b0ef6047344fa0dfc16cc4dc9",
+          "message": "chore(node): scramble periodical network discovery",
+          "timestamp": "2024-04-01T13:11:43Z",
+          "tree_id": "269d227be31f3aa21e254ea796e1b5b4b901e360",
+          "url": "https://github.com/maidsafe/safe_network/commit/6a7389b322874b4b0ef6047344fa0dfc16cc4dc9"
+        },
+        "date": 1711979628421,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
