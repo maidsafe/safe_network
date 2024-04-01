@@ -33,6 +33,7 @@ use crate::target_arch::Instant;
 
 use rand::{rngs::OsRng, Rng};
 use sn_protocol::{
+    get_port_from_multiaddr,
     messages::{CmdResponse, Query, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
@@ -553,13 +554,24 @@ impl SwarmDriver {
 
                 if !self.swarm.external_addresses().any(|addr| addr == &address) && !self.is_client
                 {
-                    info!(%address, "external address: new candidate");
+                    debug!(%address, "external address: new candidate");
 
                     // Identify will let us know when we have a candidate. (Peers will tell us what address they see us as.)
                     // We manually confirm this to be our externally reachable address, though in theory it's possible we
-                    // are not actually reachable. (Peers can lie to us.) This is a good enough heuristic for now.
+                    // are not actually reachable. This event returns addresses with ports that were not set by the user,
+                    // so we must not add those ports as they will not be forwarded.
                     // Setting this will also switch kad to server mode if it's not already in it.
-                    self.swarm.add_external_address(address);
+                    if let Some(our_port) = self.listen_port {
+                        if let Some(port) = get_port_from_multiaddr(&address) {
+                            if port == our_port {
+                                info!(%address, "external address: new candidate has the same configured port, adding it.");
+                                self.swarm.add_external_address(address);
+                            } else {
+                                info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
+                            }
+                        }
+                        trace!("external address: listen port not set. This has to be set if you're running a node");
+                    }
                 }
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {

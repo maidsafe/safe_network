@@ -491,6 +491,7 @@ impl NetworkBuilder {
             swarm,
             self_peer_id: peer_id,
             local: self.local,
+            listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             connected_peers: 0,
             bootstrap,
@@ -535,6 +536,8 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
+    /// The port that was set by the user
+    pub(crate) listen_port: Option<u16>,
     pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     /// The peers that are closer to our PeerId. Includes self.
