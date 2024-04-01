@@ -455,7 +455,6 @@ impl NodeRecordStore {
                 quoting_metrics.close_records_stored,
                 quoting_metrics.received_payment_count,
                 quoting_metrics.max_records,
-                quoting_metrics.live_time,
             )
         };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -695,17 +694,11 @@ pub fn calculate_cost_for_records(
     records_stored: usize,
     received_payment_count: usize,
     max_records: usize,
-    live_time: u64,
 ) -> u64 {
     use std::cmp::{max, min};
 
     let ori_cost = (10 * records_stored) as u64;
     let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
-
-    // Gaining one step for every day that staying in the network
-    let reward_steps: u64 = live_time / (24 * 3600);
-    let base_multiplier = 1.1_f32;
-    let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
 
     // 1.05.powf(800) = 9E+16
     // Given currently the max_records is set at 2048,
@@ -719,7 +712,7 @@ pub fn calculate_cost_for_records(
             as u64,
     );
 
-    let charge = max(10, ori_cost.saturating_mul(multiplier) / divider / rewarder);
+    let charge = max(10, ori_cost.saturating_mul(multiplier) / divider);
     // Deploy an upper cap safe_guard to the store_cost
     min(TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64, charge)
 }
@@ -776,7 +769,7 @@ mod tests {
 
     #[test]
     fn test_calculate_cost_for_records() {
-        let sut = calculate_cost_for_records(2049, 2050, 2048, 1);
+        let sut = calculate_cost_for_records(2049, 2050, 2048);
         assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
     }
 
@@ -1112,7 +1105,6 @@ mod tests {
                                     *close_records_stored,
                                     *received_payment_count,
                                     MAX_RECORDS_COUNT,
-                                    0,
                                 );
                                 *nanos_earnt += cost;
                                 *received_payment_count += 1;
@@ -1139,7 +1131,6 @@ mod tests {
                     *close_records_stored,
                     *times_paid,
                     MAX_RECORDS_COUNT,
-                    0,
                 );
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
                 received_payment_count += times_paid;
@@ -1231,7 +1222,7 @@ mod tests {
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
+                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT);
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);
