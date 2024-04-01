@@ -1098,29 +1098,30 @@ mod tests {
                                 peers_in_close.iter().map(|peer_id| **peer_id).collect()
                             }
                             Err(err) => {
-                                panic!("Cann't find close range of {name:?} with error {err:?}")
+                                panic!("Can't find close range of {name:?} with error {err:?}")
                             }
                         };
 
                         let payee = pick_cheapest_payee(&peers_in_close, &peers);
 
                         for peer in peers_in_replicate_range.iter() {
-                            let entry = peers.entry(*peer).or_insert((0, 0, 0));
+                            let (close_records_stored, nanos_earnt, received_payment_count) =
+                                peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
                                 let cost = calculate_cost_for_records(
-                                    entry.0,
-                                    entry.2,
+                                    *close_records_stored,
+                                    *received_payment_count,
                                     MAX_RECORDS_COUNT,
                                     0,
                                 );
-                                entry.1 += cost;
-                                entry.2 += 1;
+                                *nanos_earnt += cost;
+                                *received_payment_count += 1;
                             }
-                            entry.0 += 1;
+                            *close_records_stored += 1;
                         }
                     }
                     Err(err) => {
-                        panic!("Cann't find replicate range of {name:?} with error {err:?}")
+                        panic!("Can't find replicate range of {name:?} with error {err:?}")
                     }
                 }
             }
@@ -1133,19 +1134,24 @@ mod tests {
             let mut max_earned = 0;
             let mut max_store_cost = 0;
 
-            for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
+            for (_peer_id, (close_records_stored, nanos_earnt, times_paid)) in peers.iter() {
+                let cost = calculate_cost_for_records(
+                    *close_records_stored,
+                    *times_paid,
+                    MAX_RECORDS_COUNT,
+                    0,
+                );
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
-                received_payment_count += stats.2;
-                if stats.1 == 0 {
+                received_payment_count += times_paid;
+                if *nanos_earnt == 0 {
                     empty_earned_nodes += 1;
                 }
 
-                if stats.1 < min_earned {
-                    min_earned = stats.1;
+                if *nanos_earnt < min_earned {
+                    min_earned = *nanos_earnt;
                 }
-                if stats.1 > max_earned {
-                    max_earned = stats.1;
+                if *nanos_earnt > max_earned {
+                    max_earned = *nanos_earnt;
                 }
                 if cost < min_store_cost {
                     min_store_cost = cost;
