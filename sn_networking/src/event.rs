@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    cmd::SwarmCmd,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
@@ -490,7 +491,8 @@ impl SwarmDriver {
                 };
 
                 if should_clean_peer {
-                    warn!("Cleaning out peer {failed_peer_id:?}");
+                    warn!("Tracking issue of {failed_peer_id:?}. Clearing it out for now");
+
                     if let Some(dead_peer) = self
                         .swarm
                         .behaviour_mut()
@@ -498,10 +500,17 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.connected_peers = self.connected_peers.saturating_sub(1);
+
+                        self.handle_cmd(SwarmCmd::RecordNodeIssue {
+                            peer_id: failed_peer_id,
+                            issue: crate::NodeIssue::ConnectionIssue,
+                        })?;
+
                         self.send_event(NetworkEvent::PeerRemoved(
                             *dead_peer.node.key.preimage(),
                             self.connected_peers,
                         ));
+
                         self.log_kbuckets(&failed_peer_id);
                         let _ = self.check_for_change_in_our_close_group();
                     }
