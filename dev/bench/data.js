@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711970607397,
+  "lastUpdate": 1711970714895,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "69a368c879cc97b3279a46aa10a212f6c2eeecd5",
-          "message": "fix(CI): only alert during bench, not upload",
-          "timestamp": "2023-11-20T14:24:44Z",
-          "tree_id": "9c472ae88b083df8048178193f3b7a17a8addd4b",
-          "url": "https://github.com/maidsafe/safe_network/commit/69a368c879cc97b3279a46aa10a212f6c2eeecd5"
-        },
-        "date": 1700492566427,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 66,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "distinct": false,
+          "id": "29e98892489d9d071e7b97665ac880234a1c0033",
+          "message": "feat(node): carry out chunk_proof chunk against peer",
+          "timestamp": "2024-04-01T10:37:26Z",
+          "tree_id": "a7a345dc72419c191f6e46dad2b96358d17ff3ed",
+          "url": "https://github.com/maidsafe/safe_network/commit/29e98892489d9d071e7b97665ac880234a1c0033"
+        },
+        "date": 1711970714577,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
