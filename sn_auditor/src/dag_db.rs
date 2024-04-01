@@ -143,7 +143,7 @@ impl SpendDagDb {
                 .clone()
         };
 
-        // update that copy
+        // update that copy 10 generations further
         self.client
             .spend_dag_continue_from_utxos(&mut dag, Some(10))
             .await?;
