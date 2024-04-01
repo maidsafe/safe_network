@@ -144,7 +144,9 @@ impl SpendDagDb {
         };
 
         // update that copy
-        self.client.spend_dag_continue_from_utxos(&mut dag).await?;
+        self.client
+            .spend_dag_continue_from_utxos(&mut dag, Some(10))
+            .await?;
 
         // write update to DAG
         let dag_ref = self.dag.clone();

@@ -227,6 +227,11 @@ impl SpendDag {
 
     /// Merges the given dag into ours
     pub fn merge(&mut self, sub_dag: SpendDag) {
+        info!(
+            "Merging sub DAG starting at {:?} into our DAG with source {:?}",
+            sub_dag.source(),
+            self.source()
+        );
         for (addr, spends) in sub_dag.spends {
             // only add spends to the dag, ignoring utxos
             // utxos will be added automatically as their ancestors are added
