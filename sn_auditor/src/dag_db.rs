@@ -144,8 +144,9 @@ impl SpendDagDb {
         };
 
         // update that copy 10 generations further
+        const NEXT_10_GEN: u32 = 10;
         self.client
-            .spend_dag_continue_from_utxos(&mut dag, Some(10))
+            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN))
             .await?;
 
         // write update to DAG
