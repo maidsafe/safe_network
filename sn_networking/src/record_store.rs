@@ -768,9 +768,62 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_cost_for_records() {
-        let sut = calculate_cost_for_records(2049, 2050, 2048);
+    fn test_calculate_max_cost_for_records() {
+        let sut = calculate_cost_for_records(2049, 2049, 2048);
         assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
+    }
+
+    #[test]
+    fn test_calculate_50_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 50 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 10240);
+    }
+    #[test]
+    fn test_calculate_60_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 60 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 12280);
+    }
+
+    #[test]
+    fn test_calculate_65_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 65 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 2023120);
+    }
+
+    #[test]
+    fn test_calculate_70_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 70 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 316248770);
+    }
+
+    #[test]
+    fn test_calculate_80_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 80 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 7978447975680);
+    }
+
+    #[test]
+    fn test_calculate_90_percent_cost_for_records() {
+        let percent = MAX_RECORDS_COUNT * 90 / 100;
+        let sut = calculate_cost_for_records(percent, percent, 2048);
+        // at this point we should be at max cost
+        assert_eq!(sut, 198121748221132800);
+    }
+
+    #[test]
+    fn test_calculate_min_cost_for_records() {
+        let sut = calculate_cost_for_records(0, 0, 2048);
+        assert_eq!(sut, 10);
     }
 
     #[test]
