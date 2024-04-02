@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712046290082,
+  "lastUpdate": 1712046292801,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41590,6 +41590,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33465,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c490399ecc59b8b1b2c9237143e3dcd7550dacfa",
+          "message": "docs(readme): add details about the recovery secret in example folders cmds",
+          "timestamp": "2024-04-02T07:44:23Z",
+          "tree_id": "25adba6137846097812ac0c792d55ff8a5fdfe82",
+          "url": "https://github.com/maidsafe/safe_network/commit/c490399ecc59b8b1b2c9237143e3dcd7550dacfa"
+        },
+        "date": 1712046291715,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7209,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34503,
             "unit": "ms"
           },
           {
