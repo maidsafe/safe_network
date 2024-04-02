@@ -32,25 +32,6 @@ pub enum FoldersCmds {
         #[clap(name = "recovery key")]
         root_sk: Option<String>,
     },
-    Upload {
-        /// The location of the file(s) to upload for creating the folder on the network.
-        /// By default the current path is assumed.
-        #[clap(name = "path", value_name = "PATH")]
-        path: Option<PathBuf>,
-        /// The batch_size to split chunks into parallel handling batches
-        /// during payment and upload processing.
-        #[clap(long, default_value_t = BATCH_SIZE, short='b')]
-        batch_size: usize,
-        /// Should the files be made accessible to all. (This is irreversible)
-        #[clap(long, name = "make_public", default_value = "false", short = 'p')]
-        make_data_public: bool,
-        /// Set the strategy to use on chunk upload failure. Does not modify the spend failure retry attempts yet.
-        ///
-        /// Choose a retry strategy based on effort level, from 'quick' (least effort), through 'balanced',
-        /// to 'persistent' (most effort).
-        #[clap(long, default_value_t = RetryStrategy::Balanced, short = 'r', help = "Sets the retry strategy on upload failure. Options: 'quick' for minimal effort, 'balanced' for moderate effort, or 'persistent' for maximum effort.")]
-        retry_strategy: RetryStrategy,
-    },
     Download {
         /// The full local path where to download the folder. By default the current path is assumed,
         /// and the main Folder's network address will be used as the folder name.
@@ -109,31 +90,6 @@ pub(crate) async fn folders_cmds(
             let root_sk = get_recovery_secret_sk(root_sk, true)?;
             let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
             println!("Directoy at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
-        }
-        FoldersCmds::Upload {
-            path,
-            batch_size,
-            make_data_public,
-            retry_strategy,
-        } => {
-            let path = get_path(path, None)?;
-            // initialise path as a fresh new Folder with a network address derived from a random SK
-            let root_sk = get_recovery_secret_sk(None, true)?;
-            let mut acc_packet =
-                AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
-
-            let options = UploadCfg {
-                verify_store,
-                batch_size,
-                retry_strategy,
-                ..Default::default()
-            };
-            acc_packet.sync(options, make_data_public).await?;
-
-            println!(
-                "\nFolder hierarchy from {path:?} uploaded successfully at {}",
-                acc_packet.root_folder_addr().to_hex()
-            );
         }
         FoldersCmds::Download {
             path,
