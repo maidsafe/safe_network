@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712042880152,
+  "lastUpdate": 1712042881823,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41551,6 +41551,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34676,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "170bcb56a98c70609c4bb8d6a8558c831eae1b67",
+          "message": "fix(node): disable records_stored bad quote detection due to new work",
+          "timestamp": "2024-04-02T06:47:05Z",
+          "tree_id": "d33ffa3d69d220134d33142bfd3cf0fdf56fb7e1",
+          "url": "https://github.com/maidsafe/safe_network/commit/170bcb56a98c70609c4bb8d6a8558c831eae1b67"
+        },
+        "date": 1712042881451,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7419,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33465,
             "unit": "ms"
           },
           {
