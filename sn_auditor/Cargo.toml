@@ -5,6 +5,7 @@ name = "sn_auditor"
 version = "0.1.2"
 edition = "2021"
 homepage = "https://maidsafe.net"
+repository = "https://github.com/maidsafe/safe_network"
 license = "GPL-3.0"
 readme = "README.md"
 

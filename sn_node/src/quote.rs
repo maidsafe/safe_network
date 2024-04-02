@@ -111,7 +111,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
 
             quotes_for_nodes_duty.retain(|(peer_id, quote)| {
                 let cost = calculate_cost_for_records(
-                    quote.quoting_metrics.records_stored,
+                    quote.quoting_metrics.close_records_stored,
                     quote.quoting_metrics.received_payment_count,
                     quote.quoting_metrics.max_records,
                     quote.quoting_metrics.live_time,

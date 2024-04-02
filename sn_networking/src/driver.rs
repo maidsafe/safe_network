@@ -27,8 +27,8 @@ use crate::{
     replication_fetcher::ReplicationFetcher,
     transport, Network, CLOSE_GROUP_SIZE,
 };
-
 use futures::StreamExt;
+use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 
@@ -62,6 +62,10 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
 use tracing::warn;
+
+/// Interval over which we check for the farthest record we _should_ be holding
+/// based upon our knowledge of the CLOSE_GROUP
+pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -491,6 +495,7 @@ impl NetworkBuilder {
             swarm,
             self_peer_id: peer_id,
             local: self.local,
+            listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             connected_peers: 0,
             bootstrap,
@@ -535,6 +540,8 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
+    /// The port that was set by the user
+    pub(crate) listen_port: Option<u16>,
     pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     /// The peers that are closer to our PeerId. Includes self.
@@ -582,6 +589,8 @@ impl SwarmDriver {
     /// asynchronous tasks.
     pub async fn run(mut self) {
         let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
+        let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
+
         loop {
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
@@ -608,6 +617,15 @@ impl SwarmDriver {
                         bootstrap_interval = new_interval;
                     }
                 }
+                _ = set_farthest_record_interval.tick() => {
+                    let closest_k_peers = self
+                        .get_closest_k_value_local_peers();
+
+                    if let Some(distance) = self.get_farthest_relevant_address_estimate(&closest_k_peers) {
+                        // set any new distance to fathest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                    }
+                }
             }
         }
     }
@@ -615,6 +633,29 @@ impl SwarmDriver {
     // --------------------------------------------
     // ---------- Crate helpers -------------------
     // --------------------------------------------
+
+    /// Return a far address, close to but probably farther than our responsibilty range.
+    /// This simply uses the closest k peers to estimate the farthest address as
+    /// `CLOSE_GROUP_SIZE + 1`th peer's address distance.
+    fn get_farthest_relevant_address_estimate(
+        &mut self,
+        // Sorted list of closest k peers to our peer id.
+        closest_k_peers: &[PeerId],
+    ) -> Option<Distance> {
+        // if we don't have enough peers we don't set the distance range yet.
+        let mut farthest_distance = None;
+
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+
+        // get CLOSES_PEERS_COUNT + 1 peer's address distance
+        if let Some(peer) = closest_k_peers.get(CLOSE_GROUP_SIZE + 1) {
+            let address = NetworkAddress::from_peer(*peer);
+            let distance = our_address.distance(&address);
+            farthest_distance = Some(distance);
+        }
+
+        farthest_distance
+    }
 
     /// Sends an event after pushing it off thread so as to be non-blocking
     /// this is a wrapper around the `mpsc::Sender::send` call

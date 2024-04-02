@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{driver::PendingGetClosestType, SwarmDriver};
+use rand::{rngs::OsRng, Rng};
 use tokio::time::Duration;
 
 use crate::target_arch::{interval, Instant, Interval};
@@ -26,7 +27,7 @@ const LAST_PEER_ADDED_TIME_LIMIT: Duration = Duration::from_secs(180);
 const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(30);
 
 /// The bootstrap interval to use if we haven't added any new peers in a while.
-const NO_PEER_ADDED_SLOWDOWN_INTERVAL: Duration = Duration::from_secs(300);
+const NO_PEER_ADDED_SLOWDOWN_INTERVAL: u64 = 300;
 
 impl SwarmDriver {
     pub(crate) async fn run_bootstrap_continuously(
@@ -129,7 +130,14 @@ impl ContinuousBootstrap {
                 "It has been {LAST_PEER_ADDED_TIME_LIMIT:?} since we last added a peer to RT. Slowing down the continuous bootstrapping process"
             );
 
-            let mut new_interval = interval(NO_PEER_ADDED_SLOWDOWN_INTERVAL);
+            // TO avoid a heart beat like cpu usage due to the 1K candidates generation,
+            // randomlize the interval within certain range
+            let no_peer_added_slowdown_interval: u64 = OsRng
+                .gen_range(NO_PEER_ADDED_SLOWDOWN_INTERVAL..NO_PEER_ADDED_SLOWDOWN_INTERVAL * 2);
+            let no_peer_added_slowdown_interval_duration =
+                Duration::from_secs(no_peer_added_slowdown_interval);
+
+            let mut new_interval = interval(no_peer_added_slowdown_interval_duration);
             new_interval.tick().await; // the first tick completes immediately
             return (should_bootstrap, Some(new_interval));
         }

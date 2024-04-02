@@ -121,12 +121,13 @@ impl AccountPacket {
     /// All keys used for encrypting the files/folders metadata chunks and signing
     /// operations are derived from the root key provided using index derivation.
     /// The root Folder address and owner are also derived from the root SK.
-    /// TODO: A password can be optionally provided to encrypt the root SK before storing it on disk.
+    /// A password can be optionally provided to encrypt the root SK before storing it on disk.
     pub fn init(
         client: Client,
         wallet_dir: &Path,
         path: &Path,
         root_sk: &MainSecretKey,
+        password: Option<&[u8]>,
     ) -> Result<Self> {
         let (_, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
 
@@ -140,14 +141,19 @@ impl AccountPacket {
 
         let (client, root_folder_addr) = derive_keys_and_address(client, root_sk);
         store_root_folder_tracking_info(&meta_dir, root_folder_addr, false)?;
-        store_root_sk(&tracking_info_dir, root_sk)?;
-        Self::from_path(client, wallet_dir, path)
+        store_root_sk(&tracking_info_dir, root_sk, password)?;
+        Self::from_path(client, wallet_dir, path, password)
     }
 
     /// Create AccountPacket instance from a directory which has been already initialised.
-    pub fn from_path(client: Client, wallet_dir: &Path, path: &Path) -> Result<Self> {
+    pub fn from_path(
+        client: Client,
+        wallet_dir: &Path,
+        path: &Path,
+        password: Option<&[u8]>,
+    ) -> Result<Self> {
         let (files_dir, tracking_info_dir, meta_dir) = build_tracking_info_paths(path)?;
-        let root_sk = read_root_sk(&tracking_info_dir)?;
+        let root_sk = read_root_sk(&tracking_info_dir, password)?;
         let (client, root_folder_addr) = derive_keys_and_address(client, &root_sk);
 
         // this will fail if the directory was not previously initialised with 'init'.
@@ -183,6 +189,7 @@ impl AccountPacket {
         client: &Client,
         wallet_dir: &Path,
         root_sk: &MainSecretKey,
+        password: Option<&[u8]>,
         download_path: &Path,
         batch_size: usize,
         retry_strategy: RetryStrategy,
@@ -204,7 +211,7 @@ impl AccountPacket {
             }
         } else {
             store_root_folder_tracking_info(&meta_dir, root_folder_addr, true)?;
-            store_root_sk(&tracking_info_dir, root_sk)?;
+            store_root_sk(&tracking_info_dir, root_sk, password)?;
         }
 
         let mut acc_packet = Self {
@@ -882,20 +889,22 @@ fn derive_keys_and_address(
 mod tests {
     // All tests require a network running so Clients can be instantiated.
 
-    use crate::acc_packet::derive_keys_and_address;
+    use crate::acc_packet::{
+        derive_keys_and_address, RECOVERY_SEED_FILENAME, SAFE_TRACKING_CHANGES_DIR,
+    };
 
     use super::{
         read_root_folder_addr, read_tracking_info_from_disk, AccountPacket, Metadata,
         MetadataTrackingInfo, Mutation, ACC_PACKET_ADDR_DERIVATION_INDEX,
         ACC_PACKET_OWNER_DERIVATION_INDEX,
     };
-    use sn_client::transfers::MainSecretKey;
-    use sn_client::UploadCfg;
+    use rand::{thread_rng, Rng};
     use sn_client::{
         protocol::storage::{Chunk, RetryStrategy},
         registers::{EntryHash, RegisterAddress},
         test_utils::{get_funded_wallet, get_new_client, random_file_chunk},
-        FolderEntry, BATCH_SIZE,
+        transfers::MainSecretKey,
+        FolderEntry, UploadCfg, BATCH_SIZE,
     };
 
     use bls::SecretKey;
@@ -945,7 +954,8 @@ mod tests {
         );
         let expected_folder_addr = RegisterAddress::new(xorname, owner_pk);
 
-        let acc_packet = AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk)?;
+        let acc_packet =
+            AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk, None)?;
         assert_eq!(
             derive_keys_and_address(client, &root_sk).1,
             expected_folder_addr
@@ -1007,7 +1017,7 @@ mod tests {
         create_dir_all(&src_files_path)?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk, None)?;
 
         // let's sync up with the network from the original empty account packet
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
@@ -1017,6 +1027,7 @@ mod tests {
             &client,
             wallet_dir,
             &root_sk,
+            None,
             &clone_files_path,
             BATCH_SIZE,
             RetryStrategy::Quick,
@@ -1043,7 +1054,7 @@ mod tests {
         let expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk, None)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1053,6 +1064,7 @@ mod tests {
             &client,
             wallet_dir,
             &root_sk,
+            None,
             &download_files_path,
             BATCH_SIZE,
             RetryStrategy::Quick,
@@ -1079,7 +1091,7 @@ mod tests {
         let files_path = files_path.canonicalize()?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk, None)?;
 
         let changes = acc_packet.scan_files_and_folders_for_changes(false)?;
         // verify changes detected
@@ -1126,7 +1138,7 @@ mod tests {
         let mut expected_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk, None)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1135,6 +1147,7 @@ mod tests {
             &client,
             wallet_dir,
             &root_sk,
+            None,
             &clone_files_path,
             BATCH_SIZE,
             RetryStrategy::Quick,
@@ -1174,7 +1187,7 @@ mod tests {
         let mut test_files = create_test_files_on_disk(&src_files_path)?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk, None)?;
 
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
@@ -1194,7 +1207,7 @@ mod tests {
         let moved_files_path = moved_files_path.canonicalize()?;
 
         let moved_acc_packet =
-            AccountPacket::from_path(client.clone(), wallet_dir, &moved_files_path)?;
+            AccountPacket::from_path(client.clone(), wallet_dir, &moved_files_path, None)?;
 
         // verify only one change is detected still after moved to another location on disk
         let changes = moved_acc_packet.scan_files_and_folders_for_changes(false)?;
@@ -1221,7 +1234,7 @@ mod tests {
         let _ = create_test_files_on_disk(&files_path)?;
 
         let mut acc_packet =
-            AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk)?;
+            AccountPacket::init(client.clone(), wallet_dir, &files_path, &root_sk, None)?;
         acc_packet.sync(SYNC_OPTS.0, SYNC_OPTS.1).await?;
 
         // try to download Folder with a different root SK should fail since it
@@ -1233,6 +1246,7 @@ mod tests {
             &client,
             wallet_dir,
             &other_root_sk,
+            None,
             &download_files_path,
             BATCH_SIZE,
             RetryStrategy::Quick,
@@ -1242,6 +1256,81 @@ mod tests {
         {
             bail!("acc-packet retrieval succeeded unexpectedly");
         }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_acc_packet_recovery_seed_encryption() -> Result<()> {
+        let client = get_new_client(SecretKey::random()).await?;
+        let root_sk = MainSecretKey::random();
+        let tmp_dir = tempfile::tempdir()?;
+        let wallet_dir = tmp_dir.path();
+
+        // let's first test with unencrypted recovery seed
+        let src_files_path = tmp_dir.path().join("myaccpacket_unencrypted_seed");
+        create_dir_all(&src_files_path)?;
+        let _ = AccountPacket::init(client.clone(), wallet_dir, &src_files_path, &root_sk, None)?;
+        let _ = AccountPacket::from_path(client.clone(), wallet_dir, &src_files_path, None)?;
+
+        let bytes = std::fs::read(
+            src_files_path
+                .join(SAFE_TRACKING_CHANGES_DIR)
+                .join(RECOVERY_SEED_FILENAME),
+        )?;
+        assert_eq!(bytes, root_sk.to_bytes());
+
+        if AccountPacket::from_path(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(b"123456789"),
+        )
+        .is_ok()
+        {
+            bail!("acc-packet loading with a password succeeded unexpectedly");
+        }
+
+        // let's now test with encrypted recovery seed
+        let src_files_path = tmp_dir.path().join("myaccpacket_encrypted_seed");
+        create_dir_all(&src_files_path)?;
+        let mut rng = thread_rng();
+        let password: [u8; 32] = rng.gen();
+        let incorrect_password: [u8; 32] = rng.gen();
+
+        let _ = AccountPacket::init(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            &root_sk,
+            Some(&password),
+        )?;
+
+        if AccountPacket::from_path(client.clone(), wallet_dir, &src_files_path, None).is_ok() {
+            bail!("acc-packet loading without a password succeeded unexpectedly");
+        }
+
+        if AccountPacket::from_path(
+            client.clone(),
+            wallet_dir,
+            &src_files_path,
+            Some(&incorrect_password),
+        )
+        .is_ok()
+        {
+            bail!("acc-packet loading with incorrect password succeeded unexpectedly");
+        }
+
+        let _ =
+            AccountPacket::from_path(client.clone(), wallet_dir, &src_files_path, Some(&password))?;
+
+        let bytes = std::fs::read(
+            src_files_path
+                .join(SAFE_TRACKING_CHANGES_DIR)
+                .join(RECOVERY_SEED_FILENAME),
+        )?;
+        assert!(!bytes.is_empty());
+        assert_ne!(bytes, root_sk.to_bytes());
 
         Ok(())
     }

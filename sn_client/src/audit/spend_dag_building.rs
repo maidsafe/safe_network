@@ -18,7 +18,11 @@ impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
     /// Once the DAG collected, verifies and records errors in the DAG
-    pub async fn spend_dag_build_from(&self, spend_addr: SpendAddress) -> WalletResult<SpendDag> {
+    pub async fn spend_dag_build_from(
+        &self,
+        spend_addr: SpendAddress,
+        max_depth: Option<u32>,
+    ) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
         let mut dag = SpendDag::new(spend_addr);
 
@@ -46,7 +50,7 @@ impl Client {
         // use iteration instead of recursion to avoid stack overflow
         let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
         let mut known_tx = BTreeSet::new();
-        let mut gen = 0;
+        let mut gen: u32 = 0;
         let start = std::time::Instant::now();
 
         while !txs_to_follow.is_empty() {
@@ -95,12 +99,18 @@ impl Client {
             }
 
             // only follow tx we haven't already gathered
-            gen += 1;
             known_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
             txs_to_follow = next_gen_tx
                 .into_iter()
                 .filter(|tx| !known_tx.contains(&tx.hash()))
                 .collect();
+
+            // go on to next gen
+            gen += 1;
+            if gen >= max_depth.unwrap_or(u32::MAX) {
+                info!("Reached generation {gen}, stopping DAG collection from {spend_addr:?}");
+                break;
+            }
         }
 
         let elapsed = start.elapsed();
@@ -243,14 +253,19 @@ impl Client {
     /// Extends an existing SpendDag starting from the utxos in this DAG
     /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
     /// Records errors in the new DAG branches if any
-    pub async fn spend_dag_continue_from_utxos(&self, dag: &mut SpendDag) -> WalletResult<()> {
-        trace!("Gathering spend DAG from utxos...");
+    /// Stops gathering after max_depth generations
+    pub async fn spend_dag_continue_from_utxos(
+        &self,
+        dag: &mut SpendDag,
+        max_depth: Option<u32>,
+    ) -> WalletResult<()> {
+        info!("Gathering spend DAG from utxos...");
         let utxos = dag.get_utxos();
 
         let mut stream = futures::stream::iter(utxos.into_iter())
             .map(|utxo| async move {
                 debug!("Queuing task to gather DAG from utxo: {:?}", utxo);
-                (self.spend_dag_build_from(utxo).await, utxo)
+                (self.spend_dag_build_from(utxo, max_depth).await, utxo)
             })
             .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
 
@@ -264,7 +279,7 @@ impl Client {
         dag.record_faults(&dag.source())
             .map_err(|e| WalletError::Dag(e.to_string()))?;
 
-        trace!("Done gathering spend DAG from utxos");
+        info!("Done gathering spend DAG from utxos");
         Ok(())
     }
 }
