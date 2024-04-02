@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712079158047,
+  "lastUpdate": 1712079271904,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "11c29afcab912dffb83ee76d38a2dce0495421b8",
-          "message": "feat(networking): reduce batch size to 64\n\nThis should keep a lid on mem issues",
-          "timestamp": "2023-11-23T15:23:54Z",
-          "tree_id": "0ec33d82cfca3c35e3046c938202084379e17022",
-          "url": "https://github.com/maidsafe/safe_network/commit/11c29afcab912dffb83ee76d38a2dce0495421b8"
-        },
-        "date": 1700757283388,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "47e2510eec5068a1a471c9ddd61f1779fb49c8e1",
+          "message": "chore(cli): removing the folders upload command for cleaner UX",
+          "timestamp": "2024-04-02T16:41:38Z",
+          "tree_id": "7bcd2050b7d1e52cc04493976b515050c7e5d694",
+          "url": "https://github.com/maidsafe/safe_network/commit/47e2510eec5068a1a471c9ddd61f1779fb49c8e1"
+        },
+        "date": 1712079271237,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
