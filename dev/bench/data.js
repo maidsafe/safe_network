@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712051237686,
+  "lastUpdate": 1712066152982,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5a22362b84d852a10a18aa63df5a6b4293f842fd",
-          "message": "chore: replace bootstrap with query specific kbucket",
-          "timestamp": "2023-11-23T14:53:32Z",
-          "tree_id": "c92d62a9111c9d32ad1e307c3e00679b221de769",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a22362b84d852a10a18aa63df5a6b4293f842fd"
-        },
-        "date": 1700754713357,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.083716085745511,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 24.5089148907164,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 25.126604645146703,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.867166481943464,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "da05ca03e04700aec3338164606e5094d0461053",
+          "message": "fix(folders): race condition caused by uploader upon concurrent Folders being payed and synced",
+          "timestamp": "2024-04-02T13:12:45Z",
+          "tree_id": "ed524708c965f14d00012f081cbeec14a2595dc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/da05ca03e04700aec3338164606e5094d0461053"
+        },
+        "date": 1712066149422,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2385355876042425,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6366639120131574,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.45845508679652,
             "unit": "MiB/s"
           }
         ]
