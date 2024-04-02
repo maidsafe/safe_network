@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712050493997,
+  "lastUpdate": 1712051123241,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
-          "message": "test(node): increase timeout on gossipsub msg tests",
-          "timestamp": "2023-11-23T14:29:28Z",
-          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
-        },
-        "date": 1700752853821,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.146642605837997,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.043336407398282,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 14.196185896724312,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.42956660317629,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "430dfcdaafc0855f7df1cf823368f3731de9409e",
+          "message": "fix(networking): don't report ConnectionIssues during initial bootstrap\n\ncontext from the forums:\nhttps://forum.autonomi.community/t/basiceconomytweaks-early-technical-beta/39528/382",
+          "timestamp": "2024-04-02T09:04:46Z",
+          "tree_id": "09264ed7006169c548f89aaec06a3d1520d4079c",
+          "url": "https://github.com/maidsafe/safe_network/commit/430dfcdaafc0855f7df1cf823368f3731de9409e"
+        },
+        "date": 1712051119343,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2048309932914616,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.5982849480616539,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.867166481943464,
             "unit": "MiB/s"
           }
         ]
