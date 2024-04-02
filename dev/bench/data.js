@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712079944957,
+  "lastUpdate": 1712080053410,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "089bd51dd6694d8909972b42132729c35c63ebb6",
-          "message": "chore: introduce sn_rpc_client\n\nProvides a client which is a wrapper around the Protobuf-generated code and types. The intention is\nto avoid redefining that code in different places where the RPC protocol is used.\n\nRight now it doesn't implement the full protocol; for example, the node events stream is missing.\nHowever, it should serve as a starting point, and it is being used by the node manager.\n\nThe `sn_node_rpc_client` crate was extended so that it now doubles as a library and a binary, with\nthe client being added to the library. The binary was updated to use the client, where appropriate.",
-          "timestamp": "2023-11-24T08:33:03Z",
-          "tree_id": "b7507033998123a6931eb3fc039a39f80a530835",
-          "url": "https://github.com/maidsafe/safe_network/commit/089bd51dd6694d8909972b42132729c35c63ebb6"
-        },
-        "date": 1700817577835,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 96,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/47e2510eec5068a1a471c9ddd61f1779fb49c8e1"
         },
         "date": 1712079271237,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "abfcd0c01345ead03e9e1197b1eb40066f7e46c3",
+          "message": "feat(ci): run wan churn tests on the entire network",
+          "timestamp": "2024-04-02T16:58:43Z",
+          "tree_id": "19fa9388aae89128482a7e695c466946b030b096",
+          "url": "https://github.com/maidsafe/safe_network/commit/abfcd0c01345ead03e9e1197b1eb40066f7e46c3"
+        },
+        "date": 1712080052153,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
