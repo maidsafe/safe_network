@@ -37,6 +37,7 @@ bitcoin = { version = "0.31.0", optional = true}
 block-modes="0.8.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
+cryptex = "1.8.1"
 custom_debug = "~0.5.0"
 chrono = "~0.4.19"
 clap = { version = "4.2.1", features = ["derive"]}

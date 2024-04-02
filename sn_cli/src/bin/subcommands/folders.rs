@@ -15,11 +15,16 @@ use sn_client::{
 use bls::{SecretKey, SK_SIZE};
 use clap::Parser;
 use color_eyre::{eyre::bail, Result};
+use cryptex::{get_os_keyring, DynKeyRing};
 use dialoguer::Password;
+use rand::{thread_rng, Rng};
 use std::{
     env::current_dir,
     path::{Path, PathBuf},
 };
+
+const KEYRING_SECRET_ID: &str = "Account Packet recovery seed";
+const KEYRING_SERVICE: &str = "autonomi";
 
 #[derive(Parser, Debug)]
 pub enum FoldersCmds {
@@ -107,7 +112,9 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from the root SK
             let root_sk = get_recovery_secret_sk(root_sk, true)?;
-            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
+            let password = get_secret_encryption_password()?;
+            let acc_packet =
+                AccountPacket::init(client.clone(), root_dir, &path, &root_sk, Some(&password))?;
             println!("Directoy at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
         }
         FoldersCmds::Upload {
@@ -119,8 +126,9 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from a random SK
             let root_sk = get_recovery_secret_sk(None, true)?;
+            let password = get_secret_encryption_password()?;
             let mut acc_packet =
-                AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
+                AccountPacket::init(client.clone(), root_dir, &path, &root_sk, Some(&password))?;
 
             let options = UploadCfg {
                 verify_store,
@@ -152,11 +160,13 @@ pub(crate) async fn folders_cmds(
             println!("Downloading onto {download_folder_path:?}, with batch-size {batch_size}");
             debug!("Downloading onto {download_folder_path:?}");
 
+            let password = get_secret_encryption_password()?;
+
             let _ = AccountPacket::retrieve_folders(
                 client,
                 root_dir,
                 &root_sk,
-                None,
+                Some(&password),
                 &download_folder_path,
                 batch_size,
                 retry_strategy,
@@ -165,7 +175,9 @@ pub(crate) async fn folders_cmds(
         }
         FoldersCmds::Status { path } => {
             let path = get_path(path, None)?;
-            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path, None)?;
+            let password = get_secret_encryption_password()?;
+            let acc_packet =
+                AccountPacket::from_path(client.clone(), root_dir, &path, Some(&password))?;
             acc_packet.status()?;
         }
         FoldersCmds::Sync {
@@ -175,7 +187,9 @@ pub(crate) async fn folders_cmds(
             retry_strategy,
         } => {
             let path = get_path(path, None)?;
-            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path, None)?;
+            let password = get_secret_encryption_password()?;
+            let mut acc_packet =
+                AccountPacket::from_path(client.clone(), root_dir, &path, Some(&password))?;
 
             let options = UploadCfg {
                 verify_store,
@@ -260,5 +274,46 @@ fn get_recovery_secret_sk(
     match result {
         Ok(sk) => Ok(MainSecretKey::new(sk)),
         Err(err) => bail!("Failed to decode the recovery secret: {err:?}"),
+    }
+}
+
+// Get the password from host OS keystore to encrypt/decrypt the recovery secret that
+// is stored on local disk. Generate a random password if not found and store it on host OS keystore.
+fn get_secret_encryption_password() -> Result<Vec<u8>> {
+    let mut keyring = get_os_keyring(KEYRING_SERVICE)?;
+    let password = match keyring.get_secret(KEYRING_SECRET_ID) {
+        Ok(secret) => secret.to_vec(),
+        Err(_) => {
+            // TODO: inform the user, explain what the password is used for and where it's stored.
+            // and give the user the option to provide one instead of generating a random one
+            println!(
+                "Generating and storing a password in your host OS keystore which is used to \
+                encrypt the Account Packet recovery secret to locally cache it.\n"
+            );
+            let mut rng = thread_rng();
+            let pwd: [u8; 32] = rng.gen();
+            if let Err(err) = keyring.set_secret(KEYRING_SECRET_ID, &pwd) {
+                println!("Failed to store generated password on host OS keystore: {err:?}");
+            }
+
+            pwd.to_vec()
+        }
+    };
+
+    Ok(password)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_secret_encryption_password;
+    use eyre::Result;
+
+    #[test]
+    fn test_keystore() -> Result<()> {
+        let pwd1 = get_secret_encryption_password()?;
+        let pwd2 = get_secret_encryption_password()?;
+
+        assert_eq!(pwd1, pwd2);
+        Ok(())
     }
 }
