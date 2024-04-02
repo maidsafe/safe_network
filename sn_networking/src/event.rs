@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    cmd::SwarmCmd,
     driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
@@ -30,7 +31,9 @@ use libp2p::{
 
 use crate::target_arch::Instant;
 
+use rand::{rngs::OsRng, Rng};
 use sn_protocol::{
+    get_port_from_multiaddr,
     messages::{CmdResponse, Query, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
@@ -128,6 +131,11 @@ pub enum NetworkEvent {
     QuoteVerification {
         quotes: Vec<(PeerId, PaymentQuote)>,
     },
+    /// Carry out chunk proof check against the specified record and peer
+    ChunkProofVerification {
+        peer_id: PeerId,
+        keys_to_verify: Vec<NetworkAddress>,
+    },
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -174,6 +182,15 @@ impl Debug for NetworkEvent {
                     f,
                     "NetworkEvent::QuoteVerification({} quotes)",
                     quotes.len()
+                )
+            }
+            NetworkEvent::ChunkProofVerification {
+                peer_id,
+                keys_to_verify,
+            } => {
+                write!(
+                    f,
+                    "NetworkEvent::ChunkProofVerification({peer_id:?} {keys_to_verify:?})"
                 )
             }
         }
@@ -490,7 +507,8 @@ impl SwarmDriver {
                 };
 
                 if should_clean_peer {
-                    warn!("Cleaning out peer {failed_peer_id:?}");
+                    warn!("Tracking issue of {failed_peer_id:?}. Clearing it out for now");
+
                     if let Some(dead_peer) = self
                         .swarm
                         .behaviour_mut()
@@ -498,10 +516,17 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.connected_peers = self.connected_peers.saturating_sub(1);
+
+                        self.handle_cmd(SwarmCmd::RecordNodeIssue {
+                            peer_id: failed_peer_id,
+                            issue: crate::NodeIssue::ConnectionIssue,
+                        })?;
+
                         self.send_event(NetworkEvent::PeerRemoved(
                             *dead_peer.node.key.preimage(),
                             self.connected_peers,
                         ));
+
                         self.log_kbuckets(&failed_peer_id);
                         let _ = self.check_for_change_in_our_close_group();
                     }
@@ -529,13 +554,24 @@ impl SwarmDriver {
 
                 if !self.swarm.external_addresses().any(|addr| addr == &address) && !self.is_client
                 {
-                    info!(%address, "external address: new candidate");
+                    debug!(%address, "external address: new candidate");
 
                     // Identify will let us know when we have a candidate. (Peers will tell us what address they see us as.)
                     // We manually confirm this to be our externally reachable address, though in theory it's possible we
-                    // are not actually reachable. (Peers can lie to us.) This is a good enough heuristic for now.
+                    // are not actually reachable. This event returns addresses with ports that were not set by the user,
+                    // so we must not add those ports as they will not be forwarded.
                     // Setting this will also switch kad to server mode if it's not already in it.
-                    self.swarm.add_external_address(address);
+                    if let Some(our_port) = self.listen_port {
+                        if let Some(port) = get_port_from_multiaddr(&address) {
+                            if port == our_port {
+                                info!(%address, "external address: new candidate has the same configured port, adding it.");
+                                self.swarm.add_external_address(address);
+                            } else {
+                                info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
+                            }
+                        }
+                        trace!("external address: listen port not set. This has to be set if you're running a node");
+                    }
                 }
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {
@@ -1124,28 +1160,48 @@ impl SwarmDriver {
             return;
         }
 
-        // Only handle those non-exist and in close range keys
+        // On receive a replication_list from a close_group peer, we undertake two tasks:
+        //   1, For those keys that we don't have:
+        //        fetch them if close enough to us
+        //   2, For those keys that we have and supposed to be held by the sender as well:
+        //        start chunk_proof check against a randomly selected chunk type record to the sender
+
+        // For fetching, only handle those non-exist and in close range keys
         let keys_to_store =
             self.select_non_existent_records_for_replications(&incoming_keys, &closest_k_peers);
+
         if keys_to_store.is_empty() {
             debug!("Empty keys to store after adding to");
-            return;
+        } else {
+            #[allow(clippy::mutable_key_type)]
+            let all_keys = self
+                .swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .record_addresses_ref();
+            let keys_to_fetch = self
+                .replication_fetcher
+                .add_keys(holder, keys_to_store, all_keys);
+            if keys_to_fetch.is_empty() {
+                trace!("no waiting keys to fetch from the network");
+            } else {
+                self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
+            }
         }
 
-        #[allow(clippy::mutable_key_type)]
-        let all_keys = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses_ref();
-        let keys_to_fetch = self
-            .replication_fetcher
-            .add_keys(holder, keys_to_store, all_keys);
-        if !keys_to_fetch.is_empty() {
-            self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
-        } else {
-            trace!("no waiting keys to fetch from the network");
+        // Only trigger chunk_proof check when received a periodical replication request.
+        if incoming_keys.len() > 1 {
+            let keys_to_verify = self.select_verification_data_candidates(sender);
+
+            if keys_to_verify.is_empty() {
+                debug!("No valid candidate to be checked against peer {holder:?}");
+            } else {
+                self.send_event(NetworkEvent::ChunkProofVerification {
+                    peer_id: holder,
+                    keys_to_verify,
+                });
+            }
         }
     }
 
@@ -1181,7 +1237,7 @@ impl SwarmDriver {
         non_existent_keys
             .into_iter()
             .filter_map(|(key, record_type)| {
-                if self.is_in_close_range(key, closest_k_peers) {
+                if Self::is_in_close_range(&self.self_peer_id, key, closest_k_peers) {
                     Some((key.clone(), record_type.clone()))
                 } else {
                     // Reduce the log level as there will always be around 40% records being
@@ -1203,18 +1259,88 @@ impl SwarmDriver {
     // are none among target b011111's close range.
     // Hence, the ilog2 calculation based on close_range cannot cover such case.
     // And have to sort all nodes to figure out whether self is among the close_group to the target.
-    fn is_in_close_range(&self, target: &NetworkAddress, all_peers: &Vec<PeerId>) -> bool {
+    pub(crate) fn is_in_close_range(
+        our_peer_id: &PeerId,
+        target: &NetworkAddress,
+        all_peers: &Vec<PeerId>,
+    ) -> bool {
         if all_peers.len() <= REPLICATE_RANGE {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
         match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
-            Ok(close_group) => close_group.contains(&&self.self_peer_id),
+            Ok(close_group) => close_group.contains(&our_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
                 true
             }
+        }
+    }
+
+    /// Check among all chunk type records that we have, select those close to the peer,
+    /// and randomly pick one as the verification candidate.
+    #[allow(clippy::mutable_key_type)]
+    fn select_verification_data_candidates(&mut self, peer: NetworkAddress) -> Vec<NetworkAddress> {
+        let mut closest_peers = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&self.self_peer_id.into())
+            .map(|peer| peer.into_preimage())
+            .take(20)
+            .collect_vec();
+        closest_peers.push(self.self_peer_id);
+
+        let target_peer = if let Some(peer_id) = peer.as_peer_id() {
+            peer_id
+        } else {
+            error!("Target {peer:?} is not a valid PeerId");
+            return vec![];
+        };
+
+        #[allow(clippy::mutable_key_type)]
+        let all_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_addresses_ref();
+
+        // Targeted chunk type record shall be expected within the close range from our perspective.
+        let mut verify_candidates: Vec<NetworkAddress> = all_keys
+            .values()
+            .filter_map(|(addr, record_type)| {
+                if RecordType::Chunk == *record_type {
+                    match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
+                        Ok(close_group) => {
+                            if close_group.contains(&&target_peer) {
+                                Some(addr.clone())
+                            } else {
+                                None
+                            }
+                        }
+                        Err(err) => {
+                            warn!("Could not get sorted peers for {addr:?} with error {err:?}");
+                            None
+                        }
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        verify_candidates.sort_by_key(|a| peer.distance(a));
+
+        // To ensure the candidate mush have to be held by the peer,
+        // we only carry out check when there are already certain amount of chunks uploaded
+        // AND choose candidate from certain reduced range.
+        if verify_candidates.len() > 50 {
+            let index: usize = OsRng.gen_range(0..(verify_candidates.len() / 2));
+            vec![verify_candidates[index].clone()]
+        } else {
+            vec![]
         }
     }
 }

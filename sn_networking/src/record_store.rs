@@ -48,6 +48,8 @@ const MAX_RECORDS_COUNT: usize = 2048;
 pub struct NodeRecordStore {
     /// The identity of the peer owning the store.
     local_key: KBucketKey<PeerId>,
+    /// The address of the peer owning the store
+    local_address: NetworkAddress,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
@@ -188,6 +190,7 @@ impl NodeRecordStore {
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
         NodeRecordStore {
             local_key: KBucketKey::from(local_id),
+            local_address: NetworkAddress::from_peer(local_id),
             config,
             records,
             network_event_sender,
@@ -301,18 +304,15 @@ impl NodeRecordStore {
 
         // sort records by distance to our local key
         let mut sorted_records: Vec<_> = self.records.keys().cloned().collect();
-        let self_address = NetworkAddress::from_peer(self.local_key.clone().into_preimage());
         sorted_records.sort_by(|key_a, key_b| {
             let a = NetworkAddress::from_record_key(key_a);
             let b = NetworkAddress::from_record_key(key_b);
-            self_address.distance(&a).cmp(&self_address.distance(&b))
+            self.local_address
+                .distance(&a)
+                .cmp(&self.local_address.distance(&b))
         });
 
-        let distance_range = self_address.distance(&NetworkAddress::from_record_key(
-            &sorted_records[sorted_records.len() - 10],
-        ));
-        self.distance_range = Some(distance_range);
-        // sorting will be costive, hence pruning in a batch of 10
+        // sorting will be costly, hence pruning in a batch of 10
         (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
             info!(
                 "Record {i} {:?} will be pruned to free up space for new records",
@@ -428,24 +428,36 @@ impl NodeRecordStore {
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
-        let quoting_metrics = QuotingMetrics {
-            records_stored: self.records.len(),
+        let records_stored = self.records.len();
+        let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
+
+        let mut quoting_metrics = QuotingMetrics {
+            close_records_stored: records_stored,
             max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
             live_time: self.timestamp.elapsed().as_secs(),
         };
 
+        if let Some(distance_range) = self.distance_range {
+            let relevant_records =
+                self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
+
+            quoting_metrics.close_records_stored = relevant_records;
+        } else {
+            info!("Basing cost of _total_ records stored.");
+        };
+
         let cost = if self.contains(key) {
             0
         } else {
+            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
             calculate_cost_for_records(
-                quoting_metrics.records_stored,
+                quoting_metrics.close_records_stored,
                 quoting_metrics.received_payment_count,
                 quoting_metrics.max_records,
                 quoting_metrics.live_time,
             )
         };
-
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
         (NanoTokens::from(cost), quoting_metrics)
@@ -460,7 +472,7 @@ impl NodeRecordStore {
     #[allow(clippy::mutable_key_type)]
     pub fn get_records_within_distance_range(
         &self,
-        records: &HashSet<Key>,
+        records: HashSet<&Key>,
         distance_range: Distance,
     ) -> usize {
         debug!(
@@ -481,7 +493,6 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    #[cfg(test)]
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
@@ -1039,11 +1050,11 @@ mod tests {
 
         store.set_distance_range(distance);
 
-        let record_keys: HashSet<_> = store.records.keys().cloned().collect();
+        let record_keys = store.records.keys().collect();
 
         // check that the number of records returned is correct
         assert_eq!(
-            store.get_records_within_distance_range(&record_keys, distance),
+            store.get_records_within_distance_range(record_keys, distance),
             stored_records.len() / 2
         );
 
@@ -1087,29 +1098,30 @@ mod tests {
                                 peers_in_close.iter().map(|peer_id| **peer_id).collect()
                             }
                             Err(err) => {
-                                panic!("Cann't find close range of {name:?} with error {err:?}")
+                                panic!("Can't find close range of {name:?} with error {err:?}")
                             }
                         };
 
                         let payee = pick_cheapest_payee(&peers_in_close, &peers);
 
                         for peer in peers_in_replicate_range.iter() {
-                            let entry = peers.entry(*peer).or_insert((0, 0, 0));
+                            let (close_records_stored, nanos_earnt, received_payment_count) =
+                                peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
                                 let cost = calculate_cost_for_records(
-                                    entry.0,
-                                    entry.2,
+                                    *close_records_stored,
+                                    *received_payment_count,
                                     MAX_RECORDS_COUNT,
                                     0,
                                 );
-                                entry.1 += cost;
-                                entry.2 += 1;
+                                *nanos_earnt += cost;
+                                *received_payment_count += 1;
                             }
-                            entry.0 += 1;
+                            *close_records_stored += 1;
                         }
                     }
                     Err(err) => {
-                        panic!("Cann't find replicate range of {name:?} with error {err:?}")
+                        panic!("Can't find replicate range of {name:?} with error {err:?}")
                     }
                 }
             }
@@ -1122,19 +1134,24 @@ mod tests {
             let mut max_earned = 0;
             let mut max_store_cost = 0;
 
-            for (_peer_id, stats) in peers.iter() {
-                let cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
+            for (_peer_id, (close_records_stored, nanos_earnt, times_paid)) in peers.iter() {
+                let cost = calculate_cost_for_records(
+                    *close_records_stored,
+                    *times_paid,
+                    MAX_RECORDS_COUNT,
+                    0,
+                );
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
-                received_payment_count += stats.2;
-                if stats.1 == 0 {
+                received_payment_count += times_paid;
+                if *nanos_earnt == 0 {
                     empty_earned_nodes += 1;
                 }
 
-                if stats.1 < min_earned {
-                    min_earned = stats.1;
+                if *nanos_earnt < min_earned {
+                    min_earned = *nanos_earnt;
                 }
-                if stats.1 > max_earned {
-                    max_earned = stats.1;
+                if *nanos_earnt > max_earned {
+                    max_earned = *nanos_earnt;
                 }
                 if cost < min_store_cost {
                     min_store_cost = cost;

@@ -20,10 +20,10 @@ use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
-    close_group_majority, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver,
-    CLOSE_GROUP_SIZE,
+    close_group_majority, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
+    SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -48,6 +48,13 @@ use tokio::{
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
 pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+
+/// Max number of attempts that chunk proof verification will be carried out against certain target,
+/// before classifying peer as a bad peer.
+const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
+
+/// Invertal between chunk proof verfication to be retired against the same target.
+const CHUNK_PROOF_VERIFY_RETRY_INTERVAL: Duration = Duration::from_secs(15);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -410,6 +417,38 @@ impl Node {
                     quotes_verification(&network, quotes).await;
                 });
             }
+            NetworkEvent::ChunkProofVerification {
+                peer_id,
+                keys_to_verify,
+            } => {
+                event_header = "ChunkProofVerification";
+                let network = self.network.clone();
+
+                trace!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
+
+                let _handle = spawn(async move {
+                    // To avoid the peer is in the process of getting the copy via replication,
+                    // repeat the verification for couple of times (in case of error).
+                    // Only report the node as bad when ALL the verification attempts failed.
+                    let mut attempts = 0;
+                    while attempts < MAX_CHUNK_PROOF_VERIFY_ATTEMPTS {
+                        if chunk_proof_verify_peer(&network, peer_id, &keys_to_verify).await {
+                            return;
+                        }
+                        // Replication interval is 22s - 45s.
+                        // Hence some re-try erquired to allow copies to spread out.
+                        tokio::time::sleep(CHUNK_PROOF_VERIFY_RETRY_INTERVAL).await;
+                        attempts += 1;
+                    }
+                    // Now ALL attempts failed, hence report the issue.
+                    // Note this won't immediately trigger the node to be considered as BAD.
+                    // Only the same peer accumulated three same issue
+                    // within 5 mins will be considered as BAD.
+                    // As the chunk_proof_check will be triggered every periodical replication,
+                    // a low performed or cheaty peer will raise multiple issue alerts during it.
+                    network.record_node_issues(peer_id, NodeIssue::FailedChunkProofCheck);
+                });
+            }
         }
 
         trace!(
@@ -640,5 +679,70 @@ impl Node {
                 debug!("Skip bad_nodes check as not having too many nodes in RT");
             }
         }
+    }
+}
+
+async fn chunk_proof_verify_peer(
+    network: &Network,
+    peer_id: PeerId,
+    keys: &[NetworkAddress],
+) -> bool {
+    for key in keys.iter() {
+        let check_passed = if let Ok(Some(record)) =
+            network.get_local_record(&key.to_record_key()).await
+        {
+            let nonce = thread_rng().gen::<u64>();
+            let expected_proof = ChunkProof::new(&record.value, nonce);
+            trace!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
+
+            let request = Request::Query(Query::GetChunkExistenceProof {
+                key: key.clone(),
+                nonce,
+            });
+            let responses = network
+                .send_and_get_responses(&[peer_id], &request, true)
+                .await;
+            let n_verified = responses
+                .into_iter()
+                .filter_map(|(peer, resp)| {
+                    received_valid_chunk_proof(key, &expected_proof, peer, resp)
+                })
+                .count();
+
+            n_verified >= 1
+        } else {
+            error!(
+                 "To verify peer {peer_id:?} Could not get ChunkProof for {key:?} as we don't have the record locally."
+            );
+            true
+        };
+
+        if !check_passed {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn received_valid_chunk_proof(
+    key: &NetworkAddress,
+    expected_proof: &ChunkProof,
+    peer: PeerId,
+    resp: Result<Response, NetworkError>,
+) -> Option<()> {
+    if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) = resp {
+        if expected_proof.verify(&proof) {
+            debug!(
+                "Got a valid ChunkProof of {key:?} from {peer:?}, during peer chunk proof check."
+            );
+            Some(())
+        } else {
+            warn!("When verify {peer:?} with ChunkProof of {key:?}, the chunk might have been tampered?");
+            None
+        }
+    } else {
+        debug!("Did not get a valid response for the ChunkProof from {peer:?}");
+        None
     }
 }

@@ -44,6 +44,8 @@ pub enum NodeIssue {
     CloseNodesShunning,
     /// Provided a bad quote
     BadQuoting,
+    /// Peer failed to pass the chunk proof verification
+    FailedChunkProofCheck,
 }
 
 /// Commands to send to the Swarm

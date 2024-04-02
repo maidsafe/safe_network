@@ -174,55 +174,11 @@ impl WalletClient {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let payment_detail = self.wallet.api().get_payment(&xorname)?;
+        let payment_detail = self.wallet.api().get_recent_payment(&xorname)?;
 
         let payment = payment_detail.to_payment();
         trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
         let peer_id = PeerId::from_bytes(&payment_detail.peer_id_bytes)
-            .map_err(|_| WalletError::NoPaymentForAddress(xorname))?;
-
-        Ok((payment, peer_id))
-    }
-
-    /// Returns the most recent non expired cached Payment for a provided NetworkAddress.
-    ///
-    /// # Arguments
-    /// * `address` - The [`NetworkAddress`].
-    ///
-    /// # Example
-    /// ```no_run
-    /// // Getting the payment for an address using a random PeerId
-    /// # use sn_client::{Client, WalletClient, Error};
-    /// # use tempfile::TempDir;
-    /// # use bls::SecretKey;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
-    /// # let tmp_path = TempDir::new()?.path().to_owned();
-    /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// use libp2p_identity::PeerId;
-    /// use sn_protocol::NetworkAddress;
-    ///
-    /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let network_address = NetworkAddress::from_peer(PeerId::random());
-    /// let payment = wallet_client.get_non_expired_payment_for_addr(&network_address)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn get_non_expired_payment_for_addr(
-        &self,
-        address: &NetworkAddress,
-    ) -> WalletResult<(Payment, PeerId)> {
-        let xorname = address
-            .as_xorname()
-            .ok_or(WalletError::InvalidAddressType)?;
-
-        let payment_details = self.wallet.api().get_non_expired_payment(&xorname)?;
-        let payment = payment_details.to_payment();
-        trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
-        let peer_id = PeerId::from_bytes(&payment_details.peer_id_bytes)
             .map_err(|_| WalletError::NoPaymentForAddress(xorname))?;
 
         Ok((payment, peer_id))
@@ -263,62 +219,6 @@ impl WalletClient {
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
         let payment_details = self.wallet.api().get_all_payments(&xorname)?;
-
-        let payments = payment_details
-            .into_iter()
-            .map(|details| {
-                let payment = details.to_payment();
-
-                match PeerId::from_bytes(&details.peer_id_bytes) {
-                    Ok(peer_id) => Ok((payment, peer_id)),
-                    Err(_) => Err(WalletError::NoPaymentForAddress(xorname)),
-                }
-            })
-            .collect::<WalletResult<Vec<_>>>()?;
-
-        trace!(
-            "{} Payment retrieved for {xorname:?} from wallet: {payments:?}",
-            payments.len()
-        );
-
-        Ok(payments)
-    }
-
-    ///  Returns the all cached Payment for a provided NetworkAddress that have not expired yet.
-    ///
-    /// # Arguments
-    /// * `address` - The [`NetworkAddress`].
-    ///
-    /// # Example
-    /// ```no_run
-    /// // Getting the payment for an address using a random PeerId
-    /// # use sn_client::{Client, WalletClient, Error};
-    /// # use tempfile::TempDir;
-    /// # use bls::SecretKey;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
-    /// # let tmp_path = TempDir::new()?.path().to_owned();
-    /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// use libp2p_identity::PeerId;
-    /// use sn_protocol::NetworkAddress;
-    ///
-    /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let network_address = NetworkAddress::from_peer(PeerId::random());
-    /// let payments = wallet_client.get_all_non_expired_payments_for_addr(&network_address)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn get_all_non_expired_payments_for_addr(
-        &self,
-        address: &NetworkAddress,
-    ) -> WalletResult<Vec<(Payment, PeerId)>> {
-        let xorname = address
-            .as_xorname()
-            .ok_or(WalletError::InvalidAddressType)?;
-        let payment_details = self.wallet.api().get_all_non_expired_payments(&xorname)?;
 
         let payments = payment_details
             .into_iter()

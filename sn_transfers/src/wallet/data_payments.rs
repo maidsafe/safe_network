@@ -59,7 +59,7 @@ pub type QuoteSignature = Vec<u8>;
 )]
 pub struct QuotingMetrics {
     /// the records stored
-    pub records_stored: usize,
+    pub close_records_stored: usize,
     /// the max_records configured
     pub max_records: usize,
     /// number of times that got paid
@@ -73,7 +73,7 @@ impl QuotingMetrics {
     /// construct an empty QuotingMetrics
     pub fn new() -> Self {
         Self {
-            records_stored: 0,
+            close_records_stored: 0,
             max_records: 0,
             received_payment_count: 0,
             live_time: 0,
@@ -207,14 +207,21 @@ impl PaymentQuote {
             return false;
         }
 
-        // There could be pruning to be undertaken,
-        // hence the `increasement` check only valid when not being too full.
-        if new_quote.quoting_metrics.records_stored + 20 < new_quote.quoting_metrics.max_records
-            && new_quote.quoting_metrics.records_stored < old_quote.quoting_metrics.records_stored
-        {
-            info!("claimed records_stored out of sequence");
-            return false;
-        }
+        // // There could be pruning to be undertaken,
+        // // hence the `increasement` check only valid when not being too full.
+        // // As now using the `close_records_stored`, with the changing range,
+        // // there is chance that a newer close_records_stored will be smaller than old ones
+        // //
+        // // TODO: rethink about the detection policy on this part
+        //
+        // if new_quote.quoting_metrics.close_records_stored + 20
+        //     < new_quote.quoting_metrics.max_records
+        //     && new_quote.quoting_metrics.close_records_stored
+        //         < old_quote.quoting_metrics.close_records_stored
+        // {
+        //     info!("claimed records_stored out of sequence");
+        //     return false;
+        // }
 
         // TODO: Double check if this applies, as this will prevent a node restart with same ID
         if new_quote.quoting_metrics.received_payment_count
