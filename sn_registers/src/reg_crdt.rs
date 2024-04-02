@@ -113,6 +113,15 @@ impl RegisterCrdt {
             .collect()
     }
 
+    /// Returns the children of an entry, along with their corresponding entry hashes
+    pub fn children(&self, hash: &EntryHash) -> BTreeSet<(EntryHash, Entry)> {
+        self.data
+            .children(hash.0)
+            .hashes_and_nodes()
+            .map(|(hash, node)| (EntryHash(hash), node.value.clone()))
+            .collect()
+    }
+
     /// Access the underlying MerkleReg (e.g. for access to history)
     /// NOTE: This API is unstable and may be removed in the future
     pub(crate) fn merkle_reg(&self) -> &MerkleReg<Entry> {
@@ -160,6 +169,60 @@ mod tests {
         let (entry_hash_1_3, _, _) = crdt_1.write(entry_3.clone(), &parents)?;
         let (entry_hash_2_3, _, _) = crdt_1.write(entry_3, &parents)?;
         assert!(entry_hash_1_3 == entry_hash_2_3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn entry_children() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let address = RegisterAddress {
+            meta: XorName::random(&mut rng),
+            owner: SecretKey::random().public_key(),
+        };
+        let mut crdt = RegisterCrdt::new(address);
+
+        // let's build the following entries hierarchy to test:
+        // - entry_1 has no child
+        // - entry_2_1, entry_2_2, and entry_2_3, all have entry_1 as child
+        // - entry_3 has both entry_2_1 and entry_2_2 as children
+        let entry_1 = vec![0x0, 0x1];
+        let entry_2_1 = vec![0x2, 0x1];
+        let entry_2_2 = vec![0x2, 0x2];
+        let entry_2_3 = vec![0x2, 0x3];
+        let entry_3 = vec![0x0, 0x3];
+        let (entry_hash_1, _, _) = crdt.write(entry_1.clone(), &BTreeSet::new())?;
+        let (entry_hash_2_1, _, _) =
+            crdt.write(entry_2_1.clone(), &[entry_hash_1].into_iter().collect())?;
+        let (entry_hash_2_2, _, _) =
+            crdt.write(entry_2_2.clone(), &[entry_hash_1].into_iter().collect())?;
+        let (entry_hash_2_3, _, _) =
+            crdt.write(entry_2_3.clone(), &[entry_hash_1].into_iter().collect())?;
+        let (entry_hash_3, _, _) = crdt.write(
+            entry_3,
+            &[entry_hash_2_1, entry_hash_2_2].into_iter().collect(),
+        )?;
+
+        let children_entry_1 = crdt.children(&entry_hash_1);
+        assert_eq!(children_entry_1, BTreeSet::new());
+
+        let children_entry_2_1 = crdt.children(&entry_hash_2_1);
+        let children_entry_2_2 = crdt.children(&entry_hash_2_2);
+        let children_entry_2_3 = crdt.children(&entry_hash_2_3);
+        assert_eq!(
+            children_entry_2_1,
+            [(entry_hash_1, entry_1)].into_iter().collect()
+        );
+        assert_eq!(children_entry_2_1, children_entry_2_2);
+        assert_eq!(children_entry_2_1, children_entry_2_3);
+
+        let children_entry_3 = crdt.children(&entry_hash_3);
+        assert_eq!(
+            children_entry_3,
+            [(entry_hash_2_1, entry_2_1), (entry_hash_2_2, entry_2_2)]
+                .into_iter()
+                .collect()
+        );
 
         Ok(())
     }
