@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712047771652,
+  "lastUpdate": 1712047795170,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d400521da55e7dd94a4e6492ace1705819f7cbe2",
-          "message": "chore: optimise log format of DerivationIndex",
-          "timestamp": "2023-11-22T15:43:58Z",
-          "tree_id": "3c367587cb748e751634f83166739def693da981",
-          "url": "https://github.com/maidsafe/safe_network/commit/d400521da55e7dd94a4e6492ace1705819f7cbe2"
-        },
-        "date": 1700670317061,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 152,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "7cd08619a07127330a33d174c4ade31b5e4399df",
+          "message": "test(networking): add illustrative tests for various node fullness levels",
+          "timestamp": "2024-04-02T08:04:23Z",
+          "tree_id": "de7e1ccaf4851cb1c335448b8378a4843a381821",
+          "url": "https://github.com/maidsafe/safe_network/commit/7cd08619a07127330a33d174c4ade31b5e4399df"
+        },
+        "date": 1712047794774,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 60,
             "unit": "MB"
           }
         ]
