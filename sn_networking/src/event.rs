@@ -454,14 +454,29 @@ impl SwarmDriver {
                                         "HostUnreachable",
                                         "HandshakeTimedOut",
                                     ];
-                                    // It is really difficult to match this error, due to being eg:
-                                    // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
-                                    // if we can match that, let's. But meanwhile we'll check the message
-                                    let error_msg = format!("{err:?}");
-                                    if problematic_errors.iter().any(|err| error_msg.contains(err))
+
+                                    let is_bootstrap_peer = self
+                                        .bootstrap_peers
+                                        .iter()
+                                        .any(|(_ilog2, peers)| peers.contains(&failed_peer_id));
+
+                                    if is_bootstrap_peer
+                                        && self.connected_peers < self.bootstrap_peers.len()
                                     {
-                                        warn!("Problematic error encountered: {error_msg}");
-                                        there_is_a_serious_issue = true;
+                                        warn!("OutgoingConnectionError: On bootstrap peer {failed_peer_id:?}, while still in bootstrap mode, ignoring");
+                                        there_is_a_serious_issue = false;
+                                    } else {
+                                        // It is really difficult to match this error, due to being eg:
+                                        // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
+                                        // if we can match that, let's. But meanwhile we'll check the message
+                                        let error_msg = format!("{err:?}");
+                                        if problematic_errors
+                                            .iter()
+                                            .any(|err| error_msg.contains(err))
+                                        {
+                                            warn!("Problematic error encountered: {error_msg}");
+                                            there_is_a_serious_issue = true;
+                                        }
                                     }
                                 }
                             }
