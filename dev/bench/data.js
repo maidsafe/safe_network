@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712066152982,
+  "lastUpdate": 1712066261721,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "5a22362b84d852a10a18aa63df5a6b4293f842fd",
-          "message": "chore: replace bootstrap with query specific kbucket",
-          "timestamp": "2023-11-23T14:53:32Z",
-          "tree_id": "c92d62a9111c9d32ad1e307c3e00679b221de769",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a22362b84d852a10a18aa63df5a6b4293f842fd"
-        },
-        "date": 1700754885657,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 126,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 68,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "da05ca03e04700aec3338164606e5094d0461053",
+          "message": "fix(folders): race condition caused by uploader upon concurrent Folders being payed and synced",
+          "timestamp": "2024-04-02T13:12:45Z",
+          "tree_id": "ed524708c965f14d00012f081cbeec14a2595dc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/da05ca03e04700aec3338164606e5094d0461053"
+        },
+        "date": 1712066261339,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
