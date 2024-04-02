@@ -635,8 +635,8 @@ impl SwarmDriver {
     // --------------------------------------------
 
     /// Return a far address, close to but probably farther than our responsibilty range.
-    /// This simply uses the closest k peers to estimate the farthest address as CLOSE_GROUP_SIZE + 1 peer's
-    /// address distance.
+    /// This simply uses the closest k peers to estimate the farthest address as
+    /// `CLOSE_GROUP_SIZE + 1`th peer's address distance.
     fn get_farthest_relevant_address_estimate(
         &mut self,
         // Sorted list of closest k peers to our peer id.
