@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712080056335,
+  "lastUpdate": 1712080059493,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41863,6 +41863,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34747,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "abfcd0c01345ead03e9e1197b1eb40066f7e46c3",
+          "message": "feat(ci): run wan churn tests on the entire network",
+          "timestamp": "2024-04-02T16:58:43Z",
+          "tree_id": "19fa9388aae89128482a7e695c466946b030b096",
+          "url": "https://github.com/maidsafe/safe_network/commit/abfcd0c01345ead03e9e1197b1eb40066f7e46c3"
+        },
+        "date": 1712080058232,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7295,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34922,
             "unit": "ms"
           },
           {
