@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::AccountPacket;
+
 use sn_client::{
     protocol::storage::RetryStrategy, transfers::MainSecretKey, Client, UploadCfg, BATCH_SIZE,
 };
@@ -106,7 +107,7 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from the root SK
             let root_sk = get_recovery_secret_sk(root_sk, true)?;
-            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk)?;
+            let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
             println!("Directoy at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
         }
         FoldersCmds::Upload {
@@ -118,7 +119,8 @@ pub(crate) async fn folders_cmds(
             let path = get_path(path, None)?;
             // initialise path as a fresh new Folder with a network address derived from a random SK
             let root_sk = get_recovery_secret_sk(None, true)?;
-            let mut acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk)?;
+            let mut acc_packet =
+                AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
 
             let options = UploadCfg {
                 verify_store,
@@ -154,6 +156,7 @@ pub(crate) async fn folders_cmds(
                 client,
                 root_dir,
                 &root_sk,
+                None,
                 &download_folder_path,
                 batch_size,
                 retry_strategy,
@@ -162,7 +165,7 @@ pub(crate) async fn folders_cmds(
         }
         FoldersCmds::Status { path } => {
             let path = get_path(path, None)?;
-            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path, None)?;
             acc_packet.status()?;
         }
         FoldersCmds::Sync {
@@ -172,7 +175,7 @@ pub(crate) async fn folders_cmds(
             retry_strategy,
         } => {
             let path = get_path(path, None)?;
-            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path)?;
+            let mut acc_packet = AccountPacket::from_path(client.clone(), root_dir, &path, None)?;
 
             let options = UploadCfg {
                 verify_store,
