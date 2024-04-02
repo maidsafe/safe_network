@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712051235797,
+  "lastUpdate": 1712051237686,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41746,6 +41746,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34518,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "430dfcdaafc0855f7df1cf823368f3731de9409e",
+          "message": "fix(networking): don't report ConnectionIssues during initial bootstrap\n\ncontext from the forums:\nhttps://forum.autonomi.community/t/basiceconomytweaks-early-technical-beta/39528/382",
+          "timestamp": "2024-04-02T09:04:46Z",
+          "tree_id": "09264ed7006169c548f89aaec06a3d1520d4079c",
+          "url": "https://github.com/maidsafe/safe_network/commit/430dfcdaafc0855f7df1cf823368f3731de9409e"
+        },
+        "date": 1712051237112,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7808,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37089,
             "unit": "ms"
           },
           {
