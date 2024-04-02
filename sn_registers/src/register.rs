@@ -193,6 +193,11 @@ impl Register {
         self.crdt.read()
     }
 
+    /// Returns the children of an entry, along with their corresponding entry hashes
+    pub fn children(&self, hash: &EntryHash) -> BTreeSet<(EntryHash, Entry)> {
+        self.crdt.children(hash)
+    }
+
     /// Return the permission.
     pub fn permissions(&self) -> &Permissions {
         &self.permissions
