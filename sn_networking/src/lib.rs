@@ -170,6 +170,11 @@ impl Network {
         self.keypair.public().verify(msg, sig)
     }
 
+    /// Returns the protobuf serialised PublicKey to allow messaging out for share.
+    pub fn get_pub_key(&self) -> Vec<u8> {
+        self.keypair.public().encode_protobuf()
+    }
+
     /// Dial the given peer at the given address.
     /// This function will only be called for the bootstrap nodes.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {

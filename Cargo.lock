@@ -5453,6 +5453,7 @@ dependencies = [
  "fs2",
  "hex",
  "lazy_static",
+ "libp2p",
  "pprof",
  "rand",
  "rayon",

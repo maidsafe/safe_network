@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{MainPubkey, NanoTokens, Transfer};
+use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use xor_name::XorName;
@@ -102,6 +103,9 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
+    /// node's public key that can verify the signature
+    #[debug(skip)]
+    pub pub_key: Vec<u8>,
     #[debug(skip)]
     pub signature: QuoteSignature,
 }
@@ -114,6 +118,7 @@ impl PaymentQuote {
             cost: NanoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            pub_key: vec![],
             signature: vec![],
         }
     }
@@ -142,6 +147,37 @@ impl PaymentQuote {
         bytes
     }
 
+    /// Check self is signed by the claimed peer
+    pub fn check_is_signed_by_claimed_peer(&self, claimed_peer: PeerId) -> bool {
+        let pub_key = if let Ok(pub_key) = PublicKey::try_decode_protobuf(&self.pub_key) {
+            pub_key
+        } else {
+            error!("Cann't parse PublicKey from protobuf");
+            return false;
+        };
+
+        let self_peer_id = PeerId::from(pub_key.clone());
+
+        if self_peer_id != claimed_peer {
+            error!("This quote {self:?} of {self_peer_id:?} is not signed by {claimed_peer:?}");
+            return false;
+        }
+
+        let bytes = Self::bytes_for_signing(
+            self.content,
+            self.cost,
+            self.timestamp,
+            &self.quoting_metrics,
+        );
+
+        if !pub_key.verify(&bytes, &self.signature) {
+            error!("Signature is not signed by claimed pub_key");
+            return false;
+        }
+
+        true
+    }
+
     /// Returns true) if the quote has not yet expired
     pub fn has_expired(&self) -> bool {
         let now = std::time::SystemTime::now();
@@ -160,6 +196,7 @@ impl PaymentQuote {
             cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            pub_key: vec![],
             signature: vec![],
         }
     }
