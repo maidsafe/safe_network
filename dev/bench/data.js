@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712042881823,
+  "lastUpdate": 1712046179302,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
-          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
-          "timestamp": "2023-11-22T09:47:11Z",
-          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
-        },
-        "date": 1700648709548,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.119932188177506,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 24.757463389214923,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 26.719905918153064,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.6919393280831,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c490399ecc59b8b1b2c9237143e3dcd7550dacfa",
+          "message": "docs(readme): add details about the recovery secret in example folders cmds",
+          "timestamp": "2024-04-02T07:44:23Z",
+          "tree_id": "25adba6137846097812ac0c792d55ff8a5fdfe82",
+          "url": "https://github.com/maidsafe/safe_network/commit/c490399ecc59b8b1b2c9237143e3dcd7550dacfa"
+        },
+        "date": 1712046174969,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2113785212358579,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6666042834184225,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.544464461379334,
             "unit": "MiB/s"
           }
         ]
