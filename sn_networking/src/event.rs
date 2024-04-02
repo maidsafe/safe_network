@@ -8,10 +8,11 @@
 
 use crate::{
     cmd::SwarmCmd,
-    driver::{truncate_patch_version, PendingGetClosestType, SwarmDriver},
+    driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
-    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address, CLOSE_GROUP_SIZE,
-    REPLICATE_RANGE,
+    multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
+    version::IDENTIFY_NODE_VERSION_STR,
+    CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -46,9 +47,6 @@ use std::{
 use tokio::sync::oneshot;
 use tokio::time::Duration;
 use tracing::{info, warn};
-
-/// Our agent string has as a prefix that we can match against.
-const IDENTIFY_AGENT_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
 
 /// NodeEvent enum
 #[derive(CustomDebug)]
@@ -226,7 +224,7 @@ impl SwarmDriver {
                         let has_dialed = self.dialed_peers.contains(&peer_id);
                         let peer_is_agent = info
                             .agent_version
-                            .starts_with(truncate_patch_version(IDENTIFY_AGENT_STR));
+                            .starts_with(&IDENTIFY_NODE_VERSION_STR.to_string());
 
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.

@@ -11,6 +11,10 @@ use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::target_arch::{interval, spawn, Instant};
+use crate::version::{
+    IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
+    REQ_RESPONSE_VERSION_STR,
+};
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -87,32 +91,10 @@ const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
 const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// The suffix is the version of the node.
-const SN_NODE_VERSION_STR: &str = concat!("safe/node/", env!("CARGO_PKG_VERSION"));
-/// / first version for the req/response protocol
-const REQ_RESPONSE_VERSION_STR: &str = concat!("/safe/node/", env!("CARGO_PKG_VERSION"));
-
-/// The suffix is the version of the client.
-const IDENTIFY_CLIENT_VERSION_STR: &str = concat!("safe/client/", env!("CARGO_PKG_VERSION"));
-const IDENTIFY_PROTOCOL_STR: &str = concat!("safe/", env!("CARGO_PKG_VERSION"));
-
 const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
-
-// Protocol support shall be downward compatible for patch only version update.
-// i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
-pub(crate) fn truncate_patch_version(full_str: &str) -> &str {
-    if full_str.matches('.').count() == 2 {
-        match full_str.rfind('.') {
-            Some(pos) => &full_str[..pos],
-            None => full_str,
-        }
-    } else {
-        full_str
-    }
-}
 
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
@@ -309,7 +291,7 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            truncate_patch_version(SN_NODE_VERSION_STR).to_string(),
+            IDENTIFY_NODE_VERSION_STR.to_string(),
         )?;
 
         // Listen on the provided address
@@ -361,7 +343,7 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            truncate_patch_version(IDENTIFY_CLIENT_VERSION_STR).to_string(),
+            IDENTIFY_CLIENT_VERSION_STR.to_string(),
         )?;
 
         Ok((network, net_event_recv, driver))
@@ -401,9 +383,13 @@ impl NetworkBuilder {
             let cfg = RequestResponseConfig::default()
                 .with_request_timeout(self.request_timeout.unwrap_or(REQUEST_TIMEOUT_DEFAULT_S));
 
+            info!(
+                "Building request response with {:?}",
+                REQ_RESPONSE_VERSION_STR.as_str()
+            );
             request_response::cbor::Behaviour::new(
                 [(
-                    StreamProtocol::new(truncate_patch_version(REQ_RESPONSE_VERSION_STR)),
+                    StreamProtocol::new(&REQ_RESPONSE_VERSION_STR),
                     req_res_protocol,
                 )],
                 cfg,
@@ -452,12 +438,11 @@ impl NetworkBuilder {
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
+        let identify_protocol_str = IDENTIFY_PROTOCOL_STR.to_string();
+        info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_version: {identify_version:?}");
         let identify = {
-            let cfg = libp2p::identify::Config::new(
-                truncate_patch_version(IDENTIFY_PROTOCOL_STR).to_string(),
-                self.keypair.public(),
-            )
-            .with_agent_version(identify_version);
+            let cfg = libp2p::identify::Config::new(identify_protocol_str, self.keypair.public())
+                .with_agent_version(identify_version);
             libp2p::identify::Behaviour::new(cfg)
         };
 
