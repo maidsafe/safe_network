@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712047881864,
+  "lastUpdate": 1712047883858,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -41668,6 +41668,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33626,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "max@foorack.com",
+            "name": "Foorack / Max Faxälv",
+            "username": "Foorack"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2c2d574c7971ebb1da138f941febfc3a1c9df5a3",
+          "message": "chore(auditor): set repository field in cargo",
+          "timestamp": "2024-04-02T08:04:35Z",
+          "tree_id": "e4149eeac5c66b197de14eeb24fa982dfc51c440",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c2d574c7971ebb1da138f941febfc3a1c9df5a3"
+        },
+        "date": 1712047883284,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7391,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33101,
             "unit": "ms"
           },
           {
