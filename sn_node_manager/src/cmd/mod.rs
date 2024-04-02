@@ -47,10 +47,8 @@ pub async fn download_and_get_upgrade_bin_path(
             download_and_extract_release(release_type, Some(url), None, &*release_repo).await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else {
-        println!("Retrieving latest version of safenode...");
-        let latest_version = release_repo
-            .get_latest_version(&ReleaseType::Safenode)
-            .await?;
+        println!("Retrieving latest version of {}...", release_type);
+        let latest_version = release_repo.get_latest_version(&release_type).await?;
         println!("Latest version is {latest_version}");
         let (upgrade_bin_path, _) = download_and_extract_release(
             ReleaseType::Safenode,
