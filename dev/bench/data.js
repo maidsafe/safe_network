@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712046287437,
+  "lastUpdate": 1712046290082,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
-          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
-          "timestamp": "2023-11-22T09:47:11Z",
-          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
-        },
-        "date": 1700648894967,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 676,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 132,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c490399ecc59b8b1b2c9237143e3dcd7550dacfa",
+          "message": "docs(readme): add details about the recovery secret in example folders cmds",
+          "timestamp": "2024-04-02T07:44:23Z",
+          "tree_id": "25adba6137846097812ac0c792d55ff8a5fdfe82",
+          "url": "https://github.com/maidsafe/safe_network/commit/c490399ecc59b8b1b2c9237143e3dcd7550dacfa"
+        },
+        "date": 1712046288952,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
