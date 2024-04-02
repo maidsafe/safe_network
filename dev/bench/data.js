@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712046179302,
+  "lastUpdate": 1712046287437,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
-          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
-          "timestamp": "2023-11-22T09:47:11Z",
-          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
-        },
-        "date": 1700648893537,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 178,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/170bcb56a98c70609c4bb8d6a8558c831eae1b67"
         },
         "date": 1712042878259,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": false,
+          "id": "c490399ecc59b8b1b2c9237143e3dcd7550dacfa",
+          "message": "docs(readme): add details about the recovery secret in example folders cmds",
+          "timestamp": "2024-04-02T07:44:23Z",
+          "tree_id": "25adba6137846097812ac0c792d55ff8a5fdfe82",
+          "url": "https://github.com/maidsafe/safe_network/commit/c490399ecc59b8b1b2c9237143e3dcd7550dacfa"
+        },
+        "date": 1712046286224,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
