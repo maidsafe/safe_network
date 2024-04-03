@@ -10,11 +10,6 @@
 use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
-use crate::target_arch::{interval, spawn, Instant};
-use crate::version::{
-    IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
-    REQ_RESPONSE_VERSION_STR,
-};
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -28,6 +23,7 @@ use crate::{
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
     replication_fetcher::ReplicationFetcher,
+    target_arch::{interval, spawn, Instant},
     transport, Network, CLOSE_GROUP_SIZE,
 };
 use crate::{NodeIssue, REPLICATE_RANGE};
@@ -35,7 +31,6 @@ use futures::StreamExt;
 use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-
 use libp2p::{
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
@@ -52,6 +47,10 @@ use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::RetryStrategy,
+    version::{
+        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
+        REQ_RESPONSE_VERSION_STR,
+    },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::PaymentQuote;
