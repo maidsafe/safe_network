@@ -92,7 +92,7 @@ pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
             .unique_pubkey()
             .verify(&spend.derived_key_sig, bytes)
         && is_genesis_parent_tx(&spend.spend.parent_tx)
-        && spend.spend.token == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
+        && spend.spend.amount == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
