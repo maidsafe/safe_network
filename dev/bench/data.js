@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712132242504,
+  "lastUpdate": 1712145022785,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8",
-          "message": "chore: update deps",
-          "timestamp": "2023-11-28T10:15:23Z",
-          "tree_id": "567db30383071de6d6e1ed26fb8dc1665889d7ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8"
-        },
-        "date": 1701169720115,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.182451452792625,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.574456043439053,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 41.202423639848135,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11658,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.06450920886517,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c58ed056661ccdcd634ba9ce79717f58879ada62",
+          "message": "fix: use correct release type in upgrade process\n\nThe faucet and daemon upgrades did not work correctly because the release type was hard coded to\n`ReleaseType::Safenode` and was not changed when this code was refactored.",
+          "timestamp": "2024-04-03T11:05:47Z",
+          "tree_id": "e39ee6caa1ccc9a68f3df3acfcf9d378ff689f0c",
+          "url": "https://github.com/maidsafe/safe_network/commit/c58ed056661ccdcd634ba9ce79717f58879ada62"
+        },
+        "date": 1712145019141,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2329224494786375,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.637908969874266,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.64817406663618,
             "unit": "MiB/s"
           }
         ]
