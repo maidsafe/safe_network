@@ -97,12 +97,12 @@ impl ReplicationFetcher {
 
         let mut out_of_range_keys = vec![];
         let total_incoming_keys = incoming_keys.len();
-        // Filter out those out_of_range ones among the imcoming _keys.
+        // Filter out those out_of_range ones among the imcoming_keys.
         if let Some(ref distance_range) = self.distance_range {
             let self_address = NetworkAddress::from_peer(self.self_peer_id);
 
             incoming_keys.retain(|(addr, _record_type)| {
-                let is_in_range = self_address.distance(addr) >= *distance_range;
+                let is_in_range = self_address.distance(addr) <= *distance_range;
                 if !is_in_range {
                     out_of_range_keys.push(addr.clone());
                 }
@@ -356,5 +356,43 @@ mod tests {
         assert!(keys_to_fetch.is_empty());
 
         Ok(())
+    }
+
+    #[test]
+    fn verify_in_range_check() {
+        //random peer_id
+        let peer_id = PeerId::random();
+        let self_address = NetworkAddress::from_peer(peer_id);
+        let (event_sender, _event_receiver) = mpsc::channel(4);
+        let mut replication_fetcher = ReplicationFetcher::new(peer_id, event_sender);
+
+        // Set distance range
+        let distance_target = NetworkAddress::from_peer(PeerId::random());
+        let distance_range = self_address.distance(&distance_target);
+        replication_fetcher.set_distance_range(distance_range);
+
+        let mut incoming_keys = Vec::new();
+        let mut in_range_keys = 0;
+        (0..100).for_each(|_| {
+            let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
+            let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
+
+            if key.distance(&self_address) <= distance_range {
+                in_range_keys += 1;
+            }
+
+            incoming_keys.push((key, RecordType::Chunk));
+        });
+
+        let keys_to_fetch =
+            replication_fetcher.add_keys(PeerId::random(), incoming_keys, &Default::default());
+        assert_eq!(
+            keys_to_fetch.len(),
+            replication_fetcher.on_going_fetches.len()
+        );
+        assert_eq!(
+            in_range_keys,
+            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len()
+        );
     }
 }
