@@ -51,7 +51,7 @@ impl SignedSpend {
 
     /// Get Nano
     pub fn token(&self) -> &NanoTokens {
-        &self.spend.token
+        &self.spend.amount
     }
 
     /// Get reason.
@@ -113,7 +113,7 @@ impl SignedSpend {
         }
 
         // check that the value of the spend wasn't tampered with
-        let claimed_value = self.spend.token;
+        let claimed_value = self.spend.amount;
         let creation_value = self
             .spend
             .parent_tx
@@ -214,7 +214,7 @@ pub struct Spend {
     pub reason: Hash,
     /// The amount of the input CashNote.
     #[debug(skip)]
-    pub token: NanoTokens,
+    pub amount: NanoTokens,
     /// The transaction that the input CashNote was created in (where it is an output)
     #[debug(skip)]
     pub parent_tx: Transaction,
@@ -231,7 +231,7 @@ impl Spend {
         bytes.extend(self.unique_pubkey.to_bytes());
         bytes.extend(self.spent_tx.hash().as_ref());
         bytes.extend(self.reason.as_ref());
-        bytes.extend(self.token.to_bytes());
+        bytes.extend(self.amount.to_bytes());
         bytes.extend(self.parent_tx.hash().as_ref());
         bytes
     }
