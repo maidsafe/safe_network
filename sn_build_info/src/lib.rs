@@ -13,7 +13,9 @@ pub const fn git_info() -> &'static str {
         " / ",
         env!("VERGEN_GIT_BRANCH"),
         " / ",
-        env!("VERGEN_GIT_DESCRIBE")
+        env!("VERGEN_GIT_DESCRIBE"),
+        " / ",
+        env!("VERGEN_BUILD_DATE")
     )
 }
 
