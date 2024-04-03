@@ -119,7 +119,7 @@ impl TransactionBuilder {
                     unique_pubkey: *input.unique_pubkey(),
                     spent_tx: spent_tx.clone(),
                     reason,
-                    token: input.amount,
+                    amount: input.amount,
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),
                 };
@@ -158,7 +158,7 @@ impl TransactionBuilder {
                     unique_pubkey: *input.unique_pubkey(),
                     spent_tx: tx.clone(),
                     reason,
-                    token: input.amount,
+                    amount: input.amount,
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),
                 };
