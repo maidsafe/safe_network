@@ -46,8 +46,24 @@ jobs:
       # It's quite slow to install just by building it, but here we need a cross-platform solution.
       - shell: bash
         run: cargo install just
-      - shell: bash
-        run: just build-release-artifacts "${{ matrix.target }}"
+
+      # Set the network versioning based on our branch
+      # main/stable branches defaults to open compatibility. Other branches will be versioned by their branch name.
+      - name: provide network versioning
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" ]]; then
+            echo "NETWORK_VERSION_MODE=restricted" >> $GITHUB_ENV
+          fi
+        
+      - name: build release artifacts
+        shell: bash
+        run: |
+          # make sure the version env variable is set
+          export NETWORK_VERSION_MODE=${{ env.NETWORK_VERSION_MODE }}
+          echo "NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
+          just build-release-artifacts "${{ matrix.target }}"
+
       - uses: actions/upload-artifact@main
         with:
           name: safe_network-${{ matrix.target }}
@@ -126,22 +142,9 @@ jobs:
           sudo mv just/just /usr/local/bin
           rm -rf just
 
-      # Set the network versioning based on our branch
-      # main/stable branches defaults to open compatibility. Other branches will be versioned by their branch name.
-      - name: provide network versioning
-        shell: bash
-        run: |
-          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" ]]; then
-            echo "NETWORK_VERSION_MODE=restricted" >> $GITHUB_ENV
-          fi
-
       - name: publish and release
         shell: bash
         run: |
-          # make sure the version env variable is set
-          export NETWORK_VERSION_MODE=${{ env.NETWORK_VERSION_MODE }}
-          echo "NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
-
           # Package versioned assets as tar.gz and zip archives, and upload them to S3.
           #
           # This is done before publishing because the node manager relies on these binaries
