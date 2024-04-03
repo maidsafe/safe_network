@@ -608,6 +608,8 @@ impl SwarmDriver {
                     if let Some(distance) = self.get_farthest_relevant_address_estimate(&closest_k_peers) {
                         // set any new distance to fathest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                        // the distance range within the replication_fetcher shall be in sync as well
+                        self.replication_fetcher.set_distance_range(distance);
                     }
                 }
             }
