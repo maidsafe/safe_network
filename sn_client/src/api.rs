@@ -64,7 +64,7 @@ impl Client {
 
     /// Instantiate a new client.
     ///
-    /// Optionally specify the maximum time the client will wait for a connection to the network before timing out.
+    /// Optionally specify the maximum time the client will wait for a connection before timing out.
     /// Defaults to 180 seconds.
     ///
     /// # Arguments
