@@ -636,7 +636,7 @@ impl SwarmDriver {
 
     /// Return a far address, close to but probably farther than our responsibilty range.
     /// This simply uses the closest k peers to estimate the farthest address as
-    /// `CLOSE_GROUP_SIZE + 1`th peer's address distance.
+    /// `K_VALUE / 2`th peer's address distance.
     fn get_farthest_relevant_address_estimate(
         &mut self,
         // Sorted list of closest k peers to our peer id.
@@ -647,8 +647,11 @@ impl SwarmDriver {
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        // get CLOSES_PEERS_COUNT + 1 peer's address distance
-        if let Some(peer) = closest_k_peers.get(CLOSE_GROUP_SIZE + 1) {
+        // get REPLICATE_RANGE  + 2 peer's address distance
+        // This is a rough estimate of the farthest address we might be responsible for.
+        // We want this to be higher than actually necessary, so we retain more data
+        // and can be sure to pass bad node checks
+        if let Some(peer) = closest_k_peers.get(K_VALUE.get() / 2) {
             let address = NetworkAddress::from_peer(*peer);
             let distance = our_address.distance(&address);
             farthest_distance = Some(distance);
