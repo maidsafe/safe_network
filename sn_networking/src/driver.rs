@@ -633,11 +633,11 @@ impl SwarmDriver {
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        // get REPLICATE_RANGE  + 2 peer's address distance
+        // get REPLICATE_RANGE + 2 peer's address distance
         // This is a rough estimate of the farthest address we might be responsible for.
         // We want this to be higher than actually necessary, so we retain more data
         // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.get(REPLICATE_RANGE) {
+        if let Some(peer) = closest_k_peers.get(REPLICATE_RANGE + 2) {
             let address = NetworkAddress::from_peer(*peer);
             let distance = our_address.distance(&address);
             farthest_distance = Some(distance);
