@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712129919580,
+  "lastUpdate": 1712130027266,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11711,35 +11711,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "4360c79756145b0e1f2fca06b8a2546e88b4f7e7",
-          "message": "chore: increase routing table sleep before verification time",
-          "timestamp": "2023-11-27T13:59:55Z",
-          "tree_id": "5e7667d25df45cbff5499d646d49d7f80822097b",
-          "url": "https://github.com/maidsafe/safe_network/commit/4360c79756145b0e1f2fca06b8a2546e88b4f7e7"
-        },
-        "date": 1701096375608,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 125,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20392,6 +20363,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/e3fe44004a694154be3359676affcfa956193f22"
         },
         "date": 1712127432257,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cd8dfee8e639e558f143cb0cc319d62d477c231f",
+          "message": "chore: cleanup deadcode and bad comments",
+          "timestamp": "2024-04-03T06:49:29Z",
+          "tree_id": "db2b1262e0d9e7122cf7661e595d4027c908cf6e",
+          "url": "https://github.com/maidsafe/safe_network/commit/cd8dfee8e639e558f143cb0cc319d62d477c231f"
+        },
+        "date": 1712130026895,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
