@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712149507174,
+  "lastUpdate": 1712149615953,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "ff09ba917b11394df2e8da4e454668b0737620e3",
-          "message": "feat(chunks): serialise Chunks with MsgPack instead of bincode",
-          "timestamp": "2023-11-28T15:37:02Z",
-          "tree_id": "7490a3324aea1a052709f586e8bd0be4f99a3c6f",
-          "url": "https://github.com/maidsafe/safe_network/commit/ff09ba917b11394df2e8da4e454668b0737620e3"
-        },
-        "date": 1701188452616,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 113,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "10acc176e7d8790d7f7bd3b7834008c73a33d915",
+          "message": "chore(node): extend distance range",
+          "timestamp": "2024-04-03T12:16:13Z",
+          "tree_id": "aa23530a4cd6289da8eb8777d8dcfe35b1685429",
+          "url": "https://github.com/maidsafe/safe_network/commit/10acc176e7d8790d7f7bd3b7834008c73a33d915"
+        },
+        "date": 1712149614674,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
