@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712127325814,
+  "lastUpdate": 1712127432555,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4a3034076fbd7eca3a0aa88d5729a0ba17e0ef07",
-          "message": "feat(cli): peers displayed as list",
-          "timestamp": "2023-11-24T08:34:07Z",
-          "tree_id": "71c6aaa9d9b524c3fdff58d2c8c4759bfb28bdcb",
-          "url": "https://github.com/maidsafe/safe_network/commit/4a3034076fbd7eca3a0aa88d5729a0ba17e0ef07"
-        },
-        "date": 1700819053172,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 98,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 47,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "e3fe44004a694154be3359676affcfa956193f22",
+          "message": "feat(node): check peer quotes are properly signed",
+          "timestamp": "2024-04-03T06:15:00Z",
+          "tree_id": "ed8124ffedf4e6c9fe77fc5688383e4645cc9f4f",
+          "url": "https://github.com/maidsafe/safe_network/commit/e3fe44004a694154be3359676affcfa956193f22"
+        },
+        "date": 1712127432257,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
