@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712132127963,
+  "lastUpdate": 1712132238959,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "bc722fe283b6a7b4c9e6b83a1bf73793cd12cb36",
-          "message": "feat(test): impl more functions for deployer tests",
-          "timestamp": "2023-11-28T08:54:57Z",
-          "tree_id": "67021c80f6ac1359496161d1baffed7156648d61",
-          "url": "https://github.com/maidsafe/safe_network/commit/bc722fe283b6a7b4c9e6b83a1bf73793cd12cb36"
-        },
-        "date": 1701164540808,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c0bd5f814504c9796d68dd363edd0eed2f2fd98b",
+          "message": "fix(networking): reduce close record range set interval\n\nthe check is actually cheap, so can happen much more frequently",
+          "timestamp": "2024-04-03T07:32:35Z",
+          "tree_id": "d72fb4f74124e1689388a30cecea45fa3d25e92b",
+          "url": "https://github.com/maidsafe/safe_network/commit/c0bd5f814504c9796d68dd363edd0eed2f2fd98b"
+        },
+        "date": 1712132238550,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
