@@ -11,7 +11,6 @@ use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
 use crate::target_arch::{interval, spawn, Instant};
-use crate::NodeIssue;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -27,6 +26,7 @@ use crate::{
     replication_fetcher::ReplicationFetcher,
     transport, Network, CLOSE_GROUP_SIZE,
 };
+use crate::{NodeIssue, REPLICATE_RANGE};
 use futures::StreamExt;
 use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
@@ -65,7 +65,7 @@ use tracing::warn;
 
 /// Interval over which we check for the farthest record we _should_ be holding
 /// based upon our knowledge of the CLOSE_GROUP
-pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(30);
+pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15);
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -636,7 +636,7 @@ impl SwarmDriver {
 
     /// Return a far address, close to but probably farther than our responsibilty range.
     /// This simply uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE / 2`th peer's address distance.
+    /// `REPLICATE_RANGE`th peer's address distance.
     fn get_farthest_relevant_address_estimate(
         &mut self,
         // Sorted list of closest k peers to our peer id.
@@ -651,7 +651,7 @@ impl SwarmDriver {
         // This is a rough estimate of the farthest address we might be responsible for.
         // We want this to be higher than actually necessary, so we retain more data
         // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.get(K_VALUE.get() / 2) {
+        if let Some(peer) = closest_k_peers.get(REPLICATE_RANGE) {
             let address = NetworkAddress::from_peer(*peer);
             let distance = our_address.distance(&address);
             farthest_distance = Some(distance);
