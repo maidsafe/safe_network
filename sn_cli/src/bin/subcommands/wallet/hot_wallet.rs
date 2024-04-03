@@ -293,7 +293,7 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     for (i, (spend, _)) in unsigned_transfer.spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", spend.unique_pubkey.to_hex());
-        println!("\tAmount: {}", spend.token);
+        println!("\tAmount: {}", spend.amount);
         if let Some(ref tx) = spent_tx {
             if tx != &spend.spent_tx {
                 bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
