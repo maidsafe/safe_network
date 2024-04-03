@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712145133321,
+  "lastUpdate": 1712145135009,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -42019,6 +42019,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36499,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c58ed056661ccdcd634ba9ce79717f58879ada62",
+          "message": "fix: use correct release type in upgrade process\n\nThe faucet and daemon upgrades did not work correctly because the release type was hard coded to\n`ReleaseType::Safenode` and was not changed when this code was refactored.",
+          "timestamp": "2024-04-03T11:05:47Z",
+          "tree_id": "e39ee6caa1ccc9a68f3df3acfcf9d378ff689f0c",
+          "url": "https://github.com/maidsafe/safe_network/commit/c58ed056661ccdcd634ba9ce79717f58879ada62"
+        },
+        "date": 1712145134635,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7123,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34280,
             "unit": "ms"
           },
           {
