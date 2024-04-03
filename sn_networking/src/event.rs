@@ -11,7 +11,7 @@ use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
-    version::IDENTIFY_NODE_VERSION_STR,
+    target_arch::Instant,
     CLOSE_GROUP_SIZE, REPLICATE_RANGE,
 };
 use core::fmt;
@@ -29,10 +29,8 @@ use libp2p::{
     },
     Multiaddr, PeerId, TransportError,
 };
-
-use crate::target_arch::Instant;
-
 use rand::{rngs::OsRng, Rng};
+use sn_protocol::version::IDENTIFY_NODE_VERSION_STR;
 use sn_protocol::{
     get_port_from_multiaddr,
     messages::{CmdResponse, Query, Request, Response},

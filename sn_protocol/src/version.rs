@@ -17,7 +17,7 @@ lazy_static! {
     pub static ref IDENTIFY_NODE_VERSION_STR: String =
         format!(
             "safe{}/node/{}",
-            get_network_version(),
+            write_network_version_with_slash(),
             get_truncate_version_str()
         );
 
@@ -25,7 +25,7 @@ lazy_static! {
     pub static ref IDENTIFY_CLIENT_VERSION_STR: String =
         format!(
             "safe{}/client/{}",
-            get_network_version(),
+            write_network_version_with_slash(),
             get_truncate_version_str()
         );
 
@@ -33,7 +33,7 @@ lazy_static! {
     pub static ref REQ_RESPONSE_VERSION_STR: String =
         format!(
             "/safe{}/node/{}",
-            get_network_version(),
+            write_network_version_with_slash(),
             get_truncate_version_str()
         );
 
@@ -42,11 +42,38 @@ lazy_static! {
     pub static ref IDENTIFY_PROTOCOL_STR: String =
         format!(
             "safe{}/{}",
-            get_network_version(),
+            write_network_version_with_slash(),
             get_truncate_version_str()
         );
 
 
+}
+
+/// Get the network version string.
+/// If the network version mode env variable is set to `restricted`, then the git branch is used as the version.
+/// Else any non empty string is used as the version string.
+/// If the env variable is empty or not set, then we do not apply any network versioning.
+pub fn get_network_version() -> String {
+    match std::env::var(NETWORK_VERSION_MODE_ENV_VARIABLE) {
+        Ok(value) if !value.is_empty() => {
+            if value == "restricted" {
+                sn_build_info::git_branch().to_string()
+            } else {
+                value
+            }
+        }
+        _ => "".to_string(),
+    }
+}
+
+/// Helper to write the network version with `/` appended if it is not empty
+fn write_network_version_with_slash() -> String {
+    let version = get_network_version();
+    if version.is_empty() {
+        version
+    } else {
+        format!("/{version}")
+    }
 }
 
 // Protocol support shall be downward compatible for patch only version update.
@@ -60,22 +87,5 @@ fn get_truncate_version_str() -> &'static str {
         }
     } else {
         version_str
-    }
-}
-
-/// Get the network version string.
-/// If the network version mode env variable is set to `restricted`, then the git branch is used as the version.
-/// Else any non empty string is used as the version string.
-/// If the env variable is empty or not set, then we do not apply any network versioning.
-fn get_network_version() -> String {
-    match std::env::var(NETWORK_VERSION_MODE_ENV_VARIABLE) {
-        Ok(value) if !value.is_empty() => {
-            if value == "restricted" {
-                format!("/{}", sn_build_info::git_branch())
-            } else {
-                format!("/{value}")
-            }
-        }
-        _ => "".to_string(),
     }
 }

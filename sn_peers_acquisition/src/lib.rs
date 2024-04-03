@@ -10,15 +10,25 @@ pub mod error;
 
 use crate::error::{Error, Result};
 use clap::Args;
+#[cfg(feature = "network-contacts")]
+use lazy_static::lazy_static;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
+#[cfg(feature = "network-contacts")]
+use sn_protocol::version::get_network_version;
 use tracing::*;
 #[cfg(feature = "network-contacts")]
 use url::Url;
 
 #[cfg(feature = "network-contacts")]
-// URL containing the multi-addresses of the bootstrap nodes.
-const NETWORK_CONTACTS_URL: &str = "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
+lazy_static! {
+    // URL containing the multi-addresses of the bootstrap nodes.
+    pub static ref NETWORK_CONTACTS_URL: String = {
+        let version = get_network_version();
+        let version_prefix = if !version.is_empty() { format!("{version}-") } else { version };
+        format!("https://sn-testnet.s3.eu-west-2.amazonaws.com/{version_prefix}network-contacts")
+    };
+}
 
 #[cfg(feature = "network-contacts")]
 // The maximum number of retries to be performed while trying to fetch the network contacts file.
@@ -113,7 +123,7 @@ async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
     let url = args
         .network_contacts_url
         .clone()
-        .unwrap_or(Url::parse(NETWORK_CONTACTS_URL)?);
+        .unwrap_or(Url::parse(NETWORK_CONTACTS_URL.as_str())?);
 
     info!("Trying to fetch the bootstrap peers from {url}");
     println!("Trying to fetch the bootstrap peers from {url}");
