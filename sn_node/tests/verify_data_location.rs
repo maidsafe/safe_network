@@ -286,7 +286,10 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
             });
             info!("State of each node:");
             record_holders.iter().for_each(|(key, node_index)| {
-                info!("Record {key:?} is currently held by node indices {node_index:?}");
+                info!(
+                    "Record {:?} is currently held by node indices {node_index:?}",
+                    PrettyPrintRecordKey::from(key)
+                );
             });
             info!("Node index map:");
             all_peers
