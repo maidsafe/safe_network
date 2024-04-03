@@ -22,7 +22,7 @@ pub const fn git_describe() -> &'static str {
     env!("VERGEN_GIT_DESCRIBE")
 }
 
-/// Current git branch.
+/// The current git branch.
 pub const fn git_branch() -> &'static str {
     env!("VERGEN_GIT_BRANCH")
 }
