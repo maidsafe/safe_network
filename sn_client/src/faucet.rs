@@ -47,9 +47,6 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<H
     debug!("Loading genesis...");
     let genesis_wallet = load_genesis_wallet()?;
 
-    // Transfer to faucet. We will transfer almost all of the genesis wallet's
-    // balance to the faucet,.
-
     let faucet_balance = genesis_wallet.balance();
     println!("Sending {faucet_balance} from genesis to faucet wallet..");
     debug!("Sending {faucet_balance} from genesis to faucet wallet..");
