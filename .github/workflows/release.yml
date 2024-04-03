@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - stable
       - alpha*
       - beta*
       - rc*
@@ -124,9 +125,23 @@ jobs:
           rm just-1.13.0-x86_64-unknown-linux-musl.tar.gz
           sudo mv just/just /usr/local/bin
           rm -rf just
+
+      # Set the network versioning based on our branch
+      # main/stable branches defaults to open compatibility. Other branches will be versioned by their branch name.
+      - name: provide network versioning
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" ]]; then
+            echo "NETWORK_VERSION_MODE=restricted" >> $GITHUB_ENV
+          fi
+
       - name: publish and release
         shell: bash
         run: |
+          # make sure the version env variable is set
+          export NETWORK_VERSION_MODE=${{ env.NETWORK_VERSION_MODE }}
+          echo "NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
+
           # Package versioned assets as tar.gz and zip archives, and upload them to S3.
           #
           # This is done before publishing because the node manager relies on these binaries
@@ -137,6 +152,7 @@ jobs:
           # because the process gets the latest version from `crates.io` then downloads the binaries
           # from S3, using that version number. Uploading the binaries to S3 before publishing
           # ensures that they will exist after the new crate has been published.
+
           just package-release-assets "safe"
           just package-release-assets "safenode"
           just package-release-assets "faucet"
@@ -171,6 +187,7 @@ jobs:
           just upload-release-assets-to-s3 "safenodemand"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
+
       - name: post notification to slack on failure
         if: ${{ failure() }}
         uses: bryannice/gitactions-slack-notification@2.0.0
