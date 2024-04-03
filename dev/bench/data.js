@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712145022785,
+  "lastUpdate": 1712145131767,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8",
-          "message": "chore: update deps",
-          "timestamp": "2023-11-28T10:15:23Z",
-          "tree_id": "567db30383071de6d6e1ed26fb8dc1665889d7ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/199a9f38acc0744c98b8b9ecb2fc6e0dab46e4d8"
-        },
-        "date": 1701169939734,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 112,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c58ed056661ccdcd634ba9ce79717f58879ada62",
+          "message": "fix: use correct release type in upgrade process\n\nThe faucet and daemon upgrades did not work correctly because the release type was hard coded to\n`ReleaseType::Safenode` and was not changed when this code was refactored.",
+          "timestamp": "2024-04-03T11:05:47Z",
+          "tree_id": "e39ee6caa1ccc9a68f3df3acfcf9d378ff689f0c",
+          "url": "https://github.com/maidsafe/safe_network/commit/c58ed056661ccdcd634ba9ce79717f58879ada62"
+        },
+        "date": 1712145131335,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
