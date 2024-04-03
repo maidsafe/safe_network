@@ -65,7 +65,7 @@ use tracing::warn;
 
 /// Interval over which we check for the farthest record we _should_ be holding
 /// based upon our knowledge of the CLOSE_GROUP
-pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(60);
+pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
