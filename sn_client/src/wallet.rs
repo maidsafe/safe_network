@@ -131,11 +131,6 @@ impl WalletClient {
     pub fn unconfirmed_spend_requests_exist(&self) -> bool {
         self.wallet.unconfirmed_spend_requests_exist()
     }
-    /// Get unconfirmed transactions
-    //TODO: Unused
-    pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
-        self.wallet.unconfirmed_spend_requests()
-    }
 
     /// Returns the most recent cached Payment for a provided NetworkAddress. This function does not check if the
     /// quote has expired or not. Use get_non_expired_payment_for_addr if you want to get a non expired one.
@@ -277,12 +272,6 @@ impl WalletClient {
         }
     }
 
-    /// Remove CashNote from available_cash_notes
-    //TODO: Unused
-    pub fn mark_note_as_spent(&mut self, cash_note_key: UniquePubkey) {
-        self.wallet.mark_notes_as_spent(&[cash_note_key]);
-    }
-
     /// Send tokens to another wallet. Can also verify the store has been successful.
     /// Verification will be attempted via GET request through a Spend on the network.
     ///
@@ -352,7 +341,6 @@ impl WalletClient {
     /// Send signed spends to another wallet.
     /// Can optionally verify if the store has been successful.
     /// Verification will be attempted via GET request through a Spend on the network.
-    // TODO: Unused. Private method.
     async fn send_signed_spends(
         &mut self,
         signed_spends: BTreeSet<SignedSpend>,
@@ -502,7 +490,6 @@ impl WalletClient {
     /// Existing chunks will have the store cost set to Zero.
     /// The payment procedure shall be skipped, and the chunk upload as well.
     /// Hence the list of existing chunks will be returned.
-    // TODO: Used only once in current file: Set to Private. No Docs issued.
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,

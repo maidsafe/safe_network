@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, Client, ClientRegister, WalletClient};
-use crate::{Error, UploadCfg, Uploader};
+use crate::{Error, FilesApi, UploadCfg};
 use bls::{Ciphertext, PublicKey};
 use bytes::{BufMut, BytesMut};
 use self_encryption::MAX_CHUNK_SIZE;
@@ -48,6 +48,7 @@ pub struct FoldersApi {
     client: Client,
     wallet_dir: PathBuf,
     register: ClientRegister,
+    files_api: FilesApi,
     // Cache of metadata chunks. We keep the Chunk itself till we upload it to the network.
     metadata: BTreeMap<XorName, (Metadata, Option<Chunk>)>,
 }
@@ -179,21 +180,32 @@ impl FoldersApi {
     }
 
     /// Sync local Folder with the network.
-    /// This makes a payment and uploads the folder if the metadata chunks and registers have not yet been paid.
     pub async fn sync(&mut self, upload_cfg: UploadCfg) -> Result<()> {
-        let mut uploader = Uploader::new(self.client.clone(), self.wallet_dir.to_path_buf());
-        uploader.set_upload_cfg(upload_cfg);
-        uploader.set_collect_registers(true); // override upload cfg to collect the updated register.
-        uploader.insert_chunks(self.meta_chunks());
-        uploader.insert_register(vec![self.register()]);
-        let upload_summary = uploader.start_upload().await?;
+        let mut wallet_client = self.wallet()?;
 
-        let updated_register = upload_summary
-            .uploaded_registers
-            .get(self.address())
-            .ok_or(Error::RegisterNotFoundAfterUpload(self.address().xorname()))?
-            .clone();
-        self.register = updated_register;
+        // First upload any newly created metadata chunk
+        for (_, meta_chunk) in self.metadata.values_mut() {
+            if let Some(chunk) = meta_chunk.take() {
+                self.files_api
+                    .get_local_payment_and_upload_chunk(
+                        chunk.clone(),
+                        upload_cfg.verify_store,
+                        Some(upload_cfg.retry_strategy),
+                    )
+                    .await?;
+            }
+        }
+
+        let payment_info = wallet_client.get_recent_payment_for_addr(&self.as_net_addr())?;
+
+        self.register
+            .sync(
+                &mut wallet_client,
+                upload_cfg.verify_store,
+                Some(payment_info),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -285,10 +297,13 @@ impl FoldersApi {
 
     // Create a new FoldersApi instance with given register.
     fn create(client: Client, wallet_dir: &Path, register: ClientRegister) -> Result<Self> {
+        let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
+
         Ok(Self {
             client,
             wallet_dir: wallet_dir.to_path_buf(),
             register,
+            files_api,
             metadata: BTreeMap::new(),
         })
     }

@@ -33,6 +33,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
+            pub_key: network.get_pub_key(),
             signature,
         };
 
@@ -104,7 +105,14 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
                         quote.timestamp + time_gap > self_quote.timestamp
                     };
 
-                    is_same_target && is_not_self && is_not_zero_quote && is_around_same_time
+                    let is_signed_by_the_claimed_peer =
+                        quote.check_is_signed_by_claimed_peer(*peer_id);
+
+                    is_same_target
+                        && is_not_self
+                        && is_not_zero_quote
+                        && is_around_same_time
+                        && is_signed_by_the_claimed_peer
                 })
                 .cloned()
                 .collect();

@@ -16,6 +16,7 @@ mod driver;
 mod error;
 mod event;
 mod get_record_handler;
+mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
 #[cfg(feature = "open-metrics")]
@@ -168,6 +169,11 @@ impl Network {
     /// Verifies a signature for the given data and the node's public key.
     pub fn verify(&self, msg: &[u8], sig: &[u8]) -> bool {
         self.keypair.public().verify(msg, sig)
+    }
+
+    /// Returns the protobuf serialised PublicKey to allow messaging out for share.
+    pub fn get_pub_key(&self) -> Vec<u8> {
+        self.keypair.public().encode_protobuf()
     }
 
     /// Dial the given peer at the given address.
