@@ -9,7 +9,7 @@
 
 use crate::target_arch::{spawn, Instant};
 use crate::CLOSE_GROUP_SIZE;
-use crate::{cmd::SwarmCmd, event::NetworkEvent, send_swarm_cmd};
+use crate::{cmd::SwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -460,6 +460,13 @@ impl NodeRecordStore {
         };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
+
+        Marker::StoreCost {
+            cost,
+            quoting_metrics: &quoting_metrics,
+        }
+        .log();
+
         (NanoTokens::from(cost), quoting_metrics)
     }
 
@@ -488,7 +495,7 @@ impl NodeRecordStore {
             })
             .count();
 
-        debug!("Relevant records len is {relevant_records_len:?}");
+        Marker::CloseRecordsLen(&relevant_records_len).log();
         relevant_records_len
     }
 
