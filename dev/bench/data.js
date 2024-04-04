@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712222479709,
+  "lastUpdate": 1712222587378,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11706,35 +11706,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f7188549fe8b1d91d5e5755a553d6224a536f3e0",
-          "message": "feat(networking): more properly handle outgoing errors\n\nDont penalise nodes for lack of local ports eg",
-          "timestamp": "2023-11-29T09:41:08Z",
-          "tree_id": "57b71eefdbb1b35edeba1fe054ba394d3f77d602",
-          "url": "https://github.com/maidsafe/safe_network/commit/f7188549fe8b1d91d5e5755a553d6224a536f3e0"
-        },
-        "date": 1701253864899,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 90,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "daniel.eades@seebyte.com",
             "name": "Daniel Eades"
           },
@@ -20397,6 +20368,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "b662acff0fbcf0801364e8bfb0b649b360c88945",
+          "message": "chore(node): pass entire QuotingMetrics into calculate_cost_for_records",
+          "timestamp": "2024-04-04T08:27:43Z",
+          "tree_id": "af4a404d19b5c0642fc5776a179081f9fb9f4e08",
+          "url": "https://github.com/maidsafe/safe_network/commit/b662acff0fbcf0801364e8bfb0b649b360c88945"
+        },
+        "date": 1712222586811,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
