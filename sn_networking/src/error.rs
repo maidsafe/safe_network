@@ -183,6 +183,9 @@ pub enum NetworkError {
 
     #[error("Outgoing response has been dropped due to a conn being closed or timeout: {0}")]
     OutgoingResponseDropped(Response),
+
+    #[error("Error setting up behaviour: {0}")]
+    BahviourErr(String),
 }
 
 #[cfg(test)]
