@@ -13,7 +13,7 @@ use service_manager::{
     ServiceUninstallCtx,
 };
 use std::net::{SocketAddr, TcpListener};
-use sysinfo::{Pid, ProcessExt, System, SystemExt};
+use sysinfo::{Pid, System};
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
 /// easier.

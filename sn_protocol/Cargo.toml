@@ -19,7 +19,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 color-eyre = "0.6.2"
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
-custom_debug = "~0.5.0"
+custom_debug = "~0.6.1"
 dirs-next = "~2.0.0"
 hex = "~0.4.3"
 lazy_static = "~1.4.0"
