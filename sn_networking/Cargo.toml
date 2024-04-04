@@ -20,6 +20,23 @@ encrypt-records = []
 
 
 [dependencies]
+libp2p = { version = "0.53", features = [
+    "tokio",
+    "dns",
+    "kad",
+    "autonat",
+    "macros",
+    "request-response",
+    "cbor",
+    "identify",
+    "dcutr",
+    "tcp",
+    "relay",
+    "noise",
+    "tcp",
+    "yamux",
+    "websocket",
+] }
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 futures = "~0.3.13"
@@ -31,19 +48,6 @@ hyper = { version = "0.14", features = [
 ], optional = true }
 itertools = "~0.12.1"
 custom_debug = "~0.6.1"
-libp2p = { version = "0.53", features = [
-    "tokio",
-    "dns",
-    "kad",
-    "macros",
-    "request-response",
-    "cbor",
-    "identify",
-    "noise",
-    "tcp",
-    "yamux",
-    "websocket",
-] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
