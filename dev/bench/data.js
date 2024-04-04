@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712238697821,
+  "lastUpdate": 1712238805212,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,34 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "daniel.eades@seebyte.com",
-            "name": "Daniel Eades"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "36976fdf9e8d5f17032583b069175283ce2e73cb",
-          "message": "chore: add dependabot config for maintaining github actions",
-          "timestamp": "2023-11-29T10:19:56Z",
-          "tree_id": "68912461c8d3d8ba98f3d7d6f19ea69bef5b3a02",
-          "url": "https://github.com/maidsafe/safe_network/commit/36976fdf9e8d5f17032583b069175283ce2e73cb"
-        },
-        "date": 1701257389333,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 106,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20398,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "c6553fdd57c1751127e88669cb09f5f3becd0b01",
+          "message": "test(transfer): unit tests for PaymentQuote",
+          "timestamp": "2024-04-04T13:10:50Z",
+          "tree_id": "c8ac5cd63ab20b60f50597695d1e50bbd5d4b256",
+          "url": "https://github.com/maidsafe/safe_network/commit/c6553fdd57c1751127e88669cb09f5f3becd0b01"
+        },
+        "date": 1712238804811,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
