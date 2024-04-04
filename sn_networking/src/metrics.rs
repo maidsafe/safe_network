@@ -9,7 +9,7 @@
 use crate::target_arch::sleep;
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
-use sysinfo::{Pid, PidExt, ProcessExt, ProcessRefreshKind, System, SystemExt};
+use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
