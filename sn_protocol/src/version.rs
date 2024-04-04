@@ -8,10 +8,6 @@
 
 use lazy_static::lazy_static;
 
-/// Set this env variable to provide custom network versioning. If it is set to 'restricted', then the git branch name
-/// is used as the version string. Else we directly use the passed in string as the version.
-const NETWORK_VERSION_MODE_ENV_VARIABLE: &str = "NETWORK_VERSION_MODE";
-
 lazy_static! {
     /// The node version used during Identify Behaviour.
     pub static ref IDENTIFY_NODE_VERSION_STR: String =
@@ -53,16 +49,18 @@ lazy_static! {
 /// If the network version mode env variable is set to `restricted`, then the git branch is used as the version.
 /// Else any non empty string is used as the version string.
 /// If the env variable is empty or not set, then we do not apply any network versioning.
-pub fn get_network_version() -> String {
-    match std::env::var(NETWORK_VERSION_MODE_ENV_VARIABLE) {
-        Ok(value) if !value.is_empty() => {
+pub fn get_network_version() -> &'static str {
+    // Set this env variable to provide custom network versioning. If it is set to 'restricted', then the git branch name
+    // is used as the version string. Else we directly use the passed in string as the version.
+    match option_env!("NETWORK_VERSION_MODE") {
+        Some(value) => {
             if value == "restricted" {
-                sn_build_info::git_branch().to_string()
+                sn_build_info::git_branch()
             } else {
                 value
             }
         }
-        _ => "".to_string(),
+        _ => "",
     }
 }
 
@@ -70,7 +68,7 @@ pub fn get_network_version() -> String {
 fn write_network_version_with_slash() -> String {
     let version = get_network_version();
     if version.is_empty() {
-        version
+        version.to_string()
     } else {
         format!("/{version}")
     }
