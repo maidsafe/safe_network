@@ -40,6 +40,11 @@ pub enum SpendFault {
     },
     #[error("Invalid transaction for spend at {0:?}: {1}")]
     InvalidTransaction(SpendAddress, String),
+    #[error("Spend at {addr:?} has an unknown ancestor at {ancestor_addr:?}, until this ancestor is added to the DAG, it cannot be verified")]
+    UnknownAncestor {
+        addr: SpendAddress,
+        ancestor_addr: SpendAddress,
+    },
     #[error("Poisoned ancestry for spend at {0:?}: {1}")]
     PoisonedAncestry(SpendAddress, String),
     #[error("Spend at {addr:?} does not descend from given source: {src:?}")]
@@ -66,6 +71,7 @@ impl SpendFault {
             | SpendFault::MissingAncestry { addr, .. }
             | SpendFault::InvalidAncestry { addr, .. }
             | SpendFault::InvalidTransaction(addr, _)
+            | SpendFault::UnknownAncestor { addr, .. }
             | SpendFault::PoisonedAncestry(addr, _)
             | SpendFault::OrphanSpend { addr, .. } => *addr,
         }
