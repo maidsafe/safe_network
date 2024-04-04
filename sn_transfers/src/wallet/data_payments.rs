@@ -15,6 +15,9 @@ use xor_name::XorName;
 /// The time in seconds that a quote is valid for
 pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
+/// The margin allowed for live_time
+const LIVE_TIME_MARGIN: u64 = 10;
+
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, custom_debug::Debug)]
 pub struct Payment {
     /// The transfers we make
@@ -238,8 +241,8 @@ impl PaymentQuote {
         let time_diff = old_elapsed.as_secs().saturating_sub(new_elapsed.as_secs());
         let live_time_diff =
             new_quote.quoting_metrics.live_time - old_quote.quoting_metrics.live_time;
-        // In theory, these two shall match, give it a margin of 10 to avoid system glitch
-        if live_time_diff > time_diff + 10 {
+        // In theory, these two shall match, give it a LIVE_TIME_MARGIN to avoid system glitch
+        if live_time_diff > time_diff + LIVE_TIME_MARGIN {
             info!("claimed live_time out of sync with the timestamp");
             return false;
         }
@@ -262,5 +265,98 @@ impl PaymentQuote {
         }
 
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use libp2p::identity::Keypair;
+    use std::{thread::sleep, time::Duration};
+
+    #[test]
+    fn test_is_newer_than() {
+        let old_quote = PaymentQuote::zero();
+        sleep(Duration::from_millis(100));
+        let new_quote = PaymentQuote::zero();
+        assert!(new_quote.is_newer_than(&old_quote));
+        assert!(!old_quote.is_newer_than(&new_quote));
+    }
+
+    #[test]
+    fn test_is_signed_by_claimed_peer() {
+        let keypair = Keypair::generate_ed25519();
+        let peer_id = keypair.public().to_peer_id();
+
+        let false_peer = PeerId::random();
+
+        let mut quote = PaymentQuote::zero();
+        let bytes = PaymentQuote::bytes_for_signing(
+            quote.content,
+            quote.cost,
+            quote.timestamp,
+            &quote.quoting_metrics,
+        );
+        let signature = if let Ok(sig) = keypair.sign(&bytes) {
+            sig
+        } else {
+            panic!("Cannot sign the quote!");
+        };
+
+        // Check failed with both incorrect pub_key and signature
+        assert!(!quote.check_is_signed_by_claimed_peer(peer_id));
+        assert!(!quote.check_is_signed_by_claimed_peer(false_peer));
+
+        // Check failed with correct pub_key but incorrect signature
+        quote.pub_key = keypair.public().encode_protobuf();
+        assert!(!quote.check_is_signed_by_claimed_peer(peer_id));
+        assert!(!quote.check_is_signed_by_claimed_peer(false_peer));
+
+        // Check succeed with correct pub_key and signature,
+        // and failed with incorrect claimed signer (peer)
+        quote.signature = signature;
+        assert!(quote.check_is_signed_by_claimed_peer(peer_id));
+        assert!(!quote.check_is_signed_by_claimed_peer(false_peer));
+
+        // Check failed with incorrect pub_key but correct signature
+        quote.pub_key = Keypair::generate_ed25519().public().encode_protobuf();
+        assert!(!quote.check_is_signed_by_claimed_peer(peer_id));
+        assert!(!quote.check_is_signed_by_claimed_peer(false_peer));
+    }
+
+    #[test]
+    fn test_historical_verify() {
+        let mut old_quote = PaymentQuote::zero();
+        sleep(Duration::from_millis(100));
+        let mut new_quote = PaymentQuote::zero();
+
+        // historical_verify will swap quotes to compare based on timeline automatically
+        assert!(new_quote.historical_verify(&old_quote));
+        assert!(old_quote.historical_verify(&new_quote));
+
+        // Out of sequence received_payment_count shall be detected
+        old_quote.quoting_metrics.received_payment_count = 10;
+        new_quote.quoting_metrics.received_payment_count = 9;
+        assert!(!new_quote.historical_verify(&old_quote));
+        assert!(!old_quote.historical_verify(&new_quote));
+        // Reset to correct one
+        new_quote.quoting_metrics.received_payment_count = 11;
+        assert!(new_quote.historical_verify(&old_quote));
+        assert!(old_quote.historical_verify(&new_quote));
+
+        // Out of sequence live_time shall be detected
+        new_quote.quoting_metrics.live_time = 10;
+        old_quote.quoting_metrics.live_time = 11;
+        assert!(!new_quote.historical_verify(&old_quote));
+        assert!(!old_quote.historical_verify(&new_quote));
+        // Out of margin live_time shall be detected
+        new_quote.quoting_metrics.live_time = 11 + LIVE_TIME_MARGIN + 1;
+        assert!(!new_quote.historical_verify(&old_quote));
+        assert!(!old_quote.historical_verify(&new_quote));
+        // Reset live_time to be within the margin
+        new_quote.quoting_metrics.live_time = 11 + LIVE_TIME_MARGIN - 1;
+        assert!(new_quote.historical_verify(&old_quote));
+        assert!(old_quote.historical_verify(&new_quote));
     }
 }
