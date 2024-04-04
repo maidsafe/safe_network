@@ -450,13 +450,7 @@ impl NodeRecordStore {
         let cost = if self.contains(key) {
             0
         } else {
-            // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-            calculate_cost_for_records(
-                quoting_metrics.close_records_stored,
-                quoting_metrics.received_payment_count,
-                quoting_metrics.max_records,
-                quoting_metrics.live_time,
-            )
+            calculate_cost_for_records(&quoting_metrics)
         };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
@@ -698,13 +692,13 @@ impl RecordStore for ClientRecordStore {
 // to allow nodes receiving too many replication copies can still got paid,
 // and gives an exponential pricing curve when storage reaches high.
 // and give extra reward (lower the quoting price to gain a better chance) to long lived nodes.
-pub fn calculate_cost_for_records(
-    records_stored: usize,
-    received_payment_count: usize,
-    max_records: usize,
-    live_time: u64,
-) -> u64 {
+pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
     use std::cmp::{max, min};
+
+    let records_stored = quoting_metrics.close_records_stored;
+    let received_payment_count = quoting_metrics.received_payment_count;
+    let max_records = quoting_metrics.max_records;
+    let live_time = quoting_metrics.live_time;
 
     let ori_cost = (10 * records_stored) as u64;
     let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
@@ -783,21 +777,36 @@ mod tests {
 
     #[test]
     fn test_calculate_max_cost_for_records() {
-        let sut = calculate_cost_for_records(2049, 2049, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: 2049,
+            max_records: 2048,
+            received_payment_count: 2049,
+            live_time: 1,
+        });
         assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
     }
 
     #[test]
     fn test_calculate_50_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 50 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 10240);
     }
     #[test]
     fn test_calculate_60_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 60 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 12280);
     }
@@ -805,7 +814,12 @@ mod tests {
     #[test]
     fn test_calculate_65_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 65 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 2023120);
     }
@@ -813,7 +827,12 @@ mod tests {
     #[test]
     fn test_calculate_70_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 70 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 316248770);
     }
@@ -821,7 +840,12 @@ mod tests {
     #[test]
     fn test_calculate_80_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 80 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 7978447975680);
     }
@@ -829,14 +853,24 @@ mod tests {
     #[test]
     fn test_calculate_90_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 90 / 100;
-        let sut = calculate_cost_for_records(percent, percent, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: percent,
+            max_records: 2048,
+            received_payment_count: percent,
+            live_time: 1,
+        });
         // at this point we should be at max cost
         assert_eq!(sut, 198121748221132800);
     }
 
     #[test]
     fn test_calculate_min_cost_for_records() {
-        let sut = calculate_cost_for_records(0, 0, 2048, 1);
+        let sut = calculate_cost_for_records(&QuotingMetrics {
+            close_records_stored: 0,
+            max_records: 2048,
+            received_payment_count: 0,
+            live_time: 1,
+        });
         assert_eq!(sut, 10);
     }
 
@@ -1168,12 +1202,12 @@ mod tests {
                             let (close_records_stored, nanos_earnt, received_payment_count) =
                                 peers.entry(*peer).or_insert((0, 0, 0));
                             if *peer == payee {
-                                let cost = calculate_cost_for_records(
-                                    *close_records_stored,
-                                    *received_payment_count,
-                                    MAX_RECORDS_COUNT,
-                                    0,
-                                );
+                                let cost = calculate_cost_for_records(&QuotingMetrics {
+                                    close_records_stored: *close_records_stored,
+                                    max_records: MAX_RECORDS_COUNT,
+                                    received_payment_count: *received_payment_count,
+                                    live_time: 0,
+                                });
                                 *nanos_earnt += cost;
                                 *received_payment_count += 1;
                             }
@@ -1195,12 +1229,12 @@ mod tests {
             let mut max_store_cost = 0;
 
             for (_peer_id, (close_records_stored, nanos_earnt, times_paid)) in peers.iter() {
-                let cost = calculate_cost_for_records(
-                    *close_records_stored,
-                    *times_paid,
-                    MAX_RECORDS_COUNT,
-                    0,
-                );
+                let cost = calculate_cost_for_records(&QuotingMetrics {
+                    close_records_stored: *close_records_stored,
+                    max_records: MAX_RECORDS_COUNT,
+                    received_payment_count: *times_paid,
+                    live_time: 0,
+                });
                 // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
                 received_payment_count += times_paid;
                 if *nanos_earnt == 0 {
@@ -1291,7 +1325,12 @@ mod tests {
 
         for peer in peers_in_close {
             if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(stats.0, stats.2, MAX_RECORDS_COUNT, 0);
+                let store_cost = calculate_cost_for_records(&QuotingMetrics {
+                    close_records_stored: stats.0,
+                    max_records: MAX_RECORDS_COUNT,
+                    received_payment_count: stats.2,
+                    live_time: 0,
+                });
                 if store_cost < cheapest_cost {
                     cheapest_cost = store_cost;
                     payee = Some(*peer);
