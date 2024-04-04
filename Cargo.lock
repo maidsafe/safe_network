@@ -5278,7 +5278,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.105.6-alpha.1"
+version = "0.105.6-alpha.2"
 dependencies = [
  "assert_fs",
  "assert_matches",
