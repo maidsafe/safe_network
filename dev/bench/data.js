@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712238808547,
+  "lastUpdate": 1712242691830,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d9cfd5584551fccb0c701ca7cca30bbe752297a8",
-          "message": "chore(node): increase node reward test timeout to match client wait",
-          "timestamp": "2023-11-29T13:58:27+01:00",
-          "tree_id": "f5f52603cc0306347010b05476d5a116515ee995",
-          "url": "https://github.com/maidsafe/safe_network/commit/d9cfd5584551fccb0c701ca7cca30bbe752297a8"
-        },
-        "date": 1701263617399,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.092136873806922,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.220303973678245,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 40.75962314256898,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.574277112699185,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "84bd567816c4b5691f1ceea0a9d1255092f60483",
+          "message": "fix(protocol): pre release versions should be backward compatible",
+          "timestamp": "2024-04-04T14:23:39Z",
+          "tree_id": "d97753f6856f8fdc76c2b46fb4d9af0e8535dbfe",
+          "url": "https://github.com/maidsafe/safe_network/commit/84bd567816c4b5691f1ceea0a9d1255092f60483"
+        },
+        "date": 1712242688036,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2222218011600217,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6264354976607267,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.203897816185275,
             "unit": "MiB/s"
           }
         ]
