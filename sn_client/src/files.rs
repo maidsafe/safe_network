@@ -16,7 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::HotWallet;
-use std::io::{BufRead, BufReader, Read};
+use std::io::Read;
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -83,7 +83,7 @@ impl FilesApi {
             file_size if Self::zero_file_size(file_size) => EmptyFile {}.chunk_by_size(),
             file_size if Self::small_file_size(file_size) => {
                 let mut buffer = vec![0; file_size as usize];
-                file.read(&mut buffer)?;
+                file.read_exact(&mut buffer)?;
                 SmallFile::new(buffer).chunk_by_size()
             }
             _ => encrypt_large(file_path, chunk_dir)?,
