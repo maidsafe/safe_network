@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.16.3-alpha.1"
+version = "0.16.3-alpha.2"
 
 [features]
 default = []
