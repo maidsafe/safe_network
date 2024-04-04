@@ -31,6 +31,7 @@ use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
+    autonat,
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
     multiaddr::Protocol,
@@ -39,7 +40,7 @@ use libp2p::{
         dial_opts::{DialOpts, PeerCondition},
         ConnectionId, DialError, NetworkBehaviour, StreamProtocol, Swarm,
     },
-    Multiaddr, PeerId, Transport,
+    Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
@@ -170,6 +171,9 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
+    pub(super) autonat: libp2p::autonat::Behaviour,
+    pub(super) dcutr: libp2p::dcutr::Behaviour,
+    pub(super) relay_client: libp2p::relay::client::Behaviour,
 }
 
 #[derive(Debug)]
@@ -296,12 +300,12 @@ impl NetworkBuilder {
         let listen_socket_addr = listen_addr.ok_or(NetworkError::ListenAddressNotProvided)?;
 
         // Listen on QUIC
-        let addr_quic = Multiaddr::from(listen_socket_addr.ip())
-            .with(Protocol::Udp(listen_socket_addr.port()))
-            .with(Protocol::QuicV1);
+        let addr_tcp =
+            Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
+
         let _listener_id = swarm_driver
             .swarm
-            .listen_on(addr_quic)
+            .listen_on(addr_tcp)
             .expect("Multiaddr should be supported by our configured transports");
 
         // Listen on WebSocket
@@ -445,32 +449,71 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        let main_transport = transport::build_transport(&self.keypair);
+        // let main_transport = transport::build_transport(&self.keypair);
 
-        let transport = if !self.local {
-            debug!("Preventing non-global dials");
-            // Wrap upper in a transport that prevents dialing local addresses.
-            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
-        } else {
-            main_transport
-        };
+        // let transport = if !self.local {
+        //     debug!("Preventing non-global dials");
+        //     // Wrap upper in a transport that prevents dialing local addresses.
+        //     libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
+        // } else {
+        //     main_transport
+        // };
 
-        let behaviour = NodeBehaviour {
-            request_response,
-            kademlia,
-            identify,
-            #[cfg(feature = "local-discovery")]
-            mdns,
-        };
+        // let dcutr = libp2p::dcutr::Behaviour::new(keypair.public().to_peer_id());
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let swarm_config = libp2p::swarm::Config::with_tokio_executor()
-            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
-        #[cfg(target_arch = "wasm32")]
-        let swarm_config = libp2p::swarm::Config::with_wasm_executor()
-            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        // let behaviour = NodeBehaviour {
+        //     request_response,
+        //     kademlia,
+        //     identify,
+        //     #[cfg(feature = "local-discovery")]
+        //     mdns,
+        //     dcutr,
+        //     relay_client,
+        // };
 
-        let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
+        // #[cfg(not(target_arch = "wasm32"))]
+        // let swarm_config = libp2p::swarm::Config::with_tokio_executor()
+        //     .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        // #[cfg(target_arch = "wasm32")]
+        // let swarm_config = libp2p::swarm::Config::with_wasm_executor()
+        //     .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+
+        // let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
+        //
+        //
+        let swarm = libp2p::SwarmBuilder::with_existing_identity(self.keypair.clone())
+            .with_tokio()
+            .with_tcp(
+                libp2p::tcp::Config::default()
+                    .port_reuse(true)
+                    .nodelay(true),
+                libp2p::noise::Config::new,
+                libp2p::yamux::Config::default,
+            )
+            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
+            .with_quic()
+            // .with_dns()?
+            .with_relay_client(libp2p::noise::Config::new, libp2p::yamux::Config::default)
+            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
+            .with_behaviour(|_keypair, relay_behaviour| NodeBehaviour {
+                relay_client: relay_behaviour,
+                request_response,
+                #[cfg(feature = "local-discovery")]
+                mdns,
+                autonat: autonat::Behaviour::new(
+                    peer_id,
+                    autonat::Config {
+                        only_global_ips: false,
+                        ..Default::default()
+                    },
+                ),
+                identify,
+                kademlia,
+                dcutr: libp2p::dcutr::Behaviour::new(peer_id),
+            })
+            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
+            .with_swarm_config(|c| c.with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT))
+            .build();
 
         let bootstrap = ContinuousBootstrap::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
