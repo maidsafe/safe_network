@@ -353,6 +353,17 @@ impl SwarmDriver {
             SwarmEvent::NewListenAddr { address, .. } => {
                 event_string = "new listen addr";
 
+                // update our stored port if it is configured to be 0 or None
+                match self.listen_port {
+                    Some(0) | None => {
+                        if let Some(actual_port) = get_port_from_multiaddr(&address) {
+                            info!("Our listen port is configured as 0 or is not set. Setting it to our actual port: {actual_port}");
+                            self.listen_port = Some(actual_port);
+                        }
+                    }
+                    _ => {}
+                };
+
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
 
@@ -581,6 +592,7 @@ impl SwarmDriver {
                                 info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
                             }
                         }
+                    } else {
                         trace!("external address: listen port not set. This has to be set if you're running a node");
                     }
                 }

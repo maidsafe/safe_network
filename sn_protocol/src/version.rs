@@ -78,14 +78,11 @@ fn write_network_version_with_slash() -> String {
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
+// And any pre-release versions `A.B.C-alpha.X` shall be considered as a same protocol of `A.B.C-alpha`
 fn get_truncate_version_str() -> &'static str {
     let version_str = env!("CARGO_PKG_VERSION");
-    if version_str.matches('.').count() == 2 {
-        match version_str.rfind('.') {
-            Some(pos) => &version_str[..pos],
-            None => version_str,
-        }
-    } else {
-        version_str
+    match version_str.rfind('.') {
+        Some(pos) => &version_str[..pos],
+        None => version_str,
     }
 }

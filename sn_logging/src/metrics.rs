@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 use std::time::Duration;
-use sysinfo::{self, CpuExt, Pid, PidExt, ProcessExt, System, SystemExt};
+use sysinfo::{self, Networks, Pid, System};
 use tracing::{debug, error};
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
@@ -47,10 +47,11 @@ struct ProcessMetrics {
 // The function should be spawned as a task and should be re-run if our main process is restarted.
 pub async fn init_metrics(pid: u32) {
     let mut sys = System::new_all();
+    let mut networks = Networks::new_with_refreshed_list();
     let pid = Pid::from_u32(pid);
 
     loop {
-        refresh_metrics(&mut sys, pid);
+        refresh_metrics(&mut sys, &mut networks, pid);
 
         let process = match sys.process(pid) {
             Some(safenode) => {
@@ -87,9 +88,9 @@ pub async fn init_metrics(pid: u32) {
 }
 
 // Refreshes only the metrics that we interested in.
-fn refresh_metrics(sys: &mut System, pid: Pid) {
+fn refresh_metrics(sys: &mut System, networks: &mut Networks, pid: Pid) {
     sys.refresh_process(pid);
     sys.refresh_memory();
-    sys.refresh_networks();
     sys.refresh_cpu();
+    networks.refresh();
 }
