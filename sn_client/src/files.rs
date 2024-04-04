@@ -16,7 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::HotWallet;
-use std::io::Read;
+use std::io::{BufRead, BufReader, Read};
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -82,11 +82,9 @@ impl FilesApi {
         let (data_map_chunk, chunk_vec) = match file_size {
             file_size if Self::zero_file_size(file_size) => EmptyFile {}.chunk_by_size(),
             file_size if Self::small_file_size(file_size) => {
-                let mut buffer = Vec::new();
-                match file.read(&mut buffer) {
-                    Ok(..) => SmallFile { buffer }.chunk_by_size(),
-                    Err(_error) => panic!("Problem opening the file: {_error:?}"),
-                }
+                let mut buffer = vec![0; file_size as usize];
+                file.read(&mut buffer)?;
+                SmallFile::new(buffer).chunk_by_size()
             }
             _ => encrypt_large(file_path, chunk_dir)?,
         };
@@ -200,6 +198,12 @@ struct EmptyFile {}
 
 struct SmallFile {
     buffer: Vec<u8>,
+}
+
+impl SmallFile {
+    fn new(buffer: Vec<u8>) -> Self {
+        Self { buffer }
+    }
 }
 
 trait ChunkBySize {
