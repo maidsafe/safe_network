@@ -1,46 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712222591269,
+  "lastUpdate": 1712238697821,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "daniel.eades@seebyte.com",
-            "name": "Daniel Eades"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "36976fdf9e8d5f17032583b069175283ce2e73cb",
-          "message": "chore: add dependabot config for maintaining github actions",
-          "timestamp": "2023-11-29T10:19:56Z",
-          "tree_id": "68912461c8d3d8ba98f3d7d6f19ea69bef5b3a02",
-          "url": "https://github.com/maidsafe/safe_network/commit/36976fdf9e8d5f17032583b069175283ce2e73cb"
-        },
-        "date": 1701257171047,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.103776290354879,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.49136710260274,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.4778700966155,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11697,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.81174767999046,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "c6553fdd57c1751127e88669cb09f5f3becd0b01",
+          "message": "test(transfer): unit tests for PaymentQuote",
+          "timestamp": "2024-04-04T13:10:50Z",
+          "tree_id": "c8ac5cd63ab20b60f50597695d1e50bbd5d4b256",
+          "url": "https://github.com/maidsafe/safe_network/commit/c6553fdd57c1751127e88669cb09f5f3becd0b01"
+        },
+        "date": 1712238694271,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2227378637199953,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.647363351222989,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.574277112699185,
             "unit": "MiB/s"
           }
         ]
