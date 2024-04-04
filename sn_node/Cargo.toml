@@ -30,13 +30,13 @@ bytes = { version = "1.0.1", features = ["serde"] }
 clap = { version = "4.2.1", features = ["derive"] }
 crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 chrono = "~0.4.19"
-custom_debug = "~0.5.0"
+custom_debug = "~0.6.1"
 dirs-next = "~2.0.0"
 eyre = "0.6.8"
 file-rotate = "0.7.3"
 futures = "~0.3.13"
 hex = "~0.4.3"
-itertools = "~0.11.0"
+itertools = "~0.12.1"
 lazy_static = "~1.4.0"
 libp2p = { version = "0.53", features = ["tokio", "dns", "kad", "macros"] }
 prometheus-client = { version = "0.22", optional = true }
@@ -73,15 +73,15 @@ tracing = { version = "~0.1.26" }
 tracing-appender = "~0.2.0"
 tracing-opentelemetry = { version = "0.21", optional = true }
 tracing-subscriber = { version = "0.3.16" }
-walkdir = "~2.4.0"
+walkdir = "~2.5.0"
 xor_name = "5.0.0"
-strum = { version = "0.25.0", features = ["derive"] }
+strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
 
 [dev-dependencies]
 assert_matches = "1.5.0"
-reqwest = { version = "0.11.18", default-features = false, features = [
-    "rustls",
+reqwest = { version = "0.12.2", default-features = false, features = [
+    "rustls-tls-manual-roots",
 ] }
 serde_json = "1.0"
 sn_protocol = { path = "../sn_protocol", version = "0.16.3", features = [

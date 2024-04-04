@@ -21,7 +21,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"
-graphviz-rust = "0.7.1"
+graphviz-rust = "0.9.0"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 serde_json = "1.0.108"
 sn_client = { path = "../sn_client", version = "0.105.3" }

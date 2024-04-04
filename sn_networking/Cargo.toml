@@ -29,8 +29,8 @@ hyper = { version = "0.14", features = [
     "tcp",
     "http1",
 ], optional = true }
-itertools = "~0.11.0"
-custom_debug = "~0.5.0"
+itertools = "~0.12.1"
+custom_debug = "~0.6.1"
 libp2p = { version = "0.53", features = [
     "tokio",
     "dns",
@@ -52,7 +52,7 @@ serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_protocol = { path = "../sn_protocol", version = "0.16.3" }
 sn_transfers = { path = "../sn_transfers", version = "0.17.2" }
 sn_registers = { path = "../sn_registers", version = "0.3.12" }
-sysinfo = { version = "0.29.0", default-features = false, optional = true }
+sysinfo = { version = "0.30.8", default-features = false, optional = true }
 thiserror = "1.0.23"
 tiny-keccak = { version = "~2.0.2", features = ["sha3"] }
 tokio = { version = "1.32.0", features = [
@@ -66,7 +66,7 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 backoff = { version = "0.4.0", features = ["tokio"] }
 aes-gcm-siv = "0.11.1"
-walkdir = "~2.4.0"
+walkdir = "~2.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 
 [dev-dependencies]

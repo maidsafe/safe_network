@@ -46,7 +46,7 @@ sn_protocol = { path = "../sn_protocol", version = "0.16.3" }
 sn_service_management = { path = "../sn_service_management", version = "0.2.4" }
 sn-releases = "0.2.0"
 sn_transfers = { path = "../sn_transfers", version = "0.17.2" }
-sysinfo = "0.29.10"
+sysinfo = "0.30.8"
 tokio = { version = "1.26", features = ["full"] }
 tracing = { version = "~0.1.26" }
 # watch out updating this, protoc compiler needs to be installed on all build systems
@@ -64,9 +64,9 @@ assert_cmd = "2.0.12"
 assert_fs = "1.0.13"
 assert_matches = "1.5.0"
 async-trait = "0.1"
-mockall = "0.11.3"
-reqwest = { version = "0.11", default-features = false, features = [
+mockall = "0.12.1"
+reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "rustls-tls",
 ] }
-predicates = "2.0"
+predicates = "3.1.0"
