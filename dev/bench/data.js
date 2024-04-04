@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712192417785,
+  "lastUpdate": 1712192419293,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20406,40 +20406,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2",
-          "message": "fix: genesis check security flaw",
-          "timestamp": "2023-11-29T09:14:47Z",
-          "tree_id": "d37b84d9f74129c69d6ee6aeb7f6b6a626822ec2",
-          "url": "https://github.com/maidsafe/safe_network/commit/56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2"
-        },
-        "date": 1701252068077,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 694,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 236,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30597,6 +30563,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1776619c0ee33fa5ca841f5194ecc1112125ca60",
+          "message": "feat(release): set network versioning during build process not the release",
+          "timestamp": "2024-04-04T00:16:23Z",
+          "tree_id": "d9e57195eacc0b853b351ef9c21288b0e16ed0c5",
+          "url": "https://github.com/maidsafe/safe_network/commit/1776619c0ee33fa5ca841f5194ecc1112125ca60"
+        },
+        "date": 1712192418898,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
