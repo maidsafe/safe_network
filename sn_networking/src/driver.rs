@@ -602,14 +602,15 @@ impl SwarmDriver {
                     }
                 }
                 _ = set_farthest_record_interval.tick() => {
-                    let closest_k_peers = self
-                        .get_closest_k_value_local_peers();
+                    if !self.is_client {
+                        let closest_k_peers = self.get_closest_k_value_local_peers();
 
-                    if let Some(distance) = self.get_farthest_relevant_address_estimate(&closest_k_peers) {
-                        // set any new distance to fathest record in the store
-                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
-                        // the distance range within the replication_fetcher shall be in sync as well
-                        self.replication_fetcher.set_distance_range(distance);
+                        if let Some(distance) = self.get_farthest_relevant_address_estimate(&closest_k_peers) {
+                            // set any new distance to farthest record in the store
+                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                            // the distance range within the replication_fetcher shall be in sync as well
+                            self.replication_fetcher.set_distance_range(distance);
+                        }
                     }
                 }
             }
