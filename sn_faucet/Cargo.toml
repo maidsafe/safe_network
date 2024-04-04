@@ -21,7 +21,7 @@ name = "faucet"
 [dependencies]
 warp = "0.3"
 assert_fs = "1.0.0"
-base64 = { version = "0.21.7", optional = true }
+base64 = { version = "0.22.0", optional = true }
 bitcoin = { version = "0.31.0", features = [
     "rand-std",
     "base64",

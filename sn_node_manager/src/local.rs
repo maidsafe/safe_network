@@ -25,7 +25,7 @@ use std::{
     process::{Command, Stdio},
     str::FromStr,
 };
-use sysinfo::{Pid, ProcessExt, System, SystemExt};
+use sysinfo::{Pid, System};
 
 #[cfg_attr(test, automock)]
 pub trait Launcher {
