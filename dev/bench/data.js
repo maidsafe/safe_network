@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712266460838,
+  "lastUpdate": 1712266462487,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "abb32a6968a22428a60f396b48e48cb3b1ce7225",
-          "message": "chore: logging identify ops more accurately",
-          "timestamp": "2023-11-29T15:20:56Z",
-          "tree_id": "a31872f1919036d6a5013e5e04619b804cf09be1",
-          "url": "https://github.com/maidsafe/safe_network/commit/abb32a6968a22428a60f396b48e48cb3b1ce7225"
-        },
-        "date": 1701274451212,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 737,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 248,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "06fc9839a9969ea8e7909b308983f3fbb2132e05",
+          "message": "chore(deps): bump dependencies",
+          "timestamp": "2024-04-04T20:46:43Z",
+          "tree_id": "ec6035708cb84babda6799b5cd976e7f2e68c70d",
+          "url": "https://github.com/maidsafe/safe_network/commit/06fc9839a9969ea8e7909b308983f3fbb2132e05"
+        },
+        "date": 1712266461986,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
