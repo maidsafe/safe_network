@@ -20,7 +20,7 @@ use super::{
 
 use futures::future::join_all;
 use sn_networking::{target_arch::Instant, GetRecordError, NetworkError};
-use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
+use sn_transfers::{Hash, SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::{collections::BTreeSet, iter::Iterator};
 
 impl Client {
@@ -73,17 +73,19 @@ impl Client {
                 let parent_tx_hash = parent_tx.hash();
                 let parent_keys = parent_tx.inputs.iter().map(|input| input.unique_pubkey);
                 let addrs_to_verify = parent_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Depth {depth} - Verifying parent Tx : {parent_tx_hash:?}");
+                debug!("Depth {depth} - Verifying parent Tx : {parent_tx_hash:?} with inputs: {addrs_to_verify:?}");
 
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
-                    .into_iter()
+                    .clone()
                     .map(|a| self.get_spend_from_network(a))
                     .collect();
                 let spends = join_all(tasks).await
                     .into_iter()
-                    .collect::<Result<BTreeSet<_>>>()
-                    .map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spends from network for parent Tx {parent_tx_hash:?}: {err}")))?;
+                    .zip(addrs_to_verify.into_iter())
+                    .map(|(maybe_spend, a)|
+                        maybe_spend.map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spend {a:?} from network for parent Tx {parent_tx_hash:?}: {err}"))))
+                    .collect::<WalletResult<BTreeSet<_>>>()?;
                 debug!(
                     "Depth {depth} - Got {:?} spends for parent Tx: {parent_tx_hash:?}",
                     spends.len()
@@ -184,7 +186,7 @@ impl Client {
                     .iter()
                     .map(|output| output.unique_pubkey);
                 let addrs_to_follow = descendant_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?}");
+                debug!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?} with outputs: {addrs_to_follow:?}");
 
                 // get all descendant spends in parallel
                 let tasks: Vec<_> = addrs_to_follow
@@ -198,8 +200,7 @@ impl Client {
                     .collect::<Vec<_>>();
 
                 // split spends into utxos and spends
-                let (utxos, spends) = split_utxos_and_spends(spends_res)
-                    .map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at gen {gen} - Failed to get spends from network for descendant Tx {descendant_tx_hash:?}: {err}")))?;
+                let (utxos, spends) = split_utxos_and_spends(spends_res, gen, descendant_tx_hash)?;
                 debug!("Gen {gen} - Got {:?} spends and {:?} utxos for descendant Tx: {descendant_tx_hash:?}", spends.len(), utxos.len());
                 trace!("Spends for {descendant_tx_hash:?} - {spends:?}");
                 next_gen_utxos.extend(utxos);
@@ -241,7 +242,9 @@ impl Client {
 
 fn split_utxos_and_spends(
     spends_res: Vec<(Result<SignedSpend>, SpendAddress)>,
-) -> Result<(Vec<SpendAddress>, Vec<SignedSpend>)> {
+    gen: usize,
+    descendant_tx_hash: Hash,
+) -> WalletResult<(Vec<SpendAddress>, Vec<SignedSpend>)> {
     let mut utxos = Vec::new();
     let mut spends = Vec::new();
 
@@ -254,8 +257,8 @@ fn split_utxos_and_spends(
                 utxos.push(addr);
             }
             Err(err) => {
-                warn!("Error while following spends: {err}");
-                return Err(err);
+                warn!("Error while following spend {addr:?}: {err}");
+                return Err(WalletError::CouldNotVerifyTransfer(format!("at gen {gen} - Failed to get spend {addr:?} from network for descendant Tx {descendant_tx_hash:?}: {err}")));
             }
         }
     }
