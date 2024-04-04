@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Client, SpendDag};
-use crate::{Error, Result};
+use crate::Error;
 
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
@@ -93,7 +93,7 @@ impl Client {
                         info!("Reached UTXO at {addr:?}");
                     }
                     Err(err) => {
-                        error!("Could not verify transfer at {addr:?}: {err:?}");
+                        error!("Failed to get spend at {addr:?} during DAG collection: {err:?}");
                     }
                 }
             }
@@ -175,7 +175,7 @@ impl Client {
                 let parent_tx_hash = parent_tx.hash();
                 let parent_keys = parent_tx.inputs.iter().map(|input| input.unique_pubkey);
                 let addrs_to_verify = parent_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Depth {depth} - checking parent Tx : {parent_tx_hash:?}");
+                debug!("Depth {depth} - checking parent Tx : {parent_tx_hash:?} with inputs: {addrs_to_verify:?}");
 
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
@@ -184,8 +184,10 @@ impl Client {
                     .collect();
                 let spends = join_all(tasks).await
                     .into_iter()
-                    .collect::<Result<BTreeSet<_>>>()
-                    .map_err(|err| WalletError::FailedToGetSpend(format!("at depth {depth} - Failed to get spends from network for parent Tx {parent_tx_hash:?}: {err}")))?;
+                    .zip(addrs_to_verify.clone())
+                    .map(|(maybe_spend, a)|
+                        maybe_spend.map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spend {a:?} from network for parent Tx {parent_tx_hash:?}: {err}"))))
+                    .collect::<WalletResult<BTreeSet<_>>>()?;
                 debug!(
                     "Depth {depth} - Got {:?} spends for parent Tx: {parent_tx_hash:?}",
                     spends.len()
@@ -259,7 +261,8 @@ impl Client {
         dag: &mut SpendDag,
         max_depth: Option<u32>,
     ) -> WalletResult<()> {
-        info!("Gathering spend DAG from utxos...");
+        let main_dag_src = dag.source();
+        info!("Expanding spend DAG with source: {main_dag_src:?} from utxos...");
         let utxos = dag.get_utxos();
 
         let mut stream = futures::stream::iter(utxos.into_iter())
@@ -271,9 +274,14 @@ impl Client {
 
         while let Some((res, addr)) = stream.next().await {
             match res {
-                Ok(d) => dag.merge(d),
+                Ok(sub_dag) => {
+                    debug!("Gathered sub DAG from: {addr:?}");
+                    if let Err(e) = dag.merge(sub_dag) {
+                        warn!("Failed to merge sub dag from {addr:?} into dag: {e}");
+                    }
+                }
                 Err(e) => warn!("Failed to gather sub dag from {addr:?}: {e}"),
-            }
+            };
         }
 
         dag.record_faults(&dag.source())

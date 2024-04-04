@@ -82,7 +82,7 @@ impl SpendDagDb {
 
         let (spend_type, spends) = match spend {
             SpendDagGet::SpendNotFound => ("SpendNotFound", vec![]),
-            SpendDagGet::SpendIsAnUtxo => ("SpendIsAnUtxo", vec![]),
+            SpendDagGet::SpendKeyExists => ("SpendKeyExists", vec![]),
             SpendDagGet::DoubleSpend(vs) => ("DoubleSpend", vs),
             SpendDagGet::Spend(s) => ("Spend", vec![*s]),
         };
@@ -176,7 +176,7 @@ impl SpendDagDb {
         let mut w_handle = dag_ref
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
-        w_handle.merge(other);
+        w_handle.merge(other)?;
         Ok(())
     }
 }
@@ -218,17 +218,31 @@ fn dag_to_svg(dag: &SpendDag) -> Result<Vec<u8>> {
 // - makes spends clickable
 // - spend address reveals on hover
 // - marks poisoned spends as red
+// - marks UTXOs and unknown ancestors as yellow
 // - just pray it works on windows
 fn quick_edit_svg(svg: Vec<u8>, dag: &SpendDag) -> Result<Vec<u8>> {
     let mut str = String::from_utf8(svg).map_err(|err| eyre!("Failed svg conversion: {err}"))?;
 
     let spend_addrs: Vec<_> = dag.all_spends().iter().map(|s| s.address()).collect();
     let utxo_addrs = dag.get_utxos();
+    let unknown_parents = dag.get_unknown_parents();
+    let all_addrs = spend_addrs
+        .iter()
+        .chain(utxo_addrs.iter())
+        .chain(unknown_parents.iter());
 
-    for addr in spend_addrs.iter().chain(utxo_addrs.iter()) {
+    for addr in all_addrs {
         let addr_hex = addr.to_hex().to_string();
         let is_fault = !dag.get_spend_faults(addr).is_empty();
-        let colour = if is_fault { "red" } else { "none" };
+        let is_known_but_not_gathered = matches!(dag.get_spend(addr), SpendDagGet::SpendKeyExists);
+        let colour = if is_fault {
+            "red"
+        } else if is_known_but_not_gathered {
+            "yellow"
+        } else {
+            "none"
+        };
+
         let link = format!("<a xlink:href=\"/spend/{addr_hex}\">");
         let idxs = dag.get_spend_indexes(addr);
         for i in idxs {
