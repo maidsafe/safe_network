@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712282534113,
+  "lastUpdate": 1712282535928,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "00601bce285b6af233e067b62fa1f670022a4465",
-          "message": "feat: most of nodes not subscribe to royalty_transfer topic",
-          "timestamp": "2023-11-29T16:28:40Z",
-          "tree_id": "fbdd5cf3f6010e8267ae90feff0d5bf04106738d",
-          "url": "https://github.com/maidsafe/safe_network/commit/00601bce285b6af233e067b62fa1f670022a4465"
-        },
-        "date": 1701278382363,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 648,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 240,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30595,6 +30561,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "131efe1c7a08850c2391a042dd27c15cf5139e1d",
+          "message": "fix(network): clients should not perform farthest relevant record check",
+          "timestamp": "2024-04-05T00:51:02Z",
+          "tree_id": "1d3a40e89b319c9c47d9596524555e6f94a258ee",
+          "url": "https://github.com/maidsafe/safe_network/commit/131efe1c7a08850c2391a042dd27c15cf5139e1d"
+        },
+        "date": 1712282535317,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 182,
             "unit": "MB"
           },
           {
