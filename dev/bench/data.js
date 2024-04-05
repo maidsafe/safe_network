@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712282535928,
+  "lastUpdate": 1712282537922,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2bd92fcb4faf385976df81e588dbbd9cb6dae0a6",
-          "message": "test(CI): showing swarm_driver long handling statistics in bench diagram",
-          "timestamp": "2023-11-20T12:00:47Z",
-          "tree_id": "993627cf19d30f2ca970e38bf909b398dd419768",
-          "url": "https://github.com/maidsafe/safe_network/commit/2bd92fcb4faf385976df81e588dbbd9cb6dae0a6"
-        },
-        "date": 1700484648044,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 2742,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 43237,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35320,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "131efe1c7a08850c2391a042dd27c15cf5139e1d",
+          "message": "fix(network): clients should not perform farthest relevant record check",
+          "timestamp": "2024-04-05T00:51:02Z",
+          "tree_id": "1d3a40e89b319c9c47d9596524555e6f94a258ee",
+          "url": "https://github.com/maidsafe/safe_network/commit/131efe1c7a08850c2391a042dd27c15cf5139e1d"
+        },
+        "date": 1712282537303,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7348,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33300,
             "unit": "ms"
           },
           {
