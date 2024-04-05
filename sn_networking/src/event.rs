@@ -30,7 +30,7 @@ use libp2p::{
     Multiaddr, PeerId, TransportError,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_protocol::version::IDENTIFY_NODE_VERSION_STR;
+use sn_protocol::version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR};
 use sn_protocol::{
     get_port_from_multiaddr,
     messages::{CmdResponse, Query, Request, Response},
@@ -107,8 +107,13 @@ pub enum NetworkEvent {
     },
     /// Peer has been added to the Routing Table. And the number of connected peers.
     PeerAdded(PeerId, usize),
-    // Peer has been removed from the Routing Table. And the number of connected peers.
+    /// Peer has been removed from the Routing Table. And the number of connected peers.
     PeerRemoved(PeerId, usize),
+    /// The peer does not support our protocol
+    PeerWithUnsupportedProtocol {
+        our_protocol: String,
+        their_protocol: String,
+    },
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
@@ -120,13 +125,9 @@ pub enum NetworkEvent {
     /// List of peer nodes that failed to fetch replication copy from.
     FailedToFetchHolders(BTreeSet<PeerId>),
     /// A peer in RT that supposed to be verified.
-    BadNodeVerification {
-        peer_id: PeerId,
-    },
+    BadNodeVerification { peer_id: PeerId },
     /// Quotes to be verified
-    QuoteVerification {
-        quotes: Vec<(PeerId, PaymentQuote)>,
-    },
+    QuoteVerification { quotes: Vec<(PeerId, PaymentQuote)> },
     /// Carry out chunk proof check against the specified record and peer
     ChunkProofVerification {
         peer_id: PeerId,
@@ -152,6 +153,12 @@ impl Debug for NetworkEvent {
                     f,
                     "NetworkEvent::PeerRemoved({peer_id:?}, {connected_peers})"
                 )
+            }
+            NetworkEvent::PeerWithUnsupportedProtocol {
+                our_protocol,
+                their_protocol,
+            } => {
+                write!(f, "NetworkEvent::PeerWithUnsupportedProtocol({our_protocol:?}, {their_protocol:?})")
             }
             NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();
@@ -219,10 +226,20 @@ impl SwarmDriver {
                     libp2p::identify::Event::Received { peer_id, info } => {
                         trace!(%peer_id, ?info, "identify: received info");
 
+                        if info.protocol_version != IDENTIFY_PROTOCOL_STR.to_string() {
+                            warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {:?}", IDENTIFY_PROTOCOL_STR.as_str());
+
+                            self.send_event(NetworkEvent::PeerWithUnsupportedProtocol {
+                                our_protocol: IDENTIFY_PROTOCOL_STR.to_string(),
+                                their_protocol: info.protocol_version,
+                            });
+
+                            return Ok(());
+                        }
+
                         let has_dialed = self.dialed_peers.contains(&peer_id);
-                        let peer_is_agent = info
-                            .agent_version
-                            .starts_with(&IDENTIFY_NODE_VERSION_STR.to_string());
+                        let peer_is_node =
+                            info.agent_version == IDENTIFY_NODE_VERSION_STR.to_string();
 
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.
@@ -243,8 +260,8 @@ impl SwarmDriver {
 
                         // When received an identify from un-dialed peer, try to dial it
                         // The dial shall trigger the same identify to be sent again and confirm
-                        // peer is external accessable, hence safe to be added into RT.
-                        if !self.local && peer_is_agent && !has_dialed {
+                        // peer is external accessible, hence safe to be added into RT.
+                        if !self.local && peer_is_node && !has_dialed {
                             // Only need to dial back for not fulfilled kbucket
                             let (kbucket_full, ilog2) = if let Some(kbucket) =
                                 self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
@@ -275,7 +292,7 @@ impl SwarmDriver {
                             };
 
                             if !kbucket_full {
-                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {:?}, dail back to confirm external accesable", ilog2);
+                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
                                 self.dialed_peers
                                     .push(peer_id)
                                     .map_err(|_| NetworkError::CircularVecPopFrontError)?;
@@ -297,7 +314,7 @@ impl SwarmDriver {
                         }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local || has_dialed && peer_is_agent {
+                        if self.local || has_dialed && peer_is_node {
                             // To reduce the bad_node check resource usage,
                             // during the connection establish process, only check cached black_list
                             // The periodical check, which involves network queries shall filter
@@ -1028,6 +1045,12 @@ impl SwarmDriver {
             kad::Event::UnroutablePeer { peer } => {
                 event_string = "kad_event::UnroutablePeer";
                 trace!(peer_id = %peer, "kad::Event: UnroutablePeer");
+            }
+            kad::Event::RoutablePeer { peer, .. } => {
+                // We get this when we don't add a peer via the identify step.
+                // And we don't want to add these as they were rejected by identify for some reason.
+                event_string = "kad_event::RoutablePeer";
+                trace!(peer_id = %peer, "kad::Event: RoutablePeer");
             }
             other => {
                 event_string = "kad_event::Other";
