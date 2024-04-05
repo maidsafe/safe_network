@@ -46,7 +46,7 @@ type DagIndex = usize;
 /// Internal Dag entry type
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 enum DagEntry {
-    Utxo(DagIndex),
+    NotGatheredYet(DagIndex),
     DoubleSpend(Vec<(SignedSpend, DagIndex)>),
     Spend(Box<SignedSpend>, DagIndex),
 }
@@ -54,7 +54,7 @@ enum DagEntry {
 impl DagEntry {
     fn indexes(&self) -> Vec<DagIndex> {
         match self {
-            DagEntry::Utxo(idx) => vec![*idx],
+            DagEntry::NotGatheredYet(idx) => vec![*idx],
             DagEntry::DoubleSpend(spends) => spends.iter().map(|(_, idx)| *idx).collect(),
             DagEntry::Spend(_, idx) => vec![*idx],
         }
@@ -64,7 +64,7 @@ impl DagEntry {
         match self {
             DagEntry::Spend(spend, _) => vec![&**spend],
             DagEntry::DoubleSpend(spends) => spends.iter().map(|(s, _)| s).collect(),
-            DagEntry::Utxo(_) => vec![],
+            DagEntry::NotGatheredYet(_) => vec![],
         }
     }
 }
@@ -74,8 +74,8 @@ impl DagEntry {
 pub enum SpendDagGet {
     /// Spend does not exist in the DAG
     SpendNotFound,
-    /// Spend is an UTXO, meaning it was not spent yet but its ancestors exist
-    SpendIsAnUtxo,
+    /// Spend key is refered to by known spends but does not exist in the DAG yet
+    SpendKeyExists,
     /// Spend is a double spend
     DoubleSpend(Vec<SignedSpend>),
     /// Spend is in the DAG
@@ -127,7 +127,7 @@ impl SpendDag {
                 node_idx
             }
             // or upgrade existing utxo to spend
-            Some(DagEntry::Utxo(idx)) => {
+            Some(DagEntry::NotGatheredYet(idx)) => {
                 self.spends
                     .insert(spend_addr, DagEntry::Spend(Box::new(spend.clone()), idx));
                 NodeIndex::new(idx)
@@ -168,7 +168,7 @@ impl SpendDag {
             // add descendant if not already in dag
             let spends_at_addr = self.spends.entry(descendant_addr).or_insert_with(|| {
                 let node_idx = self.dag.add_node(descendant_addr);
-                DagEntry::Utxo(node_idx.index())
+                DagEntry::NotGatheredYet(node_idx.index())
             });
 
             // link to descendant
@@ -192,7 +192,7 @@ impl SpendDag {
             // add ancestor if not already in dag
             let spends_at_addr = self.spends.entry(ancestor_addr).or_insert_with(|| {
                 let node_idx = self.dag.add_node(ancestor_addr);
-                DagEntry::Utxo(node_idx.index())
+                DagEntry::NotGatheredYet(node_idx.index())
             });
 
             // link to ancestor
@@ -206,6 +206,27 @@ impl SpendDag {
         true
     }
 
+    /// Get the unknown parents: all the addresses that are refered to as parents by other spends
+    /// but don't have parents themselves.
+    /// Those Spends must exist somewhere on the Network, we just haven't gathered them yet.
+    pub fn get_unknown_parents(&self) -> BTreeSet<SpendAddress> {
+        let mut sources = BTreeSet::new();
+        for node_index in self.dag.node_indices() {
+            if !self
+                .dag
+                .neighbors_directed(node_index, petgraph::Direction::Incoming)
+                .any(|_| true)
+            {
+                let utxo_addr = self.dag[node_index];
+                sources.insert(utxo_addr);
+            }
+        }
+        sources
+    }
+
+    /// Get the UTXOs: all the addresses that are refered to as children by other spends
+    /// but that don't have children themselves.
+    /// Those will eventually exist on the Network as the address is spent by their owners.
     pub fn get_utxos(&self) -> BTreeSet<SpendAddress> {
         let mut leaves = BTreeSet::new();
         for node_index in self.dag.node_indices() {
@@ -226,18 +247,19 @@ impl SpendDag {
     }
 
     /// Merges the given dag into ours
-    pub fn merge(&mut self, sub_dag: SpendDag) {
+    pub fn merge(&mut self, sub_dag: SpendDag) -> Result<(), DagError> {
+        let source = self.source();
         info!(
             "Merging sub DAG starting at {:?} into our DAG with source {:?}",
             sub_dag.source(),
-            self.source()
+            source
         );
         for (addr, spends) in sub_dag.spends {
-            // only add spends to the dag, ignoring utxos
+            // only add spends to the dag, ignoring utxos and not yet gathered relatives
             // utxos will be added automatically as their ancestors are added
             // edges are updated by the insert method
             match spends {
-                DagEntry::Utxo(_) => continue,
+                DagEntry::NotGatheredYet(_) => continue,
                 DagEntry::DoubleSpend(spends) => {
                     for (spend, _) in spends {
                         self.insert(addr, spend);
@@ -249,15 +271,15 @@ impl SpendDag {
             }
         }
 
-        // merge errors
-        self.faults.extend(sub_dag.faults);
+        // recompute faults
+        self.record_faults(&source)
     }
 
     /// Get the spend at a given address
     pub fn get_spend(&self, addr: &SpendAddress) -> SpendDagGet {
         match self.spends.get(addr) {
             None => SpendDagGet::SpendNotFound,
-            Some(DagEntry::Utxo(_)) => SpendDagGet::SpendIsAnUtxo,
+            Some(DagEntry::NotGatheredYet(_)) => SpendDagGet::SpendKeyExists,
             Some(DagEntry::DoubleSpend(spends)) => {
                 SpendDagGet::DoubleSpend(spends.iter().map(|(s, _)| s.clone()).collect())
             }
@@ -314,11 +336,11 @@ impl SpendDag {
                 Some(DagEntry::Spend(ancestor_spend, _)) => {
                     ancestors.insert(*ancestor_spend.clone());
                 }
-                Some(DagEntry::Utxo(_)) => {
-                    warn!("InvalidAncestry: SpendIsAnUtxo ancestor {ancestor_addr:?} for spend {spend:?}");
-                    return Err(SpendFault::InvalidAncestry {
+                Some(DagEntry::NotGatheredYet(_)) => {
+                    warn!("UnknownAncestor: ancestor {ancestor_addr:?} was not gathered yet for spend {spend:?}");
+                    return Err(SpendFault::UnknownAncestor {
                         addr,
-                        invalid_ancestor: ancestor_addr,
+                        ancestor_addr,
                     });
                 }
                 Some(DagEntry::DoubleSpend(_)) => {
@@ -329,10 +351,11 @@ impl SpendDag {
                     });
                 }
                 None => {
+                    warn!("MissingAncestry: ancestor {ancestor_addr:?} is unknown for spend {spend:?}");
                     return Err(SpendFault::MissingAncestry {
                         addr,
                         invalid_ancestor: ancestor_addr,
-                    })
+                    });
                 }
             }
         }
@@ -345,8 +368,8 @@ impl SpendDag {
         let mut to_traverse = BTreeSet::from_iter(vec![addr]);
         while let Some(current_addr) = to_traverse.pop_first() {
             // get the spend at this address
-            let indexes = match self.spends.get(current_addr) {
-                Some(entry) => entry.indexes(),
+            let dag_entry = match self.spends.get(current_addr) {
+                Some(entry) => entry,
                 None => {
                     warn!("Incoherent DAG, missing descendant spend when expecting one at: {current_addr:?}");
                     return Err(DagError::IncoherentDag(
@@ -355,6 +378,14 @@ impl SpendDag {
                     ));
                 }
             };
+            let (spends, indexes) = (dag_entry.spends(), dag_entry.indexes());
+
+            // get descendants via Tx data
+            let descendants_via_tx: BTreeSet<SpendAddress> = spends
+                .into_iter()
+                .flat_map(|s| s.spend.spent_tx.outputs.to_vec())
+                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                .collect();
 
             // get descendants via DAG
             let descendants_via_dag: BTreeSet<&SpendAddress> = indexes
@@ -366,24 +397,17 @@ impl SpendDag {
                 })
                 .collect();
 
-            // get descendants via Tx data
-            let descendants_via_tx: BTreeSet<SpendAddress> = self
-                .spends
-                .get(current_addr)
-                .map(|entry| entry.spends())
-                .unwrap_or_default()
-                .into_iter()
-                .flat_map(|s| s.spend.spent_tx.outputs.to_vec())
-                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
-                .collect();
-
             // report inconsistencies
             if descendants_via_dag != descendants_via_tx.iter().collect() {
-                warn!("Incoherent DAG at: {current_addr:?}");
-                return Err(DagError::IncoherentDag(
-                    *current_addr,
-                    format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
-                ));
+                if matches!(dag_entry, DagEntry::NotGatheredYet(_)) {
+                    debug!("Spend at {current_addr:?} was not gathered yet and has children refering to it, continuing traversal through those children...");
+                } else {
+                    warn!("Incoherent DAG at: {current_addr:?}");
+                    return Err(DagError::IncoherentDag(
+                        *current_addr,
+                        format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
+                    ));
+                }
             }
 
             // continue traversal
@@ -430,6 +454,7 @@ impl SpendDag {
     pub fn record_faults(&mut self, source: &SpendAddress) -> Result<(), DagError> {
         let faults = self.verify(source)?;
 
+        self.faults.clear();
         for f in faults {
             self.faults.entry(f.spend_address()).or_default().insert(f);
         }
@@ -520,9 +545,14 @@ impl SpendDag {
         // get the ancestors of this spend
         let ancestor_spends = match self.get_ancestor_spends(spend) {
             Ok(a) => a,
-            Err(e) => {
-                debug!("Failed to get ancestor spends of: {addr:?} {e}");
-                recorded_faults.insert(e);
+            Err(fault) => {
+                debug!("Failed to get ancestor spends of {addr:?}: {fault}");
+                recorded_faults.insert(fault.clone());
+
+                // if ancestry is invalid, poison all the descendants
+                let poison = format!("ancestry issue: {fault}");
+                let descendants_faults = self.poison_all_descendants(spend, poison)?;
+                recorded_faults.extend(descendants_faults);
                 return Ok(recorded_faults);
             }
         };
