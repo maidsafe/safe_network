@@ -10,6 +10,7 @@
 use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
+use crate::NodeIssue;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -26,7 +27,6 @@ use crate::{
     target_arch::{interval, spawn, Instant},
     transport, Network, CLOSE_GROUP_SIZE,
 };
-use crate::{NodeIssue, REPLICATE_RANGE};
 use futures::StreamExt;
 use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
@@ -634,11 +634,11 @@ impl SwarmDriver {
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        // get REPLICATE_RANGE + 2 peer's address distance
+        // get K_VALUE/2 peer's address distance
         // This is a rough estimate of the farthest address we might be responsible for.
         // We want this to be higher than actually necessary, so we retain more data
         // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.get(REPLICATE_RANGE + 2) {
+        if let Some(peer) = closest_k_peers.get(K_VALUE.get() / 2) {
             let address = NetworkAddress::from_peer(*peer);
             let distance = our_address.distance(&address);
             farthest_distance = Some(distance);
