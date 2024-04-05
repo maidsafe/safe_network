@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712349161759,
+  "lastUpdate": 1712349163769,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ffc62f58039c729270c1ff0126a198505900ac99",
-          "message": "chore(faucet): print on claim genesis error",
-          "timestamp": "2023-12-04T09:03:32+01:00",
-          "tree_id": "5fbabe46e3e522d9c6719574f86e4b58be1a0bbd",
-          "url": "https://github.com/maidsafe/safe_network/commit/ffc62f58039c729270c1ff0126a198505900ac99"
-        },
-        "date": 1701679046606,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 656,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 298,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30595,6 +30561,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "3233f69c2399efce6a1b8f99256a50db9fb6d6e6",
+          "message": "ci: ensure cross uses version-mode variable\n\nThe ARM builds are done using a tool called `cross`, which uses Docker containers, and therefore the\ncompile-time variables need to be passed to the containers. This is done using the\n`CROSS_CONTAINER_OPTS` variable.\n\nI tested this locally to confirm the desired effect.",
+          "timestamp": "2024-04-05T19:50:24Z",
+          "tree_id": "1b7b406c0a184f8c7733fd8b1d5faf9bc4d7208f",
+          "url": "https://github.com/maidsafe/safe_network/commit/3233f69c2399efce6a1b8f99256a50db9fb6d6e6"
+        },
+        "date": 1712349163198,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 170,
             "unit": "MB"
           },
           {
