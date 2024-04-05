@@ -174,6 +174,7 @@ pub(super) struct NodeBehaviour {
     pub(super) autonat: libp2p::autonat::Behaviour,
     pub(super) dcutr: libp2p::dcutr::Behaviour,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
+    pub(super) relay_server: libp2p::relay::Behaviour,
 }
 
 #[derive(Debug)]
@@ -449,38 +450,6 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        // let main_transport = transport::build_transport(&self.keypair);
-
-        // let transport = if !self.local {
-        //     debug!("Preventing non-global dials");
-        //     // Wrap upper in a transport that prevents dialing local addresses.
-        //     libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
-        // } else {
-        //     main_transport
-        // };
-
-        // let dcutr = libp2p::dcutr::Behaviour::new(keypair.public().to_peer_id());
-
-        // let behaviour = NodeBehaviour {
-        //     request_response,
-        //     kademlia,
-        //     identify,
-        //     #[cfg(feature = "local-discovery")]
-        //     mdns,
-        //     dcutr,
-        //     relay_client,
-        // };
-
-        // #[cfg(not(target_arch = "wasm32"))]
-        // let swarm_config = libp2p::swarm::Config::with_tokio_executor()
-        //     .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
-        // #[cfg(target_arch = "wasm32")]
-        // let swarm_config = libp2p::swarm::Config::with_wasm_executor()
-        //     .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
-
-        // let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
-        //
-        //
         let swarm = libp2p::SwarmBuilder::with_existing_identity(self.keypair.clone())
             .with_tokio()
             .with_tcp(
@@ -492,11 +461,11 @@ impl NetworkBuilder {
             )
             .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
             .with_quic()
-            // .with_dns()?
             .with_relay_client(libp2p::noise::Config::new, libp2p::yamux::Config::default)
             .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
             .with_behaviour(|_keypair, relay_behaviour| NodeBehaviour {
                 relay_client: relay_behaviour,
+                relay_server: libp2p::relay::Behaviour::new(peer_id, Default::default()),
                 request_response,
                 #[cfg(feature = "local-discovery")]
                 mdns,
