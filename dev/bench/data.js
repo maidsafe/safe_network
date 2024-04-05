@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712340197156,
+  "lastUpdate": 1712340306599,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d8f6f4b6020c62100df639bad7f13ab40ee31a0f",
-          "message": "feat(testnet): wait till faucet server starts",
-          "timestamp": "2023-12-01T14:21:04+01:00",
-          "tree_id": "55bec5361bbae219949cdfa909151d1ddd687d7b",
-          "url": "https://github.com/maidsafe/safe_network/commit/d8f6f4b6020c62100df639bad7f13ab40ee31a0f"
-        },
-        "date": 1701439006392,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "ffc62f58039c729270c1ff0126a198505900ac99",
           "message": "chore(faucet): print on claim genesis error",
           "timestamp": "2023-12-04T09:03:32+01:00",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "65924b83b2ea7e1dc66784de7006dbb5a5984adc",
+          "message": "fix: orphan parent bug, improve fault detection and logging",
+          "timestamp": "2024-04-05T17:23:58Z",
+          "tree_id": "128e7e220d0395a89db66948f31604a66c580ada",
+          "url": "https://github.com/maidsafe/safe_network/commit/65924b83b2ea7e1dc66784de7006dbb5a5984adc"
+        },
+        "date": 1712340305521,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
