@@ -104,6 +104,12 @@ build-release-artifacts arch:
   rm -rf artifacts
   mkdir artifacts
   cargo clean
+
+  if [[ -n "${NETWORK_VERSION_MODE+x}"]]; then
+    echo "The NETWORK_VERSION_MODE variable is set to $NETWORK_VERSION_MODE"
+    export CROSS_CONTAINER_OPTS="--env NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
+  fi
+
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross
     cross build --release --features="network-contacts,distribution" --target $arch --bin safe
