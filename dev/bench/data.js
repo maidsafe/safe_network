@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712327352420,
+  "lastUpdate": 1712340197156,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d8f6f4b6020c62100df639bad7f13ab40ee31a0f",
-          "message": "feat(testnet): wait till faucet server starts",
-          "timestamp": "2023-12-01T14:21:04+01:00",
-          "tree_id": "55bec5361bbae219949cdfa909151d1ddd687d7b",
-          "url": "https://github.com/maidsafe/safe_network/commit/d8f6f4b6020c62100df639bad7f13ab40ee31a0f"
-        },
-        "date": 1701438582874,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 4.947431716124448,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.13038536053727,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.370432035150095,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.121139334497784,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "65924b83b2ea7e1dc66784de7006dbb5a5984adc",
+          "message": "fix: orphan parent bug, improve fault detection and logging",
+          "timestamp": "2024-04-05T17:23:58Z",
+          "tree_id": "128e7e220d0395a89db66948f31604a66c580ada",
+          "url": "https://github.com/maidsafe/safe_network/commit/65924b83b2ea7e1dc66784de7006dbb5a5984adc"
+        },
+        "date": 1712340192597,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2346795800603838,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6571926565686432,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.933122894143516,
             "unit": "MiB/s"
           }
         ]
