@@ -328,6 +328,7 @@ impl NetworkBuilder {
 
         // 1mb packet size
         let _ = kad_cfg
+            .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             .set_max_packet_size(MAX_PACKET_SIZE)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)

@@ -112,7 +112,8 @@ async fn main() -> Result<()> {
 
     // get the broadcaster as we want to have our own progress bar.
     let broadcaster = ClientEventsBroadcaster::default();
-    let progress_bar_handler = spawn_connection_progress_bar(broadcaster.subscribe());
+    let (progress_bar, progress_bar_handler) =
+        spawn_connection_progress_bar(broadcaster.subscribe());
 
     let result = Client::new(
         secret_key,
@@ -121,11 +122,15 @@ async fn main() -> Result<()> {
         Some(broadcaster),
     )
     .await;
-
-    // await on the progress bar to complete before handling the client result. If client errors out, we would
-    // want to make the progress bar clean up gracefully.
+    let client = match result {
+        Ok(client) => client,
+        Err(err) => {
+            // clean up progress bar
+            progress_bar.finish_with_message("Could not connect to the network");
+            return Err(err.into());
+        }
+    };
     progress_bar_handler.await?;
-    let client = result?;
 
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
@@ -153,9 +158,10 @@ async fn main() -> Result<()> {
 
 /// Helper to subscribe to the client events broadcaster and spin up a progress bar that terminates when the
 /// client successfully connects to the network or if it errors out.
-fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> JoinHandle<()> {
+fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> (ProgressBar, JoinHandle<()>) {
     // Network connection progress bar
     let progress_bar = ProgressBar::new_spinner();
+    let progress_bar_clone = progress_bar.clone();
     progress_bar.enable_steady_tick(Duration::from_millis(120));
     progress_bar.set_message("Connecting to The SAFE Network...");
     let new_style = progress_bar.style().tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈🔗");
@@ -163,7 +169,7 @@ fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> JoinHandle<()>
 
     progress_bar.set_message("Connecting to The SAFE Network...");
 
-    tokio::spawn(async move {
+    let handle = tokio::spawn(async move {
         let mut peers_connected = 0;
         loop {
             match rx.recv().await {
@@ -190,7 +196,8 @@ fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> JoinHandle<()>
                 _ => {}
             }
         }
-    })
+    });
+    (progress_bar_clone, handle)
 }
 
 fn get_client_secret_key(root_dir: &PathBuf) -> Result<SecretKey> {

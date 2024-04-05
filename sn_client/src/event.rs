@@ -42,6 +42,11 @@ pub enum ClientEvent {
     /// A peer has been added to the Routing table.
     /// Also contains the max number of peers to connect to before we receive ClientEvent::ConnectedToNetwork
     PeerAdded { max_peers_to_connect: usize },
+    /// We've encountered a Peer with an unsupported protocol.
+    PeerWithUnsupportedProtocol {
+        our_protocol: String,
+        their_protocol: String,
+    },
     /// The client has been connected to the network
     ConnectedToNetwork,
     /// No network activity has been received for a given duration

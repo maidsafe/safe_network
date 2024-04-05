@@ -191,7 +191,9 @@ impl Client {
         // loop to connect to the network
         let mut is_connected = false;
         let connection_timeout = connection_timeout.unwrap_or(CONNECTION_TIMEOUT);
+        let mut unsupported_protocol_tracker: Option<(String, String)> = None;
 
+        debug!("Client connection timeout: {connection_timeout:?}");
         let mut connection_timeout_interval = interval(connection_timeout);
         // first tick completes immediately
         connection_timeout_interval.tick().await;
@@ -200,16 +202,26 @@ impl Client {
             tokio::select! {
             _ = connection_timeout_interval.tick() => {
                 if !is_connected {
+                    if let Some((our_protocol, their_protocols)) = unsupported_protocol_tracker {
+                        error!("Timeout: Client could not connect to the network as it does not support the protocol");
+                        break Err(Error::UnsupportedProtocol(our_protocol, their_protocols));
+                    }
                     error!("Timeout: Client failed to connect to the network within {connection_timeout:?}");
-                    return Err(Error::ConnectionTimeout(connection_timeout));
+                    break Err(Error::ConnectionTimeout(connection_timeout));
                 }
             }
             event = client_events_rx.recv() => {
                 match event {
+                    // we do not error out directly as we might still connect if the other initial peers are from
+                    // the correct network.
+                    Ok(ClientEvent::PeerWithUnsupportedProtocol { our_protocol, their_protocol }) => {
+                        warn!(%our_protocol, %their_protocol, "Client tried to connect to a peer with an unsupported protocol. Tracking the latest one");
+                        unsupported_protocol_tracker = Some((our_protocol, their_protocol));
+                    }
                     Ok(ClientEvent::ConnectedToNetwork) => {
                         is_connected = true;
                         info!("Client connected to the Network {is_connected:?}.");
-                        break;
+                        break Ok(());
                     }
                     Ok(ClientEvent::InactiveClient(timeout)) => {
                         if is_connected {
@@ -221,12 +233,12 @@ impl Client {
                     Err(err) => {
                         error!("Unexpected error during client startup {err:?}");
                         println!("Unexpected error during client startup {err:?}");
-                        return Err(err.into());
+                        break Err(err.into());
                     }
                     _ => {}
                 }
             }}
-        }
+        }?;
 
         Ok(client)
     }
@@ -251,6 +263,16 @@ impl Client {
                 } else {
                     debug!("{peers_added}/{CLOSE_GROUP_SIZE} initial peers found.",);
                 }
+            }
+            NetworkEvent::PeerWithUnsupportedProtocol {
+                our_protocol,
+                their_protocol,
+            } => {
+                self.events_broadcaster
+                    .broadcast(ClientEvent::PeerWithUnsupportedProtocol {
+                        our_protocol,
+                        their_protocol,
+                    });
             }
             _other => {}
         }
