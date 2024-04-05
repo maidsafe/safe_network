@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712340309398,
+  "lastUpdate": 1712340312238,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "69a368c879cc97b3279a46aa10a212f6c2eeecd5",
-          "message": "fix(CI): only alert during bench, not upload",
-          "timestamp": "2023-11-20T14:24:44Z",
-          "tree_id": "9c472ae88b083df8048178193f3b7a17a8addd4b",
-          "url": "https://github.com/maidsafe/safe_network/commit/69a368c879cc97b3279a46aa10a212f6c2eeecd5"
-        },
-        "date": 1700492571234,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 2605,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 38991,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36192,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "65924b83b2ea7e1dc66784de7006dbb5a5984adc",
+          "message": "fix: orphan parent bug, improve fault detection and logging",
+          "timestamp": "2024-04-05T17:23:58Z",
+          "tree_id": "128e7e220d0395a89db66948f31604a66c580ada",
+          "url": "https://github.com/maidsafe/safe_network/commit/65924b83b2ea7e1dc66784de7006dbb5a5984adc"
+        },
+        "date": 1712340311100,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7179,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33741,
             "unit": "ms"
           },
           {
