@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712349163769,
+  "lastUpdate": 1712349165732,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7073ff493493029c4c7b97c0eddc2219b857c616",
-          "message": "ci: increase mem usage limits for new batch size",
-          "timestamp": "2023-11-20T15:06:51Z",
-          "tree_id": "ee3577918a713abdd291c55b01dbd4dd7445fdb9",
-          "url": "https://github.com/maidsafe/safe_network/commit/7073ff493493029c4c7b97c0eddc2219b857c616"
-        },
-        "date": 1700495217116,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4111,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 98609,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 23,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33741,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "3233f69c2399efce6a1b8f99256a50db9fb6d6e6",
+          "message": "ci: ensure cross uses version-mode variable\n\nThe ARM builds are done using a tool called `cross`, which uses Docker containers, and therefore the\ncompile-time variables need to be passed to the containers. This is done using the\n`CROSS_CONTAINER_OPTS` variable.\n\nI tested this locally to confirm the desired effect.",
+          "timestamp": "2024-04-05T19:50:24Z",
+          "tree_id": "1b7b406c0a184f8c7733fd8b1d5faf9bc4d7208f",
+          "url": "https://github.com/maidsafe/safe_network/commit/3233f69c2399efce6a1b8f99256a50db9fb6d6e6"
+        },
+        "date": 1712349165094,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6375,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 27068,
             "unit": "ms"
           },
           {
