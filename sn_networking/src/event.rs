@@ -260,6 +260,16 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
 
+                // TODO: in identify, we first need to know if we are behind nat.
+                // 1: TCP connections only, we do run autonat request in the background.
+                //
+                // (Which means all nodes must listen and act on autonat for tcp conns only.)
+                //
+                // 2. If we are behind nat and unreachable, we should not dial other nodes for now.
+                // 3. If we are unreachable, we connect to a relay server.
+                // 4. We then use dcutr to connect to other nodes and register valid quic connections.
+                // 5. That is holes punched?
+
                 // Match on the Identify event.
                 match *iden {
                     // If the event is a Received event, handle the received peer information.
