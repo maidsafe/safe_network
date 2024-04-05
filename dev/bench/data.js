@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712282537922,
+  "lastUpdate": 1712327238987,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "90893247327a40128b521d2bfc6edfee227ed526",
-          "message": "test(node): increase reverification delay",
-          "timestamp": "2023-11-29T17:16:46Z",
-          "tree_id": "a114b0b3478becff5babdafac55af31e2ec90cc7",
-          "url": "https://github.com/maidsafe/safe_network/commit/90893247327a40128b521d2bfc6edfee227ed526"
-        },
-        "date": 1701281371228,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.094004843057355,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.53541833345333,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 40.365094804623816,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.640969923593985,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "52d9673f6217674ac26e54d1274de5daec9fd058",
+          "message": "feat(register): expose API to get children of an entry",
+          "timestamp": "2024-04-05T13:40:58Z",
+          "tree_id": "8213f780fb9bdd18c182310c8f3f85873803a539",
+          "url": "https://github.com/maidsafe/safe_network/commit/52d9673f6217674ac26e54d1274de5daec9fd058"
+        },
+        "date": 1712327234765,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.218959397332568,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6456953804788355,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.121139334497784,
             "unit": "MiB/s"
           }
         ]
