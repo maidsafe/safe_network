@@ -49,6 +49,7 @@ hyper = { version = "0.14", features = [
 ], optional = true }
 itertools = "~0.12.1"
 custom_debug = "~0.6.1"
+num = "0.4.1"
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"

@@ -368,9 +368,24 @@ impl Node {
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
 
+                        // we also spawn a task to check for sybil peers
+                        let network = self.network.clone();
+                        let _handle = spawn(async move {
+                            network.perform_sybil_attack_check().await;
+                            info!(">>> Checking for sybil peers took {:?}", start.elapsed());
+                        });
+
+                        let network = self.network.clone();
                         let _handle = spawn(async move {
                             Self::try_bad_nodes_check(network, rolling_index).await;
                             trace!("Periodic bad_nodes check took {:?}", start.elapsed());
+                        });
+
+                        // we also spawn a task to check for sybil peers
+                        let network = self.network.clone();
+                        let _handle = spawn(async move {
+                            network.perform_sybil_attack_check().await;
+                            info!(">>> Checking for sybil peers took {:?}", start.elapsed());
                         });
 
                         if rolling_index == 511 {

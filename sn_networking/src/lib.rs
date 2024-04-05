@@ -26,6 +26,7 @@ mod record_store_api;
 mod relay_manager;
 mod replication_fetcher;
 mod spends;
+mod sybil;
 pub mod target_arch;
 mod transfers;
 mod transport;
@@ -45,7 +46,7 @@ pub use self::{
     transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
 };
 
-use self::{cmd::SwarmCmd, error::Result};
+use self::{cmd::SwarmCmd, error::Result, sybil::check_for_sybil_attack};
 use backoff::{Error as BackoffError, ExponentialBackoff};
 use futures::future::select_all;
 use libp2p::{
@@ -58,7 +59,7 @@ use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordType, RetryStrategy},
+    storage::{ChunkAddress, RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
@@ -67,13 +68,15 @@ use std::{
     path::PathBuf,
     sync::Arc,
 };
-use tokio::sync::{
-    mpsc::{self, Sender},
-    oneshot,
+use tokio::{
+    sync::{
+        mpsc::{self, Sender},
+        oneshot,
+    },
+    time::Duration,
 };
-
-use tokio::time::Duration;
 use tracing::trace;
+use xor_name::XorName;
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
@@ -861,6 +864,23 @@ impl Network {
 
         let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
         Ok(closest_peers.into_iter().cloned().collect())
+    }
+
+    /// Using a random address, check if there is a sybil attack around it
+    pub async fn perform_sybil_attack_check(&self) {
+        let random_addr = {
+            let mut rng = rand::thread_rng();
+            let chunk_addr = ChunkAddress::new(XorName::random(&mut rng));
+            NetworkAddress::from_chunk_address(chunk_addr)
+        };
+
+        match self.get_closest_peers(&random_addr, true).await {
+            Ok(closest_peers) => match check_for_sybil_attack(&closest_peers).await {
+                Ok(is_attack) => info!(">>> Sybil attack detection result: {is_attack}"),
+                Err(err) => error!(">>> Failed to check for sybil attack: {err:?}"),
+            },
+            Err(err) => error!(">>> Failed to get closes peer to check for sybil attack: {err:?}"),
+        }
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.

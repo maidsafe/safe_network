@@ -7234,6 +7234,7 @@ dependencies = [
  "lazy_static",
  "libp2p",
  "libp2p-identity",
+ "num",
  "prometheus-client",
  "quickcheck",
  "rand 0.8.5",
