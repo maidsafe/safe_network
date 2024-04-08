@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712567020684,
+  "lastUpdate": 1712567999578,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "04bd0dfedf41737710fe1c672a5db80cd357737a",
-          "message": "chore(ci): build testnet bin during PR checks",
-          "timestamp": "2023-12-04T09:35:53+01:00",
-          "tree_id": "fbbc2b366dbd840028da4c5d3b763141bcc30f74",
-          "url": "https://github.com/maidsafe/safe_network/commit/04bd0dfedf41737710fe1c672a5db80cd357737a"
-        },
-        "date": 1701680682469,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 5.057058662671664,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 25.106766190560705,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 41.31389059920396,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.10691010683242,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "f50a71f556fe4abe7313a608c2883ecf5fefdf9d",
+          "message": "feat: report protocol mismatch error",
+          "timestamp": "2024-04-08T08:37:28Z",
+          "tree_id": "cebec7cf4e27ccc8e0ee8f1f512f04dd8e80ee00",
+          "url": "https://github.com/maidsafe/safe_network/commit/f50a71f556fe4abe7313a608c2883ecf5fefdf9d"
+        },
+        "date": 1712567994906,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2208411018771808,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6481137189851083,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.97909303388285,
             "unit": "MiB/s"
           }
         ]
