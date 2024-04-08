@@ -114,6 +114,12 @@ pub enum NetworkEvent {
         our_protocol: String,
         their_protocol: String,
     },
+    /// The peer is now considered as a bad node, due to the detected bad behaviour
+    PeerConsideredAsBad {
+        detected_by: PeerId,
+        bad_peer: PeerId,
+        bad_behaviour: String,
+    },
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
@@ -159,6 +165,16 @@ impl Debug for NetworkEvent {
                 their_protocol,
             } => {
                 write!(f, "NetworkEvent::PeerWithUnsupportedProtocol({our_protocol:?}, {their_protocol:?})")
+            }
+            NetworkEvent::PeerConsideredAsBad {
+                bad_peer,
+                bad_behaviour,
+                ..
+            } => {
+                write!(
+                    f,
+                    "NetworkEvent::PeerConsideredAsBad({bad_peer:?}, {bad_behaviour:?})"
+                )
             }
             NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();
@@ -694,6 +710,28 @@ impl SwarmDriver {
                                 })
                                 .collect();
                             self.send_event(NetworkEvent::QuoteVerification { quotes })
+                        }
+                        Request::Cmd(sn_protocol::messages::Cmd::PeerConsideredAsBad {
+                            detected_by,
+                            bad_peer,
+                            bad_behaviour,
+                        }) => {
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::PeerConsideredAsBad(Ok(())),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            if bad_peer == NetworkAddress::from_peer(self.self_peer_id) {
+                                warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
+                                // TODO: shall we terminate self after received such notifications
+                                //       from the majority close_group nodes around us?
+                            } else {
+                                error!("Received a bad_peer notification from {detected_by:?}, targeting {bad_peer:?}, which is not us.");
+                            }
                         }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {

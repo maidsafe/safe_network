@@ -27,7 +27,7 @@ use sn_networking::{
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens};
@@ -328,6 +328,23 @@ impl Node {
             }
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";
+            }
+            NetworkEvent::PeerConsideredAsBad {
+                detected_by,
+                bad_peer,
+                bad_behaviour,
+            } => {
+                event_header = "PeerConsideredAsBad";
+                let request = Request::Cmd(Cmd::PeerConsideredAsBad {
+                    detected_by: NetworkAddress::from_peer(detected_by),
+                    bad_peer: NetworkAddress::from_peer(bad_peer),
+                    bad_behaviour,
+                });
+
+                let network = self.network.clone();
+                let _handle = spawn(async move {
+                    network.send_req_ignore_reply(request, bad_peer);
+                });
             }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";

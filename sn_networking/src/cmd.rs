@@ -735,6 +735,9 @@ impl SwarmDriver {
         info!("Peer {peer_id:?} is reported as having issue {issue:?}");
         let (issue_vec, is_bad) = self.bad_nodes.entry(peer_id).or_default();
 
+        let mut is_new_bad = false;
+        let mut bad_behaviour: String = "".to_string();
+
         // If being considered as bad already, skip certain operations
         if !(*is_bad) {
             // Remove outdated entries
@@ -767,6 +770,8 @@ impl SwarmDriver {
                     .count();
                 if issue_counts >= 3 {
                     *is_bad = true;
+                    is_new_bad = true;
+                    bad_behaviour = format!("{issue:?}");
                     info!("Peer {peer_id:?} accumulated {issue_counts} times of issue {issue:?}. Consider it as a bad node now.");
                     // Once a bad behaviour detected, no point to continue
                     break;
@@ -784,6 +789,14 @@ impl SwarmDriver {
                 ));
                 self.log_kbuckets(&peer_id);
                 let _ = self.check_for_change_in_our_close_group();
+            }
+
+            if is_new_bad {
+                self.send_event(NetworkEvent::PeerConsideredAsBad {
+                    detected_by: self.self_peer_id,
+                    bad_peer: peer_id,
+                    bad_behaviour,
+                });
             }
         }
     }
