@@ -28,23 +28,20 @@ pub enum DagError {
 pub enum SpendFault {
     #[error("Double Spend at {0:?}")]
     DoubleSpend(SpendAddress),
-    #[error("Spend at {addr:?} has missing ancestors at {invalid_ancestor:?}")]
+    #[error("Spend at {addr:?} has a missing ancestor at {ancestor:?}, until this ancestor is added to the DAG, it cannot be verified")]
     MissingAncestry {
         addr: SpendAddress,
-        invalid_ancestor: SpendAddress,
+        ancestor: SpendAddress,
     },
-    #[error("Spend at {addr:?} has invalid ancestors at {invalid_ancestor:?}")]
-    InvalidAncestry {
+    #[error(
+        "Spend at {addr:?} has a double spent ancestor at {ancestor:?}, making it unspendable"
+    )]
+    DoubleSpentAncestor {
         addr: SpendAddress,
-        invalid_ancestor: SpendAddress,
+        ancestor: SpendAddress,
     },
     #[error("Invalid transaction for spend at {0:?}: {1}")]
     InvalidTransaction(SpendAddress, String),
-    #[error("Spend at {addr:?} has an unknown ancestor at {ancestor_addr:?}, until this ancestor is added to the DAG, it cannot be verified")]
-    UnknownAncestor {
-        addr: SpendAddress,
-        ancestor_addr: SpendAddress,
-    },
     #[error("Poisoned ancestry for spend at {0:?}: {1}")]
     PoisonedAncestry(SpendAddress, String),
     #[error("Spend at {addr:?} does not descend from given source: {src:?}")]
@@ -69,9 +66,8 @@ impl SpendFault {
         match self {
             SpendFault::DoubleSpend(addr)
             | SpendFault::MissingAncestry { addr, .. }
-            | SpendFault::InvalidAncestry { addr, .. }
+            | SpendFault::DoubleSpentAncestor { addr, .. }
             | SpendFault::InvalidTransaction(addr, _)
-            | SpendFault::UnknownAncestor { addr, .. }
             | SpendFault::PoisonedAncestry(addr, _)
             | SpendFault::OrphanSpend { addr, .. } => *addr,
         }
