@@ -134,6 +134,7 @@ impl NodeBuilder {
         network_builder.metrics_registry(metrics_registry);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
+        network_builder.initial_peers(self.initial_peers.clone());
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();

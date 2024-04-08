@@ -265,11 +265,13 @@ impl SwarmDriver {
                     libp2p::autonat::Event::StatusChanged { old, new } => {
                         info!("NAT status change... was: {old:?} now: {new:?}");
 
-                        if !new.is_public() {
+                        // if we are private, establish relay
+                        if new == NatStatus::Private {
                             self.is_known_behind_nat = true;
                             warn!("BEHIND NAT>>>>>>>");
                             // we are behind NAT
                             // do relay hole punch etc
+                            self.relay_manager.dial_relays(&mut self.swarm);
                         } else if let NatStatus::Public(addr) = new {
                             self.is_known_behind_nat = false;
                             info!("NOT BEHIND NAT go server mode!!");
@@ -313,7 +315,17 @@ impl SwarmDriver {
                     },
                 }
             }
+            SwarmEvent::Behaviour(NodeEvent::RelayClient(event)) => {
+                event_string = "relay_client_event";
 
+                info!(?event, "relay client event");
+            }
+
+            SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
+                event_string = "relay_server_event";
+
+                info!(?event, "relay server event");
+            }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
 
@@ -342,6 +354,15 @@ impl SwarmDriver {
                             });
 
                             return Ok(());
+                        }
+
+                        // check if this peer is a relay candidate that we had dialed.
+                        if self.is_known_behind_nat {
+                            self.relay_manager.try_update_on_connection_success(
+                                &peer_id,
+                                &info.protocols,
+                                &mut self.swarm,
+                            );
                         }
 
                         let has_dialed = self.dialed_peers.contains(&peer_id);
@@ -397,6 +418,13 @@ impl SwarmDriver {
                                 // hence return true to skip further action.
                                 (true, None)
                             };
+
+                            // add potential relay candidates.
+                            self.relay_manager.add_potential_candidates(
+                                &peer_id,
+                                &addrs,
+                                &info.protocols,
+                            );
 
                             // Add some autonat logic here
                             for p in info.protocols {
@@ -560,6 +588,12 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+
+                // try to update the relay manager on connection failure.
+                if self.is_known_behind_nat {
+                    self.relay_manager
+                        .try_update_on_connection_failure(&failed_peer_id);
+                }
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
