@@ -300,13 +300,22 @@ impl NetworkBuilder {
         // Listen on the provided address
         let listen_socket_addr = listen_addr.ok_or(NetworkError::ListenAddressNotProvided)?;
 
-        // Listen on QUIC
+        // Listen on TCP for autonat
         let addr_tcp =
             Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
 
         let _listener_id = swarm_driver
             .swarm
             .listen_on(addr_tcp)
+            .expect("Multiaddr should be supported by our configured transports");
+
+        // Listen on QUIC
+        let addr_quic = Multiaddr::from(listen_socket_addr.ip())
+            .with(Protocol::Udp(listen_socket_addr.port()))
+            .with(Protocol::QuicV1);
+        let _listener_id = swarm_driver
+            .swarm
+            .listen_on(addr_quic)
             .expect("Multiaddr should be supported by our configured transports");
 
         // Listen on WebSocket
@@ -493,6 +502,7 @@ impl NetworkBuilder {
             local: self.local,
             listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
+            is_known_behind_nat: false,
             connected_peers: 0,
             bootstrap,
             close_group: Default::default(),
@@ -546,6 +556,8 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     #[allow(unused)]
     pub(crate) network_metrics: NetworkMetrics,
+
+    pub(crate) is_known_behind_nat: bool,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
