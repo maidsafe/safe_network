@@ -588,8 +588,7 @@ impl SwarmDriver {
             SwarmCmd::Dial { addr, sender } => {
                 cmd_string = "Dial";
 
-                let mut addr_copy = addr.clone();
-                if let Some(peer_id) = multiaddr_pop_p2p(&mut addr_copy) {
+                if let Some(peer_id) = multiaddr_pop_p2p(&mut addr.clone()) {
                     // Only consider the dial peer is bootstrap node when proper PeerId is provided.
                     if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
                         let ilog2 = kbucket.range().0.ilog2();
