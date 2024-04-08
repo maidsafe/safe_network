@@ -158,6 +158,14 @@ struct Opt {
     /// Specify the owner(readable discord user name).
     #[clap(long)]
     owner: Option<String>,
+    /// Set to have the node to act as sybil node eclipsing a specified CID/address.
+    ///
+    /// A hex-encoded xorname shall be provided to eclipse the content at such address
+    /// by dropping any provider record, as well as queries, targeting such address.
+    /// This can be used for testing sybil defense and detection using an address which belongs to
+    /// only test content so real users content is not affected.
+    #[clap(long, name = "CID's xorname")]
+    sybil: Option<String>,
 
     #[cfg(feature = "open-metrics")]
     /// Specify the port for the OpenMetrics server.
@@ -204,6 +212,15 @@ fn main() -> Result<()> {
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 
+    let sybil = opt.sybil.map(|xorname_str| {
+        let bytes = hex::decode(xorname_str).unwrap();
+        let mut arr = [0u8; xor_name::XOR_NAME_LEN];
+        arr.copy_from_slice(&bytes);
+        let xorname = xor_name::XorName(arr);
+        info!("Running as sybil node to eclipse XorName: {xorname}");
+        xorname
+    });
+
     // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
     // another process with these args.
@@ -220,6 +237,7 @@ fn main() -> Result<()> {
             opt.owner.clone(),
             #[cfg(feature = "upnp")]
             opt.upnp,
+            sybil,
         );
         node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]

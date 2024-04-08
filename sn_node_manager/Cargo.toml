@@ -35,6 +35,7 @@ clap = { version = "4.4.6", features = ["derive", "env"] }
 colored = "2.0.4"
 color-eyre = "~0.6"
 dirs-next = "2.0.0"
+hex = "0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p = { version = "0.53", features = [] }
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
@@ -56,6 +57,7 @@ tracing = { version = "~0.1.26" }
 tonic = { version = "0.6.2" }
 uuid = { version = "1.5.0", features = ["v4"] }
 which = "6.0.1"
+xor_name = "5.0.0"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
 nix = { version = "0.27.1", features = ["fs", "user"] }
