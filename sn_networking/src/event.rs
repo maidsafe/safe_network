@@ -20,6 +20,7 @@ use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
+    autonat::NatStatus,
     kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -256,7 +257,63 @@ impl SwarmDriver {
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
             }
-            // Handle the Identify event from the libp2p swarm.
+            // Handle the autonat events from the libp2p swarm.
+            SwarmEvent::Behaviour(NodeEvent::Autonat(autonat_event)) => {
+                event_string = "autonat_event";
+
+                match *autonat_event {
+                    libp2p::autonat::Event::StatusChanged { old, new } => {
+                        info!("NAT status change... was: {old:?} now: {new:?}");
+
+                        if !new.is_public() {
+                            self.is_known_behind_nat = true;
+                            warn!("BEHIND NAT>>>>>>>");
+                            // we are behind NAT
+                            // do relay hole punch etc
+                        } else if let NatStatus::Public(addr) = new {
+                            self.is_known_behind_nat = false;
+                            info!("NOT BEHIND NAT go server mode!!");
+
+                            // Trigger server mode if we're not a client
+                            if !self.is_client {
+                                if self.local {
+                                    // all addresses are effectively external here...
+                                    // this is needed for Kad Mode::Server
+                                    self.swarm.add_external_address(addr);
+                                } else {
+                                    // only add our global addresses
+                                    if multiaddr_is_global(&addr) {
+                                        self.swarm.add_external_address(addr);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    libp2p::autonat::Event::InboundProbe(in_event) => {
+                        debug!("NAT inbound probe");
+                    }
+                    libp2p::autonat::Event::OutboundProbe(out_event) => match out_event {
+                        libp2p::autonat::OutboundProbeEvent::Error {
+                            probe_id,
+                            peer,
+                            error,
+                        } => {
+                            error!(?peer, ?error, "NAT outbound probe failed");
+                        }
+                        libp2p::autonat::OutboundProbeEvent::Response {
+                            probe_id,
+                            peer,
+                            address,
+                        } => {
+                            info!(%peer, ?address, "NAT outbound probe success");
+                        }
+                        libp2p::autonat::OutboundProbeEvent::Request { probe_id, peer } => {
+                            info!(%peer, "NAT outbound probe request");
+                        }
+                    },
+                }
+            }
+
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
 
@@ -340,6 +397,25 @@ impl SwarmDriver {
                                 // hence return true to skip further action.
                                 (true, None)
                             };
+
+                            // Add some autonat logic here
+                            for p in info.protocols {
+                                // TODO tie to an actual protocol version
+                                if p.to_string().contains("autonat") {
+                                    info!(%peer_id, ?addrs, "peer supports autonat: {:?}",peer_id);
+
+                                    for a in &addrs {
+                                        // add each address to the autonat server list
+                                        self.swarm
+                                            .behaviour_mut()
+                                            .autonat
+                                            .add_server(peer_id, Some(a.clone()));
+                                    }
+
+                                    // break out
+                                    break;
+                                }
+                            }
 
                             if !kbucket_full {
                                 info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
@@ -431,20 +507,6 @@ impl SwarmDriver {
 
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
-
-                // Trigger server mode if we're not a client
-                if !self.is_client {
-                    if self.local {
-                        // all addresses are effectively external here...
-                        // this is needed for Kad Mode::Server
-                        self.swarm.add_external_address(address.clone());
-                    } else {
-                        // only add our global addresses
-                        if multiaddr_is_global(&address) {
-                            self.swarm.add_external_address(address.clone());
-                        }
-                    }
-                }
 
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 
