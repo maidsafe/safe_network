@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::Result;
-
 use libp2p::PeerId;
 use num::{integer::binomial, pow::Pow};
+use xor_name::{XorName, XOR_NAME_LEN};
 
 // Threshold to determine if there is an attack using Kullback-Liebler (KL) divergence
 // between model peer ids distribution vs. actual distribution around any point in the address space.
@@ -18,31 +17,47 @@ const KL_DIVERGENCE_THRESHOLD: f64 = 10f64; // TODO: find a good value
 const K: usize = 20;
 const N: usize = 25; // TODO: replace with network size estimation;
 
-pub(super) async fn check_for_sybil_attack(peers: &[PeerId]) -> Result<bool> {
+pub(super) async fn check_for_sybil_attack(peers: &[PeerId], cid: &XorName) -> bool {
     // TODO: do we go ahead even if we don't have at least K peer ids...?
     info!(
         ">>> CHECKING SYBIL ATTACK WITH {} PEERS: {peers:?}",
         peers.len()
     );
-    let q = num_peers_per_cpl(peers)? / K;
-    let n = get_net_size_estimate()?;
+    let q = num_peers_per_cpl(peers, cid);
+    let n = get_net_size_estimate();
     let p = compute_model_distribution(n);
+    info!(">>> MODEL DIST WITH {} PEERS: {p}", peers.len());
     let kl_divergence = compute_kl_divergence(p, q);
 
-    let is_attack = kl_divergence > KL_DIVERGENCE_THRESHOLD;
-    Ok(is_attack)
+    kl_divergence > KL_DIVERGENCE_THRESHOLD
 }
 
 // Formula 6 in page 7
-fn num_peers_per_cpl(peers: &[PeerId]) -> Result<usize> {
-    // TODO!
-    Ok(0usize)
+fn num_peers_per_cpl(peers: &[PeerId], cid: &XorName) -> usize {
+    let peers_per_cpl = peers.iter().fold(0, |acc, peer| {
+        let peer_kad_id = XorName::from_content(&peer.to_bytes());
+        acc + common_prefix(&peer_kad_id, cid)
+    });
+
+    peers_per_cpl / K
+}
+
+// TODO: this is a copy of the private XorName::common_prefix method which could be made public.
+/// Returns the length of the common prefix with the `other` name; e. g.
+/// the when `other = 11110000` and `self = 11111111` this is 4.
+fn common_prefix(lhs: &XorName, rhs: &XorName) -> usize {
+    for byte_index in 0..XOR_NAME_LEN {
+        if lhs[byte_index] != rhs[byte_index] {
+            return (byte_index * 8) + (lhs[byte_index] ^ rhs[byte_index]).leading_zeros() as usize;
+        }
+    }
+    8 * XOR_NAME_LEN
 }
 
 // Formula 1 and 2 in page ??
-fn get_net_size_estimate() -> Result<usize> {
+fn get_net_size_estimate() -> usize {
     // TODO!
-    Ok(N)
+    N
 }
 
 // Formula 3 in page 7
