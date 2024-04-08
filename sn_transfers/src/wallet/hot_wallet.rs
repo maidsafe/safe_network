@@ -335,7 +335,7 @@ impl HotWallet {
             reason_hash,
         )?;
 
-        let created_cash_notes = transfer.created_cash_notes.clone();
+        let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
         self.update_local_wallet(transfer, exclusive_access)?;
 
@@ -354,7 +354,7 @@ impl HotWallet {
         let transfer =
             OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
 
-        let created_cash_notes = transfer.created_cash_notes.clone();
+        let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
         trace!("Trying to lock wallet to get available cash_notes...");
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
@@ -436,14 +436,14 @@ impl HotWallet {
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
-            offline_transfer.created_cash_notes.len(),
+            offline_transfer.cash_notes_for_recipient.len(),
             start.elapsed()
         );
 
         let start = Instant::now();
         // cache transfer payments in the wallet
         let mut cashnotes_to_use: HashSet<CashNote> = offline_transfer
-            .created_cash_notes
+            .cash_notes_for_recipient
             .iter()
             .cloned()
             .collect();

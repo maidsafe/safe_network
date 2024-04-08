@@ -304,7 +304,7 @@ async fn broadcast_signed_spends(
     let transfer = OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
 
     // return the first CashNote (assuming there is only one because we only sent to one recipient)
-    let cash_note = match &transfer.created_cash_notes[..] {
+    let cash_note = match &transfer.cash_notes_for_recipient[..] {
         [cashnote] => cashnote.to_hex()?,
         [_multiple, ..] => bail!("Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."),
         [] =>bail!("No CashNotes were built from the Tx.")
