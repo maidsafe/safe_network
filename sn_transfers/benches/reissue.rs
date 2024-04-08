@@ -115,12 +115,12 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
 
     // prepare to send all of those cashnotes back to our starting_main_key
     let total_amount = offline_transfer
-        .created_cash_notes
+        .cash_notes_for_recipient
         .iter()
         .map(|cn| cn.value().unwrap().as_nano())
         .sum();
     let many_cashnotes = offline_transfer
-        .created_cash_notes
+        .cash_notes_for_recipient
         .into_iter()
         .map(|cn| {
             let derivation_index = cn.derivation_index();

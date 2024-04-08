@@ -73,8 +73,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     // check the CashNotes, it should fail
     info!("Verifying the transfers from first wallet...");
 
-    let cash_notes_for_2: Vec<_> = transfer_to_2.created_cash_notes.clone();
-    let cash_notes_for_3: Vec<_> = transfer_to_3.created_cash_notes.clone();
+    let cash_notes_for_2: Vec<_> = transfer_to_2.cash_notes_for_recipient.clone();
+    let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
 
     let could_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let could_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
@@ -125,7 +125,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
     assert!(res.is_ok());
 
     // put the bad cashnote in the first wallet
-    first_wallet.deposit_and_store_to_disk(&transfer.created_cash_notes)?;
+    first_wallet.deposit_and_store_to_disk(&transfer.cash_notes_for_recipient)?;
 
     // now try to spend this illegitimate cashnote (direct descendant of double spent genesis)
     let (genesis_cashnote_and_others, exclusive_access) = first_wallet.available_cash_notes()?;
