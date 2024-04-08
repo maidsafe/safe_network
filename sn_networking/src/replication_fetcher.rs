@@ -10,7 +10,7 @@
 use crate::target_arch::spawn;
 use crate::{event::NetworkEvent, target_arch::Instant};
 use libp2p::{
-    kad::{KBucketDistance as Distance, RecordKey, K_VALUE},
+    kad::{RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
@@ -41,8 +41,8 @@ pub(crate) struct ReplicationFetcher {
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
     event_sender: mpsc::Sender<NetworkEvent>,
-    // Distance range that the incoming key shall be fetched
-    distance_range: Option<Distance>,
+    /// ilog2 bucket distance range that the incoming key shall be fetched
+    distance_range: Option<u32>,
 }
 
 impl ReplicationFetcher {
@@ -58,7 +58,7 @@ impl ReplicationFetcher {
     }
 
     /// Set the distance range.
-    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
+    pub(crate) fn set_replication_distance_range(&mut self, distance_range: u32) {
         self.distance_range = Some(distance_range);
     }
 
@@ -102,7 +102,8 @@ impl ReplicationFetcher {
             let self_address = NetworkAddress::from_peer(self.self_peer_id);
 
             incoming_keys.retain(|(addr, _record_type)| {
-                let is_in_range = self_address.distance(addr) <= *distance_range;
+                let is_in_range =
+                    self_address.distance(addr).ilog2().unwrap_or(0) <= *distance_range;
                 if !is_in_range {
                     out_of_range_keys.push(addr.clone());
                 }
@@ -368,8 +369,8 @@ mod tests {
 
         // Set distance range
         let distance_target = NetworkAddress::from_peer(PeerId::random());
-        let distance_range = self_address.distance(&distance_target);
-        replication_fetcher.set_distance_range(distance_range);
+        let distance_range = self_address.distance(&distance_target).ilog2().unwrap_or(1);
+        replication_fetcher.set_replication_distance_range(distance_range);
 
         let mut incoming_keys = Vec::new();
         let mut in_range_keys = 0;
@@ -377,7 +378,7 @@ mod tests {
             let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
             let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
 
-            if key.distance(&self_address) <= distance_range {
+            if key.distance(&self_address).ilog2().unwrap_or(0) <= distance_range {
                 in_range_keys += 1;
             }
 

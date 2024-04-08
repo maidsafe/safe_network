@@ -10,7 +10,7 @@ use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATE_RANGE,
+    REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
     kad::{store::RecordStore, Quorum, Record, RecordKey},
@@ -479,9 +479,10 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .get_distance_range()
+                    .get_farthest_replication_distance_bucket()
                 {
-                    self.replication_fetcher.set_distance_range(distance);
+                    self.replication_fetcher
+                        .set_replication_distance_range(distance);
                 }
 
                 if let Err(err) = result {
@@ -818,7 +819,7 @@ impl SwarmDriver {
         let replicate_targets = closest_k_peers
             .into_iter()
             // add some leeway to allow for divergent knowledge
-            .take(REPLICATE_RANGE)
+            .take(REPLICATION_PEERS_COUNT)
             .collect::<Vec<_>>();
 
         let all_records: Vec<_> = self
