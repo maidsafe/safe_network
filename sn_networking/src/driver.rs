@@ -28,7 +28,6 @@ use crate::{
     transport, Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
-use libp2p::kad::KBucketDistance as Distance;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
@@ -609,8 +608,10 @@ impl SwarmDriver {
                         if let Some(distance) = self.get_farthest_data_address_estimate(&closest_k_peers) {
                             // set any new distance to farthest record in the store
                             self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+
+                            let replication_distance = self.swarm.behaviour_mut().kademlia.store_mut().get_farthest_replication_distance_bucket().unwrap_or(1);
                             // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_distance_range(distance);
+                            self.replication_fetcher.set_replication_distance_range(replication_distance);
                         }
                     }
                 }
@@ -622,27 +623,26 @@ impl SwarmDriver {
     // ---------- Crate helpers -------------------
     // --------------------------------------------
 
-    /// Return a far address, close to but probably farther than our responsibilty range.
+    /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
     /// This simply uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE`th peer's address distance.
+    /// `K_VALUE`th peer's bucket.
     fn get_farthest_data_address_estimate(
         &mut self,
         // Sorted list of closest k peers to our peer id.
         closest_k_peers: &[PeerId],
-    ) -> Option<Distance> {
+    ) -> Option<u32> {
         // if we don't have enough peers we don't set the distance range yet.
         let mut farthest_distance = None;
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        // get K_VALUE/2 peer's address distance
+        // get K_VALUEth peer's address distance
         // This is a rough estimate of the farthest address we might be responsible for.
         // We want this to be higher than actually necessary, so we retain more data
         // and can be sure to pass bad node checks
         if let Some(peer) = closest_k_peers.last() {
             let address = NetworkAddress::from_peer(*peer);
-            let distance = our_address.distance(&address);
-            farthest_distance = Some(distance);
+            farthest_distance = our_address.distance(&address).ilog2();
         }
 
         farthest_distance

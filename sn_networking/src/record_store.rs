@@ -19,7 +19,7 @@ use libp2p::{
     identity::PeerId,
     kad::{
         store::{Error, RecordStore, Result},
-        KBucketDistance as Distance, KBucketKey, ProviderRecord, Record, RecordKey as Key,
+        KBucketKey, ProviderRecord, Record, RecordKey as Key,
     },
 };
 #[cfg(feature = "open-metrics")]
@@ -58,9 +58,10 @@ pub struct NodeRecordStore {
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
     swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    /// Distance range specify the acceptable range of record entry.
+    /// ilog2 distance range of responsible records
+    /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
-    distance_range: Option<Distance>,
+    responsible_distance_range: Option<u32>,
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
@@ -195,7 +196,7 @@ impl NodeRecordStore {
             records,
             network_event_sender,
             swarm_cmd_sender,
-            distance_range: None,
+            responsible_distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
             received_payment_count: 0,
@@ -211,9 +212,9 @@ impl NodeRecordStore {
         self
     }
 
-    /// Returns the current distance range
-    pub fn get_distance_range(&self) -> Option<Distance> {
-        self.distance_range
+    /// Returns the current distance ilog2 (aka bucket) range of CLOSE_GROUP nodes.
+    pub fn get_responsible_distance_range(&self) -> Option<u32> {
+        self.responsible_distance_range
     }
 
     // Converts a Key into a Hex string.
@@ -438,7 +439,7 @@ impl NodeRecordStore {
             live_time: self.timestamp.elapsed().as_secs(),
         };
 
-        if let Some(distance_range) = self.distance_range {
+        if let Some(distance_range) = self.responsible_distance_range {
             let relevant_records =
                 self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
 
@@ -474,7 +475,7 @@ impl NodeRecordStore {
     pub fn get_records_within_distance_range(
         &self,
         records: HashSet<&Key>,
-        distance_range: Distance,
+        distance_range: u32,
     ) -> usize {
         debug!(
             "Total record count is {:?}. Distance is: {distance_range:?}",
@@ -485,7 +486,7 @@ impl NodeRecordStore {
             .iter()
             .filter(|key| {
                 let kbucket_key = KBucketKey::new(key.to_vec());
-                distance_range >= self.local_key.distance(&kbucket_key)
+                distance_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0)
             })
             .count();
 
@@ -494,8 +495,8 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
-        self.distance_range = Some(distance_range);
+    pub(crate) fn set_responsible_distance_range(&mut self, farthest_responsible_bucket: u32) {
+        self.responsible_distance_range = Some(farthest_responsible_bucket);
     }
 }
 
@@ -730,7 +731,7 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
 mod tests {
 
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key, REPLICATE_RANGE};
+    use crate::{close_group_majority, sort_peers_by_key, REPLICATION_PEERS_COUNT};
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
@@ -1076,7 +1077,7 @@ mod tests {
 
     #[tokio::test]
     #[allow(clippy::mutable_key_type)]
-    async fn get_records_within_distance_range() -> eyre::Result<()> {
+    async fn get_records_within_bucket_range() -> eyre::Result<()> {
         let max_records = 50;
 
         let temp_dir = std::env::temp_dir();
@@ -1140,16 +1141,21 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address.distance(&halfway_record_address);
+        let distance = self_address
+            .distance(&halfway_record_address)
+            .ilog2()
+            .unwrap_or(0);
 
-        store.set_distance_range(distance);
+        // must be plus one bucket from the halfway record
+        store.set_responsible_distance_range(distance);
 
         let record_keys = store.records.keys().collect();
 
-        // check that the number of records returned is correct
-        assert_eq!(
-            store.get_records_within_distance_range(record_keys, distance),
-            stored_records.len() / 2
+        // check that the number of records returned is larger than half our records
+        // (ie, that we cover _at least_ all the records within our distance range)
+        assert!(
+            store.get_records_within_distance_range(record_keys, distance)
+                >= stored_records.len() / 2
         );
 
         Ok(())
@@ -1177,7 +1183,11 @@ mod tests {
             for _ in 0..num_of_chunks_per_itr {
                 let name = xor_name::rand::random();
                 let address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
-                match sort_peers_by_key(&peers_vec, &address.as_kbucket_key(), REPLICATE_RANGE) {
+                match sort_peers_by_key(
+                    &peers_vec,
+                    &address.as_kbucket_key(),
+                    REPLICATION_PEERS_COUNT,
+                ) {
                     Ok(peers_in_replicate_range) => {
                         let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range
                             .iter()

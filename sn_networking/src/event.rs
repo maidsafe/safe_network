@@ -12,7 +12,7 @@ use crate::{
     error::{NetworkError, Result},
     multiaddr_is_global, multiaddr_strip_p2p, sort_peers_by_address,
     target_arch::Instant,
-    CLOSE_GROUP_SIZE, REPLICATE_RANGE,
+    CLOSE_GROUP_SIZE, REPLICATION_PEERS_COUNT,
 };
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
@@ -1310,12 +1310,12 @@ impl SwarmDriver {
         target: &NetworkAddress,
         all_peers: &Vec<PeerId>,
     ) -> bool {
-        if all_peers.len() <= REPLICATE_RANGE {
+        if all_peers.len() <= REPLICATION_PEERS_COUNT {
             return true;
         }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address(all_peers, target, REPLICATE_RANGE) {
+        match sort_peers_by_address(all_peers, target, REPLICATION_PEERS_COUNT) {
             Ok(close_group) => close_group.contains(&our_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
