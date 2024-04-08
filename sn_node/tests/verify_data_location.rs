@@ -21,7 +21,8 @@ use libp2p::{
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, FilesApi, Uploader, WalletClient};
+use sn_client::chunk_operator::BuildChunkOperator;
+use sn_client::{Client, Uploader, WalletClient};
 use sn_logging::LogBuilder;
 use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
 use sn_protocol::{
@@ -341,28 +342,29 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
         let mut output_file = File::create(file_path.clone())?;
         output_file.write_all(&random_bytes)?;
 
-        let (head_chunk_addr, _data_map, _file_size, chunks) =
-            FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
+        let chop =
+            BuildChunkOperator::new().build_with_data_map_in_chunks(&file_path, chunks_dir.path());
+        let head_address = chop.head_chunk_address;
+        let chunks_paths = chop.chunk_vec;
 
         debug!(
-            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_chunk_addr:?}",
-            chunks.len(),
+            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_address:?}",
+            chunks_paths.len(),
             random_bytes.len()
         );
 
-        let key =
-            PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
+        let key = PrettyPrintRecordKey::from(&RecordKey::new(&head_address.xorname())).into_owned();
 
         let mut uploader = Uploader::new(client.clone(), wallet_dir.clone());
         uploader.set_show_holders(true);
         uploader.set_verify_store(false);
-        uploader.insert_chunk_paths(chunks);
+        uploader.insert_chunk_paths(chunks_paths);
         let _upload_stats = uploader.start_upload().await?;
 
         uploaded_chunks_count += 1;
 
-        println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
-        info!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
+        println!("Stored Chunk with {head_address:?} / {key:?}");
+        info!("Stored Chunk with {head_address:?} / {key:?}");
     }
 
     println!(

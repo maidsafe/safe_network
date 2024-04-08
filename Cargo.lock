@@ -5331,6 +5331,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-wasm",
+ "walkdir",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtimer",

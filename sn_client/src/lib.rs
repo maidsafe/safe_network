@@ -11,6 +11,7 @@ extern crate tracing;
 
 mod api;
 mod audit;
+pub mod chunk_operator;
 mod chunks;
 mod error;
 mod event;

@@ -19,6 +19,7 @@ use rand::{
     Rng,
 };
 use self_encryption::MIN_ENCRYPTABLE_BYTES;
+use sn_client::chunk_operator::BuildChunkOperator;
 use sn_client::{Client, FilesApi};
 use sn_protocol::{
     safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest},
@@ -60,14 +61,13 @@ pub fn random_content(
     output_file.write_all(&random_length_content)?;
 
     let files_api = FilesApi::new(client.clone(), wallet_dir);
-    let (head_chunk_address, _data_map, _file_size, chunks) =
-        FilesApi::chunk_file(&file_path, chunk_dir, true)?;
+    let chop = BuildChunkOperator::new().build_with_data_map_in_chunks(&file_path, chunk_dir);
 
     Ok((
         files_api,
         random_length_content.into(),
-        head_chunk_address,
-        chunks,
+        chop.head_chunk_address,
+        chop.chunk_vec,
     ))
 }
 

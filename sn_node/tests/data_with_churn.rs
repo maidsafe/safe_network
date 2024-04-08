@@ -16,6 +16,7 @@ use common::{
 };
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
+use sn_client::chunk_operator::BuildChunkOperator;
 use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
 use sn_logging::LogBuilder;
 use sn_protocol::{
@@ -395,22 +396,27 @@ fn store_chunks_task(
                 .write_all(&random_bytes)
                 .expect("failed to write to temp chunk file");
 
-            let (addr, _data_map, _file_size, chunks) =
-                FilesApi::chunk_file(&file_path, &output_dir, true).expect("Failed to chunk bytes");
+            let chop =
+                BuildChunkOperator::new().build_with_data_map_in_chunks(&file_path, &output_dir);
+            let head_address = chop.head_chunk_address;
+            let chunks_paths = chop.chunk_vec;
 
             info!(
-                "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
-                chunks.len(),
+                "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_address:?} in {delay:?}",
+                chunks_paths.len(),
                 chunk_size
             );
             sleep(delay).await;
 
-            let chunks_len = chunks.len();
-            let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
+            let chunks_len = chunks_paths.len();
+            let chunks_name = chunks_paths
+                .iter()
+                .map(|(name, _)| *name)
+                .collect::<Vec<_>>();
 
             let mut uploader = Uploader::new(client.clone(), paying_wallet_dir.clone());
             uploader.set_show_holders(true);
-            uploader.insert_chunk_paths(chunks);
+            uploader.insert_chunk_paths(chunks_paths);
 
             let cost = match uploader.start_upload().await {
                 Ok(stats) => stats
@@ -418,15 +424,15 @@ fn store_chunks_task(
                     .checked_add(stats.storage_cost)
                     .ok_or(eyre!("Total storage cost exceed possible token amount"))?,
                 Err(err) => {
-                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
+                    bail!("Bailing w/ new Chunk ({head_address:?}) due to error: {err:?}");
                 }
             };
 
             println!(
-                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
+                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {head_address:?} in {delay:?}"
             );
             info!(
-                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
+                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {head_address:?} in {delay:?}"
             );
             sleep(delay).await;
 

@@ -14,10 +14,8 @@ use color_eyre::{
     Result,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use sn_client::{
-    protocol::storage::{Chunk, ChunkAddress},
-    FilesApi,
-};
+use sn_client::chunk_operator::BuildChunkOperator;
+use sn_client::protocol::storage::{Chunk, ChunkAddress};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -41,7 +39,7 @@ struct PathXorName(String);
 
 impl PathXorName {
     fn new(path: &Path) -> PathXorName {
-        // we just need an unique value per path, thus we don't have to mind between the
+        // we just need a unique value per path, thus we don't have to mind between the
         // [u8]/[u16] differences
         let path_as_lossy_str = path.as_os_str().to_string_lossy();
         let path_xor = XorName::from_content(path_as_lossy_str.as_bytes());
@@ -75,7 +73,7 @@ pub struct ChunkManager {
 }
 
 impl ChunkManager {
-    // Provide the root_dir. The function creates a sub-directory to store the SE chunks
+    // Provide the root_dir. The function creates a subdirectory to store the SE chunks
     pub fn new(root_dir: &Path) -> Self {
         let artifacts_dir = root_dir.join(CHUNK_ARTIFACTS_DIR);
         Self {
@@ -221,26 +219,26 @@ impl ChunkManager {
                     file_chunks_dir
                 };
 
-                match FilesApi::chunk_file(path, &file_chunks_dir, include_data_maps) {
-                    Ok((head_chunk_address, data_map, size, chunks)) => {
-                        progress_bar.clone().inc(1);
-                        debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {head_chunk_address:?} of size {size}, and chunks len: {}", chunks.len());
+                let chop = match include_data_maps {
+                    true => { BuildChunkOperator::new().build_with_data_map_in_chunks(path, &file_chunks_dir) }
+                    false => { BuildChunkOperator::new().build(path, &file_chunks_dir) }
+                };
 
-                        let chunked_file = ChunkedFile {
-                            head_chunk_address,
-                            file_path: path.to_owned(),
-                            file_name: original_file_name.clone(),
-                            chunks: chunks.into_iter().collect(),
-                            data_map
-                        };
-                        Ok((path_xor.clone(), chunked_file))
-                    }
-                    Err(err) => {
-                        println!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
-                        error!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}");
-                        Err(eyre!("Failed to chunk file {path:?}/{path_xor:?} with err: {err:?}"))
-                    }
-                }
+                progress_bar.clone().inc(1);
+
+                debug!("Chunked {original_file_name:?} with {path_xor:?} into file's XorName: {1:?} \
+                of size {2}, and chunks len: {}", chop.chunk_vec.len(), chop.head_chunk_address,
+                    chop.file_size);
+
+                let chunked_file = ChunkedFile {
+                    head_chunk_address: chop.head_chunk_address,
+                    file_path: path.to_owned(),
+                    file_name: original_file_name.clone(),
+                    chunks: chop.chunk_vec.into_iter().collect(),
+                    data_map: chop.data_map,
+                };
+                Ok((path_xor.clone(), chunked_file))
+
             })
             .collect::<Result<BTreeMap<_, _>>>()?;
         debug!(
@@ -250,7 +248,7 @@ impl ChunkManager {
         );
 
         // Self::resume_path would create an empty self.chunks entry if a file that was fully
-        // completed was resumed. Thus if it is empty, the user did not provide any valid file
+        // completed was resumed. Thus, if it is empty then the user did not provide any valid file
         // path.
         if chunked_files.is_empty() && self.chunks.is_empty() {
             bail!(

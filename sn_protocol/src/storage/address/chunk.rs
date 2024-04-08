@@ -11,7 +11,7 @@ use std::{fmt, hash::Hash};
 use xor_name::XorName;
 
 /// Address of a Chunk
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Default, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct ChunkAddress(XorName);
 
 impl ChunkAddress {

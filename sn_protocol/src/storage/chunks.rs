@@ -14,7 +14,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use xor_name::XorName;
 
 /// Chunk, an immutable chunk of data
-#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Clone, custom_debug::Debug)]
+#[derive(Default, Hash, Eq, PartialEq, PartialOrd, Ord, Clone, custom_debug::Debug)]
 pub struct Chunk {
     /// Network address. Omitted when serialising and
     /// calculated from the `value` when deserialising.
