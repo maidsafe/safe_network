@@ -35,6 +35,12 @@ pub enum Cmd {
         target: NetworkAddress,
         quotes: Vec<(NetworkAddress, PaymentQuote)>,
     },
+    /// Notify the peer it is now being considered as BAD due to the included behaviour
+    PeerConsideredAsBad {
+        detected_by: NetworkAddress,
+        bad_peer: NetworkAddress,
+        bad_behaviour: String,
+    },
 }
 
 impl std::fmt::Debug for Cmd {
@@ -53,6 +59,16 @@ impl std::fmt::Debug for Cmd {
                 .field("target", target)
                 .field("quotes_len", &quotes.len())
                 .finish(),
+            Cmd::PeerConsideredAsBad {
+                detected_by,
+                bad_peer,
+                bad_behaviour,
+            } => f
+                .debug_struct("Cmd::PeerConsideredAsBad")
+                .field("detected_by", detected_by)
+                .field("bad_peer", bad_peer)
+                .field("bad_behaviour", bad_behaviour)
+                .finish(),
         }
     }
 }
@@ -63,6 +79,7 @@ impl Cmd {
         match self {
             Cmd::Replicate { holder, .. } => holder.clone(),
             Cmd::QuoteVerification { target, .. } => target.clone(),
+            Cmd::PeerConsideredAsBad { bad_peer, .. } => bad_peer.clone(),
         }
     }
 }
@@ -84,6 +101,15 @@ impl std::fmt::Display for Cmd {
                     "Cmd::QuoteVerification(sent to {target:?} has {} quotes)",
                     quotes.len()
                 )
+            }
+            Cmd::PeerConsideredAsBad {
+                detected_by,
+                bad_peer,
+                bad_behaviour,
+            } => {
+                write!(
+                    f,
+                    "Cmd::PeerConsideredAsBad({detected_by:?} consider peer {bad_peer:?} as bad, due to {bad_behaviour:?})")
             }
         }
     }
