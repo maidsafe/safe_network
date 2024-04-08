@@ -326,6 +326,9 @@ impl Node {
                     Self::try_interval_replication(net);
                 });
             }
+            NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
+                event_header = "PeerWithUnsupportedProtocol";
+            }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {

@@ -9,6 +9,7 @@ use vergen::EmitBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     EmitBuilder::builder()
+        .build_date()
         // Emit the short SHA-1 hash of the current commit
         .git_sha(true)
         // Emit the current branch name

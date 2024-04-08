@@ -25,7 +25,7 @@ lazy_static! {
     // URL containing the multi-addresses of the bootstrap nodes.
     pub static ref NETWORK_CONTACTS_URL: String = {
         let version = get_network_version();
-        let version_prefix = if !version.is_empty() { format!("{version}-") } else { version };
+        let version_prefix = if !version.is_empty() { format!("{version}-") } else { version.to_string() };
         format!("https://sn-testnet.s3.eu-west-2.amazonaws.com/{version_prefix}network-contacts")
     };
 }

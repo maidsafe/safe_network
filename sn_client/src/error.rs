@@ -112,6 +112,9 @@ pub enum Error {
     #[error("Could not find register after batch sync: {0:?}")]
     RegisterNotFoundAfterUpload(XorName),
 
+    #[error("Could not connect due to incompatible network protocols. Our protocol: {0} Network protocol: {1}")]
+    UnsupportedProtocol(String, String),
+
     // ------ Upload Errors --------
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
