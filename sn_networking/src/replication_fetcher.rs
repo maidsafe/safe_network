@@ -59,6 +59,7 @@ impl ReplicationFetcher {
 
     /// Set the distance range.
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
+        info!("Set replication_fetcher distance_range to {distance_range:?}");
         self.distance_range = Some(distance_range);
     }
 
@@ -111,9 +112,15 @@ impl ReplicationFetcher {
         }
 
         if !out_of_range_keys.is_empty() {
+            info!(
+                "Current replication_fetcher distance_range is {:?}",
+                self.distance_range
+            );
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
+            let self_address = NetworkAddress::from_peer(self.self_peer_id);
             for addr in out_of_range_keys.iter() {
-                trace!("The incoming record_key {addr:?} is out of range, do not fetch it from {holder:?}");
+                let distance = self_address.distance(addr);
+                info!("The incoming record_key {addr:?} is out of range (distance is {distance:?}), do not fetch it from {holder:?}");
             }
         }
 

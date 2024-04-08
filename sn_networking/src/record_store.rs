@@ -495,6 +495,7 @@ impl NodeRecordStore {
 
     /// Setup the distance range.
     pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
+        info!("Set record_store distance_range to {distance_range:?}");
         self.distance_range = Some(distance_range);
     }
 }
