@@ -16,16 +16,16 @@ use crate::{
     circular_vec::CircularVec,
     cmd::SwarmCmd,
     error::{NetworkError, Result},
-    event::NetworkEvent,
-    event::NodeEvent,
+    event::{NetworkEvent, NodeEvent},
     get_record_handler::PendingGetRecord,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
     record_store_api::UnifiedRecordStore,
+    relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
     target_arch::{interval, spawn, Instant},
-    transport, Network, CLOSE_GROUP_SIZE,
+    Network, CLOSE_GROUP_SIZE,
 };
 use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
@@ -185,6 +185,7 @@ pub struct NetworkBuilder {
     listen_addr: Option<SocketAddr>,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
+    initial_peers: Vec<Multiaddr>,
     #[cfg(feature = "open-metrics")]
     metrics_registry: Option<Registry>,
     #[cfg(feature = "open-metrics")]
@@ -200,6 +201,7 @@ impl NetworkBuilder {
             listen_addr: None,
             request_timeout: None,
             concurrency_limit: None,
+            initial_peers: Default::default(),
             #[cfg(feature = "open-metrics")]
             metrics_registry: None,
             #[cfg(feature = "open-metrics")]
@@ -217,6 +219,10 @@ impl NetworkBuilder {
 
     pub fn concurrency_limit(&mut self, concurrency_limit: usize) {
         self.concurrency_limit = Some(concurrency_limit);
+    }
+
+    pub fn initial_peers(&mut self, initial_peers: Vec<Multiaddr>) {
+        self.initial_peers = initial_peers;
     }
 
     #[cfg(feature = "open-metrics")]
@@ -505,6 +511,7 @@ impl NetworkBuilder {
             is_known_behind_nat: false,
             connected_peers: 0,
             bootstrap,
+            relay_manager: RelayManager::new(self.initial_peers),
             close_group: Default::default(),
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
@@ -550,6 +557,7 @@ pub struct SwarmDriver {
     pub(crate) listen_port: Option<u16>,
     pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
+    pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,

@@ -24,6 +24,7 @@ mod metrics_service;
 mod network_discovery;
 mod record_store;
 mod record_store_api;
+mod relay_manager;
 mod replication_fetcher;
 mod spends;
 pub mod target_arch;
