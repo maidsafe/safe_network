@@ -312,9 +312,7 @@ impl NetworkBuilder {
         // Listen on TCP for autonat
         let addr_tcp =
             Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
-
-        let _listener_id = swarm_driver
-            .swarm
+        swarm_driver
             .listen_on(addr_tcp)
             .expect("Multiaddr should be supported by our configured transports");
 
@@ -324,8 +322,7 @@ impl NetworkBuilder {
             let addr_ws = Multiaddr::from(listen_socket_addr.ip())
                 .with(Protocol::Tcp(listen_socket_addr.port()))
                 .with(Protocol::Ws("/".into()));
-            let _listener_id = swarm_driver
-                .swarm
+            swarm_driver
                 .listen_on(addr_ws)
                 .expect("Multiaddr should be supported by our configured transports");
         }
@@ -501,7 +498,6 @@ impl NetworkBuilder {
             local: self.local,
             listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
-            is_known_behind_nat: false,
             connected_peers: 0,
             bootstrap,
             relay_manager: RelayManager::new(self.initial_peers),
@@ -557,8 +553,6 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     #[allow(unused)]
     pub(crate) network_metrics: NetworkMetrics,
-
-    pub(crate) is_known_behind_nat: bool,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
@@ -641,11 +635,7 @@ impl SwarmDriver {
                         }
                     }
                 }
-                _ = relay_manager_reservation_interval.tick() => {
-                    if self.is_known_behind_nat {
-                        self.relay_manager.try_connecting_to_relay(&mut self.swarm);
-                    }
-                }
+                _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm),
             }
         }
     }
@@ -796,5 +786,13 @@ impl SwarmDriver {
             // now we've logged, lets clear the stats from the btreemap
             self.handling_statistics.clear();
         }
+    }
+
+    /// Listen on the provided address. Also records it within RelayManager
+    pub(crate) fn listen_on(&mut self, addr: Multiaddr) -> Result<()> {
+        let id = self.swarm.listen_on(addr)?;
+        self.relay_manager.add_non_relayed_listener_id(id);
+
+        Ok(())
     }
 }

@@ -8,7 +8,8 @@
 
 use crate::driver::NodeBehaviour;
 use libp2p::{
-    core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
+    autonat::NatStatus, core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId,
+    StreamProtocol, Swarm,
 };
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
@@ -19,12 +20,16 @@ const MAX_POTENTIAL_CANDIDATES: usize = 15;
 // todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
 pub(crate) struct RelayManager {
     // states
+    we_are_behind_nat: bool,
     candidates: VecDeque<(PeerId, Multiaddr)>,
     waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
     connected_relays: BTreeMap<PeerId, Multiaddr>,
 
-    // misc
-    listener_id_map: HashMap<ListenerId, PeerId>,
+    /// Tracker for the relayed listen addresses.
+    relayed_listener_id_map: HashMap<ListenerId, PeerId>,
+    /// Tracker for the non relayed listen addresses. These should be collected whenever we call `listen_on` from outside
+    /// the manager.
+    non_relayed_listener_id: VecDeque<ListenerId>,
 }
 
 impl RelayManager {
@@ -41,11 +46,25 @@ impl RelayManager {
             })
             .collect();
         Self {
+            we_are_behind_nat: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates,
-            listener_id_map: Default::default(),
+            non_relayed_listener_id: Default::default(),
+            relayed_listener_id_map: Default::default(),
         }
+    }
+
+    pub(crate) fn set_nat_status(&mut self, nat_status: &NatStatus) {
+        match nat_status {
+            NatStatus::Private => self.we_are_behind_nat = true,
+            _ => self.we_are_behind_nat = false,
+        }
+    }
+
+    pub(crate) fn add_non_relayed_listener_id(&mut self, listener_id: ListenerId) {
+        debug!("Adding non relayed listener id: {listener_id:?}");
+        self.non_relayed_listener_id.push_front(listener_id);
     }
 
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
@@ -76,6 +95,10 @@ impl RelayManager {
     /// Try connecting to candidate relays if we are below the threshold connections.
     /// This is run periodically on a loop.
     pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
+        if !self.we_are_behind_nat {
+            return;
+        }
+
         if self.connected_relays.len() >= MAX_CONCURRENT_RELAY_CONNECTIONS
             || self.candidates.is_empty()
         {
@@ -94,7 +117,7 @@ impl RelayManager {
                     Ok(id) => {
                         info!("Sending reservation to relay {peer_id:?} on {relay_addr:?}");
                         self.waiting_for_reservation.insert(peer_id, relay_addr);
-                        self.listener_id_map.insert(id, peer_id);
+                        self.relayed_listener_id_map.insert(id, peer_id);
                         n_reservations += 1;
                     }
                     Err(err) => {
@@ -109,7 +132,19 @@ impl RelayManager {
     }
 
     /// Update our state after we've successfully made reservation with a relay.
-    pub(crate) fn update_on_successful_reservation(&mut self, peer_id: &PeerId) {
+    pub(crate) fn update_on_successful_reservation(
+        &mut self,
+        peer_id: &PeerId,
+        swarm: &mut Swarm<NodeBehaviour>,
+    ) {
+        // now that we have made a reservation, remove our non-relayed listeners
+        while !self.non_relayed_listener_id.is_empty() {
+            if let Some(listener_id) = self.non_relayed_listener_id.pop_back() {
+                let res = swarm.remove_listener(listener_id);
+                debug!("Removed {listener_id:?} with result: {res} from swarm as we now have a relay reservation");
+            }
+        }
+
         match self.waiting_for_reservation.remove(peer_id) {
             Some(addr) => {
                 info!("Successfully made reservation with {peer_id:?} on {addr:?}");
@@ -123,7 +158,7 @@ impl RelayManager {
 
     /// Update our state if the reservation has been cancelled or if the relay has closed.
     pub(crate) fn update_on_listener_closed(&mut self, listener_id: &ListenerId) {
-        let Some(peer_id) = self.listener_id_map.remove(listener_id) else {
+        let Some(peer_id) = self.relayed_listener_id_map.remove(listener_id) else {
             return;
         };
 
