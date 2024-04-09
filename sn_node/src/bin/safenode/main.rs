@@ -21,6 +21,7 @@ use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
 use std::{
+    cmp::Ordering,
     env,
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -34,6 +35,7 @@ use tokio::{
     time::sleep,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use xor_name::XorName;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
@@ -192,7 +194,24 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
-    let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
+    let (root_dir, keypair, sybil) = if let Some(xorname_str) = &opt.sybil {
+        let bytes = hex::decode(xorname_str)?;
+        let mut arr = [0u8; xor_name::XOR_NAME_LEN];
+        arr.copy_from_slice(&bytes);
+        let xorname = xor_name::XorName(arr);
+        info!("Running as sybil node to eclipse XorName: {xorname}");
+
+        // FIXME: use the PeerId closest to the address found in routing table,
+        // we might need to connect with a random peerid andd get-closest-peer...
+        let closest_peer = PeerId::random();
+        let (root_dir, keypair) =
+            gen_keypair_closer_to_address(&opt.root_dir, &xorname, &closest_peer)?;
+
+        (root_dir, keypair, Some(xorname))
+    } else {
+        let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
+        (root_dir, keypair, None)
+    };
 
     let (log_output_dest, log_reload_handle, _log_appender_guard) =
         init_logging(&opt, keypair.public().to_peer_id())?;
@@ -211,15 +230,6 @@ fn main() -> Result<()> {
     );
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
-
-    let sybil = opt.sybil.map(|xorname_str| {
-        let bytes = hex::decode(xorname_str).unwrap();
-        let mut arr = [0u8; xor_name::XOR_NAME_LEN];
-        arr.copy_from_slice(&bytes);
-        let xorname = xor_name::XorName(arr);
-        info!("Running as sybil node to eclipse XorName: {xorname}");
-        xorname
-    });
 
     // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
@@ -554,6 +564,40 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
             file.write_all(secret_key.as_ref())?;
 
             Ok((dir, keypair))
+        }
+    }
+}
+
+/// Generate a keypair such that the PeerId is closer to the given address
+/// than the closes peer found on the routing table.
+fn gen_keypair_closer_to_address(
+    root_dir: &Option<PathBuf>,
+    addr: &XorName,
+    closest_peer: &PeerId,
+) -> Result<(PathBuf, Keypair)> {
+    // TODO: put a limit to the number of iterations...?
+    let closest = XorName::from_content(&closest_peer.to_bytes());
+    info!("Trying to find a PeerId closer to {addr} than {closest} to act as sybil node...");
+    loop {
+        let secret_key = libp2p::identity::ed25519::SecretKey::generate();
+        let keypair: Keypair = libp2p::identity::ed25519::Keypair::from(secret_key.clone()).into();
+        let peer_id = keypair.public().to_peer_id();
+        let peer_kad_id = XorName::from_content(&peer_id.to_bytes());
+
+        if addr.cmp_distance(&peer_kad_id, &closest) == Ordering::Less {
+            // we found a closer peer id
+            let dir = if let Some(dir) = root_dir {
+                dir.to_owned()
+            } else {
+                get_safenode_root_dir(peer_id)?
+            };
+            std::fs::create_dir_all(&dir)?;
+            let secret_key_path = dir.join("secret-key");
+            let mut file = create_secret_key_file(secret_key_path)
+                .map_err(|err| eyre!("could not create secret key file: {err}"))?;
+            file.write_all(secret_key.as_ref())?;
+
+            break Ok((dir, keypair));
         }
     }
 }

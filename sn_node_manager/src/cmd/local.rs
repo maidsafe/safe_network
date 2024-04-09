@@ -43,18 +43,19 @@ pub async fn join(
         print_banner("Joining Local Network");
     }
     info!("Joining local network");
-    let sybil = sybil.map(|xorname_str| {
-        let bytes = hex::decode(xorname_str).unwrap();
-        let mut arr = [0u8; XOR_NAME_LEN];
-        arr.copy_from_slice(&bytes);
-        xor_name::XorName(arr)
-    });
 
     println!("====================================================");
     println!("               Joining Local Network                ");
-    if let Some(xorname) = sybil {
+    let sybil = if let Some(xorname_str) = sybil {
+        let bytes = hex::decode(xorname_str)?;
+        let mut arr = [0u8; XOR_NAME_LEN];
+        arr.copy_from_slice(&bytes);
+        let xorname = xor_name::XorName(arr);
         println!("** WITH SYBIL NODE/s TO ECLIPSE XorName: {xorname} **");
-    }
+        Some(xorname)
+    } else {
+        None
+    };
     println!("====================================================");
 
     let local_node_reg_path = &get_local_node_registry_path()?;

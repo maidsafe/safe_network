@@ -17,6 +17,8 @@ const KL_DIVERGENCE_THRESHOLD: f64 = 10f64; // TODO: find a good value
 const K: usize = 20;
 const N: usize = 25; // TODO: replace with network size estimation;
 
+// Given the set of closest K peers ids to the passed content address, return 'true'
+// if there is probabilistically a sybil attack around that CID address.
 pub(super) async fn check_for_sybil_attack(peers: &[PeerId], cid: &XorName) -> bool {
     // TODO: do we go ahead even if we don't have at least K peer ids...?
     info!(
@@ -42,9 +44,7 @@ fn num_peers_per_cpl(peers: &[PeerId], cid: &XorName) -> usize {
     peers_per_cpl / K
 }
 
-// TODO: this is a copy of the private XorName::common_prefix method which could be made public.
-/// Returns the length of the common prefix with the `other` name; e. g.
-/// the when `other = 11110000` and `self = 11111111` this is 4.
+// TODO: use released https://github.com/maidsafe/xor_name/pull/96 instead
 fn common_prefix(lhs: &XorName, rhs: &XorName) -> usize {
     for byte_index in 0..XOR_NAME_LEN {
         if lhs[byte_index] != rhs[byte_index] {
