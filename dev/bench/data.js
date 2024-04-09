@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712678334995,
+  "lastUpdate": 1712678337211,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "8b10c145fba734ebf4aa261e4297a377d871b13a",
-          "message": "feat: move derivation index random method to itself",
-          "timestamp": "2023-11-23T14:06:04Z",
-          "tree_id": "c94863b49e7c9d9d5c35aefef5f2e1fe0e55ea87",
-          "url": "https://github.com/maidsafe/safe_network/commit/8b10c145fba734ebf4aa261e4297a377d871b13a"
-        },
-        "date": 1700750841143,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5425,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 82217,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34545,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "17d292b2c2a2700a38b2a68ed69833c8ac81985a",
+          "message": "feat(networking): shift to use ilog2 bucket distance for close data calcs\n\nilog2 is about magnitude rather than specifics as distance is already being estimated\nwe can use this to easily render a buffer zone of data we replicate\nvs a close bucket which we deem to be our responsibility",
+          "timestamp": "2024-04-09T15:15:02Z",
+          "tree_id": "10a720c91547f595bbeafb4754b815a84d54805e",
+          "url": "https://github.com/maidsafe/safe_network/commit/17d292b2c2a2700a38b2a68ed69833c8ac81985a"
+        },
+        "date": 1712678336662,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7195,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34066,
             "unit": "ms"
           },
           {
