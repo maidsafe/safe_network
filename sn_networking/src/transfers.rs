@@ -166,9 +166,9 @@ impl Network {
                 .cloned()
                 .collect();
             let cash_note = CashNote {
-                id,
-                src_tx,
-                signed_spends,
+                unique_pubkey: id,
+                parent_tx: src_tx,
+                parent_spends: signed_spends,
                 main_pubkey,
                 derivation_index,
             };

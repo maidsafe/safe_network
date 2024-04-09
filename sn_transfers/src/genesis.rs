@@ -81,7 +81,7 @@ lazy_static! {
 
 /// Return if provided Transaction is genesis parent tx.
 pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
-    parent_tx == &GENESIS_CASHNOTE.src_tx
+    parent_tx == &GENESIS_CASHNOTE.parent_tx
 }
 
 /// Return if provided Spend is genesis spend.

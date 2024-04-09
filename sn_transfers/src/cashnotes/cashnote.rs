@@ -58,25 +58,26 @@ use tiny_keccak::{Hasher, Sha3};
 /// eg: `cashnote.derivation_index(&main_key)`
 #[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct CashNote {
-    /// The unique pulbic key of this CashNote. It is unique, and there can never
+    /// The unique public key of this CashNote. It is unique, and there can never
     /// be another CashNote with the same pulbic key. It used in SignedSpends.
-    pub id: UniquePubkey,
+    pub unique_pubkey: UniquePubkey,
     /// The transaction where this CashNote was created.
     #[debug(skip)]
-    pub src_tx: Transaction,
+    pub parent_tx: Transaction,
     /// The transaction's input's SignedSpends
-    pub signed_spends: BTreeSet<SignedSpend>,
-    /// This is the MainPubkey of the recipient of this CashNote.
+    pub parent_spends: BTreeSet<SignedSpend>,
+    /// This is the MainPubkey of the owner of this CashNote
     pub main_pubkey: MainPubkey,
-    /// This indicates which index to use when deriving the UniquePubkey of the
-    /// CashNote, from the MainPubkey.
+    /// The derivation index used to derive the UniquePubkey and DerivedSecretKey from the MainPubkey and MainSecretKey respectively.
+    /// It is to be kept secret to preserve the privacy of the owner.
+    /// Without it, it is very hard to link the MainPubkey (original owner) and the UniquePubkey (derived unique identity of the CashNote)
     pub derivation_index: DerivationIndex,
 }
 
 impl CashNote {
-    /// Return the id of this CashNote.
+    /// Return the unique pubkey of this CashNote.
     pub fn unique_pubkey(&self) -> UniquePubkey {
-        self.id
+        self.unique_pubkey
     }
 
     // Return MainPubkey from which UniquePubkey is derived.
@@ -112,7 +113,7 @@ impl CashNote {
     /// Return the reason why this CashNote was spent.
     /// Will be the default Hash (empty) if reason is none.
     pub fn reason(&self) -> Hash {
-        self.signed_spends
+        self.parent_spends
             .iter()
             .next()
             .map(|c| c.reason())
@@ -122,7 +123,7 @@ impl CashNote {
     /// Return the value in NanoTokens for this CashNote.
     pub fn value(&self) -> Result<NanoTokens> {
         Ok(self
-            .src_tx
+            .parent_tx
             .outputs
             .iter()
             .find(|o| &self.unique_pubkey() == o.unique_pubkey())
@@ -133,11 +134,11 @@ impl CashNote {
     /// Generate the hash of this CashNote
     pub fn hash(&self) -> Hash {
         let mut sha3 = Sha3::v256();
-        sha3.update(self.src_tx.hash().as_ref());
+        sha3.update(self.parent_tx.hash().as_ref());
         sha3.update(&self.main_pubkey.to_bytes());
         sha3.update(&self.derivation_index.0);
 
-        for sp in self.signed_spends.iter() {
+        for sp in self.parent_spends.iter() {
             sha3.update(&sp.to_bytes());
         }
 
@@ -161,12 +162,12 @@ impl CashNote {
     /// see TransactionVerifier::verify() for a description of
     /// verifier requirements.
     pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), TransferError> {
-        self.src_tx
-            .verify_against_inputs_spent(self.signed_spends.iter())?;
+        self.parent_tx
+            .verify_against_inputs_spent(self.parent_spends.iter())?;
 
         let unique_pubkey = self.derived_key(main_key)?.unique_pubkey();
         if !self
-            .src_tx
+            .parent_tx
             .outputs
             .iter()
             .any(|o| unique_pubkey.eq(o.unique_pubkey()))
@@ -177,7 +178,7 @@ impl CashNote {
         // verify that all signed_spend reasons are equal
         let reason = self.reason();
         let reasons_are_equal = |s: &SignedSpend| reason == s.reason();
-        if !self.signed_spends.iter().all(reasons_are_equal) {
+        if !self.parent_spends.iter().all(reasons_are_equal) {
             return Err(TransferError::SignedSpendReasonMismatch(unique_pubkey));
         }
         Ok(())
