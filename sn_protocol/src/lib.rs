@@ -48,7 +48,7 @@ use xor_name::XorName;
 pub fn get_port_from_multiaddr(multi_addr: &Multiaddr) -> Option<u16> {
     // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>
     for protocol in multi_addr.iter() {
-        if let Protocol::Udp(port) = protocol {
+        if let Protocol::Tcp(port) = protocol {
             return Some(port);
         }
     }

@@ -315,15 +315,6 @@ impl NetworkBuilder {
             .listen_on(addr_tcp)
             .expect("Multiaddr should be supported by our configured transports");
 
-        // Listen on QUIC
-        let addr_quic = Multiaddr::from(listen_socket_addr.ip())
-            .with(Protocol::Udp(listen_socket_addr.port()))
-            .with(Protocol::QuicV1);
-        let _listener_id = swarm_driver
-            .swarm
-            .listen_on(addr_quic)
-            .expect("Multiaddr should be supported by our configured transports");
-
         // Listen on WebSocket
         #[cfg(any(feature = "websockets", target_arch = "wasm32"))]
         {
@@ -475,7 +466,6 @@ impl NetworkBuilder {
                 libp2p::yamux::Config::default,
             )
             .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
-            .with_quic()
             .with_relay_client(libp2p::noise::Config::new, libp2p::yamux::Config::default)
             .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
             .with_behaviour(|_keypair, relay_behaviour| NodeBehaviour {
