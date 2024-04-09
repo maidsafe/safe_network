@@ -258,10 +258,10 @@ fn create_transaction_builder_with(
         inputs.push((
             input,
             derived_key,
-            cash_note.src_tx.clone(),
+            cash_note.parent_tx.clone(),
             cash_note.derivation_index,
         ));
-        let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.src_tx);
+        let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.parent_tx);
     }
 
     // Build the transaction and create change cash_note if needed

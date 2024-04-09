@@ -46,9 +46,9 @@ pub(crate) mod tests {
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
         let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
+            unique_pubkey: derived_key.unique_pubkey(),
+            parent_tx: tx,
+            parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -73,9 +73,9 @@ pub(crate) mod tests {
             outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
         let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
+            unique_pubkey: derived_key.unique_pubkey(),
+            parent_tx: tx,
+            parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -104,9 +104,9 @@ pub(crate) mod tests {
         };
 
         let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
+            unique_pubkey: derived_key.unique_pubkey(),
+            parent_tx: tx,
+            parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -135,9 +135,9 @@ pub(crate) mod tests {
         };
 
         let cashnote = CashNote {
-            id: derived_key.unique_pubkey(),
-            src_tx: tx,
-            signed_spends: Default::default(),
+            unique_pubkey: derived_key.unique_pubkey(),
+            parent_tx: tx,
+            parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };

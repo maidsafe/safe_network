@@ -151,7 +151,7 @@ impl CashNoteRedemption {
 
     pub fn from_cash_note(cash_note: &CashNote) -> Result<Self> {
         let derivation_index = cash_note.derivation_index();
-        let parent_spend = match cash_note.signed_spends.iter().next() {
+        let parent_spend = match cash_note.parent_spends.iter().next() {
             Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
             None => {
                 return Err(TransferError::CashNoteHasNoParentSpends);

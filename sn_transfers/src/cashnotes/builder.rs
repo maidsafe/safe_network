@@ -235,9 +235,9 @@ impl CashNoteBuilder {
 
                 Ok((
                     CashNote {
-                        id: main_pubkey.new_unique_pubkey(derivation_index),
-                        src_tx: self.spent_tx.clone(),
-                        signed_spends: self.signed_spends.clone(),
+                        unique_pubkey: main_pubkey.new_unique_pubkey(derivation_index),
+                        parent_tx: self.spent_tx.clone(),
+                        parent_spends: self.signed_spends.clone(),
                         main_pubkey: *main_pubkey,
                         derivation_index: *derivation_index,
                     },
