@@ -540,6 +540,15 @@ impl SwarmDriver {
 
                 info!("Local node is listening on {address:?}");
             }
+            SwarmEvent::ListenerClosed {
+                listener_id,
+                addresses,
+                reason,
+            } => {
+                event_string = "listener closed";
+                info!("Listener {listener_id:?} with add {addresses:?} has been closed for {reason:?}");
+                self.relay_manager.update_on_listener_closed(&listener_id);
+            }
             SwarmEvent::IncomingConnection {
                 connection_id,
                 local_addr,
