@@ -272,7 +272,7 @@ impl SwarmDriver {
                         // if we are private, establish relay
                         if new == NatStatus::Private {
                             self.is_known_behind_nat = true;
-                            warn!("BEHIND NAT>>>>>>>");
+                            info!("BEHIND NAT");
                         } else if let NatStatus::Public(addr) = new {
                             self.is_known_behind_nat = false;
                             info!("NOT BEHIND NAT go server mode!!");
@@ -386,6 +386,15 @@ impl SwarmDriver {
                                 .collect(),
                         };
 
+                        if !self.local && peer_is_node {
+                            // add potential relay candidates.
+                            self.relay_manager.add_potential_candidates(
+                                &peer_id,
+                                &addrs,
+                                &info.protocols,
+                            );
+                        }
+
                         // When received an identify from un-dialed peer, try to dial it
                         // The dial shall trigger the same identify to be sent again and confirm
                         // peer is external accessible, hence safe to be added into RT.
@@ -418,13 +427,6 @@ impl SwarmDriver {
                                 // hence return true to skip further action.
                                 (true, None)
                             };
-
-                            // add potential relay candidates.
-                            self.relay_manager.add_potential_candidates(
-                                &peer_id,
-                                &addrs,
-                                &info.protocols,
-                            );
 
                             // Add some autonat logic here
                             for p in info.protocols {
