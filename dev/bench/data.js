@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712694656139,
+  "lastUpdate": 1712694658789,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "2931d70b115b9b7b02ec0158f1da15db02413f19",
-          "message": "test(node): formalise small wait after starting payment listener",
-          "timestamp": "2023-12-05T14:43:04Z",
-          "tree_id": "cca5448a82bffde41ab0902d84ff6fae2a43f68d",
-          "url": "https://github.com/maidsafe/safe_network/commit/2931d70b115b9b7b02ec0158f1da15db02413f19"
-        },
-        "date": 1701789867055,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 724,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 184,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "db8098cac9219ee7748cf5d07daeb9d2223c77f1",
+          "message": "fix: incorrect release type reference\n\nAlready tried to fix this bug with the faucet upgrade process downloading the wrong, but somehow\nstill managed to miss another hard-coded `ReleaseType` reference.",
+          "timestamp": "2024-04-09T19:39:26Z",
+          "tree_id": "515672dce86fbca97c24f6737a086068f854a4fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/db8098cac9219ee7748cf5d07daeb9d2223c77f1"
+        },
+        "date": 1712694657660,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
