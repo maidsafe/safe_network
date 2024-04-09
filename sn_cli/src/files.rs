@@ -15,7 +15,7 @@ mod upload;
 pub use chunk_manager::ChunkManager;
 pub use download::{download_file, download_files};
 pub use estimate::Estimator;
-pub use files_uploader::FilesUploader;
+pub use files_uploader::{FilesUploadStatusNotifier, FilesUploader};
 pub use upload::{UploadedFile, UPLOADED_FILES};
 
 use color_eyre::Result;
