@@ -25,6 +25,7 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
+use serde::{Deserialize, Serialize};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
@@ -35,6 +36,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
+    time::SystemTime,
     vec,
 };
 use tokio::sync::mpsc;
@@ -43,6 +45,9 @@ use xor_name::XorName;
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
+
+/// File name of the recorded historical quoting metrics.
+const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
@@ -71,7 +76,7 @@ pub struct NodeRecordStore {
     /// Plus a 4 byte nonce starter
     encryption_details: (Aes256GcmSiv, [u8; 4]),
     /// Time that this record_store got started
-    timestamp: Instant,
+    timestamp: SystemTime,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -105,9 +110,15 @@ fn generate_nonce_for_record(nonce_starter: &[u8; 4], key: &Key) -> Nonce {
     Nonce::from_iter(nonce_bytes)
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+struct HistoricQuotingMetrics {
+    received_payment_count: usize,
+    timestamp: SystemTime,
+}
+
 impl NodeRecordStore {
     /// If a directory for our node already exists, repopulate the records from the files in the dir
-    pub fn update_records_from_an_existing_store(
+    fn update_records_from_an_existing_store(
         config: &NodeRecordStoreConfig,
         encryption_details: &(Aes256GcmSiv, [u8; 4]),
     ) -> HashMap<Key, (NetworkAddress, RecordType)> {
@@ -175,6 +186,38 @@ impl NodeRecordStore {
         records
     }
 
+    /// If quote_metrics file already exists, using the existing parameters.
+    fn restore_quoting_metrics(storage_dir: &Path) -> Option<HistoricQuotingMetrics> {
+        let file_path = storage_dir.join(HISTORICAL_QUOTING_METRICS_FILENAME);
+
+        if let Ok(file) = fs::File::open(file_path) {
+            if let Ok(quoting_metrics) = rmp_serde::from_read(&file) {
+                return Some(quoting_metrics);
+            }
+        }
+
+        None
+    }
+
+    fn flush_historic_quoting_metrics(&self) {
+        let file_path = self
+            .config
+            .storage_dir
+            .join(HISTORICAL_QUOTING_METRICS_FILENAME);
+
+        let historic_quoting_metrics = HistoricQuotingMetrics {
+            received_payment_count: self.received_payment_count,
+            timestamp: self.timestamp,
+        };
+
+        spawn(async move {
+            if let Ok(mut file) = fs::File::create(file_path) {
+                let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
+                let _ = historic_quoting_metrics.serialize(&mut serialiser);
+            }
+        });
+    }
+
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub fn with_config(
         local_id: PeerId,
@@ -188,8 +231,22 @@ impl NodeRecordStore {
         OsRng.fill_bytes(&mut nonce_starter);
 
         let encryption_details = (cipher, nonce_starter);
+
+        // Recover the quoting_metrics first, as the historical file will be cleaned by
+        // the later on update_records_from_an_existing_store function
+        let (received_payment_count, timestamp) = if let Some(historic_quoting_metrics) =
+            Self::restore_quoting_metrics(&config.storage_dir)
+        {
+            (
+                historic_quoting_metrics.received_payment_count,
+                historic_quoting_metrics.timestamp,
+            )
+        } else {
+            (0, SystemTime::now())
+        };
+
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
-        NodeRecordStore {
+        let record_store = NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             local_address: NetworkAddress::from_peer(local_id),
             config,
@@ -199,10 +256,14 @@ impl NodeRecordStore {
             responsible_distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
-            received_payment_count: 0,
+            received_payment_count,
             encryption_details,
-            timestamp: Instant::now(),
-        }
+            timestamp,
+        };
+
+        record_store.flush_historic_quoting_metrics();
+
+        record_store
     }
 
     /// Set the record_count_metric to report the number of records stored to the metrics server
@@ -432,11 +493,17 @@ impl NodeRecordStore {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
+        let live_time = if let Ok(elapsed) = self.timestamp.elapsed() {
+            elapsed.as_secs()
+        } else {
+            0
+        };
+
         let mut quoting_metrics = QuotingMetrics {
             close_records_stored: records_stored,
             max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
-            live_time: self.timestamp.elapsed().as_secs(),
+            live_time,
         };
 
         if let Some(distance_range) = self.responsible_distance_range {
@@ -468,6 +535,8 @@ impl NodeRecordStore {
     /// Notify the node received a payment.
     pub(crate) fn payment_received(&mut self) {
         self.received_payment_count = self.received_payment_count.saturating_add(1);
+
+        self.flush_historic_quoting_metrics();
     }
 
     /// Calculate how many records are stored within a distance range
