@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::get_progress_bar;
 use crate::ChunkManager;
 use bytes::Bytes;
 use color_eyre::{eyre::eyre, Report, Result};
@@ -16,8 +17,9 @@ use sn_client::{
     transfers::{TransferError, WalletError},
     Client, Error as ClientError, UploadCfg, UploadEvent, UploadSummary, Uploader,
 };
-use sn_protocol::storage::Chunk;
+use sn_protocol::storage::{Chunk, ChunkAddress};
 use std::{
+    ffi::OsString,
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
@@ -26,7 +28,15 @@ use tracing::{debug, error, info, warn};
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-use super::get_progress_bar;
+/// The result of a successful files upload.
+pub struct FilesUploadSummary {
+    /// The cost and count summary of the upload.
+    pub upload_summary: UploadSummary,
+    /// The list of completed files (FilePath, FileName, HeadChunkAddress)
+    pub completed_files: Vec<(PathBuf, OsString, ChunkAddress)>,
+    /// The list of incomplete files (FilePath, FileName, HeadChunkAddress)
+    pub incomplete_files: Vec<(PathBuf, OsString, ChunkAddress)>,
+}
 
 /// Combines the `Uploader` along with the `ChunkManager`
 pub struct FilesUploader {
@@ -79,7 +89,7 @@ impl FilesUploader {
         self
     }
 
-    pub async fn start_upload(self) -> Result<UploadSummary> {
+    pub async fn start_upload(self) -> Result<FilesUploadSummary> {
         let mut chunk_manager = ChunkManager::new(&self.root_dir);
         let chunks_to_upload = self.get_chunks_to_upload(&mut chunk_manager).await?;
         let chunks_to_upload_len = chunks_to_upload.len();
@@ -119,7 +129,7 @@ impl FilesUploader {
             );
         }
 
-        let summary = match uploader.start_upload().await {
+        let upload_sum = match uploader.start_upload().await {
             Ok(summary) => summary,
             Err(ClientError::Wallet(WalletError::Transfer(TransferError::NotEnoughBalance(
                 available,
@@ -132,32 +142,43 @@ impl FilesUploader {
             }
             Err(err) => return Err(eyre!("Failed to upload chunk batch: {err}")),
         };
-        events_handle.await??;
+        let chunk_manager = events_handle.await??;
 
         let elapsed = Self::msg_format_elapsed_time(now.elapsed());
         println!(
             "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
             the leftover {} chunks in {elapsed}",
-            summary.skipped_count, summary.uploaded_count,
+            upload_sum.skipped_count, upload_sum.uploaded_count,
         );
         info!(
             "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
             the leftover {} chunks in {elapsed}",
-            summary.skipped_count, summary.uploaded_count,
+            upload_sum.skipped_count, upload_sum.uploaded_count,
         );
         println!("**************************************");
         println!("*          Payment Details           *");
         println!("**************************************");
         println!(
             "Made payment of {:?} for {} chunks",
-            summary.storage_cost, summary.uploaded_count
+            upload_sum.storage_cost, upload_sum.uploaded_count
         );
         println!(
             "Made payment of {:?} for royalties fees",
-            summary.royalty_fees
+            upload_sum.royalty_fees
         );
-        println!("New wallet balance: {}", summary.final_balance);
+        println!("New wallet balance: {}", upload_sum.final_balance);
 
+        let summary = FilesUploadSummary {
+            upload_summary: upload_sum,
+            completed_files: chunk_manager.completed_files().clone(),
+            incomplete_files: chunk_manager
+                .incomplete_files()
+                .into_iter()
+                .map(|(path, file_name, head_address)| {
+                    (path.clone(), file_name.clone(), *head_address)
+                })
+                .collect(),
+        };
         Ok(summary)
     }
 
@@ -246,7 +267,7 @@ impl FilesUploader {
         make_data_public: bool,
         chunks_to_upload_len: usize,
         mut upload_event_rx: Receiver<UploadEvent>,
-    ) -> Result<JoinHandle<Result<()>>> {
+    ) -> Result<JoinHandle<Result<ChunkManager>>> {
         let progress_bar = get_progress_bar(chunks_to_upload_len as u64)?;
         let handle = tokio::spawn(async move {
             let mut upload_terminated_with_error = false;
@@ -279,7 +300,7 @@ impl FilesUploader {
             if upload_terminated_with_error {
                 error!("Got UploadEvent::Error inside upload event loop");
             } else {
-                for file_name in chunk_manager.incomplete_files() {
+                for (_, file_name, _) in chunk_manager.incomplete_files() {
                     if let Some(file_name) = file_name.to_str() {
                         println!("Unverified file \"{file_name}\", suggest to re-upload again.");
                         info!("Unverified {file_name}");
@@ -294,7 +315,7 @@ impl FilesUploader {
                 Self::print_completed_file_list(&chunk_manager);
             }
 
-            Ok::<_, Report>(())
+            Ok::<_, Report>(chunk_manager)
         });
 
         Ok(handle)
@@ -323,7 +344,7 @@ impl FilesUploader {
     }
 
     fn print_completed_file_list(chunk_manager: &ChunkManager) {
-        for (file_name, addr) in chunk_manager.completed_files() {
+        for (_, file_name, addr) in chunk_manager.completed_files() {
             let hex_addr = addr.to_hex();
             if let Some(file_name) = file_name.to_str() {
                 println!("\"{file_name}\" {hex_addr}");

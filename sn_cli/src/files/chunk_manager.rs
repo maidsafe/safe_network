@@ -69,7 +69,7 @@ pub struct ChunkManager {
     artifacts_dir: PathBuf,
     files_to_chunk: Vec<(OsString, PathXorName, PathBuf)>,
     chunks: BTreeMap<PathXorName, ChunkedFile>,
-    completed_files: Vec<(OsString, ChunkAddress)>,
+    completed_files: Vec<(PathBuf, OsString, ChunkAddress)>,
     resumed_chunk_count: usize,
     resumed_files_count: usize,
 }
@@ -185,6 +185,7 @@ impl ChunkManager {
             let completed_files = self.chunks.iter().filter_map(|(_, chunked_file)| {
                 if chunked_file.chunks.is_empty() {
                     Some((
+                        chunked_file.file_path.clone(),
                         chunked_file.file_name.clone(),
                         chunked_file.head_chunk_address,
                     ))
@@ -391,6 +392,7 @@ impl ChunkManager {
                 trace!("removed {path_xor:?} from chunks list");
 
                 self.completed_files.push((
+                    chunked_file.file_path.clone(),
                     chunked_file.file_name.clone(),
                     chunked_file.head_chunk_address,
                 ));
@@ -430,15 +432,21 @@ impl ChunkManager {
 
     /// Return the filename and the file's Xor address if all their chunks has been marked as
     /// completed
-    pub(crate) fn completed_files(&self) -> &Vec<(OsString, ChunkAddress)> {
+    pub(crate) fn completed_files(&self) -> &Vec<(PathBuf, OsString, ChunkAddress)> {
         &self.completed_files
     }
 
     /// Return the list of Filenames that have some chunks that are yet to be marked as completed.
-    pub(crate) fn incomplete_files(&self) -> Vec<&OsString> {
+    pub(crate) fn incomplete_files(&self) -> Vec<(&PathBuf, &OsString, &ChunkAddress)> {
         self.chunks
             .values()
-            .map(|chunked_file| &chunked_file.file_name)
+            .map(|chunked_file| {
+                (
+                    &chunked_file.file_path,
+                    &chunked_file.file_name,
+                    &chunked_file.head_chunk_address,
+                )
+            })
             .collect()
     }
 
