@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712625773186,
+  "lastUpdate": 1712670444320,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "9e3b05a5e231397321257ad70067a0369cd41267",
-          "message": "fix: mark chunks as completed when no failures on retry",
-          "timestamp": "2023-12-05T11:44:29Z",
-          "tree_id": "15fbe1fd7aa1af48dcbce33a81cb0508e699e22a",
-          "url": "https://github.com/maidsafe/safe_network/commit/9e3b05a5e231397321257ad70067a0369cd41267"
-        },
-        "date": 1701779013307,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1390689508804686,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8867295436604123,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.66528625994924,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.20724820733236,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "1d4761a731f2c8b440c69284c81a5e9e94aae77d",
+          "message": "feat(cli): implement FilesUploadStatusNotifier trait for lib code\n\nThis would allow users of this struct to override the default stdout\nprinting and instead provide thier own custom impl",
+          "timestamp": "2024-04-09T12:43:51Z",
+          "tree_id": "b47e8dcc662f27c88e3871759d0cd3a0718d1e02",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d4761a731f2c8b440c69284c81a5e9e94aae77d"
+        },
+        "date": 1712670440387,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.238008216941316,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6534005617496181,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.45114564071913,
             "unit": "MiB/s"
           }
         ]
