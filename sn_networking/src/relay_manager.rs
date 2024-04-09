@@ -76,12 +76,9 @@ impl RelayManager {
 
         for (candidate_id, candidate_addr) in self.candidates.iter() {
             match swarm.dial(
-                DialOpts::peer_id(candidate_id.clone())
+                DialOpts::peer_id(*candidate_id)
                     .condition(PeerCondition::NotDialing)
-                    // todo: should we add P2pCircuit here?
-                    // Just perform a direct connection and if the peer supports circuit protocol, the listen_on it.
-                    // the `listen_on(adrr.with P2pP)` will create the persistent relay connection right?
-                    .addresses(vec![candidate_addr.clone().with(Protocol::P2pCircuit)])
+                    .addresses(vec![candidate_addr.clone()])
                     .build(),
             ) {
                 Ok(_) => {
