@@ -11,6 +11,6 @@ mod files;
 
 pub use acc_packet::AccountPacket;
 pub use files::{
-    download_file, download_files, ChunkManager, Estimator, FilesUploader, UploadedFile,
-    UPLOADED_FILES,
+    download_file, download_files, ChunkManager, Estimator, FilesUploadStatusNotifier,
+    FilesUploader, UploadedFile, UPLOADED_FILES,
 };
