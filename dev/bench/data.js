@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712623599071,
+  "lastUpdate": 1712623600551,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30614,45 +30614,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6ebee0ec7f8a308f6681ecd487af7e7c27523b99",
-          "message": "chore(sn_networking): enable_gossip via the builder pattern",
-          "timestamp": "2023-11-21T14:55:20Z",
-          "tree_id": "70fd6639ab616d731da86a1f9f3f3fa8938035ae",
-          "url": "https://github.com/maidsafe/safe_network/commit/6ebee0ec7f8a308f6681ecd487af7e7c27523b99"
-        },
-        "date": 1700581250845,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7222,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 104735,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34926,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f86f758711c5c54a8a810b3f18c69f931c1726eb",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 5.4.5 to 6.0.0\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 5.4.5 to 6.0.0.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/5ce82f5d814d4010519d15f0552aec4f17a1e1fe...3c75220e8d20774b68eea48e869a706ff7249b54)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-04-09T09:32:21+09:00",
+          "tree_id": "9f44daadc68da1f72635322071cdd8d2e6f133fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/f86f758711c5c54a8a810b3f18c69f931c1726eb"
+        },
+        "date": 1712623600223,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7255,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33419,
             "unit": "ms"
           },
           {
