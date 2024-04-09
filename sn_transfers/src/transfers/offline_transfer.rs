@@ -31,7 +31,7 @@ pub struct OfflineTransfer {
     /// The cash_notes that were created containing
     /// the tokens sent to respective recipient.
     #[debug(skip)]
-    pub created_cash_notes: Vec<CashNote>,
+    pub cash_notes_for_recipient: Vec<CashNote>,
     /// The cash_note holding surplus tokens after
     /// spending the necessary input cash_notes.
     #[debug(skip)]
@@ -70,7 +70,7 @@ impl OfflineTransfer {
 
         Ok(Self {
             tx,
-            created_cash_notes,
+            cash_notes_for_recipient: created_cash_notes,
             change_cash_note,
             all_spend_requests: signed_spends.into_iter().collect(),
         })
@@ -345,7 +345,7 @@ fn create_offline_transfer_with(
 
     Ok(OfflineTransfer {
         tx,
-        created_cash_notes,
+        cash_notes_for_recipient: created_cash_notes,
         change_cash_note,
         all_spend_requests,
     })
