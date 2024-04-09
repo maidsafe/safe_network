@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712678337211,
+  "lastUpdate": 1712694545759,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "2931d70b115b9b7b02ec0158f1da15db02413f19",
-          "message": "test(node): formalise small wait after starting payment listener",
-          "timestamp": "2023-12-05T14:43:04Z",
-          "tree_id": "cca5448a82bffde41ab0902d84ff6fae2a43f68d",
-          "url": "https://github.com/maidsafe/safe_network/commit/2931d70b115b9b7b02ec0158f1da15db02413f19"
-        },
-        "date": 1701789701089,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1237729830220529,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.62955556732252,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 40.87526871221766,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.59401664507749,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "db8098cac9219ee7748cf5d07daeb9d2223c77f1",
+          "message": "fix: incorrect release type reference\n\nAlready tried to fix this bug with the faucet upgrade process downloading the wrong, but somehow\nstill managed to miss another hard-coded `ReleaseType` reference.",
+          "timestamp": "2024-04-09T19:39:26Z",
+          "tree_id": "515672dce86fbca97c24f6737a086068f854a4fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/db8098cac9219ee7748cf5d07daeb9d2223c77f1"
+        },
+        "date": 1712694541070,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2169133159399592,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6540645299811834,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.86963188270402,
             "unit": "MiB/s"
           }
         ]
