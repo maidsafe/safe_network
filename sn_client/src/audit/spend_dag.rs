@@ -126,7 +126,7 @@ impl SpendDag {
                 );
                 node_idx
             }
-            // or upgrade existing utxo to spend
+            // or upgrade a known but not gathered entry to spend
             Some(DagEntry::NotGatheredYet(idx)) => {
                 self.spends
                     .insert(spend_addr, DagEntry::Spend(Box::new(spend.clone()), idx));
@@ -324,42 +324,54 @@ impl SpendDag {
     }
 
     /// helper that returns the direct ancestors of a given spend
-    fn get_ancestor_spends(
+    /// along with any faults detected
+    /// On error returns the address of the missing ancestor
+    fn get_direct_ancestors(
         &self,
         spend: &SignedSpend,
-    ) -> Result<BTreeSet<SignedSpend>, SpendFault> {
+    ) -> Result<(BTreeSet<SignedSpend>, BTreeSet<SpendFault>), SpendAddress> {
         let addr = spend.address();
         let mut ancestors = BTreeSet::new();
+        let mut faults = BTreeSet::new();
         for input in spend.spend.parent_tx.inputs.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
             match self.spends.get(&ancestor_addr) {
                 Some(DagEntry::Spend(ancestor_spend, _)) => {
                     ancestors.insert(*ancestor_spend.clone());
                 }
-                Some(DagEntry::NotGatheredYet(_)) => {
-                    warn!("UnknownAncestor: ancestor {ancestor_addr:?} was not gathered yet for spend {spend:?}");
-                    return Err(SpendFault::UnknownAncestor {
-                        addr,
-                        ancestor_addr,
-                    });
+                Some(DagEntry::NotGatheredYet(_)) | None => {
+                    warn!("Direct ancestor of {spend:?} at {ancestor_addr:?} is missing");
+                    return Err(ancestor_addr);
                 }
-                Some(DagEntry::DoubleSpend(_)) => {
-                    warn!("InvalidAncestry: DoubleSpend ancestor {ancestor_addr:?} for spend {spend:?}");
-                    return Err(SpendFault::InvalidAncestry {
+                Some(DagEntry::DoubleSpend(multiple_ancestors)) => {
+                    debug!("Direct ancestor for spend {spend:?} at {ancestor_addr:?} is a double spend");
+                    faults.insert(SpendFault::DoubleSpentAncestor {
                         addr,
-                        invalid_ancestor: ancestor_addr,
+                        ancestor: ancestor_addr,
                     });
-                }
-                None => {
-                    warn!("MissingAncestry: ancestor {ancestor_addr:?} is unknown for spend {spend:?}");
-                    return Err(SpendFault::MissingAncestry {
-                        addr,
-                        invalid_ancestor: ancestor_addr,
-                    });
+                    let actual_ancestor: Vec<_> = multiple_ancestors
+                        .iter()
+                        .filter(|(s, _)| s.spend.spent_tx.hash() == spend.spend.parent_tx.hash())
+                        .map(|(s, _)| s.clone())
+                        .collect();
+                    match actual_ancestor.as_slice() {
+                        [ancestor_spend] => {
+                            debug!("Direct ancestor of {spend:?} at {ancestor_addr:?} is a double spend but one of those match our parent_tx hash, using it for verification");
+                            ancestors.insert(ancestor_spend.clone());
+                        }
+                        [ancestor1, _ancestor2, ..] => {
+                            warn!("Direct ancestor of {spend:?} at {ancestor_addr:?} is a double spend and mutliple match our parent_tx hash, using the first one for verification");
+                            ancestors.insert(ancestor1.clone());
+                        }
+                        [] => {
+                            warn!("Direct ancestor of {spend:?} at {ancestor_addr:?} is a double spend and none of them match the spend parent_tx, which means the parent for this spend is missing!");
+                            return Err(ancestor_addr);
+                        }
+                    }
                 }
             }
         }
-        Ok(ancestors)
+        Ok((ancestors, faults))
     }
 
     /// helper that returns all the descendants (recursively all the way to UTXOs) of a given spend
@@ -543,35 +555,34 @@ impl SpendDag {
         }
 
         // get the ancestors of this spend
-        let ancestor_spends = match self.get_ancestor_spends(spend) {
+        let (ancestor_spends, faults) = match self.get_direct_ancestors(spend) {
             Ok(a) => a,
-            Err(fault) => {
-                debug!("Failed to get ancestor spends of {addr:?}: {fault}");
-                recorded_faults.insert(fault.clone());
+            Err(missing_ancestor) => {
+                debug!("Failed to get ancestor spends of {addr:?} as ancestor at {missing_ancestor:?} is missing");
+                recorded_faults.insert(SpendFault::MissingAncestry {
+                    addr,
+                    ancestor: missing_ancestor,
+                });
 
-                // if ancestry is invalid, poison all the descendants
-                let poison = format!("ancestry issue: {fault}");
+                let poison = format!("missing ancestor at: {missing_ancestor:?}");
                 let descendants_faults = self.poison_all_descendants(spend, poison)?;
                 recorded_faults.extend(descendants_faults);
                 return Ok(recorded_faults);
             }
         };
+        recorded_faults.extend(faults);
 
         // verify the tx
-        match spend
+        if let Err(e) = spend
             .spend
             .parent_tx
             .verify_against_inputs_spent(&ancestor_spends)
         {
-            Ok(_) => (),
-            Err(e) => {
-                recorded_faults.insert(SpendFault::InvalidTransaction(addr, format!("{e}")));
-
-                // mark this spend's descendants as poisoned if tx is invalid
-                let poison = format!("ancestor transaction was poisoned at: {addr:?}: {e}");
-                let descendants_faults = self.poison_all_descendants(spend, poison)?;
-                recorded_faults.extend(descendants_faults);
-            }
+            warn!("Parent Tx verfication failed for spend at: {addr:?}: {e}");
+            recorded_faults.insert(SpendFault::InvalidTransaction(addr, format!("{e}")));
+            let poison = format!("ancestor transaction was poisoned at: {addr:?}: {e}");
+            let descendants_faults = self.poison_all_descendants(spend, poison)?;
+            recorded_faults.extend(descendants_faults);
         }
 
         Ok(recorded_faults)
