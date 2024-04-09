@@ -75,12 +75,13 @@ fn write_network_version_with_slash() -> String {
 }
 
 // Protocol support shall be downward compatible for patch only version update.
-// i.e. versions of `A.B.X` shall be considered as a same protocol of `A.B`
-// And any pre-release versions `A.B.C-alpha.X` shall be considered as a same protocol of `A.B.C-alpha`
-fn get_truncate_version_str() -> &'static str {
+// i.e. versions of `A.B.X` or `A.B.X-alpha.Y` shall be considered as a same protocol of `A.B`
+fn get_truncate_version_str() -> String {
     let version_str = env!("CARGO_PKG_VERSION");
-    match version_str.rfind('.') {
-        Some(pos) => &version_str[..pos],
-        None => version_str,
+    let parts = version_str.split('.').collect::<Vec<_>>();
+    if parts.len() >= 2 {
+        format!("{}.{}", parts[0], parts[1])
+    } else {
+        panic!("Cannot obtain truncated version str for {version_str:?}: {parts:?}");
     }
 }
