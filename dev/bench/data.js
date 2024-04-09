@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712694658789,
+  "lastUpdate": 1712694661676,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "ea4a9098747c45c3fc1d7bd76ab63fb11577445c",
-          "message": "test(node): increase timeout on gossipsub msg tests",
-          "timestamp": "2023-11-23T14:29:28Z",
-          "tree_id": "8598d3aee030ad324aa6c99d8f687a1a585094ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/ea4a9098747c45c3fc1d7bd76ab63fb11577445c"
-        },
-        "date": 1700753047388,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6583,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 82202,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 12,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34066,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "db8098cac9219ee7748cf5d07daeb9d2223c77f1",
+          "message": "fix: incorrect release type reference\n\nAlready tried to fix this bug with the faucet upgrade process downloading the wrong, but somehow\nstill managed to miss another hard-coded `ReleaseType` reference.",
+          "timestamp": "2024-04-09T19:39:26Z",
+          "tree_id": "515672dce86fbca97c24f6737a086068f854a4fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/db8098cac9219ee7748cf5d07daeb9d2223c77f1"
+        },
+        "date": 1712694660536,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7379,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36055,
             "unit": "ms"
           },
           {
