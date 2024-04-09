@@ -65,6 +65,7 @@ impl RelayManager {
             if let Some(addr) = addrs.iter().next() {
                 // only consider non relayed peers
                 if !addr.iter().any(|p| p == Protocol::P2pCircuit) {
+                    debug!("Adding {peer_id:?} with {addr:?} as a potential relay candidate");
                     self.candidates.push_back((*peer_id, addr.clone()));
                 }
             }
@@ -75,7 +76,9 @@ impl RelayManager {
     /// Try connecting to candidate relays if we are below the threshold connections.
     /// This is run periodically on a loop.
     pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
-        if self.connected_relays.len() >= MAX_CONCURRENT_RELAY_CONNECTIONS {
+        if self.connected_relays.len() >= MAX_CONCURRENT_RELAY_CONNECTIONS
+            || self.candidates.is_empty()
+        {
             return;
         }
 
@@ -99,7 +102,7 @@ impl RelayManager {
                     }
                 }
             } else {
-                error!("No more relay candidates");
+                debug!("No more relay candidates.");
                 break;
             }
         }
