@@ -973,7 +973,7 @@ impl Client {
         // and compare them to the spends in the cash_note, to know if the
         // transfer is considered valid in the network.
         let mut tasks = Vec::new();
-        for spend in &cash_note.signed_spends {
+        for spend in &cash_note.parent_spends {
             let address = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
             debug!(
                 "Getting spend for pubkey {:?} from network at {address:?}",
@@ -991,7 +991,7 @@ impl Client {
 
         // If all the spends in the cash_note are the same as the ones in the network,
         // we have successfully verified that the cash_note is globally recognised and therefor valid.
-        if received_spends == cash_note.signed_spends {
+        if received_spends == cash_note.parent_spends {
             return Ok(());
         }
         Err(WalletError::CouldNotVerifyTransfer(

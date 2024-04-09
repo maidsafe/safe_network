@@ -74,7 +74,12 @@ impl WatchOnlyWallet {
         let cash_notes = load_cash_notes_from_disk(&self.wallet_dir)?;
         let spent_unique_pubkeys: BTreeSet<_> = cash_notes
             .iter()
-            .flat_map(|cn| cn.src_tx.inputs.iter().map(|input| input.unique_pubkey()))
+            .flat_map(|cn| {
+                cn.parent_tx
+                    .inputs
+                    .iter()
+                    .map(|input| input.unique_pubkey())
+            })
             .collect();
         self.deposit(&cash_notes)?;
         self.mark_notes_as_spent(spent_unique_pubkeys);
