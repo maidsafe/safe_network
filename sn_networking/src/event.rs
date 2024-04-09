@@ -270,11 +270,10 @@ impl SwarmDriver {
                         info!("NAT status change... was: {old:?} now: {new:?}");
 
                         // if we are private, establish relay
+                        self.relay_manager.set_nat_status(&new);
                         if new == NatStatus::Private {
-                            self.is_known_behind_nat = true;
                             info!("BEHIND NAT");
                         } else if let NatStatus::Public(addr) = new {
-                            self.is_known_behind_nat = false;
                             info!("NOT BEHIND NAT go server mode!!");
 
                             // Trigger server mode if we're not a client
@@ -326,7 +325,7 @@ impl SwarmDriver {
                 } = *event
                 {
                     self.relay_manager
-                        .update_on_successful_reservation(&relay_peer_id);
+                        .update_on_successful_reservation(&relay_peer_id, &mut self.swarm);
                 }
             }
 
