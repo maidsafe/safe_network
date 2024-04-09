@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712670552628,
+  "lastUpdate": 1712670554658,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d400521da55e7dd94a4e6492ace1705819f7cbe2",
-          "message": "chore: optimise log format of DerivationIndex",
-          "timestamp": "2023-11-22T15:43:58Z",
-          "tree_id": "3c367587cb748e751634f83166739def693da981",
-          "url": "https://github.com/maidsafe/safe_network/commit/d400521da55e7dd94a4e6492ace1705819f7cbe2"
-        },
-        "date": 1700670320921,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6718,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 76100,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 11,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34454,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "gabrielviganotti@gmail.com",
+            "name": "bochaco",
+            "username": "bochaco"
+          },
+          "distinct": true,
+          "id": "1d4761a731f2c8b440c69284c81a5e9e94aae77d",
+          "message": "feat(cli): implement FilesUploadStatusNotifier trait for lib code\n\nThis would allow users of this struct to override the default stdout\nprinting and instead provide thier own custom impl",
+          "timestamp": "2024-04-09T12:43:51Z",
+          "tree_id": "b47e8dcc662f27c88e3871759d0cd3a0718d1e02",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d4761a731f2c8b440c69284c81a5e9e94aae77d"
+        },
+        "date": 1712670554056,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7420,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32966,
             "unit": "ms"
           },
           {
