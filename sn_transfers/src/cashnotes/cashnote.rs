@@ -59,7 +59,7 @@ use tiny_keccak::{Hasher, Sha3};
 #[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct CashNote {
     /// The unique public key of this CashNote. It is unique, and there can never
-    /// be another CashNote with the same pulbic key. It used in SignedSpends.
+    /// be another CashNote with the same public key. It used in SignedSpends.
     pub unique_pubkey: UniquePubkey,
     /// The transaction where this CashNote was created.
     #[debug(skip)]
