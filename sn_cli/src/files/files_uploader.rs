@@ -38,30 +38,60 @@ pub struct FilesUploadSummary {
     pub incomplete_files: Vec<(PathBuf, OsString, ChunkAddress)>,
 }
 
+/// A trait designed to customize the standard output behavior for file upload processes.
+pub trait FilesUploadStatusNotifier: Send {
+    fn collect_entries(&mut self, entries_iter: Vec<DirEntry>);
+    fn collect_paths(&mut self, path: &Path);
+    fn on_verifying_uploaded_chunks_init(&self, chunks_len: usize);
+    fn on_verifying_uploaded_chunks_success(
+        &self,
+        completed_files: &[(PathBuf, OsString, ChunkAddress)],
+        make_data_public: bool,
+    );
+    fn on_verifying_uploaded_chunks_failure(&self, failed_chunks_len: usize);
+    fn on_failed_to_upload_all_files(
+        &self,
+        incomplete_files: Vec<(&PathBuf, &OsString, &ChunkAddress)>,
+        completed_files: &[(PathBuf, OsString, ChunkAddress)],
+        make_data_public: bool,
+    );
+    fn on_chunking_complete(
+        &self,
+        upload_cfg: &UploadCfg,
+        make_data_public: bool,
+        chunks_to_upload_len: usize,
+    );
+    fn on_upload_complete(
+        &self,
+        upload_sum: &UploadSummary,
+        elapsed_time: Duration,
+        chunks_to_upload_len: usize,
+    );
+}
+
 /// Combines the `Uploader` along with the `ChunkManager`
 pub struct FilesUploader {
     client: Client,
     root_dir: PathBuf,
-
-    // entries to upload
+    /// entries to upload
     entries_to_upload: Vec<DirEntry>,
-    // todo: remove this in favour of an trait that abstracts the std out printing.
-    file_paths_to_print: Vec<PathBuf>,
-
-    // config
+    /// The status notifier that can be overridden to perform custom actions instead of printing things to stdout.
+    status_notifier: Option<Box<dyn FilesUploadStatusNotifier>>,
+    /// config
     make_data_public: bool,
     upload_cfg: UploadCfg,
 }
 
 impl FilesUploader {
     pub fn new(client: Client, root_dir: PathBuf) -> Self {
+        let status_notifier = Box::new(StdOutPrinter {
+            file_paths_to_print: Default::default(),
+        });
         Self {
             client,
             root_dir,
-
             entries_to_upload: Default::default(),
-            file_paths_to_print: Default::default(),
-
+            status_notifier: Some(status_notifier),
             make_data_public: false,
             upload_cfg: Default::default(),
         }
@@ -77,25 +107,44 @@ impl FilesUploader {
         self
     }
 
+    /// Override the default status notifier. By default we print things to stdout.
+    pub fn set_status_notifier(
+        mut self,
+        status_notifier: Box<dyn FilesUploadStatusNotifier>,
+    ) -> Self {
+        self.status_notifier = Some(status_notifier);
+        self
+    }
+
     pub fn insert_entries(mut self, entries_iter: impl IntoIterator<Item = DirEntry>) -> Self {
         self.entries_to_upload.extend(entries_iter);
         self
     }
 
     pub fn insert_path(mut self, path: &Path) -> Self {
-        self.file_paths_to_print.push(path.to_path_buf());
+        if let Some(notifier) = &mut self.status_notifier {
+            notifier.collect_paths(path);
+        }
         let entries = WalkDir::new(path).into_iter().flatten();
         self.entries_to_upload.extend(entries);
         self
     }
 
-    pub async fn start_upload(self) -> Result<FilesUploadSummary> {
+    pub async fn start_upload(mut self) -> Result<FilesUploadSummary> {
         let mut chunk_manager = ChunkManager::new(&self.root_dir);
         let chunks_to_upload = self.get_chunks_to_upload(&mut chunk_manager).await?;
         let chunks_to_upload_len = chunks_to_upload.len();
 
-        let now = Instant::now();
+        // Notify on chunking complete
+        if let Some(notifier) = &self.status_notifier {
+            notifier.on_chunking_complete(
+                &self.upload_cfg,
+                self.make_data_public,
+                chunks_to_upload_len,
+            );
+        }
 
+        let now = Instant::now();
         let mut uploader = Uploader::new(self.client, self.root_dir);
         uploader.set_upload_cfg(self.upload_cfg);
         uploader.insert_chunk_paths(chunks_to_upload);
@@ -105,29 +154,8 @@ impl FilesUploader {
             self.make_data_public,
             chunks_to_upload_len,
             uploader.get_event_receiver(),
+            self.status_notifier.take(),
         )?;
-
-        for path in self.file_paths_to_print.iter() {
-            debug!(
-                "Uploading file(s) from {path:?} batch size {:?} will verify?: {}",
-                self.upload_cfg.batch_size, self.upload_cfg.verify_store
-            );
-            if self.make_data_public {
-                info!("{path:?} will be made public and linkable");
-                println!("{path:?} will be made public and linkable");
-            }
-        }
-        if self.file_paths_to_print.len() == 1 {
-            println!(
-                "Splitting and uploading {:?} into {chunks_to_upload_len} chunks",
-                self.file_paths_to_print[0]
-            );
-        } else {
-            println!(
-                "Splitting and uploading {:?} into {chunks_to_upload_len} chunks",
-                self.file_paths_to_print
-            );
-        }
 
         let upload_sum = match uploader.start_upload().await {
             Ok(summary) => summary,
@@ -142,31 +170,13 @@ impl FilesUploader {
             }
             Err(err) => return Err(eyre!("Failed to upload chunk batch: {err}")),
         };
-        let chunk_manager = events_handle.await??;
+        let (chunk_manager, status_notifier) = events_handle.await??;
+        self.status_notifier = status_notifier;
 
-        let elapsed = Self::msg_format_elapsed_time(now.elapsed());
-        println!(
-            "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
-            the leftover {} chunks in {elapsed}",
-            upload_sum.skipped_count, upload_sum.uploaded_count,
-        );
-        info!(
-            "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
-            the leftover {} chunks in {elapsed}",
-            upload_sum.skipped_count, upload_sum.uploaded_count,
-        );
-        println!("**************************************");
-        println!("*          Payment Details           *");
-        println!("**************************************");
-        println!(
-            "Made payment of {:?} for {} chunks",
-            upload_sum.storage_cost, upload_sum.uploaded_count
-        );
-        println!(
-            "Made payment of {:?} for royalties fees",
-            upload_sum.royalty_fees
-        );
-        println!("New wallet balance: {}", upload_sum.final_balance);
+        // Notify on upload complete
+        if let Some(notifier) = &self.status_notifier {
+            notifier.on_upload_complete(&upload_sum, now.elapsed(), chunks_to_upload_len);
+        }
 
         let summary = FilesUploadSummary {
             upload_summary: upload_sum,
@@ -204,10 +214,11 @@ impl FilesUploader {
                 self.make_data_public,
             )?;
 
-            println!(
-                "Files upload attempted previously, verifying {} chunks",
-                chunks.len()
-            );
+            // Notify on verification init
+            if let Some(notifier) = &self.status_notifier {
+                notifier.on_verifying_uploaded_chunks_init(chunks.len());
+            }
+
             let failed_chunks = self.verify_uploaded_chunks(&chunks).await?;
 
             chunk_manager.mark_completed(
@@ -218,17 +229,20 @@ impl FilesUploader {
             )?;
 
             if failed_chunks.is_empty() {
-                println!("All files were already uploaded and verified");
-                Self::print_uploaded_msg(self.make_data_public);
-
-                if chunk_manager.completed_files().is_empty() {
-                    println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+                // Notify on verification success
+                if let Some(notifier) = &self.status_notifier {
+                    notifier.on_verifying_uploaded_chunks_success(
+                        chunk_manager.completed_files(),
+                        self.make_data_public,
+                    );
                 }
-                Self::print_completed_file_list(chunk_manager);
 
                 return Ok(vec![]);
             }
-            println!("{} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...", failed_chunks.len());
+            // Notify on verification failure
+            if let Some(notifier) = &self.status_notifier {
+                notifier.on_verifying_uploaded_chunks_failure(failed_chunks.len());
+            }
             failed_chunks
         };
         // shuffle the chunks
@@ -262,12 +276,15 @@ impl FilesUploader {
         Ok(failed_chunks)
     }
 
+    #[allow(clippy::type_complexity)]
     fn spawn_upload_events_handler(
         mut chunk_manager: ChunkManager,
         make_data_public: bool,
         chunks_to_upload_len: usize,
         mut upload_event_rx: Receiver<UploadEvent>,
-    ) -> Result<JoinHandle<Result<ChunkManager>>> {
+        status_notifier: Option<Box<dyn FilesUploadStatusNotifier>>,
+    ) -> Result<JoinHandle<Result<(ChunkManager, Option<Box<dyn FilesUploadStatusNotifier>>)>>>
+    {
         let progress_bar = get_progress_bar(chunks_to_upload_len as u64)?;
         let handle = tokio::spawn(async move {
             let mut upload_terminated_with_error = false;
@@ -300,34 +317,157 @@ impl FilesUploader {
             if upload_terminated_with_error {
                 error!("Got UploadEvent::Error inside upload event loop");
             } else {
-                for (_, file_name, _) in chunk_manager.incomplete_files() {
-                    if let Some(file_name) = file_name.to_str() {
-                        println!("Unverified file \"{file_name}\", suggest to re-upload again.");
-                        info!("Unverified {file_name}");
-                    } else {
-                        println!("Unverified file \"{file_name:?}\", suggest to re-upload again.");
-                        info!("Unverified file {file_name:?}");
-                    }
+                // Notify on upload failure
+                if let Some(notifier) = &status_notifier {
+                    notifier.on_failed_to_upload_all_files(
+                        chunk_manager.incomplete_files(),
+                        chunk_manager.completed_files(),
+                        make_data_public,
+                    );
                 }
-
-                // log uploaded file information
-                Self::print_uploaded_msg(make_data_public);
-                Self::print_completed_file_list(&chunk_manager);
             }
 
-            Ok::<_, Report>(chunk_manager)
+            Ok::<_, Report>((chunk_manager, status_notifier))
         });
 
         Ok(handle)
     }
+}
 
-    fn msg_format_elapsed_time(elapsed_time: Duration) -> String {
+/// The default
+struct StdOutPrinter {
+    file_paths_to_print: Vec<PathBuf>,
+}
+
+impl FilesUploadStatusNotifier for StdOutPrinter {
+    fn collect_entries(&mut self, _entries_iter: Vec<DirEntry>) {}
+
+    fn collect_paths(&mut self, path: &Path) {
+        self.file_paths_to_print.push(path.to_path_buf());
+    }
+
+    fn on_verifying_uploaded_chunks_init(&self, chunks_len: usize) {
+        println!("Files upload attempted previously, verifying {chunks_len} chunks",);
+    }
+
+    fn on_verifying_uploaded_chunks_success(
+        &self,
+        completed_files: &[(PathBuf, OsString, ChunkAddress)],
+        make_data_public: bool,
+    ) {
+        println!("All files were already uploaded and verified");
+        Self::print_uploaded_msg(make_data_public);
+
+        if completed_files.is_empty() {
+            println!("chunk_manager doesn't have any verified_files, nor any failed_chunks to re-upload.");
+        }
+        Self::print_completed_file_list(completed_files);
+    }
+
+    fn on_verifying_uploaded_chunks_failure(&self, failed_chunks_len: usize) {
+        println!("{failed_chunks_len} chunks were uploaded in the past but failed to verify. Will attempt to upload them again...");
+    }
+
+    fn on_failed_to_upload_all_files(
+        &self,
+        incomplete_files: Vec<(&PathBuf, &OsString, &ChunkAddress)>,
+        completed_files: &[(PathBuf, OsString, ChunkAddress)],
+        make_data_public: bool,
+    ) {
+        for (_, file_name, _) in incomplete_files {
+            if let Some(file_name) = file_name.to_str() {
+                println!("Unverified file \"{file_name}\", suggest to re-upload again.");
+                info!("Unverified {file_name}");
+            } else {
+                println!("Unverified file \"{file_name:?}\", suggest to re-upload again.");
+                info!("Unverified file {file_name:?}");
+            }
+        }
+
+        // log uploaded file information
+        Self::print_uploaded_msg(make_data_public);
+        Self::print_completed_file_list(completed_files);
+    }
+
+    fn on_chunking_complete(
+        &self,
+        upload_cfg: &UploadCfg,
+        make_data_public: bool,
+        chunks_to_upload_len: usize,
+    ) {
+        for path in self.file_paths_to_print.iter() {
+            debug!(
+                "Uploading file(s) from {path:?} batch size {:?} will verify?: {}",
+                upload_cfg.batch_size, upload_cfg.verify_store
+            );
+            if make_data_public {
+                info!("{path:?} will be made public and linkable");
+                println!("{path:?} will be made public and linkable");
+            }
+        }
+        if self.file_paths_to_print.len() == 1 {
+            println!(
+                "Splitting and uploading {:?} into {chunks_to_upload_len} chunks",
+                self.file_paths_to_print[0]
+            );
+        } else {
+            println!(
+                "Splitting and uploading {:?} into {chunks_to_upload_len} chunks",
+                self.file_paths_to_print
+            );
+        }
+    }
+
+    fn on_upload_complete(
+        &self,
+        upload_sum: &UploadSummary,
+        elapsed_time: Duration,
+        chunks_to_upload_len: usize,
+    ) {
         let elapsed_minutes = elapsed_time.as_secs() / 60;
         let elapsed_seconds = elapsed_time.as_secs() % 60;
-        if elapsed_minutes > 0 {
+        let elapsed = if elapsed_minutes > 0 {
             format!("{elapsed_minutes} minutes {elapsed_seconds} seconds")
         } else {
             format!("{elapsed_seconds} seconds")
+        };
+
+        println!(
+            "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
+            the leftover {} chunks in {elapsed}",
+            upload_sum.skipped_count, upload_sum.uploaded_count,
+        );
+        info!(
+            "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
+            the leftover {} chunks in {elapsed}",
+            upload_sum.skipped_count, upload_sum.uploaded_count,
+        );
+        println!("**************************************");
+        println!("*          Payment Details           *");
+        println!("**************************************");
+        println!(
+            "Made payment of {:?} for {} chunks",
+            upload_sum.storage_cost, upload_sum.uploaded_count
+        );
+        println!(
+            "Made payment of {:?} for royalties fees",
+            upload_sum.royalty_fees
+        );
+        println!("New wallet balance: {}", upload_sum.final_balance);
+    }
+}
+
+impl StdOutPrinter {
+    fn print_completed_file_list(completed_files: &[(PathBuf, OsString, ChunkAddress)]) {
+        for (_, file_name, addr) in completed_files {
+            let hex_addr = addr.to_hex();
+            if let Some(file_name) = file_name.to_str() {
+                println!("\"{file_name}\" {hex_addr}");
+                info!("Uploaded {file_name} to {hex_addr}");
+            } else {
+                println!("\"{file_name:?}\" {hex_addr}");
+                info!("Uploaded {file_name:?} to {hex_addr}");
+            }
         }
     }
 
@@ -341,18 +481,5 @@ impl FilesUploader {
             println!("*      to publish the datamaps.      *");
         }
         println!("**************************************");
-    }
-
-    fn print_completed_file_list(chunk_manager: &ChunkManager) {
-        for (_, file_name, addr) in chunk_manager.completed_files() {
-            let hex_addr = addr.to_hex();
-            if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {hex_addr}");
-                info!("Uploaded {file_name} to {hex_addr}");
-            } else {
-                println!("\"{file_name:?}\" {hex_addr}");
-                info!("Uploaded {file_name:?} to {hex_addr}");
-            }
-        }
     }
 }
