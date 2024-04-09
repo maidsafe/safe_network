@@ -261,6 +261,10 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Autonat(autonat_event)) => {
                 event_string = "autonat_event";
 
+                if self.is_client {
+                    return Ok(());
+                }
+
                 match *autonat_event {
                     libp2p::autonat::Event::StatusChanged { old, new } => {
                         info!("NAT status change... was: {old:?} now: {new:?}");
