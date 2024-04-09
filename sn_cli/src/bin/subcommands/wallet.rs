@@ -61,7 +61,7 @@ impl WalletApiHelper {
         let cash_notes = vec![cash_note.clone()];
 
         let spent_unique_pubkeys: BTreeSet<_> = cash_note
-            .src_tx
+            .parent_tx
             .inputs
             .iter()
             .map(|input| input.unique_pubkey())
