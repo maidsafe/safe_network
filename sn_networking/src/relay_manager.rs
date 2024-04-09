@@ -7,12 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::driver::NodeBehaviour;
-use libp2p::{
-    multiaddr::Protocol,
-    swarm::dial_opts::{DialOpts, PeerCondition},
-    Multiaddr, PeerId, StreamProtocol, Swarm,
-};
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
 const MAX_POTENTIAL_CANDIDATES: usize = 15;
@@ -21,8 +17,8 @@ const MAX_POTENTIAL_CANDIDATES: usize = 15;
 // todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
 pub(crate) struct RelayManager {
     connected_relays: BTreeMap<PeerId, Multiaddr>,
-    dialing_relays: BTreeSet<PeerId>,
-    candidates: BTreeMap<PeerId, Multiaddr>,
+    waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
+    candidates: VecDeque<(PeerId, Multiaddr)>,
 }
 
 impl RelayManager {
@@ -40,11 +36,13 @@ impl RelayManager {
             .collect();
         Self {
             connected_relays: Default::default(),
-            dialing_relays: Default::default(),
+            waiting_for_reservation: Default::default(),
             candidates,
         }
     }
 
+    /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
+    /// protocol.
     pub(crate) fn add_potential_candidates(
         &mut self,
         peer_id: &PeerId,
@@ -60,101 +58,55 @@ impl RelayManager {
             if let Some(addr) = addrs.iter().next() {
                 // only consider non relayed peers
                 if !addr.iter().any(|p| p == Protocol::P2pCircuit) {
-                    self.candidates.insert(*peer_id, addr.clone());
+                    self.candidates.push_back((*peer_id, addr.clone()));
                 }
             }
         }
     }
 
-    /// Dials candidate relays.
-    pub(crate) fn dial_relays(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
-        let mut n_dialed = self.connected_relays.len();
-
-        if n_dialed >= MAX_CONCURRENT_RELAY_CONNECTIONS {
+    // todo: how do we know if a reservation has been revoked / if the peer has gone offline?
+    /// Try connecting to candidate relays if we are below the threshold connections.
+    /// This is run periodically on a loop.
+    pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
+        if self.connected_relays.len() >= MAX_CONCURRENT_RELAY_CONNECTIONS {
             return;
         }
 
-        for (candidate_id, candidate_addr) in self.candidates.iter() {
-            match swarm.dial(
-                DialOpts::peer_id(*candidate_id)
-                    .condition(PeerCondition::NotDialing)
-                    .addresses(vec![candidate_addr.clone()])
-                    .build(),
-            ) {
-                Ok(_) => {
-                    info!("Dialing Relay: {candidate_id:?} succeeded.");
-                    self.dialing_relays.insert(*candidate_id);
-                    n_dialed += 1;
-                    if n_dialed >= MAX_CONCURRENT_RELAY_CONNECTIONS {
-                        return;
-                    }
-                }
-                Err(err) => {
-                    error!("Error while dialing relay: {candidate_id:?} {err:?}",);
-                }
-            }
-        }
-    }
+        let reservations_to_make = MAX_CONCURRENT_RELAY_CONNECTIONS - self.connected_relays.len();
+        let mut n_reservations = 0;
 
-    // todo: should we remove all our other `listen_addr`? Any should we block from adding `add_external_address` if
-    // we're behind nat?
-    pub(crate) fn try_update_on_connection_success(
-        &mut self,
-        peer_id: &PeerId,
-        stream_protocols: &Vec<StreamProtocol>,
-        swarm: &mut Swarm<NodeBehaviour>,
-    ) {
-        if !self.dialing_relays.contains(peer_id) {
-            return;
-        }
-
-        let _ = self.dialing_relays.remove(peer_id);
-
-        // this can happen if the initial bootstrap peers does not support the protocol
-        if !Self::does_it_support_relay_server_protocol(stream_protocols) {
-            let _ = self.candidates.remove(peer_id);
-            error!("A dialed relay candidate does not support relay server protocol: {peer_id:?}");
-            return;
-        }
-
-        // todo: when should we clear out our previous non-relayed listen_addrs?
-        if let Some(addr) = self.candidates.remove(peer_id) {
-            // if we have less than threshold relay connections, listen on this relayed connection
-            if self.connected_relays.len() < MAX_CONCURRENT_RELAY_CONNECTIONS {
+        while n_reservations < reservations_to_make {
+            // todo: should we remove all our other `listen_addr`? And should we block from adding `add_external_address` if
+            // we're behind nat?
+            if let Some((peer_id, addr)) = self.candidates.pop_front() {
                 let relay_addr = addr.with(Protocol::P2pCircuit);
                 match swarm.listen_on(relay_addr.clone()) {
                     Ok(_) => {
-                        info!("Relay connection established with {peer_id:?} on {relay_addr:?}");
-                        self.connected_relays.insert(*peer_id, relay_addr);
+                        info!("Sending reservation to relay {peer_id:?} on {relay_addr:?}");
+                        self.waiting_for_reservation.insert(peer_id, relay_addr);
+                        n_reservations += 1;
                     }
                     Err(err) => {
-                        error!("Error while trying to listen on relayed connection: {err:?} on {relay_addr:?}");
+                        error!("Error while trying to listen on the relay addr: {err:?} on {relay_addr:?}");
                     }
                 }
+            } else {
+                error!("No more relay candidates");
+                break;
             }
-        } else {
-            error!("Could not find relay candidate after successful connection: {peer_id:?}");
         }
     }
 
-    pub(crate) fn try_update_on_connection_failure(&mut self, peer_id: &PeerId) {
-        if !self.connected_relays.contains_key(peer_id)
-            && !self.dialing_relays.contains(peer_id)
-            && !self.candidates.contains_key(peer_id)
-        {
-            return;
-        }
-
-        if let Some(addr) = self.connected_relays.remove(peer_id) {
-            debug!("Removing connected relay from {peer_id:?}: {addr:?} as we had a connection failure");
-        }
-
-        if self.dialing_relays.remove(peer_id) {
-            debug!("Removing dialing candidate {peer_id:?} as we had a connection failure");
-        }
-
-        if let Some(addr) = self.candidates.remove(peer_id) {
-            debug!("Removing relay candidate {peer_id:?}: {addr:?} as we had a connection failure");
+    /// Update our state after we've successfully made reservation with a relay.
+    pub(crate) fn update_on_successful_reservation(&mut self, peer_id: &PeerId) {
+        match self.waiting_for_reservation.remove(peer_id) {
+            Some(addr) => {
+                info!("Successfully made reservation with {peer_id:?} on {addr:?}");
+                self.connected_relays.insert(*peer_id, addr);
+            }
+            None => {
+                debug!("Made a reservation with a peer that we had not requested to");
+            }
         }
     }
 
