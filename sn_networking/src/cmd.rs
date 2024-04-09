@@ -54,10 +54,6 @@ pub enum NodeIssue {
 /// Commands to send to the Swarm
 #[allow(clippy::large_enum_variant)]
 pub enum SwarmCmd {
-    StartListening {
-        addr: Multiaddr,
-        sender: oneshot::Sender<Result<()>>,
-    },
     Dial {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
@@ -189,9 +185,6 @@ pub enum SwarmCmd {
 impl Debug for SwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SwarmCmd::StartListening { addr, .. } => {
-                write!(f, "SwarmCmd::StartListening {{ addr: {addr:?} }}")
-            }
             SwarmCmd::Dial { addr, .. } => {
                 write!(f, "SwarmCmd::Dial {{ addr: {addr:?} }}")
             }
@@ -576,14 +569,6 @@ impl SwarmDriver {
                     .store_mut()
                     .record_addresses();
                 let _ = sender.send(addresses);
-            }
-
-            SwarmCmd::StartListening { addr, sender } => {
-                cmd_string = "StartListening";
-                let _ = match self.swarm.listen_on(addr) {
-                    Ok(_) => sender.send(Ok(())),
-                    Err(e) => sender.send(Err(e.into())),
-                };
             }
             SwarmCmd::Dial { addr, sender } => {
                 cmd_string = "Dial";
