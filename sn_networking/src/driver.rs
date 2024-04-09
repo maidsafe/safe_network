@@ -70,6 +70,9 @@ use tracing::warn;
 /// based upon our knowledge of the CLOSE_GROUP
 pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15);
 
+/// Interval over which we query relay manager to check if we can make any more reservations.
+pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
+
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
     /// The network discovery method is present at the networking layer
@@ -596,6 +599,7 @@ impl SwarmDriver {
     pub async fn run(mut self) {
         let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
         let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
+        let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
 
         loop {
             tokio::select! {
@@ -635,6 +639,11 @@ impl SwarmDriver {
                             // the distance range within the replication_fetcher shall be in sync as well
                             self.replication_fetcher.set_replication_distance_range(replication_distance);
                         }
+                    }
+                }
+                _ = relay_manager_reservation_interval.tick() => {
+                    if self.is_known_behind_nat {
+                        self.relay_manager.try_connecting_to_relay(&mut self.swarm);
                     }
                 }
             }
