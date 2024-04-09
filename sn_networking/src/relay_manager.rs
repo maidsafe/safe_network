@@ -7,8 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::driver::NodeBehaviour;
-use libp2p::{multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm};
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use libp2p::{
+    core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
+};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
 const MAX_POTENTIAL_CANDIDATES: usize = 15;
@@ -16,9 +18,13 @@ const MAX_POTENTIAL_CANDIDATES: usize = 15;
 /// To manager relayed connections.
 // todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
 pub(crate) struct RelayManager {
-    connected_relays: BTreeMap<PeerId, Multiaddr>,
-    waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
+    // states
     candidates: VecDeque<(PeerId, Multiaddr)>,
+    waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
+    connected_relays: BTreeMap<PeerId, Multiaddr>,
+
+    // misc
+    listener_id_map: HashMap<ListenerId, PeerId>,
 }
 
 impl RelayManager {
@@ -38,6 +44,7 @@ impl RelayManager {
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates,
+            listener_id_map: Default::default(),
         }
     }
 
@@ -81,9 +88,10 @@ impl RelayManager {
             if let Some((peer_id, addr)) = self.candidates.pop_front() {
                 let relay_addr = addr.with(Protocol::P2pCircuit);
                 match swarm.listen_on(relay_addr.clone()) {
-                    Ok(_) => {
+                    Ok(id) => {
                         info!("Sending reservation to relay {peer_id:?} on {relay_addr:?}");
                         self.waiting_for_reservation.insert(peer_id, relay_addr);
+                        self.listener_id_map.insert(id, peer_id);
                         n_reservations += 1;
                     }
                     Err(err) => {
@@ -107,6 +115,21 @@ impl RelayManager {
             None => {
                 debug!("Made a reservation with a peer that we had not requested to");
             }
+        }
+    }
+
+    /// Update our state if the reservation has been cancelled or if the relay has closed.
+    pub(crate) fn update_on_listener_closed(&mut self, listener_id: &ListenerId) {
+        let Some(peer_id) = self.listener_id_map.remove(listener_id) else {
+            return;
+        };
+
+        if let Some(addr) = self.connected_relays.remove(&peer_id) {
+            info!("Removed peer form connected_relays as the listener has been closed {peer_id:?}: {addr:?}");
+        } else if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
+            info!("Removed peer form waiting_for_reservation as the listener has been closed {peer_id:?}: {addr:?}");
+        } else {
+            warn!("Could not find the listen addr after making reservation to the same");
         }
     }
 
