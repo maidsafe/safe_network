@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712625771571,
+  "lastUpdate": 1712625773186,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244",
-          "message": "feat(peers_acq): shuffle peers before we return.\n\nThis shoulf help prevent any one peer from being hammered more than any other in the list",
-          "timestamp": "2023-11-22T09:47:11Z",
-          "tree_id": "b95d40483b6edd3d468fa76bf660582a022f53b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/8dead7ecfe8fac6dd1ddb2ae2a4e58de39cf2244"
-        },
-        "date": 1700648896764,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6257,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 93195,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33419,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "523373996931c400d98dca64475fed5c2fbd4852",
+          "message": "feat: unit testing dag, double spend poisoning tweaks",
+          "timestamp": "2024-04-09T00:02:36Z",
+          "tree_id": "dd9c9197ece2b3d5bd2790b86de1e5dedc72756e",
+          "url": "https://github.com/maidsafe/safe_network/commit/523373996931c400d98dca64475fed5c2fbd4852"
+        },
+        "date": 1712625772828,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7258,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34454,
             "unit": "ms"
           },
           {
