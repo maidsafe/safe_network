@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712672968036,
+  "lastUpdate": 1712678225746,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "2c132d2bfde6688229de13b92697feaa8f7e2f23",
-          "message": "fix: protect against amounts tampering and incomplete spends attack",
-          "timestamp": "2023-12-05T13:20:48Z",
-          "tree_id": "1acf660c63ee560dffab3161a50a8444bc07c025",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c132d2bfde6688229de13b92697feaa8f7e2f23"
-        },
-        "date": 1701784872929,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.0975132888246606,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.453662319682059,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 40.691008108426566,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.006680692072116,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "17d292b2c2a2700a38b2a68ed69833c8ac81985a",
+          "message": "feat(networking): shift to use ilog2 bucket distance for close data calcs\n\nilog2 is about magnitude rather than specifics as distance is already being estimated\nwe can use this to easily render a buffer zone of data we replicate\nvs a close bucket which we deem to be our responsibility",
+          "timestamp": "2024-04-09T15:15:02Z",
+          "tree_id": "10a720c91547f595bbeafb4754b815a84d54805e",
+          "url": "https://github.com/maidsafe/safe_network/commit/17d292b2c2a2700a38b2a68ed69833c8ac81985a"
+        },
+        "date": 1712678221689,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.214859619679891,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.655992385869222,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.59401664507749,
             "unit": "MiB/s"
           }
         ]
