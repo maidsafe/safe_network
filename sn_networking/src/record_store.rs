@@ -19,12 +19,13 @@ use libp2p::{
     identity::PeerId,
     kad::{
         store::{Error, RecordStore, Result},
-        KBucketDistance as Distance, KBucketKey, ProviderRecord, Record, RecordKey as Key,
+        KBucketKey, ProviderRecord, Record, RecordKey as Key,
     },
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
+use serde::{Deserialize, Serialize};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
@@ -35,6 +36,7 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
+    time::SystemTime,
     vec,
 };
 use tokio::sync::mpsc;
@@ -43,6 +45,9 @@ use xor_name::XorName;
 
 /// Max number of records a node can store
 const MAX_RECORDS_COUNT: usize = 2048;
+
+/// File name of the recorded historical quoting metrics.
+const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
@@ -58,9 +63,10 @@ pub struct NodeRecordStore {
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
     swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    /// Distance range specify the acceptable range of record entry.
+    /// ilog2 distance range of responsible records
+    /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
-    distance_range: Option<Distance>,
+    responsible_distance_range: Option<u32>,
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
@@ -70,7 +76,7 @@ pub struct NodeRecordStore {
     /// Plus a 4 byte nonce starter
     encryption_details: (Aes256GcmSiv, [u8; 4]),
     /// Time that this record_store got started
-    timestamp: Instant,
+    timestamp: SystemTime,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -104,9 +110,15 @@ fn generate_nonce_for_record(nonce_starter: &[u8; 4], key: &Key) -> Nonce {
     Nonce::from_iter(nonce_bytes)
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+struct HistoricQuotingMetrics {
+    received_payment_count: usize,
+    timestamp: SystemTime,
+}
+
 impl NodeRecordStore {
     /// If a directory for our node already exists, repopulate the records from the files in the dir
-    pub fn update_records_from_an_existing_store(
+    fn update_records_from_an_existing_store(
         config: &NodeRecordStoreConfig,
         encryption_details: &(Aes256GcmSiv, [u8; 4]),
     ) -> HashMap<Key, (NetworkAddress, RecordType)> {
@@ -174,6 +186,38 @@ impl NodeRecordStore {
         records
     }
 
+    /// If quote_metrics file already exists, using the existing parameters.
+    fn restore_quoting_metrics(storage_dir: &Path) -> Option<HistoricQuotingMetrics> {
+        let file_path = storage_dir.join(HISTORICAL_QUOTING_METRICS_FILENAME);
+
+        if let Ok(file) = fs::File::open(file_path) {
+            if let Ok(quoting_metrics) = rmp_serde::from_read(&file) {
+                return Some(quoting_metrics);
+            }
+        }
+
+        None
+    }
+
+    fn flush_historic_quoting_metrics(&self) {
+        let file_path = self
+            .config
+            .storage_dir
+            .join(HISTORICAL_QUOTING_METRICS_FILENAME);
+
+        let historic_quoting_metrics = HistoricQuotingMetrics {
+            received_payment_count: self.received_payment_count,
+            timestamp: self.timestamp,
+        };
+
+        spawn(async move {
+            if let Ok(mut file) = fs::File::create(file_path) {
+                let mut serialiser = rmp_serde::encode::Serializer::new(&mut file);
+                let _ = historic_quoting_metrics.serialize(&mut serialiser);
+            }
+        });
+    }
+
     /// Creates a new `DiskBackedStore` with the given configuration.
     pub fn with_config(
         local_id: PeerId,
@@ -187,21 +231,39 @@ impl NodeRecordStore {
         OsRng.fill_bytes(&mut nonce_starter);
 
         let encryption_details = (cipher, nonce_starter);
+
+        // Recover the quoting_metrics first, as the historical file will be cleaned by
+        // the later on update_records_from_an_existing_store function
+        let (received_payment_count, timestamp) = if let Some(historic_quoting_metrics) =
+            Self::restore_quoting_metrics(&config.storage_dir)
+        {
+            (
+                historic_quoting_metrics.received_payment_count,
+                historic_quoting_metrics.timestamp,
+            )
+        } else {
+            (0, SystemTime::now())
+        };
+
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
-        NodeRecordStore {
+        let record_store = NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             local_address: NetworkAddress::from_peer(local_id),
             config,
             records,
             network_event_sender,
             swarm_cmd_sender,
-            distance_range: None,
+            responsible_distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
-            received_payment_count: 0,
+            received_payment_count,
             encryption_details,
-            timestamp: Instant::now(),
-        }
+            timestamp,
+        };
+
+        record_store.flush_historic_quoting_metrics();
+
+        record_store
     }
 
     /// Set the record_count_metric to report the number of records stored to the metrics server
@@ -211,9 +273,9 @@ impl NodeRecordStore {
         self
     }
 
-    /// Returns the current distance range
-    pub fn get_distance_range(&self) -> Option<Distance> {
-        self.distance_range
+    /// Returns the current distance ilog2 (aka bucket) range of CLOSE_GROUP nodes.
+    pub fn get_responsible_distance_range(&self) -> Option<u32> {
+        self.responsible_distance_range
     }
 
     // Converts a Key into a Hex string.
@@ -431,14 +493,20 @@ impl NodeRecordStore {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
+        let live_time = if let Ok(elapsed) = self.timestamp.elapsed() {
+            elapsed.as_secs()
+        } else {
+            0
+        };
+
         let mut quoting_metrics = QuotingMetrics {
             close_records_stored: records_stored,
             max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
-            live_time: self.timestamp.elapsed().as_secs(),
+            live_time,
         };
 
-        if let Some(distance_range) = self.distance_range {
+        if let Some(distance_range) = self.responsible_distance_range {
             let relevant_records =
                 self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
 
@@ -467,6 +535,8 @@ impl NodeRecordStore {
     /// Notify the node received a payment.
     pub(crate) fn payment_received(&mut self) {
         self.received_payment_count = self.received_payment_count.saturating_add(1);
+
+        self.flush_historic_quoting_metrics();
     }
 
     /// Calculate how many records are stored within a distance range
@@ -474,7 +544,7 @@ impl NodeRecordStore {
     pub fn get_records_within_distance_range(
         &self,
         records: HashSet<&Key>,
-        distance_range: Distance,
+        distance_range: u32,
     ) -> usize {
         debug!(
             "Total record count is {:?}. Distance is: {distance_range:?}",
@@ -485,7 +555,7 @@ impl NodeRecordStore {
             .iter()
             .filter(|key| {
                 let kbucket_key = KBucketKey::new(key.to_vec());
-                distance_range >= self.local_key.distance(&kbucket_key)
+                distance_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0)
             })
             .count();
 
@@ -494,8 +564,8 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    pub(crate) fn set_distance_range(&mut self, distance_range: Distance) {
-        self.distance_range = Some(distance_range);
+    pub(crate) fn set_responsible_distance_range(&mut self, farthest_responsible_bucket: u32) {
+        self.responsible_distance_range = Some(farthest_responsible_bucket);
     }
 }
 
@@ -730,7 +800,7 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
 mod tests {
 
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key, REPLICATE_RANGE};
+    use crate::{close_group_majority, sort_peers_by_key, REPLICATION_PEERS_COUNT};
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
@@ -1076,7 +1146,7 @@ mod tests {
 
     #[tokio::test]
     #[allow(clippy::mutable_key_type)]
-    async fn get_records_within_distance_range() -> eyre::Result<()> {
+    async fn get_records_within_bucket_range() -> eyre::Result<()> {
         let max_records = 50;
 
         let temp_dir = std::env::temp_dir();
@@ -1140,16 +1210,21 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address.distance(&halfway_record_address);
+        let distance = self_address
+            .distance(&halfway_record_address)
+            .ilog2()
+            .unwrap_or(0);
 
-        store.set_distance_range(distance);
+        // must be plus one bucket from the halfway record
+        store.set_responsible_distance_range(distance);
 
         let record_keys = store.records.keys().collect();
 
-        // check that the number of records returned is correct
-        assert_eq!(
-            store.get_records_within_distance_range(record_keys, distance),
-            stored_records.len() / 2
+        // check that the number of records returned is larger than half our records
+        // (ie, that we cover _at least_ all the records within our distance range)
+        assert!(
+            store.get_records_within_distance_range(record_keys, distance)
+                >= stored_records.len() / 2
         );
 
         Ok(())
@@ -1177,7 +1252,11 @@ mod tests {
             for _ in 0..num_of_chunks_per_itr {
                 let name = xor_name::rand::random();
                 let address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
-                match sort_peers_by_key(&peers_vec, &address.as_kbucket_key(), REPLICATE_RANGE) {
+                match sort_peers_by_key(
+                    &peers_vec,
+                    &address.as_kbucket_key(),
+                    REPLICATION_PEERS_COUNT,
+                ) {
                     Ok(peers_in_replicate_range) => {
                         let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range
                             .iter()

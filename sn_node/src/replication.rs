@@ -11,7 +11,7 @@ use libp2p::{
     kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, REPLICATE_RANGE};
+use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, REPLICATION_PEERS_COUNT};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -150,7 +150,7 @@ impl Node {
             let sorted_based_on_addr = match sort_peers_by_address(
                 &closest_k_peers,
                 &data_addr,
-                REPLICATE_RANGE,
+                REPLICATION_PEERS_COUNT,
             ) {
                 Ok(result) => result,
                 Err(err) => {
