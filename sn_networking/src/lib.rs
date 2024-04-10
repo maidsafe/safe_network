@@ -868,17 +868,22 @@ impl Network {
 
     /// Using a random address, check if there is a sybil attack around it
     pub async fn perform_sybil_attack_check(&self) {
-        let (random_addr, cid) = {
+        let random_addr = {
             let mut rng = rand::thread_rng();
             let cid = XorName::random(&mut rng);
-            let chunk_addr = ChunkAddress::new(cid);
-            (NetworkAddress::from_chunk_address(chunk_addr), cid)
+            NetworkAddress::from_chunk_address(ChunkAddress::new(cid))
         };
 
         match self.get_closest_peers(&random_addr, true).await {
             Ok(closest_peers) => {
-                if check_for_sybil_attack(&closest_peers, &cid).await {
-                    info!(">>> Sybil attack detected around xorname: {cid}");
+                if check_for_sybil_attack(
+                    &closest_peers,
+                    random_addr.as_kbucket_key(),
+                    &BTreeMap::default(),
+                )
+                .await
+                {
+                    info!(">>> Sybil attack detected around addr: {random_addr}");
                 }
             }
             Err(err) => error!(">>> Failed to get closes peer to check for sybil attack: {err:?}"),
