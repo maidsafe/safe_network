@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712749826337,
+  "lastUpdate": 1712749828914,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "c1a3342944ba087361d1e02db975513d47854da2",
-          "message": "ci: remove old 'no-verify' flag from cli run.\n\nI'm not sure why it's needed there at all, so lets drop it",
-          "timestamp": "2023-12-06T09:09:14Z",
-          "tree_id": "56b5d1857b44d328ed6cfc8d64e1ead36587fd56",
-          "url": "https://github.com/maidsafe/safe_network/commit/c1a3342944ba087361d1e02db975513d47854da2"
-        },
-        "date": 1701857496642,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 640,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 162,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c3f724621e58bfda3394c234dadd257f24e6a832",
+          "message": "chore(cli): make FilesUploadSummary public",
+          "timestamp": "2024-04-10T11:05:23Z",
+          "tree_id": "98baca5225bfa661e56a653ad0d1fd7f8b78ad3e",
+          "url": "https://github.com/maidsafe/safe_network/commit/c3f724621e58bfda3394c234dadd257f24e6a832"
+        },
+        "date": 1712749827806,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
