@@ -493,7 +493,10 @@ impl SwarmDriver {
                 };
             }
             SwarmCmd::AddLocalRecordAsStored { key, record_type } => {
-                trace!("Adding Record locally, for {key:?} and {record_type:?}");
+                info!(
+                    "Adding Record locally, for {:?} and {record_type:?}",
+                    PrettyPrintRecordKey::from(&key)
+                );
                 cmd_string = "AddLocalRecordAsStored";
                 self.swarm
                     .behaviour_mut()
