@@ -67,6 +67,13 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 #[derive(Parser, Debug)]
 #[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
 struct Opt {
+    /// Specify whether the node is operating from a home network and situated behind a NAT without port forwarding
+    /// capabilities. Setting this to true, activates hole-punching to facilitate direct connections from other nodes.
+    ///
+    /// If this not enabled and you're behind a NAT, the node is terminated.
+    #[clap(long, default_value_t = false)]
+    home_network: bool,
+
     /// Specify the logging output destination.
     ///
     /// Valid values are "stdout", "data-dir", or a custom path.
@@ -179,13 +186,14 @@ fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
     let restart_options = rt.block_on(async move {
-        let node_builder = NodeBuilder::new(
+        let mut node_builder = NodeBuilder::new(
             keypair,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
             root_dir,
         );
+        node_builder.enable_hole_punching = opt.home_network;
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
         #[cfg(feature = "open-metrics")]
@@ -336,11 +344,11 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         break;
                     }
                 }
-                Ok(NodeEvent::TerminateNode) => {
+                Ok(NodeEvent::TerminateNode(reason)) => {
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node terminated due to termination command !"),
+                            cause: eyre!("Node terminated due to: {reason:?}"),
                         })
                         .await
                     {

@@ -65,6 +65,8 @@ pub struct NodeBuilder {
     root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: u16,
+    /// Enable hole punching for nodes connecting from home networks.
+    pub enable_hole_punching: bool,
 }
 
 impl NodeBuilder {
@@ -84,6 +86,7 @@ impl NodeBuilder {
             root_dir,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
+            enable_hole_punching: false,
         }
     }
 
@@ -135,6 +138,7 @@ impl NodeBuilder {
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
+        network_builder.enable_hole_punching(self.enable_hole_punching);
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
@@ -404,10 +408,11 @@ impl Node {
                 });
             }
 
-            NetworkEvent::TerminateNode => {
+            NetworkEvent::TerminateNode { reason } => {
                 event_header = "TerminateNode";
-                error!("Received termination from swarm_driver due to too many HDD write errors.");
-                self.events_channel.broadcast(NodeEvent::TerminateNode);
+                error!("Received termination from swarm_driver due to {reason:?}");
+                self.events_channel
+                    .broadcast(NodeEvent::TerminateNode(format!("{reason:?}")));
             }
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 event_header = "FailedToFetchHolders";
