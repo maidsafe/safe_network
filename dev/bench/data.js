@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712735620862,
+  "lastUpdate": 1712735623228,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "11c29afcab912dffb83ee76d38a2dce0495421b8",
-          "message": "feat(networking): reduce batch size to 64\n\nThis should keep a lid on mem issues",
-          "timestamp": "2023-11-23T15:23:54Z",
-          "tree_id": "0ec33d82cfca3c35e3046c938202084379e17022",
-          "url": "https://github.com/maidsafe/safe_network/commit/11c29afcab912dffb83ee76d38a2dce0495421b8"
-        },
-        "date": 1700757288392,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5729,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 69251,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 12,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 39069,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "40b11f98cf6acb40d00c8d5eb5e3d79e6ea5481f",
+          "message": "feat(faucet): log from sn_client",
+          "timestamp": "2024-04-10T06:58:23Z",
+          "tree_id": "4cd3cadffde41fb091e3051f51e9abf647ea9f23",
+          "url": "https://github.com/maidsafe/safe_network/commit/40b11f98cf6acb40d00c8d5eb5e3d79e6ea5481f"
+        },
+        "date": 1712735622427,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7187,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33841,
             "unit": "ms"
           },
           {
