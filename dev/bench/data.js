@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712735623228,
+  "lastUpdate": 1712749716261,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "c1a3342944ba087361d1e02db975513d47854da2",
-          "message": "ci: remove old 'no-verify' flag from cli run.\n\nI'm not sure why it's needed there at all, so lets drop it",
-          "timestamp": "2023-12-06T09:09:14Z",
-          "tree_id": "56b5d1857b44d328ed6cfc8d64e1ead36587fd56",
-          "url": "https://github.com/maidsafe/safe_network/commit/c1a3342944ba087361d1e02db975513d47854da2"
-        },
-        "date": 1701857330892,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1730142571520539,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7199392787714556,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 43.11780193054874,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.711290584019636,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git@happybeing.com",
+            "name": "Mark",
+            "username": "happybeing"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "c3f724621e58bfda3394c234dadd257f24e6a832",
+          "message": "chore(cli): make FilesUploadSummary public",
+          "timestamp": "2024-04-10T11:05:23Z",
+          "tree_id": "98baca5225bfa661e56a653ad0d1fd7f8b78ad3e",
+          "url": "https://github.com/maidsafe/safe_network/commit/c3f724621e58bfda3394c234dadd257f24e6a832"
+        },
+        "date": 1712749711759,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2058360643738568,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6487754470423897,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.25461023454465,
             "unit": "MiB/s"
           }
         ]
