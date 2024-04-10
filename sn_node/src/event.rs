@@ -67,7 +67,7 @@ pub enum NodeEvent {
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
     /// Terminates the node
-    TerminateNode,
+    TerminateNode(String),
 }
 
 impl NodeEvent {

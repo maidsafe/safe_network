@@ -9,6 +9,7 @@
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
+    event::TerminateNodeReason,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATION_PEERS_COUNT,
 };
@@ -546,7 +547,9 @@ impl SwarmDriver {
                 // When there is certain amount of continuous HDD write error,
                 // the hard disk is considered as full, and the node shall be terminated.
                 if self.hard_disk_write_error > MAX_CONTINUOUS_HDD_WRITE_ERROR {
-                    self.send_event(NetworkEvent::TerminateNode);
+                    self.send_event(NetworkEvent::TerminateNode {
+                        reason: TerminateNodeReason::HardDiskWriteError,
+                    });
                 }
             }
             SwarmCmd::RecordStoreHasKey { key, sender } => {
