@@ -1230,6 +1230,46 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn historic_quoting_metrics() -> Result<()> {
+        let temp_dir = std::env::temp_dir();
+        let unique_dir_name = uuid::Uuid::new_v4().to_string();
+        let storage_dir = temp_dir.join(unique_dir_name);
+        fs::create_dir_all(&storage_dir).expect("Failed to create directory");
+
+        let store_config = NodeRecordStoreConfig {
+            storage_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config.clone(),
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        store.payment_received();
+
+        // Wait for a while to allow the file written to disk.
+        sleep(Duration::from_millis(5000)).await;
+
+        let new_store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        assert_eq!(1, new_store.received_payment_count);
+        assert_eq!(store.timestamp, new_store.timestamp);
+
+        Ok(())
+    }
+
     #[test]
     fn address_distribution_sim() {
         // Map of peers and correspondent stats of `(num_of_records, Nano_earned, received_payment_count)`.
