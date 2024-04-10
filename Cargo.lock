@@ -3076,7 +3076,7 @@ dependencies = [
  "soketto",
  "tracing",
  "url",
- "webpki-roots",
+ "webpki-roots 0.25.4",
 ]
 
 [[package]]
@@ -3251,7 +3251,7 @@ dependencies = [
  "once_cell",
  "rustls 0.21.12",
  "rustls-webpki 0.101.7",
- "webpki-roots",
+ "webpki-roots 0.25.4",
 ]
 
 [[package]]
@@ -4582,7 +4582,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots",
+ "webpki-roots 0.25.4",
  "winreg 0.50.0",
 ]
 
@@ -4623,6 +4623,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "webpki-roots 0.26.1",
  "winreg 0.52.0",
 ]
 
@@ -5531,7 +5532,7 @@ dependencies = [
  "lazy_static",
  "libp2p",
  "rand",
- "reqwest 0.11.27",
+ "reqwest 0.12.4",
  "sn_protocol",
  "thiserror",
  "tokio",
@@ -6841,6 +6842,15 @@ name = "webpki-roots"
 version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
+
+[[package]]
+name = "webpki-roots"
+version = "0.26.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3de34ae270483955a94f4b21bdaaeb83d508bb84a01435f393818edb0012009"
+dependencies = [
+ "rustls-pki-types",
+]
 
 [[package]]
 name = "which"
