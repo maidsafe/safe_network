@@ -304,6 +304,18 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Vec<String>,
     },
+    /// Restart a node
+    #[clap(Long)]
+    Restart {
+        /// The peer ID of the service to restart.
+        #[clap(long)]
+        peer_id: Vec<String>,
+        // /// The name of the service to stop.
+        // ///
+        // /// The argument can be used multiple times to stop many services.
+        // #[clap(long, conflicts_with = "peer_id")]
+        // service_name: Vec<String>,
+    },
     /// Get the status of services.
     #[clap(name = "status")]
     Status {
