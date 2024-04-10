@@ -20,7 +20,6 @@ use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
-    autonat::NatStatus,
     kad::{self, GetClosestPeersError, InboundRequest, QueryResult, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Message, ResponseChannel as PeerResponseChannel},
@@ -55,7 +54,6 @@ pub(super) enum NodeEvent {
     #[cfg(feature = "local-discovery")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
-    Autonat(Box<libp2p::autonat::Event>),
     Dcutr(Box<libp2p::dcutr::Event>),
     RelayClient(Box<libp2p::relay::client::Event>),
     RelayServer(Box<libp2p::relay::Event>),
@@ -83,11 +81,6 @@ impl From<mdns::Event> for NodeEvent {
 impl From<libp2p::identify::Event> for NodeEvent {
     fn from(event: libp2p::identify::Event) -> Self {
         NodeEvent::Identify(Box::new(event))
-    }
-}
-impl From<libp2p::autonat::Event> for NodeEvent {
-    fn from(event: libp2p::autonat::Event) -> Self {
-        NodeEvent::Autonat(Box::new(event))
     }
 }
 impl From<libp2p::dcutr::Event> for NodeEvent {
@@ -151,8 +144,8 @@ pub enum NetworkEvent {
     NewListenAddr(Multiaddr),
     /// Report unverified record
     UnverifiedRecord(Record),
-    /// Terminate Node on HDD write erros
-    TerminateNode,
+    /// Terminate Node on unrecoverable errors
+    TerminateNode { reason: TerminateNodeReason },
     /// List of peer nodes that failed to fetch replication copy from.
     FailedToFetchHolders(BTreeSet<PeerId>),
     /// A peer in RT that supposed to be verified.
@@ -164,6 +157,13 @@ pub enum NetworkEvent {
         peer_id: PeerId,
         keys_to_verify: Vec<NetworkAddress>,
     },
+}
+
+/// Terminate node for the following reason
+#[derive(Debug, Clone)]
+pub enum TerminateNodeReason {
+    HardDiskWriteError,
+    BehindNAT,
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -212,8 +212,8 @@ impl Debug for NetworkEvent {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 write!(f, "NetworkEvent::UnverifiedRecord({pretty_key:?})")
             }
-            NetworkEvent::TerminateNode => {
-                write!(f, "NetworkEvent::TerminateNode")
+            NetworkEvent::TerminateNode { reason } => {
+                write!(f, "NetworkEvent::TerminateNode({reason:?})")
             }
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 write!(f, "NetworkEvent::FailedToFetchHolders({bad_nodes:?})")
@@ -256,64 +256,6 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
-            }
-            // Handle the autonat events from the libp2p swarm.
-            SwarmEvent::Behaviour(NodeEvent::Autonat(autonat_event)) => {
-                event_string = "autonat_event";
-
-                if self.is_client {
-                    return Ok(());
-                }
-
-                match *autonat_event {
-                    libp2p::autonat::Event::StatusChanged { old, new } => {
-                        info!("NAT status change... was: {old:?} now: {new:?}");
-
-                        // if we are private, establish relay
-                        self.relay_manager.set_nat_status(&new);
-                        if new == NatStatus::Private {
-                            info!("BEHIND NAT");
-                        } else if let NatStatus::Public(addr) = new {
-                            info!("NOT BEHIND NAT go server mode!!");
-
-                            // Trigger server mode if we're not a client
-                            if !self.is_client {
-                                if self.local {
-                                    // all addresses are effectively external here...
-                                    // this is needed for Kad Mode::Server
-                                    self.swarm.add_external_address(addr);
-                                } else {
-                                    // only add our global addresses
-                                    if multiaddr_is_global(&addr) {
-                                        self.swarm.add_external_address(addr);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    libp2p::autonat::Event::InboundProbe(in_event) => {
-                        debug!("NAT inbound probe");
-                    }
-                    libp2p::autonat::Event::OutboundProbe(out_event) => match out_event {
-                        libp2p::autonat::OutboundProbeEvent::Error {
-                            probe_id,
-                            peer,
-                            error,
-                        } => {
-                            error!(?peer, ?error, "NAT outbound probe failed");
-                        }
-                        libp2p::autonat::OutboundProbeEvent::Response {
-                            probe_id,
-                            peer,
-                            address,
-                        } => {
-                            info!(%peer, ?address, "NAT outbound probe success");
-                        }
-                        libp2p::autonat::OutboundProbeEvent::Request { probe_id, peer } => {
-                            info!(%peer, "NAT outbound probe request");
-                        }
-                    },
-                }
             }
             SwarmEvent::Behaviour(NodeEvent::RelayClient(event)) => {
                 event_string = "relay_client_event";
@@ -427,25 +369,6 @@ impl SwarmDriver {
                                 (true, None)
                             };
 
-                            // Add some autonat logic here
-                            for p in info.protocols {
-                                // TODO tie to an actual protocol version
-                                if p.to_string().contains("autonat") {
-                                    info!(%peer_id, ?addrs, "peer supports autonat: {:?}",peer_id);
-
-                                    for a in &addrs {
-                                        // add each address to the autonat server list
-                                        self.swarm
-                                            .behaviour_mut()
-                                            .autonat
-                                            .add_server(peer_id, Some(a.clone()));
-                                    }
-
-                                    // break out
-                                    break;
-                                }
-                            }
-
                             if !kbucket_full {
                                 info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
                                 self.dialed_peers.push(peer_id);
@@ -486,6 +409,12 @@ impl SwarmDriver {
                                         .behaviour_mut()
                                         .kademlia
                                         .add_address(&peer_id, multiaddr.clone());
+                                }
+
+                                if self.relay_manager.are_we_behind_nat(&mut self.swarm) {
+                                    self.send_event(NetworkEvent::TerminateNode {
+                                        reason: TerminateNodeReason::BehindNAT,
+                                    })
                                 }
                             }
                         }
@@ -539,6 +468,20 @@ impl SwarmDriver {
 
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
+
+                // Trigger server mode if we're not a client
+                if !self.is_client {
+                    if self.local {
+                        // all addresses are effectively external here...
+                        // this is needed for Kad Mode::Server
+                        self.swarm.add_external_address(address.clone());
+                    } else {
+                        // only add our global addresses
+                        if multiaddr_is_global(&address) {
+                            self.swarm.add_external_address(address.clone());
+                        }
+                    }
+                }
 
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 

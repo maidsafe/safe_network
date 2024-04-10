@@ -31,7 +31,6 @@ use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
-    autonat,
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
     multiaddr::Protocol,
@@ -174,7 +173,6 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) autonat: libp2p::autonat::Behaviour,
     pub(super) dcutr: libp2p::dcutr::Behaviour,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
     pub(super) relay_server: libp2p::relay::Behaviour,
@@ -182,6 +180,7 @@ pub(super) struct NodeBehaviour {
 
 #[derive(Debug)]
 pub struct NetworkBuilder {
+    enable_hole_punching: bool,
     keypair: Keypair,
     local: bool,
     root_dir: PathBuf,
@@ -198,6 +197,7 @@ pub struct NetworkBuilder {
 impl NetworkBuilder {
     pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
         Self {
+            enable_hole_punching: false,
             keypair,
             local,
             root_dir,
@@ -210,6 +210,10 @@ impl NetworkBuilder {
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
         }
+    }
+
+    pub fn enable_hole_punching(&mut self, enable: bool) {
+        self.enable_hole_punching = enable;
     }
 
     pub fn listen_addr(&mut self, listen_addr: SocketAddr) {
@@ -474,13 +478,6 @@ impl NetworkBuilder {
                 request_response,
                 #[cfg(feature = "local-discovery")]
                 mdns,
-                autonat: autonat::Behaviour::new(
-                    peer_id,
-                    autonat::Config {
-                        only_global_ips: false,
-                        ..Default::default()
-                    },
-                ),
                 identify,
                 kademlia,
                 dcutr: libp2p::dcutr::Behaviour::new(peer_id),
@@ -491,6 +488,10 @@ impl NetworkBuilder {
 
         let bootstrap = ContinuousBootstrap::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
+        let mut relay_manager = RelayManager::new(self.initial_peers);
+        if !is_client {
+            relay_manager.enable_hole_punching(self.enable_hole_punching);
+        }
 
         let swarm_driver = SwarmDriver {
             swarm,
@@ -500,7 +501,7 @@ impl NetworkBuilder {
             is_client,
             connected_peers: 0,
             bootstrap,
-            relay_manager: RelayManager::new(self.initial_peers),
+            relay_manager,
             close_group: Default::default(),
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
