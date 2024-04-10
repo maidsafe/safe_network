@@ -270,7 +270,7 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
                 .for_each(|expected| failed_peers.push(*expected));
 
             if !failed_peers.is_empty() {
-                failed.insert(PrettyPrintRecordKey::from(key).into_owned(), failed_peers);
+                failed.insert(key.clone(), failed_peers);
             }
         }
 
@@ -279,9 +279,13 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
             println!("Verification failed for {:?} entries", failed.len());
 
             failed.iter().for_each(|(key, failed_peers)| {
+                let key_addr = NetworkAddress::from_record_key(key);
+                let pretty_key = PrettyPrintRecordKey::from(key);
                 failed_peers.iter().for_each(|peer| {
-                    println!("Record {key:?} is not stored inside {peer:?}");
-                    error!("Record {key:?} is not stored inside {peer:?}");
+                    let peer_addr = NetworkAddress::from_peer(*peer);
+                    let ilog2_distance = peer_addr.distance(&key_addr).ilog2();
+                    println!("Record {pretty_key:?} is not stored inside {peer:?}, with ilog2 distance to be {ilog2_distance:?}");
+                    error!("Record {pretty_key:?} is not stored inside {peer:?}, with ilog2 distance to be {ilog2_distance:?}");
                 });
             });
             info!("State of each node:");
