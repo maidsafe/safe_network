@@ -1053,6 +1053,7 @@ pub async fn send(
         .await
     {
         println!("Wallet has pre-unconfirmed transactions, can't progress further.");
+        warn!("Wallet has pre-unconfirmed transactions, can't progress further.");
         return Err(err.into());
     }
 
