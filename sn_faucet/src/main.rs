@@ -41,6 +41,7 @@ async fn main() -> Result<()> {
     let logging_targets = vec![
         // TODO: Reset to nice and clean defaults once we have a better idea of what we want
         ("faucet".to_string(), Level::TRACE),
+        ("sn_client".to_string(), Level::TRACE),
         ("sn_faucet".to_string(), Level::TRACE),
         ("sn_networking".to_string(), Level::DEBUG),
         ("sn_build_info".to_string(), Level::TRACE),
