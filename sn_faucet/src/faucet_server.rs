@@ -15,8 +15,9 @@ use sn_client::Client;
 use sn_transfers::{
     get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, WALLET_DIR_NAME,
 };
-use std::collections::HashMap;
 use std::path::Path;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::Semaphore;
 use tracing::{debug, error, info, warn};
 use warp::{
     http::{Response, StatusCode},
@@ -69,9 +70,12 @@ async fn respond_to_distribution_request(
     client: Client,
     query: HashMap<String, String>,
     balances: HashMap<String, NanoTokens>,
+    semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let permit = semaphore.try_acquire();
+
     // some rate limiting
-    if is_wallet_locked() {
+    if is_wallet_locked() || permit.is_err() {
         warn!("Rate limited request due to locked wallet");
 
         let mut response = Response::new("Rate limited".to_string());
@@ -119,10 +123,13 @@ fn is_wallet_locked() -> bool {
 async fn respond_to_gift_request(
     client: Client,
     key: String,
+    semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let permit = semaphore.try_acquire();
+
     // some rate limiting
-    if is_wallet_locked() {
-        warn!("Rate limited request due to locked wallet");
+    if is_wallet_locked() || permit.is_err() {
+        warn!("Rate limited request due");
         let mut response = Response::new("Rate limited".to_string());
         *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
 
@@ -146,6 +153,9 @@ async fn respond_to_gift_request(
 }
 
 async fn startup_server(client: Client) -> Result<()> {
+    // Create a semaphore with a single permit
+    let semaphore = Arc::new(Semaphore::new(1));
+
     #[allow(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
@@ -163,6 +173,9 @@ async fn startup_server(client: Client) -> Result<()> {
     }
 
     let gift_client = client.clone();
+    #[cfg(feature = "distribution")]
+    let semaphore_dist = semaphore.clone();
+
     // GET /distribution/address=address&wallet=wallet&signature=signature
     #[cfg(feature = "distribution")]
     let distribution_route = warp::get()
@@ -173,8 +186,9 @@ async fn startup_server(client: Client) -> Result<()> {
             query
         })
         .and_then(move |query| {
+            let semaphore = semaphore_dist.clone();
             let client = client.clone();
-            respond_to_distribution_request(client, query, balances.clone())
+            respond_to_distribution_request(client, query, balances.clone(), semaphore)
         });
 
     // GET /key
@@ -186,8 +200,9 @@ async fn startup_server(client: Client) -> Result<()> {
         })
         .and_then(move |key| {
             let client = gift_client.clone();
+            let semaphore = semaphore.clone();
 
-            respond_to_gift_request(client, key)
+            respond_to_gift_request(client, key, semaphore)
         });
 
     println!("Starting http server listening on port 8000...");
