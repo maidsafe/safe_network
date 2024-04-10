@@ -4998,7 +4998,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.7.4-alpha.1"
+version = "0.7.4"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -5055,7 +5055,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.7-alpha.0"
+version = "0.1.7"
 dependencies = [
  "blsttc",
  "clap 4.5.4",
@@ -5074,14 +5074,14 @@ dependencies = [
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.7-alpha.1"
+version = "0.1.7"
 dependencies = [
  "vergen",
 ]
 
 [[package]]
 name = "sn_cli"
-version = "0.90.4-alpha.5"
+version = "0.90.4"
 dependencies = [
  "aes 0.7.5",
  "base64 0.21.7",
@@ -5122,7 +5122,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.105.3-alpha.5"
+version = "0.105.3"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -5171,7 +5171,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.9-alpha.0"
+version = "0.4.9"
 dependencies = [
  "assert_fs",
  "base64 0.21.7",
@@ -5224,7 +5224,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.4-alpha.0"
+version = "0.1.4"
 dependencies = [
  "clap 4.5.4",
  "color-eyre",
@@ -5238,7 +5238,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.14.4-alpha.0"
+version = "0.14.4"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -5278,7 +5278,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.105.6-alpha.4"
+version = "0.105.6"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -5333,7 +5333,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.8-alpha.0"
+version = "0.6.8"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -5360,7 +5360,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.2.10-alpha.0"
+version = "0.2.10"
 dependencies = [
  "clap 4.5.4",
  "lazy_static",
@@ -5376,7 +5376,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.16.3-alpha.2"
+version = "0.16.3"
 dependencies = [
  "blsttc",
  "bytes",
@@ -5422,7 +5422,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.2.4-alpha.0"
+version = "0.2.4"
 dependencies = [
  "async-trait",
  "dirs-next",
@@ -5446,7 +5446,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.17.2-alpha.0"
+version = "0.17.2"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -5884,7 +5884,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.47-alpha.0"
+version = "0.1.47"
 dependencies = [
  "dirs-next",
  "reqwest",
