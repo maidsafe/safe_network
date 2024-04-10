@@ -313,11 +313,12 @@ impl NetworkBuilder {
         // Listen on the provided address
         let listen_socket_addr = listen_addr.ok_or(NetworkError::ListenAddressNotProvided)?;
 
-        // Listen on TCP for autonat
-        let addr_tcp =
-            Multiaddr::from(listen_socket_addr.ip()).with(Protocol::Tcp(listen_socket_addr.port()));
+        // Listen on QUIC
+        let addr_quic = Multiaddr::from(listen_socket_addr.ip())
+            .with(Protocol::Udp(listen_socket_addr.port()))
+            .with(Protocol::QuicV1);
         swarm_driver
-            .listen_on(addr_tcp)
+            .listen_on(addr_quic)
             .expect("Multiaddr should be supported by our configured transports");
 
         // Listen on WebSocket
@@ -462,14 +463,7 @@ impl NetworkBuilder {
 
         let swarm = libp2p::SwarmBuilder::with_existing_identity(self.keypair.clone())
             .with_tokio()
-            .with_tcp(
-                libp2p::tcp::Config::default()
-                    .port_reuse(true)
-                    .nodelay(true),
-                libp2p::noise::Config::new,
-                libp2p::yamux::Config::default,
-            )
-            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
+            .with_quic_config(|_config| libp2p::quic::Config::new(&self.keypair))
             .with_relay_client(libp2p::noise::Config::new, libp2p::yamux::Config::default)
             .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
             .with_behaviour(|_keypair, relay_behaviour| NodeBehaviour {
