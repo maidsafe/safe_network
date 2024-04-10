@@ -8,19 +8,19 @@
 
 use crate::driver::NodeBehaviour;
 use libp2p::{
-    autonat::NatStatus, core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId,
-    StreamProtocol, Swarm,
+    core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
 const MAX_POTENTIAL_CANDIDATES: usize = 15;
+const MAX_PEERS_IN_RT_DURING_NAT_CHECK: usize = 30;
 
 /// To manager relayed connections.
 // todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
 pub(crate) struct RelayManager {
     // states
-    we_are_behind_nat: bool,
+    enabled: bool,
     candidates: VecDeque<(PeerId, Multiaddr)>,
     waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
     connected_relays: BTreeMap<PeerId, Multiaddr>,
@@ -46,7 +46,7 @@ impl RelayManager {
             })
             .collect();
         Self {
-            we_are_behind_nat: false,
+            enabled: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates,
@@ -55,16 +55,38 @@ impl RelayManager {
         }
     }
 
-    pub(crate) fn set_nat_status(&mut self, nat_status: &NatStatus) {
-        match nat_status {
-            NatStatus::Private => self.we_are_behind_nat = true,
-            _ => self.we_are_behind_nat = false,
-        }
+    pub(crate) fn enable_hole_punching(&mut self, enable: bool) {
+        info!("Setting enable hole punching to {enable:?}");
+        self.enabled = enable;
     }
 
     pub(crate) fn add_non_relayed_listener_id(&mut self, listener_id: ListenerId) {
         debug!("Adding non relayed listener id: {listener_id:?}");
         self.non_relayed_listener_id.push_front(listener_id);
+    }
+
+    /// If we have 0 incoming connection even after we have a lot of peers, then we are behind a NAT
+    pub(crate) fn are_we_behind_nat(&self, swarm: &mut Swarm<NodeBehaviour>) -> bool {
+        if swarm
+            .network_info()
+            .connection_counters()
+            .num_established_incoming()
+            == 0
+            || swarm
+                .network_info()
+                .connection_counters()
+                .num_pending_incoming()
+                == 0
+        {
+            let mut total_peers = 0;
+            for kbucket in swarm.behaviour_mut().kademlia.kbuckets() {
+                total_peers += kbucket.num_entries();
+                if total_peers > MAX_PEERS_IN_RT_DURING_NAT_CHECK {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
@@ -95,7 +117,7 @@ impl RelayManager {
     /// Try connecting to candidate relays if we are below the threshold connections.
     /// This is run periodically on a loop.
     pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
-        if !self.we_are_behind_nat {
+        if !self.enabled {
             return;
         }
 
