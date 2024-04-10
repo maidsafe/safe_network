@@ -112,7 +112,7 @@ impl Node {
                         error!(
                             "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
                         );
-                        return;
+                        None
                     }
                 };
 
@@ -124,7 +124,7 @@ impl Node {
                     error!(
                         "Could not get record from store for replication: {pretty_key:?} after 10 retries"
                     );
-                    break;
+                    return;
                 }
 
                 retry_count += 1;

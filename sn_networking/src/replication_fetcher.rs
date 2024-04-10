@@ -231,16 +231,27 @@ impl ReplicationFetcher {
     //   1, the pending_entries from that node shall be removed from `to_be_fetched` list.
     //   2, firing event up to notify bad_nodes, hence trigger them to be removed from RT.
     fn prune_expired_keys_and_slow_nodes(&mut self) {
-        let mut failed_holders = BTreeSet::default();
+        let mut failed_fetches = vec![];
 
-        self.on_going_fetches.retain(|_, (peer_id, time_out)| {
-            if *time_out < Instant::now() {
-                failed_holders.insert(*peer_id);
-                false
-            } else {
-                true
-            }
-        });
+        self.on_going_fetches
+            .retain(|(record_key, _), (peer_id, time_out)| {
+                if *time_out < Instant::now() {
+                    failed_fetches.push((record_key.clone(), *peer_id));
+                    false
+                } else {
+                    true
+                }
+            });
+
+        let mut failed_holders = BTreeSet::new();
+
+        for (record_key, peer_id) in failed_fetches {
+            error!(
+                "Failed to fetch {:?} from {peer_id:?}",
+                PrettyPrintRecordKey::from(&record_key)
+            );
+            let _ = failed_holders.insert(peer_id);
+        }
 
         // now to clear any failed nodes from our lists.
         self.to_be_fetched
