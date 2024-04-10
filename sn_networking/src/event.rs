@@ -520,7 +520,10 @@ impl SwarmDriver {
                 }
             }
 
-            SwarmEvent::NewListenAddr { address, .. } => {
+            SwarmEvent::NewListenAddr {
+                address,
+                listener_id,
+            } => {
                 event_string = "new listen addr";
 
                 // update our stored port if it is configured to be 0 or None
@@ -539,7 +542,7 @@ impl SwarmDriver {
 
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 
-                info!("Local node is listening on {address:?}");
+                info!("Local node is listening (id: {listener_id}) on {address:?}");
             }
             SwarmEvent::ListenerClosed {
                 listener_id,
