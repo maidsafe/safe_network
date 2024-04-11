@@ -947,9 +947,10 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
             if matches!(p, Protocol::P2pCircuit) {
                 before_relay_protocol = false;
             }
-            if matches!(p, Protocol::P2p(_)) && before_relay_protocol {
-                new_multi_addr.push(p);
+            if matches!(p, Protocol::P2p(_)) && !before_relay_protocol {
+                continue;
             }
+            new_multi_addr.push(p);
         }
         new_multi_addr
     } else {
