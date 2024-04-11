@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712839732784,
+  "lastUpdate": 1712839843771,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d8c842b01a1110b44c9a6cf681b7afd78d5307e7",
-          "message": "feat(node): replicate valid Spends to CLOSE_GROUP",
-          "timestamp": "2023-12-12T12:24:40Z",
-          "tree_id": "c58f9a256466e267b9e57d8cacefa8cba66144ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/d8c842b01a1110b44c9a6cf681b7afd78d5307e7"
-        },
-        "date": 1702386198392,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 100,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "cef9855ce5a401ee57d352db64961125976ba19e",
+          "message": "feat(store): load existing records in parallel",
+          "timestamp": "2024-04-11T11:57:00Z",
+          "tree_id": "ae6caf0f0fd420f0baf431ce1fa22e838187472a",
+          "url": "https://github.com/maidsafe/safe_network/commit/cef9855ce5a401ee57d352db64961125976ba19e"
+        },
+        "date": 1712839843402,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
