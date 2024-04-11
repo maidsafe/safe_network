@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712796079697,
+  "lastUpdate": 1712796082564,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6",
-          "message": "feat: replace bootstrap node if bucket full",
-          "timestamp": "2023-12-06T11:40:53Z",
-          "tree_id": "b76db349c27e9d0553d2301999956e16148a09cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6"
-        },
-        "date": 1701866551714,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 712,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 167,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2a796eee14217c42c6f51e90281f96965be33e88",
+          "message": "feat(faucet): fully limit any concurrency\n\nThis means we'll be able to await any verification\nsteps and retries (once we have that working properly)\nto avoid spend errors there (as wallet lock releases quite often)",
+          "timestamp": "2024-04-11T09:27:33+09:00",
+          "tree_id": "e897fc3160cfe1e4c05f88f5cac032b59f830022",
+          "url": "https://github.com/maidsafe/safe_network/commit/2a796eee14217c42c6f51e90281f96965be33e88"
+        },
+        "date": 1712796081357,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
