@@ -158,9 +158,6 @@ pub enum NetworkError {
     #[error("Close group size must be a non-zero usize")]
     InvalidCloseGroupSize,
 
-    #[error("Failed to pop from front of CircularVec")]
-    CircularVecPopFrontError,
-
     #[error("Node Listen Address was not provided during construction")]
     ListenAddressNotProvided,
 

@@ -6,37 +6,34 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::error::NetworkError;
-
 /// Based on https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/7
 
 /// A circular buffer implemented with a VecDeque.
 #[derive(Debug)]
-pub struct CircularVec<T> {
+pub(crate) struct CircularVec<T> {
     inner: std::collections::VecDeque<T>,
 }
 
 impl<T> CircularVec<T> {
     /// Creates a new CircularVec with the given capacity.
-    pub fn new(capacity: usize) -> Self {
+    ///
+    /// Capacity is normally rounded up to the nearest power of 2, minus one. E.g. 15, 31, 63, 127, 255, etc.
+    pub(crate) fn new(capacity: usize) -> Self {
         Self {
             inner: std::collections::VecDeque::with_capacity(capacity),
         }
     }
 
     /// Pushes an item into the CircularVec. If the CircularVec is full, the oldest item is removed.
-    pub fn push(&mut self, item: T) -> Result<(), NetworkError> {
+    pub(crate) fn push(&mut self, item: T) {
         if self.inner.len() == self.inner.capacity() {
-            self.inner
-                .pop_front()
-                .ok_or(NetworkError::CircularVecPopFrontError)?;
+            let _ = self.inner.pop_front();
         }
         self.inner.push_back(item);
-        Ok(())
     }
 
     /// Checks if the CircularVec contains the given item.
-    pub fn contains(&self, item: &T) -> bool
+    pub(crate) fn contains(&self, item: &T) -> bool
     where
         T: PartialEq,
     {
@@ -51,14 +48,16 @@ mod tests {
     #[test]
     fn test_push_and_contains() {
         let mut cv = CircularVec::new(2);
-        assert!(cv.push(1).is_ok());
-        assert!(cv.push(2).is_ok());
+        cv.push(1);
+        cv.push(2);
         assert!(cv.contains(&1));
         assert!(cv.contains(&2));
 
-        assert!(cv.push(3).is_ok());
+        cv.push(3);
         assert!(!cv.contains(&1));
         assert!(cv.contains(&2));
         assert!(cv.contains(&3));
+
+        assert!(cv.inner.len() == 2);
     }
 }
