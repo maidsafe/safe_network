@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712812237263,
+  "lastUpdate": 1712812238851,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2",
-          "message": "fix: genesis check security flaw",
-          "timestamp": "2023-11-29T09:14:47Z",
-          "tree_id": "d37b84d9f74129c69d6ee6aeb7f6b6a626822ec2",
-          "url": "https://github.com/maidsafe/safe_network/commit/56e6bdfbe9d40457b3f7f19fbd7131d78e6e31d2"
-        },
-        "date": 1701252071229,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7728,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 76636,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 9,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33921,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "37ab87b2a410bab7b45e8a5562bc7c7605f7e5e6",
+          "message": "ci: remove schedule version bumper from workflow",
+          "timestamp": "2024-04-11T13:57:05+09:00",
+          "tree_id": "3919ff9c2ffa1c6a89f3d569c9db99f135a66681",
+          "url": "https://github.com/maidsafe/safe_network/commit/37ab87b2a410bab7b45e8a5562bc7c7605f7e5e6"
+        },
+        "date": 1712812238520,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7169,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32827,
             "unit": "ms"
           },
           {
