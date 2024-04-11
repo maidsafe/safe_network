@@ -168,13 +168,14 @@ impl RelayManager {
         while !self.non_relayed_listener_id.is_empty() {
             if let Some(listener_id) = self.non_relayed_listener_id.pop_back() {
                 let res = swarm.remove_listener(listener_id);
-                debug!("Removed {listener_id:?} with result: {res} from swarm as we now have a relay reservation");
+                debug!("Successful reservation: Removing {listener_id:?} with result: {res} from swarm as we now have a relay reservation");
             }
         }
 
         match self.waiting_for_reservation.remove(peer_id) {
             Some(addr) => {
-                info!("Successfully made reservation with {peer_id:?} on {addr:?}");
+                info!("Successfully made reservation with {peer_id:?} on {addr:?}. Adding the addr to external address.");
+                swarm.add_external_address(addr.clone());
                 self.connected_relays.insert(*peer_id, addr);
             }
             None => {
