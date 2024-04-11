@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712796082564,
+  "lastUpdate": 1712796085681,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30614,45 +30614,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "4360c79756145b0e1f2fca06b8a2546e88b4f7e7",
-          "message": "chore: increase routing table sleep before verification time",
-          "timestamp": "2023-11-27T13:59:55Z",
-          "tree_id": "5e7667d25df45cbff5499d646d49d7f80822097b",
-          "url": "https://github.com/maidsafe/safe_network/commit/4360c79756145b0e1f2fca06b8a2546e88b4f7e7"
-        },
-        "date": 1701096380586,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6252,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 69530,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 11,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35432,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2a796eee14217c42c6f51e90281f96965be33e88",
+          "message": "feat(faucet): fully limit any concurrency\n\nThis means we'll be able to await any verification\nsteps and retries (once we have that working properly)\nto avoid spend errors there (as wallet lock releases quite often)",
+          "timestamp": "2024-04-11T09:27:33+09:00",
+          "tree_id": "e897fc3160cfe1e4c05f88f5cac032b59f830022",
+          "url": "https://github.com/maidsafe/safe_network/commit/2a796eee14217c42c6f51e90281f96965be33e88"
+        },
+        "date": 1712796084410,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7308,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33433,
             "unit": "ms"
           },
           {
