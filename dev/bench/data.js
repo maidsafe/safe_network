@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712813355733,
+  "lastUpdate": 1712813518826,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6d5d8c1a77cfebdb1b0041d9c903b607e521a2b0",
-          "message": "chore(cli): ux improvements after upload completes",
-          "timestamp": "2023-12-11T09:53:43Z",
-          "tree_id": "b7f7c8c1a31c6e87db3ddbfafb56a90ee61eb2ce",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d5d8c1a77cfebdb1b0041d9c903b607e521a2b0"
-        },
-        "date": 1702290885634,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6299674530641602,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8463090952526484,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.93803445908951,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.42160680036507,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9ad4b38116981e9c9410f0fc23dcc163fd29ee58",
+          "message": "ci: dont require await for past release in bumper",
+          "timestamp": "2024-04-11T14:20:18+09:00",
+          "tree_id": "3d8511e7029d30d8146b8c07604c4090e2fdfd71",
+          "url": "https://github.com/maidsafe/safe_network/commit/9ad4b38116981e9c9410f0fc23dcc163fd29ee58"
+        },
+        "date": 1712813515045,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2256354265166531,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6506773226903408,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.315347969486396,
             "unit": "MiB/s"
           }
         ]
