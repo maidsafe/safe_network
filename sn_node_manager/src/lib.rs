@@ -44,6 +44,7 @@ use sn_service_management::{
     NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
+use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
 pub const DAEMON_SERVICE_NAME: &str = "safenodemand";
@@ -90,6 +91,31 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         }
         self.service_control.start(&self.service.name())?;
         self.service_control.wait(RPC_START_UP_DELAY_MS);
+
+        // This is an attempt to see whether the service process has actually launched. You don't
+        // always get an error from the service infrastructure.
+        //
+        // There might be many different `safenode` processes running, but since each service has
+        // its own isolated binary, we use the binary path to uniquely identify it.
+        match self
+            .service_control
+            .get_process_pid(&self.service.bin_path())
+        {
+            Ok(pid) => {
+                debug!(
+                    "Service process started for {} with PID {}",
+                    self.service.name(),
+                    pid
+                );
+            }
+            Err(sn_service_management::error::Error::ServiceProcessNotFound(_)) => {
+                return Err(eyre!(
+                    "The '{}' service has failed to start",
+                    self.service.name()
+                ));
+            }
+            Err(e) => return Err(e.into()),
+        }
 
         self.service.on_start().await?;
 
@@ -236,7 +262,18 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         )?;
 
         if options.start_service {
-            self.start().await?;
+            match self.start().await {
+                Ok(()) => {}
+                Err(e) => {
+                    self.service
+                        .set_version(&options.target_version.to_string());
+                    return Ok(UpgradeResult::UpgradedButNotStarted(
+                        current_version.to_string(),
+                        options.target_version.to_string(),
+                        e.to_string(),
+                    ));
+                }
+            }
         }
         self.service
             .set_version(&options.target_version.to_string());
@@ -444,14 +481,14 @@ mod tests {
     use predicates::prelude::*;
     use service_manager::ServiceInstallCtx;
     use sn_service_management::{
-        error::Result as ServiceControlResult,
+        error::{Error as ServiceControlError, Result as ServiceControlResult},
         node::{NodeService, NodeServiceData},
         rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
         UpgradeOptions, UpgradeResult,
     };
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
-        path::PathBuf,
+        path::{Path, PathBuf},
         str::FromStr,
     };
 
@@ -475,7 +512,7 @@ mod tests {
             fn create_service_user(&self, username: &str) -> ServiceControlResult<()>;
             fn get_available_port(&self) -> ServiceControlResult<u16>;
             fn install(&self, install_ctx: ServiceInstallCtx) -> ServiceControlResult<()>;
-            fn get_process_pid(&self, name: &str) -> ServiceControlResult<u32>;
+            fn get_process_pid(&self, bin_path: &Path) -> ServiceControlResult<u32>;
             fn is_service_process_running(&self, pid: u32) -> bool;
             fn start(&self, service_name: &str) -> ServiceControlResult<()>;
             fn stop(&self, service_name: &str) -> ServiceControlResult<()>;
@@ -499,6 +536,13 @@ mod tests {
             .with(eq(3000))
             .times(1)
             .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
+            .times(1)
+            .returning(|_| Ok(100));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -575,6 +619,13 @@ mod tests {
             .with(eq(3000))
             .times(1)
             .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
+            .times(1)
+            .returning(|_| Ok(100));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -698,6 +749,11 @@ mod tests {
         let mut mock_rpc_client = MockRpcClient::new();
 
         mock_service_control
+            .expect_is_service_process_running()
+            .with(eq(1000))
+            .times(1)
+            .returning(|_| false);
+        mock_service_control
             .expect_start()
             .with(eq("safenode1"))
             .times(1)
@@ -708,10 +764,12 @@ mod tests {
             .times(1)
             .returning(|_| ());
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| false);
+            .returning(|_| Ok(100));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -771,6 +829,65 @@ mod tests {
             service_manager.service.service_data.status,
             ServiceStatus::Running
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn start_should_return_an_error_if_the_process_was_not_found() -> Result<()> {
+        let mut mock_service_control = MockServiceControl::new();
+
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"))
+            .times(1)
+            .returning(|_| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
+            .times(1)
+            .returning(|_| {
+                Err(ServiceControlError::ServiceProcessNotFound(
+                    "/var/safenode-manager/services/safenode1/safenode".to_string(),
+                ))
+            });
+
+        let mut service_data = NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            number: 1,
+            peer_id: None,
+            pid: None,
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            user: "safe".to_string(),
+            version: "0.98.1".to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        let result = service_manager.start().await;
+        match result {
+            Ok(_) => panic!("This test should have resulted in an error"),
+            Err(e) => assert_eq!("The 'safenode1' service has failed to start", e.to_string()),
+        }
 
         Ok(())
     }
@@ -994,6 +1111,11 @@ mod tests {
             .with(eq(3000))
             .times(1)
             .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(100));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1185,6 +1307,11 @@ mod tests {
             .with(eq(3000))
             .times(1)
             .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(100));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1397,6 +1524,121 @@ mod tests {
             service_manager.service.service_data.status,
             ServiceStatus::Stopped
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn upgrade_should_return_upgraded_but_not_started_if_service_did_not_start() -> Result<()>
+    {
+        let current_version = "0.1.0";
+        let target_version = "0.2.0";
+
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let current_install_dir = tmp_data_dir.child("safenode_install");
+        current_install_dir.create_dir_all()?;
+
+        let current_node_bin = current_install_dir.child("safenode");
+        current_node_bin.write_binary(b"fake safenode binary")?;
+        let target_node_bin = tmp_data_dir.child("safenode");
+        target_node_bin.write_binary(b"fake safenode binary")?;
+
+        let current_node_bin_str = current_node_bin.to_path_buf().to_string_lossy().to_string();
+
+        let mut mock_service_control = MockServiceControl::new();
+
+        // before binary upgrade
+        mock_service_control
+            .expect_is_service_process_running()
+            .with(eq(1000))
+            .times(1)
+            .returning(|_| true);
+        mock_service_control
+            .expect_stop()
+            .with(eq("safenode1"))
+            .times(1)
+            .returning(|_| Ok(()));
+
+        // after binary upgrade
+        mock_service_control
+            .expect_uninstall()
+            .with(eq("safenode1"))
+            .times(1)
+            .returning(|_| Ok(()));
+        mock_service_control
+            .expect_install()
+            .with(always())
+            .times(1)
+            .returning(|_| Ok(()));
+
+        // after service restart
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"))
+            .times(1)
+            .returning(|_| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(move |_| {
+                Err(ServiceControlError::ServiceProcessNotFound(
+                    current_node_bin_str.clone(),
+                ))
+            });
+
+        let mut service_data = NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            number: 1,
+            peer_id: Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?),
+            pid: Some(1000),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: current_node_bin.to_path_buf(),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Running,
+            user: "safe".to_string(),
+            version: current_version.to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(MockRpcClient::new()));
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        let upgrade_result = service_manager
+            .upgrade(UpgradeOptions {
+                bootstrap_peers: Vec::new(),
+                env_variables: None,
+                force: false,
+                start_service: true,
+                target_bin_path: target_node_bin.to_path_buf(),
+                target_version: Version::parse(target_version).unwrap(),
+            })
+            .await?;
+
+        match upgrade_result {
+            UpgradeResult::UpgradedButNotStarted(old_version, new_version, _) => {
+                assert_eq!(old_version, current_version);
+                assert_eq!(new_version, target_version);
+            }
+            _ => panic!(
+                "Expected UpgradeResult::UpgradedButNotStarted but was {:#?}",
+                upgrade_result
+            ),
+        }
 
         Ok(())
     }

@@ -31,7 +31,7 @@ use sn_service_management::{
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
 };
 
@@ -54,7 +54,7 @@ mock! {
         fn create_service_user(&self, username: &str) -> ServiceControlResult<()>;
         fn get_available_port(&self) -> ServiceControlResult<u16>;
         fn install(&self, install_ctx: ServiceInstallCtx) -> ServiceControlResult<()>;
-        fn get_process_pid(&self, name: &str) -> ServiceControlResult<u32>;
+        fn get_process_pid(&self, bin_path: &Path) -> ServiceControlResult<u32>;
         fn is_service_process_running(&self, pid: u32) -> bool;
         fn start(&self, service_name: &str) -> ServiceControlResult<()>;
         fn stop(&self, service_name: &str) -> ServiceControlResult<()>;

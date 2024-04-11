@@ -18,7 +18,7 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
@@ -358,9 +358,18 @@ pub async fn upgrade(
         }
     }
 
-    print_upgrade_summary(upgrade_summary);
-
     node_registry.save()?;
+    print_upgrade_summary(upgrade_summary.clone());
+
+    if upgrade_summary.iter().any(|(_, r)| {
+        matches!(r, UpgradeResult::Error(_))
+            || matches!(r, UpgradeResult::UpgradedButNotStarted(_, _, _))
+    }) {
+        return Err(eyre!("There was a problem upgrading one or more nodes").suggestion(
+            "For any services that were upgraded but did not start, you can attempt to start them \
+                again using the 'start' command."));
+    }
+
     Ok(())
 }
 
