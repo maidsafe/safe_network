@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use libp2p::{
@@ -25,7 +25,7 @@ const ITERATIONS_FOR_NET_SIZE_ESTIMATION: usize = 50;
 // of its K_VALUE closest peers, sorted by increasing distance. This order
 // is a prerequisite for the functions this container is used by,
 // i.e. their result is dependant on the correct ordering of these values.
-pub(super) type RandomKeysAndClosestPeerIds = BTreeMap<KBucketKey<Vec<u8>>, Vec<PeerId>>;
+pub(super) type RandomKeysAndClosestPeerIds = Vec<(KBucketKey<Vec<u8>>, Vec<PeerId>)>;
 
 // Given the set of closest K peers ids to the passed content address, return 'true'
 // if there is probabilistically a sybil attack around that CID address.
@@ -44,10 +44,11 @@ pub(super) async fn check_for_sybil_attack(
         .iter()
         .all(|(_, peers)| peers.len() >= K_VALUE.get()));
 
-    let cpls_freqs = average_num_peers_per_cpl(peers, cid.clone());
+    let cpls_freqs = num_peers_per_cpl(peers, cid.clone());
     let q = |x| cpls_freqs.get(&x).cloned().unwrap_or(0) as f64 / k as f64;
 
     let n = get_net_size_estimate(random_keys);
+    info!(">>> NET SIZE ESTIMATE: {n}");
     let model_dist = compute_model_distribution(n);
     let p = |x| model_dist.get(&x).cloned().unwrap_or(0f64) / k as f64;
 
@@ -79,10 +80,11 @@ fn average_between_keys_and_i_th_closest_peer(
 fn get_net_size_estimate(random_keys: &RandomKeysAndClosestPeerIds) -> usize {
     let mut best_n_found = 0;
     let mut smallest_value_found = f64::MAX;
+    // FIXME: this iteration needs to be smarter
     for n in 0..ITERATIONS_FOR_NET_SIZE_ESTIMATION {
-        let value = (1..=K_VALUE.get()).fold(0f64, |acc, i| {
+        let value = (0..K_VALUE.get()).fold(0f64, |acc, i| {
             let d_i = average_between_keys_and_i_th_closest_peer(i, random_keys);
-            let dist: f64 = d_i - ((2f64.pow(256) * i as f64) / (n + 1) as f64);
+            let dist: f64 = d_i - ((2f64.pow(256) * (i + 1) as f64) / (n + 1) as f64);
             acc + dist.pow(2)
         });
         if value < smallest_value_found {
@@ -96,18 +98,18 @@ fn get_net_size_estimate(random_keys: &RandomKeysAndClosestPeerIds) -> usize {
 
 // Formula 3 in page 7
 fn distrib_j_th_largest_prefix_length(n: usize, j: usize, x: usize) -> f64 {
-    (0..j).fold(0f64, |acc, i| {
+    (0..=j).fold(0f64, |acc, i| {
         acc + (binomial(n, i) as f64
             * (1f64 - 0.5.pow((x + 1) as f64)).pow((n - i) as f64)
             * 0.5.pow(((x + 1) * i) as f64))
     })
 }
 
-// Formula 4 in page 7
+// Formula 4 (partially) in page 7
 // Returns a map of common prefix lengths to their probabilistically expected frequency.
 fn compute_model_distribution(n: usize) -> HashMap<usize, f64> {
     let f = |x| {
-        (1..=K_VALUE.get()).fold(0f64, |acc, j| {
+        (0..K_VALUE.get()).fold(0f64, |acc, j| {
             acc + distrib_j_th_largest_prefix_length(n, j, x)
                 - distrib_j_th_largest_prefix_length(n, j, x - 1)
         })
@@ -125,9 +127,9 @@ fn compute_kl_divergence(p: &dyn Fn(usize) -> f64, q: &dyn Fn(usize) -> f64) -> 
     })
 }
 
-// Formula 6 in page 7
+// Formula 6 (partially) in page 7
 // Returns a map with common prefix lengths of given peers and their frequency.
-fn average_num_peers_per_cpl(peers: &[PeerId], cid: KBucketKey<Vec<u8>>) -> HashMap<usize, usize> {
+fn num_peers_per_cpl(peers: &[PeerId], cid: KBucketKey<Vec<u8>>) -> HashMap<usize, usize> {
     let cid_bytes = cid.hashed_bytes();
     peers
         .iter()
@@ -150,4 +152,41 @@ fn common_prefix_length(lhs: &[u8], rhs: &[u8]) -> usize {
         }
     }
     common_prefix_length
+}
+
+#[cfg(test)]
+mod tests {
+    use super::common_prefix_length;
+
+    // we use XorName utilities just because it's easier to build test data with them
+    use xor_name::XorName;
+
+    #[test]
+    fn test_common_prefix_length() {
+        let mut rng = rand::thread_rng();
+        let mut lhs = XorName::random(&mut rng);
+        assert_eq!(common_prefix_length(&lhs, &lhs), 256);
+
+        let mut rhs = !lhs;
+        // let's first make sure lhs != rhs in every bit
+        assert_eq!(common_prefix_length(&lhs, &rhs), 0);
+
+        for i in 0..=255 {
+            lhs = lhs.with_bit(i, true);
+            rhs = rhs.with_bit(i, true);
+            assert_eq!(
+                i as usize + 1,
+                common_prefix_length(&lhs, &rhs),
+                "unexpected result from common_prefix_length fn"
+            );
+        }
+    }
+
+    #[test]
+    fn test_net_size_estimate() {
+        // Build a map with 256 random keys, one for each Kbucket
+        // with their corresponding K-closest peers to a random CID;
+        // e.g. in Kbucket #2 get the 20 closest peers to a random CID that shares 2 bits as a prefix.
+        todo!();
+    }
 }

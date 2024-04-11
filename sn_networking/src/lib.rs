@@ -876,12 +876,8 @@ impl Network {
 
         match self.get_closest_peers(&random_addr, true).await {
             Ok(closest_peers) => {
-                if check_for_sybil_attack(
-                    &closest_peers,
-                    random_addr.as_kbucket_key(),
-                    &BTreeMap::default(),
-                )
-                .await
+                if check_for_sybil_attack(&closest_peers, random_addr.as_kbucket_key(), &vec![])
+                    .await
                 {
                     info!(">>> Sybil attack detected around addr: {random_addr}");
                 }
