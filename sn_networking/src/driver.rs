@@ -183,7 +183,7 @@ pub(super) struct NodeBehaviour {
 
 #[derive(Debug)]
 pub struct NetworkBuilder {
-    enable_hole_punching: bool,
+    is_behind_home_network: bool,
     keypair: Keypair,
     local: bool,
     root_dir: PathBuf,
@@ -200,7 +200,7 @@ pub struct NetworkBuilder {
 impl NetworkBuilder {
     pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
         Self {
-            enable_hole_punching: false,
+            is_behind_home_network: false,
             keypair,
             local,
             root_dir,
@@ -215,8 +215,8 @@ impl NetworkBuilder {
         }
     }
 
-    pub fn enable_hole_punching(&mut self, enable: bool) {
-        self.enable_hole_punching = enable;
+    pub fn is_behind_home_network(&mut self, enable: bool) {
+        self.is_behind_home_network = enable;
     }
 
     pub fn listen_addr(&mut self, listen_addr: SocketAddr) {
@@ -516,7 +516,7 @@ impl NetworkBuilder {
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
         let mut relay_manager = RelayManager::new(self.initial_peers);
         if !is_client {
-            relay_manager.enable_hole_punching(self.enable_hole_punching);
+            relay_manager.enable_hole_punching(self.is_behind_home_network);
         }
 
         let swarm_driver = SwarmDriver {
@@ -525,6 +525,7 @@ impl NetworkBuilder {
             local: self.local,
             listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
+            is_behind_home_network: self.is_behind_home_network,
             connected_peers: 0,
             bootstrap,
             relay_manager,
@@ -569,6 +570,7 @@ pub struct SwarmDriver {
     pub(crate) self_peer_id: PeerId,
     pub(crate) local: bool,
     pub(crate) is_client: bool,
+    pub(crate) is_behind_home_network: bool,
     /// The port that was set by the user
     pub(crate) listen_port: Option<u16>,
     pub(crate) connected_peers: usize,
