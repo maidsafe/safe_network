@@ -4,12 +4,9 @@ name: Version Bump
 
 # prevent concurrent version bumps
 concurrency:
-  group: "version-bump-${{ github.event_name == 'schedule' && 'main' || github.ref_name }}"
+  group: "version-bump-${{ github.ref_name }}"
 
 on:
-  schedule:
-    # Schedule for midnight UTC. Adjust according to your timezone
-    - cron: "0 0 * * *" # Runs at 00:00 UTC every day
   workflow_dispatch:
     inputs:
       branch:
@@ -33,8 +30,8 @@ jobs:
         with:
           fetch-depth: "0"
           token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-          # For scheduled runs, explicitly set ref to 'main'. For workflow_dispatch, use the input branch. Otherwise, use the triggering ref.
-          ref: ${{ github.event_name == 'schedule' && 'main' || github.event.inputs.branch || github.ref_name }}
+          # For workflow_dispatch, use the input branch. Otherwise, use the triggering ref.
+          ref: ${{ github.event.inputs.branch || github.ref_name }}
 
       - name: Get the SHA of the last release commit
         id: get-sha
@@ -51,11 +48,11 @@ jobs:
           repository-name: ${{ github.repository }}
           repository-owner: ${{ github.repository_owner }}
           head-sha: ${{ env.sha }}
-          base-branch: ${{ github.event_name == 'schedule' && 'main' || github.event.inputs.branch || github.ref_name }}
+          base-branch: ${{ github.event.inputs.branch || github.ref_name }}
           polling-interval: 60
 
       - name: Fetch the latest code from the specified branch
-        run: git pull origin ${{ github.event_name == 'schedule' && 'main' || github.event.inputs.branch || github.ref_name }}
+        run: git pull origin ${{ github.event.inputs.branch || github.ref_name }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -81,13 +78,13 @@ jobs:
           rm release-plz-x86_64-unknown-linux-gnu.tar.gz
           sudo mv release-plz /usr/local/bin
       - shell: bash
-        # run an alpha release bump when scheduled, otherwise run as the branch name
-        run: ./resources/scripts/bump_version.sh ${{ github.event_name == 'schedule' && 'alpha' || github.event.inputs.branch || github.ref_name }}
+        # run as the branch name
+        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.branch || github.ref_name }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-          branch: ${{ github.event_name == 'schedule' && 'main' || github.event.inputs.branch || github.ref_name }}
+          branch: ${{ github.event.inputs.branch || github.ref_name }}
           tags: true
       - name: post notification to slack on failure
         if: ${{ failure() }}
