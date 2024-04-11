@@ -43,7 +43,7 @@ pub enum Error {
     RpcNodeUpdateError(String),
     #[error("Could not obtain record addresses through RPC: {0}")]
     RpcRecordAddressError(String),
-    #[error("Could not find process '{0}'")]
+    #[error("Could not find process at '{0}'")]
     ServiceProcessNotFound(String),
     #[error("The user may have removed the '{0}' service outwith the node manager")]
     ServiceRemovedManually(String),

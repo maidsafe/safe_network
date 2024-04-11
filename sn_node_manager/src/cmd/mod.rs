@@ -75,6 +75,13 @@ pub fn print_upgrade_summary(upgrade_summary: Vec<(String, UpgradeResult)>) {
                     service_name
                 );
             }
+            UpgradeResult::UpgradedButNotStarted(previous_version, new_version, _) => {
+                println!(
+                    "{} {} was upgraded from {previous_version} to {new_version} but it did not start",
+                    "✕".red(),
+                    service_name
+                );
+            }
             UpgradeResult::Forced(previous_version, target_version) => {
                 println!(
                     "{} Forced {} version change from {previous_version} to {target_version}.",

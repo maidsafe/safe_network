@@ -49,6 +49,7 @@ pub enum UpgradeResult {
     Forced(String, String),
     NotRequired,
     Upgraded(String, String),
+    UpgradedButNotStarted(String, String, String),
     Error(String),
 }
 
