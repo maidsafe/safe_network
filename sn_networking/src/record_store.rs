@@ -15,6 +15,7 @@ use aes_gcm_siv::{
     Aes256GcmSiv, Nonce,
 };
 
+use itertools::Itertools;
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -25,6 +26,7 @@ use libp2p::{
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
@@ -40,7 +42,7 @@ use std::{
     vec,
 };
 use tokio::sync::mpsc;
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 /// Max number of records a node can store
@@ -122,67 +124,68 @@ impl NodeRecordStore {
         config: &NodeRecordStoreConfig,
         encryption_details: &(Aes256GcmSiv, [u8; 4]),
     ) -> HashMap<Key, (NetworkAddress, RecordType)> {
-        let mut records = HashMap::default();
-
-        info!("Attempting to repopulate records from existing store...");
-        for entry in WalkDir::new(&config.storage_dir)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
+        let process_entry = |entry: &DirEntry| -> _ {
             let path = entry.path();
             if path.is_file() {
                 info!("Existing record found: {path:?}");
                 // if we've got a file, lets try and read it
-                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                    // get the record key from the filename
-                    if let Some(key) = Self::get_data_from_filename(filename) {
-                        let record = match fs::read(path) {
-                            Ok(bytes) => {
-                                // and the stored record
-                                Self::get_record_from_bytes(bytes, &key, encryption_details)
-                            }
-                            Err(err) => {
-                                error!(
-                                    "Error while reading file. filename: {filename}, error: {err:?}"
-                                );
-                                None
-                            }
-                        };
-
-                        if let Some(record) = record {
-                            let record_type = match RecordHeader::is_record_of_type_chunk(&record) {
-                                Ok(true) => RecordType::Chunk,
-                                Ok(false) => {
-                                    let xorname_hash = XorName::from_content(&record.value);
-                                    RecordType::NonChunk(xorname_hash)
-                                }
-                                Err(error) => {
-                                    warn!("Failed to parse record type from record: {:?}", error);
-                                    continue;
-                                }
-                            };
-
-                            let address = NetworkAddress::from_record_key(&key);
-                            records.insert(key, (address, record_type));
-                            info!("Existing record loaded: {path:?}");
-                        }
-                    };
-                } else {
-                    // warn and remove this file as it's not a valid record
-                    warn!(
-                        "Found a file in the storage dir that is not a valid record: {:?}",
-                        path
-                    );
-                    if let Err(e) = fs::remove_file(path) {
+                let filename = match path.file_name().and_then(|n| n.to_str()) {
+                    Some(file_name) => file_name,
+                    None => {
+                        // warn and remove this file as it's not a valid record
                         warn!(
-                            "Failed to remove invalid record file from storage dir: {:?}",
-                            e
+                            "Found a file in the storage dir that is not a valid record: {:?}",
+                            path
                         );
+                        if let Err(e) = fs::remove_file(path) {
+                            warn!(
+                                "Failed to remove invalid record file from storage dir: {:?}",
+                                e
+                            );
+                        }
+                        return None;
                     }
-                }
-            }
-        }
+                };
+                // get the record key from the filename
+                let key = Self::get_data_from_filename(filename)?;
+                let record = match fs::read(path) {
+                    Ok(bytes) => {
+                        // and the stored record
+                        Self::get_record_from_bytes(bytes, &key, encryption_details)?
+                    }
+                    Err(err) => {
+                        error!("Error while reading file. filename: {filename}, error: {err:?}");
+                        return None;
+                    }
+                };
 
+                let record_type = match RecordHeader::is_record_of_type_chunk(&record) {
+                    Ok(true) => RecordType::Chunk,
+                    Ok(false) => {
+                        let xorname_hash = XorName::from_content(&record.value);
+                        RecordType::NonChunk(xorname_hash)
+                    }
+                    Err(error) => {
+                        warn!("Failed to parse record type from record: {:?}", error);
+                        return None;
+                    }
+                };
+
+                let address = NetworkAddress::from_record_key(&key);
+                info!("Existing record loaded: {path:?}");
+                return Some((key, (address, record_type)));
+            }
+            None
+        };
+
+        info!("Attempting to repopulate records from existing store...");
+        let records = WalkDir::new(&config.storage_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .collect_vec()
+            .par_iter()
+            .filter_map(process_entry)
+            .collect();
         records
     }
 
