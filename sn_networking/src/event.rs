@@ -371,7 +371,6 @@ impl SwarmDriver {
 
                             if !kbucket_full {
                                 info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
-                                self.dialed_peers.push(peer_id);
                                 if let Err(err) = self.swarm.dial(
                                     DialOpts::peer_id(peer_id)
                                         .condition(PeerCondition::NotDialing)
