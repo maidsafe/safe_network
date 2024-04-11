@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712754262755,
+  "lastUpdate": 1712795970008,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6",
-          "message": "feat: replace bootstrap node if bucket full",
-          "timestamp": "2023-12-06T11:40:53Z",
-          "tree_id": "b76db349c27e9d0553d2301999956e16148a09cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6"
-        },
-        "date": 1701866389151,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6197574930577369,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8445544880668558,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.78614433040721,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.789997577858024,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2a796eee14217c42c6f51e90281f96965be33e88",
+          "message": "feat(faucet): fully limit any concurrency\n\nThis means we'll be able to await any verification\nsteps and retries (once we have that working properly)\nto avoid spend errors there (as wallet lock releases quite often)",
+          "timestamp": "2024-04-11T09:27:33+09:00",
+          "tree_id": "e897fc3160cfe1e4c05f88f5cac032b59f830022",
+          "url": "https://github.com/maidsafe/safe_network/commit/2a796eee14217c42c6f51e90281f96965be33e88"
+        },
+        "date": 1712795965194,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2222054104473001,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6452202088444141,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.618948599512564,
             "unit": "MiB/s"
           }
         ]
