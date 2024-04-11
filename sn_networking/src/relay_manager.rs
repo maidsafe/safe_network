@@ -39,7 +39,9 @@ impl RelayManager {
             .filter_map(|addr| {
                 for protocol in addr.iter() {
                     if let Protocol::P2p(peer_id) = protocol {
-                        return Some((peer_id, addr));
+                        let relay_addr = Self::craft_relay_address(&addr, Some(peer_id))?;
+
+                        return Some((peer_id, relay_addr));
                     }
                 }
                 None
@@ -106,8 +108,12 @@ impl RelayManager {
             if let Some(addr) = addrs.iter().next() {
                 // only consider non relayed peers
                 if !addr.iter().any(|p| p == Protocol::P2pCircuit) {
-                    debug!("Adding {peer_id:?} with {addr:?} as a potential relay candidate");
-                    self.candidates.push_back((*peer_id, addr.clone()));
+                    if let Some(relay_addr) = Self::craft_relay_address(addr, None) {
+                        debug!(
+                            "Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate"
+                        );
+                        self.candidates.push_back((*peer_id, relay_addr));
+                    }
                 }
             }
         }
@@ -133,8 +139,7 @@ impl RelayManager {
         while n_reservations < reservations_to_make {
             // todo: should we remove all our other `listen_addr`? And should we block from adding `add_external_address` if
             // we're behind nat?
-            if let Some((peer_id, addr)) = self.candidates.pop_front() {
-                let relay_addr = addr.with(Protocol::P2pCircuit);
+            if let Some((peer_id, relay_addr)) = self.candidates.pop_front() {
                 match swarm.listen_on(relay_addr.clone()) {
                     Ok(id) => {
                         info!("Sending reservation to relay {peer_id:?} on {relay_addr:?}");
@@ -200,5 +205,36 @@ impl RelayManager {
             }
         }
         false
+    }
+
+    // the listen addr should be something like `/ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/
+    fn craft_relay_address(addr: &Multiaddr, peer_id: Option<PeerId>) -> Option<Multiaddr> {
+        let mut output_addr = Multiaddr::empty();
+
+        let ip = addr
+            .iter()
+            .find(|protocol| matches!(protocol, Protocol::Ip4(_)))?;
+        output_addr.push(ip);
+        let port = addr
+            .iter()
+            .find(|protocol| matches!(protocol, Protocol::Udp(_)))?;
+        output_addr.push(port);
+        output_addr.push(Protocol::QuicV1);
+
+        let peer_id = {
+            if let Some(peer_id) = peer_id {
+                Protocol::P2p(peer_id)
+            } else {
+                let peer_id = addr
+                    .iter()
+                    .find(|protocol| matches!(protocol, Protocol::P2p(_)))?;
+                peer_id
+            }
+        };
+        output_addr.push(peer_id);
+        output_addr.push(Protocol::P2pCircuit);
+
+        debug!("Crafted p2p relay address: {output_addr:?}");
+        Some(output_addr)
     }
 }
