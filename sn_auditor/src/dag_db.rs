@@ -26,7 +26,7 @@ pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 /// Currently in memory, with disk backup, but should probably be a real DB at scale
 #[derive(Clone)]
 pub struct SpendDagDb {
-    client: Client,
+    client: Option<Client>,
     path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
 }
@@ -57,7 +57,21 @@ impl SpendDagDb {
         };
 
         Ok(Self {
-            client,
+            client: Some(client),
+            path,
+            dag: Arc::new(RwLock::new(dag)),
+        })
+    }
+
+    /// Create a new SpendDagDb from a local file and no network connection
+    pub fn offline(dag_path: PathBuf) -> Result<Self> {
+        let path = dag_path
+            .parent()
+            .ok_or_else(|| eyre!("Failed to get parent path"))?
+            .to_path_buf();
+        let dag = SpendDag::load_from_file(&dag_path)?;
+        Ok(Self {
+            client: None,
             path,
             dag: Arc::new(RwLock::new(dag)),
         })
@@ -82,7 +96,7 @@ impl SpendDagDb {
 
         let (spend_type, spends) = match spend {
             SpendDagGet::SpendNotFound => ("SpendNotFound", vec![]),
-            SpendDagGet::SpendKeyExists => ("SpendKeyExists", vec![]),
+            SpendDagGet::Utxo => ("Utxo", vec![]),
             SpendDagGet::DoubleSpend(vs) => ("DoubleSpend", vs),
             SpendDagGet::Spend(s) => ("Spend", vec![*s]),
         };
@@ -146,6 +160,8 @@ impl SpendDagDb {
         // update that copy 10 generations further
         const NEXT_10_GEN: u32 = 10;
         self.client
+            .clone()
+            .ok_or(eyre!("Cannot update in offline mode"))?
             .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN))
             .await?;
 
@@ -224,17 +240,13 @@ fn quick_edit_svg(svg: Vec<u8>, dag: &SpendDag) -> Result<Vec<u8>> {
     let mut str = String::from_utf8(svg).map_err(|err| eyre!("Failed svg conversion: {err}"))?;
 
     let spend_addrs: Vec<_> = dag.all_spends().iter().map(|s| s.address()).collect();
-    let utxo_addrs = dag.get_utxos();
-    let unknown_parents = dag.get_unknown_parents();
-    let all_addrs = spend_addrs
-        .iter()
-        .chain(utxo_addrs.iter())
-        .chain(unknown_parents.iter());
+    let pending_addrs = dag.get_pending_spends();
+    let all_addrs = spend_addrs.iter().chain(pending_addrs.iter());
 
     for addr in all_addrs {
         let addr_hex = addr.to_hex().to_string();
         let is_fault = !dag.get_spend_faults(addr).is_empty();
-        let is_known_but_not_gathered = matches!(dag.get_spend(addr), SpendDagGet::SpendKeyExists);
+        let is_known_but_not_gathered = matches!(dag.get_spend(addr), SpendDagGet::Utxo);
         let colour = if is_fault {
             "red"
         } else if is_known_but_not_gathered {
