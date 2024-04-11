@@ -10,7 +10,6 @@
 use crate::metrics::NetworkMetrics;
 #[cfg(feature = "open-metrics")]
 use crate::metrics_service::run_metrics_server;
-use crate::NodeIssue;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -27,9 +26,13 @@ use crate::{
     target_arch::{interval, spawn, Instant},
     Network, CLOSE_GROUP_SIZE,
 };
+use crate::{transport, NodeIssue};
+use futures::future::Either;
 use futures::StreamExt;
+use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+use libp2p::Transport as _;
 use libp2p::{
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
@@ -461,24 +464,53 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        let swarm = libp2p::SwarmBuilder::with_existing_identity(self.keypair.clone())
-            .with_tokio()
-            .with_quic_config(|_config| libp2p::quic::Config::new(&self.keypair))
-            .with_relay_client(libp2p::noise::Config::new, libp2p::yamux::Config::default)
-            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
-            .with_behaviour(|_keypair, relay_behaviour| NodeBehaviour {
-                relay_client: relay_behaviour,
-                relay_server: libp2p::relay::Behaviour::new(peer_id, Default::default()),
-                request_response,
-                #[cfg(feature = "local-discovery")]
-                mdns,
-                identify,
-                kademlia,
-                dcutr: libp2p::dcutr::Behaviour::new(peer_id),
+        let main_transport = transport::build_transport(&self.keypair);
+
+        let transport = if !self.local {
+            debug!("Preventing non-global dials");
+            // Wrap upper in a transport that prevents dialing local addresses.
+            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
+        } else {
+            main_transport
+        };
+
+        let (relay_transport, relay_behaviour) =
+            libp2p::relay::client::new(self.keypair.public().to_peer_id());
+        let relay_transport = relay_transport
+            .upgrade(libp2p::core::upgrade::Version::V1Lazy)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .or_transport(transport);
+
+        let transport = relay_transport
+            .map(|either_output, _| match either_output {
+                Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+                Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
             })
-            .map_err(|e| NetworkError::BahviourErr(e.to_string()))?
-            .with_swarm_config(|c| c.with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT))
-            .build();
+            .boxed();
+
+        let behaviour = NodeBehaviour {
+            relay_client: relay_behaviour,
+            relay_server: libp2p::relay::Behaviour::new(peer_id, Default::default()),
+            request_response,
+            kademlia,
+            identify,
+            #[cfg(feature = "local-discovery")]
+            mdns,
+            dcutr: libp2p::dcutr::Behaviour::new(peer_id),
+        };
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let swarm_config = libp2p::swarm::Config::with_tokio_executor()
+            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+        #[cfg(target_arch = "wasm32")]
+        let swarm_config = libp2p::swarm::Config::with_wasm_executor()
+            .with_idle_connection_timeout(CONNECTION_KEEP_ALIVE_TIMEOUT);
+
+        let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
         let bootstrap = ContinuousBootstrap::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
