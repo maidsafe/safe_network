@@ -327,7 +327,7 @@ impl SwarmDriver {
                                 .collect(),
                         };
 
-                        if !self.local && peer_is_node {
+                        if peer_is_node {
                             // add potential relay candidates.
                             self.relay_manager.add_potential_candidates(
                                 &peer_id,
@@ -470,8 +470,9 @@ impl SwarmDriver {
                 let local_peer_id = *self.swarm.local_peer_id();
                 let address = address.with(Protocol::P2p(local_peer_id));
 
-                // Trigger server mode if we're not a client
-                if !self.is_client {
+                // Trigger server mode if we're not a client and we should not add our own address if we're behind
+                // home network.
+                if !self.is_client && !self.is_behind_home_network {
                     if self.local {
                         // all addresses are effectively external here...
                         // this is needed for Kad Mode::Server
@@ -684,7 +685,17 @@ impl SwarmDriver {
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
 
-                if !self.swarm.external_addresses().any(|addr| addr == &address) && !self.is_client
+                let all_external_addresses = self.swarm.external_addresses().collect_vec();
+                let all_listeners = self.swarm.listeners().collect_vec();
+                info!("All our listeners: {all_listeners:?}");
+                info!("All our external addresses: {all_external_addresses:?}");
+
+                if !self.swarm.external_addresses().any(|addr| addr == &address)
+                    && !self.is_client
+                    // If we are behind a home network, then our IP is returned here. We should be only having
+                    // relay server as our external address
+                    // todo: can our relay address be reported here? If so, maybe we should add them.
+                    && !self.is_behind_home_network
                 {
                     debug!(%address, "external address: new candidate");
 

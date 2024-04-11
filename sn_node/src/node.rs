@@ -66,7 +66,7 @@ pub struct NodeBuilder {
     #[cfg(feature = "open-metrics")]
     metrics_server_port: u16,
     /// Enable hole punching for nodes connecting from home networks.
-    pub enable_hole_punching: bool,
+    pub is_behind_home_network: bool,
 }
 
 impl NodeBuilder {
@@ -86,7 +86,7 @@ impl NodeBuilder {
             root_dir,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
-            enable_hole_punching: false,
+            is_behind_home_network: false,
         }
     }
 
@@ -138,7 +138,7 @@ impl NodeBuilder {
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
-        network_builder.enable_hole_punching(self.enable_hole_punching);
+        network_builder.is_behind_home_network(self.is_behind_home_network);
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
