@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712850857036,
+  "lastUpdate": 1712850859047,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
-          "message": "feat(node): log if RPC server fails to start",
-          "timestamp": "2023-12-12T14:58:46Z",
-          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
-          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
-        },
-        "date": 1702395328378,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 726,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 130,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "7c5d931b2be1f749143cdfed2ed77f426e7dfc1a",
+          "message": "refactor(networking): remove circular vec error",
+          "timestamp": "2024-04-11T15:00:56Z",
+          "tree_id": "1dac3935d6036b7e4471dd8eb4e00a8a2671c1c8",
+          "url": "https://github.com/maidsafe/safe_network/commit/7c5d931b2be1f749143cdfed2ed77f426e7dfc1a"
+        },
+        "date": 1712850858306,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
