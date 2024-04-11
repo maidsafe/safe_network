@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712807892001,
+  "lastUpdate": 1712807893605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "ff09ba917b11394df2e8da4e454668b0737620e3",
-          "message": "feat(chunks): serialise Chunks with MsgPack instead of bincode",
-          "timestamp": "2023-11-28T15:37:02Z",
-          "tree_id": "7490a3324aea1a052709f586e8bd0be4f99a3c6f",
-          "url": "https://github.com/maidsafe/safe_network/commit/ff09ba917b11394df2e8da4e454668b0737620e3"
-        },
-        "date": 1701188455867,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6851,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 76101,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 11,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42295,6 +42256,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35318,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c96cc5b174c6ef88f6593bb480c33e4f6fddf007",
+          "message": "feat(resources): update bump script to strip suffix-version if no changes found",
+          "timestamp": "2024-04-11T12:44:36+09:00",
+          "tree_id": "8f9fde5c2cd9d1f424c50fb8c41241ee5749c642",
+          "url": "https://github.com/maidsafe/safe_network/commit/c96cc5b174c6ef88f6593bb480c33e4f6fddf007"
+        },
+        "date": 1712807893273,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7386,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33921,
             "unit": "ms"
           },
           {
