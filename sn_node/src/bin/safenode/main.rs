@@ -193,7 +193,7 @@ fn main() -> Result<()> {
             opt.local,
             root_dir,
         );
-        node_builder.enable_hole_punching = opt.home_network;
+        node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
         #[cfg(feature = "open-metrics")]
