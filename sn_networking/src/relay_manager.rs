@@ -225,10 +225,8 @@ impl RelayManager {
             if let Some(peer_id) = peer_id {
                 Protocol::P2p(peer_id)
             } else {
-                let peer_id = addr
-                    .iter()
-                    .find(|protocol| matches!(protocol, Protocol::P2p(_)))?;
-                peer_id
+                addr.iter()
+                    .find(|protocol| matches!(protocol, Protocol::P2p(_)))?
             }
         };
         output_addr.push(peer_id);
