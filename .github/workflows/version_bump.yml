@@ -1,5 +1,4 @@
 # Automatically run the version bump script.
-# We do this only on main/beta branches, and also allow manual triggers on specific branches via workflow dispatch.
 name: Version Bump
 
 # prevent concurrent version bumps
@@ -7,7 +6,12 @@ concurrency:
   group: "version-bump-${{ github.ref_name }}"
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      suffix:
+        description: 'Suffix to append to the version (alpha/beta), leave empty for no suffix.'
+        required: false
+        default: 'alpha'
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
@@ -58,8 +62,8 @@ jobs:
           rm release-plz-x86_64-unknown-linux-gnu.tar.gz
           sudo mv release-plz /usr/local/bin
       - shell: bash
-        # run as the branch name
-        run: ./resources/scripts/bump_version.sh ${{ github.ref_name }}
+        # run as the branch name with the suffix from workflow dispatch, allowing for an empty suffix as a valid option
+        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.suffix }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
