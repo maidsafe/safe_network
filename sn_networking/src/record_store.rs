@@ -582,7 +582,7 @@ impl RecordStore for NodeRecordStore {
         // ignored if we don't have the record locally.
         let key = PrettyPrintRecordKey::from(k);
         if !self.records.contains_key(k) {
-            trace!("Record not found locally: {key}");
+            trace!("Record not found locally: {key:?}");
             return None;
         }
 

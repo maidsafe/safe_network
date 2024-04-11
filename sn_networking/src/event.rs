@@ -1307,7 +1307,12 @@ impl SwarmDriver {
 
                 // if we have a local value of matching record_type, we don't need to fetch it
                 if let Some((_, local_record_type)) = local {
-                    local_record_type != record_type
+                    let not_same_type = local_record_type != record_type;
+                    if not_same_type {
+                        // Shall only happens for Register
+                        info!("Record {addr:?} has different type: local {local_record_type:?}, incoming {record_type:?}");
+                    }
+                    not_same_type
                 } else {
                     true
                 }
