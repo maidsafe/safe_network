@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712850859047,
+  "lastUpdate": 1712850861142,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "90893247327a40128b521d2bfc6edfee227ed526",
-          "message": "test(node): increase reverification delay",
-          "timestamp": "2023-11-29T17:16:46Z",
-          "tree_id": "a114b0b3478becff5babdafac55af31e2ec90cc7",
-          "url": "https://github.com/maidsafe/safe_network/commit/90893247327a40128b521d2bfc6edfee227ed526"
-        },
-        "date": 1701281760909,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4454,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 64160,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33881,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "7c5d931b2be1f749143cdfed2ed77f426e7dfc1a",
+          "message": "refactor(networking): remove circular vec error",
+          "timestamp": "2024-04-11T15:00:56Z",
+          "tree_id": "1dac3935d6036b7e4471dd8eb4e00a8a2671c1c8",
+          "url": "https://github.com/maidsafe/safe_network/commit/7c5d931b2be1f749143cdfed2ed77f426e7dfc1a"
+        },
+        "date": 1712850860531,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7731,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36410,
             "unit": "ms"
           },
           {
