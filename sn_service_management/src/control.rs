@@ -12,7 +12,10 @@ use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
 };
-use std::net::{SocketAddr, TcpListener};
+use std::{
+    net::{SocketAddr, TcpListener},
+    path::Path,
+};
 use sysinfo::{Pid, System};
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
@@ -26,7 +29,7 @@ pub trait ServiceControl: Sync {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()>;
-    fn get_process_pid(&self, name: &str) -> Result<u32>;
+    fn get_process_pid(&self, path: &Path) -> Result<u32>;
     fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str) -> Result<()>;
     fn stop(&self, service_name: &str) -> Result<()>;
@@ -161,17 +164,21 @@ impl ServiceControl for ServiceController {
         Ok(port)
     }
 
-    fn get_process_pid(&self, name: &str) -> Result<u32> {
+    fn get_process_pid(&self, bin_path: &Path) -> Result<u32> {
         let mut system = System::new_all();
         system.refresh_all();
         for (pid, process) in system.processes() {
-            if process.name() == name {
-                // There does not seem to be any easy way to get the process ID from the `Pid`
-                // type. Probably something to do with representing it in a cross-platform way.
-                return Ok(pid.to_string().parse::<u32>()?);
+            if let Some(path) = process.exe() {
+                if bin_path == path {
+                    // There does not seem to be any easy way to get the process ID from the `Pid`
+                    // type. Probably something to do with representing it in a cross-platform way.
+                    return Ok(pid.to_string().parse::<u32>()?);
+                }
             }
         }
-        Err(Error::ServiceProcessNotFound(name.to_string()))
+        Err(Error::ServiceProcessNotFound(
+            bin_path.to_string_lossy().to_string(),
+        ))
     }
 
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {

@@ -102,7 +102,7 @@ impl<'a> ServiceStateActions for FaucetService<'a> {
     async fn on_start(&mut self) -> Result<()> {
         let pid = self
             .service_control
-            .get_process_pid(&self.service_data.service_name)?;
+            .get_process_pid(&self.service_data.faucet_path)?;
         self.service_data.pid = Some(pid);
         self.service_data.status = ServiceStatus::Running;
         Ok(())

@@ -96,7 +96,7 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
         // get_process_pid causes errors for the daemon. Maybe because it is being run as root?
         if let Ok(pid) = self
             .service_control
-            .get_process_pid(&self.service_data.service_name)
+            .get_process_pid(&self.service_data.daemon_path)
         {
             self.service_data.pid = Some(pid);
         }
