@@ -19,7 +19,7 @@ use num::{integer::binomial, pow::Pow};
 // between model peer ids distribution vs. actual distribution around any point in the address space.
 const KL_DIVERGENCE_THRESHOLD: f64 = 10f64; // TODO: find a proper value
 
-const ITERATIONS_FOR_NET_SIZE_ESTIMATION: usize = 50;
+const ITERATIONS_FOR_NET_SIZE_ESTIMATION: usize = 500;
 
 // The container maps each random KAD Key to the ordered list
 // of its K_VALUE closest peers, sorted by increasing distance. This order
@@ -87,6 +87,7 @@ fn get_net_size_estimate(random_keys: &RandomKeysAndClosestPeerIds) -> usize {
             let dist: f64 = d_i - ((2f64.pow(256) * (i + 1) as f64) / (n + 1) as f64);
             acc + dist.pow(2)
         });
+        println!(">>> EVAL FOR N {n} gives {value} -- smallest so far {smallest_value_found}");
         if value < smallest_value_found {
             smallest_value_found = value;
             best_n_found = n;
@@ -156,7 +157,12 @@ fn common_prefix_length(lhs: &[u8], rhs: &[u8]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::common_prefix_length;
+    use crate::sort_peers_by_address;
+
+    use super::{common_prefix_length, get_net_size_estimate, RandomKeysAndClosestPeerIds};
+
+    use libp2p::{kad::K_VALUE, PeerId};
+    use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 
     // we use XorName utilities just because it's easier to build test data with them
     use xor_name::XorName;
@@ -187,6 +193,31 @@ mod tests {
         // Build a map with 256 random keys, one for each Kbucket
         // with their corresponding K-closest peers to a random CID;
         // e.g. in Kbucket #2 get the 20 closest peers to a random CID that shares 2 bits as a prefix.
-        todo!();
+        const NUM_OF_KBUCKETS: usize = 256;
+        const NUM_OF_PEERS: usize = 200;
+        let random_peers: Vec<PeerId> = (0..NUM_OF_PEERS).map(|_| PeerId::random()).collect();
+        let mut random_keys = RandomKeysAndClosestPeerIds::default();
+
+        let mut rng = rand::thread_rng();
+        for _i in 0..NUM_OF_KBUCKETS {
+            let xorname = XorName::random(&mut rng);
+            let address = NetworkAddress::ChunkAddress(ChunkAddress::new(xorname));
+            let sorted_peers: Vec<PeerId> =
+                sort_peers_by_address(&random_peers, &address, K_VALUE.get())
+                    .unwrap()
+                    .iter()
+                    .map(|p| (**p))
+                    .collect();
+            random_keys.push((address.as_kbucket_key(), sorted_peers));
+        }
+
+        assert_eq!(
+            random_keys.iter().filter(|(_, c)| c.len() >= 20).count(),
+            NUM_OF_KBUCKETS
+        );
+
+        let estimate = get_net_size_estimate(&random_keys);
+        println!(">>> NET SIZE ESTIMATE: {estimate}");
+        assert_eq!(estimate, NUM_OF_PEERS);
     }
 }
