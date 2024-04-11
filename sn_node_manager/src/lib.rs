@@ -12,6 +12,7 @@ pub mod config;
 pub mod helpers;
 pub mod local;
 pub mod rpc;
+pub mod rpc_client;
 
 #[derive(Clone, PartialEq)]
 pub enum VerbosityLevel {
