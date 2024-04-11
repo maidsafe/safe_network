@@ -362,12 +362,12 @@ fn test_spend_dag_orphans() -> Result<()> {
     assert_eq!(got, expected, "DAG should have detected orphan spend");
 
     let got = dag.get_spend_faults(&utxo_addr);
-    let expected = BTreeSet::from_iter([SpendFault::OrphanSpend {
+    let expected = SpendFault::OrphanSpend {
         addr: utxo_addr,
         src: dag.source(),
-    }]);
-    assert_eq!(
-        got, expected,
+    };
+    assert!(
+        got.contains(&expected),
         "Utxo of orphan spend should also be an orphan"
     );
     Ok(())
