@@ -79,6 +79,8 @@ pub struct NodeRecordStore {
     encryption_details: (Aes256GcmSiv, [u8; 4]),
     /// Time that this record_store got started
     timestamp: SystemTime,
+    /// List of records that got obsoleted, i.e. overwritten by a newer version
+    obsoleted_records: HashSet<(NetworkAddress, RecordType)>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -262,6 +264,7 @@ impl NodeRecordStore {
             received_payment_count,
             encryption_details,
             timestamp,
+            obsoleted_records: Default::default(),
         };
 
         record_store.flush_historic_quoting_metrics();
@@ -413,10 +416,12 @@ impl NodeRecordStore {
     /// in the RecordStore records set. After this it should be safe
     /// to return the record as stored.
     pub(crate) fn mark_as_stored(&mut self, key: Key, record_type: RecordType) {
-        let _ = self.records.insert(
+        if let Some((record_addr, record_type)) = self.records.insert(
             key.clone(),
             (NetworkAddress::from_record_key(&key), record_type),
-        );
+        ) {
+            let _ = self.obsoleted_records.insert((record_addr, record_type));
+        }
     }
 
     /// Prepare record bytes for storage
@@ -454,6 +459,16 @@ impl NodeRecordStore {
         trace!("PUT a verified Record: {record_key:?}");
 
         self.prune_storage_if_needed_for_record();
+
+        let record_addr = NetworkAddress::from_record_key(&r.key);
+
+        if self
+            .obsoleted_records
+            .contains(&(record_addr, record_type.clone()))
+        {
+            error!("The record to store was an obsoleted one, {record_key:?} - {record_type:?}");
+            return Ok(());
+        }
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -804,11 +819,14 @@ mod tests {
 
     use super::*;
     use crate::{close_group_majority, sort_peers_by_key, REPLICATION_PEERS_COUNT};
+    use bls::SecretKey;
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
+    use rand::{thread_rng, Rng};
     use sn_protocol::storage::{try_serialize_record, ChunkAddress};
+    use sn_registers::{Permissions, Register};
     use std::collections::BTreeMap;
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
@@ -1269,6 +1287,94 @@ mod tests {
 
         assert_eq!(1, new_store.received_payment_count);
         assert_eq!(store.timestamp, new_store.timestamp);
+
+        Ok(())
+    }
+
+    fn random_register_entry() -> Vec<u8> {
+        let random_bytes = thread_rng().gen::<[u8; 32]>();
+        random_bytes.to_vec()
+    }
+
+    #[tokio::test]
+    async fn not_store_obsoleted_record() -> Result<()> {
+        let temp_dir = std::env::temp_dir();
+        let unique_dir_name = uuid::Uuid::new_v4().to_string();
+        let storage_dir = temp_dir.join(unique_dir_name);
+        fs::create_dir_all(&storage_dir).expect("Failed to create directory");
+
+        let store_config = NodeRecordStoreConfig {
+            storage_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config.clone(),
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        // ====== Construct a register ======
+        let authority_sk = SecretKey::random();
+        let authority = authority_sk.public_key();
+        let meta: XorName = xor_name::rand::random();
+        let mut register_replica = Register::new(authority, meta, Permissions::default());
+        let _ = register_replica
+            .write(random_register_entry(), &Default::default(), &authority_sk)
+            .expect("Cannot update register");
+
+        // ====== Convert the register into a record ======
+        let network_address = NetworkAddress::from_register_address(*register_replica.address());
+        let record_key = network_address.to_record_key();
+        let record_1 = Record {
+            key: record_key.clone(),
+            value: try_serialize_record(&register_replica, RecordKind::Register)
+                .expect("Failed to serialize register")
+                .to_vec(),
+            publisher: None,
+            expires: None,
+        };
+
+        // ====== Stored the record_1 ======
+        let content_hash = XorName::from_content(&record_1.value);
+        let record_type_1 = RecordType::NonChunk(content_hash);
+        let _ = store.put_verified(record_1.clone(), record_type_1.clone());
+        sleep(Duration::from_millis(1000)).await;
+        store.mark_as_stored(record_1.key.clone(), record_type_1.clone());
+
+        // ====== update the register ======
+        let _ = register_replica
+            .write(random_register_entry(), &Default::default(), &authority_sk)
+            .expect("Cannot update register");
+
+        // ====== Convert the register into a record ======
+        let record_2 = Record {
+            key: record_key.clone(),
+            value: try_serialize_record(&register_replica, RecordKind::Register)
+                .expect("Failed to serialize register")
+                .to_vec(),
+            publisher: None,
+            expires: None,
+        };
+
+        // ====== Stored the record_2 ======
+        let content_hash = XorName::from_content(&record_2.value);
+        let record_type_2 = RecordType::NonChunk(content_hash);
+        let _ = store.put_verified(record_2.clone(), record_type_2.clone());
+        sleep(Duration::from_millis(1000)).await;
+        store.mark_as_stored(record_2.key, record_type_2);
+
+        // ====== Try to store record_1 again ======
+        let _ = store.put_verified(record_1, record_type_1);
+        sleep(Duration::from_millis(1000)).await;
+
+        // The read back record shall still be the record_2
+        let read_back_record = store.get(&record_key).expect("Failed to read record back");
+        assert_eq!(record_2.value, read_back_record.value);
 
         Ok(())
     }
