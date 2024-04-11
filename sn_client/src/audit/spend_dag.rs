@@ -75,7 +75,7 @@ pub enum SpendDagGet {
     /// Spend does not exist in the DAG
     SpendNotFound,
     /// Spend key is refered to by known spends but does not exist in the DAG yet
-    SpendKeyExists,
+    Utxo,
     /// Spend is a double spend
     DoubleSpend(Vec<SignedSpend>),
     /// Spend is in the DAG
@@ -206,22 +206,17 @@ impl SpendDag {
         true
     }
 
-    /// Get the unknown parents: all the addresses that are refered to as parents by other spends
-    /// but don't have parents themselves.
-    /// Those Spends must exist somewhere on the Network, we just haven't gathered them yet.
-    pub fn get_unknown_parents(&self) -> BTreeSet<SpendAddress> {
-        let mut sources = BTreeSet::new();
-        for node_index in self.dag.node_indices() {
-            if !self
-                .dag
-                .neighbors_directed(node_index, petgraph::Direction::Incoming)
-                .any(|_| true)
-            {
-                let utxo_addr = self.dag[node_index];
-                sources.insert(utxo_addr);
-            }
-        }
-        sources
+    /// Get spend addresses that probably exist as they are refered to by spends we know,
+    /// but we haven't gathered them yet
+    /// This includes UTXOs and unknown ancestors
+    pub fn get_pending_spends(&self) -> BTreeSet<SpendAddress> {
+        self.spends
+            .iter()
+            .filter_map(|(addr, entry)| match entry {
+                DagEntry::NotGatheredYet(_) => Some(*addr),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Get the UTXOs: all the addresses that are refered to as children by other spends
@@ -279,7 +274,7 @@ impl SpendDag {
     pub fn get_spend(&self, addr: &SpendAddress) -> SpendDagGet {
         match self.spends.get(addr) {
             None => SpendDagGet::SpendNotFound,
-            Some(DagEntry::NotGatheredYet(_)) => SpendDagGet::SpendKeyExists,
+            Some(DagEntry::NotGatheredYet(_)) => SpendDagGet::Utxo,
             Some(DagEntry::DoubleSpend(spends)) => {
                 SpendDagGet::DoubleSpend(spends.iter().map(|(s, _)| s.clone()).collect())
             }
@@ -515,8 +510,20 @@ impl SpendDag {
 
             // record double spends
             if spends.len() > 1 {
-                debug!("Found a double spend entry in DAG: {source:?}");
+                debug!("Found a double spend entry in DAG at {addr:?}");
                 recorded_faults.insert(SpendFault::DoubleSpend(*addr));
+                let direct_descendants: BTreeSet<SpendAddress> = spends
+                    .iter()
+                    .flat_map(|s| s.spend.spent_tx.outputs.iter())
+                    .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                    .collect();
+                debug!("Making the direct descendants of the double spend at {addr:?} as faulty: {direct_descendants:?}");
+                for a in direct_descendants {
+                    recorded_faults.insert(SpendFault::DoubleSpentAncestor {
+                        addr: a,
+                        ancestor: *addr,
+                    });
+                }
                 continue;
             }
 
@@ -599,13 +606,16 @@ impl SpendDag {
         let direct_descendants = spent_tx
             .outputs
             .iter()
-            .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey));
-        let all_descendants = direct_descendants
-            .map(|addr| self.all_descendants(&addr))
+            .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+            .collect::<BTreeSet<_>>();
+        let mut all_descendants = direct_descendants
+            .iter()
+            .map(|addr| self.all_descendants(addr))
             .collect::<Result<BTreeSet<_>, _>>()?
             .into_iter()
             .flatten()
             .collect::<BTreeSet<&SpendAddress>>();
+        all_descendants.extend(direct_descendants.iter());
 
         for d in all_descendants {
             recorded_faults.insert(SpendFault::PoisonedAncestry(*d, poison.clone()));
