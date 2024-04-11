@@ -412,9 +412,11 @@ impl SwarmDriver {
                                 }
 
                                 if self.relay_manager.are_we_behind_nat(&mut self.swarm) {
-                                    self.send_event(NetworkEvent::TerminateNode {
-                                        reason: TerminateNodeReason::BehindNAT,
-                                    })
+                                    error!("Node reported as being behind NAT for not having enough incoming connections. This can be false positive.");
+
+                                    // self.send_event(NetworkEvent::TerminateNode {
+                                    //     reason: TerminateNodeReason::BehindNAT,
+                                    // })
                                 }
                             }
                         }
