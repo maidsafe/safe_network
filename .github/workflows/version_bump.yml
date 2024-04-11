@@ -63,7 +63,12 @@ jobs:
           sudo mv release-plz /usr/local/bin
       - shell: bash
         # run as the branch name with the suffix from workflow dispatch, allowing for an empty suffix as a valid option
-        run: ./resources/scripts/bump_version.sh ${{ github.event.inputs.suffix }}
+        run: |
+          if [[ -z "${{ github.event.inputs.suffix }}" && "${{ github.ref_name }}" != "stable" ]]; then
+            echo "Error: Empty suffix is only allowed on the stable branch."
+            exit 1
+          fi
+          ./resources/scripts/bump_version.sh ${{ github.event.inputs.suffix }}
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
