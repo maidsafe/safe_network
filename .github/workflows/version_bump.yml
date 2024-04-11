@@ -31,20 +31,6 @@ jobs:
         id: get-sha
         run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
 
-      - name: Wait for release workflow to complete
-        uses: mostafahussein/workflow-watcher@v1.0.0
-        # Don't fail the whole run if this step fails
-        # this action will fail if the previous workflows failed or was skipped,
-        # which isn't helpful
-        continue-on-error: true
-        with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          repository-name: ${{ github.repository }}
-          repository-owner: ${{ github.repository_owner }}
-          head-sha: ${{ env.sha }}
-          base-branch: ${{ github.ref_name }}
-          polling-interval: 60
-
       - name: Fetch the latest code from the specified branch
         run: git pull origin ${{ github.ref_name }}
 
