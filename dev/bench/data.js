@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712798411198,
+  "lastUpdate": 1712798483364,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629",
-          "message": "fix(network): implement custom Debug for GetRecordError",
-          "timestamp": "2023-12-07T15:05:32Z",
-          "tree_id": "e7715178c496a67ff1da944cbed9509ca4c3b8e5",
-          "url": "https://github.com/maidsafe/safe_network/commit/2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629"
-        },
-        "date": 1701964560385,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6674900237543459,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.565994307861704,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.67925035700935,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.18531801042343,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5c670793496e5e6f2fbe058cba0929c8984b2663",
+          "message": "fix(node): not send out replication when failed read from local",
+          "timestamp": "2024-04-11T00:36:40Z",
+          "tree_id": "746accd8b6938fc8c92dafdac6cfb385f4949f92",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c670793496e5e6f2fbe058cba0929c8984b2663"
+        },
+        "date": 1712798478567,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2238376023450648,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6602655618124396,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.20979695732603,
             "unit": "MiB/s"
           }
         ]
