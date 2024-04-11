@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712798483364,
+  "lastUpdate": 1712798592133,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629",
-          "message": "fix(network): implement custom Debug for GetRecordError",
-          "timestamp": "2023-12-07T15:05:32Z",
-          "tree_id": "e7715178c496a67ff1da944cbed9509ca4c3b8e5",
-          "url": "https://github.com/maidsafe/safe_network/commit/2eeb54e0855dcf2f5ba3a8fc9b63dde5f10a1629"
-        },
-        "date": 1701964711104,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 91,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5c670793496e5e6f2fbe058cba0929c8984b2663",
+          "message": "fix(node): not send out replication when failed read from local",
+          "timestamp": "2024-04-11T00:36:40Z",
+          "tree_id": "746accd8b6938fc8c92dafdac6cfb385f4949f92",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c670793496e5e6f2fbe058cba0929c8984b2663"
+        },
+        "date": 1712798590853,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
