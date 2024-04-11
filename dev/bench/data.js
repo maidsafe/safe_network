@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712798301563,
+  "lastUpdate": 1712798408244,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "74b37c15125a81fbaa96b44550aa354414bf4aec",
-          "message": "chore(network): use PUT Quorum::One for chunks",
-          "timestamp": "2023-12-06T13:35:19Z",
-          "tree_id": "cf3be086078da04184a2fe110eeba2b03b5b7161",
-          "url": "https://github.com/maidsafe/safe_network/commit/74b37c15125a81fbaa96b44550aa354414bf4aec"
-        },
-        "date": 1701872487429,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 101,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "4658048772a1fac699af7a15f9a0dcfebf12ac8f",
+          "message": "test(node): unit test for recover historic quoting metrics",
+          "timestamp": "2024-04-11T00:28:23Z",
+          "tree_id": "22e12452a8749acaed653c0befef5f0019ac6c59",
+          "url": "https://github.com/maidsafe/safe_network/commit/4658048772a1fac699af7a15f9a0dcfebf12ac8f"
+        },
+        "date": 1712798407922,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
