@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1712869720925,
+  "lastUpdate": 1712869723776,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20418,40 +20418,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "distinct": true,
-          "id": "45c0ed319a53cb5927afd9f8d7d1deee86b36555",
-          "message": "feat(cli): skip payment and upload for existing chunks",
-          "timestamp": "2023-12-12T16:02:42Z",
-          "tree_id": "9e1f5d9017dc0ba44abeb005ce60e2ee3c4d6463",
-          "url": "https://github.com/maidsafe/safe_network/commit/45c0ed319a53cb5927afd9f8d7d1deee86b36555"
-        },
-        "date": 1702399386638,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 647,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 116,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
           "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
           "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
           "timestamp": "2023-12-12T17:23:18Z",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "592ac510efa3741ea778ec6b994318ac7ef79470",
+          "message": "feat: distinguish failure to start during upgrade\n\nIt's possible for a service to be upgraded but then not subsequently start. In this case, it has\nstill been upgraded to a new version. It's worth making a distinction to the user between an actual\nerror in the upgrade process, or a failure to start, because in the latter case, they do actually\nhave an upgrade. They can then take action to try and start their services again.\n\nAs part of this change, the start process attempts to find whether the service process did indeed\nstart, because you don't always seem to get errors back from the service infrastructure. We also\nmake sure that we return an error if there was a failure with the upgrade process for any services.\nThis is necessary for visibility on our own deploy process.",
+          "timestamp": "2024-04-11T20:12:54Z",
+          "tree_id": "932c361826415206cab6aa3083f4a84edbbf7f03",
+          "url": "https://github.com/maidsafe/safe_network/commit/592ac510efa3741ea778ec6b994318ac7ef79470"
+        },
+        "date": 1712869722698,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 175,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
