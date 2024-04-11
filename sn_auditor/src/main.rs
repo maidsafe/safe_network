@@ -21,6 +21,7 @@ use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_peers_acquisition::PeersArgs;
+use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
 #[derive(Parser)]
@@ -34,6 +35,9 @@ struct Opt {
     /// Clear the local spend DAG and start from scratch
     #[clap(short, long)]
     clean: bool,
+    /// Visualize a local DAG file offline, does not connect to the Network
+    #[clap(short, long, value_name = "dag_file")]
+    offline_viewer: Option<PathBuf>,
 
     /// Specify the logging output destination.
     ///
@@ -62,6 +66,14 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
     let _log_handles = log_builder.initialize()?;
+
+    if let Some(dag_to_view) = opt.offline_viewer {
+        let dag = SpendDagDb::offline(dag_to_view)?;
+        dag.dump_dag_svg()?;
+        start_server(dag).await?;
+        return Ok(());
+    }
+
     let client = connect_to_network(opt.peers).await?;
     let dag = initialize_background_spend_dag_collection(
         client.clone(),
