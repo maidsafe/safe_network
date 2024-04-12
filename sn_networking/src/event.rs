@@ -487,7 +487,7 @@ impl SwarmDriver {
 
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 
-                info!("Local node is listening (id: {listener_id}) on {address:?}");
+                info!("Local node is listening {listener_id:?} on {address:?}");
             }
             SwarmEvent::ListenerClosed {
                 listener_id,
