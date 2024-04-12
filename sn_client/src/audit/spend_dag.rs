@@ -196,10 +196,21 @@ impl SpendDag {
             });
 
             // link to ancestor
-            for idx in spends_at_addr.indexes() {
-                let ancestor_idx = NodeIndex::new(idx);
-                self.dag
-                    .update_edge(ancestor_idx, new_node_idx, *spend_amount);
+            match spends_at_addr {
+                DagEntry::Spend(_, idx) | DagEntry::NotGatheredYet(idx) => {
+                    let ancestor_idx = NodeIndex::new(*idx);
+                    self.dag
+                        .update_edge(ancestor_idx, new_node_idx, *spend_amount);
+                }
+                DagEntry::DoubleSpend(multiple_ancestors) => {
+                    for (ancestor_spend, ancestor_idx) in multiple_ancestors {
+                        if ancestor_spend.spend.spent_tx.hash() == spend.spend.parent_tx.hash() {
+                            let ancestor_idx = NodeIndex::new(*ancestor_idx);
+                            self.dag
+                                .update_edge(ancestor_idx, new_node_idx, *spend_amount);
+                        }
+                    }
+                }
             }
         }
 
