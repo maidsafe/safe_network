@@ -152,6 +152,18 @@ impl ReplicationFetcher {
         self.next_keys_to_fetch()
     }
 
+    // An early completion of a fetch means the target is an old version record (Register or Spend).
+    pub(crate) fn notify_fetch_early_completed(
+        &mut self,
+        key_in: RecordKey,
+    ) -> Vec<(PeerId, RecordKey)> {
+        self.to_be_fetched.retain(|(key, _t, _), _| key != &key_in);
+
+        self.on_going_fetches.retain(|(key, _t), _| key != &key_in);
+
+        self.next_keys_to_fetch()
+    }
+
     // Returns the set of keys that has to be fetched from the peer/network.
     // Target must not be under-fetching
     // and no more than MAX_PARALLEL_FETCH fetches to be undertaken at the same time.
