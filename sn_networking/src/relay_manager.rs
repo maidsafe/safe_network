@@ -99,7 +99,9 @@ impl RelayManager {
         addrs: &HashSet<Multiaddr>,
         stream_protocols: &Vec<StreamProtocol>,
     ) {
+        trace!("Trying to add potential relay candidates for {peer_id:?} with addrs: {addrs:?}");
         if self.candidates.len() >= MAX_POTENTIAL_CANDIDATES {
+            trace!("Got max relay candidates");
             return;
         }
 
@@ -113,9 +115,15 @@ impl RelayManager {
                             "Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate"
                         );
                         self.candidates.push_back((*peer_id, relay_addr));
+                    } else {
+                        trace!("Was not able to craft relay address");
                     }
+                } else {
+                    trace!("Addr contains P2pCircuit protocol. Not adding as candidate.");
                 }
             }
+        } else {
+            trace!("Peer does not support relay server protocol");
         }
     }
 
