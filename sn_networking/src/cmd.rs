@@ -177,6 +177,8 @@ pub enum SwarmCmd {
     QuoteVerification {
         quotes: Vec<(PeerId, PaymentQuote)>,
     },
+    // Notify a fetch completion
+    FetchCompleted(RecordKey),
 }
 
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
@@ -296,6 +298,13 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::QuoteVerification { quotes } => {
                 write!(f, "SwarmCmd::QuoteVerification of {} quotes", quotes.len())
+            }
+            SwarmCmd::FetchCompleted(key) => {
+                write!(
+                    f,
+                    "SwarmCmd::FetchCompleted({:?})",
+                    PrettyPrintRecordKey::from(key)
+                )
             }
         }
     }
@@ -725,6 +734,17 @@ impl SwarmDriver {
                         }
                     }
                     self.verify_peer_quote(peer_id, quote);
+                }
+            }
+            SwarmCmd::FetchCompleted(key) => {
+                info!(
+                    "Fetch {:?} early completed, may fetched an old version record.",
+                    PrettyPrintRecordKey::from(&key)
+                );
+                cmd_string = "FetchCompleted";
+                let new_keys_to_fetch = self.replication_fetcher.notify_fetch_early_completed(key);
+                if !new_keys_to_fetch.is_empty() {
+                    self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
             }
         }
