@@ -110,7 +110,7 @@ impl RelayManager {
             if let Some(addr) = addrs.iter().next() {
                 // only consider non relayed peers
                 if !addr.iter().any(|p| p == Protocol::P2pCircuit) {
-                    if let Some(relay_addr) = Self::craft_relay_address(addr, None) {
+                    if let Some(relay_addr) = Self::craft_relay_address(addr, Some(*peer_id)) {
                         debug!(
                             "Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate"
                         );
@@ -172,14 +172,6 @@ impl RelayManager {
         peer_id: &PeerId,
         swarm: &mut Swarm<NodeBehaviour>,
     ) {
-        // now that we have made a reservation, remove our non-relayed listeners
-        // while !self.non_relayed_listener_id.is_empty() {
-        //     if let Some(listener_id) = self.non_relayed_listener_id.pop_back() {
-        //         let res = swarm.remove_listener(listener_id);
-        //         debug!("Successful reservation: Removing {listener_id:?} with result: {res} from swarm as we now have a relay reservation");
-        //     }
-        // }
-
         match self.waiting_for_reservation.remove(peer_id) {
             Some(addr) => {
                 info!("Successfully made reservation with {peer_id:?} on {addr:?}. Adding the addr to external address.");
@@ -193,6 +185,7 @@ impl RelayManager {
     }
 
     /// Update our state if the reservation has been cancelled or if the relay has closed.
+    /// todo: remove from external addresses.
     pub(crate) fn update_on_listener_closed(&mut self, listener_id: &ListenerId) {
         let Some(peer_id) = self.relayed_listener_id_map.remove(listener_id) else {
             return;
