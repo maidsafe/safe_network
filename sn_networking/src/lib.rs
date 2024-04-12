@@ -681,6 +681,12 @@ impl Network {
         response
     }
 
+    /// Notify ReplicationFetch a fetch attempt is completed.
+    /// (but it won't trigger any real writes to disk, say fetched an old version of register)
+    pub fn notify_fetch_completed(&self, key: RecordKey) {
+        self.send_swarm_cmd(SwarmCmd::FetchCompleted(key))
+    }
+
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
     pub fn put_local_record(&self, record: Record) {

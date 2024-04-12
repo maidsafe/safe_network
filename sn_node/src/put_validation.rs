@@ -89,6 +89,9 @@ impl Node {
                         record_key,
                         RecordType::NonChunk(content_hash),
                     );
+                } else {
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    self.network.notify_fetch_completed(record.key.clone());
                 }
                 result
             }
@@ -289,6 +292,8 @@ impl Node {
         let updated_register = match self.register_validation(&register, present_locally).await? {
             Some(reg) => reg,
             None => {
+                // Notify replication_fetcher to mark the attempt as completed.
+                self.network.notify_fetch_completed(key.clone());
                 return Ok(CmdOk::DataAlreadyPresent);
             }
         };
