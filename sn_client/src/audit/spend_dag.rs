@@ -8,6 +8,7 @@
 
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress};
 use std::collections::{BTreeMap, BTreeSet};
@@ -130,7 +131,9 @@ impl SpendDag {
             Some(DagEntry::NotGatheredYet(idx)) => {
                 self.spends
                     .insert(spend_addr, DagEntry::Spend(Box::new(spend.clone()), idx));
-                NodeIndex::new(idx)
+                let node_idx = NodeIndex::new(idx);
+                self.reset_edges(node_idx);
+                node_idx
             }
             // or upgrade spend to double spend if it is different from the existing one
             Some(DagEntry::Spend(s, idx)) => {
@@ -185,7 +188,7 @@ impl SpendDag {
         }
 
         // link to ancestors
-        let spend_amount = spend.token();
+        const PENDING_AMOUNT: NanoTokens = NanoTokens::from(0);
         for ancestor in spend.spend.parent_tx.inputs.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(&ancestor.unique_pubkey);
 
@@ -197,17 +200,38 @@ impl SpendDag {
 
             // link to ancestor
             match spends_at_addr {
-                DagEntry::Spend(_, idx) | DagEntry::NotGatheredYet(idx) => {
+                DagEntry::NotGatheredYet(idx) => {
                     let ancestor_idx = NodeIndex::new(*idx);
                     self.dag
-                        .update_edge(ancestor_idx, new_node_idx, *spend_amount);
+                        .update_edge(ancestor_idx, new_node_idx, PENDING_AMOUNT);
+                }
+                DagEntry::Spend(ancestor_spend, idx) => {
+                    let ancestor_idx = NodeIndex::new(*idx);
+                    let ancestor_given_amount = ancestor_spend
+                        .spend
+                        .spent_tx
+                        .outputs
+                        .iter()
+                        .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
+                        .map(|o| o.amount)
+                        .unwrap_or(PENDING_AMOUNT);
+                    self.dag
+                        .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
                 }
                 DagEntry::DoubleSpend(multiple_ancestors) => {
                     for (ancestor_spend, ancestor_idx) in multiple_ancestors {
                         if ancestor_spend.spend.spent_tx.hash() == spend.spend.parent_tx.hash() {
                             let ancestor_idx = NodeIndex::new(*ancestor_idx);
+                            let ancestor_given_amount = ancestor_spend
+                                .spend
+                                .spent_tx
+                                .outputs
+                                .iter()
+                                .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
+                                .map(|o| o.amount)
+                                .unwrap_or(PENDING_AMOUNT);
                             self.dag
-                                .update_edge(ancestor_idx, new_node_idx, *spend_amount);
+                                .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
                         }
                     }
                 }
@@ -327,6 +351,23 @@ impl SpendDag {
             }
         }
         Ok(royalties)
+    }
+
+    /// Remove all edges from a Node in the DAG
+    fn reset_edges(&mut self, node: NodeIndex) {
+        let incoming: Vec<_> = self
+            .dag
+            .edges_directed(node, petgraph::Direction::Incoming)
+            .map(|e| e.id())
+            .collect();
+        let outgoing: Vec<_> = self
+            .dag
+            .edges_directed(node, petgraph::Direction::Outgoing)
+            .map(|e| e.id())
+            .collect();
+        for edge in incoming.into_iter().chain(outgoing.into_iter()) {
+            self.dag.remove_edge(edge);
+        }
     }
 
     /// helper that returns the direct ancestors of a given spend
@@ -467,6 +508,44 @@ impl SpendDag {
         Ok(recorded_faults)
     }
 
+    /// Checks if a double spend has multiple living descendant branches that fork
+    fn double_spend_has_forking_descendant_branches(&self, spends: &Vec<&SignedSpend>) -> bool {
+        // gather all living descendants for each branch
+        let mut set_of_living_descendants: BTreeSet<BTreeSet<_>> = BTreeSet::new();
+        for spend in spends {
+            let gathered_descendants = spend
+                .spend
+                .spent_tx
+                .outputs
+                .iter()
+                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                .filter_map(|a| self.spends.get(&a))
+                .filter_map(|s| {
+                    if matches!(s, DagEntry::NotGatheredYet(_)) {
+                        None
+                    } else {
+                        Some(s.spends())
+                    }
+                })
+                .flatten()
+                .collect::<BTreeSet<_>>();
+            set_of_living_descendants.insert(gathered_descendants);
+        }
+
+        // make sure there is no fork
+        for set1 in set_of_living_descendants.iter() {
+            for set2 in set_of_living_descendants.iter() {
+                if set1.is_subset(set2) || set2.is_subset(set1) {
+                    continue;
+                } else {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     /// Verify the DAG and record faults in the DAG
     /// If the DAG is invalid, return an error immediately, without mutating the DAG
     pub fn record_faults(&mut self, source: &SpendAddress) -> Result<(), DagError> {
@@ -529,11 +608,25 @@ impl SpendDag {
                     .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
                     .collect();
                 debug!("Making the direct descendants of the double spend at {addr:?} as faulty: {direct_descendants:?}");
-                for a in direct_descendants {
+                for a in direct_descendants.iter() {
                     recorded_faults.insert(SpendFault::DoubleSpentAncestor {
-                        addr: a,
+                        addr: *a,
                         ancestor: *addr,
                     });
+                }
+                if self.double_spend_has_forking_descendant_branches(&spends) {
+                    debug!("Double spend at {addr:?} has multiple living descendant branches, poisoning them...");
+                    let poison = format!(
+                        "spend is on one of multiple branches of a double spent ancestor: {addr:?}"
+                    );
+                    let direct_living_descendant_spends: BTreeSet<_> = direct_descendants
+                        .iter()
+                        .filter_map(|a| self.spends.get(a))
+                        .flat_map(|s| s.spends())
+                        .collect();
+                    for s in direct_living_descendant_spends {
+                        recorded_faults.extend(self.poison_all_descendants(s, poison.clone())?);
+                    }
                 }
                 continue;
             }
