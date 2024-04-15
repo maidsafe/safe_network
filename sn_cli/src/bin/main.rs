@@ -72,7 +72,6 @@ async fn main() -> Result<()> {
     if let SubCmd::Wallet(cmds) = &opt.cmd {
         if let WalletCmds::Address
         | WalletCmds::Balance { .. }
-        | WalletCmds::Deposit { .. }
         | WalletCmds::Create { .. }
         | WalletCmds::Sign { .. } = cmds
         {
