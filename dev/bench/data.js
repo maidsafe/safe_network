@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713200034279,
+  "lastUpdate": 1713200036281,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "aeca48732f7e44e8a0e77312df82c0bcd319bde6",
-          "message": "test(node): update assert over royalty count\n\nIf a repayment happens we may top up, so the count could actually be higher",
-          "timestamp": "2023-12-05T09:32:32Z",
-          "tree_id": "1c92b8620a09d8c715153ff44c1ac82fe5b039e5",
-          "url": "https://github.com/maidsafe/safe_network/commit/aeca48732f7e44e8a0e77312df82c0bcd319bde6"
-        },
-        "date": 1701771084640,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4256,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 70090,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 16,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34426,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "cb4e0a36b0bd75133d89ab26d7062c18a55c617b",
+          "message": "test(CI): confirm there is no failed replication fetch",
+          "timestamp": "2024-04-15T16:01:21Z",
+          "tree_id": "0484f2c24f18d896e2f27518f041c517749d984f",
+          "url": "https://github.com/maidsafe/safe_network/commit/cb4e0a36b0bd75133d89ab26d7062c18a55c617b"
+        },
+        "date": 1713200035623,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7046,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33942,
             "unit": "ms"
           },
           {
