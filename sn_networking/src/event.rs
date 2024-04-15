@@ -327,14 +327,14 @@ impl SwarmDriver {
                                 .collect(),
                         };
 
-                        if peer_is_node {
-                            // add potential relay candidates.
-                            self.relay_manager.add_potential_candidates(
-                                &peer_id,
-                                &addrs,
-                                &info.protocols,
-                            );
-                        }
+                        // if peer_is_node {
+                        //     // add potential relay candidates.
+                        //     self.relay_manager.add_potential_candidates(
+                        //         &peer_id,
+                        //         &addrs,
+                        //         &info.protocols,
+                        //     );
+                        // }
 
                         // When received an identify from un-dialed peer, try to dial it
                         // The dial shall trigger the same identify to be sent again and confirm
