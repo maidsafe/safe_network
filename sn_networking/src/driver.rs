@@ -29,10 +29,10 @@ use crate::{
 use crate::{transport, NodeIssue};
 use futures::future::Either;
 use futures::StreamExt;
-use libp2p::core::muxing::StreamMuxerBox;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::Transport as _;
+use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
     kad::{self, QueryId, Quorum, Record, K_VALUE},
@@ -492,9 +492,19 @@ impl NetworkBuilder {
             })
             .boxed();
 
+        let relay_server = {
+            let relay_server_cfg = relay::Config {
+                max_reservations: 1024,      // the number of home nodes that we can support
+                max_circuits: 32_000, // total max number of relayed connections we can support
+                max_circuits_per_peer: 1024, // max number of relayed connections per peer
+                ..Default::default()
+            };
+            libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
+        };
+
         let behaviour = NodeBehaviour {
             relay_client: relay_behaviour,
-            relay_server: libp2p::relay::Behaviour::new(peer_id, Default::default()),
+            relay_server,
             request_response,
             kademlia,
             identify,
