@@ -48,8 +48,8 @@ jobs:
           vm-count: 5
           provider: digital-ocean
           testnet-name: NightlyChurnE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Download material, 1.6G
         shell: bash
@@ -117,8 +117,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyChurnE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Upload local logs
         if: always()
@@ -147,5 +147,5 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyChurnE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
