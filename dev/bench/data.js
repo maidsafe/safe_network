@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713218351876,
+  "lastUpdate": 1713218462624,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "7e41bf944baa8ff1f6aaddb87998f9e7ca1bcc08",
-          "message": "chore: remove large log",
-          "timestamp": "2023-12-13T15:11:31Z",
-          "tree_id": "00347dfbd6b154e6d54c872463e04cec837882ab",
-          "url": "https://github.com/maidsafe/safe_network/commit/7e41bf944baa8ff1f6aaddb87998f9e7ca1bcc08"
-        },
-        "date": 1702483658332,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 96,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "786b5b62328894c116492f147680d5ecf16aa6c6",
           "message": "ci: prevent retries on ci runs w/ '-r 0'\n\nAka 0 retries",
           "timestamp": "2023-12-14T08:40:55Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cccdfc80635b7f97734df4305c69ca88b3ab5669",
+          "message": "fix(ci): update the custom branch variable names",
+          "timestamp": "2024-04-15T21:11:53Z",
+          "tree_id": "551d2d8c9129e2874201068ee79648891d68cf59",
+          "url": "https://github.com/maidsafe/safe_network/commit/cccdfc80635b7f97734df4305c69ca88b3ab5669"
+        },
+        "date": 1713218462248,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
