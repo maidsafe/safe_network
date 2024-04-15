@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713169631171,
+  "lastUpdate": 1713169739542,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075",
-          "message": "chore: udeps and gitignore",
-          "timestamp": "2023-12-13T08:42:47Z",
-          "tree_id": "178f222bc534ea2ad530e775787bf24e7078d73d",
-          "url": "https://github.com/maidsafe/safe_network/commit/b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075"
-        },
-        "date": 1702460232404,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 154,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "8e4f66c61154863b1111185e48f4c93828016f88",
+          "message": "ci: restrict stable releases to stable branch",
+          "timestamp": "2024-04-15T07:37:33Z",
+          "tree_id": "f2759d1254b3671a56ba8e80e80a7eba080036eb",
+          "url": "https://github.com/maidsafe/safe_network/commit/8e4f66c61154863b1111185e48f4c93828016f88"
+        },
+        "date": 1713169739157,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
