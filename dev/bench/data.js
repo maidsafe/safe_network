@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713170001051,
+  "lastUpdate": 1713170003134,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "04bd0dfedf41737710fe1c672a5db80cd357737a",
-          "message": "chore(ci): build testnet bin during PR checks",
-          "timestamp": "2023-12-04T09:35:53+01:00",
-          "tree_id": "fbbc2b366dbd840028da4c5d3b763141bcc30f74",
-          "url": "https://github.com/maidsafe/safe_network/commit/04bd0dfedf41737710fe1c672a5db80cd357737a"
-        },
-        "date": 1701681041894,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4528,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 65899,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33970,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "59cec7b7e0167557298a5cde0a2bb1138ae408d2",
+          "message": "fix: justfile conditional error",
+          "timestamp": "2024-04-15T07:48:00Z",
+          "tree_id": "96b285dbc1d8d5d6e3f4534f72eed5e7bae57b18",
+          "url": "https://github.com/maidsafe/safe_network/commit/59cec7b7e0167557298a5cde0a2bb1138ae408d2"
+        },
+        "date": 1713170002536,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7539,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34426,
             "unit": "ms"
           },
           {
