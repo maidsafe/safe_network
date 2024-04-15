@@ -113,8 +113,10 @@ impl ReplicationFetcher {
 
         if !out_of_range_keys.is_empty() {
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
+            let self_address = NetworkAddress::from_peer(self.self_peer_id);
             for addr in out_of_range_keys.iter() {
-                trace!("The incoming record_key {addr:?} is out of range, do not fetch it from {holder:?}");
+                let ilog2_distance = self_address.distance(addr).ilog2();
+                trace!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
             }
         }
 
