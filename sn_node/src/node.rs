@@ -411,6 +411,9 @@ impl Node {
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 event_header = "FailedToFetchHolders";
                 let network = self.network.clone();
+                // Note: this log will be checked in CI, and expecting `not appear`.
+                //       any change to the keyword `failed to fetch` shall incur
+                //       correspondent CI script change as well.
                 error!("Received notification from replication_fetcher, notifying {bad_nodes:?} failed to fetch replication copies from.");
                 let _handle = spawn(async move {
                     for peer_id in bad_nodes {
