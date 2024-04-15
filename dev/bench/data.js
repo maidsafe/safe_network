@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713169889527,
+  "lastUpdate": 1713169999102,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7a29f07c14198adb16c53c8e6cd045e05fc34d31",
-          "message": "feat(cli): download path is familiar to users",
-          "timestamp": "2023-12-13T08:46:52Z",
-          "tree_id": "15c63daa7e0a347e1d672e2bdae2ffc2f5bc8196",
-          "url": "https://github.com/maidsafe/safe_network/commit/7a29f07c14198adb16c53c8e6cd045e05fc34d31"
-        },
-        "date": 1702461862288,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 92,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "git@happybeing.com",
             "name": "Mark",
             "username": "happybeing"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "59cec7b7e0167557298a5cde0a2bb1138ae408d2",
+          "message": "fix: justfile conditional error",
+          "timestamp": "2024-04-15T07:48:00Z",
+          "tree_id": "96b285dbc1d8d5d6e3f4534f72eed5e7bae57b18",
+          "url": "https://github.com/maidsafe/safe_network/commit/59cec7b7e0167557298a5cde0a2bb1138ae408d2"
+        },
+        "date": 1713169998535,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
