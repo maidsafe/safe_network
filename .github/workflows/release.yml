@@ -7,7 +7,6 @@ concurrency:
 on:
   push:
     branches:
-      - main
       - stable
       - alpha*
       - beta*
@@ -55,7 +54,7 @@ jobs:
           if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" ]]; then
             echo "NETWORK_VERSION_MODE=restricted" >> $GITHUB_ENV
           fi
-        
+
       - name: build release artifacts
         shell: bash
         run: |
