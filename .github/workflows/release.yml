@@ -51,7 +51,7 @@ jobs:
       - name: provide network versioning
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" ]]; then
+          if [[ "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stable" && "$GITHUB_REF_NAME" != "alpha" && "$GITHUB_REF_NAME" != "beta" ]]; then
             echo "NETWORK_VERSION_MODE=restricted" >> $GITHUB_ENV
           fi
 
