@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713170003134,
+  "lastUpdate": 1713199922091,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "10c55f1c1c81fab9eb19dd99989a3282d1046ae7",
-          "message": "fix: update README paths to use .local/share/safe",
-          "timestamp": "2023-12-13T15:00:00+01:00",
-          "tree_id": "bb6e2230bd361a41f884c68aa5d8810fe2687db7",
-          "url": "https://github.com/maidsafe/safe_network/commit/10c55f1c1c81fab9eb19dd99989a3282d1046ae7"
-        },
-        "date": 1702476697271,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2879778507046635,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9163466589212066,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 37.58104542000044,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.22629802968252,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "cb4e0a36b0bd75133d89ab26d7062c18a55c617b",
+          "message": "test(CI): confirm there is no failed replication fetch",
+          "timestamp": "2024-04-15T16:01:21Z",
+          "tree_id": "0484f2c24f18d896e2f27518f041c517749d984f",
+          "url": "https://github.com/maidsafe/safe_network/commit/cb4e0a36b0bd75133d89ab26d7062c18a55c617b"
+        },
+        "date": 1713199917968,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2454240985829295,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.652667473754474,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.807143775072014,
             "unit": "MiB/s"
           }
         ]
