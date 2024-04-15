@@ -128,6 +128,107 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
 }
 
 #[test]
+fn test_spend_dag_double_spend_branches() -> Result<()> {
+    let mut net = MockNetwork::genesis()?;
+    let genesis = net.genesis_spend;
+
+    let owner1 = net.new_pk_with_balance(100)?;
+    let owner2 = net.new_pk_with_balance(0)?;
+    let owner3 = net.new_pk_with_balance(0)?;
+    let owner4 = net.new_pk_with_balance(0)?;
+    let owner5 = net.new_pk_with_balance(0)?;
+    let owner6 = net.new_pk_with_balance(0)?;
+    let owner3a = net.new_pk_with_balance(0)?;
+    let owner4a = net.new_pk_with_balance(0)?;
+    let owner5a = net.new_pk_with_balance(0)?;
+
+    // spend normaly and save a cashnote to reuse later
+    net.send(&owner1, &owner2, 100)?;
+    let cn_to_reuse_later = net
+        .wallets
+        .get(&owner2)
+        .expect("owner2 wallet to exist")
+        .cn
+        .clone();
+    let spend2 = net.send(&owner2, &owner3, 100)?;
+    let spend3 = net.send(&owner3, &owner4, 100)?;
+    let spend4 = net.send(&owner4, &owner5, 100)?;
+    let spend5 = net.send(&owner5, &owner6, 100)?;
+
+    // reuse that cashnote to perform a double spend and create a branch
+    net.wallets
+        .get_mut(&owner2)
+        .expect("owner2 wallet to still exist")
+        .cn = cn_to_reuse_later;
+    let spend2a = net.send(&owner2, &owner3a, 100)?;
+    let spend3a = net.send(&owner3a, &owner4a, 100)?;
+    let spend4a = net.send(&owner4a, &owner5a, 100)?;
+
+    // create dag
+    let mut dag = SpendDag::new(genesis);
+    for spend in net.spends {
+        dag.insert(spend.address(), spend.clone());
+    }
+    assert!(dag.record_faults(&genesis).is_ok());
+    // dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
+
+    // make sure double spend is detected
+    assert_eq!(spend2, spend2a, "both spends should be at the same address");
+    let double_spent = spend2.first().expect("spend1 to have an element");
+    let got = dag.get_spend_faults(double_spent);
+    let expected = BTreeSet::from_iter([SpendFault::DoubleSpend(*double_spent)]);
+    assert_eq!(got, expected, "DAG should have detected double spend");
+
+    // make sure the double spend's direct descendants are marked as bad
+    let s3 = spend3.first().expect("spend3 to have an element");
+    let got = dag.get_spend_faults(s3);
+    let expected = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
+        addr: *s3,
+        ancestor: *double_spent,
+    }]);
+    assert_eq!(got, expected, "spend3 should be unspendable");
+    let s3a = spend3a.first().expect("spend3a to have an element");
+    let got = dag.get_spend_faults(s3a);
+    let expected = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
+        addr: *s3a,
+        ancestor: *double_spent,
+    }]);
+    assert_eq!(got, expected, "spend3a should be unspendable");
+
+    // make sur all the descendants further down the branch are marked as bad as well
+    let utxo_of_5a = SpendAddress::from_unique_pubkey(
+        &net.wallets
+            .get(&owner5a)
+            .expect("owner5a wallet to exist")
+            .cn
+            .first()
+            .expect("owner5a wallet to have 1 cashnote")
+            .unique_pubkey(),
+    );
+    let utxo_of_6 = SpendAddress::from_unique_pubkey(
+        &net.wallets
+            .get(&owner6)
+            .expect("owner6 wallet to exist")
+            .cn
+            .first()
+            .expect("owner6 wallet to have 1 cashnote")
+            .unique_pubkey(),
+    );
+    let all_descendants = [spend4, spend5, vec![utxo_of_6], spend4a, vec![utxo_of_5a]];
+    for d in all_descendants.iter() {
+        let got = dag.get_spend_faults(d.first().expect("descendant spend to have an element"));
+        let expected = BTreeSet::from_iter([SpendFault::PoisonedAncestry(
+            *d.first().expect("d to have an element"),
+            format!(
+                "spend is on one of multiple branches of a double spent ancestor: {double_spent:?}"
+            ),
+        )]);
+        assert_eq!(got, expected, "all descendants should be marked as bad");
+    }
+    Ok(())
+}
+
+#[test]
 fn test_spend_dag_double_spend_detection() -> Result<()> {
     let mut net = MockNetwork::genesis()?;
     let genesis = net.genesis_spend;
