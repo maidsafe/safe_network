@@ -48,12 +48,12 @@ jobs:
           provider: digital-ocean
           testnet-name: NightlyE2E
           # if we were to run on a PR, use the below
-          # custom-node-bin-org-name: ${{ github.actor }}"
-          # custom-node-bin-branch-name: ${{ github.event.pull_request.head.ref }}
+          # safe-network-user: ${{ github.actor }}"
+          # safe-network-branch: ${{ github.event.pull_request.head.ref }}
           # Specify custom branch to prevent the deployer from fetching the latest release.
           # The latest release contains the `network-contacts` feature turned on.
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Check env variables
         shell: bash
@@ -113,8 +113,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Upload local logs
         if: always()
@@ -143,8 +143,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyE2E
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -191,8 +191,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlySpendTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Check env variables
         shell: bash
@@ -233,8 +233,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlySpendTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Upload local logs
         if: always()
@@ -263,8 +263,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlySpendTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
@@ -323,8 +323,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyChurnTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Check env variables
         shell: bash
@@ -361,8 +361,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyChurnTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Upload local logs
         if: always()
@@ -391,8 +391,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyChurnTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       # TODO: re-enable the below scripts once we have proper way to restart nodes.
       # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
@@ -528,8 +528,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Check env variables
         shell: bash
@@ -568,8 +568,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       - name: Upload local logs
         if: always()
@@ -598,8 +598,8 @@ jobs:
           vm-count: 1
           provider: digital-ocean
           testnet-name: NightlyDataLocationTest
-          custom-node-bin-org-name: maidsafe
-          custom-node-bin-branch-name: main
+          safe-network-user: maidsafe
+          safe-network-branch: main
 
       # TODO: re-enable the below scripts once we have proper way to restart nodes.
       # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
