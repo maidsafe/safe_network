@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713141835882,
+  "lastUpdate": 1713141957749,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
-          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
-          "timestamp": "2023-12-12T17:23:18Z",
-          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
-          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
-        },
-        "date": 1702404238509,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 99,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9d57535244cae65abd5ed30a8473da0b0fb3d412",
+          "message": "fix(node): notify replication_fetcher of early completion",
+          "timestamp": "2024-04-14T23:52:57Z",
+          "tree_id": "f1dedba2fc1dc07a02284a2cf478dcf78d511154",
+          "url": "https://github.com/maidsafe/safe_network/commit/9d57535244cae65abd5ed30a8473da0b0fb3d412"
+        },
+        "date": 1713141957390,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 59,
             "unit": "MB"
           }
         ]
