@@ -13,7 +13,10 @@ use crate::{
     REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
-    kad::{store::RecordStore, Quorum, Record, RecordKey},
+    kad::{
+        store::{Error as StoreError, RecordStore},
+        Quorum, Record, RecordKey,
+    },
     swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
@@ -470,6 +473,19 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .put_verified(record, record_type.clone());
+
+                // In case the capacity reaches full, restrict replication_fetcher to
+                // only fetch entries not farther than the current farthest record
+                if let Err(StoreError::MaxRecords) = result {
+                    let farthest = self
+                        .swarm
+                        .behaviour_mut()
+                        .kademlia
+                        .store_mut()
+                        .get_farthest();
+                    self.replication_fetcher.set_farthest_on_full(farthest);
+                }
+
                 // No matter storing the record succeeded or not,
                 // the entry shall be removed from the `replication_fetcher`.
                 // In case of local store error, re-attempt will be carried out

@@ -357,6 +357,21 @@ impl NodeRecordStore {
         }
     }
 
+    // Returns the farthest record_key to self.
+    pub fn get_farthest(&self) -> Option<Key> {
+        // sort records by distance to our local key
+        let mut sorted_records: Vec<_> = self.records.keys().collect();
+        sorted_records.sort_by(|key_a, key_b| {
+            let a = NetworkAddress::from_record_key(key_a);
+            let b = NetworkAddress::from_record_key(key_b);
+            self.local_address
+                .distance(&a)
+                .cmp(&self.local_address.distance(&b))
+        });
+
+        sorted_records.last().cloned().cloned()
+    }
+
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
     /// Returns Ok if the record can be stored because it is closer to the local peer
@@ -371,36 +386,25 @@ impl NodeRecordStore {
             return Ok(());
         }
 
-        // sort records by distance to our local key
-        let mut sorted_records: Vec<_> = self.records.keys().cloned().collect();
-        sorted_records.sort_by(|key_a, key_b| {
-            let a = NetworkAddress::from_record_key(key_a);
-            let b = NetworkAddress::from_record_key(key_b);
-            self.local_address
-                .distance(&a)
-                .cmp(&self.local_address.distance(&b))
-        });
-
-        if let Some(last_record) = sorted_records.last() {
+        if let Some(last_record) = self.get_farthest() {
             // if we're full and the incoming record is farther than the farthest record, we can't store it
             if num_records >= self.config.max_records
                 && self
                     .local_address
-                    .distance(&NetworkAddress::from_record_key(last_record))
+                    .distance(&NetworkAddress::from_record_key(&last_record))
                     < self
                         .local_address
                         .distance(&NetworkAddress::from_record_key(incoming_record_key))
             {
                 return Err(Error::MaxRecords);
             }
-        }
 
-        let record_to_remove = &sorted_records[sorted_records.len() - 1];
-        info!(
-            "Record {:?} will be pruned to free up space for new records",
-            PrettyPrintRecordKey::from(record_to_remove)
-        );
-        self.remove(record_to_remove);
+            info!(
+                "Record {:?} will be pruned to free up space for new records",
+                PrettyPrintRecordKey::from(&last_record)
+            );
+            self.remove(&last_record);
+        }
 
         Ok(())
     }
