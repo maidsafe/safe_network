@@ -132,7 +132,7 @@ impl SpendDag {
                 self.spends
                     .insert(spend_addr, DagEntry::Spend(Box::new(spend.clone()), idx));
                 let node_idx = NodeIndex::new(idx);
-                self.reset_edges(node_idx);
+                self.remove_all_edges(node_idx);
                 node_idx
             }
             // or upgrade spend to double spend if it is different from the existing one
@@ -354,7 +354,7 @@ impl SpendDag {
     }
 
     /// Remove all edges from a Node in the DAG
-    fn reset_edges(&mut self, node: NodeIndex) {
+    fn remove_all_edges(&mut self, node: NodeIndex) {
         let incoming: Vec<_> = self
             .dag
             .edges_directed(node, petgraph::Direction::Incoming)
