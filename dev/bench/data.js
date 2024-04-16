@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713303031998,
+  "lastUpdate": 1713303034445,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": false,
-          "id": "f4ed662d52c49a823850403b9b9fe033f1bf4285",
-          "message": "refactor: add more workspace lints from node",
-          "timestamp": "2023-12-06T08:57:16Z",
-          "tree_id": "ba759abd9b785a5778833dd2b81e05d9ba780b5c",
-          "url": "https://github.com/maidsafe/safe_network/commit/f4ed662d52c49a823850403b9b9fe033f1bf4285"
-        },
-        "date": 1701855731653,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4935,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 72088,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35101,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "david.irvine@maidsafe.net",
+            "name": "David Irvine",
+            "username": "dirvine"
+          },
+          "distinct": true,
+          "id": "93c024e69b97e6b164de85cba0e7bea35bd856d9",
+          "message": "feat: provide `reset` command\n\nThis command was requested in community feedback. It will remove all services, clearing out all logs\nand data, and also delete the node registry file, which will reset the service counter back to zero.",
+          "timestamp": "2024-04-16T22:16:44+01:00",
+          "tree_id": "057709d2f6104b5282e3082ed0fb2a45117b5177",
+          "url": "https://github.com/maidsafe/safe_network/commit/93c024e69b97e6b164de85cba0e7bea35bd856d9"
+        },
+        "date": 1713303033624,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7206,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33026,
             "unit": "ms"
           },
           {
