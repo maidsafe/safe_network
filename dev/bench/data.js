@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713254177273,
+  "lastUpdate": 1713254179754,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "9e3b05a5e231397321257ad70067a0369cd41267",
-          "message": "fix: mark chunks as completed when no failures on retry",
-          "timestamp": "2023-12-05T11:44:29Z",
-          "tree_id": "15fbe1fd7aa1af48dcbce33a81cb0508e699e22a",
-          "url": "https://github.com/maidsafe/safe_network/commit/9e3b05a5e231397321257ad70067a0369cd41267"
-        },
-        "date": 1701779196919,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4557,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 75499,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 16,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36047,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e92b8e46bb332daa4aeddf1ec255704cd977b99e",
+          "message": "chore: improve naming and typo fix",
+          "timestamp": "2024-04-16T07:06:10Z",
+          "tree_id": "6b7e64c2e57b64f6a705447cff9d5a67577a60e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/e92b8e46bb332daa4aeddf1ec255704cd977b99e"
+        },
+        "date": 1713254178914,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7525,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35500,
             "unit": "ms"
           },
           {
