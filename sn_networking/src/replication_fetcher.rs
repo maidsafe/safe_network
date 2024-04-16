@@ -113,8 +113,10 @@ impl ReplicationFetcher {
 
         if !out_of_range_keys.is_empty() {
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
+            let self_address = NetworkAddress::from_peer(self.self_peer_id);
             for addr in out_of_range_keys.iter() {
-                trace!("The incoming record_key {addr:?} is out of range, do not fetch it from {holder:?}");
+                let ilog2_distance = self_address.distance(addr).ilog2();
+                trace!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
             }
         }
 
@@ -134,6 +136,10 @@ impl ReplicationFetcher {
     // Notify the replication fetcher about a newly added Record to the node.
     // The corresponding key can now be removed from the replication fetcher.
     // Also returns the next set of keys that has to be fetched from the peer/network.
+    //
+    // Note: for Register, which different content (i.e. record_type) bearing same record_key
+    //       remove `on_going_fetches` entry bearing same `record_key` only,
+    //       to avoid false FetchFailed alarm against the peer.
     pub(crate) fn notify_about_new_put(
         &mut self,
         new_put: RecordKey,
@@ -143,7 +149,19 @@ impl ReplicationFetcher {
             .retain(|(key, t, _), _| key != &new_put || t != &record_type);
 
         // if we're actively fetching for the key, reduce the on_going_fetches
-        let _ = self.on_going_fetches.remove(&(new_put, record_type));
+        self.on_going_fetches.retain(|(key, _t), _| key != &new_put);
+
+        self.next_keys_to_fetch()
+    }
+
+    // An early completion of a fetch means the target is an old version record (Register or Spend).
+    pub(crate) fn notify_fetch_early_completed(
+        &mut self,
+        key_in: RecordKey,
+    ) -> Vec<(PeerId, RecordKey)> {
+        self.to_be_fetched.retain(|(key, _t, _), _| key != &key_in);
+
+        self.on_going_fetches.retain(|(key, _t), _| key != &key_in);
 
         self.next_keys_to_fetch()
     }

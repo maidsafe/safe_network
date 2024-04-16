@@ -40,28 +40,6 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
-    /// DEPRECATED will be removed in future versions.
-    /// Prefer using the send and receive commands instead.
-    ///
-    /// Deposit CashNotes from the received directory to the local wallet.
-    /// Or Read a hex encoded CashNote from stdin.
-    ///
-    /// The default received directory is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/wallet/cash_notes
-    ///  - macOS: $HOME/Library/Application Support/safe/wallet/cash_notes
-    ///  - Windows: C:\Users\{username}\AppData\Roaming\safe\wallet\cash_notes
-    ///
-    /// If you find the default path unwieldy, you can also set the RECEIVED_CASHNOTES_PATH environment
-    /// variable to a path you would prefer to work with.
-    #[clap(verbatim_doc_comment)]
-    Deposit {
-        /// Read a hex encoded CashNote from stdin.
-        #[clap(long, default_value = "false")]
-        stdin: bool,
-        /// The hex encoded CashNote.
-        #[clap(long)]
-        cash_note: Option<String>,
-    },
     /// Create a hot wallet from the given (hex-encoded) key.
     Create {
         /// Hex-encoded main secret key.
@@ -160,10 +138,6 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 }
             }
             Ok(())
-        }
-        WalletCmds::Deposit { stdin, cash_note } => {
-            let mut wallet = WalletApiHelper::load_from(root_dir)?;
-            wallet.deposit(*stdin, cash_note.as_deref())
         }
         WalletCmds::Create { key } => {
             let sk = SecretKey::from_hex(key)

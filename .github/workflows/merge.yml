@@ -878,6 +878,16 @@ jobs:
           node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
           echo "Node dir count is $node_count"
 
+      - name: check there is no failed replication fetch
+        if: matrix.os != 'windows-latest' # causes error
+        shell: bash
+        run: |
+          if grep -r "failed to fetch" "${{ matrix.node_data_path }}"
+          then
+            echo "We find failed replication fetch"
+            exit 1
+          fi
+
       # Only error out after uploading the logs
       - name: Don't log raw data
         if: matrix.os != 'windows-latest' # causes error
