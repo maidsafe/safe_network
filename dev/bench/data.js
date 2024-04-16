@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713218465919,
+  "lastUpdate": 1713254060152,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "786b5b62328894c116492f147680d5ecf16aa6c6",
-          "message": "ci: prevent retries on ci runs w/ '-r 0'\n\nAka 0 retries",
-          "timestamp": "2023-12-14T08:40:55Z",
-          "tree_id": "a2961a3150832bf6e31448f5bbbefb725e9b8f07",
-          "url": "https://github.com/maidsafe/safe_network/commit/786b5b62328894c116492f147680d5ecf16aa6c6"
-        },
-        "date": 1702545873917,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3326417770070837,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9279261961859384,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.42322220573339,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.29495477854588,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e92b8e46bb332daa4aeddf1ec255704cd977b99e",
+          "message": "chore: improve naming and typo fix",
+          "timestamp": "2024-04-16T07:06:10Z",
+          "tree_id": "6b7e64c2e57b64f6a705447cff9d5a67577a60e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/e92b8e46bb332daa4aeddf1ec255704cd977b99e"
+        },
+        "date": 1713254055499,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1967959700467385,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6270218021902507,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.96414725090417,
             "unit": "MiB/s"
           }
         ]
