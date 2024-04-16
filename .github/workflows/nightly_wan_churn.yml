@@ -48,6 +48,7 @@ jobs:
           vm-count: 5
           provider: digital-ocean
           testnet-name: NightlyChurnE2E
+          public-rpc: true
           safe-network-user: maidsafe
           safe-network-branch: main
 
