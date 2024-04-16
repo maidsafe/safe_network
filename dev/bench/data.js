@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713266627247,
+  "lastUpdate": 1713266737429,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "13fdb583210623e16124641268611499ba605263",
-          "message": "chore(cli): make wallet address easy to copy",
-          "timestamp": "2023-12-14T10:35:30Z",
-          "tree_id": "fdee44788c985e802ec895fc9504c6cffb82a6e2",
-          "url": "https://github.com/maidsafe/safe_network/commit/13fdb583210623e16124641268611499ba605263"
-        },
-        "date": 1702552663596,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 94,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdca59e69aa05c653562412e1df2d493447ccf82",
+          "message": "chore(networking): notify network event on failed put due to prune",
+          "timestamp": "2024-04-16T10:31:39Z",
+          "tree_id": "90be851c1521f299081846e596c740ae38585f17",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdca59e69aa05c653562412e1df2d493447ccf82"
+        },
+        "date": 1713266736780,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 47,
             "unit": "MB"
           }
         ]
