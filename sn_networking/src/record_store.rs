@@ -359,7 +359,10 @@ impl NodeRecordStore {
 
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
-    /// Returns true if the record can be stored.
+    /// Returns Ok if the record can be stored because it is closer to the local peer
+    /// or we are not full.
+    ///
+    /// Err MaxRecords if we cannot store as it's farther than the farthest data we have
     fn prune_records_if_needed(&mut self, incoming_record_key: &Key) -> Result<()> {
         let num_records = self.records.len();
 
@@ -468,7 +471,12 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        self.prune_records_if_needed(&r.key)?;
+        // notify fetcher
+        if let Err(error) = self.prune_records_if_needed(&r.key) {
+            let cmd = SwarmCmd::RemoveFailedLocalRecord { key: r.key };
+            send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
+            return Err(error);
+        }
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
