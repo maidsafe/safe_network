@@ -359,12 +359,13 @@ impl NodeRecordStore {
 
     /// Prune the records in the store to ensure that we free up space
     /// for the incoming record.
-    fn prune_storage_if_needed_for_record(&mut self) {
+    /// Returns true if the record can be stored.
+    fn prune_records_if_needed(&mut self, incoming_record_key: &Key) -> Result<()> {
         let num_records = self.records.len();
 
         // we're not full, so we don't need to prune
         if num_records < self.config.max_records {
-            return;
+            return Ok(());
         }
 
         // sort records by distance to our local key
@@ -377,6 +378,20 @@ impl NodeRecordStore {
                 .cmp(&self.local_address.distance(&b))
         });
 
+        if let Some(last_record) = sorted_records.last() {
+            // if we're full and the incoming record is farther than the farthest record, we can't store it
+            if num_records >= self.config.max_records
+                && self
+                    .local_address
+                    .distance(&NetworkAddress::from_record_key(last_record))
+                    < self
+                        .local_address
+                        .distance(&NetworkAddress::from_record_key(incoming_record_key))
+            {
+                return Err(Error::MaxRecords);
+            }
+        }
+
         // sorting will be costly, hence pruning in a batch of 10
         (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
             info!(
@@ -385,6 +400,8 @@ impl NodeRecordStore {
             );
             self.remove(&sorted_records[i]);
         });
+
+        Ok(())
     }
 }
 
@@ -453,7 +470,7 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        self.prune_storage_if_needed_for_record();
+        self.prune_records_if_needed(&r.key)?;
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
@@ -1036,6 +1053,7 @@ mod tests {
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {
         let max_iterations = 10;
+        // lower max records for faster testing
         let max_records = 50;
 
         let temp_dir = std::env::temp_dir();
@@ -1061,9 +1079,16 @@ mod tests {
             network_event_sender,
             swarm_cmd_sender,
         );
-        let mut stored_records: Vec<RecordKey> = vec![];
+        // keep track of everything ever stored, to check missing at the end are further away
+        let mut stored_records_at_some_point: Vec<RecordKey> = vec![];
         let self_address = NetworkAddress::from_peer(self_id);
-        for _ in 0..100 {
+
+        // keep track of fails to assert they're further than stored
+        let mut failed_records = vec![];
+
+        // try and put an excess of records
+        for _ in 0..max_records * 2 {
+            // println!("i: {i}");
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
             let value = match try_serialize_record(
                 &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
@@ -1080,68 +1105,76 @@ mod tests {
             };
 
             // Will be stored anyway.
-            assert!(store.put_verified(record, RecordType::Chunk).is_ok());
-            // We must also mark the record as stored (which would be triggered
-            // after the async write in nodes via NetworkEvent::CompletedWrite)
-            store.mark_as_stored(record_key.clone(), RecordType::Chunk);
+            let succeeded = store.put_verified(record, RecordType::Chunk).is_ok();
 
-            if stored_records.len() >= max_records {
-                // The list is already sorted by distance, hence always shall only prune the last 10.
-                let mut pruned_keys = vec![];
-                (0..10).for_each(|i| {
-                    let furthest_key = stored_records.remove(stored_records.len() - 1);
-                    println!(
-                        "chunk {i} {:?} shall be removed",
-                        PrettyPrintRecordKey::from(&furthest_key)
-                    );
-                    pruned_keys.push(furthest_key);
-                });
+            if !succeeded {
+                failed_records.push(record_key.clone());
+                println!("failed {record_key:?}");
+            } else {
+                // We must also mark the record as stored (which would be triggered
+                // after the async write in nodes via NetworkEvent::CompletedWrite)
+                store.mark_as_stored(record_key.clone(), RecordType::Chunk);
 
-                for pruned_key in pruned_keys {
-                    println!(
-                        "record {:?} shall be pruned.",
-                        PrettyPrintRecordKey::from(&pruned_key)
-                    );
-                    // Confirm the pruned_key got removed, looping to allow async disk ops to complete.
-                    let mut iteration = 0;
-                    while iteration < max_iterations {
-                        if NodeRecordStore::read_from_disk(
-                            &store.encryption_details,
-                            &pruned_key,
-                            &store_config.storage_dir,
-                        )
-                        .is_none()
-                        {
-                            break;
-                        }
-                        sleep(Duration::from_millis(100)).await;
-                        iteration += 1;
+                println!("success sotred len: {:?} ", store.record_addresses().len());
+                stored_records_at_some_point.push(record_key.clone());
+                if stored_records_at_some_point.len() <= max_records {
+                    assert!(succeeded);
+                }
+                // loop over max_iterations times to ensure async disk write had time to complete.
+                let mut iteration = 0;
+                while iteration < max_iterations {
+                    if store.get(&record_key).is_some() {
+                        break;
                     }
-                    if iteration == max_iterations {
-                        panic!("record_store prune test failed with pruned record still exists.");
-                    }
+                    sleep(Duration::from_millis(100)).await;
+                    iteration += 1;
+                }
+                if iteration == max_iterations {
+                    panic!("record_store prune test failed with stored record {record_key:?} can't be read back");
                 }
             }
+        }
 
-            // loop over max_iterations times to ensure async disk write had time to complete.
-            let mut iteration = 0;
-            while iteration < max_iterations {
-                if store.get(&record_key).is_some() {
-                    break;
+        let stored_data_at_end = store.record_addresses();
+        assert!(
+            stored_data_at_end.len() == max_records,
+            "Stored records ({:?}) should be max_records, {max_records:?}",
+            stored_data_at_end.len(),
+        );
+
+        // now assert that we've stored at _least_ max records (likely many more over the liftime of the store)
+        assert!(
+            stored_records_at_some_point.len() >= max_records,
+            "we should have stored ata least max over time"
+        );
+
+        // now all failed records should be farther than the farthest stored record
+        let mut sorted_stored_data = stored_data_at_end.iter().collect_vec();
+
+        sorted_stored_data
+            .sort_by(|(a, _), (b, _)| self_address.distance(a).cmp(&self_address.distance(b)));
+
+        // next assert that all records stored are closer than the next closest of the failed records
+        if let Some((most_distant_data, _)) = sorted_stored_data.last() {
+            for failed_record in failed_records {
+                let failed_data = NetworkAddress::from_record_key(&failed_record);
+                assert!(
+                    self_address.distance(&failed_data) > self_address.distance(most_distant_data),
+                    "failed record should be farther than the farthest stored record"
+                );
+            }
+
+            // now for any stored data. It either shoudl still be stored OR further away than `most_distant_data`
+            for data in stored_records_at_some_point {
+                let data_addr = NetworkAddress::from_record_key(&data);
+                if !sorted_stored_data.contains(&(&data_addr, &RecordType::Chunk)) {
+                    assert!(
+                        self_address.distance(&data_addr)
+                            > self_address.distance(most_distant_data),
+                        "stored record should be farther than the farthest stored record"
+                    );
                 }
-                sleep(Duration::from_millis(100)).await;
-                iteration += 1;
             }
-            if iteration == max_iterations {
-                panic!("record_store prune test failed with stored record cann't be read back");
-            }
-
-            stored_records.push(record_key);
-            stored_records.sort_by(|a, b| {
-                let a = NetworkAddress::from_record_key(a);
-                let b = NetworkAddress::from_record_key(b);
-                self_address.distance(&a).cmp(&self_address.distance(&b))
-            });
         }
 
         Ok(())
