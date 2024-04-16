@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713303029785,
+  "lastUpdate": 1713303031998,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7808046377062a5fde078c9e32ba30eacd2eb317",
-          "message": "chore(deps): bump github/codeql-action from 2 to 3\n\nBumps [github/codeql-action](https://github.com/github/codeql-action) from 2 to 3.\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/v2...v3)\n\n---\nupdated-dependencies:\n- dependency-name: github/codeql-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2023-12-14T15:43:21Z",
-          "tree_id": "a4944f4592b331559a31de139a525a0bb06fc2be",
-          "url": "https://github.com/maidsafe/safe_network/commit/7808046377062a5fde078c9e32ba30eacd2eb317"
-        },
-        "date": 1702571086900,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 712,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 135,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "david.irvine@maidsafe.net",
+            "name": "David Irvine",
+            "username": "dirvine"
+          },
+          "distinct": true,
+          "id": "93c024e69b97e6b164de85cba0e7bea35bd856d9",
+          "message": "feat: provide `reset` command\n\nThis command was requested in community feedback. It will remove all services, clearing out all logs\nand data, and also delete the node registry file, which will reset the service counter back to zero.",
+          "timestamp": "2024-04-16T22:16:44+01:00",
+          "tree_id": "057709d2f6104b5282e3082ed0fb2a45117b5177",
+          "url": "https://github.com/maidsafe/safe_network/commit/93c024e69b97e6b164de85cba0e7bea35bd856d9"
+        },
+        "date": 1713303031173,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
