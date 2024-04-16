@@ -392,14 +392,12 @@ impl NodeRecordStore {
             }
         }
 
-        // sorting will be costly, hence pruning in a batch of 10
-        (sorted_records.len() - 10..sorted_records.len()).for_each(|i| {
-            info!(
-                "Record {i} {:?} will be pruned to free up space for new records",
-                PrettyPrintRecordKey::from(&sorted_records[i])
-            );
-            self.remove(&sorted_records[i]);
-        });
+        let record_to_remove = &sorted_records[sorted_records.len() - 1];
+        info!(
+            "Record {:?} will be pruned to free up space for new records",
+            PrettyPrintRecordKey::from(record_to_remove)
+        );
+        self.remove(record_to_remove);
 
         Ok(())
     }
