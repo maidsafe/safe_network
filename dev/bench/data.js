@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713266739320,
+  "lastUpdate": 1713266741312,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a1e69fa942c0f977bea36e813f0ca339221eab4a",
-          "message": "feat: not dial back for peers in full kbucket",
-          "timestamp": "2023-12-05T12:35:18Z",
-          "tree_id": "0395eac9b1eec40e52f63e4be18919cb1005169d",
-          "url": "https://github.com/maidsafe/safe_network/commit/a1e69fa942c0f977bea36e813f0ca339221eab4a"
-        },
-        "date": 1701783248941,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4942,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 69898,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35500,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdca59e69aa05c653562412e1df2d493447ccf82",
+          "message": "chore(networking): notify network event on failed put due to prune",
+          "timestamp": "2024-04-16T10:31:39Z",
+          "tree_id": "90be851c1521f299081846e596c740ae38585f17",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdca59e69aa05c653562412e1df2d493447ccf82"
+        },
+        "date": 1713266740744,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7302,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33350,
             "unit": "ms"
           },
           {
