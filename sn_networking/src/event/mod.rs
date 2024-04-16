@@ -35,6 +35,7 @@ use tokio::sync::oneshot;
 /// NodeEvent enum
 #[derive(CustomDebug)]
 pub(super) enum NodeEvent {
+    Upnp(libp2p::upnp::Event),
     MsgReceived(libp2p::request_response::Event<Request, Response>),
     Kademlia(libp2p::kad::Event),
     #[cfg(feature = "local-discovery")]
@@ -43,6 +44,12 @@ pub(super) enum NodeEvent {
     Dcutr(Box<libp2p::dcutr::Event>),
     RelayClient(Box<libp2p::relay::client::Event>),
     RelayServer(Box<libp2p::relay::Event>),
+}
+
+impl From<libp2p::upnp::Event> for NodeEvent {
+    fn from(event: libp2p::upnp::Event) -> Self {
+        NodeEvent::Upnp(event)
+    }
 }
 
 impl From<libp2p::request_response::Event<Request, Response>> for NodeEvent {
