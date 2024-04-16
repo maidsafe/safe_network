@@ -168,8 +168,12 @@ jobs:
           # The `release-plz` command publishes crates which had their versions bumped, and also
           # creates Github releases. The binaries are then attached to the releases in the
           # `upload-github-release-assets` target.
-          cargo login ${{ secrets.CRATES_IO_TOKEN }}
-          release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          cargo login "${{ secrets.CRATES_IO_TOKEN }}"
+          # The use of 'awk' suppresses the annoying instrumentation output
+          # that makes the log difficult to read.
+          release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }} | \
+            awk '{ if (!/^\s*in release with input/ && !/^\s{4}/) print }'
+
           just upload-github-release-assets
 
           # Now upload the 'latest' versions to S3. This can be done later because the node manager
