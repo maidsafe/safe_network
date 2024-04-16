@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713269721642,
+  "lastUpdate": 1713288004657,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "3675d0f3bb02538fb77d90d05c8113691f48f788",
-          "message": "chore(cli): make upload summary printout clearer",
-          "timestamp": "2023-12-14T13:33:27Z",
-          "tree_id": "b5069598ca5e7bfcbe36a60cab1dc6c42b759b15",
-          "url": "https://github.com/maidsafe/safe_network/commit/3675d0f3bb02538fb77d90d05c8113691f48f788"
-        },
-        "date": 1702563178635,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2914699334490414,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9507564167623874,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.44595972089822,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.230458776363285,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "1953acacd0880a2c5a28ff7ad72c435466019bab",
+          "message": "chore(ci): enable public rpc for wan test",
+          "timestamp": "2024-04-16T16:27:02Z",
+          "tree_id": "c0c5bb8f5cb15c3e4241a04786557d80b36d478f",
+          "url": "https://github.com/maidsafe/safe_network/commit/1953acacd0880a2c5a28ff7ad72c435466019bab"
+        },
+        "date": 1713288000487,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2423365678376295,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.650642377401535,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.40360956149074,
             "unit": "MiB/s"
           }
         ]
