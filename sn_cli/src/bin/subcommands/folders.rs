@@ -89,7 +89,7 @@ pub(crate) async fn folders_cmds(
             // initialise path as a fresh new Folder with a network address derived from the root SK
             let root_sk = get_recovery_secret_sk(root_sk, true)?;
             let acc_packet = AccountPacket::init(client.clone(), root_dir, &path, &root_sk, None)?;
-            println!("Directoy at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
+            println!("Directory at {path:?} initialised as a root Folder, ready to track and sync changes with the network at address: {}", acc_packet.root_folder_addr().to_hex())
         }
         FoldersCmds::Download {
             path,
