@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713269336608,
+  "lastUpdate": 1713269339189,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "189a9089b6570706ae07d8276bfa6f25b788073f",
-          "message": "chore(network): return error with more info during quorum failure",
-          "timestamp": "2023-12-14T10:36:18Z",
-          "tree_id": "fc2166d2bbe8f7dc0aa0c607118b8e160a0d20f9",
-          "url": "https://github.com/maidsafe/safe_network/commit/189a9089b6570706ae07d8276bfa6f25b788073f"
-        },
-        "date": 1702552693377,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 740,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 124,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30595,6 +30561,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 198,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "ccce41be38c14752789765678b40fabddb1caf78",
+          "message": "chore: fix typo for issue 1494",
+          "timestamp": "2024-04-16T11:21:14Z",
+          "tree_id": "ff9ebc907ff23c9dc35f3546aeff7da4bb80bacd",
+          "url": "https://github.com/maidsafe/safe_network/commit/ccce41be38c14752789765678b40fabddb1caf78"
+        },
+        "date": 1713269338116,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
             "unit": "MB"
           },
           {
