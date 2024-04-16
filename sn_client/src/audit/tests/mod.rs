@@ -195,7 +195,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     }]);
     assert_eq!(got, expected, "spend3a should be unspendable");
 
-    // make sur all the descendants further down the branch are marked as bad as well
+    // make sure all the descendants further down the branch are marked as bad as well
     let utxo_of_5a = SpendAddress::from_unique_pubkey(
         &net.wallets
             .get(&owner5a)
