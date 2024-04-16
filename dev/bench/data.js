@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713269604426,
+  "lastUpdate": 1713269716984,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
-          "message": "chore(cli): make sequential payment fail limit a const",
-          "timestamp": "2023-12-14T11:43:34Z",
-          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
-        },
-        "date": 1702556588555,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 90,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "445da434b5854ee99f946de5fe6307b0eac3de56",
+          "message": "chore: remove deprecated wallet deposit cmd",
+          "timestamp": "2024-04-16T11:21:36Z",
+          "tree_id": "db89cd67d27e5164e294cea38a48221b95555adc",
+          "url": "https://github.com/maidsafe/safe_network/commit/445da434b5854ee99f946de5fe6307b0eac3de56"
+        },
+        "date": 1713269716111,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
