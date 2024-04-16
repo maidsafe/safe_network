@@ -10,7 +10,7 @@
 use crate::target_arch::spawn;
 use crate::{event::NetworkEvent, target_arch::Instant};
 use libp2p::{
-    kad::{RecordKey, K_VALUE},
+    kad::{KBucketDistance as Distance, RecordKey, K_VALUE},
     PeerId,
 };
 use sn_protocol::{storage::RecordType, NetworkAddress, PrettyPrintRecordKey};
@@ -43,6 +43,8 @@ pub(crate) struct ReplicationFetcher {
     event_sender: mpsc::Sender<NetworkEvent>,
     /// ilog2 bucket distance range that the incoming key shall be fetched
     distance_range: Option<u32>,
+    /// Restrict fetch range when node is full
+    farthest_distance: Option<Distance>,
 }
 
 impl ReplicationFetcher {
@@ -54,6 +56,7 @@ impl ReplicationFetcher {
             on_going_fetches: HashMap::new(),
             event_sender,
             distance_range: None,
+            farthest_distance: None,
         }
     }
 
@@ -73,10 +76,29 @@ impl ReplicationFetcher {
         locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
     ) -> Vec<(PeerId, RecordKey)> {
         self.remove_stored_keys(locally_stored_keys);
+        let self_address = NetworkAddress::from_peer(self.self_peer_id);
+        let total_incoming_keys = incoming_keys.len();
+
+        // In case of node full, restrict fetch range
+        if let Some(farthest_distance) = self.farthest_distance {
+            let mut out_of_range_keys = vec![];
+            incoming_keys.retain(|(addr, _)| {
+                let is_in_range = self_address.distance(addr) <= farthest_distance;
+                if !is_in_range {
+                    out_of_range_keys.push(addr.clone());
+                }
+                is_in_range
+            });
+
+            info!("Node is full, among {total_incoming_keys} incoming replications from {holder:?}, found {} beyond current farthest", out_of_range_keys.len());
+            for addr in out_of_range_keys.iter() {
+                trace!("Node is full, the incoming record_key {addr:?} is beyond current farthest record");
+            }
+        }
 
         let mut keys_to_fetch = vec![];
         // For new data, it will be replicated out in a special replication_list of length 1.
-        // And we shall `fetch` that copy immediately, if it's not being fetched.
+        // And we shall `fetch` that copy immediately (if in range), if it's not being fetched.
         if incoming_keys.len() == 1 {
             let (record_address, record_type) = incoming_keys[0].clone();
 
@@ -96,11 +118,8 @@ impl ReplicationFetcher {
             .retain(|_, time_out| *time_out > Instant::now());
 
         let mut out_of_range_keys = vec![];
-        let total_incoming_keys = incoming_keys.len();
         // Filter out those out_of_range ones among the imcoming_keys.
         if let Some(ref distance_range) = self.distance_range {
-            let self_address = NetworkAddress::from_peer(self.self_peer_id);
-
             incoming_keys.retain(|(addr, _record_type)| {
                 let is_in_range =
                     self_address.distance(addr).ilog2().unwrap_or(0) <= *distance_range;
@@ -113,7 +132,6 @@ impl ReplicationFetcher {
 
         if !out_of_range_keys.is_empty() {
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
-            let self_address = NetworkAddress::from_peer(self.self_peer_id);
             for addr in out_of_range_keys.iter() {
                 let ilog2_distance = self_address.distance(addr).ilog2();
                 trace!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
@@ -131,6 +149,36 @@ impl ReplicationFetcher {
         keys_to_fetch.extend(self.next_keys_to_fetch());
 
         keys_to_fetch
+    }
+
+    // Node is full, any fetch (ongoing or new) shall no farther than the current farthest.
+    pub(crate) fn set_farthest_on_full(&mut self, farthest_in: Option<RecordKey>) {
+        let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+
+        let new_farthest_distance = if let Some(farthest_in) = farthest_in {
+            let addr = NetworkAddress::from_record_key(&farthest_in);
+            self_addr.distance(&addr)
+        } else {
+            return;
+        };
+
+        if let Some(old_farthest_distance) = self.farthest_distance {
+            if new_farthest_distance >= old_farthest_distance {
+                return;
+            }
+        }
+
+        // Remove any ongoing or pending fetches that is farther than the current farthest
+        self.to_be_fetched.retain(|(key, _t, _), _| {
+            let addr = NetworkAddress::from_record_key(key);
+            self_addr.distance(&addr) <= new_farthest_distance
+        });
+        self.on_going_fetches.retain(|(key, _t), _| {
+            let addr = NetworkAddress::from_record_key(key);
+            self_addr.distance(&addr) <= new_farthest_distance
+        });
+
+        self.farthest_distance = Some(new_farthest_distance);
     }
 
     // Notify the replication fetcher about a newly added Record to the node.

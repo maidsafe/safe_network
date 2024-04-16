@@ -150,6 +150,16 @@ impl UnifiedRecordStore {
         }
     }
 
+    pub(crate) fn get_farthest(&self) -> Option<RecordKey> {
+        match self {
+            Self::Client(_store) => {
+                warn!("Calling get_farthest at Client. This should not happen");
+                None
+            }
+            Self::Node(store) => store.get_farthest(),
+        }
+    }
+
     /// Mark the record as stored in the store.
     /// This adds it to records set, so it can now be retrieved
     /// (to be done after writes are finalised)
