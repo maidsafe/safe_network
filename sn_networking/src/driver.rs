@@ -182,6 +182,7 @@ pub enum VerificationKind {
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
+    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
     pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
     #[cfg(feature = "local-discovery")]
@@ -485,6 +486,13 @@ impl NetworkBuilder {
             main_transport
         };
 
+        let upnp = if !self.local && !is_client {
+            Some(libp2p::upnp::tokio::Behaviour::default())
+        } else {
+            None
+        };
+        let upnp = upnp.into(); // Into `Toggle<T>`
+
         let (relay_transport, relay_behaviour) =
             libp2p::relay::client::new(self.keypair.public().to_peer_id());
         let relay_transport = relay_transport
@@ -516,6 +524,7 @@ impl NetworkBuilder {
         let behaviour = NodeBehaviour {
             relay_client: relay_behaviour,
             relay_server,
+            upnp,
             request_response,
             kademlia,
             identify,
