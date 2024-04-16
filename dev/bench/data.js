@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713254179754,
+  "lastUpdate": 1713266627247,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "13fdb583210623e16124641268611499ba605263",
-          "message": "chore(cli): make wallet address easy to copy",
-          "timestamp": "2023-12-14T10:35:30Z",
-          "tree_id": "fdee44788c985e802ec895fc9504c6cffb82a6e2",
-          "url": "https://github.com/maidsafe/safe_network/commit/13fdb583210623e16124641268611499ba605263"
-        },
-        "date": 1702552528216,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2886670516171597,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9301737586146557,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.961043214052694,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.96414725090417,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bdca59e69aa05c653562412e1df2d493447ccf82",
+          "message": "chore(networking): notify network event on failed put due to prune",
+          "timestamp": "2024-04-16T10:31:39Z",
+          "tree_id": "90be851c1521f299081846e596c740ae38585f17",
+          "url": "https://github.com/maidsafe/safe_network/commit/bdca59e69aa05c653562412e1df2d493447ccf82"
+        },
+        "date": 1713266623102,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2515796672750037,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6697896780167436,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.74113144749762,
             "unit": "MiB/s"
           }
         ]
