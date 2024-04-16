@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713269719144,
+  "lastUpdate": 1713269721642,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "2931d70b115b9b7b02ec0158f1da15db02413f19",
-          "message": "test(node): formalise small wait after starting payment listener",
-          "timestamp": "2023-12-05T14:43:04Z",
-          "tree_id": "cca5448a82bffde41ab0902d84ff6fae2a43f68d",
-          "url": "https://github.com/maidsafe/safe_network/commit/2931d70b115b9b7b02ec0158f1da15db02413f19"
-        },
-        "date": 1701789869634,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4395,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 68836,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34430,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "445da434b5854ee99f946de5fe6307b0eac3de56",
+          "message": "chore: remove deprecated wallet deposit cmd",
+          "timestamp": "2024-04-16T11:21:36Z",
+          "tree_id": "db89cd67d27e5164e294cea38a48221b95555adc",
+          "url": "https://github.com/maidsafe/safe_network/commit/445da434b5854ee99f946de5fe6307b0eac3de56"
+        },
+        "date": 1713269720815,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7477,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35244,
             "unit": "ms"
           },
           {
