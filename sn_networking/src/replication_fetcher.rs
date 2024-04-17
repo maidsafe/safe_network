@@ -153,13 +153,6 @@ impl ReplicationFetcher {
         keys_to_fetch
     }
 
-    // Node is storing and or pruning data fine, any fetch (ongoing or new) shall no longer be restricted
-    // by the fetcher itself (data is checked for being "close" at a higher level before keys are fed in
-    // to the ReplicationFetcher)
-    pub(crate) fn clear_farthest_on_full(&mut self) {
-        self.farthest_acceptable_distance = None;
-    }
-
     // Node is full, any fetch (ongoing or new) shall no farther than the current farthest.
     pub(crate) fn set_farthest_on_full(&mut self, farthest_in: Option<RecordKey>) {
         let self_addr = NetworkAddress::from_peer(self.self_peer_id);
