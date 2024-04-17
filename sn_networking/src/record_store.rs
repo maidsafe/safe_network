@@ -379,22 +379,19 @@ impl NodeRecordStore {
     ///
     /// Err MaxRecords if we cannot store as it's farther than the farthest data we have
     fn prune_records_if_needed(&mut self, incoming_record_key: &Key) -> Result<()> {
-        let num_records = self.records.len();
-
         // we're not full, so we don't need to prune
-        if num_records < self.config.max_records {
+        if self.records.len() < self.config.max_records {
             return Ok(());
         }
 
         if let Some(last_record) = self.get_farthest() {
-            // if we're full and the incoming record is farther than the farthest record, we can't store it
-            if num_records >= self.config.max_records
-                && self
+            // if the incoming record is farther than the farthest record, we can't store it
+            if self
+                .local_address
+                .distance(&NetworkAddress::from_record_key(&last_record))
+                < self
                     .local_address
-                    .distance(&NetworkAddress::from_record_key(&last_record))
-                    < self
-                        .local_address
-                        .distance(&NetworkAddress::from_record_key(incoming_record_key))
+                    .distance(&NetworkAddress::from_record_key(incoming_record_key))
             {
                 return Err(Error::MaxRecords);
             }
