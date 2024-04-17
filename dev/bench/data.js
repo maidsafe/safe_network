@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713368737016,
+  "lastUpdate": 1713368739876,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
-          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
-          "timestamp": "2023-12-18T15:12:43Z",
-          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
-          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
-        },
-        "date": 1702915132243,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 762,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 120,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "840af8d6612ddc4ac4bbe506306c362912266e1c",
+          "message": "docs: bash included",
+          "timestamp": "2024-04-17T16:31:54+01:00",
+          "tree_id": "fd5ea6f79ec2906f4cbcdf07bca2ce90d9c00cd9",
+          "url": "https://github.com/maidsafe/safe_network/commit/840af8d6612ddc4ac4bbe506306c362912266e1c"
+        },
+        "date": 1713368739272,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
