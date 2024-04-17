@@ -58,11 +58,33 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
         let peer_id = PeerId::from_bytes(&request.get_ref().peer_id)
             .map_err(|err| Status::new(Code::Internal, format!("Failed to parse PeerId: {err}")))?;
 
-        Self::restart_handler(node_registry, peer_id, request.get_ref().retain_peer_id)
-            .await
-            .map_err(|err| {
-                Status::new(Code::Internal, format!("Failed to restart the node: {err}"))
-            })?;
+        match rpc::restart_node_service(
+            node_registry.clone(),
+            peer_id,
+            request.get_ref().retain_peer_id,
+        )
+        .await
+        {
+            Ok(_) => {
+                node_registry.save().map_err(|err| {
+                    Status::new(
+                        Code::DataLoss,
+                        format!("Critical: Failed to save to the node registry {err}"),
+                    )
+                })?;
+            }
+            Err(_) => {
+                node_registry.save().map_err(|err| {
+                    Status::new(
+                        Code::DataLoss,
+                        format!(
+                            "Error: Failed to restart node service. \
+                            Critical: Failed to save to the node registry. {err}"
+                        ),
+                    )
+                })?;
+            }
+        }
 
         Ok(Response::new(NodeServiceRestartResponse {}))
     }
@@ -100,19 +122,6 @@ impl SafeNodeManagerDaemon {
         let node_registry = NodeRegistry::load(&node_registry_path)
             .map_err(|err| eyre!("Could not load node registry: {err:?}"))?;
         Ok(node_registry)
-    }
-
-    async fn restart_handler(
-        mut node_registry: NodeRegistry,
-        peer_id: PeerId,
-        retain_peer_id: bool,
-    ) -> Result<()> {
-        let res = rpc::restart_node_service(&mut node_registry, peer_id, retain_peer_id).await;
-
-        // make sure to save the state even if the above fn fails.
-        node_registry.save()?;
-
-        res
     }
 }
 

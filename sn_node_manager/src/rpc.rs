@@ -22,12 +22,13 @@ use sn_service_management::{
 };
 
 pub async fn restart_node_service(
-    node_registry: &mut NodeRegistry,
+    node_registry: NodeRegistry,
     peer_id: PeerId,
     retain_peer_id: bool,
 ) -> Result<()> {
+    let mut m = node_registry.clone();
     let nodes_len = node_registry.nodes.len();
-    let current_node_mut = node_registry
+    let current_node_mut = m
         .nodes
         .iter_mut()
         .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
@@ -182,9 +183,7 @@ pub async fn restart_node_service(
             VerbosityLevel::Normal,
         );
         service_manager.start().await?;
-        node_registry
-            .nodes
-            .push(service_manager.service.service_data.clone());
+        m.nodes.push(service_manager.service.service_data.clone());
     };
 
     Ok(())
