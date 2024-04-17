@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713364777631,
+  "lastUpdate": 1713364890328,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "295fe84bbe00ed6592961fbb0e03e11de23db446",
-          "message": "feat(cli): random shuffle upload chunks to allow clients co-operation",
-          "timestamp": "2023-12-18T11:56:01Z",
-          "tree_id": "7322482124e89bcbe6d1922a3c4f339d9f52cd09",
-          "url": "https://github.com/maidsafe/safe_network/commit/295fe84bbe00ed6592961fbb0e03e11de23db446"
-        },
-        "date": 1702903185542,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c2ca49e2e09e8548f4626000b1992ed2c87f9212",
+          "message": "chore(node): remove duplicated record_store fullness check",
+          "timestamp": "2024-04-17T13:43:25Z",
+          "tree_id": "05cc3d01a8735e00d2d5bc18180771d9403f26e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/c2ca49e2e09e8548f4626000b1992ed2c87f9212"
+        },
+        "date": 1713364889455,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
