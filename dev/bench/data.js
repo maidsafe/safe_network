@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713315763972,
+  "lastUpdate": 1713315766042,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "c1a3342944ba087361d1e02db975513d47854da2",
-          "message": "ci: remove old 'no-verify' flag from cli run.\n\nI'm not sure why it's needed there at all, so lets drop it",
-          "timestamp": "2023-12-06T09:09:14Z",
-          "tree_id": "56b5d1857b44d328ed6cfc8d64e1ead36587fd56",
-          "url": "https://github.com/maidsafe/safe_network/commit/c1a3342944ba087361d1e02db975513d47854da2"
-        },
-        "date": 1701857499144,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4270,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 64459,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33026,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2b796e5fec5d3ec2efc2fbe163c5c2f49012afe2",
+          "message": "ci: suppress release-plz instrumentation output\n\nThis output makes it difficult to find things in the logs for the release workflow runs.",
+          "timestamp": "2024-04-17T00:13:44Z",
+          "tree_id": "495d926a9239a6688dd4e09c9e40af8b2711d387",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b796e5fec5d3ec2efc2fbe163c5c2f49012afe2"
+        },
+        "date": 1713315765473,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7148,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33950,
             "unit": "ms"
           },
           {
