@@ -43,8 +43,10 @@ pub(crate) struct ReplicationFetcher {
     event_sender: mpsc::Sender<NetworkEvent>,
     /// ilog2 bucket distance range that the incoming key shall be fetched
     distance_range: Option<u32>,
-    /// Restrict fetch range when node is full
-    farthest_distance: Option<Distance>,
+    /// Restrict fetch range to closer than this value
+    /// used when the node is full, but we still have "close" data coming in
+    /// that is _not_ closer than our farthest max record
+    farthest_acceptable_distance: Option<Distance>,
 }
 
 impl ReplicationFetcher {
@@ -56,7 +58,7 @@ impl ReplicationFetcher {
             on_going_fetches: HashMap::new(),
             event_sender,
             distance_range: None,
-            farthest_distance: None,
+            farthest_acceptable_distance: None,
         }
     }
 
@@ -80,7 +82,7 @@ impl ReplicationFetcher {
         let total_incoming_keys = incoming_keys.len();
 
         // In case of node full, restrict fetch range
-        if let Some(farthest_distance) = self.farthest_distance {
+        if let Some(farthest_distance) = self.farthest_acceptable_distance {
             let mut out_of_range_keys = vec![];
             incoming_keys.retain(|(addr, _)| {
                 let is_in_range = self_address.distance(addr) <= farthest_distance;
@@ -151,6 +153,13 @@ impl ReplicationFetcher {
         keys_to_fetch
     }
 
+    // Node is storing and or pruning data fine, any fetch (ongoing or new) shall no longer be restricted
+    // by the fetcher itself (data is checked for being "close" at a higher level before keys are fed in
+    // to the ReplicationFetcher)
+    pub(crate) fn clear_farthest_on_full(&mut self) {
+        self.farthest_acceptable_distance = None;
+    }
+
     // Node is full, any fetch (ongoing or new) shall no farther than the current farthest.
     pub(crate) fn set_farthest_on_full(&mut self, farthest_in: Option<RecordKey>) {
         let self_addr = NetworkAddress::from_peer(self.self_peer_id);
@@ -162,7 +171,7 @@ impl ReplicationFetcher {
             return;
         };
 
-        if let Some(old_farthest_distance) = self.farthest_distance {
+        if let Some(old_farthest_distance) = self.farthest_acceptable_distance {
             if new_farthest_distance >= old_farthest_distance {
                 return;
             }
@@ -178,7 +187,7 @@ impl ReplicationFetcher {
             self_addr.distance(&addr) <= new_farthest_distance
         });
 
-        self.farthest_distance = Some(new_farthest_distance);
+        self.farthest_acceptable_distance = Some(new_farthest_distance);
     }
 
     // Notify the replication fetcher about a newly added Record to the node.
