@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713352252662,
+  "lastUpdate": 1713352254557,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6",
-          "message": "feat: replace bootstrap node if bucket full",
-          "timestamp": "2023-12-06T11:40:53Z",
-          "tree_id": "b76db349c27e9d0553d2301999956e16148a09cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/c54e7340af4fa6a4cb7d78819f231b3ec0cd3fe6"
-        },
-        "date": 1701866554499,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4921,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 78172,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 26644,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "6da215f79d48500e9d2064078f5a62ecb78908a5",
+          "message": "feat: rpc restart command",
+          "timestamp": "2024-04-17T10:14:18Z",
+          "tree_id": "bf3855d7c9453c205ce97cbc85689f28346bdde3",
+          "url": "https://github.com/maidsafe/safe_network/commit/6da215f79d48500e9d2064078f5a62ecb78908a5"
+        },
+        "date": 1713352254020,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7171,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34452,
             "unit": "ms"
           },
           {
