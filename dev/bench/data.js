@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713352143645,
+  "lastUpdate": 1713352250776,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "2b13e887b41acd6fad606a9f9472a9c4eb83176e",
-          "message": "test(CI): upload same file with different names",
-          "timestamp": "2023-12-18T09:54:53Z",
-          "tree_id": "d8c28cbad62f385be51a61b09df2c9a9cc6f0bc3",
-          "url": "https://github.com/maidsafe/safe_network/commit/2b13e887b41acd6fad606a9f9472a9c4eb83176e"
-        },
-        "date": 1702897924411,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "295fe84bbe00ed6592961fbb0e03e11de23db446",
           "message": "feat(cli): random shuffle upload chunks to allow clients co-operation",
           "timestamp": "2023-12-18T11:56:01Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gapspace@engineer.com",
+            "name": "Jason Paul",
+            "username": "JasonPaulGithub"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "6da215f79d48500e9d2064078f5a62ecb78908a5",
+          "message": "feat: rpc restart command",
+          "timestamp": "2024-04-17T10:14:18Z",
+          "tree_id": "bf3855d7c9453c205ce97cbc85689f28346bdde3",
+          "url": "https://github.com/maidsafe/safe_network/commit/6da215f79d48500e9d2064078f5a62ecb78908a5"
+        },
+        "date": 1713352250159,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
