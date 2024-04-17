@@ -472,12 +472,7 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
-        // notify fetcher
-        if let Err(error) = self.prune_records_if_needed(&r.key) {
-            let cmd = SwarmCmd::RemoveFailedLocalRecord { key: r.key };
-            send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
-            return Err(error);
-        }
+        self.prune_records_if_needed(&r.key)?;
 
         let filename = Self::generate_filename(&r.key);
         let file_path = self.config.storage_dir.join(&filename);
