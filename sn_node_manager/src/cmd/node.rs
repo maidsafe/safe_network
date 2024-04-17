@@ -32,6 +32,7 @@ use sn_service_management::{
 };
 use sn_transfers::HotWallet;
 use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use tracing::debug;
 
 pub async fn add(
     count: Option<u16>,
@@ -264,6 +265,7 @@ pub async fn start(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+        debug!("Sleeping for {} milliseconds", interval);
         std::thread::sleep(std::time::Duration::from_millis(interval));
         match service_manager.start().await {
             Ok(()) => {
@@ -363,6 +365,7 @@ pub async fn upgrade(
     do_not_start: bool,
     custom_bin_path: Option<PathBuf>,
     force: bool,
+    interval: u64,
     peer_ids: Vec<String>,
     provided_env_variables: Option<Vec<(String, String)>>,
     service_names: Vec<String>,
@@ -449,6 +452,9 @@ pub async fn upgrade(
                 ));
             }
         }
+
+        debug!("Sleeping for {} milliseconds", interval);
+        std::thread::sleep(std::time::Duration::from_millis(interval));
     }
 
     node_registry.save()?;

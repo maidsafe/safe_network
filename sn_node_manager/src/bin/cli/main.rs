@@ -284,6 +284,11 @@ pub enum SubCmd {
         /// Required if we want to downgrade, or for testing purposes.
         #[clap(long)]
         force: bool,
+        /// An interval applied between upgrading each service.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, default_value_t = 200)]
+        interval: u64,
         /// Provide a path for the safenode binary to be used by the service.
         ///
         /// Useful for upgrading the service using a custom built binary.
@@ -764,6 +769,7 @@ async fn main() -> Result<()> {
         SubCmd::Upgrade {
             do_not_start,
             force,
+            interval,
             path,
             peer_id: peer_ids,
             service_name: service_names,
@@ -775,6 +781,7 @@ async fn main() -> Result<()> {
                 do_not_start,
                 path,
                 force,
+                interval,
                 peer_ids,
                 provided_env_variable,
                 service_names,
