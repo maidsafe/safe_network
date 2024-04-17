@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713315766042,
+  "lastUpdate": 1713321358584,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ece4febff0c2a1a67eb9c250d35dd2909b20cdc6",
-          "message": "chore(client): add docs to the Files struct",
-          "timestamp": "2023-12-18T09:54:20Z",
-          "tree_id": "c24d65f2b525b99eaa970d73d4847f18ebb880e4",
-          "url": "https://github.com/maidsafe/safe_network/commit/ece4febff0c2a1a67eb9c250d35dd2909b20cdc6"
-        },
-        "date": 1702895981313,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3277555386245319,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.927155526756449,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 39.352922925343485,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.31185159840085,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7df004431facafb7d40e7498f3ccccf14b66da26",
+          "message": "feat(networking): clear  record on valid put\n\nIf we're able to store data agin, we clear the farthest distance in the replication fetcher.\n(The assumed sitation is that the network has grown, and we're not responsible for less data).",
+          "timestamp": "2024-04-17T01:56:42Z",
+          "tree_id": "541df6feb8579095cd15ceeb6e03eaf2b3f67b42",
+          "url": "https://github.com/maidsafe/safe_network/commit/7df004431facafb7d40e7498f3ccccf14b66da26"
+        },
+        "date": 1713321353860,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.276928970543557,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7122687292349854,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.65139576545924,
             "unit": "MiB/s"
           }
         ]
