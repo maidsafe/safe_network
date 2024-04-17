@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713321466631,
+  "lastUpdate": 1713321469234,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "9eb9532bdd9379ac95632daf0279c92850eacc04",
-          "message": "test(wallet): adding unit tests for watch-only wallet impl.",
-          "timestamp": "2023-12-06T11:31:01Z",
-          "tree_id": "222673a042525ff0d3a661fcabb15b28a4b9f282",
-          "url": "https://github.com/maidsafe/safe_network/commit/9eb9532bdd9379ac95632daf0279c92850eacc04"
-        },
-        "date": 1701864782602,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4721,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 71451,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33950,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7df004431facafb7d40e7498f3ccccf14b66da26",
+          "message": "feat(networking): clear  record on valid put\n\nIf we're able to store data agin, we clear the farthest distance in the replication fetcher.\n(The assumed sitation is that the network has grown, and we're not responsible for less data).",
+          "timestamp": "2024-04-17T01:56:42Z",
+          "tree_id": "541df6feb8579095cd15ceeb6e03eaf2b3f67b42",
+          "url": "https://github.com/maidsafe/safe_network/commit/7df004431facafb7d40e7498f3ccccf14b66da26"
+        },
+        "date": 1713321468214,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5899,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 26644,
             "unit": "ms"
           },
           {
