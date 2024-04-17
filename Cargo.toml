@@ -19,6 +19,7 @@ members = [
     "sn_transfers",
     "test_utils",
     "token_supplies",
+    "node-tui"
 ]
 
 [workspace.lints.rust]
