@@ -476,9 +476,12 @@ impl SwarmDriver {
 
                 match result {
                     Ok(_) => {
-                        // We've stored the record fine, which means our replication
-                        // fetcher should not be limited
-                        self.replication_fetcher.clear_farthest_on_full();
+                        // `replication_fetcher.farthest_acceptable_distance` shall only get
+                        // shrinked, instead of expanding, even with more nodes joined to share
+                        // the responsibility. Hence no need to reset it.
+                        // Also, as `record_store` is `prune 1 on 1 success put`, which means
+                        // once capacity reached max_records, there is only chance of rising slowly.
+                        // Due to the async/parrellel handling in replication_fetcher & record_store.
                     }
                     Err(StoreError::MaxRecords) => {
                         // In case the capacity reaches full, restrict replication_fetcher to
