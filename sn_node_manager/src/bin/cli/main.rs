@@ -284,6 +284,11 @@ pub enum SubCmd {
         /// Required if we want to downgrade, or for testing purposes.
         #[clap(long)]
         force: bool,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for upgrading the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
         /// The peer ID of the service to upgrade
         #[clap(long)]
         peer_id: Vec<String>,
@@ -759,6 +764,7 @@ async fn main() -> Result<()> {
         SubCmd::Upgrade {
             do_not_start,
             force,
+            path,
             peer_id: peer_ids,
             service_name: service_names,
             env_variables: provided_env_variable,
@@ -767,6 +773,7 @@ async fn main() -> Result<()> {
         } => {
             cmd::node::upgrade(
                 do_not_start,
+                path,
                 force,
                 peer_ids,
                 provided_env_variable,
