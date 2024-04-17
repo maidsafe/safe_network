@@ -474,16 +474,27 @@ impl SwarmDriver {
                     .store_mut()
                     .put_verified(record, record_type.clone());
 
-                // In case the capacity reaches full, restrict replication_fetcher to
-                // only fetch entries not farther than the current farthest record
-                if let Err(StoreError::MaxRecords) = result {
-                    let farthest = self
-                        .swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .store_mut()
-                        .get_farthest();
-                    self.replication_fetcher.set_farthest_on_full(farthest);
+                match result {
+                    Ok(_) => {
+                        // We've stored the record fine, which means our replication
+                        // fetcher should not be limited
+                        self.replication_fetcher.clear_farthest_on_full();
+                    }
+                    Err(StoreError::MaxRecords) => {
+                        // In case the capacity reaches full, restrict replication_fetcher to
+                        // only fetch entries not farther than the current farthest record
+                        let farthest = self
+                            .swarm
+                            .behaviour_mut()
+                            .kademlia
+                            .store_mut()
+                            .get_farthest();
+                        self.replication_fetcher.set_farthest_on_full(farthest);
+                    }
+                    Err(_) => {
+                        // Nothing special to do for these errors,
+                        // All error cases are further logged and bubbled up below
+                    }
                 }
 
                 // No matter storing the record succeeded or not,
@@ -511,7 +522,7 @@ impl SwarmDriver {
                 }
 
                 if let Err(err) = result {
-                    error!("Cann't store verified record {record_key:?} locally: {err:?}");
+                    error!("Can't store verified record {record_key:?} locally: {err:?}");
                     cmd_string = "PutLocalRecord error";
                     self.log_handling(cmd_string.to_string(), start.elapsed());
                     return Err(err.into());
