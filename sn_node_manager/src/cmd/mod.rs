@@ -11,7 +11,7 @@ pub mod faucet;
 pub mod local;
 pub mod node;
 
-use crate::helpers::download_and_extract_release;
+use crate::helpers::{download_and_extract_release, get_bin_version};
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
@@ -33,10 +33,20 @@ pub fn is_running_as_root() -> bool {
 }
 
 pub async fn download_and_get_upgrade_bin_path(
+    custom_bin_path: Option<PathBuf>,
     release_type: ReleaseType,
     url: Option<String>,
     version: Option<String>,
 ) -> Result<(PathBuf, Version)> {
+    if let Some(path) = custom_bin_path {
+        println!(
+            "Using the supplied custom binary at {}",
+            path.to_string_lossy()
+        );
+        let bin_version = get_bin_version(&path)?;
+        return Ok((path, bin_version.parse()?));
+    }
+
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     if let Some(version) = version {
         let (upgrade_bin_path, version) =
