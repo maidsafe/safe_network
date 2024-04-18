@@ -20,7 +20,7 @@ use libp2p::{
     identity::PeerId,
     kad::{
         store::{Error, RecordStore, Result},
-        KBucketKey, ProviderRecord, Record, RecordKey as Key,
+        KBucketDistance as Distance, KBucketKey, ProviderRecord, Record, RecordKey as Key,
     },
 };
 #[cfg(feature = "open-metrics")]
@@ -79,6 +79,8 @@ pub struct NodeRecordStore {
     encryption_details: (Aes256GcmSiv, [u8; 4]),
     /// Time that this record_store got started
     timestamp: SystemTime,
+    /// Farthest record to self
+    farthest_record: Option<(Key, Distance)>,
 }
 
 /// Configuration for a `DiskBackedRecordStore`.
@@ -249,7 +251,7 @@ impl NodeRecordStore {
         };
 
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
-        let record_store = NodeRecordStore {
+        let mut record_store = NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             local_address: NetworkAddress::from_peer(local_id),
             config,
@@ -262,7 +264,10 @@ impl NodeRecordStore {
             received_payment_count,
             encryption_details,
             timestamp,
+            farthest_record: None,
         };
+
+        record_store.farthest_record = record_store.calculate_farthest();
 
         record_store.flush_historic_quoting_metrics();
 
@@ -359,17 +364,28 @@ impl NodeRecordStore {
 
     // Returns the farthest record_key to self.
     pub fn get_farthest(&self) -> Option<Key> {
+        if let Some((ref key, _distance)) = self.farthest_record {
+            Some(key.clone())
+        } else {
+            None
+        }
+    }
+
+    // Calculates the farthest record_key to self.
+    fn calculate_farthest(&self) -> Option<(Key, Distance)> {
         // sort records by distance to our local key
         let mut sorted_records: Vec<_> = self.records.keys().collect();
-        sorted_records.sort_by(|key_a, key_b| {
-            let a = NetworkAddress::from_record_key(key_a);
-            let b = NetworkAddress::from_record_key(key_b);
-            self.local_address
-                .distance(&a)
-                .cmp(&self.local_address.distance(&b))
+        sorted_records.sort_by_key(|key| {
+            let addr = NetworkAddress::from_record_key(key);
+            self.local_address.distance(&addr)
         });
 
-        sorted_records.last().cloned().cloned()
+        if let Some(key) = sorted_records.last() {
+            let addr = NetworkAddress::from_record_key(key);
+            Some(((*key).clone(), self.local_address.distance(&addr)))
+        } else {
+            None
+        }
     }
 
     /// Prune the records in the store to ensure that we free up space
@@ -384,11 +400,9 @@ impl NodeRecordStore {
             return Ok(());
         }
 
-        if let Some(last_record) = self.get_farthest() {
+        if let Some((farthest_record, farthest_record_distance)) = self.farthest_record.clone() {
             // if the incoming record is farther than the farthest record, we can't store it
-            if self
-                .local_address
-                .distance(&NetworkAddress::from_record_key(&last_record))
+            if farthest_record_distance
                 < self
                     .local_address
                     .distance(&NetworkAddress::from_record_key(incoming_record_key))
@@ -398,9 +412,9 @@ impl NodeRecordStore {
 
             info!(
                 "Record {:?} will be pruned to free up space for new records",
-                PrettyPrintRecordKey::from(&last_record)
+                PrettyPrintRecordKey::from(&farthest_record)
             );
-            self.remove(&last_record);
+            self.remove(&farthest_record);
         }
 
         Ok(())
@@ -432,10 +446,19 @@ impl NodeRecordStore {
     /// in the RecordStore records set. After this it should be safe
     /// to return the record as stored.
     pub(crate) fn mark_as_stored(&mut self, key: Key, record_type: RecordType) {
-        let _ = self.records.insert(
-            key.clone(),
-            (NetworkAddress::from_record_key(&key), record_type),
-        );
+        let addr = NetworkAddress::from_record_key(&key);
+        let _ = self
+            .records
+            .insert(key.clone(), (addr.clone(), record_type));
+
+        let key_distance = self.local_address.distance(&addr);
+        if let Some((_farthest_record, farthest_record_distance)) = self.farthest_record.clone() {
+            if key_distance > farthest_record_distance {
+                self.farthest_record = Some((key, key_distance));
+            }
+        } else {
+            self.farthest_record = Some((key, key_distance));
+        }
     }
 
     /// Prepare record bytes for storage
@@ -677,6 +700,12 @@ impl RecordStore for NodeRecordStore {
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);
+        }
+
+        if let Some((farthest_record, _)) = self.farthest_record.clone() {
+            if farthest_record == *k {
+                self.farthest_record = self.calculate_farthest();
+            }
         }
 
         let filename = Self::generate_filename(k);
@@ -1111,7 +1140,7 @@ mod tests {
 
             if !succeeded {
                 failed_records.push(record_key.clone());
-                println!("failed {record_key:?}");
+                println!("failed {:?}", PrettyPrintRecordKey::from(&record_key));
             } else {
                 // We must also mark the record as stored (which would be triggered
                 // after the async write in nodes via NetworkEvent::CompletedWrite)
@@ -1162,7 +1191,7 @@ mod tests {
                 let failed_data = NetworkAddress::from_record_key(&failed_record);
                 assert!(
                     self_address.distance(&failed_data) > self_address.distance(most_distant_data),
-                    "failed record should be farther than the farthest stored record"
+                    "failed record {failed_data:?} should be farther than the farthest stored record {most_distant_data:?}"
                 );
             }
 
