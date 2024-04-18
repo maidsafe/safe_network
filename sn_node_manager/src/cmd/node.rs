@@ -78,9 +78,13 @@ pub async fn add(
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
+        tracing::debug!("upsss");
+        panic!("uppssssss");
         download_and_extract_release(ReleaseType::Safenode, url.clone(), version, &*release_repo)
             .await?
     };
+
+    tracing::debug!("peers questions...");
 
     // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
     // manager.
@@ -124,6 +128,7 @@ pub async fn add(
     add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
     node_registry.save()?;
+    tracing::debug!("registery saved......");
 
     Ok(())
 }

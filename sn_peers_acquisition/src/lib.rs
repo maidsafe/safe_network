@@ -37,7 +37,7 @@ const MAX_NETWORK_CONTACTS_GET_RETRIES: usize = 3;
 /// The name of the environment variable that can be used to pass peers to the node.
 pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Default, Clone)]
 pub struct PeersArgs {
     /// Set to indicate this is the first node in a new network
     ///

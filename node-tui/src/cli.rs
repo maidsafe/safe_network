@@ -1,6 +1,5 @@
-use std::path::PathBuf;
-
 use clap::Parser;
+use sn_peers_acquisition::PeersArgs;
 
 use crate::utils::version;
 
@@ -24,4 +23,7 @@ pub struct Cli {
         default_value_t = 4.0
     )]
     pub frame_rate: f64,
+
+    #[command(flatten)]
+    pub peers: PeersArgs,
 }

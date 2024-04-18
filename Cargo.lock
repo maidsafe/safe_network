@@ -4607,6 +4607,8 @@ dependencies = [
  "serde",
  "serde_json",
  "signal-hook",
+ "sn-node-manager",
+ "sn_peers_acquisition",
  "sn_service_management",
  "strip-ansi-escapes",
  "strum",
