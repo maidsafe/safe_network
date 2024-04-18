@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713448397447,
+  "lastUpdate": 1713448506567,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "cf0c80d09a56f7860071edb0d69617dd6a7e6f25",
-          "message": "chore: add data path field to node info\n\nSince we provide the logs path, it's useful for the node manager to also have access here to the\ndata path, which it can provide to the user.\n\nI also wanted to provide the port the node is running on, but it's not easy to get access to that if\nthe port is assigned by libp2p.",
-          "timestamp": "2023-12-19T14:25:09Z",
-          "tree_id": "e3fb3bdbdbe0ce998cfaad234c8db575b2368ab0",
-          "url": "https://github.com/maidsafe/safe_network/commit/cf0c80d09a56f7860071edb0d69617dd6a7e6f25"
-        },
-        "date": 1702998264175,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 76,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "5c6ab50cf07f6cd8de9d45e94df59a52f0abb072",
+          "message": "fix(test): quoting metrics might have live_time field changed along time",
+          "timestamp": "2024-04-18T13:11:08Z",
+          "tree_id": "23eac83b35fde938d00d72f185e99a038eb2c83a",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c6ab50cf07f6cd8de9d45e94df59a52f0abb072"
+        },
+        "date": 1713448506249,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 48,
             "unit": "MB"
           }
         ]
