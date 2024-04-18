@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713440069653,
+  "lastUpdate": 1713440071641,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6d5d8c1a77cfebdb1b0041d9c903b607e521a2b0",
-          "message": "chore(cli): ux improvements after upload completes",
-          "timestamp": "2023-12-11T09:53:43Z",
-          "tree_id": "b7f7c8c1a31c6e87db3ddbfafb56a90ee61eb2ce",
-          "url": "https://github.com/maidsafe/safe_network/commit/6d5d8c1a77cfebdb1b0041d9c903b607e521a2b0"
-        },
-        "date": 1702291058266,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4868,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 75140,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35915,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "6dedb62ef1093050e9595bcd4a62e8c55a6106a4",
+          "message": "feat: faucet donate endpoint to feed the faucet",
+          "timestamp": "2024-04-18T10:33:00Z",
+          "tree_id": "3b9f55363b67425798f942e13a2694104ba96174",
+          "url": "https://github.com/maidsafe/safe_network/commit/6dedb62ef1093050e9595bcd4a62e8c55a6106a4"
+        },
+        "date": 1713440071038,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7394,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34050,
             "unit": "ms"
           },
           {
