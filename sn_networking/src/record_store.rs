@@ -1026,8 +1026,8 @@ mod tests {
         assert!(store.get(&r.key).is_none());
         // Store cost should not change if no PUT has been added
         assert_eq!(
-            store.store_cost(&r.key),
-            store_cost_before,
+            store.store_cost(&r.key).0,
+            store_cost_before.0,
             "store cost should not change over unverified put"
         );
 
