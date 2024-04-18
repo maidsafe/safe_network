@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713399435561,
+  "lastUpdate": 1713399437515,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "af40983e24315b001f10610600093054b05450ee",
-          "message": "fix(cli): mark chunk completion as soon as we upload each chunk",
-          "timestamp": "2023-12-19T08:46:47Z",
-          "tree_id": "7293749b21b06611c0907a924f2b07972a257113",
-          "url": "https://github.com/maidsafe/safe_network/commit/af40983e24315b001f10610600093054b05450ee"
-        },
-        "date": 1702978628849,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 720,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 114,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bc4848ea19562a506a66c0d02d3088c93aa70de4",
+          "message": "feat: provide `--interval` arg for `upgrade` cmd\n\nThis was another community feedback request.\n\nAs with the `start` command, a time-based interval is applied between each node being upgraded.\n\nWe will probably need something more sophisticated, but this simple mechanism should hopefully be\nuseful for now.",
+          "timestamp": "2024-04-17T23:17:08Z",
+          "tree_id": "4fddd8898b3c2d7140c9fcf591f7ccfd0420e03a",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc4848ea19562a506a66c0d02d3088c93aa70de4"
+        },
+        "date": 1713399436880,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
