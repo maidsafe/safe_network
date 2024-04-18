@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713434801462,
+  "lastUpdate": 1713434804212,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "4edbc084ec009fe8935e0c17bdec83437533d93a",
-          "message": "test: increase wait time for royalty transfers",
-          "timestamp": "2023-12-08T09:03:56Z",
-          "tree_id": "82924311e583e022c80d4c539c8c15da5072e5ec",
-          "url": "https://github.com/maidsafe/safe_network/commit/4edbc084ec009fe8935e0c17bdec83437533d93a"
-        },
-        "date": 1702029056531,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4328,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 63956,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33436,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0fe22e81c038a24123a42e869052894bad48a826",
+          "message": "chore(node): do not reset farthest_acceptance_distance",
+          "timestamp": "2024-04-18T09:00:02Z",
+          "tree_id": "43e39963e5d0634edeee17f4dad19256d089d420",
+          "url": "https://github.com/maidsafe/safe_network/commit/0fe22e81c038a24123a42e869052894bad48a826"
+        },
+        "date": 1713434803101,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7327,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35915,
             "unit": "ms"
           },
           {
