@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713419007457,
+  "lastUpdate": 1713434685629,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4936795c12c0e5b903c22fd4003fa8bcd036f735",
-          "message": "fix(test): tests should try to load just the faucet wallet\n- We start a faucet server before each test, so we should be not trying\n  to load the genesis wallet again, instead try to wait for the faucet\n  wallet to get filled in by the faucet_server",
-          "timestamp": "2023-12-19T12:17:13Z",
-          "tree_id": "f570bb2c76dd2f89056554e3ab5a4207406df75a",
-          "url": "https://github.com/maidsafe/safe_network/commit/4936795c12c0e5b903c22fd4003fa8bcd036f735"
-        },
-        "date": 1702990462641,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3173942056934853,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9844103568037985,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.65724158817464,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.65913142763274,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0fe22e81c038a24123a42e869052894bad48a826",
+          "message": "chore(node): do not reset farthest_acceptance_distance",
+          "timestamp": "2024-04-18T09:00:02Z",
+          "tree_id": "43e39963e5d0634edeee17f4dad19256d089d420",
+          "url": "https://github.com/maidsafe/safe_network/commit/0fe22e81c038a24123a42e869052894bad48a826"
+        },
+        "date": 1713434680778,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.225564397018756,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.635440506745115,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.28295416394892,
             "unit": "MiB/s"
           }
         ]
