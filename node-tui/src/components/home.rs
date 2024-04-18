@@ -39,7 +39,7 @@ impl Component for Home {
                 tracing::debug!("STARTING");
                 // let local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
                 let peers = self.peers_args.clone();
-                tokio::spawn(async {
+                tokio::task::spawn_local(async {
                     if let Err(err) = sn_node_manager::cmd::node::add(
                         None,
                         None,
@@ -64,7 +64,7 @@ impl Component for Home {
 
                     tracing::debug!("added servicionssss");
 
-                    sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal)
+                    sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal).await
                 });
             },
             Action::Tick => {

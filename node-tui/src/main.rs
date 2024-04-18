@@ -11,6 +11,7 @@ pub mod utils;
 use clap::Parser;
 use cli::Cli;
 use color_eyre::eyre::Result;
+use tokio::{runtime::Runtime, task::LocalSet};
 
 use crate::{
     app::App,
@@ -31,10 +32,16 @@ async fn tokio_main() -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if let Err(e) = tokio_main().await {
-        eprintln!("{} error: Something went wrong", env!("CARGO_PKG_NAME"));
-        Err(e)
-    } else {
-        Ok(())
-    }
+    // Construct a local task set that can run `!Send` futures.
+    let local = LocalSet::new();
+    local
+        .run_until(async {
+            if let Err(e) = tokio_main().await {
+                eprintln!("{} error: Something went wrong", env!("CARGO_PKG_NAME"));
+                Err(e)
+            } else {
+                Ok(())
+            }
+        })
+        .await
 }
