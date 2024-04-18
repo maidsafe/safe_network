@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713368741863,
+  "lastUpdate": 1713399324454,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "af40983e24315b001f10610600093054b05450ee",
-          "message": "fix(cli): mark chunk completion as soon as we upload each chunk",
-          "timestamp": "2023-12-19T08:46:47Z",
-          "tree_id": "7293749b21b06611c0907a924f2b07972a257113",
-          "url": "https://github.com/maidsafe/safe_network/commit/af40983e24315b001f10610600093054b05450ee"
-        },
-        "date": 1702978504087,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3480348931363975,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9865825243476098,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.174173063238186,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.5594492742928,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bc4848ea19562a506a66c0d02d3088c93aa70de4",
+          "message": "feat: provide `--interval` arg for `upgrade` cmd\n\nThis was another community feedback request.\n\nAs with the `start` command, a time-based interval is applied between each node being upgraded.\n\nWe will probably need something more sophisticated, but this simple mechanism should hopefully be\nuseful for now.",
+          "timestamp": "2024-04-17T23:17:08Z",
+          "tree_id": "4fddd8898b3c2d7140c9fcf591f7ccfd0420e03a",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc4848ea19562a506a66c0d02d3088c93aa70de4"
+        },
+        "date": 1713399320292,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2209363210800848,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6446256407560884,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.360405748716914,
             "unit": "MiB/s"
           }
         ]
