@@ -11,9 +11,9 @@ use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::Result;
 use fs2::FileExt;
-use sn_client::Client;
+use sn_client::{load_faucet_wallet_from_genesis_wallet, Client};
 use sn_transfers::{
-    get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, WALLET_DIR_NAME,
+    get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, Transfer, WALLET_DIR_NAME,
 };
 use std::path::Path;
 use std::{collections::HashMap, sync::Arc};
@@ -120,6 +120,84 @@ fn is_wallet_locked() -> bool {
     false
 }
 
+async fn respond_to_donate_request(
+    client: Client,
+    transfer_str: String,
+    semaphore: Arc<Semaphore>,
+) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let permit = semaphore.try_acquire();
+    info!("Got donate request with: {transfer_str}");
+
+    // some rate limiting
+    if is_wallet_locked() || permit.is_err() {
+        warn!("Rate limited request due");
+        let mut response = Response::new("Rate limited".to_string());
+        *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
+
+        // Either opening the file or locking it failed, indicating rate limiting should occur
+        return Ok(response);
+    }
+
+    // load wallet
+    let mut wallet = match load_faucet_wallet_from_genesis_wallet(&client).await {
+        Ok(w) => w,
+        Err(err) => {
+            eprintln!("Failed to load faucet wallet: {err}");
+            error!("Failed to load faucet wallet: {err}");
+            let mut response = Response::new(format!("Failed to load faucet wallet: {err}"));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            return Ok(response);
+        }
+    };
+
+    // return key is Transfer is empty
+    if transfer_str.is_empty() {
+        let address = wallet.address().to_hex();
+        return Ok(Response::new(format!("Faucet wallet address: {address}")));
+    }
+
+    // parse transfer
+    let transfer = match Transfer::from_hex(&transfer_str) {
+        Ok(t) => t,
+        Err(err) => {
+            eprintln!("Failed to parse transfer: {err}");
+            error!("Failed to parse transfer {transfer_str}: {err}");
+            let mut response = Response::new(format!("Failed to parse transfer: {err}"));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            return Ok(response);
+        }
+    };
+
+    // receive transfer
+    let res = client.receive(&transfer, &wallet).await;
+    match res {
+        Ok(cashnotes) => {
+            let old_balance = wallet.balance();
+            if let Err(e) = wallet.deposit_and_store_to_disk(&cashnotes) {
+                eprintln!("Failed to store deposited amount: {e}");
+                error!("Failed to store deposited amount: {e}");
+                let mut response = Response::new(format!("Failed to store deposited amount: {e}"));
+                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                return Ok(response);
+            }
+            let new_balance = wallet.balance();
+
+            info!("Successfully stored cash_note to wallet dir");
+            info!("Old balance: {old_balance}, new balance: {new_balance}");
+
+            Ok(Response::new("Thank you!".to_string()))
+        }
+        Err(err) => {
+            eprintln!("Failed to verify and redeem transfer: {err}");
+            error!("Failed to verify and redeem transfer: {err}");
+            let mut response =
+                Response::new(format!("Failed to verify and redeem transfer: {err}"));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
+        }
+    }
+}
+
 async fn respond_to_gift_request(
     client: Client,
     key: String,
@@ -173,6 +251,10 @@ async fn startup_server(client: Client) -> Result<()> {
     }
 
     let gift_client = client.clone();
+    let donation_client = client.clone();
+    let donation_addr_client = client.clone();
+    let donation_semaphore = semaphore.clone();
+    let donation_addr_semaphore = semaphore.clone();
     #[cfg(feature = "distribution")]
     let semaphore_dist = semaphore.clone();
 
@@ -205,17 +287,47 @@ async fn startup_server(client: Client) -> Result<()> {
             respond_to_gift_request(client, key, semaphore)
         });
 
+    // GET /donate
+    let donation_addr = warp::get().and(warp::path("donate")).and_then(move || {
+        debug!("Donation address request");
+        let client = donation_addr_client.clone();
+        let semaphore = donation_addr_semaphore.clone();
+
+        respond_to_donate_request(client, String::new(), semaphore)
+    });
+
+    // GET /donate/transfer
+    let donation_route = warp::get()
+        .and(warp::path!("donate" / String))
+        .map(|query| {
+            debug!("Donation request: {query}");
+            query
+        })
+        .and_then(move |transfer| {
+            let client = donation_client.clone();
+            let semaphore = donation_semaphore.clone();
+
+            respond_to_donate_request(client, transfer, semaphore)
+        });
+
     println!("Starting http server listening on port 8000...");
     debug!("Starting http server listening on port 8000...");
 
     #[cfg(feature = "distribution")]
-    warp::serve(distribution_route.or(gift_route))
-        // warp::serve(gift_route)
-        .run(([0, 0, 0, 0], 8000))
-        .await;
+    warp::serve(
+        distribution_route
+            .or(donation_route)
+            .or(donation_addr)
+            .or(gift_route),
+    )
+    // warp::serve(gift_route)
+    .run(([0, 0, 0, 0], 8000))
+    .await;
 
     #[cfg(not(feature = "distribution"))]
-    warp::serve(gift_route).run(([0, 0, 0, 0], 8000)).await;
+    warp::serve(donation_route.or(donation_addr).or(gift_route))
+        .run(([0, 0, 0, 0], 8000))
+        .await;
 
     debug!("Server closed");
     Ok(())

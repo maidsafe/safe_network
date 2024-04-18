@@ -32,6 +32,7 @@ use sn_service_management::{
 };
 use sn_transfers::HotWallet;
 use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use tracing::debug;
 
 pub async fn add(
     count: Option<u16>,
@@ -264,6 +265,7 @@ pub async fn start(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+        debug!("Sleeping for {} milliseconds", interval);
         std::thread::sleep(std::time::Duration::from_millis(interval));
         match service_manager.start().await {
             Ok(()) => {
@@ -361,7 +363,9 @@ pub async fn stop(
 
 pub async fn upgrade(
     do_not_start: bool,
+    custom_bin_path: Option<PathBuf>,
     force: bool,
+    interval: u64,
     peer_ids: Vec<String>,
     provided_env_variables: Option<Vec<(String, String)>>,
     service_names: Vec<String>,
@@ -373,19 +377,29 @@ pub async fn upgrade(
         return Err(eyre!("The upgrade command must run as the root user"));
     }
 
+    // In the case of a custom binary, we want to force the use of it. Regardless of its version
+    // number, the user has probably built it for some special case. They may have not used the
+    // `--force` flag; if they didn't, we can just do that for them here.
+    let use_force = force || custom_bin_path.is_some();
+
     if verbosity != VerbosityLevel::Minimal {
         println!("=================================================");
         println!("           Upgrade Safenode Services             ");
         println!("=================================================");
     }
 
-    let (upgrade_bin_path, target_version) =
-        download_and_get_upgrade_bin_path(ReleaseType::Safenode, url, version).await?;
+    let (upgrade_bin_path, target_version) = download_and_get_upgrade_bin_path(
+        custom_bin_path.clone(),
+        ReleaseType::Safenode,
+        url,
+        version,
+    )
+    .await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
 
-    if !force {
+    if !use_force {
         let node_versions = node_registry
             .nodes
             .iter()
@@ -413,7 +427,7 @@ pub async fn upgrade(
         let options = UpgradeOptions {
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             env_variables: env_variables.clone(),
-            force,
+            force: use_force,
             start_service: !do_not_start,
             target_bin_path: upgrade_bin_path.clone(),
             target_version: target_version.clone(),
@@ -438,6 +452,9 @@ pub async fn upgrade(
                 ));
             }
         }
+
+        debug!("Sleeping for {} milliseconds", interval);
+        std::thread::sleep(std::time::Duration::from_millis(interval));
     }
 
     node_registry.save()?;

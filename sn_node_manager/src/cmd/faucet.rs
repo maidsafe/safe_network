@@ -161,7 +161,7 @@ pub async fn upgrade(
     }
 
     let (upgrade_bin_path, target_version) =
-        download_and_get_upgrade_bin_path(ReleaseType::Faucet, url, version).await?;
+        download_and_get_upgrade_bin_path(None, ReleaseType::Faucet, url, version).await?;
     let faucet = node_registry.faucet.as_mut().unwrap();
 
     if !force {
