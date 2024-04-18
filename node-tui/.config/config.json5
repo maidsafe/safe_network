@@ -1,6 +1,7 @@
 {
   "keybindings": {
     "Home": {
+      "<s>": "StartNodes", // Start nodes
       "<q>": "Quit", // Quit the application
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit
