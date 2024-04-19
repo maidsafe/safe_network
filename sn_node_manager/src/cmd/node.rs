@@ -78,8 +78,6 @@ pub async fn add(
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
-        tracing::debug!("upsss");
-        panic!("uppssssss");
         download_and_extract_release(ReleaseType::Safenode, url.clone(), version, &*release_repo)
             .await?
     };
