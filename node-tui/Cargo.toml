@@ -11,7 +11,7 @@ build = "build.rs"
 
 [dependencies]
 sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition", features = [
-    # "network-contacts",
+    "network-contacts",
 ] }
 sn_service_management = { verison = "0.2.4", path = "../sn_service_management" }
 better-panic = "0.3.0"
