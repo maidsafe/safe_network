@@ -263,7 +263,7 @@ impl Node {
         };
 
         // finally store the Record directly into the local storage
-        debug!("Storing chunk {chunk_name:?} as Record locally");
+        trace!("Storing chunk {chunk_name:?} as Record locally");
         self.network.put_local_record(record);
 
         self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));

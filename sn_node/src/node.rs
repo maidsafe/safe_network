@@ -369,7 +369,7 @@ impl Node {
             }
             NetworkEvent::KeysToFetchForReplication(keys) => {
                 event_header = "KeysToFetchForReplication";
-                info!("Going to fetch {:?} keys for replication", keys.len());
+                trace!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
@@ -756,7 +756,7 @@ fn received_valid_chunk_proof(
 ) -> Option<()> {
     if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) = resp {
         if expected_proof.verify(&proof) {
-            debug!(
+            trace!(
                 "Got a valid ChunkProof of {key:?} from {peer:?}, during peer chunk proof check."
             );
             Some(())
