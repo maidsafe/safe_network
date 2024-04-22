@@ -142,4 +142,16 @@ pub enum Error {
 
     #[error("Error occurred when access wallet file")]
     FailedToAccessWallet,
+
+    #[error("Error parsing entropy for mnemonic phrase")]
+    FailedToParseEntropy,
+
+    #[error("Error parsing mnemonic phrase")]
+    FailedToParseMnemonic,
+
+    #[error("Invalid mnemonic seed phrase")]
+    InvalidMnemonicSeedPhrase,
+
+    #[error("SecretKey could not be created from the provided bytes")]
+    InvalidKeyBytes,
 }

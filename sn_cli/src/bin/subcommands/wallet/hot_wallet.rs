@@ -8,7 +8,7 @@
 
 use super::{
     audit::audit,
-    helpers::{get_faucet, load_wallet_or_create_with_mnemonic, receive, verify_spend_at},
+    helpers::{get_faucet, receive, verify_spend_at},
     WalletApiHelper,
 };
 use crate::get_stdin_response;
@@ -24,7 +24,9 @@ use sn_client::transfers::{
     HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
     WalletError,
 };
-use sn_client::{Client, Error as ClientError};
+use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic, Client, Error as ClientError,
+};
 use std::{path::Path, str::FromStr};
 
 // Please do not remove the blank lines in these doc comments.
@@ -123,8 +125,10 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         WalletCmds::Address {
             passphrase: derivation_passphrase,
         } => {
-            let wallet =
-                load_wallet_or_create_with_mnemonic(root_dir, derivation_passphrase.as_deref())?;
+            let wallet = load_account_wallet_or_create_with_mnemonic(
+                root_dir,
+                derivation_passphrase.as_deref(),
+            )?;
 
             println!("{:?}", wallet.address());
             Ok(())
