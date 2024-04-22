@@ -74,6 +74,11 @@ struct Opt {
     #[clap(long, default_value_t = false)]
     home_network: bool,
 
+    /// Try to use UPnP to open a port in the home router and allow incoming connections.
+    #[cfg(feature = "upnp")]
+    #[clap(long, default_value_t = false)]
+    upnp: bool,
+
     /// Specify the logging output destination.
     ///
     /// Valid values are "stdout", "data-dir", or a custom path.
@@ -200,6 +205,8 @@ fn main() -> Result<()> {
             opt.local,
             root_dir,
             opt.owner.clone(),
+            #[cfg(feature = "upnp")]
+            opt.upnp,
         );
         node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]

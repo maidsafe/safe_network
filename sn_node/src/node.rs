@@ -68,6 +68,8 @@ pub struct NodeBuilder {
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
     owner: String,
+    #[cfg(feature = "upnp")]
+    upnp: bool,
 }
 
 impl NodeBuilder {
@@ -79,6 +81,8 @@ impl NodeBuilder {
         local: bool,
         root_dir: PathBuf,
         owner: String,
+        #[cfg(feature = "upnp")]
+        upnp: bool,
     ) -> Self {
         Self {
             keypair,
@@ -90,6 +94,8 @@ impl NodeBuilder {
             metrics_server_port: 0,
             is_behind_home_network: false,
             owner,
+            #[cfg(feature = "upnp")]
+            upnp,
         }
     }
 
@@ -142,6 +148,9 @@ impl NodeBuilder {
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
         network_builder.is_behind_home_network(self.is_behind_home_network);
+
+        #[cfg(feature = "upnp")]
+        network_builder.upnp(self.upnp);
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
