@@ -189,3 +189,30 @@ pub async fn restart_node_service(
 
     Ok(())
 }
+
+// add node service
+pub async fn add_node_service(
+    node_registry: &mut NodeRegistry,
+    peer_id: PeerId,
+    retain_peer_id: bool,
+) -> Result<()> {
+    Ok(())
+}
+
+// remove node service
+pub async fn remove_node_service(
+    node_registry: &mut NodeRegistry,
+    peer_id: PeerId,
+    retain_peer_id: bool,
+) -> Result<()> {
+    Ok(())
+}
+
+// start node service
+pub async fn start_node_service(
+    node_registry: &mut NodeRegistry,
+    peer_id: PeerId,
+    retain_peer_id: bool,
+) -> Result<()> {
+    Ok(())
+}

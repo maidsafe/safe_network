@@ -13,6 +13,7 @@ use sn_node_manager::{
     cmd, VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
+use std::net::SocketAddr;
 use std::{net::Ipv4Addr, path::PathBuf};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
@@ -164,6 +165,8 @@ pub enum SubCmd {
     Faucet(FaucetSubCmd),
     #[clap(subcommand)]
     Local(LocalSubCmd),
+    #[clap(name = "rpc", subcommand)]
+    Rpc(RpcSubCmd),
     /// Remove safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be removed.
@@ -377,7 +380,32 @@ pub enum DaemonSubCmd {
     Stop {},
 }
 
-/// Manage the faucet service.
+/// Manage RPC client commands
+#[derive(Subcommand, Debug)]
+pub enum RpcSubCmd {
+    #[clap(name = "restart")]
+    /// Issue an RPC command to restart nodes
+    Restart {
+        /// The peer ID of the service to restart.
+        ///
+        /// The argument can be used multiple times to restart many services.
+        #[clap(long)]
+        peer_id: Vec<String>,
+        /// The address of the RPC server where the command will be sent.
+        ///
+        /// It should be an IP address and port, e.g, 127.0.0.1:59091.
+        #[clap(long)]
+        rpc_server_address: SocketAddr,
+        /// Set to retain the peer ID of the nodes to be restarted.
+        #[clap(long)]
+        retain_peer_id: bool,
+    },
+    Remove {},
+    Add {},
+    Start {},
+}
+
+/// Manage faucet services.
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 pub enum FaucetSubCmd {
@@ -791,6 +819,14 @@ async fn main() -> Result<()> {
             )
             .await
         }
+        SubCmd::Rpc(RpcSubCmd::Restart {
+            peer_id,
+            rpc_server_address: socket_addr,
+            retain_peer_id,
+        }) => sn_node_manager::rpc_client::restart_node(peer_id, socket_addr, retain_peer_id).await,
+        SubCmd::Rpc(RpcSubCmd::Add { .. }) => sn_node_manager::rpc_client::add_node().await,
+        SubCmd::Rpc(RpcSubCmd::Remove { .. }) => sn_node_manager::rpc_client::remove_node().await,
+        SubCmd::Rpc(RpcSubCmd::Start { .. }) => sn_node_manager::rpc_client::start_node().await,
     }
 }
 

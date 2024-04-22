@@ -20,6 +20,30 @@ message NodeServiceRestartRequest {
   
 message NodeServiceRestartResponse {}
 
+message NodeServiceAddRequest {
+    bytes peer_id = 1;
+    bool retain_peer_id = 2;
+    uint64 delay_millis = 3;
+}
+
+message NodeServiceAddResponse {}
+
+message NodeServiceRemoveRequest {
+    bytes peer_id = 1;
+    bool retain_peer_id = 2;
+    uint64 delay_millis = 3;
+}
+
+message NodeServiceRemoveResponse {}
+
+message NodeServiceStartRequest {
+    bytes peer_id = 1;
+    bool retain_peer_id = 2;
+    uint64 delay_millis = 3;
+}
+
+message NodeServiceStartResponse {}
+
 message GetStatusRequest {}
 
 message GetStatusResponse {
