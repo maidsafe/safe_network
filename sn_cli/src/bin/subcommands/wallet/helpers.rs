@@ -8,6 +8,9 @@
 
 #[cfg(feature = "distribution")]
 use super::WalletApiHelper;
+use autonomi::user_secret::{
+    account_wallet_secret_key, random_eip2333_mnemonic, write_mnemonic_to_disk,
+};
 #[cfg(feature = "distribution")]
 use base64::Engine;
 use color_eyre::Result;
@@ -15,6 +18,8 @@ use sn_client::transfers::{HotWallet, SpendAddress, Transfer};
 use sn_client::Client;
 use std::{path::Path, str::FromStr};
 use url::Url;
+
+const DEFAULT_WALLET_DERIVIATION_PASSPHRASE: &str = "default";
 
 #[cfg(feature = "distribution")]
 pub async fn get_faucet(
@@ -49,8 +54,29 @@ pub async fn get_faucet(
     get_faucet_fixed_amount(root_dir, client, url).await
 }
 
+///
+pub fn load_wallet_or_create_with_mnemonic(
+    root_dir: &Path,
+    derivation_passphrase: Option<&str>,
+) -> Result<HotWallet> {
+    let wallet = HotWallet::load_from(root_dir);
+    match wallet {
+        Ok(wallet) => Ok(wallet),
+        Err(error) => {
+            warn!("Issue loading wallet, creating a new one: {error}");
+            let mnemonic = random_eip2333_mnemonic()?;
+            write_mnemonic_to_disk(root_dir, &mnemonic)?;
+
+            let passphrase = derivation_passphrase.unwrap_or(DEFAULT_WALLET_DERIVIATION_PASSPHRASE);
+
+            let wallet = account_wallet_secret_key(mnemonic, passphrase)?;
+            Ok(HotWallet::create_from_key(root_dir, wallet)?)
+        }
+    }
+}
+
 pub async fn get_faucet_fixed_amount(root_dir: &Path, client: &Client, url: String) -> Result<()> {
-    let wallet = HotWallet::load_from(root_dir)?;
+    let wallet = load_wallet_or_create_with_mnemonic(root_dir, None)?;
     let address_hex = wallet.address().to_hex();
     let url = if !url.contains("://") {
         format!("{}://{}", "http", url)
