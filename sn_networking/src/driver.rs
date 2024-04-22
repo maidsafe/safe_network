@@ -208,6 +208,7 @@ pub struct NetworkBuilder {
     metrics_registry: Option<Registry>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: u16,
+    upnp: bool,
 }
 
 impl NetworkBuilder {
@@ -225,6 +226,8 @@ impl NetworkBuilder {
             metrics_registry: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
+            #[cfg(feature = "upnp")]
+            upnp: false,
         }
     }
 
@@ -256,6 +259,11 @@ impl NetworkBuilder {
     #[cfg(feature = "open-metrics")]
     pub fn metrics_server_port(&mut self, port: u16) {
         self.metrics_server_port = port;
+    }
+
+    #[cfg(feature = "upnp")]
+    pub fn upnp(&mut self, upnp: bool) {
+        self.upnp = upnp;
     }
 
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
@@ -317,6 +325,7 @@ impl NetworkBuilder {
         };
 
         let listen_addr = self.listen_addr;
+        let upnp = self.upnp;
 
         let (network, events_receiver, mut swarm_driver) = self.build(
             kad_cfg,
@@ -324,6 +333,8 @@ impl NetworkBuilder {
             false,
             ProtocolSupport::Full,
             IDENTIFY_NODE_VERSION_STR.to_string(),
+            #[cfg(feature = "upnp")]
+            upnp,
         )?;
 
         // Listen on the provided address
@@ -375,6 +386,8 @@ impl NetworkBuilder {
             true,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
+            #[cfg(feature = "upnp")]
+            false
         )?;
 
         Ok((network, net_event_recv, driver))
@@ -388,6 +401,8 @@ impl NetworkBuilder {
         is_client: bool,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
+        #[cfg(feature = "upnp")]
+        upnp: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -488,7 +503,8 @@ impl NetworkBuilder {
         };
 
         #[cfg(feature = "upnp")]
-        let upnp = if !self.local && !is_client {
+        let upnp = if !self.local && !is_client && upnp {
+            debug!("Enabling UPnP port opening behavior");
             Some(libp2p::upnp::tokio::Behaviour::default())
         } else {
             None
