@@ -17,6 +17,7 @@ open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 test-utils = ["sn_peers_acquisition", "lazy_static", "eyre"]
 # required to pass on flag to node builds
 websockets = ["sn_networking/websockets", "sn_protocol/websockets"]
+gifting-from-genesis = []
 
 [dependencies]
 bip39 = "2.0.0"
