@@ -222,7 +222,7 @@ impl ReplicationFetcher {
     pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<(PeerId, RecordKey)> {
         self.prune_expired_keys_and_slow_nodes();
 
-        info!("Next to fetch....");
+        trace!("Next to fetch....");
 
         if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
             warn!("Replication Fetcher doesn't have free fetch capacity. Currently has {} entries in queue.",

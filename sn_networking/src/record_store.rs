@@ -129,7 +129,7 @@ impl NodeRecordStore {
         let process_entry = |entry: &DirEntry| -> _ {
             let path = entry.path();
             if path.is_file() {
-                info!("Existing record found: {path:?}");
+                trace!("Existing record found: {path:?}");
                 // if we've got a file, lets try and read it
                 let filename = match path.file_name().and_then(|n| n.to_str()) {
                     Some(file_name) => file_name,
