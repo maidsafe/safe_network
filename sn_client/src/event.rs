@@ -29,9 +29,10 @@ impl ClientEventsBroadcaster {
     // Broadcast a new event, meant to be a helper only used by the client's internals.
     pub(crate) fn broadcast(&self, event: ClientEvent) {
         if let Err(err) = self.0.send(event) {
-            trace!(
-                "Could not broadcast ClientEvent as we don't have any active listeners: {err:?}"
-            );
+            if self.0.receiver_count() == 0 {
+                return;
+            }
+            trace!("Could not broadcast ClientEvent, though we do have listeners: {err:?}");
         }
     }
 }
