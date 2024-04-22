@@ -11,8 +11,9 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.14.4"
 
 [features]
-default = ["libp2p/quic"]
+default = ["libp2p/quic", "upnp"]
 local-discovery = ["libp2p/mdns"]
+upnp = ["libp2p/upnp"]
 # tcp is automatically enabled when compiling for wasm32
 websockets = ["libp2p/tcp"]
 open-metrics = ["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
