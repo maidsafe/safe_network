@@ -8,14 +8,10 @@
 
 use super::{
     audit::audit,
-    helpers::{get_faucet, receive, verify_spend_at},
+    helpers::{get_faucet, load_wallet_or_create_with_mnemonic, receive, verify_spend_at},
     WalletApiHelper,
 };
 use crate::get_stdin_response;
-
-use autonomi::user_secret::{
-    account_wallet_secret_key, random_eip2333_mnemonic, write_mnemonic_to_disk,
-};
 
 use bls::SecretKey;
 use clap::Parser;
@@ -124,30 +120,11 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address { passphrase } => {
-            let wallet = match HotWallet::load_from(root_dir) {
-                Ok(wallet) => wallet,
-                Err(error) => match error {
-                    WalletError::MainSecretKeyNotFound(path) => {
-                        warn!("Main secret key not found at {:?}", path);
-
-                        let mnemonic = random_eip2333_mnemonic()?;
-
-                        write_mnemonic_to_disk(root_dir, &mnemonic)?;
-
-                        // TODO grab this as input
-                        let passphrase = passphrase.clone().unwrap_or("default".to_string());
-                        let sk = account_wallet_secret_key(mnemonic, &passphrase)?;
-
-                        // so we generate entropy and create a new wallet
-                        // AccountPacket::get_or_generate_wallet_from_mnemonic(&self, passphrase)
-                        HotWallet::create_from_key(root_dir, sk)?
-                    }
-                    _ => {
-                        return Err(error.into());
-                    }
-                },
-            };
+        WalletCmds::Address {
+            passphrase: derivation_passphrase,
+        } => {
+            let wallet =
+                load_wallet_or_create_with_mnemonic(root_dir, derivation_passphrase.as_deref())?;
 
             println!("{:?}", wallet.address());
             Ok(())
