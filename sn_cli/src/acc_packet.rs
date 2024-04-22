@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod change_tracking;
+pub mod user_secret;
 
 use change_tracking::*;
 
@@ -58,7 +59,7 @@ const ACC_PACKET_OWNER_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0x1;
 /// and tools necessary to keep an instance tracking a local storage path, as well as keeping it in sync
 /// with its remote version stored on the network.
 /// A `Client` and a the location for a funded local hot-wallet are required by this object in order to be able to connect
-/// to the network, paying for data storage, and upload/retrieve information to/from the network.  
+/// to the network, paying for data storage, and upload/retrieve information to/from the network.
 ///
 /// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
 ///

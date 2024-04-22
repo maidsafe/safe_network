@@ -190,7 +190,11 @@ pub fn create_faucet_wallet() -> HotWallet {
     let root_dir = get_faucet_data_dir();
 
     println!("Loading faucet wallet... {root_dir:#?}");
-    HotWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
+
+    let random_faucet_key = MainSecretKey::random();
+
+    HotWallet::create_from_key(&root_dir, random_faucet_key)
+        .expect("Faucet wallet shall be created successfully.")
 }
 
 // We need deterministic and fix path for the faucet wallet.
