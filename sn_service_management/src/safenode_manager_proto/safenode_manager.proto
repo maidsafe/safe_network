@@ -21,6 +21,15 @@ service SafeNodeManager {
   // Restart a running safenode service.
   rpc RestartNodeService (NodeServiceRestartRequest) returns (NodeServiceRestartResponse);
 
+  // Add a safenode service.
+  rpc AddNodeService (NodeServiceAddRequest) returns (NodeServiceAddResponse);
+
+  // Remove a safenode service.
+    rpc RemoveNodeService (NodeServiceRemoveRequest) returns (NodeServiceRemoveResponse);
+
+  // Start a safenode service.
+    rpc StartNodeService (NodeServiceStartRequest) returns (NodeServiceStartResponse);
+
   // Get the status of the nodes managed by the Daemon
   rpc GetStatus (GetStatusRequest) returns (GetStatusResponse);
 }

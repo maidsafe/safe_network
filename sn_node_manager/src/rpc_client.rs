@@ -2,7 +2,10 @@ use color_eyre::eyre::bail;
 use color_eyre::{eyre::eyre, Result};
 use libp2p_identity::PeerId;
 use sn_service_management::safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient;
-use sn_service_management::safenode_manager_proto::NodeServiceRestartRequest;
+use sn_service_management::safenode_manager_proto::{
+    NodeServiceAddRequest, NodeServiceRemoveRequest, NodeServiceRestartRequest,
+    NodeServiceStartRequest,
+};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use std::time::Duration;
@@ -35,6 +38,90 @@ pub async fn restart_node(
             .map_err(|err| {
                 eyre!(
                     "Failed to restart node service with {peer_id:?} at {:?} with err: {err:?}",
+                    daemon_client.addr
+                )
+            })?;
+    }
+    Ok(())
+}
+
+pub async fn add_node(
+    peer_ids: Vec<String>,
+    rpc_server_address: SocketAddr,
+    retain_peer_id: bool,
+) -> Result<()> {
+    for peer_id in peer_ids {
+        let str_bytes = PeerId::from_str(&peer_id)?.to_bytes();
+
+        let mut daemon_client = get_rpc_client(rpc_server_address).await?;
+
+        let _response = daemon_client
+            .rpc
+            .add_node_service(Request::new(NodeServiceAddRequest {
+                peer_id: str_bytes,
+                delay_millis: 0,
+                retain_peer_id,
+            }))
+            .await
+            .map_err(|err| {
+                eyre!(
+                    "Failed to Add node service with {peer_id:?} at {:?} with err: {err:?}",
+                    daemon_client.addr
+                )
+            })?;
+    }
+    Ok(())
+}
+
+pub async fn remove_node(
+    peer_ids: Vec<String>,
+    rpc_server_address: SocketAddr,
+    retain_peer_id: bool,
+) -> Result<()> {
+    for peer_id in peer_ids {
+        let str_bytes = PeerId::from_str(&peer_id)?.to_bytes();
+
+        let mut daemon_client = get_rpc_client(rpc_server_address).await?;
+
+        let _response = daemon_client
+            .rpc
+            .remove_node_service(Request::new(NodeServiceRemoveRequest {
+                peer_id: str_bytes,
+                delay_millis: 0,
+                retain_peer_id,
+            }))
+            .await
+            .map_err(|err| {
+                eyre!(
+                    "Failed to remove node service with {peer_id:?} at {:?} with err: {err:?}",
+                    daemon_client.addr
+                )
+            })?;
+    }
+    Ok(())
+}
+
+pub async fn start_node(
+    peer_ids: Vec<String>,
+    rpc_server_address: SocketAddr,
+    retain_peer_id: bool,
+) -> Result<()> {
+    for peer_id in peer_ids {
+        let str_bytes = PeerId::from_str(&peer_id)?.to_bytes();
+
+        let mut daemon_client = get_rpc_client(rpc_server_address).await?;
+
+        let _response = daemon_client
+            .rpc
+            .start_node_service(Request::new(NodeServiceStartRequest {
+                peer_id: str_bytes,
+                delay_millis: 0,
+                retain_peer_id,
+            }))
+            .await
+            .map_err(|err| {
+                eyre!(
+                    "Failed to start node service with {peer_id:?} at {:?} with err: {err:?}",
                     daemon_client.addr
                 )
             })?;

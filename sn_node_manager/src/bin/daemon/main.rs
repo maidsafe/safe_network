@@ -13,6 +13,9 @@ use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
 use libp2p_identity::PeerId;
 use sn_node_manager::{config::get_node_registry_path, rpc, DAEMON_DEFAULT_PORT};
+use sn_service_management::safenode_manager_proto::{
+    NodeServiceAddRequest, NodeServiceAddResponse,
+};
 use sn_service_management::{
     safenode_manager_proto::{
         get_status_response::Node,
@@ -67,6 +70,13 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
         Ok(Response::new(NodeServiceRestartResponse {}))
     }
 
+    async fn add_node_service(
+        &self,
+        request: Request<NodeServiceAddRequest>,
+    ) -> std::result::Result<Response<NodeServiceAddResponse>, Status> {
+        todo!()
+    }
+
     async fn get_status(
         &self,
         request: Request<GetStatusRequest>,
@@ -108,6 +118,45 @@ impl SafeNodeManagerDaemon {
         retain_peer_id: bool,
     ) -> Result<()> {
         let res = rpc::restart_node_service(&mut node_registry, peer_id, retain_peer_id).await;
+
+        // make sure to save the state even if the above fn fails.
+        node_registry.save()?;
+
+        res
+    }
+
+    async fn add_handler(
+        mut node_registry: NodeRegistry,
+        peer_id: PeerId,
+        retain_peer_id: bool,
+    ) -> Result<()> {
+        let res = rpc::add_node_service(&mut node_registry, peer_id, retain_peer_id).await;
+
+        // make sure to save the state even if the above fn fails.
+        node_registry.save()?;
+
+        res
+    }
+
+    async fn remove_handler(
+        mut node_registry: NodeRegistry,
+        peer_id: PeerId,
+        retain_peer_id: bool,
+    ) -> Result<()> {
+        let res = rpc::remove_node_service(&mut node_registry, peer_id, retain_peer_id).await;
+
+        // make sure to save the state even if the above fn fails.
+        node_registry.save()?;
+
+        res
+    }
+
+    async fn start_handler(
+        mut node_registry: NodeRegistry,
+        peer_id: PeerId,
+        retain_peer_id: bool,
+    ) -> Result<()> {
+        let res = rpc::start_node_service(&mut node_registry, peer_id, retain_peer_id).await;
 
         // make sure to save the state even if the above fn fails.
         node_registry.save()?;

@@ -400,6 +400,9 @@ pub enum RpcSubCmd {
         #[clap(long)]
         retain_peer_id: bool,
     },
+    Remove {},
+    Add {},
+    Start {},
 }
 
 /// Manage faucet services.
@@ -821,6 +824,9 @@ async fn main() -> Result<()> {
             rpc_server_address: socket_addr,
             retain_peer_id,
         }) => sn_node_manager::rpc_client::restart_node(peer_id, socket_addr, retain_peer_id).await,
+        SubCmd::Rpc(RpcSubCmd::Add { .. }) => sn_node_manager::rpc_client::add_node().await,
+        SubCmd::Rpc(RpcSubCmd::Remove { .. }) => sn_node_manager::rpc_client::remove_node().await,
+        SubCmd::Rpc(RpcSubCmd::Start { .. }) => sn_node_manager::rpc_client::start_node().await,
     }
 }
 
