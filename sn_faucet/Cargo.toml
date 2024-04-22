@@ -13,6 +13,7 @@ version = "0.4.16"
 [features]
 default = []
 distribution = ["base64", "bitcoin", "minreq"]
+gifting-from-genesis = ["sn_client/gifting-from-genesis"]
 
 [[bin]]
 path = "src/main.rs"

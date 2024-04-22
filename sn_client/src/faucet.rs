@@ -28,22 +28,41 @@ pub async fn fund_faucet_from_genesis_wallet(
     println!("Loading genesis...");
     debug!("Loading genesis...");
     let genesis_wallet = load_genesis_wallet()?;
+    let genesis_balance = genesis_wallet.balance();
 
-    let faucet_balance = genesis_wallet.balance();
-    println!("Sending {faucet_balance} from genesis to faucet wallet..");
-    debug!("Sending {faucet_balance} from genesis to faucet wallet..");
-    let cash_note = send(
-        genesis_wallet,
-        faucet_balance,
-        faucet_wallet.address(),
-        client,
-        true,
-    )
-    .await?;
+    let cash_note = if cfg!(feature = "gifting-from-genesis") {
+        println!("Sending {genesis_balance} from genesis to faucet wallet..");
+        debug!("Sending {genesis_balance} from genesis to faucet wallet..");
+        let cash_note = send(
+            genesis_wallet,
+            genesis_balance,
+            faucet_wallet.address(),
+            client,
+            true,
+        )
+        .await?;
 
-    faucet_wallet
-        .deposit_and_store_to_disk(&vec![cash_note.clone()])
-        .expect("Faucet wallet shall be stored successfully.");
+        faucet_wallet
+            .deposit_and_store_to_disk(&vec![cash_note.clone()])
+            .expect("Faucet wallet shall be stored successfully.");
+
+        cash_note
+    } else {
+        let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?;
+        println!(
+            "Sending {genesis_balance} from genesis to foundation wallet {foundation_key:?}.."
+        );
+        debug!("Sending {genesis_balance} from genesis to foundation wallet..{foundation_key:?}");
+        send(
+            genesis_wallet,
+            genesis_balance,
+            foundation_key,
+            client,
+            true,
+        )
+        .await?
+    };
+
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
     debug!("Faucet wallet balance: {}", faucet_wallet.balance());
 
