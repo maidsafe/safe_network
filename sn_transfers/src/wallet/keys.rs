@@ -26,17 +26,17 @@ pub(crate) fn store_new_keypair(wallet_dir: &Path, main_key: &MainSecretKey) -> 
     Ok(())
 }
 
-/// Returns Some(sn_transfers::MainSecretKey) or None if file doesn't exist. It assumes it's hex-encoded.
-pub(super) fn get_main_key(wallet_dir: &Path) -> Result<Option<MainSecretKey>> {
+/// Returns sn_transfers::MainSecretKey or None if file doesn't exist. It assumes it's hex-encoded.
+pub(super) fn get_main_key_from_disk(wallet_dir: &Path) -> Result<MainSecretKey> {
     let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
     if !path.is_file() {
-        return Ok(None);
+        return Err(Error::MainSecretKeyNotFound(path));
     }
 
     let secret_hex_bytes = std::fs::read(&path)?;
     let secret = bls_secret_from_hex(secret_hex_bytes)?;
 
-    Ok(Some(MainSecretKey::new(secret)))
+    Ok(MainSecretKey::new(secret))
 }
 
 /// Writes the public address (hex-encoded) to disk.
@@ -73,7 +73,7 @@ pub fn bls_secret_from_hex<T: AsRef<[u8]>>(hex: T) -> Result<bls::SecretKey> {
 
 #[cfg(test)]
 mod test {
-    use super::{get_main_key, store_new_keypair, MainSecretKey};
+    use super::{get_main_key_from_disk, store_new_keypair, MainSecretKey};
     use assert_fs::TempDir;
     use eyre::Result;
 
@@ -83,7 +83,7 @@ mod test {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         store_new_keypair(&root_dir, &main_key)?;
-        let secret_result = get_main_key(&root_dir)?.expect("There to be a key on disk.");
+        let secret_result = get_main_key_from_disk(&root_dir)?.expect("There to be a key on disk.");
         assert_eq!(secret_result.main_pubkey(), main_key.main_pubkey());
         Ok(())
     }

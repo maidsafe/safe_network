@@ -9,7 +9,7 @@
 use super::{
     api::{WalletApi, WALLET_DIR_NAME},
     data_payments::{PaymentDetails, PaymentQuote},
-    keys::{get_main_key, store_new_keypair},
+    keys::{get_main_key_from_disk, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, load_created_cash_note, remove_cash_notes,
         remove_unconfirmed_spend_requests, store_created_cash_notes,
@@ -591,14 +591,30 @@ impl HotWallet {
     }
 
     /// Loads a serialized wallet from a path.
+    // TODO: what's the behaviour here if path has stored key and we pass one in?
     fn load_from_path_and_key(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
-        let key = match get_main_key(wallet_dir)? {
-            Some(key) => key,
-            None => {
-                let key = main_key.unwrap_or(MainSecretKey::random());
-                store_new_keypair(wallet_dir, &key)?;
-                warn!("No main key found when loading wallet from path, generating a new one with pubkey: {:?}", key.main_pubkey());
+        let key = match get_main_key_from_disk(wallet_dir) {
+            Ok(key) => {
+                if let Some(passed_key) = main_key {
+                    if key.secret_key() != passed_key.secret_key() {
+                        warn!("main_key passed to load_from_path_and_key, but a key was found in the wallet dir. Using the one found in the wallet dir.");
+                    }
+                }
+
                 key
+            }
+            Err(error) => {
+                if let Some(key) = main_key {
+                    store_new_keypair(wallet_dir, &key)?;
+                    key
+                } else {
+                    error!(
+                        "No main key found when loading wallet from path {:?}",
+                        wallet_dir
+                    );
+
+                    return Err(error);
+                }
             }
         };
         let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
