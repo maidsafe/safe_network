@@ -9,6 +9,7 @@
 #[macro_use]
 extern crate tracing;
 
+pub mod acc_packet;
 mod api;
 mod audit;
 mod chunks;
@@ -39,7 +40,7 @@ pub use self::{
     audit::{DagError, SpendDag, SpendDagGet, SpendFault},
     error::Error,
     event::{ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver},
-    faucet::{get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet},
+    faucet::fund_faucet_from_genesis_wallet,
     files::{
         download::{FilesDownload, FilesDownloadEvent},
         FilesApi, BATCH_SIZE,

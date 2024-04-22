@@ -11,7 +11,10 @@ use crate::token_distribution;
 use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::Result;
 use fs2::FileExt;
-use sn_client::{load_faucet_wallet_from_genesis_wallet, Client};
+use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet,
+    Client,
+};
 use sn_transfers::{
     get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, Transfer, WALLET_DIR_NAME,
 };
@@ -43,7 +46,9 @@ use warp::{
 /// # balance should be updated
 /// ```
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
-    claim_genesis(client).await.map_err(|err| {
+    let root_dir = get_faucet_data_dir();
+    let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)?;
+    claim_genesis(client, wallet).await.map_err(|err| {
         println!("Faucet Server couldn't start as we failed to claim Genesis");
         eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
         error!("Faucet Server couldn't start as we failed to claim Genesis");
@@ -125,6 +130,18 @@ async fn respond_to_donate_request(
     transfer_str: String,
     semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let faucet_root = get_faucet_data_dir();
+
+    let mut wallet = match load_account_wallet_or_create_with_mnemonic(&faucet_root, None) {
+        Ok(wallet) => wallet,
+        Err(_error) => {
+            let mut response = Response::new("Could not load wallet".to_string());
+            *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+
+            // Either opening the file or locking it failed, indicating rate limiting should occur
+            return Ok(response);
+        }
+    };
     let permit = semaphore.try_acquire();
     info!("Got donate request with: {transfer_str}");
 
@@ -138,16 +155,12 @@ async fn respond_to_donate_request(
         return Ok(response);
     }
 
-    // load wallet
-    let mut wallet = match load_faucet_wallet_from_genesis_wallet(&client).await {
-        Ok(w) => w,
-        Err(err) => {
-            eprintln!("Failed to load faucet wallet: {err}");
-            error!("Failed to load faucet wallet: {err}");
-            let mut response = Response::new(format!("Failed to load faucet wallet: {err}"));
-            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Ok(response);
-        }
+    if let Err(err) = fund_faucet_from_genesis_wallet(&client, &mut wallet).await {
+        eprintln!("Failed to load + fund faucet wallet: {err}");
+        error!("Failed to load + fund faucet wallet: {err}");
+        let mut response = Response::new(format!("Failed to load faucet wallet: {err}"));
+        *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+        return Ok(response);
     };
 
     // return key is Transfer is empty
@@ -203,6 +216,19 @@ async fn respond_to_gift_request(
     key: String,
     semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let faucet_root = get_faucet_data_dir();
+
+    let from = match load_account_wallet_or_create_with_mnemonic(&faucet_root, None) {
+        Ok(wallet) => wallet,
+        Err(_error) => {
+            let mut response = Response::new("Could not load wallet".to_string());
+            *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+
+            // Either opening the file or locking it failed, indicating rate limiting should occur
+            return Ok(response);
+        }
+    };
+
     let permit = semaphore.try_acquire();
 
     // some rate limiting
@@ -216,7 +242,7 @@ async fn respond_to_gift_request(
     }
 
     const GIFT_AMOUNT_SNT: &str = "1";
-    match send_tokens(&client, GIFT_AMOUNT_SNT, &key).await {
+    match send_tokens(&client, from, GIFT_AMOUNT_SNT, &key).await {
         Ok(transfer) => {
             println!("Sent tokens to {key}");
             debug!("Sent tokens to {key}");
@@ -233,6 +259,9 @@ async fn respond_to_gift_request(
 async fn startup_server(client: Client) -> Result<()> {
     // Create a semaphore with a single permit
     let semaphore = Arc::new(Semaphore::new(1));
+
+    let faucet_root = get_faucet_data_dir();
+    let _faucet_wallet = load_account_wallet_or_create_with_mnemonic(&faucet_root, None)?;
 
     #[allow(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();

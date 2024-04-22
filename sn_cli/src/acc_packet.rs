@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod change_tracking;
-pub mod user_secret;
 
 use change_tracking::*;
 
