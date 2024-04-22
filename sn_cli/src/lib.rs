@@ -9,6 +9,7 @@
 mod acc_packet;
 mod files;
 
+pub use acc_packet::user_secret;
 pub use acc_packet::AccountPacket;
 pub use files::{
     download_file, download_files, ChunkManager, Estimator, FilesUploadStatusNotifier,

@@ -83,7 +83,7 @@ mod test {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         store_new_keypair(&root_dir, &main_key)?;
-        let secret_result = get_main_key_from_disk(&root_dir)?.expect("There to be a key on disk.");
+        let secret_result = get_main_key_from_disk(&root_dir)?;
         assert_eq!(secret_result.main_pubkey(), main_key.main_pubkey());
         Ok(())
     }

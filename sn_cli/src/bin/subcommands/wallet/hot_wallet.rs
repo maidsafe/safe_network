@@ -12,6 +12,11 @@ use super::{
     WalletApiHelper,
 };
 use crate::get_stdin_response;
+
+use autonomi::user_secret::{
+    account_wallet_secret_key, random_eip2333_mnemonic, write_mnemonic_to_disk,
+};
+
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{
@@ -31,7 +36,10 @@ use std::{path::Path, str::FromStr};
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the wallet address.
-    Address,
+    Address {
+        /// Optional passphrase to use for the wallet deriviation if generating a new mnemonic.
+        passphrase: Option<String>,
+    },
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
@@ -116,8 +124,31 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address => {
-            let wallet = WalletApiHelper::load_from(root_dir)?;
+        WalletCmds::Address { passphrase } => {
+            let wallet = match HotWallet::load_from(root_dir) {
+                Ok(wallet) => wallet,
+                Err(error) => match error {
+                    WalletError::MainSecretKeyNotFound(path) => {
+                        warn!("Main secret key not found at {:?}", path);
+
+                        let mnemonic = random_eip2333_mnemonic()?;
+
+                        write_mnemonic_to_disk(root_dir, &mnemonic)?;
+
+                        // TODO grab this as input
+                        let passphrase = passphrase.clone().unwrap_or("default".to_string());
+                        let sk = account_wallet_secret_key(mnemonic, &passphrase)?;
+
+                        // so we generate entropy and create a new wallet
+                        // AccountPacket::get_or_generate_wallet_from_mnemonic(&self, passphrase)
+                        HotWallet::create_from_key(root_dir, sk)?
+                    }
+                    _ => {
+                        return Err(error.into());
+                    }
+                },
+            };
+
             println!("{:?}", wallet.address());
             Ok(())
         }
