@@ -279,19 +279,7 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
 
-                // TODO: in identify, we first need to know if we are behind nat.
-                // 1: TCP connections only, we do run autonat request in the background.
-                //
-                // (Which means all nodes must listen and act on autonat for tcp conns only.)
-                //
-                // 2. If we are behind nat and unreachable, we should not dial other nodes for now.
-                // 3. If we are unreachable, we connect to a relay server.
-                // 4. We then use dcutr to connect to other nodes and register valid quic connections.
-                // 5. That is holes punched?
-
-                // Match on the Identify event.
                 match *iden {
-                    // If the event is a Received event, handle the received peer information.
                     libp2p::identify::Event::Received { peer_id, info } => {
                         trace!(%peer_id, ?info, "identify: received info");
 
@@ -307,13 +295,11 @@ impl SwarmDriver {
                         }
 
                         let has_dialed = self.dialed_peers.contains(&peer_id);
-                        let peer_is_node =
-                            info.agent_version == IDENTIFY_NODE_VERSION_STR.to_string();
-                        trace!(
-                            ?has_dialed,
-                            ?peer_is_node,
-                            "identify: state for {peer_id:?}"
-                        );
+
+                        // if client, return.
+                        if info.agent_version != IDENTIFY_NODE_VERSION_STR.to_string() {
+                            return Ok(());
+                        }
 
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.
@@ -344,7 +330,7 @@ impl SwarmDriver {
                         // When received an identify from un-dialed peer, try to dial it
                         // The dial shall trigger the same identify to be sent again and confirm
                         // peer is external accessible, hence safe to be added into RT.
-                        if !self.local && peer_is_node && !has_dialed {
+                        if !self.local && !has_dialed {
                             // Only need to dial back for not fulfilled kbucket
                             let (kbucket_full, ilog2) = if let Some(kbucket) =
                                 self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
@@ -396,7 +382,7 @@ impl SwarmDriver {
                         }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local || has_dialed && peer_is_node {
+                        if self.local || has_dialed {
                             // To reduce the bad_node check resource usage,
                             // during the connection establish process, only check cached black_list
                             // The periodical check, which involves network queries shall filter

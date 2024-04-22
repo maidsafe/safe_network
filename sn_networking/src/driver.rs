@@ -601,7 +601,7 @@ pub struct SwarmDriver {
     pub(crate) pending_requests:
         HashMap<OutboundRequestId, Option<oneshot::Sender<Result<Response>>>>,
     pub(crate) pending_get_record: PendingGetRecord,
-    /// A list of the most recent peers we have dialed ourselves.
+    /// A list of the most recent peers we have dialed ourselves. Old dialed peers are evicted once the vec fills up.
     pub(crate) dialed_peers: CircularVec<PeerId>,
     // A list of random `PeerId` candidates that falls into kbuckets,
     // This is to ensure a more accurate network discovery.
