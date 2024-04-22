@@ -20,7 +20,7 @@ const ACCOUNT_ROOT_XORNAME_DERIVATION: &str = "m/1/0";
 
 const ACCOUNT_WALLET_DERIVATION: &str = "m/2/0";
 
-pub(super) fn random_eip2333_mnemonic() -> Result<bip39::Mnemonic> {
+pub fn random_eip2333_mnemonic() -> Result<bip39::Mnemonic> {
     let mut entropy = [1u8; 32];
     let rng = &mut rand::rngs::OsRng;
     rng.fill_bytes(&mut entropy);
@@ -29,7 +29,7 @@ pub(super) fn random_eip2333_mnemonic() -> Result<bip39::Mnemonic> {
 }
 
 /// Derive a wallet secret key from the mnemonic for the account.
-pub(super) fn account_wallet_secret_key(
+pub fn account_wallet_secret_key(
     mnemonic: bip39::Mnemonic,
     passphrase: &str,
 ) -> Result<MainSecretKey> {
@@ -44,8 +44,9 @@ pub(super) fn account_wallet_secret_key(
     Ok(MainSecretKey::new(sk))
 }
 
+#[allow(dead_code)] // as yet unused, will be used soon
 /// Derive an xorname from the mnemonic for the account to store data.
-pub(super) fn account_root_xorname(mnemonic: bip39::Mnemonic, passphrase: &str) -> Result<XorName> {
+pub(crate) fn account_root_xorname(mnemonic: bip39::Mnemonic, passphrase: &str) -> Result<XorName> {
     let seed = mnemonic.to_seed(passphrase);
 
     let root_sk = eip2333::derive_master_sk(&seed)
@@ -55,13 +56,14 @@ pub(super) fn account_root_xorname(mnemonic: bip39::Mnemonic, passphrase: &str) 
     Ok(XorName::from_content(&derived_key_bytes))
 }
 
-pub(super) fn write_mnemonic_to_disk(files_dir: &Path, mnemonic: &bip39::Mnemonic) -> Result<()> {
+pub fn write_mnemonic_to_disk(files_dir: &Path, mnemonic: &bip39::Mnemonic) -> Result<()> {
     let filename = files_dir.join(MNEMONIC_FILENAME);
     let content = mnemonic.to_string();
     std::fs::write(filename, content)?;
     Ok(())
 }
 
+#[allow(dead_code)] // as yet unused, will be used soon
 pub(super) fn read_mnemonic_from_disk(files_dir: &Path) -> Result<bip39::Mnemonic> {
     let filename = files_dir.join(MNEMONIC_FILENAME);
     let content = std::fs::read_to_string(filename)
