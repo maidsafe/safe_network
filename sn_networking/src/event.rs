@@ -309,6 +309,11 @@ impl SwarmDriver {
                         let has_dialed = self.dialed_peers.contains(&peer_id);
                         let peer_is_node =
                             info.agent_version == IDENTIFY_NODE_VERSION_STR.to_string();
+                        trace!(
+                            ?has_dialed,
+                            ?peer_is_node,
+                            "identify: state for {peer_id:?}"
+                        );
 
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.
@@ -379,6 +384,8 @@ impl SwarmDriver {
                                 ) {
                                     warn!(%peer_id, ?addrs, "dialing error: {err:?}");
                                 }
+                            } else {
+                                trace!("received identify for a full bucket {ilog2:?}, no dialing {peer_id:?} on {addrs:?}");
                             }
 
                             trace!(
@@ -538,6 +545,14 @@ impl SwarmDriver {
                 // info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
+            }
+            SwarmEvent::OutgoingConnectionError {
+                connection_id,
+                peer_id: None,
+                error,
+            } => {
+                event_string = "OutgoingConnErr";
+                warn!("OutgoingConnectionError to on {connection_id:?} - {error:?}");
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -732,8 +747,6 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
-
-        self.remove_outdated_connections();
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
@@ -1266,7 +1279,7 @@ impl SwarmDriver {
     }
 
     // Remove outdated connection to a peer if it is not in the RT.
-    fn remove_outdated_connections(&mut self) {
+    fn _remove_outdated_connections(&mut self) {
         let mut shall_removed = vec![];
 
         self.live_connected_peers
