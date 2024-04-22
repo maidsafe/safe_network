@@ -33,13 +33,6 @@ impl WalletApiHelper {
         Ok(Self::HotWallet(wallet))
     }
 
-    pub fn address(&self) -> MainPubkey {
-        match self {
-            Self::WatchOnlyWallet(w) => w.address(),
-            Self::HotWallet(w) => w.address(),
-        }
-    }
-
     pub fn balance(&self) -> NanoTokens {
         match self {
             Self::WatchOnlyWallet(w) => w.balance(),
