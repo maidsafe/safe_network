@@ -7,40 +7,39 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Result};
-use sn_transfers::{
-    create_faucet_wallet, load_genesis_wallet, CashNote, HotWallet, MainPubkey, NanoTokens,
-};
+use sn_transfers::{load_genesis_wallet, HotWallet};
 
-/// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
-/// Note this will create a faucet having a Genesis balance
-pub async fn get_tokens_from_faucet(
-    amount: NanoTokens,
-    to: MainPubkey,
-    client: &Client,
-) -> Result<CashNote> {
-    send(
-        load_faucet_wallet_from_genesis_wallet(client).await?,
-        amount,
-        to,
-        client,
-        // we should not need to wait for this
-        true,
-    )
-    .await
-}
+// /// Returns a cash_note with the requested number of tokens, for use by E2E test instances.
+// /// Note this will create a faucet having a Genesis balance
+// pub async fn get_tokens_from_faucet_from_genesis(
+//     wallet: HotWallet,
+//     amount: NanoTokens,
+//     to: MainPubkey,
+//     client: &Client,
+// ) -> Result<CashNote> {
+//     let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
+
+//     send(
+//         wallet, amount, to, client, // we should not need to wait for this
+//         true,
+//     )
+//     .await
+// }
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
-pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<HotWallet> {
+pub async fn fund_faucet_from_genesis_wallet(
+    client: &Client,
+    faucet_wallet: &mut HotWallet,
+) -> Result<()> {
     println!("Loading faucet...");
     info!("Loading faucet...");
-    let mut faucet_wallet = create_faucet_wallet();
 
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
         println!("Faucet wallet balance: {faucet_balance}");
         debug!("Faucet wallet balance: {faucet_balance}");
-        return Ok(faucet_wallet);
+        return Ok(());
     }
 
     println!("Loading genesis...");
@@ -75,5 +74,5 @@ pub async fn load_faucet_wallet_from_genesis_wallet(client: &Client) -> Result<H
         info!("Successfully verified the transfer from genesis on the second try.");
     }
 
-    Ok(faucet_wallet)
+    Ok(())
 }

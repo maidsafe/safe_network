@@ -16,12 +16,12 @@ use color_eyre::eyre::{bail, eyre, Result};
 use faucet_server::{restart_faucet_server, run_faucet_server};
 use indicatif::ProgressBar;
 use sn_client::{
-    get_tokens_from_faucet, load_faucet_wallet_from_genesis_wallet, Client, ClientEvent,
-    ClientEventsBroadcaster, ClientEventsReceiver,
+    acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet, send,
+    Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver,
 };
 use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens, Transfer};
+use sn_transfers::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{debug, error, info};
@@ -81,7 +81,9 @@ async fn main() -> Result<()> {
     };
     handle.await?;
 
-    if let Err(err) = faucet_cmds(opt.cmd.clone(), &client).await {
+    let root_dir = get_faucet_data_dir();
+    let funded_faucet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)?;
+    if let Err(err) = faucet_cmds(opt.cmd.clone(), &client, funded_faucet).await {
         error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
     }
 
@@ -185,13 +187,13 @@ enum SubCmd {
     RestartServer,
 }
 
-async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
+async fn faucet_cmds(cmds: SubCmd, client: &Client, funded_wallet: HotWallet) -> Result<()> {
     match cmds {
         SubCmd::ClaimGenesis => {
-            claim_genesis(client).await?;
+            claim_genesis(client, funded_wallet).await?;
         }
         SubCmd::Send { amount, to } => {
-            send_tokens(client, &amount, &to).await?;
+            send_tokens(client, funded_wallet, &amount, &to).await?;
         }
         SubCmd::Server => {
             // shouldn't return except on error
@@ -205,9 +207,9 @@ async fn faucet_cmds(cmds: SubCmd, client: &Client) -> Result<()> {
     Ok(())
 }
 
-async fn claim_genesis(client: &Client) -> Result<()> {
+async fn claim_genesis(client: &Client, mut wallet: HotWallet) -> Result<()> {
     for i in 1..6 {
-        if let Err(e) = load_faucet_wallet_from_genesis_wallet(client).await {
+        if let Err(e) = fund_faucet_from_genesis_wallet(client, &mut wallet).await {
             println!("Failed to claim genesis: {e}");
         } else {
             println!("Genesis claimed!");
@@ -219,7 +221,7 @@ async fn claim_genesis(client: &Client) -> Result<()> {
 }
 
 /// returns the hex-encoded transfer
-async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> {
+async fn send_tokens(client: &Client, from: HotWallet, amount: &str, to: &str) -> Result<String> {
     let to = MainPubkey::from_hex(to)?;
     use std::str::FromStr;
     let amount = NanoTokens::from_str(amount)?;
@@ -230,7 +232,7 @@ async fn send_tokens(client: &Client, amount: &str, to: &str) -> Result<String> 
         ));
     }
 
-    let cash_note = get_tokens_from_faucet(amount, to, client).await?;
+    let cash_note = send(from, amount, to, client, true).await?;
     let transfer_hex = Transfer::transfer_from_cash_note(&cash_note)?.to_hex()?;
     println!("{transfer_hex}");
 
