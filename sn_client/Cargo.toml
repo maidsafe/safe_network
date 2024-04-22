@@ -11,14 +11,19 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.105.3"
 
 [features]
-default=[]
-local-discovery=["sn_networking/local-discovery"]
+default = []
+local-discovery = ["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
-test-utils=["sn_peers_acquisition", "lazy_static", "eyre"]
+test-utils = ["sn_peers_acquisition", "lazy_static", "eyre"]
 # required to pass on flag to node builds
 websockets = ["sn_networking/websockets", "sn_protocol/websockets"]
 
 [dependencies]
+bip39 = "2.0.0"
+curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
+    "num-bigint",
+] }
+eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 async-trait = "0.1"
 backoff = { version = "0.4.0", features = ["tokio"] }
 bls = { package = "blsttc", version = "8.0.1" }
@@ -28,14 +33,14 @@ custom_debug = "~0.6.1"
 futures = "~0.3.13"
 hex = "~0.4.3"
 itertools = "~0.12.1"
-libp2p = { version="0.53", features = ["identify"] }
+libp2p = { version = "0.53", features = ["identify"] }
 petgraph = { version = "0.6.4", features = ["serde-1"] }
 prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
-serde = { version = "1.0.133", features = [ "derive", "rc" ]}
+serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_networking = { path = "../sn_networking", version = "0.14.4" }
 sn_protocol = { path = "../sn_protocol", version = "0.16.3" }
 serde_json = "1.0"
@@ -44,10 +49,16 @@ sn_transfers = { path = "../sn_transfers", version = "0.17.2" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
-tokio = { version = "1.35.0", features = ["io-util", "macros", "rt", "sync", "time"] }
+tokio = { version = "1.35.0", features = [
+    "io-util",
+    "macros",
+    "rt",
+    "sync",
+    "time",
+] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
-sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.10", optional = true }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.10", optional = true }
 eyre = { version = "0.6.8", optional = true }
 lazy_static = { version = "~1.4.0", optional = true }
 
@@ -55,10 +66,12 @@ lazy_static = { version = "~1.4.0", optional = true }
 assert_matches = "1.5.0"
 dirs-next = "~2.0.0"
 # add rand to libp2p
-libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", features = ["test-utils"]}
+libp2p-identity = { version = "0.2.7", features = ["rand"] }
+sn_client = { path = "../sn_client", features = ["test-utils"] }
 sn_logging = { path = "../sn_logging", version = "0.2.25" }
-sn_registers = { path = "../sn_registers", version = "0.3.12", features = ["test-utils"]}
+sn_registers = { path = "../sn_registers", version = "0.3.12", features = [
+    "test-utils",
+] }
 
 [lints]
 workspace = true
@@ -71,8 +84,8 @@ crate-type = ["cdylib", "rlib"]
 getrandom = { version = "0.2.12", features = ["js"] }
 wasm-bindgen = "0.2.90"
 wasm-bindgen-futures = "0.4.40"
-sn_peers_acquisition= { path="../sn_peers_acquisition", version = "0.2.10" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.10" }
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2.1"
 wasmtimer = "0.2.0"
-web-sys = { version= "0.3.22", features=["console"] }
+web-sys = { version = "0.3.22", features = ["console"] }

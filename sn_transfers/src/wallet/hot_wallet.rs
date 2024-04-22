@@ -63,11 +63,16 @@ impl HotWallet {
     /// reloads the wallet from disk.
     fn reload(&mut self) -> Result<()> {
         // placeholder random MainSecretKey to take it out
-        let current_key = std::mem::replace(&mut self.key, MainSecretKey::random());
-        let wallet =
-            Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), Some(current_key))?;
+        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None)?;
 
-        // and move the original back in
+        if *wallet.key.secret_key() != *self.key.secret_key() {
+            return Err(WalletError::CurrentAndLoadedKeyMismatch(
+                wallet.key.main_pubkey(),
+                self.key.main_pubkey(),
+            ));
+        }
+
+        // if it's a matching key, we can overwrite our wallet
         *self = wallet;
         Ok(())
     }
@@ -624,7 +629,7 @@ impl HotWallet {
         let watchonly_wallet = WatchOnlyWallet::load_from(wallet_dir, key.main_pubkey())?;
 
         Ok(Self {
-            key,
+            key: key,
             watchonly_wallet,
             unconfirmed_spend_requests,
         })
