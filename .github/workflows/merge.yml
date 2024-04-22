@@ -355,7 +355,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -534,7 +538,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features=local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="local-discovery,gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -603,7 +611,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery,distribution --bin safenode --bin faucet
+        run: cargo build --release --features=local-discovery,distribution --bin safenode
+        timeout-minutes: 35
+
+      - name: Build faucet binary
+        run: cargo build --release --features=local-discovery,distribution,gifting-from-genesis --bin faucet
         timeout-minutes: 35
 
       - name: Build testing executable
@@ -673,7 +685,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binaries
+        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -799,7 +815,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build fuacet binary
+        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
@@ -934,7 +954,11 @@ jobs:
           ls -l
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1070,7 +1094,11 @@ jobs:
           df
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
