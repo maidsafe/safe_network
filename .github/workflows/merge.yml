@@ -160,9 +160,9 @@ jobs:
       - shell: bash
         run: cargo test --lib --package sn-node-manager
 
-#
-# Temporarily disable node manager integration tests until they can be made more isolated.
-#
+  #
+  # Temporarily disable node manager integration tests until they can be made more isolated.
+  #
   # node-manager-e2e-tests:
   #   name: node manager e2e tests
   #   runs-on: ${{ matrix.os }}
@@ -358,7 +358,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -393,7 +397,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          cargo run --bin faucet --features="gifting-from-genesis" --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
@@ -537,7 +541,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features=local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="local-discovery,gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -606,7 +614,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery,distribution --bin safenode --bin faucet
+        run: cargo build --release --features=local-discovery,distribution --bin safenode
+        timeout-minutes: 35
+
+      - name: Build faucet binary
+        run: cargo build --release --features=local-discovery,distribution,gifting-from-genesis --bin faucet
         timeout-minutes: 35
 
       - name: Build testing executable
@@ -676,7 +688,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binaries
+        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -802,7 +818,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build fuacet binary
+        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
@@ -937,7 +957,11 @@ jobs:
           ls -l
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1073,7 +1097,11 @@ jobs:
           df
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1098,7 +1126,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          cargo run --bin faucet --release --features="gifting-from-genesis" -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
