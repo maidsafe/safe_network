@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Result};
-use sn_transfers::{load_genesis_wallet, HotWallet};
+use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey};
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
