@@ -9,7 +9,7 @@
 use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
 use libp2p::PeerId;
-use sn_client::{send, Client};
+use sn_client::{acc_packet::load_account_wallet_or_create_with_mnemonic, send, Client};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{
@@ -49,7 +49,8 @@ lazy_static! {
 
 /// Load HotWallet from dir
 pub fn get_wallet(root_dir: &Path) -> HotWallet {
-    HotWallet::load_from(root_dir).expect("Wallet shall be successfully created.")
+    load_account_wallet_or_create_with_mnemonic(root_dir, None)
+        .expect("Wallet shall be successfully created.")
 }
 
 /// Get the node count

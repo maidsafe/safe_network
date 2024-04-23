@@ -67,8 +67,9 @@ pub async fn get_funded_wallet(client: &Client, wallet_dir: &Path) -> Result<Hot
     let wallet_balance = NanoTokens::from(AMOUNT_TO_FUND_WALLETS);
     let _guard = FAUCET_WALLET_MUTEX.lock().await;
     let from_faucet_wallet = load_faucet_wallet().await?;
-    let mut local_wallet =
-        HotWallet::load_from(wallet_dir).expect("Wallet shall be successfully created.");
+
+    let mut local_wallet = load_account_wallet_or_create_with_mnemonic(wallet_dir, None)
+        .expect("Wallet shall be successfully created.");
 
     println!("Getting {wallet_balance} tokens from the faucet...");
     info!("Getting {wallet_balance} tokens from the faucet...");
