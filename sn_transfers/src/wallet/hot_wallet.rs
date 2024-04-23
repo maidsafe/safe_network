@@ -67,8 +67,7 @@ impl HotWallet {
 
         if *wallet.key.secret_key() != *self.key.secret_key() {
             return Err(WalletError::CurrentAndLoadedKeyMismatch(
-                wallet.key.main_pubkey(),
-                self.key.main_pubkey(),
+                self.watchonly_wallet.wallet_dir().into(),
             ));
         }
 
@@ -629,7 +628,7 @@ impl HotWallet {
         let watchonly_wallet = WatchOnlyWallet::load_from(wallet_dir, key.main_pubkey())?;
 
         Ok(Self {
-            key: key,
+            key,
             watchonly_wallet,
             unconfirmed_spend_requests,
         })
