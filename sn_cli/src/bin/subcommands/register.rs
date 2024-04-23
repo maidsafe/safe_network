@@ -9,9 +9,10 @@
 use bls::PublicKey;
 use clap::Subcommand;
 use color_eyre::{eyre::WrapErr, Result, Section};
+use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
 use sn_client::protocol::storage::RegisterAddress;
 use sn_client::registers::Permissions;
-use sn_client::transfers::HotWallet;
+
 use sn_client::{Client, Error as ClientError, WalletClient};
 use std::path::Path;
 use xor_name::XorName;
@@ -86,7 +87,8 @@ async fn create_register(
     verify_store: bool,
 ) -> Result<()> {
     trace!("Starting to pay for Register storage");
-    let wallet = HotWallet::load_from(root_dir)
+
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)
         .wrap_err("Unable to read wallet file in {path:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",

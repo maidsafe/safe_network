@@ -683,8 +683,10 @@ impl AccountPacket {
         let _summary = files_uploader.start_upload().await?;
 
         // Let's make the storage payment for Folders
-        let mut wallet_client =
-            WalletClient::new(self.client.clone(), HotWallet::load_from(&self.wallet_dir)?);
+        let new_wallet = MainSecretKey::random();
+        let wallet = HotWallet::create_from_key(&self.wallet_dir, new_wallet)?;
+
+        let mut wallet_client = WalletClient::new(self.client.clone(), wallet);
         let mut net_addresses = vec![];
         let mut new_folders = 0;
         // let's collect list of addresses we need to pay for
