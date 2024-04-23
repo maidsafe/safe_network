@@ -17,7 +17,6 @@ const MAX_POTENTIAL_CANDIDATES: usize = 15;
 const MAX_PEERS_IN_RT_DURING_NAT_CHECK: usize = 30;
 
 /// To manager relayed connections.
-// todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
 #[derive(Debug)]
 pub(crate) struct RelayManager {
     // states
