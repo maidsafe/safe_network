@@ -16,9 +16,10 @@ use super::{
 };
 
 use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic,
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
-    transfers::{DerivationIndex, HotWallet, MainSecretKey},
+    transfers::{DerivationIndex, MainSecretKey},
     Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg, WalletClient,
 };
 
@@ -683,8 +684,7 @@ impl AccountPacket {
         let _summary = files_uploader.start_upload().await?;
 
         // Let's make the storage payment for Folders
-        let new_wallet = MainSecretKey::random();
-        let wallet = HotWallet::create_from_key(&self.wallet_dir, new_wallet)?;
+        let wallet = load_account_wallet_or_create_with_mnemonic(&self.wallet_dir, None)?;
 
         let mut wallet_client = WalletClient::new(self.client.clone(), wallet);
         let mut net_addresses = vec![];
