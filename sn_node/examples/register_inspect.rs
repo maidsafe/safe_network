@@ -10,9 +10,9 @@ use crdts::merkle_reg::{Hash, MerkleReg, Node};
 use std::collections::HashMap;
 use std::io;
 
-use sn_client::{Client, WalletClient};
+use sn_client::{acc_packet::load_account_wallet_or_create_with_mnemonic, Client, WalletClient};
 use sn_registers::{Entry, Permissions, RegisterAddress};
-use sn_transfers::HotWallet;
+
 use xor_name::XorName;
 
 use bls::SecretKey;
@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
         .join("safe")
         .join("client");
 
-    let wallet = HotWallet::load_from(&root_dir)
+    let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)
         .wrap_err("Unable to read wallet file in {root_dir:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",

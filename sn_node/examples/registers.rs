@@ -6,9 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_client::{Client, Error, WalletClient};
+use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic, Client, Error, WalletClient,
+};
 use sn_registers::{Permissions, RegisterAddress};
-use sn_transfers::HotWallet;
+
 use xor_name::XorName;
 
 use bls::SecretKey;
@@ -75,7 +77,7 @@ async fn main() -> Result<()> {
         .join("safe")
         .join("client");
 
-    let wallet = HotWallet::load_from(&root_dir)
+    let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)
         .wrap_err("Unable to read wallet file in {root_dir:?}")
         .suggestion(
             "If you have an old wallet file, it may no longer be compatible. Try removing it",
