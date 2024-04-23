@@ -421,7 +421,7 @@ impl SwarmDriver {
                                 }
 
                                 if self.relay_manager.are_we_behind_nat(&mut self.swarm) {
-                                    error!("Node reported as being behind NAT for not having enough incoming connections. This can be false positive.");
+                                    warn!("Node reported as being behind NAT for not having enough incoming connections. This can be a false positive. Do nothing.");
 
                                     // self.send_event(NetworkEvent::TerminateNode {
                                     //     reason: TerminateNodeReason::BehindNAT,
@@ -510,7 +510,8 @@ impl SwarmDriver {
             } => {
                 event_string = "listener closed";
                 info!("Listener {listener_id:?} with add {addresses:?} has been closed for {reason:?}");
-                self.relay_manager.update_on_listener_closed(&listener_id);
+                self.relay_manager
+                    .update_on_listener_closed(&listener_id, &mut self.swarm);
             }
             SwarmEvent::IncomingConnection {
                 connection_id,
@@ -1309,10 +1310,7 @@ impl SwarmDriver {
             }
 
             // skip if the peer is a relay server that we're connected to
-            if self
-                .relay_manager
-                .is_peer_an_established_relay_server(peer_id)
-            {
+            if self.relay_manager.keep_alive_peer(peer_id) {
                 continue;
             }
 
@@ -1333,6 +1331,7 @@ impl SwarmDriver {
                 shall_removed.len(),
                 self.live_connected_peers.len()
             );
+            trace!(?self.relay_manager);
 
             for (connection_id, peer_id) in shall_removed {
                 let _ = self.live_connected_peers.remove(&connection_id);
