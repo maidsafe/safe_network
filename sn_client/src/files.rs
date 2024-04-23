@@ -9,8 +9,8 @@
 pub(crate) mod download;
 
 use crate::{
-    chunks::Error as ChunksError, error::Result, wallet::StoragePaymentResult, Client, Error,
-    WalletClient,
+    acc_packet::load_account_wallet_or_create_with_mnemonic, chunks::Error as ChunksError,
+    error::Result, wallet::StoragePaymentResult, Client, Error, WalletClient,
 };
 use bytes::Bytes;
 use self_encryption::{self, MIN_ENCRYPTABLE_BYTES};
@@ -18,7 +18,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
-use sn_transfers::HotWallet;
+
 use std::{
     fs::{self, create_dir_all, File},
     io::Write,
@@ -48,10 +48,9 @@ impl FilesApi {
         Self { client, wallet_dir }
     }
     pub fn build(client: Client, wallet_dir: PathBuf) -> Result<FilesApi> {
-        if HotWallet::load_from(wallet_dir.as_path())?
-            .balance()
-            .is_zero()
-        {
+        let wallet = load_account_wallet_or_create_with_mnemonic(&wallet_dir, None)?;
+
+        if wallet.balance().is_zero() {
             Err(Error::AmountIsZero)
         } else {
             Ok(FilesApi::new(client, wallet_dir))
@@ -66,7 +65,8 @@ impl FilesApi {
     /// Create a new WalletClient for a given root directory.
     pub fn wallet(&self) -> Result<WalletClient> {
         let path = self.wallet_dir.as_path();
-        let wallet = HotWallet::load_from(path)?;
+
+        let wallet = load_account_wallet_or_create_with_mnemonic(path, None)?;
 
         Ok(WalletClient::new(self.client.clone(), wallet))
     }

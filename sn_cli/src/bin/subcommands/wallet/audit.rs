@@ -9,9 +9,8 @@
 use std::path::Path;
 
 use color_eyre::Result;
-use sn_client::transfers::{
-    CashNoteRedemption, HotWallet, SpendAddress, Transfer, GENESIS_CASHNOTE,
-};
+use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
+use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_CASHNOTE};
 use sn_client::{Client, SpendDag};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
@@ -69,7 +68,7 @@ async fn redeem_royalties(
         println!("Found {} royalties.", royalties.len());
     }
 
-    let mut wallet = HotWallet::load_from(root_dir)?;
+    let mut wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
     // batch royalties per 100
     let mut batch = Vec::new();

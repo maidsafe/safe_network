@@ -16,7 +16,7 @@ use sn_client::{
     Client,
 };
 use sn_transfers::{
-    get_faucet_data_dir, wallet_lockfile_name, HotWallet, NanoTokens, Transfer, WALLET_DIR_NAME,
+    get_faucet_data_dir, wallet_lockfile_name, NanoTokens, Transfer, WALLET_DIR_NAME,
 };
 use std::path::Path;
 use std::{collections::HashMap, sync::Arc};
@@ -363,7 +363,7 @@ async fn startup_server(client: Client) -> Result<()> {
 }
 
 fn deposit(root_dir: &Path) -> Result<()> {
-    let mut wallet = HotWallet::load_from(root_dir)?;
+    let mut wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
     let previous_balance = wallet.balance();
 

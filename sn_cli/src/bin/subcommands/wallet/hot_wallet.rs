@@ -220,7 +220,8 @@ async fn send(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let from = HotWallet::load_from(root_dir)?;
+    let from = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
+
     let amount = match NanoTokens::from_str(&amount) {
         Ok(amount) => amount,
         Err(err) => {
@@ -271,7 +272,8 @@ async fn send(
 }
 
 fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
-    let wallet = HotWallet::load_from(root_dir)?;
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
+
     let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
     println!("The unsigned transaction has been successfully decoded:");

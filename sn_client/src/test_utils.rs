@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{send, Client, WalletClient};
+use crate::{acc_packet::load_account_wallet_or_create_with_mnemonic, send, Client, WalletClient};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
 use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens};
@@ -98,7 +98,9 @@ pub async fn pay_for_storage(
     wallet_dir: &Path,
     addrs2pay: Vec<NetworkAddress>,
 ) -> Result<()> {
-    let mut wallet_client = WalletClient::new(client.clone(), HotWallet::load_from(wallet_dir)?);
+    let wallet = load_account_wallet_or_create_with_mnemonic(wallet_dir, None)?;
+
+    let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let _ = wallet_client.pay_for_storage(addrs2pay.into_iter()).await?;
     Ok(())
 }

@@ -12,7 +12,7 @@ use super::WalletApiHelper;
 use base64::Engine;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
-use sn_client::transfers::{HotWallet, SpendAddress, Transfer};
+use sn_client::transfers::{SpendAddress, Transfer};
 use sn_client::Client;
 use std::{path::Path, str::FromStr};
 use url::Url;
@@ -134,7 +134,7 @@ pub async fn receive(
     println!("Successfully parsed transfer. ");
 
     println!("Verifying transfer with the Network...");
-    let mut wallet = HotWallet::load_from(root_dir)?;
+    let mut wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
     let cashnotes = match client.receive(&transfer, &wallet).await {
         Ok(cashnotes) => cashnotes,
         Err(err) => {
