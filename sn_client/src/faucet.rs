@@ -48,7 +48,7 @@ pub async fn fund_faucet_from_genesis_wallet(
 
         cash_note
     } else {
-        let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?;
+        let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?; // DevSkim: ignore DS117838
         println!(
             "Sending {genesis_balance} from genesis to foundation wallet {foundation_key:?}.."
         );
