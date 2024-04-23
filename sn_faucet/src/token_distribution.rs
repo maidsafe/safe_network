@@ -11,8 +11,9 @@ use crate::send_tokens;
 use base64::Engine;
 use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
+use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
 use sn_client::Client;
-use sn_transfers::{MainPubkey, NanoTokens};
+use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens};
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
@@ -445,15 +446,19 @@ async fn create_distribution(
         "Distributing {} for {} to {}",
         amount, claim.address, claim.wallet
     );
+
+    let faucet_dir = get_faucet_data_dir();
+    let faucet_wallet = load_account_wallet_or_create_with_mnemonic(&faucet_dir, None)?;
     // create a transfer to the claim wallet
-    let transfer_hex = match send_tokens(client, &amount.to_string(), &claim.wallet).await {
-        Ok(t) => t,
-        Err(err) => {
-            let msg = format!("Failed send for {0}: {err}", claim.address);
-            info!(msg);
-            return Err(eyre!(msg));
-        }
-    };
+    let transfer_hex =
+        match send_tokens(client, faucet_wallet, &amount.to_string(), &claim.wallet).await {
+            Ok(t) => t,
+            Err(err) => {
+                let msg = format!("Failed send for {0}: {err}", claim.address);
+                info!(msg);
+                return Err(eyre!(msg));
+            }
+        };
     let _ = match hex::decode(transfer_hex.clone()) {
         Ok(t) => t,
         Err(err) => {
