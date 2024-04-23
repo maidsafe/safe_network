@@ -7,8 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 #[cfg(feature = "distribution")]
-use super::WalletApiHelper;
-#[cfg(feature = "distribution")]
 use base64::Engine;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
@@ -88,7 +86,9 @@ pub async fn get_faucet_distribution(
         url
     };
     // receive to the current local wallet
-    let wallet = WalletApiHelper::load_from(root_dir)?.address().to_hex();
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?
+        .address()
+        .to_hex();
     println!("Requesting distribution for maid address {address} to local wallet {wallet}");
     // base64 uses + and / as the delimiters which doesn't go well in the query
     // string, so the signature is encoded using url safe characters.
