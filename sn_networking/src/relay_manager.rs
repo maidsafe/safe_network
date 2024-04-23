@@ -28,9 +28,6 @@ pub(crate) struct RelayManager {
 
     /// Tracker for the relayed listen addresses.
     relayed_listener_id_map: HashMap<ListenerId, PeerId>,
-    /// Tracker for the non relayed listen addresses. These should be collected whenever we call `listen_on` from outside
-    /// the manager.
-    non_relayed_listener_id: VecDeque<ListenerId>,
 }
 
 impl RelayManager {
@@ -53,7 +50,6 @@ impl RelayManager {
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates,
-            non_relayed_listener_id: Default::default(),
             relayed_listener_id_map: Default::default(),
         }
     }
@@ -66,11 +62,6 @@ impl RelayManager {
     pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
         self.connected_relays.contains_key(peer_id)
             || self.waiting_for_reservation.contains_key(peer_id)
-    }
-
-    pub(crate) fn add_non_relayed_listener_id(&mut self, listener_id: ListenerId) {
-        debug!("Adding non relayed listener id: {listener_id:?}");
-        self.non_relayed_listener_id.push_front(listener_id);
     }
 
     /// If we have 0 incoming connection even after we have a lot of peers, then we are behind a NAT
