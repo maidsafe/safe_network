@@ -62,6 +62,10 @@ impl RelayManager {
         self.enabled = enable;
     }
 
+    pub(crate) fn is_peer_an_established_relay_server(&self, peer_id: &PeerId) -> bool {
+        self.connected_relays.contains_key(peer_id)
+    }
+
     pub(crate) fn add_non_relayed_listener_id(&mut self, listener_id: ListenerId) {
         debug!("Adding non relayed listener id: {listener_id:?}");
         self.non_relayed_listener_id.push_front(listener_id);

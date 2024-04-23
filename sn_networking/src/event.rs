@@ -494,7 +494,6 @@ impl SwarmDriver {
                 send_back_addr,
             } => {
                 event_string = "incoming";
-                // info!("{:?}", self.swarm.network_info());
                 trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
@@ -502,11 +501,11 @@ impl SwarmDriver {
                 endpoint,
                 num_established,
                 connection_id,
-                ..
+                concurrent_dial_errors,
+                established_in,
             } => {
                 event_string = "ConnectionEstablished";
-                trace!(%peer_id, num_established, "ConnectionEstablished ({connection_id:?}): {}", endpoint_str(&endpoint));
-                // info!(%peer_id, ?connection_id, "ConnectionEstablished {:?}", self.swarm.network_info());
+                trace!(%peer_id, num_established, ?concurrent_dial_errors, "ConnectionEstablished ({connection_id:?}) in {established_in:?}: {}", endpoint_str(&endpoint));
 
                 let _ = self.live_connected_peers.insert(
                     connection_id,
@@ -525,7 +524,6 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                // info!(%peer_id, ?connection_id, "ConnectionClosed: {:?}", self.swarm.network_info());
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
             }
@@ -669,7 +667,6 @@ impl SwarmDriver {
                 send_back_addr,
                 error,
             } => {
-                // info!("{:?}", self.swarm.network_info());
                 event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
             }
@@ -682,11 +679,6 @@ impl SwarmDriver {
             }
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
-
-                let all_external_addresses = self.swarm.external_addresses().collect_vec();
-                let all_listeners = self.swarm.listeners().collect_vec();
-                info!("All our listeners: {all_listeners:?}");
-                info!("All our external addresses: {all_external_addresses:?}");
 
                 if !self.swarm.external_addresses().any(|addr| addr == &address)
                     && !self.is_client
@@ -715,6 +707,10 @@ impl SwarmDriver {
                         trace!("external address: listen port not set. This has to be set if you're running a node");
                     }
                 }
+                let all_external_addresses = self.swarm.external_addresses().collect_vec();
+                let all_listeners = self.swarm.listeners().collect_vec();
+                debug!("All our listeners: {all_listeners:?}");
+                debug!("All our external addresses: {all_external_addresses:?}");
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {
                 event_string = "ExternalAddrConfirmed";
@@ -730,6 +726,7 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
+        self.remove_outdated_connections();
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
@@ -1262,17 +1259,41 @@ impl SwarmDriver {
     }
 
     // Remove outdated connection to a peer if it is not in the RT.
-    fn _remove_outdated_connections(&mut self) {
+    fn remove_outdated_connections(&mut self) {
         let mut shall_removed = vec![];
 
-        self.live_connected_peers
-            .retain(|connection_id, (peer_id, timeout)| {
-                let shall_retained = *timeout > Instant::now();
-                if !shall_retained {
-                    shall_removed.push((*connection_id, *peer_id))
+        let timed_out_connections =
+            self.live_connected_peers
+                .iter()
+                .filter_map(|(connection_id, (peer_id, timeout))| {
+                    if Instant::now() > *timeout {
+                        Some((connection_id, peer_id))
+                    } else {
+                        None
+                    }
+                });
+
+        for (connection_id, peer_id) in timed_out_connections {
+            // Skip if the peer is present in our RT
+            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(*peer_id) {
+                if kbucket
+                    .iter()
+                    .any(|peer_entry| *peer_id == *peer_entry.node.key.preimage())
+                {
+                    continue;
                 }
-                shall_retained
-            });
+            }
+
+            // skip if the peer is a relay server that we're connected to
+            if self
+                .relay_manager
+                .is_peer_an_established_relay_server(peer_id)
+            {
+                continue;
+            }
+
+            shall_removed.push((*connection_id, *peer_id));
+        }
 
         if !shall_removed.is_empty() {
             trace!(
@@ -1284,22 +1305,12 @@ impl SwarmDriver {
                 shall_removed.len(),
                 self.live_connected_peers.len()
             );
-        }
 
-        // Only remove outdated peer not in the RT
-        for (connection_id, peer_id) in shall_removed {
-            if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(peer_id) {
-                if kbucket
-                    .iter()
-                    .any(|peer_entry| peer_id == *peer_entry.node.key.preimage())
-                {
-                    // Skip the connection as peer presents in the RT.
-                    continue;
-                }
+            for (connection_id, peer_id) in shall_removed {
+                let _ = self.live_connected_peers.remove(&connection_id);
+                let result = self.swarm.close_connection(connection_id);
+                trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
             }
-
-            trace!("Removing outdated connection {connection_id:?} to {peer_id:?}");
-            let _result = self.swarm.close_connection(connection_id);
         }
     }
 
