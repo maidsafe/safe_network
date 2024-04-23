@@ -11,6 +11,7 @@ use super::{
     UploaderInterface,
 };
 use crate::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic,
     transfers::{TransferError, WalletError},
     Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient,
 };
@@ -24,7 +25,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::{HotWallet, NanoTokens, WalletApi};
+use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
@@ -797,6 +798,7 @@ impl InnerUploader {
         batch_size: usize,
     ) -> Result<()> {
         let mut wallet_client = Self::load_wallet_client(self.client.clone(), &self.root_dir)?;
+
         let verify_store = self.cfg.verify_store;
         let _handle = tokio::spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
@@ -1021,8 +1023,7 @@ impl InnerUploader {
 
     /// Create a new WalletClient for a given root directory.
     fn load_wallet_client(client: Client, root_dir: &Path) -> Result<WalletClient> {
-        let wallet =
-            HotWallet::load_from(root_dir).map_err(|_| ClientError::FailedToAccessWallet)?;
+        let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
         Ok(WalletClient::new(client, wallet))
     }
