@@ -275,6 +275,19 @@ impl SwarmDriver {
                 event_string = "relay_server_event";
 
                 info!(?event, "relay server event");
+
+                match *event {
+                    libp2p::relay::Event::ReservationReqAccepted {
+                        src_peer_id,
+                        renewed: _,
+                    } => {
+                        self.relay_server_reservations.insert(src_peer_id);
+                    }
+                    libp2p::relay::Event::ReservationTimedOut { src_peer_id } => {
+                        self.relay_server_reservations.remove(&src_peer_id);
+                    }
+                    _ => {}
+                }
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
@@ -1300,6 +1313,10 @@ impl SwarmDriver {
                 .relay_manager
                 .is_peer_an_established_relay_server(peer_id)
             {
+                continue;
+            }
+
+            if self.relay_server_reservations.contains(peer_id) {
                 continue;
             }
 
