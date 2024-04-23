@@ -294,12 +294,12 @@ impl SwarmDriver {
                             return Ok(());
                         }
 
-                        let has_dialed = self.dialed_peers.contains(&peer_id);
-
                         // if client, return.
                         if info.agent_version != IDENTIFY_NODE_VERSION_STR.to_string() {
                             return Ok(());
                         }
+
+                        let has_dialed = self.dialed_peers.contains(&peer_id);
 
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.
@@ -329,46 +329,53 @@ impl SwarmDriver {
                         // peer is external accessible, hence safe to be added into RT.
                         if !self.local && !has_dialed {
                             // Only need to dial back for not fulfilled kbucket
-                            let (kbucket_full, ilog2) = if let Some(kbucket) =
-                                self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
-                            {
-                                let ilog2 = kbucket.range().0.ilog2();
-                                let num_peers = kbucket.num_entries();
-                                let mut is_bucket_full = num_peers >= K_VALUE.into();
+                            let (kbucket_full, already_present_in_rt, ilog2) =
+                                if let Some(kbucket) =
+                                    self.swarm.behaviour_mut().kademlia.kbucket(peer_id)
+                                {
+                                    let ilog2 = kbucket.range().0.ilog2();
+                                    let num_peers = kbucket.num_entries();
+                                    let mut is_bucket_full = num_peers >= K_VALUE.into();
 
-                                // If the bucket contains any of a bootstrap node,
-                                // consider the bucket is not full and dial back
-                                // so that the bootstrap nodes can be replaced.
-                                if is_bucket_full {
-                                    if let Some(peers) = self.bootstrap_peers.get(&ilog2) {
-                                        if kbucket
-                                            .iter()
-                                            .any(|entry| peers.contains(entry.node.key.preimage()))
-                                        {
-                                            is_bucket_full = false;
+                                    // check if peer_id is already a part of RT
+                                    let already_present_in_rt = kbucket
+                                        .iter()
+                                        .any(|entry| entry.node.key.preimage() == &peer_id);
+
+                                    // If the bucket contains any of a bootstrap node,
+                                    // consider the bucket is not full and dial back
+                                    // so that the bootstrap nodes can be replaced.
+                                    if is_bucket_full {
+                                        if let Some(peers) = self.bootstrap_peers.get(&ilog2) {
+                                            if kbucket.iter().any(|entry| {
+                                                peers.contains(entry.node.key.preimage())
+                                            }) {
+                                                is_bucket_full = false;
+                                            }
                                         }
                                     }
-                                }
 
-                                (is_bucket_full, ilog2)
-                            } else {
-                                // Function will return `None` if the given key refers to self
-                                // hence return true to skip further action.
-                                (true, None)
-                            };
+                                    (is_bucket_full, already_present_in_rt, ilog2)
+                                } else {
+                                    return Ok(());
+                                };
 
-                            if !kbucket_full {
-                                info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
-                                if let Err(err) = self.swarm.dial(
-                                    DialOpts::peer_id(peer_id)
-                                        .condition(PeerCondition::NotDialing)
-                                        .addresses(addrs.iter().cloned().collect())
-                                        .build(),
-                                ) {
-                                    warn!(%peer_id, ?addrs, "dialing error: {err:?}");
-                                }
-                            } else {
-                                trace!("received identify for a full bucket {ilog2:?}, no dialing {peer_id:?} on {addrs:?}");
+                            if kbucket_full {
+                                trace!("received identify for a full bucket {ilog2:?}, not dialing {peer_id:?} on {addrs:?}");
+                                return Ok(());
+                            } else if already_present_in_rt {
+                                trace!("received identify for {peer_id:?} that is already part of the RT. Not dialing {peer_id:?} on {addrs:?}");
+                                return Ok(());
+                            }
+
+                            info!(%peer_id, ?addrs, "received identify info from undialed peer for not full kbucket {ilog2:?}, dial back to confirm external accessible");
+                            if let Err(err) = self.swarm.dial(
+                                DialOpts::peer_id(peer_id)
+                                    .condition(PeerCondition::NotDialing)
+                                    .addresses(addrs.iter().cloned().collect())
+                                    .build(),
+                            ) {
+                                warn!(%peer_id, ?addrs, "dialing error: {err:?}");
                             }
 
                             trace!(
@@ -409,6 +416,10 @@ impl SwarmDriver {
                                 }
                             }
                         }
+                        trace!(
+                            "SwarmEvent handled in {:?}: {event_string:?}",
+                            start.elapsed()
+                        );
                     }
                     // Log the other Identify events.
                     libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
