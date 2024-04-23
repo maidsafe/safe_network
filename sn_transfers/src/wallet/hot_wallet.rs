@@ -801,7 +801,8 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut depositor = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit_and_store_to_disk(&vec![genesis])?;
@@ -844,8 +845,8 @@ mod tests {
     async fn sending_decreases_balance() -> Result<()> {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
-
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -877,7 +878,9 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -929,8 +932,9 @@ mod tests {
     async fn store_created_cash_note_gives_file_that_try_load_cash_notes_can_use() -> Result<()> {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet)?;
 
-        let mut sender = HotWallet::load_from(&sender_root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -940,7 +944,10 @@ mod tests {
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let mut recipient = HotWallet::load_from(&recipient_root_dir)?;
+
+        let new_wallet = MainSecretKey::random();
+        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet)?;
+
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
         let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
@@ -987,7 +994,9 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
