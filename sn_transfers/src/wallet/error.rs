@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{MainPubkey, UniquePubkey};
-use std::collections::BTreeSet;
+use crate::UniquePubkey;
+use std::{collections::BTreeSet, path::PathBuf};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -18,8 +18,8 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 pub enum Error {
     /// The cashnotes that were attempted to be spent have already been spent to another address
-    #[error("Attempted to reload a wallet from disk, but the disk wallet is not the same as the current wallet. Current wallet: {0:?}, Disk wallet: {1:?}")]
-    CurrentAndLoadedKeyMismatch(MainPubkey, MainPubkey),
+    #[error("Attempted to reload a wallet from disk, but the disk wallet is not the same as the current wallet. Wallet path: {0}")]
+    CurrentAndLoadedKeyMismatch(PathBuf),
 
     /// The cashnotes that were attempted to be spent have already been spent to another address
     #[error("Double spend attempted with cashnotes: {0:?}")]
