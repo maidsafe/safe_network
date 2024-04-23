@@ -832,9 +832,8 @@ impl SwarmDriver {
 
     /// Listen on the provided address. Also records it within RelayManager
     pub(crate) fn listen_on(&mut self, addr: Multiaddr) -> Result<()> {
-        let id = self.swarm.listen_on(addr)?;
-        self.relay_manager.add_non_relayed_listener_id(id);
-
+        let id = self.swarm.listen_on(addr.clone())?;
+        info!("Listening on {id:?} with addr: {addr:?}");
         Ok(())
     }
 }
