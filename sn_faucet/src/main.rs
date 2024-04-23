@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
     handle.await?;
 
     let root_dir = get_faucet_data_dir();
-    let mut funded_faucet = match load_account_wallet_or_create_with_mnemonic(&root_dir, None) {
+    let funded_faucet = match load_account_wallet_or_create_with_mnemonic(&root_dir, None) {
         Ok(wallet) => wallet,
         Err(err) => {
             println!("failed to load wallet for faucet! with error {err:?}");
