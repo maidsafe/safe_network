@@ -412,6 +412,23 @@ jobs:
         continue-on-error: true
         if: always()
 
+      - name: Move faucet log to the working folder
+        run: |
+          echo "current folder is:"
+          pwd
+          echo "SAFE_DATA_PATH has: "
+          ls -l $SAFE_DATA_PATH
+          echo "test_faucet foder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet
+          echo "logs folder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet/logs
+          mv $FAUCET_LOG_PATH/*.log ./faucet_log.log
+        env:
+          SN_LOG: "all"
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
+
       - name: Upload faucet log
         uses: actions/upload-artifact@main
         with:
