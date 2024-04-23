@@ -18,6 +18,7 @@ const MAX_PEERS_IN_RT_DURING_NAT_CHECK: usize = 30;
 
 /// To manager relayed connections.
 // todo: try to dial whenever connected_relays drops below threshold. Need to perform this on interval.
+#[derive(Debug)]
 pub(crate) struct RelayManager {
     // states
     enabled: bool,
@@ -62,8 +63,9 @@ impl RelayManager {
         self.enabled = enable;
     }
 
-    pub(crate) fn is_peer_an_established_relay_server(&self, peer_id: &PeerId) -> bool {
+    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
         self.connected_relays.contains_key(peer_id)
+            || self.waiting_for_reservation.contains_key(peer_id)
     }
 
     pub(crate) fn add_non_relayed_listener_id(&mut self, listener_id: ListenerId) {
@@ -152,6 +154,13 @@ impl RelayManager {
             // todo: should we remove all our other `listen_addr`? And should we block from adding `add_external_address` if
             // we're behind nat?
             if let Some((peer_id, relay_addr)) = self.candidates.pop_front() {
+                if self.connected_relays.contains_key(&peer_id)
+                    || self.waiting_for_reservation.contains_key(&peer_id)
+                {
+                    trace!("We are already using {peer_id:?} as a relay server. Skipping.");
+                    continue;
+                }
+
                 match swarm.listen_on(relay_addr.clone()) {
                     Ok(id) => {
                         info!("Sending reservation to relay {peer_id:?} on {relay_addr:?}");
@@ -164,7 +173,7 @@ impl RelayManager {
                     }
                 }
             } else {
-                debug!("No more relay candidates.");
+                trace!("No more relay candidates.");
                 break;
             }
         }
@@ -189,14 +198,18 @@ impl RelayManager {
     }
 
     /// Update our state if the reservation has been cancelled or if the relay has closed.
-    /// todo: remove from external addresses.
-    pub(crate) fn update_on_listener_closed(&mut self, listener_id: &ListenerId) {
+    pub(crate) fn update_on_listener_closed(
+        &mut self,
+        listener_id: &ListenerId,
+        swarm: &mut Swarm<NodeBehaviour>,
+    ) {
         let Some(peer_id) = self.relayed_listener_id_map.remove(listener_id) else {
             return;
         };
 
         if let Some(addr) = self.connected_relays.remove(&peer_id) {
-            info!("Removed peer form connected_relays as the listener has been closed {peer_id:?}: {addr:?}");
+            info!("Removed peer form connected_relays and external address as the listener has been closed {peer_id:?}: {addr:?}");
+            swarm.remove_external_address(&addr);
         } else if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
             info!("Removed peer form waiting_for_reservation as the listener has been closed {peer_id:?}: {addr:?}");
         } else {
