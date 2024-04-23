@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{acc_packet::load_account_wallet_or_create_with_mnemonic, send, Client, WalletClient};
+use crate::{
+    acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
+    send, Client, WalletClient,
+};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
-use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens};
+use sn_transfers::{HotWallet, NanoTokens};
 
 use bls::SecretKey;
 use bytes::Bytes;
@@ -110,7 +113,7 @@ async fn load_faucet_wallet() -> Result<HotWallet> {
     info!("Loading faucet...");
     let now = Instant::now();
     for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
-        let faucet_wallet = create_faucet_wallet();
+        let faucet_wallet = create_faucet_account_and_wallet();
 
         let faucet_balance = faucet_wallet.balance();
         if !faucet_balance.is_zero() {

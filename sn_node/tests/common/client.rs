@@ -9,13 +9,16 @@
 use eyre::{bail, OptionExt, Result};
 use lazy_static::lazy_static;
 use libp2p::PeerId;
-use sn_client::{acc_packet::load_account_wallet_or_create_with_mnemonic, send, Client};
+use sn_client::{
+    acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
+    send, Client,
+};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{
     get_local_node_registry_path, safenode_manager_proto::NodeServiceRestartRequest, NodeRegistry,
 };
-use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens, Transfer};
+use sn_transfers::{HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
 use test_utils::testnet::DeploymentInventory;
 use tokio::{
@@ -213,7 +216,7 @@ impl NonDroplet {
         info!("Loading faucet...");
         let now = Instant::now();
         for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
-            let faucet_wallet = create_faucet_wallet();
+            let faucet_wallet = create_faucet_account_and_wallet();
 
             let faucet_balance = faucet_wallet.balance();
             if !faucet_balance.is_zero() {

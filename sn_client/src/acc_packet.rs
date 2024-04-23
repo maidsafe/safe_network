@@ -9,7 +9,7 @@
 use std::path::Path;
 
 use super::error::Result;
-use sn_transfers::HotWallet;
+use sn_transfers::{get_faucet_data_dir, HotWallet};
 
 pub mod user_secret;
 
@@ -34,4 +34,12 @@ pub fn load_account_wallet_or_create_with_mnemonic(
             Ok(HotWallet::create_from_key(root_dir, wallet)?)
         }
     }
+}
+
+pub fn create_faucet_account_and_wallet() -> HotWallet {
+    let root_dir = get_faucet_data_dir();
+
+    println!("Loading faucet wallet... {root_dir:#?}");
+    load_account_wallet_or_create_with_mnemonic(&root_dir, None)
+        .expect("Faucet wallet shall be created successfully.")
 }
