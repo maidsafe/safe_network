@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
     handle.await?;
 
     let root_dir = get_faucet_data_dir();
-    let funded_faucet = match load_account_wallet_or_create_with_mnemonic(&root_dir, None) {
+    let mut funded_faucet = match load_account_wallet_or_create_with_mnemonic(&root_dir, None) {
         Ok(wallet) => wallet,
         Err(err) => {
             println!("failed to load wallet for faucet! with error {err:?}");
@@ -90,6 +90,9 @@ async fn main() -> Result<()> {
             return Err(err.into());
         }
     };
+
+    fund_faucet_from_genesis_wallet(&client, &mut funded_faucet).await?;
+
     if let Err(err) = faucet_cmds(opt.cmd.clone(), &client, funded_faucet).await {
         error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
     }
