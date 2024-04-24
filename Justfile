@@ -96,7 +96,7 @@ build-release-artifacts arch:
     if [[ "$(grep -E '^NAME="Ubuntu"' /etc/os-release)" ]]; then
       # This is intended for use on a fresh Github Actions agent
       sudo apt update -y
-      sudo apt install -y musl-tools
+      sudo apt-get install -y musl-tools
     fi
     rustup target add x86_64-unknown-linux-musl
   fi
