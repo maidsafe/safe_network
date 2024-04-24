@@ -3,7 +3,7 @@ name: PR Benchmarks
 on: pull_request
 
 env:
-  CARGO_INCREMENTAL: '0'
+  CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
@@ -43,7 +43,11 @@ jobs:
       # it will be better to execute bench test with `local-discovery`,
       # to make the measurement results reflect speed improvement or regression more accurately.
       - name: Build sn bins
-        run: cargo build --release --bins --features local-discovery
+        run: cargo build --release --bin safe --bin safenode --features local-discovery
+        timeout-minutes: 30
+
+      - name: Build faucet bin
+        run: cargo build --release --bin faucet --features local-discovery --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -143,8 +147,8 @@ jobs:
       - name: Alert for client memory usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Memory Usage of Client during uploading large file'
-          tool: 'customSmallerIsBetter'
+          name: "Memory Usage of Client during uploading large file"
+          tool: "customSmallerIsBetter"
           output-file-path: client_memory_usage.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/client-mem-usage.json
@@ -155,7 +159,7 @@ jobs:
           # Enable alert commit comment
           comment-on-alert: true
           # 200% regression will result in alert
-          alert-threshold: '200%'
+          alert-threshold: "200%"
           # Enable Job Summary for PRs
           summary-always: true
 
@@ -186,7 +190,7 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           # What benchmark tool the output.txt came from
-          tool: 'customBiggerIsBetter'
+          tool: "customBiggerIsBetter"
           output-file-path: files-benchmark.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data.json
@@ -197,7 +201,7 @@ jobs:
           # Enable alert commit comment
           comment-on-alert: true
           # 200% regression will result in alert
-          alert-threshold: '200%'
+          alert-threshold: "200%"
           # Enable Job Summary for PRs
           summary-always: true
 
@@ -269,7 +273,7 @@ jobs:
       - name: Alert for node memory usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          tool: 'customSmallerIsBetter'
+          tool: "customSmallerIsBetter"
           output-file-path: node_memory_usage.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/node-mem-usage.json
@@ -282,7 +286,7 @@ jobs:
           # Comment on the PR
           comment-always: true
           # 200% regression will result in alert
-          alert-threshold: '200%'
+          alert-threshold: "200%"
           # Enable Job Summary for PRs
           summary-always: true
 
@@ -369,7 +373,7 @@ jobs:
       - name: Alert for swarm_driver long handlings
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          tool: 'customSmallerIsBetter'
+          tool: "customSmallerIsBetter"
           output-file-path: swarm_driver_long_handlings.json
           # Where the previous data file is stored
           external-data-json-path: ./cache/swarm_driver_long_handlings.json
@@ -382,7 +386,7 @@ jobs:
           # Comment on the PR
           comment-always: true
           # 200% regression will result in alert
-          alert-threshold: '200%'
+          alert-threshold: "200%"
           # Enable Job Summary for PRs
           summary-always: true
 
@@ -409,8 +413,6 @@ jobs:
 
       - name: install ripgrep
         run: sudo apt-get -y install ripgrep
-
-
 
       ########################
       ### Benchmark        ###
