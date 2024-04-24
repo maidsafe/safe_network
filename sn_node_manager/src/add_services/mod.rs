@@ -198,7 +198,9 @@ pub async fn add_node(
         rpc_port = increment_port_option(rpc_port);
     }
 
-    std::fs::remove_file(options.safenode_src_path)?;
+    if options.delete_safenode_src {
+        std::fs::remove_file(options.safenode_src_path)?;
+    }
 
     if !added_service_data.is_empty() {
         println!("Services Added:");
