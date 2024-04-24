@@ -524,7 +524,7 @@ impl NetworkBuilder {
 
         let bootstrap = ContinuousBootstrap::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
-        let mut relay_manager = RelayManager::new(self.initial_peers);
+        let mut relay_manager = RelayManager::new(self.initial_peers, peer_id);
         if !is_client {
             relay_manager.enable_hole_punching(self.is_behind_home_network);
         }
