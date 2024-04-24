@@ -19,6 +19,7 @@ const MAX_PEERS_IN_RT_DURING_NAT_CHECK: usize = 30;
 /// To manager relayed connections.
 #[derive(Debug)]
 pub(crate) struct RelayManager {
+    self_peer_id: PeerId,
     // states
     enabled: bool,
     candidates: VecDeque<(PeerId, Multiaddr)>,
@@ -30,7 +31,7 @@ pub(crate) struct RelayManager {
 }
 
 impl RelayManager {
-    pub(crate) fn new(initial_peers: Vec<Multiaddr>) -> Self {
+    pub(crate) fn new(initial_peers: Vec<Multiaddr>, self_peer_id: PeerId) -> Self {
         let candidates = initial_peers
             .into_iter()
             .filter_map(|addr| {
@@ -45,6 +46,7 @@ impl RelayManager {
             })
             .collect();
         Self {
+            self_peer_id,
             enabled: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
@@ -198,8 +200,18 @@ impl RelayManager {
         };
 
         if let Some(addr) = self.connected_relays.remove(&peer_id) {
-            info!("Removed peer form connected_relays and external address as the listener has been closed {peer_id:?}: {addr:?}");
+            info!("Removing connected relay server as the listener has been closed: {peer_id:?}");
+            info!("Removing external addr: {addr:?}");
             swarm.remove_external_address(&addr);
+
+            // Even though we craft and store addrs in this format /ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/,
+            // sometimes our PeerId is added at the end by the swarm?, which we want to remove as well i.e.,
+            // /ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/p2p/QmSelf
+            let Ok(addr_with_self_peer_id) = addr.with_p2p(self.self_peer_id) else {
+                return;
+            };
+            info!("Removing external addr: {addr_with_self_peer_id:?}");
+            swarm.remove_external_address(&addr_with_self_peer_id);
         } else if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
             info!("Removed peer form waiting_for_reservation as the listener has been closed {peer_id:?}: {addr:?}");
         } else {
@@ -216,7 +228,7 @@ impl RelayManager {
         false
     }
 
-    // the listen addr should be something like `/ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/
+    /// The listen addr should be something like /ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/
     fn craft_relay_address(addr: &Multiaddr, peer_id: Option<PeerId>) -> Option<Multiaddr> {
         let mut output_addr = Multiaddr::empty();
 
