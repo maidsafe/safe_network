@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713927403524,
+  "lastUpdate": 1713927405223,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "tomek@librem.one",
-            "name": "trycatch",
-            "username": "thomasmarkiewicz"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4",
-          "message": "chore: log full Register address when created in cli and example app",
-          "timestamp": "2023-12-21T13:39:08Z",
-          "tree_id": "8133219fbb95d3533523121a251ecaab4ed96c97",
-          "url": "https://github.com/maidsafe/safe_network/commit/9c9cb568efaeb03c80f055f6cf9f7df52bf76ad4"
-        },
-        "date": 1703168330560,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 260,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 60,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2d350877ddd5244b3b23b2b0d2878025e4756795",
+          "message": "ci: increase token distribution build times by 5 mins",
+          "timestamp": "2024-04-24T02:11:07Z",
+          "tree_id": "a1f09bb1d45b6eb30eaff31f575220818479ce27",
+          "url": "https://github.com/maidsafe/safe_network/commit/2d350877ddd5244b3b23b2b0d2878025e4756795"
+        },
+        "date": 1713927404707,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
