@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713964321901,
+  "lastUpdate": 1713964323926,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ed9294b38086bb1e2423a1af3e6a762402907e2b",
-          "message": "test: address distribution sim",
-          "timestamp": "2023-12-22T07:08:35Z",
-          "tree_id": "a4674efdc33886841f0a615bb5884a39305e2d3a",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed9294b38086bb1e2423a1af3e6a762402907e2b"
-        },
-        "date": 1703231277737,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 283,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 64,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0415cf7263aa271043a885d3812867c16c30a964",
+          "message": "fix(network): remove all external addresses related to a relay server",
+          "timestamp": "2024-04-24T13:52:29+01:00",
+          "tree_id": "5e84e76149189cd6b1bd0ce909c0d3e4b1dddea5",
+          "url": "https://github.com/maidsafe/safe_network/commit/0415cf7263aa271043a885d3812867c16c30a964"
+        },
+        "date": 1713964323532,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
