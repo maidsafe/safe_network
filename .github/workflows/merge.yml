@@ -400,6 +400,7 @@ jobs:
           cargo run --bin faucet --features="gifting-from-genesis" --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           SN_LOG: "all"
         timeout-minutes: 5
 
