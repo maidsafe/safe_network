@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713972508491,
+  "lastUpdate": 1713972626813,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
-          "message": "fix(testnet): sleep after launching faucet",
-          "timestamp": "2023-12-28T08:50:26Z",
-          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
-          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
-        },
-        "date": 1703756214734,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "362c9a3d31601dc2eeb38e3c376301fb26a5b5e1",
+          "message": "chore(CI): upload faucet log during CI",
+          "timestamp": "2024-04-24T14:43:47Z",
+          "tree_id": "d8fb990831c933f2579f69cae8b3df540ec42c6d",
+          "url": "https://github.com/maidsafe/safe_network/commit/362c9a3d31601dc2eeb38e3c376301fb26a5b5e1"
+        },
+        "date": 1713972625715,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58,
             "unit": "MB"
           }
         ]
