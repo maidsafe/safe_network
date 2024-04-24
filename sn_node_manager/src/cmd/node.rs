@@ -16,7 +16,7 @@ use crate::{
     },
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
+    print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
@@ -57,9 +57,7 @@ pub async fn add(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Add Safenode Services              ");
-        println!("=================================================");
+        print_banner("Add Safenode Services");
         println!("{} service(s) to be added", count.unwrap_or(1));
     }
 
@@ -137,9 +135,7 @@ pub async fn balance(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("                 Reward Balances                 ");
-        println!("=================================================");
+        print_banner("Reward Balances");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -176,9 +172,7 @@ pub async fn remove(
         return Err(eyre!("The remove command must run as the root user"));
     }
 
-    println!("=================================================");
-    println!("           Remove Safenode Services              ");
-    println!("=================================================");
+    print_banner("Remove Safenode Services");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
@@ -213,9 +207,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
         return Err(eyre!("The reset command must run as the root user"));
     }
 
-    println!("=================================================");
-    println!("           Reset Safenode Services               ");
-    println!("=================================================");
+    print_banner("Reset Safenode Services");
 
     if !force {
         println!("WARNING: all safenode services, data, and logs will be removed.");
@@ -249,9 +241,7 @@ pub async fn start(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("             Start Safenode Services             ");
-        println!("=================================================");
+        print_banner("Start Safenode Services");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -294,9 +284,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
     let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
     if !local_node_registry.nodes.is_empty() {
         if !json {
-            println!("=================================================");
-            println!("                Local Network                    ");
-            println!("=================================================");
+            print_banner("Local Network");
         }
         status_report(
             &mut local_node_registry,
@@ -312,10 +300,8 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if !node_registry.nodes.is_empty() {
-        if !json {
-            println!("=================================================");
-            println!("                Safenode Services                ");
-            println!("=================================================");
+        if !json && !details {
+            print_banner("Safenode Services");
         }
         status_report(
             &mut node_registry,
@@ -340,9 +326,7 @@ pub async fn stop(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Stop Safenode Services             ");
-        println!("=================================================");
+        print_banner("Stop Safenode Services");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -395,9 +379,7 @@ pub async fn upgrade(
     let use_force = force || custom_bin_path.is_some();
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("           Upgrade Safenode Services             ");
-        println!("=================================================");
+        print_banner("Upgrade Safenode Services");
     }
 
     let (upgrade_bin_path, target_version) = download_and_get_upgrade_bin_path(
