@@ -15,6 +15,7 @@ env:
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
   RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
+  FAUCET_LOG_PATH: /home/runner/.local/share/safe/test_faucet/logs
 
 jobs:
   memory-check:
@@ -104,6 +105,19 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 15
+
+      - name: Move faucet log to the working folder
+        run: |
+          echo "SAFE_DATA_PATH has: "
+          ls -l $SAFE_DATA_PATH
+          echo "test_faucet foder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet
+          echo "logs folder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet/logs
+          mv $FAUCET_LOG_PATH/faucet.log ./faucet_log.log
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
@@ -395,5 +409,13 @@ jobs:
         with:
           name: payment_wallet_initialization_log
           path: initial_balance_from_faucet.txt
+        continue-on-error: true
+        if: always()
+
+      - name: Upload faucet log
+        uses: actions/upload-artifact@main
+        with:
+          name: memory_check_faucet_log
+          path: faucet_log.log
         continue-on-error: true
         if: always()
