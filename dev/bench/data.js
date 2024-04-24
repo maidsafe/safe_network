@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713985433439,
+  "lastUpdate": 1713985435149,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "171f6d80bb8e33294a56bf474249bcb611fa1f0c",
-          "message": "fix: reduce duplicated kbucket part when logging NetworkAddress::RecordKey",
-          "timestamp": "2023-12-12T17:23:18Z",
-          "tree_id": "8adc6f01a5e63e45ad9497386d1b3a451265532d",
-          "url": "https://github.com/maidsafe/safe_network/commit/171f6d80bb8e33294a56bf474249bcb611fa1f0c"
-        },
-        "date": 1702404243871,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5190,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 69315,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 13,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36166,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "d501e3b4c12d44d0aa277b99a49f64a94def7f81",
+          "message": "fix: do not delete custom bin on `add` cmd\n\nWhen the `--path` argument is specified on the node manager's `add` command, a custom binary is\nsupplied, and now, the source of `--path` is not deleted.\n\nBy default, the `add` command downloads the latest version of a binary to a temporary location, and\nthat binary is then copied to the service location. Having finished with it, the node manager then\ncleans up the temporary binary. When the `--path` argument is used, it goes through the same code\npath, and hence the source of `--path` was being deleted as a side effect. Now, a flag is used to\nindicate whether the binary should be deleted, and it is set to `false` when the `--path` argument\nis supplied.\n\nThe `--path` argument is being used when users build their own `safenode`, so they are expecting\nthat the built binary will still exist.",
+          "timestamp": "2024-04-24T18:25:21Z",
+          "tree_id": "4ac758741f86cbe8bcaeab922677d4e2a2c5cb8a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d501e3b4c12d44d0aa277b99a49f64a94def7f81"
+        },
+        "date": 1713985434722,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7682,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35307,
             "unit": "ms"
           },
           {
