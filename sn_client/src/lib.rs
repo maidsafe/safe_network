@@ -118,7 +118,7 @@ pub async fn get_data(peer: &str, data_address: &str) -> std::result::Result<(),
     Ok(())
 }
 
-/// Client API implementation to store and get data.
+/// Provides a client for interacting with the network.
 #[derive(Clone)]
 pub struct Client {
     network: Network,
