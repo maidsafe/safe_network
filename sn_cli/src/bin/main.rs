@@ -64,8 +64,14 @@ async fn main() -> Result<()> {
     // Log the full command that was run
     info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));
 
-    debug!("Built with git version: {}", sn_build_info::git_info());
-    println!("Built with git version: {}", sn_build_info::git_info());
+    debug!(
+        "safe client built with git version: {}",
+        sn_build_info::git_info()
+    );
+    println!(
+        "safe client built with git version: {}",
+        sn_build_info::git_info()
+    );
 
     let client_data_dir_path = get_client_data_dir_path()?;
     // Perform actions that do not require us connecting to the network and return early
