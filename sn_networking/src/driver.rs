@@ -208,6 +208,7 @@ pub struct NetworkBuilder {
     metrics_registry: Option<Registry>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: u16,
+    #[cfg(feature = "upnp")]
     upnp: bool,
 }
 
@@ -325,6 +326,7 @@ impl NetworkBuilder {
         };
 
         let listen_addr = self.listen_addr;
+        #[cfg(feature = "upnp")]
         let upnp = self.upnp;
 
         let (network, events_receiver, mut swarm_driver) = self.build(
