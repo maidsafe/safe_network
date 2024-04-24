@@ -389,7 +389,7 @@ impl NetworkBuilder {
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
-            false
+            false,
         )?;
 
         Ok((network, net_event_recv, driver))
@@ -403,8 +403,7 @@ impl NetworkBuilder {
         is_client: bool,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
-        #[cfg(feature = "upnp")]
-        upnp: bool,
+        #[cfg(feature = "upnp")] upnp: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -510,7 +509,8 @@ impl NetworkBuilder {
             Some(libp2p::upnp::tokio::Behaviour::default())
         } else {
             None
-        }.into(); // Into `Toggle<T>`
+        }
+        .into(); // Into `Toggle<T>`
 
         let (relay_transport, relay_behaviour) =
             libp2p::relay::client::new(self.keypair.public().to_peer_id());
