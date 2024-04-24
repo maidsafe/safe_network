@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713927407242,
+  "lastUpdate": 1713964209114,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ed9294b38086bb1e2423a1af3e6a762402907e2b",
-          "message": "test: address distribution sim",
-          "timestamp": "2023-12-22T07:08:35Z",
-          "tree_id": "a4674efdc33886841f0a615bb5884a39305e2d3a",
-          "url": "https://github.com/maidsafe/safe_network/commit/ed9294b38086bb1e2423a1af3e6a762402907e2b"
-        },
-        "date": 1703231152262,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.138120199828181,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8759144205341134,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 36.5627822135314,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.90991189103945,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0415cf7263aa271043a885d3812867c16c30a964",
+          "message": "fix(network): remove all external addresses related to a relay server",
+          "timestamp": "2024-04-24T13:52:29+01:00",
+          "tree_id": "5e84e76149189cd6b1bd0ce909c0d3e4b1dddea5",
+          "url": "https://github.com/maidsafe/safe_network/commit/0415cf7263aa271043a885d3812867c16c30a964"
+        },
+        "date": 1713964205031,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2115737353602665,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6378068219800828,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.00236612054296,
             "unit": "MiB/s"
           }
         ]
