@@ -108,6 +108,7 @@ impl InstallNodeServiceCtxBuilder {
 pub struct AddNodeServiceOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
+    pub delete_safenode_src: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub local: bool,
