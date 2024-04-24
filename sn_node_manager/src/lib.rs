@@ -307,7 +307,11 @@ pub async fn status_report(
         println!("{json}");
     } else if detailed_view {
         for node in &node_registry.nodes {
-            print_banner(&node.service_name, &node.status);
+            print_banner(&format!(
+                "{} - {}",
+                &node.service_name,
+                format_status_without_colour(&node.status)
+            ));
             println!("Version: {}", node.version);
             println!(
                 "Peer ID: {}",
@@ -334,13 +338,21 @@ pub async fn status_report(
         }
 
         if let Some(daemon) = &node_registry.daemon {
-            print_banner(&daemon.service_name, &daemon.status);
+            print_banner(&format!(
+                "{} - {}",
+                &daemon.service_name,
+                format_status(&daemon.status)
+            ));
             println!("Version: {}", daemon.version);
             println!("Bin path: {}", daemon.daemon_path.to_string_lossy());
         }
 
         if let Some(faucet) = &node_registry.faucet {
-            print_banner(&faucet.service_name, &faucet.status);
+            print_banner(&format!(
+                "{} - {}",
+                &faucet.service_name,
+                format_status(&faucet.status)
+            ));
             println!("Version: {}", faucet.version);
             println!("Bin path: {}", faucet.faucet_path.to_string_lossy());
             println!("Log path: {}", faucet.log_dir_path.to_string_lossy());
@@ -457,6 +469,18 @@ pub async fn refresh_node_registry(
     Ok(())
 }
 
+pub fn print_banner(text: &str) {
+    let padding = 2;
+    let text_width = text.len() + padding * 2;
+    let border_chars = 2;
+    let total_width = text_width + border_chars;
+    let top_bottom = "═".repeat(total_width);
+
+    println!("╔{}╗", top_bottom);
+    println!("║ {:^width$} ║", text, width = text_width);
+    println!("╚{}╝", top_bottom);
+}
+
 fn format_status(status: &ServiceStatus) -> String {
     match status {
         ServiceStatus::Running => "RUNNING".green().to_string(),
@@ -466,12 +490,13 @@ fn format_status(status: &ServiceStatus) -> String {
     }
 }
 
-fn print_banner(service_name: &str, status: &ServiceStatus) {
-    let service_status = format!("{} - {}", service_name, format_status(status));
-    let banner = "=".repeat(service_status.len());
-    println!("{}", banner);
-    println!("{service_status}");
-    println!("{}", banner);
+fn format_status_without_colour(status: &ServiceStatus) -> String {
+    match status {
+        ServiceStatus::Running => "RUNNING".to_string(),
+        ServiceStatus::Stopped => "STOPPED".to_string(),
+        ServiceStatus::Added => "ADDED".to_string(),
+        ServiceStatus::Removed => "REMOVED".to_string(),
+    }
 }
 
 #[cfg(test)]
