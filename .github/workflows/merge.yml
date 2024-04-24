@@ -604,7 +604,7 @@ jobs:
 
       - name: Build binaries
         run: cargo build --release --features=local-discovery,distribution --bin safenode --bin faucet
-        timeout-minutes: 30
+        timeout-minutes: 35
 
       - name: Build testing executable
         run: cargo test --release --features=local-discovery,distribution --no-run
@@ -612,7 +612,7 @@ jobs:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
+        timeout-minutes: 35
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
