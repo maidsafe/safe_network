@@ -176,7 +176,10 @@ fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-    debug!("Built with git version: {}", sn_build_info::git_info());
+    debug!(
+        "safenode built with git version: {}",
+        sn_build_info::git_info()
+    );
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 

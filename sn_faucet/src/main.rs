@@ -56,7 +56,14 @@ async fn main() -> Result<()> {
     log_builder.output_dest(opt.log_output_dest);
     let _log_handles = log_builder.initialize()?;
 
-    debug!("Built with git version: {}", sn_build_info::git_info());
+    debug!(
+        "faucet built with git version: {}",
+        sn_build_info::git_info()
+    );
+    println!(
+        "faucet built with git version: {}",
+        sn_build_info::git_info()
+    );
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
