@@ -73,7 +73,7 @@ pub async fn add(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    let (safenode_src_path, version) = if let Some(path) = src_path {
+    let (safenode_src_path, version) = if let Some(path) = src_path.clone() {
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
@@ -102,6 +102,7 @@ pub async fn add(
 
     let options = AddNodeServiceOptions {
         count,
+        delete_safenode_src: src_path.is_none(),
         env_variables,
         genesis: is_first,
         local,
