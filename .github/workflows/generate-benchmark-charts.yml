@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 env:
-  CARGO_INCREMENTAL: '0'
+  CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-          
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -44,9 +44,13 @@ jobs:
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
-     
+
       - name: Build node and client
-        run: cargo build --release --features local-discovery --bin safenode --bin safe --bin faucet
+        run: cargo build --release --features local-discovery --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet bin
+        run: cargo build --release --bin faucet --features local-discovery --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Start a local network
@@ -91,13 +95,13 @@ jobs:
       - name: check files-benchmark.json
         shell: bash
         run: cat files-benchmark.json
-        
+
       # gh-pages branch is updated and pushed automatically with extracted benchmark data
       - name: Store cli files benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: "`safe files` benchmarks"
-          tool: 'customBiggerIsBetter'
+          tool: "customBiggerIsBetter"
           output-file-path: files-benchmark.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -108,7 +112,7 @@ jobs:
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
         env:
           SN_LOG: "all"
-      
+
       #########################
       ### Stop Network      ###
       #########################
@@ -130,12 +134,12 @@ jobs:
         shell: bash
         run: |
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename | 
-            awk -F':' '/"memory_used_mb":/{print $2}' | 
-            sort -n | 
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
             tail -n 1
           )
-         
+
           # Write the node memory usage to a file
           echo '[
               {
@@ -152,8 +156,8 @@ jobs:
       - name: Upload Node Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Node memory'
-          tool: 'customSmallerIsBetter'
+          name: "Node memory"
+          tool: "customSmallerIsBetter"
           output-file-path: node_memory_usage.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -163,13 +167,13 @@ jobs:
         shell: bash
         run: |
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
-            awk -F':' '/"memory_used_mb":/{print $2}' | 
-            sort -n | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
             tail -n 1
           )
           total_mem=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename | 
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
           )
           num_of_times=$(
@@ -204,8 +208,8 @@ jobs:
       - name: Upload Client Memory Usage
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'Client memory'
-          tool: 'customSmallerIsBetter'
+          name: "Client memory"
+          tool: "customSmallerIsBetter"
           output-file-path: client_memory_usage.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -252,7 +256,7 @@ jobs:
           echo "Total swarm_driver long handling times is: $total_num_of_times"
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
-         
+
           # Write the node memory usage to a file
           echo '[
               {
@@ -279,8 +283,8 @@ jobs:
       - name: Upload swarm_driver Long Handlings
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: 'swarm_driver long handlings'
-          tool: 'customSmallerIsBetter'
+          name: "swarm_driver long handlings"
+          tool: "customSmallerIsBetter"
           output-file-path: swarm_driver_long_handlings.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true

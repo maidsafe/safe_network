@@ -35,7 +35,11 @@ jobs:
         run: sudo apt-get install -y ripgrep
 
       - name: Build binaries
-        run: cargo build --release --bins
+        run: cargo build --release --bin safe --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binary with gifting
+        run: cargo build --release --bin faucet --features="gifting-from-genesis"
         timeout-minutes: 30
 
       - name: Build tests
@@ -96,7 +100,7 @@ jobs:
             --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1)
           echo "Sending tokens to the faucet at $address"
           cargo run \
-            --bin faucet --release -- \
+            --bin faucet --release --features="gifting-from-genesis" -- \
             --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt | tail -n 1 > transfer_hex
@@ -147,7 +151,7 @@ jobs:
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
+          cargo run --bin faucet --release --features="gifting-from-genesis"-- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
           cat transfer_hex
