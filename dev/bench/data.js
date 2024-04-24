@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713927405223,
+  "lastUpdate": 1713927407242,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d8c842b01a1110b44c9a6cf681b7afd78d5307e7",
-          "message": "feat(node): replicate valid Spends to CLOSE_GROUP",
-          "timestamp": "2023-12-12T12:24:40Z",
-          "tree_id": "c58f9a256466e267b9e57d8cacefa8cba66144ef",
-          "url": "https://github.com/maidsafe/safe_network/commit/d8c842b01a1110b44c9a6cf681b7afd78d5307e7"
-        },
-        "date": 1702386203172,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5289,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 78533,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36326,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2d350877ddd5244b3b23b2b0d2878025e4756795",
+          "message": "ci: increase token distribution build times by 5 mins",
+          "timestamp": "2024-04-24T02:11:07Z",
+          "tree_id": "a1f09bb1d45b6eb30eaff31f575220818479ce27",
+          "url": "https://github.com/maidsafe/safe_network/commit/2d350877ddd5244b3b23b2b0d2878025e4756795"
+        },
+        "date": 1713927406638,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7623,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36227,
             "unit": "ms"
           },
           {
