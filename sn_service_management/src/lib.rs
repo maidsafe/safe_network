@@ -44,7 +44,7 @@ pub enum ServiceStatus {
     Removed,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum UpgradeResult {
     Forced(String, String),
     NotRequired,
