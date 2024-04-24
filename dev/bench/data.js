@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713964323926,
+  "lastUpdate": 1713964325973,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "fcea7b7e998c9e4782e16aaaabe08616b896f1ac",
-          "message": "feat(node): log if RPC server fails to start",
-          "timestamp": "2023-12-12T14:58:46Z",
-          "tree_id": "bb072167801f26234b5aec9d154594d177f3ff15",
-          "url": "https://github.com/maidsafe/safe_network/commit/fcea7b7e998c9e4782e16aaaabe08616b896f1ac"
-        },
-        "date": 1702395330986,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5246,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 75487,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36227,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0415cf7263aa271043a885d3812867c16c30a964",
+          "message": "fix(network): remove all external addresses related to a relay server",
+          "timestamp": "2024-04-24T13:52:29+01:00",
+          "tree_id": "5e84e76149189cd6b1bd0ce909c0d3e4b1dddea5",
+          "url": "https://github.com/maidsafe/safe_network/commit/0415cf7263aa271043a885d3812867c16c30a964"
+        },
+        "date": 1713964325353,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7503,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34657,
             "unit": "ms"
           },
           {
