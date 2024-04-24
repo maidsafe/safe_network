@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713985430995,
+  "lastUpdate": 1713985433439,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7d55a30c2338fbff17e9371950d11714c1d03536",
-          "message": "feat: use put_record_to during upload chunk",
-          "timestamp": "2023-12-29T07:00:36Z",
-          "tree_id": "831e0dc52e1891d913f384cc2c04295fac0b7de3",
-          "url": "https://github.com/maidsafe/safe_network/commit/7d55a30c2338fbff17e9371950d11714c1d03536"
-        },
-        "date": 1703836214787,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 209,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 59,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "d501e3b4c12d44d0aa277b99a49f64a94def7f81",
+          "message": "fix: do not delete custom bin on `add` cmd\n\nWhen the `--path` argument is specified on the node manager's `add` command, a custom binary is\nsupplied, and now, the source of `--path` is not deleted.\n\nBy default, the `add` command downloads the latest version of a binary to a temporary location, and\nthat binary is then copied to the service location. Having finished with it, the node manager then\ncleans up the temporary binary. When the `--path` argument is used, it goes through the same code\npath, and hence the source of `--path` was being deleted as a side effect. Now, a flag is used to\nindicate whether the binary should be deleted, and it is set to `false` when the `--path` argument\nis supplied.\n\nThe `--path` argument is being used when users build their own `safenode`, so they are expecting\nthat the built binary will still exist.",
+          "timestamp": "2024-04-24T18:25:21Z",
+          "tree_id": "4ac758741f86cbe8bcaeab922677d4e2a2c5cb8a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d501e3b4c12d44d0aa277b99a49f64a94def7f81"
+        },
+        "date": 1713985432068,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 175,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
