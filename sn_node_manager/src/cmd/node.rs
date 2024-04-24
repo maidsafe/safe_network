@@ -28,7 +28,7 @@ use sn_service_management::{
     control::{ServiceControl, ServiceController},
     get_local_node_registry_path,
     rpc::RpcClient,
-    NodeRegistry, NodeService, ServiceStatus, UpgradeOptions, UpgradeResult,
+    NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
 use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
@@ -271,8 +271,14 @@ pub async fn start(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
-        debug!("Sleeping for {} milliseconds", interval);
-        std::thread::sleep(std::time::Duration::from_millis(interval));
+        if service_manager.service.status() != ServiceStatus::Running {
+            // It would be possible here to check if the service *is* running and then just
+            // continue without applying the delay. The reason for not doing so is because when
+            // `start` is called below, the user will get a message to say the service was already
+            // started, which I think is useful behaviour to retain.
+            debug!("Sleeping for {} milliseconds", interval);
+            std::thread::sleep(std::time::Duration::from_millis(interval));
+        }
         match service_manager.start().await {
             Ok(()) => {
                 node_registry.save()?;
@@ -446,6 +452,12 @@ pub async fn upgrade(
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
+                if upgrade_result != UpgradeResult::NotRequired {
+                    // It doesn't seem useful to apply the interval if there was no upgrade
+                    // required for the previous service.
+                    debug!("Sleeping for {} milliseconds", interval);
+                    std::thread::sleep(std::time::Duration::from_millis(interval));
+                }
                 upgrade_summary.push((
                     service_manager.service.service_data.service_name.clone(),
                     upgrade_result,
@@ -458,9 +470,6 @@ pub async fn upgrade(
                 ));
             }
         }
-
-        debug!("Sleeping for {} milliseconds", interval);
-        std::thread::sleep(std::time::Duration::from_millis(interval));
     }
 
     node_registry.save()?;
