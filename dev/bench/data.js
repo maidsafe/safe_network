@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714034699549,
+  "lastUpdate": 1714034701308,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "c4f485d1c6384f27aa4b9eb6e7c233cea2b47020",
-          "message": "test: update churn tests to be harsher\n\nNow we more swiftly detect churn, these tests can be more strenuous",
-          "timestamp": "2023-12-29T11:12:56Z",
-          "tree_id": "6ac0ffe5dac7222e629eaf747c1976ab115dcf08",
-          "url": "https://github.com/maidsafe/safe_network/commit/c4f485d1c6384f27aa4b9eb6e7c233cea2b47020"
-        },
-        "date": 1703851061256,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 209,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 59,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "2c5209b0f2a53ec1aaa703e5877df92b0f16b24a",
+          "message": "feat(client): speed up register checks when paying\n\nWe take the existence of Payment at regsiter.sync as a proxy for intent to create a register.\nWith that we can effectively use RetryStrategy::Quick under the hood to speed up initial\nregister PUTs (15s check vs 60s with retries).",
+          "timestamp": "2024-04-25T07:56:23Z",
+          "tree_id": "8f169565123d1f65f7206c804dff0565f03264fc",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c5209b0f2a53ec1aaa703e5877df92b0f16b24a"
+        },
+        "date": 1714034700844,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
