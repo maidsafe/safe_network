@@ -261,9 +261,6 @@ async fn startup_server(client: Client) -> Result<()> {
     // Create a semaphore with a single permit
     let semaphore = Arc::new(Semaphore::new(1));
 
-    let faucet_root = get_faucet_data_dir();
-    let _faucet_wallet = load_account_wallet_or_create_with_mnemonic(&faucet_root, None)?;
-
     #[allow(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
