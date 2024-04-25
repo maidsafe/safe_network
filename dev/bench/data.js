@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714034701308,
+  "lastUpdate": 1714034703382,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": false,
-          "id": "b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075",
-          "message": "chore: udeps and gitignore",
-          "timestamp": "2023-12-13T08:42:47Z",
-          "tree_id": "178f222bc534ea2ad530e775787bf24e7078d73d",
-          "url": "https://github.com/maidsafe/safe_network/commit/b5a33a0fcfcb2e8b89019ee6f6026f0dc2b45075"
-        },
-        "date": 1702460236327,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7753,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 80651,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 10,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35307,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "2c5209b0f2a53ec1aaa703e5877df92b0f16b24a",
+          "message": "feat(client): speed up register checks when paying\n\nWe take the existence of Payment at regsiter.sync as a proxy for intent to create a register.\nWith that we can effectively use RetryStrategy::Quick under the hood to speed up initial\nregister PUTs (15s check vs 60s with retries).",
+          "timestamp": "2024-04-25T07:56:23Z",
+          "tree_id": "8f169565123d1f65f7206c804dff0565f03264fc",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c5209b0f2a53ec1aaa703e5877df92b0f16b24a"
+        },
+        "date": 1714034702682,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7844,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37156,
             "unit": "ms"
           },
           {
