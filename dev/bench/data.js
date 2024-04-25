@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714051041619,
+  "lastUpdate": 1714051043111,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7a29f07c14198adb16c53c8e6cd045e05fc34d31",
-          "message": "feat(cli): download path is familiar to users",
-          "timestamp": "2023-12-13T08:46:52Z",
-          "tree_id": "15c63daa7e0a347e1d672e2bdae2ffc2f5bc8196",
-          "url": "https://github.com/maidsafe/safe_network/commit/7a29f07c14198adb16c53c8e6cd045e05fc34d31"
-        },
-        "date": 1702461865283,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4940,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 87624,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 17,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "git@happybeing.com",
             "name": "Mark",
             "username": "happybeing"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 37156,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ac77ad7951f11412d5d3335654d5e846c990d271",
+          "message": "chore(network): remove nat detection via incoming connections check",
+          "timestamp": "2024-04-25T12:23:56Z",
+          "tree_id": "6a5b19608a2f2fafada1cda0c99a30d32b7c9a42",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac77ad7951f11412d5d3335654d5e846c990d271"
+        },
+        "date": 1714051042749,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7614,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35418,
             "unit": "ms"
           },
           {
