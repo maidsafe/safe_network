@@ -306,7 +306,7 @@ pub async fn run_node(
     Ok(NodeServiceData {
         connected_peers,
         genesis: run_options.genesis,
-        // not read for local network.
+        home_network: false,
         local: true,
         service_name: format!("safenode-local{}", run_options.number),
         user: get_username()?,

@@ -109,6 +109,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: None,
         genesis: true,
+        home_network: false,
         local: true,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -136,6 +137,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
             delete_safenode_src: true,
             env_variables: None,
             genesis: true,
+            home_network: false,
             local: true,
             metrics_port: None,
             node_port: None,
@@ -195,21 +197,22 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: true,
-            local: false,
-            service_name: "safenode1".to_string(),
-            user: "safe".to_string(),
-            number: 1,
-            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            version: latest_version.to_string(),
-            status: ServiceStatus::Added,
+            home_network: false,
             listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            number: 1,
             pid: None,
             peer_id: None,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            status: ServiceStatus::Added,
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            connected_peers: None,
+            service_name: "safenode1".to_string(),
+            user: "safe".to_string(),
+            version: latest_version.to_string(),
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
@@ -233,6 +236,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             delete_safenode_src: true,
             env_variables: None,
             genesis: true,
+            home_network: false,
             local: true,
             metrics_port: None,
             node_port: None,
@@ -291,6 +295,7 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
             delete_safenode_src: true,
             env_variables: None,
             genesis: true,
+            home_network: false,
             local: true,
             metrics_port: None,
             node_port: None,
@@ -356,6 +361,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -388,6 +394,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
         metrics_port: None,
@@ -420,6 +427,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         bootstrap_peers: vec![],
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
         metrics_port: None,
@@ -448,6 +456,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: None,
@@ -562,6 +571,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -590,6 +600,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
             env_variables: None,
             local: false,
             genesis: false,
+            home_network: false,
             metrics_port: None,
             node_port: None,
             rpc_address: None,
@@ -677,6 +688,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: env_variables.clone(),
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -704,6 +716,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
             delete_safenode_src: true,
             env_variables: env_variables.clone(),
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: None,
@@ -762,21 +775,22 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
             genesis: true,
+            home_network: false,
+            listen_addr: None,
             local: false,
-            service_name: "safenode1".to_string(),
-            user: "safe".to_string(),
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             number: 1,
-            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            version: latest_version.to_string(),
-            status: ServiceStatus::Added,
             pid: None,
             peer_id: None,
-            listen_addr: None,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            connected_peers: None,
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            user: "safe".to_string(),
+            version: latest_version.to_string(),
         }],
         bootstrap_peers: vec![],
         environment_variables: None,
@@ -801,6 +815,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
         metrics_port: None,
@@ -829,6 +844,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: None,
@@ -907,6 +923,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -935,6 +952,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Single(custom_port)),
@@ -1147,6 +1165,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
@@ -1202,6 +1221,7 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Range(12000, 12002)),
@@ -1263,6 +1283,7 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: Some(PortRange::Single(12000)),
@@ -1462,6 +1483,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: Some(PortRange::Range(12000, 12002)),
             node_port: None,
@@ -1635,6 +1657,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             delete_safenode_src: true,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: None,
@@ -1989,6 +2012,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
         env_variables: None,
         genesis: false,
+        home_network: false,
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         metrics_port: None,
@@ -2017,6 +2041,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
             delete_safenode_src: false,
             env_variables: None,
             genesis: false,
+            home_network: false,
             local: false,
             metrics_port: None,
             node_port: None,
@@ -2036,6 +2061,98 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     .await?;
 
     safenode_download_path.assert(predicate::path::is_file());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let mut seq = Sequence::new();
+
+    // Expected calls for first installation
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(8081))
+        .in_sequence(&mut seq);
+
+    let install_ctx = InstallNodeServiceCtxBuilder {
+        bootstrap_peers: vec![],
+        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        env_variables: None,
+        genesis: false,
+        home_network: true,
+        local: false,
+        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        metrics_port: None,
+        name: "safenode1".to_string(),
+        node_port: None,
+        rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+        safenode_path: node_data_dir
+            .to_path_buf()
+            .join("safenode1")
+            .join(SAFENODE_FILE_NAME),
+        service_user: get_username(),
+    }
+    .build()?;
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(eq(install_ctx))
+        .returning(|_| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: Some(1),
+            delete_safenode_src: false,
+            env_variables: None,
+            genesis: false,
+            home_network: true,
+            local: false,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    assert!(node_registry.nodes[0].home_network);
 
     Ok(())
 }
