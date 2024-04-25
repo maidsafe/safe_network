@@ -813,6 +813,40 @@ impl Client {
         self.get_signed_register_from_network(address, true).await
     }
 
+    /// Quickly checks if a `Register` is stored by expected nodes on the network.
+    ///
+    /// To be used for initial register put checks eg, if we expect the data _not_
+    /// to exist, we can use it and essentially use the RetryStrategy::Quick under the hood
+    ///
+    ///
+    /// # Example
+    /// ```no_run
+    /// use sn_client::{Client, Error};
+    /// use bls::SecretKey;
+    /// use xor_name::XorName;
+    /// use sn_registers::RegisterAddress;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(),Error>{
+    /// // Set up Client
+    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
+    /// // Set up an address
+    /// let mut rng = rand::thread_rng();
+    /// let owner = SecretKey::random().public_key();
+    /// let xorname = XorName::random(&mut rng);
+    /// let address = RegisterAddress::new(xorname, owner);
+    /// // Verify address is stored
+    /// let is_stored = client.verify_register_stored(address).await.is_ok();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn quickly_check_if_register_stored(
+        &self,
+        address: RegisterAddress,
+    ) -> Result<SignedRegister> {
+        info!("Quickly checking for existing register : {address:?}");
+        self.get_signed_register_from_network(address, false).await
+    }
+
     /// Send a `SpendCashNote` request to the network. Protected method.
     ///
     /// # Arguments
