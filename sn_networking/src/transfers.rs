@@ -143,16 +143,17 @@ impl Network {
             parent_spends.iter().map(|s| s.spent_tx()).collect();
 
         // get our outputs from Tx
-        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
-            .iter()
-            .map(|u| {
-                let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
-                (unique_pubkey, u.derivation_index)
-            })
-            .collect();
+        let our_output_unique_pubkeys: Vec<(String, UniquePubkey, DerivationIndex)> =
+            cashnote_redemptions
+                .iter()
+                .map(|u| {
+                    let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
+                    (u.reason.clone(), unique_pubkey, u.derivation_index)
+                })
+                .collect();
         let mut our_output_cash_notes = Vec::new();
 
-        for (id, derivation_index) in our_output_unique_pubkeys.into_iter() {
+        for (reason, id, derivation_index) in our_output_unique_pubkeys.into_iter() {
             let src_tx = parent_txs
                 .iter()
                 .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
@@ -169,6 +170,7 @@ impl Network {
                 unique_pubkey: id,
                 parent_tx: src_tx,
                 parent_spends: signed_spends,
+                reason: reason.clone(),
                 main_pubkey,
                 derivation_index,
             };

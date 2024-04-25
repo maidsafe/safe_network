@@ -138,14 +138,21 @@ pub struct CashNoteRedemption {
     /// spentbook entry of one of one of the inputs (parent spends)
     /// using data found at this address the owner can check that the output is valid money
     pub parent_spend: SpendAddress,
+    /// For what purpose this cash_note was created
+    pub reason: String,
 }
 
 impl CashNoteRedemption {
     /// Create a new CashNoteRedemption
-    pub fn new(derivation_index: DerivationIndex, parent_spend: SpendAddress) -> Self {
+    pub fn new(
+        derivation_index: DerivationIndex,
+        parent_spend: SpendAddress,
+        reason: String,
+    ) -> Self {
         Self {
             derivation_index,
             parent_spend,
+            reason,
         }
     }
 
@@ -157,7 +164,11 @@ impl CashNoteRedemption {
                 return Err(TransferError::CashNoteHasNoParentSpends);
             }
         };
-        Ok(Self::new(derivation_index, parent_spend))
+        Ok(Self::new(
+            derivation_index,
+            parent_spend,
+            cash_note.reason.clone(),
+        ))
     }
 
     /// Serialize the CashNoteRedemption to bytes
@@ -199,6 +210,7 @@ mod tests {
         let cashnote_redemption = CashNoteRedemption::new(
             DerivationIndex([42; 32]),
             SpendAddress::new(XorName::random(rng)),
+            Default::default(),
         );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();
@@ -219,6 +231,7 @@ mod tests {
         let cashnote_redemption = CashNoteRedemption::new(
             DerivationIndex([42; 32]),
             SpendAddress::new(XorName::random(rng)),
+            Default::default(),
         );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();

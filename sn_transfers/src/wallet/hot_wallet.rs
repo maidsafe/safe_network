@@ -22,8 +22,8 @@ use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
-    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
+    CashNote, CashNoteOutputDetails, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash,
+    MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
     WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::{
@@ -36,6 +36,9 @@ use xor_name::XorName;
 
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
+
+// TransactionPayeeDetails: (reason, amount, address)
+pub type TransactionPayeeDetails = (String, NanoTokens, MainPubkey);
 
 /// A hot-wallet.
 pub struct HotWallet {
@@ -303,7 +306,7 @@ impl HotWallet {
 
     pub fn build_unsigned_transaction(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<TransactionPayeeDetails>,
         reason_hash: Option<Hash>,
     ) -> Result<UnsignedTransfer> {
         self.watchonly_wallet
@@ -313,14 +316,16 @@ impl HotWallet {
     /// Make a transfer and return all created cash_notes
     pub fn local_send(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<TransactionPayeeDetails>,
         reason_hash: Option<Hash>,
     ) -> Result<Vec<CashNote>> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(reason, amount, address)| {
+                (amount, reason, address, DerivationIndex::random(&mut rng))
+            })
             .collect();
 
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -352,7 +357,7 @@ impl HotWallet {
         signed_spends: BTreeSet<SignedSpend>,
         tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
     ) -> Result<Vec<CashNote>> {
         let transfer =
             OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
@@ -389,6 +394,7 @@ impl HotWallet {
         for (xorname, (main_pubkey, quote, peer_id_bytes)) in price_map.iter() {
             let storage_payee = (
                 quote.cost,
+                quote.reason.clone(),
                 *main_pubkey,
                 DerivationIndex::random(&mut rng),
                 peer_id_bytes.clone(),
@@ -396,6 +402,7 @@ impl HotWallet {
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
+                "CASH_NOTE_REASON_FOR_NETWORK_ROYALTIES".to_string(),
                 *NETWORK_ROYALTIES_PK,
                 DerivationIndex::random(&mut rng),
             );
@@ -413,7 +420,14 @@ impl HotWallet {
         // create offline transfers
         let recipients = recipients_by_xor
             .values()
-            .flat_map(|(node, roy)| vec![(node.0, node.1, node.2), *roy])
+            .flat_map(
+                |((cost, reason, pubkey, derivation_index, _id_bytes), roy)| {
+                    vec![
+                        (*cost, reason.clone(), *pubkey, *derivation_index),
+                        roy.clone(),
+                    ]
+                },
+            )
             .collect();
 
         trace!(
@@ -429,7 +443,7 @@ impl HotWallet {
             start.elapsed()
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let reason_hash = Default::default();
+        let reason_hash = Hash::hash(b"SPEND_REASON_FOR_STORAGE");
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
@@ -452,7 +466,7 @@ impl HotWallet {
             .collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
-            let (pay_amount, node_key, _, peer_id_bytes) = storage_payee;
+            let (pay_amount, _reason, node_key, _, peer_id_bytes) = storage_payee;
             let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
@@ -467,7 +481,7 @@ impl HotWallet {
             let transfer_for_node = Transfer::transfer_from_cash_note(&cash_note_for_node)?;
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
-            let royalties_key = royalties_payee.1;
+            let royalties_key = royalties_payee.2;
             let royalties_amount = royalties_payee.0;
             let cash_note_for_royalties = cashnotes_to_use
                 .iter()
@@ -856,7 +870,11 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let created_cash_notes = sender.local_send(to, None)?;
 
         assert_eq!(1, created_cash_notes.len());
@@ -888,7 +906,11 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let _created_cash_notes = sender.local_send(to, None)?;
 
         let deserialized = HotWallet::load_from(&root_dir)?;
@@ -949,7 +971,11 @@ mod tests {
 
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
