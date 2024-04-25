@@ -61,6 +61,11 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Set this flag to use the safenode '--home-network' feature.
+        ///
+        /// This enables the use of safenode services from a home network with a router.
+        #[clap(long)]
+        home_network: bool,
         /// Set this flag to launch safenode with the --local flag.
         ///
         /// This is useful for building a service-based local network.
@@ -609,6 +614,7 @@ async fn main() -> Result<()> {
             count,
             data_dir_path,
             env_variables,
+            home_network,
             local,
             log_dir_path,
             metrics_port,
@@ -625,6 +631,7 @@ async fn main() -> Result<()> {
                 count,
                 data_dir_path,
                 env_variables,
+                home_network,
                 local,
                 log_dir_path,
                 metrics_port,

@@ -45,6 +45,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub data_dir_path: PathBuf,
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
+    pub home_network: bool,
     pub local: bool,
     pub log_dir_path: PathBuf,
     pub name: String,
@@ -69,6 +70,9 @@ impl InstallNodeServiceCtxBuilder {
 
         if self.genesis {
             args.push(OsString::from("--first"));
+        }
+        if self.home_network {
+            args.push(OsString::from("--home-network"));
         }
         if self.local {
             args.push(OsString::from("--local"));
@@ -111,6 +115,7 @@ pub struct AddNodeServiceOptions {
     pub delete_safenode_src: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
+    pub home_network: bool,
     pub local: bool,
     pub metrics_port: Option<PortRange>,
     pub node_port: Option<PortRange>,
