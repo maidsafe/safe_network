@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714061666133,
+  "lastUpdate": 1714061780532,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "distinct": true,
-          "id": "e815224222e3d83590c926b88998dcda8a0f72ad",
-          "message": "feat: pick cheapest payee using linear pricing curve",
-          "timestamp": "2024-01-02T13:46:17Z",
-          "tree_id": "c771f4bb26215d691fb8afd853b29a90ba52ec7b",
-          "url": "https://github.com/maidsafe/safe_network/commit/e815224222e3d83590c926b88998dcda8a0f72ad"
-        },
-        "date": 1704205749650,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
           "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
           "message": "fix(client): wallet not progress with unconfirmed tx",
           "timestamp": "2024-01-02T17:26:40Z",
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e44f46dfc83590f8a539982249b0a00767fe96e0",
+          "message": "feat: provide `--home-network` arg for `add` cmd\n\nThe `add` command now enables the user to pass the `--home-network` argument to the `safenode`\nservice.\n\nBREAKING CHANGE: the addition of the `home_network` field to `NodeServiceData` will mean this\nversion of the node manager will not be able to deserialize old node registry files.",
+          "timestamp": "2024-04-25T15:23:27Z",
+          "tree_id": "6e1f9f4c5fd3a7506bfc40862e49e4facf78e676",
+          "url": "https://github.com/maidsafe/safe_network/commit/e44f46dfc83590f8a539982249b0a00767fe96e0"
+        },
+        "date": 1714061780206,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
