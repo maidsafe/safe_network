@@ -14,7 +14,6 @@ use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
 const MAX_POTENTIAL_CANDIDATES: usize = 15;
-const MAX_PEERS_IN_RT_DURING_NAT_CHECK: usize = 30;
 
 /// To manager relayed connections.
 #[derive(Debug)]
@@ -63,30 +62,6 @@ impl RelayManager {
     pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
         self.connected_relays.contains_key(peer_id)
             || self.waiting_for_reservation.contains_key(peer_id)
-    }
-
-    /// If we have 0 incoming connection even after we have a lot of peers, then we are behind a NAT
-    pub(crate) fn are_we_behind_nat(&self, swarm: &mut Swarm<NodeBehaviour>) -> bool {
-        if swarm
-            .network_info()
-            .connection_counters()
-            .num_established_incoming()
-            == 0
-            || swarm
-                .network_info()
-                .connection_counters()
-                .num_pending_incoming()
-                == 0
-        {
-            let mut total_peers = 0;
-            for kbucket in swarm.behaviour_mut().kademlia.kbuckets() {
-                total_peers += kbucket.num_entries();
-                if total_peers > MAX_PEERS_IN_RT_DURING_NAT_CHECK {
-                    return true;
-                }
-            }
-        }
-        false
     }
 
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
