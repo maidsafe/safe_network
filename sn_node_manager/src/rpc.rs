@@ -59,6 +59,7 @@ pub async fn restart_node_service(
             data_dir_path: current_node_clone.data_dir_path.clone(),
             env_variables: node_registry.environment_variables.clone(),
             genesis: current_node_clone.genesis,
+            home_network: current_node_clone.home_network,
             local: current_node_clone.local,
             log_dir_path: current_node_clone.log_dir_path.clone(),
             metrics_port: None,
@@ -136,20 +137,19 @@ pub async fn restart_node_service(
         };
 
         let install_ctx = InstallNodeServiceCtxBuilder {
-            local: current_node_clone.local,
+            bootstrap_peers: node_registry.bootstrap_peers.clone(),
+            data_dir_path: data_dir_path.clone(),
+            env_variables: node_registry.environment_variables.clone(),
             genesis: current_node_clone.genesis,
+            home_network: current_node_clone.home_network,
+            local: current_node_clone.local,
+            log_dir_path: log_dir_path.clone(),
             name: new_service_name.clone(),
-            // don't re-use port
             metrics_port: None,
             node_port: None,
-            bootstrap_peers: node_registry.bootstrap_peers.clone(),
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            // set new paths
-            data_dir_path: data_dir_path.clone(),
-            log_dir_path: log_dir_path.clone(),
             safenode_path: safenode_path.clone(),
             service_user: current_node_clone.user.clone(),
-            env_variables: node_registry.environment_variables.clone(),
         }
         .build()?;
         service_control.install(install_ctx).map_err(|err| {
@@ -157,21 +157,22 @@ pub async fn restart_node_service(
         })?;
 
         let mut node = NodeServiceData {
-            genesis: current_node_clone.genesis,
-            local: current_node_clone.local,
-            service_name: new_service_name.clone(),
-            user: current_node_clone.user.clone(),
-            number: new_node_number as u16,
-            rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            version: current_node_clone.version.clone(),
-            status: ServiceStatus::Added,
-            listen_addr: None,
-            pid: None,
-            peer_id: None,
-            log_dir_path,
-            data_dir_path,
-            safenode_path,
             connected_peers: None,
+            data_dir_path,
+            genesis: current_node_clone.genesis,
+            home_network: current_node_clone.home_network,
+            listen_addr: None,
+            local: current_node_clone.local,
+            log_dir_path,
+            number: new_node_number as u16,
+            peer_id: None,
+            pid: None,
+            rpc_socket_addr: current_node_clone.rpc_socket_addr,
+            safenode_path,
+            service_name: new_service_name.clone(),
+            status: ServiceStatus::Added,
+            user: current_node_clone.user.clone(),
+            version: current_node_clone.version.clone(),
         };
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
