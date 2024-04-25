@@ -163,7 +163,6 @@ pub enum NetworkEvent {
 #[derive(Debug, Clone)]
 pub enum TerminateNodeReason {
     HardDiskWriteError,
-    BehindNAT,
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -256,6 +255,13 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
+            }
+            SwarmEvent::Behaviour(NodeEvent::Dcutr(event)) => {
+                event_string = "dcutr_event";
+                info!(
+                    "Dcutr with remote peer: {:?} is: {:?}",
+                    event.remote_peer_id, event.result
+                );
             }
             SwarmEvent::Behaviour(NodeEvent::RelayClient(event)) => {
                 event_string = "relay_client_event";
@@ -418,14 +424,6 @@ impl SwarmDriver {
                                         .behaviour_mut()
                                         .kademlia
                                         .add_address(&peer_id, multiaddr.clone());
-                                }
-
-                                if self.relay_manager.are_we_behind_nat(&mut self.swarm) {
-                                    warn!("Node reported as being behind NAT for not having enough incoming connections. This can be a false positive. Do nothing.");
-
-                                    // self.send_event(NetworkEvent::TerminateNode {
-                                    //     reason: TerminateNodeReason::BehindNAT,
-                                    // })
                                 }
                             }
                         }
