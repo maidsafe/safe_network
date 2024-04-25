@@ -9,7 +9,7 @@
 use super::{
     api::WalletApi,
     error::{Error, Result},
-    hot_wallet::WalletExclusiveAccess,
+    hot_wallet::{TransactionPayeeDetails, WalletExclusiveAccess},
     keys::{get_main_pubkey, store_new_pubkey},
     wallet_file::{
         load_cash_notes_from_disk, load_created_cash_note, store_created_cash_notes, store_wallet,
@@ -215,14 +215,16 @@ impl WatchOnlyWallet {
 
     pub fn build_unsigned_transaction(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<TransactionPayeeDetails>,
         reason_hash: Option<Hash>,
     ) -> Result<UnsignedTransfer> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(reason, amount, address)| {
+                (amount, reason, address, DerivationIndex::random(&mut rng))
+            })
             .collect();
 
         trace!("Trying to lock wallet to get available cash_notes...");

@@ -8,9 +8,9 @@
 
 use crate::{
     cashnotes::{CashNoteBuilder, UnsignedTransfer},
-    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, Result,
-    SignedSpend, Transaction, TransactionBuilder, TransferError, UniquePubkey,
-    NETWORK_ROYALTIES_PK,
+    rng, CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, Input,
+    MainPubkey, NanoTokens, Result, SignedSpend, Transaction, TransactionBuilder, TransferError,
+    UniquePubkey, NETWORK_ROYALTIES_PK,
 };
 
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// List of CashNotes, with (optionally when needed) their corresponding derived owning secret key.
 pub type CashNotesAndSecretKey = Vec<(CashNote, Option<DerivedSecretKey>)>;
+
+/// RecipientDetails: (amount, cash_note_reason, pub_key, derivation_index)
+pub type TransferRecipientDetails = (NanoTokens, String, MainPubkey, DerivationIndex);
 
 /// Offline Transfer
 /// This struct contains all the necessary information to carry out the transfer.
@@ -45,7 +48,7 @@ impl OfflineTransfer {
         signed_spends: BTreeSet<SignedSpend>,
         tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
     ) -> Result<Self> {
         let cash_note_builder =
             CashNoteBuilder::new(tx.clone(), output_details, signed_spends.clone());
@@ -88,13 +91,13 @@ impl OfflineTransfer {
     /// them upon request, the transaction will be completed.
     pub fn new(
         available_cash_notes: CashNotesAndSecretKey,
-        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
+        recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
         change_to: MainPubkey,
         reason_hash: Hash,
     ) -> Result<Self> {
         let total_output_amount = recipients
             .iter()
-            .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
+            .try_fold(NanoTokens::zero(), |total, (amount, _, _, _)| {
                 total.checked_add(*amount)
             })
             .ok_or_else(|| {
@@ -125,7 +128,7 @@ struct TransferInputs {
     /// to transfer the below specified amount of tokens to each recipients.
     pub cash_notes_to_spend: CashNotesAndSecretKey,
     /// The amounts and cash_note ids for the cash_notes that will be created to hold the transferred tokens.
-    pub recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
+    pub recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
     /// Any surplus amount after spending the necessary input cash_notes.
     pub change: (NanoTokens, MainPubkey),
 }
@@ -133,13 +136,13 @@ struct TransferInputs {
 /// A function for creating an unsigned transfer of tokens.
 pub fn create_unsigned_transfer(
     available_cash_notes: CashNotesAndSecretKey,
-    recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
+    recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
     reason_hash: Hash,
 ) -> Result<UnsignedTransfer> {
     let total_output_amount = recipients
         .iter()
-        .try_fold(NanoTokens::zero(), |total, (amount, _, _)| {
+        .try_fold(NanoTokens::zero(), |total, (amount, _, _, _)| {
             total.checked_add(*amount)
         })
         .ok_or(TransferError::ExcessiveNanoValue)?;
@@ -158,8 +161,8 @@ pub fn create_unsigned_transfer(
     let network_royalties: Vec<DerivationIndex> = selected_inputs
         .recipients
         .iter()
-        .filter(|(_, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
-        .map(|(_, _, derivation_index)| *derivation_index)
+        .filter(|(_, _, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
+        .map(|(_, _, _, derivation_index)| *derivation_index)
         .collect();
 
     let (tx_builder, _src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
@@ -272,7 +275,12 @@ fn create_transaction_builder_with(
     let derivation_index = DerivationIndex::random(&mut rng);
     let change_id = change_to.new_unique_pubkey(&derivation_index);
     if !change.is_zero() {
-        tx_builder = tx_builder.add_output(change, change_to, derivation_index);
+        tx_builder = tx_builder.add_output(
+            change,
+            "CASH_NOTE_REASON_FOR_CHANGE".to_string(),
+            change_to,
+            derivation_index,
+        );
     }
 
     Ok((tx_builder, src_txs, change_id))
@@ -292,8 +300,8 @@ fn create_offline_transfer_with(
     let network_royalties: Vec<DerivationIndex> = selected_inputs
         .recipients
         .iter()
-        .filter(|(_, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
-        .map(|(_, _, derivation_index)| *derivation_index)
+        .filter(|(_, _, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
+        .map(|(_, _, _, derivation_index)| *derivation_index)
         .collect();
 
     let (tx_builder, src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;

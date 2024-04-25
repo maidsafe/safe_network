@@ -33,6 +33,7 @@ pub trait Launcher {
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
     fn launch_node(
         &self,
+        owner: String,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
     ) -> Result<()>;
@@ -66,10 +67,15 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_node(
         &self,
+        owner: String,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
     ) -> Result<()> {
         let mut args = Vec::new();
+
+        args.push("--owner".to_string());
+        args.push(owner);
+
         if bootstrap_peers.is_empty() {
             args.push("--first".to_string())
         } else {
@@ -162,6 +168,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 
 pub struct LocalNetworkOptions {
     pub faucet_bin_path: PathBuf,
+    pub owner: String,
     pub join: bool,
     pub interval: u64,
     pub node_count: u16,
@@ -200,6 +207,7 @@ pub async fn run_network(
         let node = run_node(
             RunNodeOptions {
                 version: get_bin_version(&launcher.get_safenode_path())?,
+                owner: options.owner.clone(),
                 number,
                 genesis: true,
                 interval: options.interval,
@@ -227,6 +235,7 @@ pub async fn run_network(
         let node = run_node(
             RunNodeOptions {
                 version: get_bin_version(&launcher.get_safenode_path())?,
+                owner: options.owner.clone(),
                 number,
                 genesis: false,
                 interval: options.interval,
@@ -274,6 +283,7 @@ pub async fn run_network(
 
 pub struct RunNodeOptions {
     pub version: String,
+    pub owner: String,
     pub number: u16,
     pub genesis: bool,
     pub interval: u64,
@@ -286,8 +296,31 @@ pub async fn run_node(
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<NodeServiceData> {
+    let user = match get_username() {
+        Ok(user_name) => {
+            println!("parsed env set user_name is {user_name:?}");
+            if user_name.is_empty() {
+                println!(
+                    "Env set user_name is empty, using owner ({:?}) passed via cli.",
+                    run_options.owner
+                );
+                run_options.owner.clone()
+            } else {
+                user_name
+            }
+        }
+        Err(_err) => {
+            println!(
+                "cannot parse user_name from env, using owner ({:?}) passed via cli.",
+                run_options.owner
+            );
+            run_options.owner.clone()
+        }
+    };
+
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
+        user.clone(),
         run_options.rpc_socket_addr,
         run_options.bootstrap_peers.clone(),
     )?;
@@ -309,7 +342,7 @@ pub async fn run_node(
         home_network: false,
         local: true,
         service_name: format!("safenode-local{}", run_options.number),
-        user: get_username()?,
+        user,
         number: run_options.number,
         rpc_socket_addr: run_options.rpc_socket_addr,
         version: run_options.version.to_string(),
@@ -412,14 +445,15 @@ mod tests {
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut mock_rpc_client = MockRpcClient::new();
+        let owner = get_username()?;
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_launch_node()
-            .with(eq(rpc_socket_addr), eq(vec![]))
+            .with(eq(owner.clone()), eq(rpc_socket_addr), eq(vec![]))
             .times(1)
-            .returning(|_, _| Ok(()));
+            .returning(|_, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -456,6 +490,7 @@ mod tests {
         let node = run_node(
             RunNodeOptions {
                 version: "0.100.12".to_string(),
+                owner,
                 number: 1,
                 genesis: true,
                 interval: 100,

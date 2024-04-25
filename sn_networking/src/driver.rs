@@ -206,10 +206,11 @@ pub struct NetworkBuilder {
     metrics_registry: Option<Registry>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: u16,
+    owner: String,
 }
 
 impl NetworkBuilder {
-    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
+    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf, owner: String) -> Self {
         Self {
             is_behind_home_network: false,
             keypair,
@@ -223,6 +224,7 @@ impl NetworkBuilder {
             metrics_registry: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
+            owner,
         }
     }
 
@@ -315,6 +317,7 @@ impl NetworkBuilder {
         };
 
         let listen_addr = self.listen_addr;
+        let owner = self.owner.clone();
 
         let (network, events_receiver, mut swarm_driver) = self.build(
             kad_cfg,
@@ -322,6 +325,7 @@ impl NetworkBuilder {
             false,
             ProtocolSupport::Full,
             IDENTIFY_NODE_VERSION_STR.to_string(),
+            owner,
         )?;
 
         // Listen on the provided address
@@ -367,12 +371,15 @@ impl NetworkBuilder {
                     .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
             );
 
+        let owner = self.owner.clone();
+
         let (network, net_event_recv, driver) = self.build(
             kad_cfg,
             None,
             true,
             ProtocolSupport::Outbound,
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
+            owner,
         )?;
 
         Ok((network, net_event_recv, driver))
@@ -386,6 +393,7 @@ impl NetworkBuilder {
         is_client: bool,
         req_res_protocol: ProtocolSupport,
         identify_version: String,
+        owner: String,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -579,6 +587,7 @@ impl NetworkBuilder {
                 peer_id: Arc::new(peer_id),
                 root_dir_path: Arc::new(self.root_dir),
                 keypair: Arc::new(self.keypair),
+                owner,
             },
             network_event_receiver,
             swarm_driver,

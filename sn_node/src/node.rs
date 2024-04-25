@@ -67,6 +67,7 @@ pub struct NodeBuilder {
     metrics_server_port: u16,
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
+    owner: String,
 }
 
 impl NodeBuilder {
@@ -77,6 +78,7 @@ impl NodeBuilder {
         initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: PathBuf,
+        owner: String,
     ) -> Self {
         Self {
             keypair,
@@ -87,6 +89,7 @@ impl NodeBuilder {
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
             is_behind_home_network: false,
+            owner,
         }
     }
 
@@ -130,7 +133,8 @@ impl NodeBuilder {
             (metrics_registry, node_metrics)
         };
 
-        let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
+        let mut network_builder =
+            NetworkBuilder::new(self.keypair, self.local, self.root_dir, self.owner.clone());
 
         network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
