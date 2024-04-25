@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714061781918,
+  "lastUpdate": 1714061783550,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "10c55f1c1c81fab9eb19dd99989a3282d1046ae7",
-          "message": "fix: update README paths to use .local/share/safe",
-          "timestamp": "2023-12-13T15:00:00+01:00",
-          "tree_id": "bb6e2230bd361a41f884c68aa5d8810fe2687db7",
-          "url": "https://github.com/maidsafe/safe_network/commit/10c55f1c1c81fab9eb19dd99989a3282d1046ae7"
-        },
-        "date": 1702476828456,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4139,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 64749,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35418,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e44f46dfc83590f8a539982249b0a00767fe96e0",
+          "message": "feat: provide `--home-network` arg for `add` cmd\n\nThe `add` command now enables the user to pass the `--home-network` argument to the `safenode`\nservice.\n\nBREAKING CHANGE: the addition of the `home_network` field to `NodeServiceData` will mean this\nversion of the node manager will not be able to deserialize old node registry files.",
+          "timestamp": "2024-04-25T15:23:27Z",
+          "tree_id": "6e1f9f4c5fd3a7506bfc40862e49e4facf78e676",
+          "url": "https://github.com/maidsafe/safe_network/commit/e44f46dfc83590f8a539982249b0a00767fe96e0"
+        },
+        "date": 1714061783225,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7694,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35748,
             "unit": "ms"
           },
           {
