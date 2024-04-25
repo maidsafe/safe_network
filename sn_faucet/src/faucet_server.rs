@@ -132,6 +132,9 @@ async fn respond_to_donate_request(
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
     let faucet_root = get_faucet_data_dir();
 
+    let permit = semaphore.try_acquire();
+    info!("Got donate request with: {transfer_str}");
+
     let mut wallet = match load_account_wallet_or_create_with_mnemonic(&faucet_root, None) {
         Ok(wallet) => wallet,
         Err(_error) => {
@@ -142,8 +145,6 @@ async fn respond_to_donate_request(
             return Ok(response);
         }
     };
-    let permit = semaphore.try_acquire();
-    info!("Got donate request with: {transfer_str}");
 
     // some rate limiting
     if is_wallet_locked() || permit.is_err() {
