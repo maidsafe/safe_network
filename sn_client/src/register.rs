@@ -500,7 +500,18 @@ impl ClientRegister {
         let mut royalties_fees = NanoTokens::zero();
         let reg_result = if verify_store {
             debug!("VERIFYING REGISTER STORED {:?}", self.address());
-            let res = self.client.verify_register_stored(*self.address()).await;
+
+            let res = if payment_info.is_some() {
+                // we expect this to be a _fresh_ register.
+                // It still could have been PUT previously, but we'll do a quick verification
+                // instead of thorough one.
+                self.client
+                    .quickly_check_if_register_stored(*self.address())
+                    .await
+            } else {
+                self.client.verify_register_stored(*self.address()).await
+            };
+
             // we need to keep the error here if verifying, so we can retry and pay for storage
             // once more below
             match res {
