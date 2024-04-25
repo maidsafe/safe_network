@@ -8,11 +8,11 @@
 
 use super::{
     transaction::{Output, Transaction},
-    CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, SignedSpend,
-    Spend, UniquePubkey,
+    CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey,
+    NanoTokens, SignedSpend, Spend, UniquePubkey,
 };
 
-use crate::{Result, TransferError};
+use crate::{transfers::TransferRecipientDetails, Result, TransferError};
 
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -31,7 +31,7 @@ pub struct UnsignedTransfer {
     /// spending the necessary input cash_notes.
     pub change_id: UniquePubkey,
     /// Information for aggregating signed spends and generating the final CashNote outputs.
-    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    pub output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
 }
 
 /// A builder to create a Transaction from
@@ -41,7 +41,7 @@ pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
     input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
 }
 
 impl TransactionBuilder {
@@ -72,17 +72,18 @@ impl TransactionBuilder {
         self
     }
 
-    /// Add an output given the token, the MainPubkey and the DerivationIndex
+    /// Add an output given the token, reason, the MainPubkey and the DerivationIndex
     pub fn add_output(
         mut self,
         token: NanoTokens,
+        reason: String,
         main_pubkey: MainPubkey,
         derivation_index: DerivationIndex,
     ) -> Self {
         let unique_pubkey = main_pubkey.new_unique_pubkey(&derivation_index);
 
         self.output_details
-            .insert(unique_pubkey, (main_pubkey, derivation_index));
+            .insert(unique_pubkey, (reason, main_pubkey, derivation_index));
         let output = Output::new(unique_pubkey, token.as_nano());
         self.outputs.push(output);
 
@@ -92,10 +93,10 @@ impl TransactionBuilder {
     /// Add a list of outputs given the tokens, the MainPubkey and the DerivationIndex
     pub fn add_outputs(
         mut self,
-        outputs: impl IntoIterator<Item = (NanoTokens, MainPubkey, DerivationIndex)>,
+        outputs: impl IntoIterator<Item = TransferRecipientDetails>,
     ) -> Self {
-        for (token, main_pubkey, derivation_index) in outputs.into_iter() {
-            self = self.add_output(token, main_pubkey, derivation_index);
+        for (token, reason, main_pubkey, derivation_index) in outputs.into_iter() {
+            self = self.add_output(token, reason, main_pubkey, derivation_index);
         }
         self
     }
@@ -179,7 +180,7 @@ impl TransactionBuilder {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CashNoteBuilder {
     pub spent_tx: Transaction,
-    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    pub output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
     pub signed_spends: BTreeSet<SignedSpend>,
 }
 
@@ -187,7 +188,7 @@ impl CashNoteBuilder {
     /// Create a new CashNoteBuilder.
     pub fn new(
         spent_tx: Transaction,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
         signed_spends: BTreeSet<SignedSpend>,
     ) -> Self {
         Self {
@@ -228,7 +229,7 @@ impl CashNoteBuilder {
             .outputs
             .iter()
             .map(|output| {
-                let (main_pubkey, derivation_index) = self
+                let (reason, main_pubkey, derivation_index) = self
                     .output_details
                     .get(&output.unique_pubkey)
                     .ok_or(TransferError::UniquePubkeyNotFound)?;
@@ -238,6 +239,7 @@ impl CashNoteBuilder {
                         unique_pubkey: main_pubkey.new_unique_pubkey(derivation_index),
                         parent_tx: self.spent_tx.clone(),
                         parent_spends: self.signed_spends.clone(),
+                        reason: reason.clone(),
                         main_pubkey: *main_pubkey,
                         derivation_index: *derivation_index,
                     },

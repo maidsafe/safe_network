@@ -347,7 +347,11 @@ impl SpendDag {
         for s in spends {
             for derivation_idx in s.spend.network_royalties.iter() {
                 let spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
-                royalties.push(CashNoteRedemption::new(*derivation_idx, spend_addr));
+                royalties.push(CashNoteRedemption::new(
+                    *derivation_idx,
+                    spend_addr,
+                    "CASH_NOTE_REASON_FOR_NETWORK_ROYALTIES".to_string(),
+                ));
             }
         }
         Ok(royalties)

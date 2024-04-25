@@ -117,6 +117,7 @@ impl MockNetwork {
             .map_err(|e| eyre!("could not get cashnotes for transfer: {e}"))?;
         let recipient = vec![(
             NanoTokens::from(amount),
+            Default::default(),
             to_wallet.sk.main_pubkey(),
             DerivationIndex::random(&mut rng),
         )];

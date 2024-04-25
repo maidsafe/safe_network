@@ -16,7 +16,7 @@ use sn_networking::target_arch::Instant;
 use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
+    CashNote, CashNoteOutputDetails, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
 };
 use std::{
@@ -306,7 +306,10 @@ impl WalletClient {
         to: MainPubkey,
         verify_store: bool,
     ) -> WalletResult<CashNote> {
-        let created_cash_notes = self.wallet.local_send(vec![(amount, to)], None)?;
+        let created_cash_notes = self.wallet.local_send(
+            vec![("CASH_NOTE_REASON_FOR_TRANSFER".to_string(), amount, to)],
+            None,
+        )?;
 
         // send to network
         if let Err(error) = self
@@ -346,7 +349,7 @@ impl WalletClient {
         signed_spends: BTreeSet<SignedSpend>,
         tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
         verify_store: bool,
     ) -> WalletResult<CashNote> {
         let created_cash_notes =
@@ -1086,7 +1089,7 @@ pub async fn send(
 /// * signed_spends - [BTreeSet]<[SignedSpend]>,
 /// * transaction - [Transaction],
 /// * change_id - [UniquePubkey],
-/// * output_details - [BTreeMap]<[UniquePubkey], ([MainPubkey], [DerivationIndex])>,
+/// * output_details - [BTreeMap]<[UniquePubkey], CashNoteOutputDetails>,
 /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
 ///
 /// # Return value
@@ -1128,7 +1131,7 @@ pub async fn broadcast_signed_spends(
     signed_spends: BTreeSet<SignedSpend>,
     tx: Transaction,
     change_id: UniquePubkey,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
     verify_store: bool,
 ) -> WalletResult<CashNote> {
     let mut wallet_client = WalletClient::new(client.clone(), from);

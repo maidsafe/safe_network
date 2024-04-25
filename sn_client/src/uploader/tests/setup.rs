@@ -425,7 +425,12 @@ pub fn start_uploading_with_steps(
 // Build a very simple client struct for testing. This does not connect to any network.
 // The UploaderInterface eliminates the need for direct networking in tests.
 pub fn build_unconnected_client(root_dir: PathBuf) -> Result<Client> {
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), true, root_dir);
+    let network_builder = NetworkBuilder::new(
+        Keypair::generate_ed25519(),
+        true,
+        root_dir,
+        "maidsafe_client".to_string(),
+    );
     let (network, ..) = network_builder.build_client()?;
     let client = Client {
         network: network.clone(),

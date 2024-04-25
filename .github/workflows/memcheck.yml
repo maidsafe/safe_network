@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p $BOOTSTRAP_NODE_DATA_PATH
           ./target/release/safenode --first \
-            --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local &
+            --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local --owner=maidsafe_test &
           sleep 10
         env:
           SN_LOG: "all"
@@ -65,7 +65,7 @@ jobs:
         run: |
           mkdir -p $RESTART_TEST_NODE_DATA_PATH
           ./target/release/safenode \
-            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local &
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --owner=maidsafe_test &
           sleep 10
         env:
           SN_LOG: "all"
@@ -165,7 +165,7 @@ jobs:
       - name: Start the restart node again
         run: |
           ./target/release/safenode \
-            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local &
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --owner=maidsafe_test &
           sleep 10
         env:
           SN_LOG: "all"
