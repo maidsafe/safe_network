@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714050920135,
+  "lastUpdate": 1714051040170,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "25e33a0b7fd029fd4323e62f59a61111ecb2799f",
-          "message": "feat: restart faucet_server from breaking point",
-          "timestamp": "2023-12-29T14:50:41Z",
-          "tree_id": "b2c5531dabb7daf65a7b20c6b5e48f3f22326ac5",
-          "url": "https://github.com/maidsafe/safe_network/commit/25e33a0b7fd029fd4323e62f59a61111ecb2799f"
-        },
-        "date": 1703864221354,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ac77ad7951f11412d5d3335654d5e846c990d271",
+          "message": "chore(network): remove nat detection via incoming connections check",
+          "timestamp": "2024-04-25T12:23:56Z",
+          "tree_id": "6a5b19608a2f2fafada1cda0c99a30d32b7c9a42",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac77ad7951f11412d5d3335654d5e846c990d271"
+        },
+        "date": 1714051039787,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
