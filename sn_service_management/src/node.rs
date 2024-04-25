@@ -151,6 +151,7 @@ pub struct NodeServiceData {
     pub connected_peers: Option<Vec<PeerId>>,
     pub data_dir_path: PathBuf,
     pub genesis: bool,
+    pub home_network: bool,
     pub listen_addr: Option<Vec<Multiaddr>>,
     pub local: bool,
     pub log_dir_path: PathBuf,
