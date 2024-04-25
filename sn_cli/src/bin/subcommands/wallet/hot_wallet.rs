@@ -35,7 +35,7 @@ use std::{path::Path, str::FromStr};
 pub enum WalletCmds {
     /// Print the wallet address.
     Address {
-        /// Optional passphrase to use for the wallet deriviation if generating a new mnemonic.
+        /// Optional phrase to use for the wallet deriviation from mnemonic entropy.
         passphrase: Option<String>,
     },
     /// Print the wallet balance.
