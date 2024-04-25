@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1713985435149,
+  "lastUpdate": 1714034584061,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "c4f485d1c6384f27aa4b9eb6e7c233cea2b47020",
-          "message": "test: update churn tests to be harsher\n\nNow we more swiftly detect churn, these tests can be more strenuous",
-          "timestamp": "2023-12-29T11:12:56Z",
-          "tree_id": "6ac0ffe5dac7222e629eaf747c1976ab115dcf08",
-          "url": "https://github.com/maidsafe/safe_network/commit/c4f485d1c6384f27aa4b9eb6e7c233cea2b47020"
-        },
-        "date": 1703850909038,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5756411600482919,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0231112924696422,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.16855085376227,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.93680557671058,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "2c5209b0f2a53ec1aaa703e5877df92b0f16b24a",
+          "message": "feat(client): speed up register checks when paying\n\nWe take the existence of Payment at regsiter.sync as a proxy for intent to create a register.\nWith that we can effectively use RetryStrategy::Quick under the hood to speed up initial\nregister PUTs (15s check vs 60s with retries).",
+          "timestamp": "2024-04-25T07:56:23Z",
+          "tree_id": "8f169565123d1f65f7206c804dff0565f03264fc",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c5209b0f2a53ec1aaa703e5877df92b0f16b24a"
+        },
+        "date": 1714034579123,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.220787700760608,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.630899559117196,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.79290131794749,
             "unit": "MiB/s"
           }
         ]
