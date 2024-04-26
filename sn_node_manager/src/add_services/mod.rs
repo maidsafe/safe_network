@@ -21,6 +21,7 @@ use sn_service_management::{
     control::ServiceControl, DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData,
     ServiceStatus,
 };
+use sn_transfers::NanoTokens;
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -176,6 +177,7 @@ pub async fn add_node(
                     local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
                     number: node_number,
+                    reward_balance: NanoTokens::zero(),
                     rpc_socket_addr,
                     peer_id: None,
                     pid: None,

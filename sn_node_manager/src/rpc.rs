@@ -167,6 +167,7 @@ pub async fn restart_node_service(
             number: new_node_number as u16,
             peer_id: None,
             pid: None,
+            reward_balance: current_node_clone.reward_balance,
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
             safenode_path,
             service_name: new_service_name.clone(),
