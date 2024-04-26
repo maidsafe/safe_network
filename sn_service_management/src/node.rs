@@ -12,6 +12,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_protocol::get_port_from_multiaddr;
+use sn_transfers::NanoTokens;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr};
 
 pub struct NodeService<'a> {
@@ -162,6 +163,7 @@ pub struct NodeServiceData {
     )]
     pub peer_id: Option<PeerId>,
     pub pid: Option<u32>,
+    pub reward_balance: NanoTokens,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_name: String,

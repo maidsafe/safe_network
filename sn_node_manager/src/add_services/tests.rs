@@ -28,6 +28,7 @@ use sn_service_management::error::Result as ServiceControlResult;
 use sn_service_management::{
     DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
+use sn_transfers::NanoTokens;
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -207,6 +208,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             number: 1,
             pid: None,
             peer_id: None,
+            reward_balance: NanoTokens::zero(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: ServiceStatus::Added,
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -785,6 +787,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             number: 1,
             pid: None,
             peer_id: None,
+            reward_balance: NanoTokens::zero(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
