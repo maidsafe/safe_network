@@ -7272,6 +7272,7 @@ dependencies = [
  "serde_json",
  "service-manager",
  "sn_protocol",
+ "sn_transfers",
  "sysinfo",
  "thiserror",
  "tokio",

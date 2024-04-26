@@ -18,7 +18,7 @@ use sn_service_management::{
     rpc::{RpcActions, RpcClient},
     FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::get_faucet_data_dir;
+use sn_transfers::{get_faucet_data_dir, NanoTokens};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -338,21 +338,22 @@ pub async fn run_node(
 
     Ok(NodeServiceData {
         connected_peers,
+        data_dir_path: node_info.data_path,
         genesis: run_options.genesis,
         home_network: false,
-        local: true,
-        service_name: format!("safenode-local{}", run_options.number),
-        user,
-        number: run_options.number,
-        rpc_socket_addr: run_options.rpc_socket_addr,
-        version: run_options.version.to_string(),
-        status: ServiceStatus::Running,
-        pid: Some(node_info.pid),
         listen_addr: Some(listen_addrs),
-        peer_id: Some(peer_id),
+        local: true,
         log_dir_path: node_info.log_path,
-        data_dir_path: node_info.data_path,
+        number: run_options.number,
+        peer_id: Some(peer_id),
+        pid: Some(node_info.pid),
+        reward_balance: NanoTokens::zero(),
+        rpc_socket_addr: run_options.rpc_socket_addr,
         safenode_path: launcher.get_safenode_path(),
+        status: ServiceStatus::Running,
+        service_name: format!("safenode-local{}", run_options.number),
+        user: get_username()?,
+        version: run_options.version.to_string(),
     })
 }
 
