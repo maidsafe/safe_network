@@ -16,7 +16,6 @@ use crate::{
     cmd::SwarmCmd,
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
-    get_record_handler::PendingGetRecord,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
@@ -24,7 +23,7 @@ use crate::{
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
     target_arch::{interval, spawn, Instant},
-    Network, CLOSE_GROUP_SIZE,
+    GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
 use crate::{transport, NodeIssue};
 use futures::future::Either;
@@ -67,6 +66,7 @@ use std::{
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
 use tracing::warn;
+use xor_name::XorName;
 
 /// Interval over which we check for the farthest record we _should_ be holding
 /// based upon our knowledge of the CLOSE_GROUP
@@ -84,6 +84,17 @@ pub(crate) enum PendingGetClosestType {
     FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
 type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
+
+/// Using XorName to differentiate different record content under the same key.
+type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
+pub(crate) type PendingGetRecord = HashMap<
+    QueryId,
+    (
+        oneshot::Sender<std::result::Result<Record, GetRecordError>>,
+        GetRecordResultMap,
+        GetRecordCfg,
+    ),
+>;
 
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
