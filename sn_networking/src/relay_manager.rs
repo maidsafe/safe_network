@@ -19,8 +19,10 @@ const MAX_POTENTIAL_CANDIDATES: usize = 15;
 #[derive(Debug)]
 pub(crate) struct RelayManager {
     self_peer_id: PeerId,
-    // states
-    enabled: bool,
+    // server states
+    reserved_by: HashSet<PeerId>,
+    // client states
+    enable_client: bool,
     candidates: VecDeque<(PeerId, Multiaddr)>,
     waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
     connected_relays: BTreeMap<PeerId, Multiaddr>,
@@ -46,7 +48,8 @@ impl RelayManager {
             .collect();
         Self {
             self_peer_id,
-            enabled: false,
+            reserved_by: Default::default(),
+            enable_client: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates,
@@ -55,13 +58,15 @@ impl RelayManager {
     }
 
     pub(crate) fn enable_hole_punching(&mut self, enable: bool) {
-        info!("Setting enable hole punching to {enable:?}");
-        self.enabled = enable;
+        info!("Setting relay client mode to {enable:?}");
+        self.enable_client = enable;
     }
 
+    /// Should we keep this peer alive?
     pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
         self.connected_relays.contains_key(peer_id)
             || self.waiting_for_reservation.contains_key(peer_id)
+            || self.reserved_by.contains(peer_id)
     }
 
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
@@ -72,7 +77,6 @@ impl RelayManager {
         addrs: &HashSet<Multiaddr>,
         stream_protocols: &Vec<StreamProtocol>,
     ) {
-        trace!("Trying to add potential relay candidates for {peer_id:?} with addrs: {addrs:?}");
         if self.candidates.len() >= MAX_POTENTIAL_CANDIDATES {
             trace!("Got max relay candidates");
             return;
@@ -88,15 +92,13 @@ impl RelayManager {
                             "Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate"
                         );
                         self.candidates.push_back((*peer_id, relay_addr));
-                    } else {
-                        trace!("Was not able to craft relay address");
                     }
                 } else {
-                    trace!("Addr contains P2pCircuit protocol. Not adding as candidate.");
+                    trace!("Addr for peer {peer_id:?} contains P2pCircuit protocol. Not adding as candidate.");
                 }
             }
         } else {
-            trace!("Peer does not support relay server protocol");
+            trace!("Peer {peer_id:?} does not support relay server protocol");
         }
     }
 
@@ -104,7 +106,7 @@ impl RelayManager {
     /// Try connecting to candidate relays if we are below the threshold connections.
     /// This is run periodically on a loop.
     pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
-        if !self.enabled {
+        if !self.enable_client {
             return;
         }
 
@@ -146,8 +148,18 @@ impl RelayManager {
         }
     }
 
-    /// Update our state after we've successfully made reservation with a relay.
-    pub(crate) fn update_on_successful_reservation(
+    /// Update relay server state on incoming reservation from a client
+    pub(crate) fn on_successful_reservation_by_server(&mut self, peer_id: PeerId) {
+        self.reserved_by.insert(peer_id);
+    }
+
+    /// Update relay server state on reservation timeout
+    pub(crate) fn on_reservation_timeout(&mut self, peer_id: PeerId) {
+        self.reserved_by.remove(&peer_id);
+    }
+
+    /// Update client state after we've successfully made reservation with a relay.
+    pub(crate) fn on_successful_reservation_by_client(
         &mut self,
         peer_id: &PeerId,
         swarm: &mut Swarm<NodeBehaviour>,
@@ -164,8 +176,8 @@ impl RelayManager {
         }
     }
 
-    /// Update our state if the reservation has been cancelled or if the relay has closed.
-    pub(crate) fn update_on_listener_closed(
+    /// Update client state if the reservation has been cancelled or if the relay has closed.
+    pub(crate) fn on_listener_closed(
         &mut self,
         listener_id: &ListenerId,
         swarm: &mut Swarm<NodeBehaviour>,
