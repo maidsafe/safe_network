@@ -273,7 +273,7 @@ impl SwarmDriver {
                 } = *event
                 {
                     self.relay_manager
-                        .update_on_successful_reservation(&relay_peer_id, &mut self.swarm);
+                        .on_successful_reservation_by_client(&relay_peer_id, &mut self.swarm);
                 }
             }
 
@@ -287,10 +287,11 @@ impl SwarmDriver {
                         src_peer_id,
                         renewed: _,
                     } => {
-                        self.relay_server_reservations.insert(src_peer_id);
+                        self.relay_manager
+                            .on_successful_reservation_by_server(src_peer_id);
                     }
                     libp2p::relay::Event::ReservationTimedOut { src_peer_id } => {
-                        self.relay_server_reservations.remove(&src_peer_id);
+                        self.relay_manager.on_reservation_timeout(src_peer_id);
                     }
                     _ => {}
                 }
@@ -418,12 +419,12 @@ impl SwarmDriver {
                                 trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                                 // Attempt to add the addresses to the routing table.
-                                for multiaddr in &addrs {
+                                for multiaddr in addrs {
                                     let _routing_update = self
                                         .swarm
                                         .behaviour_mut()
                                         .kademlia
-                                        .add_address(&peer_id, multiaddr.clone());
+                                        .add_address(&peer_id, multiaddr);
                                 }
                             }
                         }
@@ -509,7 +510,7 @@ impl SwarmDriver {
                 event_string = "listener closed";
                 info!("Listener {listener_id:?} with add {addresses:?} has been closed for {reason:?}");
                 self.relay_manager
-                    .update_on_listener_closed(&listener_id, &mut self.swarm);
+                    .on_listener_closed(&listener_id, &mut self.swarm);
             }
             SwarmEvent::IncomingConnection {
                 connection_id,
@@ -1309,10 +1310,6 @@ impl SwarmDriver {
 
             // skip if the peer is a relay server that we're connected to
             if self.relay_manager.keep_alive_peer(peer_id) {
-                continue;
-            }
-
-            if self.relay_server_reservations.contains(peer_id) {
                 continue;
             }
 

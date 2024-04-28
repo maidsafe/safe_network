@@ -539,7 +539,6 @@ impl NetworkBuilder {
             connected_peers: 0,
             bootstrap,
             relay_manager,
-            relay_server_reservations: Default::default(),
             close_group: Default::default(),
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
@@ -579,6 +578,7 @@ impl NetworkBuilder {
 pub struct SwarmDriver {
     pub(crate) swarm: Swarm<NodeBehaviour>,
     pub(crate) self_peer_id: PeerId,
+    /// When true, we don't filter our local addresses
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) is_behind_home_network: bool,
@@ -587,8 +587,6 @@ pub struct SwarmDriver {
     pub(crate) connected_peers: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
-    /// The reservations given out by our relay server
-    pub(crate) relay_server_reservations: HashSet<PeerId>,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
