@@ -130,21 +130,8 @@ async fn respond_to_donate_request(
     transfer_str: String,
     semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
-    let faucet_root = get_faucet_data_dir();
-
     let permit = semaphore.try_acquire();
     info!("Got donate request with: {transfer_str}");
-
-    let mut wallet = match load_account_wallet_or_create_with_mnemonic(&faucet_root, None) {
-        Ok(wallet) => wallet,
-        Err(_error) => {
-            let mut response = Response::new("Could not load wallet".to_string());
-            *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
-
-            // Either opening the file or locking it failed, indicating rate limiting should occur
-            return Ok(response);
-        }
-    };
 
     // some rate limiting
     if is_wallet_locked() || permit.is_err() {
@@ -155,6 +142,18 @@ async fn respond_to_donate_request(
         // Either opening the file or locking it failed, indicating rate limiting should occur
         return Ok(response);
     }
+
+    let faucet_root = get_faucet_data_dir();
+    let mut wallet = match load_account_wallet_or_create_with_mnemonic(&faucet_root, None) {
+        Ok(wallet) => wallet,
+        Err(_error) => {
+            let mut response = Response::new("Could not load wallet".to_string());
+            *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+
+            // Either opening the file or locking it failed, indicating rate limiting should occur
+            return Ok(response);
+        }
+    };
 
     if let Err(err) = fund_faucet_from_genesis_wallet(&client, &mut wallet).await {
         eprintln!("Failed to load + fund faucet wallet: {err}");
