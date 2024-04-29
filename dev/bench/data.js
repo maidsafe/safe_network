@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714389560854,
+  "lastUpdate": 1714393108289,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "adc48868750014c0a6fac91311a7b202439587d0",
-          "message": "chore: no more max_records cap",
-          "timestamp": "2024-01-03T07:24:12Z",
-          "tree_id": "f2d3f52ede0bf0d8f3477c261e2bfce5be63fce6",
-          "url": "https://github.com/maidsafe/safe_network/commit/adc48868750014c0a6fac91311a7b202439587d0"
-        },
-        "date": 1704269419053,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.5919325173650681,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.032050038720191,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 38.49071465509669,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.74470492340892,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "b1885903e49d8069cd2ea52ab9ba61be80a901f9",
+          "message": "refactor(network): move event handling to its own module",
+          "timestamp": "2024-04-29T11:32:40Z",
+          "tree_id": "c9da0cf0b7202e717192b5477fa455aa75cd671a",
+          "url": "https://github.com/maidsafe/safe_network/commit/b1885903e49d8069cd2ea52ab9ba61be80a901f9"
+        },
+        "date": 1714393104145,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2192099086777177,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6535288502845271,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.07997965143257,
             "unit": "MiB/s"
           }
         ]
