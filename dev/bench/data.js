@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714393227028,
+  "lastUpdate": 1714393228624,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "786b5b62328894c116492f147680d5ecf16aa6c6",
-          "message": "ci: prevent retries on ci runs w/ '-r 0'\n\nAka 0 retries",
-          "timestamp": "2023-12-14T08:40:55Z",
-          "tree_id": "a2961a3150832bf6e31448f5bbbefb725e9b8f07",
-          "url": "https://github.com/maidsafe/safe_network/commit/786b5b62328894c116492f147680d5ecf16aa6c6"
-        },
-        "date": 1702546004667,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4248,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 69985,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 16,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36834,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "b1885903e49d8069cd2ea52ab9ba61be80a901f9",
+          "message": "refactor(network): move event handling to its own module",
+          "timestamp": "2024-04-29T11:32:40Z",
+          "tree_id": "c9da0cf0b7202e717192b5477fa455aa75cd671a",
+          "url": "https://github.com/maidsafe/safe_network/commit/b1885903e49d8069cd2ea52ab9ba61be80a901f9"
+        },
+        "date": 1714393228263,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7355,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33796,
             "unit": "ms"
           },
           {
