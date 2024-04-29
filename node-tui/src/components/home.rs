@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{cmd::node::ProgressType, config::get_node_registry_path};
 use sn_peers_acquisition::PeersArgs;
@@ -10,10 +10,13 @@ use crate::{action::Action, config::Config};
 
 #[derive(Default)]
 pub struct Home {
-    command_tx: Option<UnboundedSender<Action>>,
+    action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
     node_registry: Option<NodeRegistry>,
+    // Currently the node registry file does not support concurrent actions and thus can lead to
+    // inconsistent state. A simple file lock or a db like file would work.
+    lock_registry: bool,
 
     // Network Peers
     pub peers_args: PeersArgs,
@@ -21,7 +24,7 @@ pub struct Home {
 
 impl Home {
     pub fn new(peers_args: PeersArgs) -> Result<Self> {
-        tracing::debug!("Loading node registry");
+        debug!("Loading node registry");
 
         let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
 
@@ -31,7 +34,7 @@ impl Home {
 
 impl Component for Home {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
-        self.command_tx = Some(tx);
+        self.action_sender = Some(tx);
         Ok(())
     }
 
@@ -43,12 +46,18 @@ impl Component for Home {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::AddNode => {
-                tracing::debug!("adding");
+                if self.lock_registry {
+                    error!("Registry is locked, cannot add node now.");
+                    return Ok(None);
+                }
+                info!("Adding a new node service");
 
                 let peers = self.peers_args.clone();
                 let (progress_sender, _) = mpsc::channel::<ProgressType>(1);
+                let action_sender = self.get_actions_sender()?;
+                self.lock_registry = true;
 
-                tokio::task::spawn_local(async {
+                tokio::task::spawn_local(async move {
                     if let Err(err) = sn_node_manager::cmd::node::add(
                         None,
                         None,
@@ -69,20 +78,42 @@ impl Component for Home {
                     )
                     .await
                     {
-                        tracing::error!("Error while adding service {err:?}")
+                        error!("Error while adding service {err:?}")
+                    }
+                    info!("Successfully added service");
+                    // todo: need to handle these properly?
+                    if let Err(err) = action_sender.send(Action::AddNodeCompleted) {
+                        error!("Error while sending action: {err:?}");
                     }
                 });
-
-                tracing::debug!("added servicionssss");
             },
             Action::StartNodes => {
-                tracing::debug!("STARTING");
+                if self.lock_registry {
+                    error!("Registry is locked. Cannot start node now.");
+                    return Ok(None);
+                }
+                info!("Starting Node service");
+                let action_sender = self.get_actions_sender()?;
 
-                tokio::task::spawn_local(async {
-                    sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal).await
+                self.lock_registry = true;
+                tokio::task::spawn_local(async move {
+                    if let Err(err) =
+                        sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal)
+                            .await
+                    {
+                        error!("Error while starting services {err:?}");
+                    }
+                    if let Err(err) = action_sender.send(Action::StartNodesCompleted) {
+                        error!("Error while sending action: {err:?}");
+                    }
+                    info!("Successfully started services");
                 });
             },
-
+            Action::AddNodeCompleted | Action::StartNodesCompleted => {
+                self.lock_registry = false;
+                let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+                self.node_registry = Some(node_registry);
+            },
             _ => {},
         }
         Ok(None)
@@ -107,7 +138,7 @@ impl Component for Home {
                 .iter()
                 .filter_map(|n| {
                     let peer_id = n.peer_id;
-                    tracing::debug!("peer_id {:?} {:?}", peer_id, n.status);
+                    debug!("peer_id {:?} {:?}", peer_id, n.status);
                     if n.status == ServiceStatus::Removed {
                         return None;
                     }
@@ -139,5 +170,11 @@ impl Component for Home {
             home_layout[2],
         );
         Ok(())
+    }
+}
+
+impl Home {
+    fn get_actions_sender(&self) -> Result<UnboundedSender<Action>> {
+        self.action_sender.clone().ok_or_eyre("Action sender not registered")
     }
 }
