@@ -240,6 +240,15 @@ impl Spend {
     pub fn hash(&self) -> Hash {
         Hash::hash(&self.to_bytes())
     }
+
+    /// Returns the purpose of the outputs that associate with this Spend
+    pub fn output_purposes(&self) -> Vec<(String, NanoTokens)> {
+        self.spent_tx
+            .outputs
+            .iter()
+            .map(|output| (output.purpose.clone(), output.amount))
+            .collect()
+    }
 }
 
 impl PartialOrd for Spend {

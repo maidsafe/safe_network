@@ -15,6 +15,7 @@ type Result<T> = std::result::Result<T, TransferError>;
 
 #[derive(Eq, PartialEq, Debug, Clone, Serialize, Deserialize, Hash)]
 pub struct Input {
+    // pub_key of the cash_note that as this input
     pub unique_pubkey: UniquePubkey,
     pub amount: NanoTokens,
 }
@@ -41,15 +42,19 @@ impl Input {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Output {
+    // pub_key of the derived_key that used for this output
     pub unique_pubkey: UniquePubkey,
     pub amount: NanoTokens,
+    // Purpose of this output, i.e. the reason why the output got generated.
+    pub purpose: String,
 }
 
 impl Output {
-    pub fn new(unique_pubkey: UniquePubkey, amount: u64) -> Self {
+    pub fn new(unique_pubkey: UniquePubkey, amount: u64, purpose: String) -> Self {
         Self {
             unique_pubkey,
             amount: NanoTokens::from(amount),
+            purpose,
         }
     }
 
@@ -57,6 +62,7 @@ impl Output {
         let mut v: Vec<u8> = Default::default();
         v.extend(self.unique_pubkey.to_bytes().as_ref());
         v.extend(self.amount.to_bytes());
+        v.extend(self.purpose.clone().into_bytes());
         v
     }
 
