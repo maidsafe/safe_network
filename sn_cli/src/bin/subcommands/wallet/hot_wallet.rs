@@ -35,7 +35,10 @@ use std::{path::Path, str::FromStr};
 pub enum WalletCmds {
     /// Print the wallet address.
     Address {
-        /// Optional phrase to use for the wallet deriviation from mnemonic entropy.
+        /// Optional passphrase to protect the mnemonic,
+        /// it's not the source of the entropy for the mnemonic generation.
+        /// The mnemonic+passphrase will be the seed. See detail at
+        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
         passphrase: Option<String>,
     },
     /// Print the wallet balance.

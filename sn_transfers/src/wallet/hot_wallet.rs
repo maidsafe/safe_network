@@ -62,7 +62,6 @@ impl HotWallet {
 
     /// reloads the wallet from disk.
     fn reload(&mut self) -> Result<()> {
-        // placeholder random MainSecretKey to take it out
         let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None)?;
 
         if *wallet.key.secret_key() != *self.key.secret_key() {
