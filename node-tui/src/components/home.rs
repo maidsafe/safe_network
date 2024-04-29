@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{cmd::node::ProgressType, config::get_node_registry_path};
 use sn_peers_acquisition::PeersArgs;
-use sn_service_management::{get_local_node_registry_path, NodeRegistry, ServiceStatus};
+use sn_service_management::{NodeRegistry, ServiceStatus};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
 use super::{Component, Frame};
@@ -12,40 +12,20 @@ use crate::{action::Action, config::Config};
 pub struct Home {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
-    progress_messages: Vec<ProgressType>,
+    // state
     node_registry: Option<NodeRegistry>,
+
     // Network Peers
     pub peers_args: PeersArgs,
 }
 
 impl Home {
-    pub fn new(peers_args: PeersArgs) -> Self {
-        Self { peers_args, ..Default::default() }
-    }
+    pub fn new(peers_args: PeersArgs) -> Result<Self> {
+        tracing::debug!("Loading node registry");
 
-    // TODO: we should have a helper to correctlt choose the registry
-    pub fn check_for_node_registry(&mut self) -> Result<()> {
-        if self.node_registry.is_none() {
-            tracing::debug!("No registryllocal yet...");
-            let reg = NodeRegistry::load(&get_local_node_registry_path()?)?;
+        let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
 
-            // register this
-            if !reg.nodes.is_empty() {
-                self.node_registry = Some(reg);
-            }
-        }
-
-        // local nodes failed, so we try the _other_ setup
-        if self.node_registry.is_none() {
-            tracing::debug!("No registry yet...");
-            let reg = NodeRegistry::load(&get_node_registry_path()?)?;
-            // register this
-            if !reg.nodes.is_empty() {
-                self.node_registry = Some(reg);
-            }
-        }
-
-        Ok(())
+        Ok(Self { peers_args, node_registry: Some(node_registry), ..Default::default() })
     }
 }
 
@@ -61,64 +41,39 @@ impl Component for Home {
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        let action_sender = self.command_tx.clone();
         match action {
             Action::AddNode => {
                 tracing::debug!("adding");
 
-                if let Some(reg) = &self.node_registry {
-                    tracing::debug!("No nodes yet...");
+                let peers = self.peers_args.clone();
+                let (progress_sender, _) = mpsc::channel::<ProgressType>(1);
 
-                    if reg.nodes.is_empty() {
-                        let peers = self.peers_args.clone();
-
-                        // report progress via forwarding messages as actions
-                        let (progress_sender, mut progress_receiver) = mpsc::channel::<ProgressType>(1);
-
-                        tokio::task::spawn_local(async {
-                            if let Err(err) = sn_node_manager::cmd::node::add(
-                                None,
-                                None,
-                                None,
-                                true,
-                                None,
-                                None,
-                                None,
-                                peers,
-                                None,
-                                None,
-                                None,
-                                None,
-                                None,
-                                None,
-                                sn_node_manager::VerbosityLevel::Minimal,
-                                progress_sender,
-                            )
-                            .await
-                            {
-                                tracing::error!("ERRROR adding {err:?}")
-                            }
-                        });
-
-                        tracing::debug!("OKAY AND NOW LISTENING TO EVENTS>.....");
-
-                        let action_sender = self.command_tx.clone();
-                        tokio::task::spawn(async move {
-                            while let Some(report) = progress_receiver.recv().await {
-                                tracing::debug!("REPORTTTT {report:?}");
-                                if let Some(ref sender) = action_sender {
-                                    if let Err(error) = sender.send(Action::ProgressMessage(report)) {
-                                        tracing::error!("Err sending progress action: {error:?}");
-                                    };
-                                }
-                            }
-                        });
-
-                        tracing::debug!("added servicionssss");
-                    } else {
-                        tracing::debug!("We've no node registery... so skip the addition of services...");
+                tokio::task::spawn_local(async {
+                    if let Err(err) = sn_node_manager::cmd::node::add(
+                        None,
+                        None,
+                        None,
+                        true,
+                        None,
+                        None,
+                        None,
+                        peers,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        sn_node_manager::VerbosityLevel::Minimal,
+                        progress_sender,
+                    )
+                    .await
+                    {
+                        tracing::error!("Error while adding service {err:?}")
                     }
-                }
+                });
+
+                tracing::debug!("added servicionssss");
             },
             Action::StartNodes => {
                 tracing::debug!("STARTING");
@@ -126,10 +81,6 @@ impl Component for Home {
                 tokio::task::spawn_local(async {
                     sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal).await
                 });
-            },
-            Action::ProgressMessage(message) => self.progress_messages.push(message),
-            Action::Tick => {
-                self.check_for_node_registry()?;
             },
 
             _ => {},
@@ -144,11 +95,8 @@ impl Component for Home {
 
         // top section
         //
-        // let text = Text::raw(content)
-        //
-        let text: String = self.progress_messages.iter().map(|progress| format!("{progress:?}\n")).collect();
         f.render_widget(
-            Paragraph::new(text).block(Block::default().title("Autonomi Node Status").borders(Borders::ALL)),
+            Paragraph::new("None").block(Block::default().title("Autonomi Node Status").borders(Borders::ALL)),
             home_layout[0],
         );
 
