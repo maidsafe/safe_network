@@ -6,7 +6,10 @@ use sn_service_management::{NodeRegistry, ServiceStatus};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
 use super::{Component, Frame};
-use crate::{action::Action, config::Config};
+use crate::{
+    action::{Action, HomeActions},
+    config::Config,
+};
 
 #[derive(Default)]
 pub struct Home {
@@ -45,7 +48,7 @@ impl Component for Home {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::AddNode => {
+            Action::HomeActions(HomeActions::AddNode) => {
                 if self.lock_registry {
                     error!("Registry is locked, cannot add node now.");
                     return Ok(None);
@@ -82,12 +85,12 @@ impl Component for Home {
                     }
                     info!("Successfully added service");
                     // todo: need to handle these properly?
-                    if let Err(err) = action_sender.send(Action::AddNodeCompleted) {
+                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::AddNodeCompleted)) {
                         error!("Error while sending action: {err:?}");
                     }
                 });
             },
-            Action::StartNodes => {
+            Action::HomeActions(HomeActions::StartNodes) => {
                 if self.lock_registry {
                     error!("Registry is locked. Cannot start node now.");
                     return Ok(None);
@@ -103,13 +106,36 @@ impl Component for Home {
                     {
                         error!("Error while starting services {err:?}");
                     }
-                    if let Err(err) = action_sender.send(Action::StartNodesCompleted) {
+                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted)) {
                         error!("Error while sending action: {err:?}");
                     }
                     info!("Successfully started services");
                 });
             },
-            Action::AddNodeCompleted | Action::StartNodesCompleted => {
+            Action::HomeActions(HomeActions::StopNode) => {
+                if self.lock_registry {
+                    error!("Registry is locked. Cannot stop node now.");
+                    return Ok(None);
+                }
+                info!("Stopping node service");
+                let action_sender = self.get_actions_sender()?;
+
+                self.lock_registry = true;
+                tokio::task::spawn_local(async move {
+                    if let Err(err) =
+                        sn_node_manager::cmd::node::stop(vec![], vec![], sn_node_manager::VerbosityLevel::Minimal).await
+                    {
+                        error!("Error while stopping services {err:?}");
+                    }
+                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StopNodeCompleted)) {
+                        error!("Error while sending action: {err:?}");
+                    }
+                    info!("Successfully stopped services");
+                });
+            },
+            Action::HomeActions(HomeActions::AddNodeCompleted)
+            | Action::HomeActions(HomeActions::StartNodesCompleted)
+            | Action::HomeActions(HomeActions::StopNodeCompleted) => {
                 self.lock_registry = false;
                 let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
                 self.node_registry = Some(node_registry);

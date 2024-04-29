@@ -1,8 +1,9 @@
 {
   "keybindings": {
     "Home": {
-      "<a>": "AddNode", // Add nodes
-      "<s>": "StartNodes", // Start nodes
+      "<a>": {"HomeActions":"AddNode"}, // Add nodes
+      "<s>": {"HomeActions":"StartNodes"}, // Start nodes
+      "<k>": {"HomeActions":"StopNode"}, // Stop nodes
       "<q>": "Quit", // Quit the application
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit

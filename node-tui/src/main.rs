@@ -14,7 +14,7 @@ extern crate tracing;
 use clap::Parser;
 use cli::Cli;
 use color_eyre::eyre::Result;
-use tokio::{runtime::Runtime, task::LocalSet};
+use tokio::task::LocalSet;
 
 use crate::{
     app::App,
