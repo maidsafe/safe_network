@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714389555568,
+  "lastUpdate": 1714389558057,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
-          "message": "fix(client): wallet not progress with unconfirmed tx",
-          "timestamp": "2024-01-02T17:26:40Z",
-          "tree_id": "4c17ea58bae4ea00905c32b3026b4f3c42fae5b8",
-          "url": "https://github.com/maidsafe/safe_network/commit/6368b3b1cf7327af4005b6f7f1c6acc27730950d"
-        },
-        "date": 1704219284315,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 208,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 64,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "1cc37d4a8230c696676f4c9e694a194ace9ea9c6",
+          "message": "chore: addres review comments",
+          "timestamp": "2024-04-29T10:24:05Z",
+          "tree_id": "4920d9519d633e8e913cef7ba920fd84a412aa30",
+          "url": "https://github.com/maidsafe/safe_network/commit/1cc37d4a8230c696676f4c9e694a194ace9ea9c6"
+        },
+        "date": 1714389557046,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
