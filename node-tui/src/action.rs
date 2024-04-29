@@ -6,7 +6,9 @@ use strum::Display;
 pub enum Action {
     ProgressMessage(ProgressType),
     AddNode,
+    AddNodeCompleted,
     StartNodes,
+    StartNodesCompleted,
     Tick,
     Render,
     Resize(u16, u16),

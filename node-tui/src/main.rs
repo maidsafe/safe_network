@@ -8,6 +8,9 @@ pub mod mode;
 pub mod tui;
 pub mod utils;
 
+#[macro_use]
+extern crate tracing;
+
 use clap::Parser;
 use cli::Cli;
 use color_eyre::eyre::Result;
