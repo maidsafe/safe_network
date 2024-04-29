@@ -25,8 +25,7 @@ pub struct App {
 
 impl App {
     pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
-        let mut home = Home::new();
-        home.check_for_node_registry()?;
+        let home = Home::new()?;
         let fps = FpsCounter::default();
         let config = Config::new()?;
         let mode = Mode::Home;
