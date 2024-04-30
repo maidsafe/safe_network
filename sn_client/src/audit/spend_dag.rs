@@ -11,10 +11,39 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress};
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+    path::Path,
+};
 
 use super::dag_error::{DagError, SpendFault};
+
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct SpendDagAddress {
+    address: SpendAddress,
+    purpose: String,
+}
+
+impl Clone for SpendDagAddress {
+    fn clone(&self) -> Self {
+        SpendDagAddress {
+            address: self.address,
+            purpose: self.purpose.clone(),
+        }
+    }
+}
+
+impl std::fmt::Debug for SpendDagAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "address: {}\npurpose: {}",
+            &self.address.to_hex()[0..6],
+            self.purpose
+        )
+    }
+}
 
 /// A DAG representing the spends from a specific Spend all the way to the UTXOs.
 /// Starting from Genesis, this would encompass all the spends that have happened on the network
@@ -33,13 +62,15 @@ use super::dag_error::{DagError, SpendFault};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpendDag {
     /// A directed graph of spend addresses
-    dag: DiGraph<SpendAddress, NanoTokens>,
+    dag: DiGraph<SpendDagAddress, NanoTokens>,
     /// All the spends refered to in the dag indexed by their SpendAddress
     spends: BTreeMap<SpendAddress, DagEntry>,
     /// The source of the DAG (aka Genesis)
     source: SpendAddress,
     /// Recorded faults in the DAG
     faults: BTreeMap<SpendAddress, BTreeSet<SpendFault>>,
+    /// Creation reasons (purpose) of the spends
+    creation_reasons: BTreeMap<SpendAddress, String>,
 }
 
 type DagIndex = usize;
@@ -91,6 +122,7 @@ impl SpendDag {
             spends: BTreeMap::new(),
             source,
             faults: BTreeMap::new(),
+            creation_reasons: BTreeMap::new(),
         }
     }
 
@@ -110,17 +142,42 @@ impl SpendDag {
         Ok(())
     }
 
+    fn get_dag_address(&self, spend_addr: &SpendAddress) -> SpendDagAddress {
+        let spend_creation_reason =
+            if let Some(creation_reason) = self.creation_reasons.get(spend_addr) {
+                creation_reason.clone()
+            } else {
+                "Undefined".to_string()
+            };
+        SpendDagAddress {
+            address: *spend_addr,
+            purpose: spend_creation_reason,
+        }
+    }
+
     /// Insert a spend into the dag
     /// Creating edges (links) from its ancestors and to its descendants
     /// If the inserted spend is already known, it will be ignored
     /// If the inserted spend is a double spend, it will be saved along with the previous spend
     /// Return true if the spend was inserted and false if it was already in the DAG
     pub fn insert(&mut self, spend_addr: SpendAddress, spend: SignedSpend) -> bool {
+        for output in spend.outputs().iter() {
+            let output_spend_address = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
+            if let Some(old) = self
+                .creation_reasons
+                .insert(output_spend_address, output.purpose.clone())
+            {
+                error!("Spend {output_spend_address:?} already have an un-expected creation reason: {old:?}");
+            }
+        }
+
+        let spend_dag_address = self.get_dag_address(&spend_addr);
+
         let existing_entry = self.spends.get(&spend_addr).cloned();
         let new_node_idx = match existing_entry {
             // add new spend to the DAG
             None => {
-                let node_idx = self.dag.add_node(spend_addr);
+                let node_idx = self.dag.add_node(spend_dag_address);
                 self.spends.insert(
                     spend_addr,
                     DagEntry::Spend(Box::new(spend.clone()), node_idx.index()),
@@ -142,7 +199,7 @@ impl SpendDag {
                     return false;
                 }
 
-                let node_idx = self.dag.add_node(spend_addr);
+                let node_idx = self.dag.add_node(spend_dag_address);
                 let double_spend = DagEntry::DoubleSpend(vec![
                     (existing_spend.clone(), idx),
                     (spend.clone(), node_idx.index()),
@@ -156,7 +213,7 @@ impl SpendDag {
                     return false;
                 }
 
-                let node_idx = self.dag.add_node(spend_addr);
+                let node_idx = self.dag.add_node(spend_dag_address);
                 let mut vec_s = vec_s.clone();
                 vec_s.push((spend.clone(), node_idx.index()));
                 self.spends.insert(spend_addr, DagEntry::DoubleSpend(vec_s));
@@ -167,10 +224,11 @@ impl SpendDag {
         // link to descendants
         for descendant in spend.spend.spent_tx.outputs.iter() {
             let descendant_addr = SpendAddress::from_unique_pubkey(&descendant.unique_pubkey);
+            let descendant_dag_address = self.get_dag_address(&descendant_addr);
 
             // add descendant if not already in dag
             let spends_at_addr = self.spends.entry(descendant_addr).or_insert_with(|| {
-                let node_idx = self.dag.add_node(descendant_addr);
+                let node_idx = self.dag.add_node(descendant_dag_address);
                 DagEntry::NotGatheredYet(node_idx.index())
             });
 
@@ -191,10 +249,11 @@ impl SpendDag {
         const PENDING_AMOUNT: NanoTokens = NanoTokens::from(0);
         for ancestor in spend.spend.parent_tx.inputs.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(&ancestor.unique_pubkey);
+            let ancestor_dag_address = self.get_dag_address(&ancestor_addr);
 
             // add ancestor if not already in dag
             let spends_at_addr = self.spends.entry(ancestor_addr).or_insert_with(|| {
-                let node_idx = self.dag.add_node(ancestor_addr);
+                let node_idx = self.dag.add_node(ancestor_dag_address);
                 DagEntry::NotGatheredYet(node_idx.index())
             });
 
@@ -265,7 +324,7 @@ impl SpendDag {
                 .neighbors_directed(node_index, petgraph::Direction::Outgoing)
                 .any(|_| true)
             {
-                let utxo_addr = self.dag[node_index];
+                let utxo_addr = self.dag[node_index].address;
                 leaves.insert(utxo_addr);
             }
         }
@@ -456,7 +515,7 @@ impl SpendDag {
                 .flat_map(|idx| {
                     self.dag
                         .neighbors_directed(NodeIndex::new(idx), petgraph::Direction::Outgoing)
-                        .map(|i| &self.dag[i])
+                        .map(|i| &self.dag[i].address)
                 })
                 .collect();
 
@@ -494,7 +553,7 @@ impl SpendDag {
                 self.dag
                     .neighbors_directed(NodeIndex::new(idx), petgraph::Direction::Incoming)
             })
-            .map(|parent_idx| &self.dag[parent_idx])
+            .map(|parent_idx| &self.dag[parent_idx].address)
             .collect();
         let non_orphans =
             BTreeSet::from_iter(all_descendants.into_iter().chain(parents).chain([source]));
