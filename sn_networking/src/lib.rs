@@ -158,16 +158,9 @@ pub struct Network {
     pub peer_id: Arc<PeerId>,
     pub root_dir_path: Arc<PathBuf>,
     keypair: Arc<Keypair>,
-    /// node owner's discord username, in readable format
-    owner: String,
 }
 
 impl Network {
-    /// Returns of the discord user_name of the node's owner
-    pub fn owner(&self) -> String {
-        self.owner.clone()
-    }
-
     /// Signs the given data with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair.sign(msg).map_err(NetworkError::from)
@@ -1053,13 +1046,9 @@ mod tests {
 
     #[test]
     fn test_network_sign_verify() -> eyre::Result<()> {
-        let (network, _, _) = NetworkBuilder::new(
-            Keypair::generate_ed25519(),
-            false,
-            std::env::temp_dir(),
-            "maidsafe_test".to_string(),
-        )
-        .build_client()?;
+        let (network, _, _) =
+            NetworkBuilder::new(Keypair::generate_ed25519(), false, std::env::temp_dir())
+                .build_client()?;
         let msg = b"test message";
         let sig = network.sign(msg)?;
         assert!(network.verify(msg, &sig));

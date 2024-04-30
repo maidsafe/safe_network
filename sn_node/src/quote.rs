@@ -19,6 +19,7 @@ impl Node {
         cost: NanoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
+        owner: String,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
@@ -27,7 +28,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics,
-            network.owner(),
+            owner.clone(),
         );
 
         let Ok(signature) = network.sign(&bytes) else {
@@ -39,7 +40,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
-            reason: network.owner(),
+            reason: owner,
             pub_key: network.get_pub_key(),
             signature,
         };
