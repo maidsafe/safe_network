@@ -148,12 +148,12 @@ impl Network {
                 .iter()
                 .map(|u| {
                     let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
-                    (u.reason.clone(), unique_pubkey, u.derivation_index)
+                    (u.purpose.clone(), unique_pubkey, u.derivation_index)
                 })
                 .collect();
         let mut our_output_cash_notes = Vec::new();
 
-        for (reason, id, derivation_index) in our_output_unique_pubkeys.into_iter() {
+        for (purpose, id, derivation_index) in our_output_unique_pubkeys.into_iter() {
             let src_tx = parent_txs
                 .iter()
                 .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
@@ -170,7 +170,7 @@ impl Network {
                 unique_pubkey: id,
                 parent_tx: src_tx,
                 parent_spends: signed_spends,
-                reason: reason.clone(),
+                purpose: purpose.clone(),
                 main_pubkey,
                 derivation_index,
             };
