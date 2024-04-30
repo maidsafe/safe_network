@@ -108,20 +108,10 @@ impl Client {
         // TODO: shall client bearing owner's discord user name, to be reflected in the cash_notes?
 
         #[cfg(not(feature = "open-metrics"))]
-        let network_builder = NetworkBuilder::new(
-            Keypair::generate_ed25519(),
-            local,
-            root_dir,
-            "maidsafe_client".to_string(),
-        );
+        let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
 
         #[cfg(feature = "open-metrics")]
-        let mut network_builder = NetworkBuilder::new(
-            Keypair::generate_ed25519(),
-            local,
-            root_dir,
-            "maidsafe_client".to_string(),
-        );
+        let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_registry(Registry::default());
 
