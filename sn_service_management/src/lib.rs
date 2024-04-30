@@ -138,7 +138,11 @@ impl NodeRegistry {
             });
         }
 
-        let registry = serde_json::from_str(&contents)?;
+        Self::from_json(&contents)
+    }
+
+    pub fn from_json(json: &str) -> Result<Self> {
+        let registry = serde_json::from_str(json)?;
         Ok(registry)
     }
 
