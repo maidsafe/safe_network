@@ -18,6 +18,7 @@ use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, CashNoteOutputDetails, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
     SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
+    CASH_NOTE_PURPOSE_FOR_TRANSFER,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -307,7 +308,7 @@ impl WalletClient {
         verify_store: bool,
     ) -> WalletResult<CashNote> {
         let created_cash_notes = self.wallet.local_send(
-            vec![("CASH_NOTE_REASON_FOR_TRANSFER".to_string(), amount, to)],
+            vec![(CASH_NOTE_PURPOSE_FOR_TRANSFER.to_string(), amount, to)],
             None,
         )?;
 

@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cashnotes::{CashNoteBuilder, UnsignedTransfer},
+    cashnotes::{CashNoteBuilder, UnsignedTransfer, CASH_NOTE_PURPOSE_FOR_CHANGE},
     rng, CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, Input,
     MainPubkey, NanoTokens, Result, SignedSpend, Transaction, TransactionBuilder, TransferError,
     UniquePubkey, NETWORK_ROYALTIES_PK,
@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// List of CashNotes, with (optionally when needed) their corresponding derived owning secret key.
 pub type CashNotesAndSecretKey = Vec<(CashNote, Option<DerivedSecretKey>)>;
 
-/// RecipientDetails: (amount, cash_note_reason, pub_key, derivation_index)
+/// RecipientDetails: (amount, cash_note_purpose, pub_key, derivation_index)
 pub type TransferRecipientDetails = (NanoTokens, String, MainPubkey, DerivationIndex);
 
 /// Offline Transfer
@@ -277,7 +277,7 @@ fn create_transaction_builder_with(
     if !change.is_zero() {
         tx_builder = tx_builder.add_output(
             change,
-            "CASH_NOTE_REASON_FOR_CHANGE".to_string(),
+            CASH_NOTE_PURPOSE_FOR_CHANGE.to_string(),
             change_to,
             derivation_index,
         );
