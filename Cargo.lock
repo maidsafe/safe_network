@@ -6876,6 +6876,7 @@ dependencies = [
  "sn_logging",
  "sn_peers_acquisition",
  "sn_protocol",
+ "sn_transfers",
  "tempfile",
  "tiny-keccak",
  "tokio",

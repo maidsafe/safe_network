@@ -62,6 +62,7 @@ sn_client = { path = "../sn_client", version = "0.105.3" }
 sn_logging = { path = "../sn_logging", version = "0.2.25" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.10" }
 sn_protocol = { path = "../sn_protocol", version = "0.16.3" }
+sn_transfers = { path = "../sn_transfers", version = "0.17.2" }
 tempfile = "3.6.0"
 tiny-keccak = "~2.0.2"
 tokio = { version = "1.32.0", features = [
