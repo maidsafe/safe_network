@@ -139,7 +139,7 @@ pub struct CashNoteRedemption {
     /// using data found at this address the owner can check that the output is valid money
     pub parent_spend: SpendAddress,
     /// For what purpose this cash_note was created
-    pub reason: String,
+    pub purpose: String,
 }
 
 impl CashNoteRedemption {
@@ -147,12 +147,12 @@ impl CashNoteRedemption {
     pub fn new(
         derivation_index: DerivationIndex,
         parent_spend: SpendAddress,
-        reason: String,
+        purpose: String,
     ) -> Self {
         Self {
             derivation_index,
             parent_spend,
-            reason,
+            purpose,
         }
     }
 
@@ -167,7 +167,7 @@ impl CashNoteRedemption {
         Ok(Self::new(
             derivation_index,
             parent_spend,
-            cash_note.reason.clone(),
+            cash_note.purpose.clone(),
         ))
     }
 
