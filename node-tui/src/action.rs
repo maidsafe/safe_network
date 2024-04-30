@@ -24,4 +24,7 @@ pub enum HomeActions {
     StartNodesCompleted,
     StopNode,
     StopNodeCompleted,
+
+    PreviousTableItem,
+    NextTableItem,
 }
