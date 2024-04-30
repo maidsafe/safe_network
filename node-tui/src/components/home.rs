@@ -2,7 +2,7 @@ use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{cmd::node::ProgressType, config::get_node_registry_path};
 use sn_peers_acquisition::PeersArgs;
-use sn_service_management::{NodeRegistry, ServiceStatus};
+use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
 use super::{Component, Frame};
@@ -16,7 +16,8 @@ pub struct Home {
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
-    node_registry: Option<NodeRegistry>,
+    running_nodes: Vec<NodeServiceData>,
+    node_table_state: TableState,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. A simple file lock or a db like file would work.
     lock_registry: bool,
@@ -27,11 +28,9 @@ pub struct Home {
 
 impl Home {
     pub fn new(peers_args: PeersArgs) -> Result<Self> {
-        debug!("Loading node registry");
-
-        let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-
-        Ok(Self { peers_args, node_registry: Some(node_registry), ..Default::default() })
+        let mut home = Self { peers_args, ..Default::default() };
+        home.load_node_registry()?;
+        Ok(home)
     }
 }
 
@@ -137,8 +136,7 @@ impl Component for Home {
             | Action::HomeActions(HomeActions::StartNodesCompleted)
             | Action::HomeActions(HomeActions::StopNodeCompleted) => {
                 self.lock_registry = false;
-                let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-                self.node_registry = Some(node_registry);
+                self.load_node_registry()?;
             },
             _ => {},
         }
@@ -157,41 +155,37 @@ impl Component for Home {
             home_layout[0],
         );
 
-        if let Some(registry) = &self.node_registry {
-            let nodes: Vec<_> = registry
-                .to_status_summary()
-                .nodes
-                .iter()
-                .filter_map(|n| {
-                    let peer_id = n.peer_id;
-                    debug!("peer_id {:?} {:?}", peer_id, n.status);
-                    if n.status == ServiceStatus::Removed {
-                        return None;
-                    }
+        // Node List
+        let rows: Vec<_> = self
+            .running_nodes
+            .iter()
+            .filter_map(|n| {
+                let peer_id = n.peer_id;
+                info!("peer_id {:?} {:?}", peer_id, n.status);
+                if n.status == ServiceStatus::Removed {
+                    return None;
+                }
+                let service_name = n.service_name.clone();
+                let peer_id = peer_id.map(|p| p.to_string()).unwrap_or("-".to_string());
+                let status = format!("{:?}", n.status);
 
-                    let id = peer_id.map(|p| p.to_string()).unwrap_or("Pending...".to_string());
-                    Some(format!("{id:?}: {:?}", n.status))
-                })
-                .collect();
+                let row = vec![service_name, peer_id, status];
+                Some(Row::new(row))
+            })
+            .collect();
 
-            if !nodes.is_empty() {
-                let list = List::new(nodes);
+        let widths = [Constraint::Max(15), Constraint::Min(30), Constraint::Max(10)];
+        let table = Table::new(rows, widths)
+            .column_spacing(2)
+            .header(Row::new(vec!["Service", "PeerId", "Status"]).style(Style::new().bold()).bottom_margin(1))
+            .highlight_style(Style::new().reversed())
+            .block(Block::default().title("Running Nodes").borders(Borders::ALL))
+            .highlight_symbol(">");
 
-                f.render_widget(
-                    list.block(Block::default().title("Running nodes").borders(Borders::ALL)),
-                    home_layout[1],
-                );
-            }
-        } else {
-            f.render_widget(
-                Paragraph::new("No nodes running")
-                    .block(Block::default().title("Autonomi Node Runner").borders(Borders::ALL)),
-                home_layout[1],
-            )
-        }
+        f.render_stateful_widget(table, home_layout[1], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [Q]uit")
+            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit")
                 .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
             home_layout[2],
         );
@@ -202,5 +196,46 @@ impl Component for Home {
 impl Home {
     fn get_actions_sender(&self) -> Result<UnboundedSender<Action>> {
         self.action_sender.clone().ok_or_eyre("Action sender not registered")
+    }
+
+    fn load_node_registry(&mut self) -> Result<()> {
+        let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+        self.running_nodes =
+            node_registry.nodes.into_iter().filter(|node| node.status != ServiceStatus::Removed).collect();
+        info!("Loaded node registry. Runnign nodes: {:?}", self.running_nodes.len());
+
+        Ok(())
+    }
+
+    fn next_item_in_table(&mut self) {
+        let i = match self.node_table_state.selected() {
+            Some(i) => {
+                if i >= self.running_nodes.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            },
+            None => 0,
+        };
+        self.node_table_state.select(Some(i));
+    }
+
+    fn previous_item_in_table(&mut self) {
+        let i = match self.node_table_state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.running_nodes.len() - 1
+                } else {
+                    i - 1
+                }
+            },
+            None => 0,
+        };
+        self.node_table_state.select(Some(i));
+    }
+
+    fn unselect_table_item(&mut self) {
+        self.node_table_state.select(None);
     }
 }
