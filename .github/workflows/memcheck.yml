@@ -279,6 +279,15 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
+      - name: Audit from genesis to collect entire spend DAG and dump to a dot file
+        run: |
+          cargo run --bin safe --release -- --log-output-dest=data-dir wallet audit --dot > spend_dag.dot
+          echo "=============================================================================="
+          cat spend_dag.dot
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 60
+
       - name: Check nodes running
         shell: bash
         timeout-minutes: 1
@@ -434,5 +443,13 @@ jobs:
         with:
           name: memory_check_faucet_log
           path: faucet_log.log
+        continue-on-error: true
+        if: always()
+
+      - name: Upload spend DAG
+        uses: actions/upload-artifact@main
+        with:
+          name: memory_check_spend_dag
+          path: spend_dag.dot
         continue-on-error: true
         if: always()
