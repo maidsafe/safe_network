@@ -138,6 +138,12 @@ impl Component for Home {
                 self.lock_registry = false;
                 self.load_node_registry()?;
             },
+            Action::HomeActions(HomeActions::PreviousTableItem) => {
+                self.select_previous_table_item();
+            },
+            Action::HomeActions(HomeActions::NextTableItem) => {
+                self.select_next_table_item();
+            },
             _ => {},
         }
         Ok(None)
@@ -207,7 +213,7 @@ impl Home {
         Ok(())
     }
 
-    fn next_item_in_table(&mut self) {
+    fn select_next_table_item(&mut self) {
         let i = match self.node_table_state.selected() {
             Some(i) => {
                 if i >= self.running_nodes.len() - 1 {
@@ -221,7 +227,7 @@ impl Home {
         self.node_table_state.select(Some(i));
     }
 
-    fn previous_item_in_table(&mut self) {
+    fn select_previous_table_item(&mut self) {
         let i = match self.node_table_state.selected() {
             Some(i) => {
                 if i == 0 {
