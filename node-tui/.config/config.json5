@@ -4,6 +4,8 @@
       "<a>": {"HomeActions":"AddNode"}, // Add nodes
       "<s>": {"HomeActions":"StartNodes"}, // Start nodes
       "<k>": {"HomeActions":"StopNode"}, // Stop nodes
+      "up" : {"HomeActions":"PreviousTableItem"},
+      "down" : {"HomeActions":"NextTableItem"},
       "<q>": "Quit", // Quit the application
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit
