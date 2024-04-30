@@ -40,7 +40,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
-            reason: owner,
+            owner,
             pub_key: network.get_pub_key(),
             signature,
         };
@@ -73,7 +73,7 @@ pub(crate) fn verify_quote_for_storecost(
         quote.cost,
         quote.timestamp,
         &quote.quoting_metrics,
-        quote.reason.clone(),
+        quote.owner.clone(),
     );
     let signature = quote.signature;
     if !network.verify(&bytes, &signature) {

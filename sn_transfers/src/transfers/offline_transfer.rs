@@ -93,7 +93,7 @@ impl OfflineTransfer {
         available_cash_notes: CashNotesAndSecretKey,
         recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
         change_to: MainPubkey,
-        reason_hash: Hash,
+        input_reason_hash: Hash,
     ) -> Result<Self> {
         let total_output_amount = recipients
             .iter()
@@ -116,7 +116,7 @@ impl OfflineTransfer {
             change: (change_amount, change_to),
         };
 
-        create_offline_transfer_with(selected_inputs, reason_hash)
+        create_offline_transfer_with(selected_inputs, input_reason_hash)
     }
 }
 
@@ -294,7 +294,7 @@ fn create_transaction_builder_with(
 /// enough peers in the network, the transaction will be completed.
 fn create_offline_transfer_with(
     selected_inputs: TransferInputs,
-    reason_hash: Hash,
+    input_reason_hash: Hash,
 ) -> Result<OfflineTransfer> {
     // gather the network_royalties derivation indexes
     let network_royalties: Vec<DerivationIndex> = selected_inputs
@@ -307,7 +307,7 @@ fn create_offline_transfer_with(
     let (tx_builder, src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder.build(reason_hash, network_royalties)?;
+    let cash_note_builder = tx_builder.build(input_reason_hash, network_royalties)?;
 
     let tx = cash_note_builder.spent_tx.clone();
 

@@ -222,8 +222,8 @@ impl WatchOnlyWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(reason, amount, address)| {
-                (amount, reason, address, DerivationIndex::random(&mut rng))
+            .map(|(purpose, amount, address)| {
+                (amount, purpose, address, DerivationIndex::random(&mut rng))
             })
             .collect();
 

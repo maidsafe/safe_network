@@ -72,11 +72,11 @@ impl TransactionBuilder {
         self
     }
 
-    /// Add an output given the token, reason, the MainPubkey and the DerivationIndex
+    /// Add an output given the token, purpose, the MainPubkey and the DerivationIndex
     pub fn add_output(
         mut self,
         token: NanoTokens,
-        reason: String,
+        purpose: String,
         main_pubkey: MainPubkey,
         derivation_index: DerivationIndex,
     ) -> Self {
@@ -84,9 +84,9 @@ impl TransactionBuilder {
 
         self.output_details.insert(
             unique_pubkey,
-            (reason.clone(), main_pubkey, derivation_index),
+            (purpose.clone(), main_pubkey, derivation_index),
         );
-        let output = Output::new(unique_pubkey, token.as_nano(), reason);
+        let output = Output::new(unique_pubkey, token.as_nano(), purpose);
         self.outputs.push(output);
 
         self
@@ -97,8 +97,8 @@ impl TransactionBuilder {
         mut self,
         outputs: impl IntoIterator<Item = TransferRecipientDetails>,
     ) -> Self {
-        for (token, reason, main_pubkey, derivation_index) in outputs.into_iter() {
-            self = self.add_output(token, reason, main_pubkey, derivation_index);
+        for (token, purpose, main_pubkey, derivation_index) in outputs.into_iter() {
+            self = self.add_output(token, purpose, main_pubkey, derivation_index);
         }
         self
     }
@@ -231,7 +231,7 @@ impl CashNoteBuilder {
             .outputs
             .iter()
             .map(|output| {
-                let (reason, main_pubkey, derivation_index) = self
+                let (purpose, main_pubkey, derivation_index) = self
                     .output_details
                     .get(&output.unique_pubkey)
                     .ok_or(TransferError::UniquePubkeyNotFound)?;
@@ -241,7 +241,7 @@ impl CashNoteBuilder {
                         unique_pubkey: main_pubkey.new_unique_pubkey(derivation_index),
                         parent_tx: self.spent_tx.clone(),
                         parent_spends: self.signed_spends.clone(),
-                        reason: reason.clone(),
+                        purpose: purpose.clone(),
                         main_pubkey: *main_pubkey,
                         derivation_index: *derivation_index,
                     },

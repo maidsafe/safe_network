@@ -69,9 +69,9 @@ pub struct CashNote {
     pub parent_tx: Transaction,
     /// The transaction's input's SignedSpends
     pub parent_spends: BTreeSet<SignedSpend>,
-    /// The reason this cash_note created for
+    /// The purpose this cash_note created for
     /// eg. `store cost pay to...`, `network royalty`, `change to self`, `payment transfer`, ...
-    pub reason: String,
+    pub purpose: String,
     /// This is the MainPubkey of the owner of this CashNote
     pub main_pubkey: MainPubkey,
     /// The derivation index used to derive the UniquePubkey and DerivedSecretKey from the MainPubkey and MainSecretKey respectively.
@@ -122,13 +122,13 @@ impl CashNote {
         self.parent_spends
             .iter()
             .next()
-            .map(|c| c.reason())
+            .map(|s| s.reason())
             .unwrap_or_default()
     }
 
-    /// Return the reason why this CashNote was created.
-    pub fn self_reason(&self) -> String {
-        self.reason.clone()
+    /// Return the purpose why this CashNote was created.
+    pub fn purpose(&self) -> String {
+        self.purpose.clone()
     }
 
     /// Return the value in NanoTokens for this CashNote.
@@ -153,7 +153,7 @@ impl CashNote {
             sha3.update(&sp.to_bytes());
         }
 
-        sha3.update(&self.reason.clone().into_bytes());
+        sha3.update(&self.purpose.clone().into_bytes());
 
         sha3.update(self.spent_reason().as_ref());
         let mut hash = [0u8; 32];

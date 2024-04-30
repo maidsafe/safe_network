@@ -37,7 +37,7 @@ use xor_name::XorName;
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
 
-// TransactionPayeeDetails: (reason, amount, address)
+// TransactionPayeeDetails: (purpose, amount, address)
 pub type TransactionPayeeDetails = (String, NanoTokens, MainPubkey);
 
 /// A hot-wallet.
@@ -323,8 +323,8 @@ impl HotWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(reason, amount, address)| {
-                (amount, reason, address, DerivationIndex::random(&mut rng))
+            .map(|(purpose, amount, address)| {
+                (amount, purpose, address, DerivationIndex::random(&mut rng))
             })
             .collect();
 
@@ -394,7 +394,7 @@ impl HotWallet {
         for (xorname, (main_pubkey, quote, peer_id_bytes)) in price_map.iter() {
             let storage_payee = (
                 quote.cost,
-                quote.reason.clone(),
+                quote.owner.clone(),
                 *main_pubkey,
                 DerivationIndex::random(&mut rng),
                 peer_id_bytes.clone(),
@@ -421,9 +421,9 @@ impl HotWallet {
         let recipients = recipients_by_xor
             .values()
             .flat_map(
-                |((cost, reason, pubkey, derivation_index, _id_bytes), roy)| {
+                |((cost, purpose, pubkey, derivation_index, _id_bytes), roy)| {
                     vec![
-                        (*cost, reason.clone(), *pubkey, *derivation_index),
+                        (*cost, purpose.clone(), *pubkey, *derivation_index),
                         roy.clone(),
                     ]
                 },
@@ -443,13 +443,13 @@ impl HotWallet {
             start.elapsed()
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let reason_hash = Hash::hash(b"SPEND_REASON_FOR_STORAGE");
+        let input_reason_hash = Hash::hash(b"SPEND_REASON_FOR_STORAGE");
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
             recipients,
             self.address(),
-            reason_hash,
+            input_reason_hash,
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
@@ -466,7 +466,7 @@ impl HotWallet {
             .collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
-            let (pay_amount, _reason, node_key, _, peer_id_bytes) = storage_payee;
+            let (pay_amount, _purpose, node_key, _, peer_id_bytes) = storage_payee;
             let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
