@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714490726886,
+  "lastUpdate": 1714490845666,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bdd3c054785d43c47b70521352ccebbc544c8491",
-          "message": "fix(cli): write datamap to metadata\n\nThis should allow datamaps to be written to disk even if we restart uploads",
-          "timestamp": "2024-01-03T13:04:53Z",
-          "tree_id": "d6d2d57a80ba53a3c2f7889eccc57f2135e916cc",
-          "url": "https://github.com/maidsafe/safe_network/commit/bdd3c054785d43c47b70521352ccebbc544c8491"
-        },
-        "date": 1704289391187,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 49,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5252242d0cbdaf9cbc1a7c58983128a7921a2d36",
+          "message": "chore: rename output reason to purpose for clarity",
+          "timestamp": "2024-04-30T14:37:53Z",
+          "tree_id": "6d074670ec32c24c50cb9342eaf86c15a36f5de9",
+          "url": "https://github.com/maidsafe/safe_network/commit/5252242d0cbdaf9cbc1a7c58983128a7921a2d36"
+        },
+        "date": 1714490845091,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
