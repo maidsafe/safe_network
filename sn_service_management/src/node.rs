@@ -163,7 +163,7 @@ pub struct NodeServiceData {
     )]
     pub peer_id: Option<PeerId>,
     pub pid: Option<u32>,
-    pub reward_balance: NanoTokens,
+    pub reward_balance: Option<NanoTokens>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_name: String,
