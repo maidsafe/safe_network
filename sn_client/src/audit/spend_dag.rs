@@ -10,7 +10,10 @@ use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
-use sn_transfers::{is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress};
+use sn_transfers::{
+    is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress,
+    CASH_NOTE_PURPOSE_FOR_GENESIS, CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
@@ -147,7 +150,7 @@ impl SpendDag {
             if let Some(creation_reason) = self.creation_reasons.get(spend_addr) {
                 creation_reason.clone()
             } else {
-                "Undefined".to_string()
+                CASH_NOTE_PURPOSE_FOR_GENESIS.to_string()
             };
         SpendDagAddress {
             address: *spend_addr,
@@ -409,7 +412,7 @@ impl SpendDag {
                 royalties.push(CashNoteRedemption::new(
                     *derivation_idx,
                     spend_addr,
-                    "CASH_NOTE_REASON_FOR_NETWORK_ROYALTIES".to_string(),
+                    CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES.to_string(),
                 ));
             }
         }
