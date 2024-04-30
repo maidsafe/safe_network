@@ -18,7 +18,7 @@ use sn_service_management::{
     rpc::{RpcActions, RpcClient},
     FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::{get_faucet_data_dir, NanoTokens};
+use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -347,7 +347,7 @@ pub async fn run_node(
         number: run_options.number,
         peer_id: Some(peer_id),
         pid: Some(node_info.pid),
-        reward_balance: NanoTokens::zero(),
+        reward_balance: None,
         rpc_socket_addr: run_options.rpc_socket_addr,
         safenode_path: launcher.get_safenode_path(),
         status: ServiceStatus::Running,
