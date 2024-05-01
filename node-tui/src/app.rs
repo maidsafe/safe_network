@@ -14,9 +14,9 @@ use tokio::sync::mpsc;
 
 use crate::{
     action::Action,
-    components::{home::Home, Component},
+    components::{home::Home, tab::Tab, Component},
     config::Config,
-    mode::Mode,
+    mode::{Mode, Scene},
     tui,
 };
 
@@ -28,22 +28,25 @@ pub struct App {
     pub should_quit: bool,
     pub should_suspend: bool,
     pub mode: Mode,
+    pub scene: Scene,
     pub last_tick_key_events: Vec<KeyEvent>,
 }
 
 impl App {
     pub fn new(tick_rate: f64, frame_rate: f64, peers_args: PeersArgs) -> Result<Self> {
+        let tab = Tab::default();
         let home = Home::new(peers_args)?;
         let config = Config::new()?;
-        let mode = Mode::Home;
+        let scene = tab.get_current_scene();
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(home)],
+            components: vec![Box::new(home), Box::new(tab)],
             should_quit: false,
             should_suspend: false,
             config,
-            mode,
+            mode: Mode::Navigation,
+            scene,
             last_tick_key_events: Vec::new(),
         })
     }
@@ -75,22 +78,24 @@ impl App {
                     tui::Event::Render => action_tx.send(Action::Render)?,
                     tui::Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
                     tui::Event::Key(key) => {
-                        if let Some(keymap) = self.config.keybindings.get(&self.mode) {
-                            if let Some(action) = keymap.get(&vec![key]) {
-                                log::info!("Got action: {action:?}");
-                                action_tx.send(action.clone())?;
-                            } else {
-                                // If the key was not handled as a single key action,
-                                // then consider it for multi-key combinations.
-                                self.last_tick_key_events.push(key);
-
-                                // Check for multi-key combinations
-                                if let Some(action) = keymap.get(&self.last_tick_key_events) {
+                        if self.mode == Mode::Navigation {
+                            if let Some(keymap) = self.config.keybindings.get(&self.scene) {
+                                if let Some(action) = keymap.get(&vec![key]) {
                                     log::info!("Got action: {action:?}");
                                     action_tx.send(action.clone())?;
+                                } else {
+                                    // If the key was not handled as a single key action,
+                                    // then consider it for multi-key combinations.
+                                    self.last_tick_key_events.push(key);
+
+                                    // Check for multi-key combinations
+                                    if let Some(action) = keymap.get(&self.last_tick_key_events) {
+                                        log::info!("Got action: {action:?}");
+                                        action_tx.send(action.clone())?;
+                                    }
                                 }
-                            }
-                        };
+                            };
+                        }
                     },
                     _ => {},
                 }
@@ -132,6 +137,9 @@ impl App {
                                 }
                             }
                         })?;
+                    },
+                    Action::SwitchScene(scene) => {
+                        self.scene = scene;
                     },
                     _ => {},
                 }
