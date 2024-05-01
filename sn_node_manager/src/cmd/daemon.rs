@@ -56,6 +56,7 @@ pub async fn add(
             url.clone(),
             version,
             &*release_repo,
+            verbosity,
         )
         .await?
     };
