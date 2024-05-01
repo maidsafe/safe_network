@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714584260001,
+  "lastUpdate": 1714584262238,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20417,40 +20417,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": true,
-          "id": "34130207d0d4ab08e17de481beadad25ba31b04f",
-          "message": "chore(cli): print private data warning",
-          "timestamp": "2024-01-04T13:55:17Z",
-          "tree_id": "660a342f3d4c5c2ae47379255e9ebd5339bca4b6",
-          "url": "https://github.com/maidsafe/safe_network/commit/34130207d0d4ab08e17de481beadad25ba31b04f"
-        },
-        "date": 1704379076533,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 228,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 64,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": false,
           "id": "a84df6f763aa91704a4138019be1ba7e69a6df6b",
           "message": "chore(node): reduce node default logging level",
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "7c410fc1294a8186dfe5111fc144381032c41886",
+          "message": "chore: rename `node-launchpad` crate to `sn_node_launchpad`\n\nThe binary name will be `node-launchpad`, but the crate is named consistently along with the other\ncrates in the workspace (including the use of underscores rather than hyphens).",
+          "timestamp": "2024-05-01T18:02:48+01:00",
+          "tree_id": "f29c088ce36d4559ad61ba635bc31741c221780f",
+          "url": "https://github.com/maidsafe/safe_network/commit/7c410fc1294a8186dfe5111fc144381032c41886"
+        },
+        "date": 1714584261396,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
