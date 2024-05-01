@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "node-launchpad",
     "sn_auditor",
     "sn_build_info",
     "sn_cli",
@@ -19,7 +20,6 @@ members = [
     "sn_transfers",
     "test_utils",
     "token_supplies",
-    "node-tui"
 ]
 
 [workspace.lints.rust]
