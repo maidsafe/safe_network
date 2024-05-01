@@ -20,6 +20,8 @@ use std::{
     sync::Arc,
 };
 
+use crate::VerbosityLevel;
+
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
 /// Downloads and extracts a release binary to a temporary location.
@@ -32,16 +34,25 @@ pub async fn download_and_extract_release(
     url: Option<String>,
     version: Option<String>,
     release_repo: &dyn SafeReleaseRepoActions,
+    verbosity: VerbosityLevel,
 ) -> Result<(PathBuf, String)> {
-    let pb = Arc::new(ProgressBar::new(0));
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")?
-        .progress_chars("#>-"));
-    let pb_clone = pb.clone();
-    let callback: Box<dyn Fn(u64, u64) + Send + Sync> = Box::new(move |downloaded, total| {
-        pb_clone.set_length(total);
-        pb_clone.set_position(downloaded);
-    });
+    let mut pb = None;
+    let callback = if verbosity != VerbosityLevel::Minimal {
+        let progress_bar = Arc::new(ProgressBar::new(0));
+        progress_bar.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")?
+            .progress_chars("#>-"));
+        pb = Some(progress_bar.clone());
+        let pb_clone = progress_bar.clone();
+        let callback: Box<dyn Fn(u64, u64) + Send + Sync> = Box::new(move |downloaded, total| {
+            pb_clone.set_length(total);
+            pb_clone.set_position(downloaded);
+        });
+        callback
+    } else {
+        let callback: Box<dyn Fn(u64, u64) + Send + Sync> = Box::new(move |_, _| {});
+        callback
+    };
 
     let temp_dir_path = create_temp_dir()?;
 
@@ -52,27 +63,37 @@ pub async fn download_and_extract_release(
         }
 
         if let Some(url) = &url {
-            println!("Retrieving {release_type} from {url}");
+            if verbosity != VerbosityLevel::Minimal {
+                println!("Retrieving {release_type} from {url}");
+            }
             match release_repo
                 .download_release(url, &temp_dir_path, &callback)
                 .await
             {
                 Ok(archive_path) => break archive_path,
                 Err(err) => {
-                    println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    }
                     download_attempts += 1;
-                    pb.finish_and_clear();
+                    if let Some(pb) = &pb {
+                        pb.finish_and_clear();
+                    }
                 }
             }
         } else {
             let version = if let Some(version) = version.clone() {
                 Version::parse(&version)?
             } else {
-                println!("Retrieving latest version for {release_type}...");
+                if verbosity != VerbosityLevel::Minimal {
+                    println!("Retrieving latest version for {release_type}...");
+                }
                 release_repo.get_latest_version(&release_type).await?
             };
 
-            println!("Downloading {release_type} version {version}...");
+            if verbosity != VerbosityLevel::Minimal {
+                println!("Downloading {release_type} version {version}...");
+            }
             match release_repo
                 .download_release_from_s3(
                     &release_type,
@@ -86,19 +107,27 @@ pub async fn download_and_extract_release(
             {
                 Ok(archive_path) => break archive_path,
                 Err(err) => {
-                    println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                    }
                     download_attempts += 1;
-                    pb.finish_and_clear();
+                    if let Some(pb) = &pb {
+                        pb.finish_and_clear();
+                    }
                 }
             }
         };
     };
-    pb.finish_and_clear();
+    if let Some(pb) = pb {
+        pb.finish_and_clear();
+    }
 
     let safenode_download_path =
         release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
 
-    println!("Download completed: {}", &safenode_download_path.display());
+    if verbosity != VerbosityLevel::Minimal {
+        println!("Download completed: {}", &safenode_download_path.display());
+    }
 
     // Finally, obtain the version number from the binary by running `--version`. This is useful
     // when the `--url` argument is used, and in any case, ultimately the binary we obtained is the

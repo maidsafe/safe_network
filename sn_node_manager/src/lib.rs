@@ -14,7 +14,7 @@ pub mod local;
 pub mod rpc;
 pub mod rpc_client;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum VerbosityLevel {
     Minimal,
     Normal,
@@ -81,7 +81,9 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 .service_control
                 .is_service_process_running(self.service.pid().unwrap())
             {
-                println!("The {} service is already running", self.service.name());
+                if self.verbosity != VerbosityLevel::Minimal {
+                    println!("The {} service is already running", self.service.name());
+                }
                 return Ok(());
             }
         }
@@ -121,8 +123,9 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
         self.service.on_start().await?;
 
-        println!("{} Started {} service", "✓".green(), self.service.name());
         if self.verbosity != VerbosityLevel::Minimal {
+            println!("{} Started {} service", "✓".green(), self.service.name());
+
             println!(
                 "  - PID: {}",
                 self.service
@@ -148,14 +151,18 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
     pub async fn stop(&mut self) -> Result<()> {
         match self.service.status() {
             ServiceStatus::Added => {
-                println!(
-                    "Service {} has not been started since it was installed",
-                    self.service.name()
-                );
+                if self.verbosity != VerbosityLevel::Minimal {
+                    println!(
+                        "Service {} has not been started since it was installed",
+                        self.service.name()
+                    );
+                }
                 Ok(())
             }
             ServiceStatus::Removed => {
-                println!("Service {} has been removed", self.service.name());
+                if self.verbosity != VerbosityLevel::Minimal {
+                    println!("Service {} has been removed", self.service.name());
+                }
                 Ok(())
             }
             ServiceStatus::Running => {
@@ -163,15 +170,19 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 let name = self.service.name();
 
                 if self.service_control.is_service_process_running(pid) {
-                    println!("Attempting to stop {}...", name);
+                    if self.verbosity != VerbosityLevel::Minimal {
+                        println!("Attempting to stop {}...", name);
+                    }
                     self.service_control.stop(&name)?;
-                    println!(
-                        "{} Service {} with PID {} was stopped",
-                        "✓".green(),
-                        name,
-                        pid
-                    );
-                } else {
+                    if self.verbosity != VerbosityLevel::Minimal {
+                        println!(
+                            "{} Service {} with PID {} was stopped",
+                            "✓".green(),
+                            name,
+                            pid
+                        );
+                    }
+                } else if self.verbosity != VerbosityLevel::Minimal {
                     println!("{} Service {} was already stopped", "✓".green(), name);
                 }
 
@@ -179,11 +190,13 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 Ok(())
             }
             ServiceStatus::Stopped => {
-                println!(
-                    "{} Service {} was already stopped",
-                    "✓".green(),
-                    self.service.name()
-                );
+                if self.verbosity != VerbosityLevel::Minimal {
+                    println!(
+                        "{} Service {} was already stopped",
+                        "✓".green(),
+                        self.service.name()
+                    );
+                }
                 Ok(())
             }
         }
@@ -236,11 +249,13 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
         self.service.on_remove();
 
-        println!(
-            "{} Service {} was removed",
-            "✓".green(),
-            self.service.name()
-        );
+        if self.verbosity != VerbosityLevel::Minimal {
+            println!(
+                "{} Service {} was removed",
+                "✓".green(),
+                self.service.name()
+            );
+        }
 
         Ok(())
     }

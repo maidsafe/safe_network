@@ -76,8 +76,14 @@ pub async fn add(
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
-        download_and_extract_release(ReleaseType::Safenode, url.clone(), version, &*release_repo)
-            .await?
+        download_and_extract_release(
+            ReleaseType::Safenode,
+            url.clone(),
+            version,
+            &*release_repo,
+            verbosity,
+        )
+        .await?
     };
 
     tracing::debug!("peers questions...");
@@ -139,7 +145,12 @@ pub async fn balance(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+    refresh_node_registry(
+        &mut node_registry,
+        &ServiceController {},
+        verbosity != VerbosityLevel::Minimal,
+    )
+    .await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
@@ -175,12 +186,19 @@ pub async fn remove(
     print_banner("Remove Safenode Services");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+    refresh_node_registry(
+        &mut node_registry,
+        &ServiceController {},
+        verbosity != VerbosityLevel::Minimal,
+    )
+    .await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
-        println!("No services were eligible for removal");
+        if verbosity != VerbosityLevel::Minimal {
+            println!("No services were eligible for removal");
+        }
         return Ok(());
     }
 
@@ -190,7 +208,7 @@ pub async fn remove(
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
-            ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+            ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         match service_manager.remove(keep_directories).await {
             Ok(()) => {
                 node_registry.save()?;
@@ -199,7 +217,7 @@ pub async fn remove(
         }
     }
 
-    summarise_any_failed_ops(failed_services, "remove")
+    summarise_any_failed_ops(failed_services, "remove", verbosity)
 }
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
@@ -221,7 +239,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
         }
     }
 
-    stop(vec![], vec![], verbosity.clone()).await?;
+    stop(vec![], vec![], verbosity).await?;
     remove(false, vec![], vec![], verbosity).await?;
 
     let node_registry_path = config::get_node_registry_path()?;
@@ -245,12 +263,19 @@ pub async fn start(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+    refresh_node_registry(
+        &mut node_registry,
+        &ServiceController {},
+        verbosity != VerbosityLevel::Minimal,
+    )
+    .await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
-        println!("No services were eligible to be started");
+        if verbosity != VerbosityLevel::Minimal {
+            println!("No services were eligible to be started");
+        }
         return Ok(());
     }
 
@@ -260,7 +285,7 @@ pub async fn start(
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
-            ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+            ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         if service_manager.service.status() != ServiceStatus::Running {
             // It would be possible here to check if the service *is* running and then just
             // continue without applying the delay. The reason for not doing so is because when
@@ -277,7 +302,7 @@ pub async fn start(
         }
     }
 
-    summarise_any_failed_ops(failed_services, "start")
+    summarise_any_failed_ops(failed_services, "start", verbosity)
 }
 
 pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
@@ -330,12 +355,19 @@ pub async fn stop(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+    refresh_node_registry(
+        &mut node_registry,
+        &ServiceController {},
+        verbosity != VerbosityLevel::Minimal,
+    )
+    .await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
         // This could be the case if all services are at `Removed` status.
-        println!("No services were eligible to be stopped");
+        if verbosity != VerbosityLevel::Minimal {
+            println!("No services were eligible to be stopped");
+        }
         return Ok(());
     }
 
@@ -345,7 +377,7 @@ pub async fn stop(
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
-            ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+            ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         match service_manager.stop().await {
             Ok(()) => {
                 node_registry.save()?;
@@ -354,7 +386,7 @@ pub async fn stop(
         }
     }
 
-    summarise_any_failed_ops(failed_services, "stop")
+    summarise_any_failed_ops(failed_services, "stop", verbosity)
 }
 
 pub async fn upgrade(
@@ -387,11 +419,17 @@ pub async fn upgrade(
         ReleaseType::Safenode,
         url,
         version,
+        verbosity,
     )
     .await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
+    refresh_node_registry(
+        &mut node_registry,
+        &ServiceController {},
+        verbosity != VerbosityLevel::Minimal,
+    )
+    .await?;
 
     if !use_force {
         let node_versions = node_registry
@@ -403,7 +441,9 @@ pub async fn upgrade(
             .iter()
             .any(|current_version| current_version < &target_version);
         if !any_nodes_need_upgraded {
-            println!("{} All nodes are at the latest version", "✓".green());
+            if verbosity != VerbosityLevel::Minimal {
+                println!("{} All nodes are at the latest version", "✓".green());
+            }
             return Ok(());
         }
     }
@@ -430,7 +470,7 @@ pub async fn upgrade(
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
-            ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
+            ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
@@ -517,12 +557,19 @@ fn get_services_for_ops(
     Ok(service_indices)
 }
 
-fn summarise_any_failed_ops(failed_services: Vec<(String, String)>, verb: &str) -> Result<()> {
+fn summarise_any_failed_ops(
+    failed_services: Vec<(String, String)>,
+    verb: &str,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
     if !failed_services.is_empty() {
-        println!("Failed to {verb} {} service(s):", failed_services.len());
-        for failed in failed_services.iter() {
-            println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+        if verbosity != VerbosityLevel::Minimal {
+            println!("Failed to {verb} {} service(s):", failed_services.len());
+            for failed in failed_services.iter() {
+                println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+            }
         }
+
         return Err(eyre!("Failed to {verb} one or more services"));
     }
     Ok(())

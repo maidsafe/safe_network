@@ -126,7 +126,6 @@ async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
         .unwrap_or(Url::parse(NETWORK_CONTACTS_URL.as_str())?);
 
     info!("Trying to fetch the bootstrap peers from {url}");
-    println!("Trying to fetch the bootstrap peers from {url}");
 
     get_bootstrap_peers_from_url(url).await
 }

@@ -58,8 +58,14 @@ pub async fn add(
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
-        download_and_extract_release(ReleaseType::Faucet, url.clone(), version, &*release_repo)
-            .await?
+        download_and_extract_release(
+            ReleaseType::Faucet,
+            url.clone(),
+            version,
+            &*release_repo,
+            verbosity,
+        )
+        .await?
     };
 
     add_faucet(
@@ -161,7 +167,8 @@ pub async fn upgrade(
     }
 
     let (upgrade_bin_path, target_version) =
-        download_and_get_upgrade_bin_path(None, ReleaseType::Faucet, url, version).await?;
+        download_and_get_upgrade_bin_path(None, ReleaseType::Faucet, url, version, verbosity)
+            .await?;
     let faucet = node_registry.faucet.as_mut().unwrap();
 
     if !force {
