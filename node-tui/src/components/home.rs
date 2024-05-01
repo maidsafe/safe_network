@@ -57,7 +57,7 @@ impl Component for Home {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::SwitchScene(mode) => match mode {
+            Action::SwitchScene(scene) => match scene {
                 Scene::Home => self.show_scene = true,
                 _ => self.show_scene = false,
             },

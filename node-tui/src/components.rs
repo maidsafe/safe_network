@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub mod home;
+pub mod options;
 pub mod tab;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
