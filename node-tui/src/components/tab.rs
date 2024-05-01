@@ -39,25 +39,25 @@ impl Component for Tab {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::TabActions(TabActions::NextTab) => {
-                info!(?self.current_tab_index, "Got Next tab");
+                trace!(?self.current_tab_index, "Got Next tab");
                 let mut new_index = self.current_tab_index + 1;
                 if new_index >= self.scene_list.len() {
                     new_index = 0;
                 }
                 self.current_tab_index = new_index;
                 let new_scene = self.scene_list[self.current_tab_index];
-                info!(?new_scene, "Updated tab:");
+                trace!(?new_scene, "Updated tab:");
                 Some(Action::SwitchScene(new_scene))
             },
 
             Action::TabActions(TabActions::PreviousTab) => {
-                info!(?self.current_tab_index, "Got PreviousTab");
+                trace!(?self.current_tab_index, "Got PreviousTab");
                 let new_index =
                     if self.current_tab_index == 0 { self.scene_list.len() - 1 } else { self.current_tab_index - 1 };
                 self.current_tab_index = new_index;
 
                 let new_scene = self.scene_list[self.current_tab_index];
-                info!(?new_scene, "Updated tab:");
+                trace!(?new_scene, "Updated tab:");
                 Some(Action::SwitchScene(new_scene))
             },
             _ => None,
