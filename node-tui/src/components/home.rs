@@ -6,6 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::{Component, Frame};
+use crate::{
+    action::{Action, HomeActions},
+    config::Config,
+    mode::Scene,
+};
 use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{cmd::node::ProgressType, config::get_node_registry_path};
@@ -13,24 +19,19 @@ use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-use super::{Component, Frame};
-use crate::{
-    action::{Action, HomeActions},
-    config::Config,
-};
-
 #[derive(Default)]
 pub struct Home {
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
+    show_scene: bool,
     running_nodes: Vec<NodeServiceData>,
     node_table_state: TableState,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. A simple file lock or a db like file would work.
     lock_registry: bool,
 
-    // Network Peers
+    // Network Peer
     pub peers_args: PeersArgs,
 }
 
@@ -38,6 +39,7 @@ impl Home {
     pub fn new(peers_args: PeersArgs) -> Result<Self> {
         let mut home = Self { peers_args, ..Default::default() };
         home.load_node_registry()?;
+        home.show_scene = true;
         Ok(home)
     }
 }
@@ -55,6 +57,10 @@ impl Component for Home {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
+            Action::SwitchScene(mode) => match mode {
+                Scene::Home => self.show_scene = true,
+                _ => self.show_scene = false,
+            },
             Action::HomeActions(HomeActions::AddNode) => {
                 if self.lock_registry {
                     error!("Registry is locked, cannot add node now.");
@@ -158,15 +164,22 @@ impl Component for Home {
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        // basic home layout
-        let home_layout =
-            Layout::new(Direction::Vertical, [Constraint::Min(5), Constraint::Min(3), Constraint::Max(3)]).split(area);
+        if !self.show_scene {
+            return Ok(());
+        }
+
+        // index 0 is reserved for tab
+        let layer_zero = Layout::new(
+            Direction::Vertical,
+            [Constraint::Max(1), Constraint::Min(5), Constraint::Min(3), Constraint::Max(3)],
+        )
+        .split(area);
 
         // top section
         //
         f.render_widget(
             Paragraph::new("None").block(Block::default().title("Autonomi Node Status").borders(Borders::ALL)),
-            home_layout[0],
+            layer_zero[1],
         );
 
         // Node List
@@ -175,7 +188,6 @@ impl Component for Home {
             .iter()
             .filter_map(|n| {
                 let peer_id = n.peer_id;
-                info!("peer_id {:?} {:?}", peer_id, n.status);
                 if n.status == ServiceStatus::Removed {
                     return None;
                 }
@@ -196,12 +208,14 @@ impl Component for Home {
             .block(Block::default().title("Running Nodes").borders(Borders::ALL))
             .highlight_symbol(">");
 
-        f.render_stateful_widget(table, home_layout[1], &mut self.node_table_state);
+        f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit")
-                .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
-            home_layout[2],
+            Paragraph::new(
+                "[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page, [Shift + Tab] Previous Page",
+            )
+            .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
+            layer_zero[3],
         );
         Ok(())
     }
