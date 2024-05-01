@@ -1,7 +1,7 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Node Launchpad"
-name = "node-launchpad"
+name = "sn_node_launchpad"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
@@ -9,6 +9,10 @@ homepage = "https://maidsafe.net"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 build = "build.rs"
+
+[[bin]]
+name = "node-launchpad"
+path = "src/main.rs"
 
 [dependencies]
 sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition", features = [
