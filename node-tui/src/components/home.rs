@@ -211,10 +211,8 @@ impl Component for Home {
         f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new(
-                "[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page, [Shift + Tab] Previous Page",
-            )
-            .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
+            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page")
+                .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
             layer_zero[3],
         );
         Ok(())

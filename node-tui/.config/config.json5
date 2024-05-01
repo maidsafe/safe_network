@@ -17,7 +17,6 @@
       "tab": {"TabActions":"NextTab"},
       "<Shift-tab>": {"TabActions":"PreviousTab"},
       "enter": {"SwitchInputMode":"Entry"},
-     // "esc": {"SwitchInputMode":"Navigation"}, // disabled because when in entry mode, keybindings are not captured
       "<q>": "Quit", // Quit the application
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit
