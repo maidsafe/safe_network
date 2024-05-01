@@ -10,7 +10,7 @@ on:
         default: main
 
 env:
-  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.13.0/just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
 
 jobs:
   build:
@@ -95,8 +95,8 @@ jobs:
         run: |
           curl -L -O $JUST_BIN_URL
           mkdir just
-          tar xvf just-1.13.0-x86_64-unknown-linux-musl.tar.gz -C just
-          rm just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+          tar xvf just-1.25.2-x86_64-unknown-linux-musl.tar.gz -C just
+          rm just-1.25.2-x86_64-unknown-linux-musl.tar.gz
           sudo mv just/just /usr/local/bin
           rm -rf just
           sudo apt-get install -y tree
@@ -106,9 +106,9 @@ jobs:
           tree artifacts
           just package-release-assets "safe"
           just package-release-assets "safenode"
-          just package-release-assets "testnet"
           just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
+          just package-release-assets "node-launchpad"
       - uses: actions/upload-artifact@main
         with:
           name: packaged_binaries
