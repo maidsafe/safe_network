@@ -14,10 +14,10 @@ use crate::{
 };
 use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::{cmd::node::ProgressType, config::get_node_registry_path};
+use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
-use tokio::sync::mpsc::{self, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedSender};
 
 #[derive(Default)]
 pub struct Home {
@@ -69,7 +69,6 @@ impl Component for Home {
                 info!("Adding a new node service");
 
                 let peers = self.peers_args.clone();
-                let (progress_sender, _) = mpsc::channel::<ProgressType>(1);
                 let action_sender = self.get_actions_sender()?;
                 self.lock_registry = true;
 
@@ -90,7 +89,6 @@ impl Component for Home {
                         None,
                         None,
                         sn_node_manager::VerbosityLevel::Minimal,
-                        progress_sender,
                     )
                     .await
                     {

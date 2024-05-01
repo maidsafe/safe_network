@@ -4567,7 +4567,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-tui"
+name = "node-launchpad"
 version = "0.1.0"
 dependencies = [
  "better-panic",

@@ -1,12 +1,14 @@
 [package]
-name = "node-tui"
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Node Launchpad"
+name = "node-launchpad"
 version = "0.1.0"
 edition = "2021"
-description = "Terminal interface for autonomi node management"
-
-authors = ["Josh Wilson <joshuef@gmail.com>"]
+license = "GPL-3.0"
+homepage = "https://maidsafe.net"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
 build = "build.rs"
-
 
 [dependencies]
 sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition", features = [
