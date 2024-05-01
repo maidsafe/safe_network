@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::mode::Scene;
+use crate::mode::{InputMode, Scene};
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -15,6 +15,7 @@ pub enum Action {
     HomeActions(HomeActions),
     TabActions(TabActions),
     SwitchScene(Scene),
+    SwitchInputMode(InputMode),
 
     Tick,
     Render,

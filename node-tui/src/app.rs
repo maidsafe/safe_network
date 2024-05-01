@@ -6,19 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::{
+    action::Action,
+    components::{home::Home, options::Options, tab::Tab, Component},
+    config::Config,
+    mode::{InputMode, Scene},
+    tui,
+};
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
-
-use crate::{
-    action::Action,
-    components::{home::Home, tab::Tab, Component},
-    config::Config,
-    mode::{Mode, Scene},
-    tui,
-};
 
 pub struct App {
     pub config: Config,
@@ -27,7 +26,7 @@ pub struct App {
     pub components: Vec<Box<dyn Component>>,
     pub should_quit: bool,
     pub should_suspend: bool,
-    pub mode: Mode,
+    pub input_mode: InputMode,
     pub scene: Scene,
     pub last_tick_key_events: Vec<KeyEvent>,
 }
@@ -37,15 +36,16 @@ impl App {
         let tab = Tab::default();
         let home = Home::new(peers_args)?;
         let config = Config::new()?;
+        let options = Options::default();
         let scene = tab.get_current_scene();
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(home), Box::new(tab)],
+            components: vec![Box::new(home), Box::new(options), Box::new(tab)],
             should_quit: false,
             should_suspend: false,
             config,
-            mode: Mode::Navigation,
+            input_mode: InputMode::Navigation,
             scene,
             last_tick_key_events: Vec::new(),
         })
@@ -78,10 +78,10 @@ impl App {
                     tui::Event::Render => action_tx.send(Action::Render)?,
                     tui::Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
                     tui::Event::Key(key) => {
-                        if self.mode == Mode::Navigation {
+                        if self.input_mode == InputMode::Navigation {
                             if let Some(keymap) = self.config.keybindings.get(&self.scene) {
                                 if let Some(action) = keymap.get(&vec![key]) {
-                                    log::info!("Got action: {action:?}");
+                                    info!("Got action: {action:?}");
                                     action_tx.send(action.clone())?;
                                 } else {
                                     // If the key was not handled as a single key action,
@@ -90,25 +90,26 @@ impl App {
 
                                     // Check for multi-key combinations
                                     if let Some(action) = keymap.get(&self.last_tick_key_events) {
-                                        log::info!("Got action: {action:?}");
+                                        info!("Got action: {action:?}");
                                         action_tx.send(action.clone())?;
                                     }
                                 }
                             };
+                        } else if self.input_mode == InputMode::Entry {
+                            for component in self.components.iter_mut() {
+                                if let Some(action) = component.handle_events(Some(e.clone()))? {
+                                    action_tx.send(action)?;
+                                }
+                            }
                         }
                     },
                     _ => {},
-                }
-                for component in self.components.iter_mut() {
-                    if let Some(action) = component.handle_events(Some(e.clone()))? {
-                        action_tx.send(action)?;
-                    }
                 }
             }
 
             while let Ok(action) = action_rx.try_recv() {
                 if action != Action::Tick && action != Action::Render {
-                    log::debug!("{action:?}");
+                    debug!("{action:?}");
                 }
                 match action {
                     Action::Tick => {
@@ -139,7 +140,12 @@ impl App {
                         })?;
                     },
                     Action::SwitchScene(scene) => {
+                        info!("Scene swtiched to: {scene:?}");
                         self.scene = scene;
+                    },
+                    Action::SwitchInputMode(mode) => {
+                        info!("Input mode switched to: {mode:?}");
+                        self.input_mode = mode;
                     },
                     _ => {},
                 }

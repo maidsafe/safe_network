@@ -16,8 +16,8 @@ pub enum Scene {
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Mode {
+pub enum InputMode {
     #[default]
     Navigation,
-    Input,
+    Entry,
 }
