@@ -174,6 +174,7 @@ impl Component for Home {
             [Constraint::Max(1), Constraint::Min(5), Constraint::Min(3), Constraint::Max(3)],
         )
         .split(area);
+        let popup_area = Self::centered_rect(25, 25, area);
 
         // top section
         //
@@ -215,6 +216,18 @@ impl Component for Home {
                 .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
             layer_zero[3],
         );
+
+        // popup
+        if self.lock_registry {
+            f.render_widget(Clear, popup_area);
+            f.render_widget(
+                Paragraph::new("Adding/Starting Node.. Please wait...")
+                    .alignment(Alignment::Center)
+                    .block(Block::default().borders(Borders::ALL).style(Style::default().bg(Color::Reset))),
+                popup_area,
+            );
+        }
+
         Ok(())
     }
 }
@@ -263,5 +276,22 @@ impl Home {
 
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
+    }
+
+    /// helper function to create a centered rect using up certain percentage of the available rect `r`
+    fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+        let popup_layout = Layout::vertical([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+        Layout::horizontal([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
     }
 }
