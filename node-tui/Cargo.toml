@@ -7,7 +7,6 @@ description = "Terminal interface for autonomi node management"
 authors = ["Josh Wilson <joshuef@gmail.com>"]
 build = "build.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition", features = [
