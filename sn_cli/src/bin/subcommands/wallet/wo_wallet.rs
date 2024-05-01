@@ -20,7 +20,7 @@ use sn_client::transfers::{
     WatchOnlyWallet,
 };
 use sn_client::Client;
-use sn_transfers::CASH_NOTE_PURPOSE_FOR_TRANSFER;
+use sn_transfers::CASHNOTE_PURPOSE_OF_TRANSFER;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -234,7 +234,7 @@ fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Pat
     };
 
     let unsigned_transfer = wallet.build_unsigned_transaction(
-        vec![(CASH_NOTE_PURPOSE_FOR_TRANSFER.to_string(), amount, to)],
+        vec![(CASHNOTE_PURPOSE_OF_TRANSFER.to_string(), amount, to)],
         None,
     )?;
 
