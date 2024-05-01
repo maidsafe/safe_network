@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "node-launchpad",
     "sn_auditor",
     "sn_build_info",
     "sn_cli",
@@ -11,6 +10,7 @@ members = [
     "sn_metrics",
     "sn_networking",
     "sn_node",
+    "sn_node_launchpad",
     "sn_node_manager",
     "sn_node_rpc_client",
     "sn_peers_acquisition",
