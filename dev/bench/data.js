@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714585001869,
+  "lastUpdate": 1714585003706,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20413,40 +20413,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "a84df6f763aa91704a4138019be1ba7e69a6df6b",
-          "message": "chore(node): reduce node default logging level",
-          "timestamp": "2024-01-04T15:07:46Z",
-          "tree_id": "d3c5d80230575459435f2565c5c9d9f5b4794996",
-          "url": "https://github.com/maidsafe/safe_network/commit/a84df6f763aa91704a4138019be1ba7e69a6df6b"
-        },
-        "date": 1704383401107,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 224,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "79ea950913c89f7cc6f6ff92fd2d9d360e760e6a",
+          "message": "test: disable node man integration tests\n\nThese tests are no longer passing and it's not completely clear why. In any case, I think they need\nto be a bit more isolated, and operate on their own local network.\n\nAt the moment there is not enough time to address that.",
+          "timestamp": "2024-05-01T18:14:56+01:00",
+          "tree_id": "f3999ce7e9c59bd6d80427becfc5a36dc0f5867e",
+          "url": "https://github.com/maidsafe/safe_network/commit/79ea950913c89f7cc6f6ff92fd2d9d360e760e6a"
+        },
+        "date": 1714585003080,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
