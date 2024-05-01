@@ -4586,42 +4586,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-launchpad"
-version = "0.1.0"
-dependencies = [
- "better-panic",
- "clap",
- "color-eyre",
- "config",
- "crossterm",
- "derive_deref",
- "directories",
- "futures",
- "human-panic",
- "json5",
- "lazy_static",
- "libc",
- "log",
- "pretty_assertions",
- "ratatui",
- "serde",
- "serde_json",
- "signal-hook",
- "sn-node-manager",
- "sn_peers_acquisition",
- "sn_service_management",
- "strip-ansi-escapes",
- "strum",
- "tokio",
- "tokio-util 0.7.10",
- "tracing",
- "tracing-error",
- "tracing-subscriber",
- "tui-input",
- "vergen",
-]
-
-[[package]]
 name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7166,6 +7130,42 @@ dependencies = [
  "tracing-subscriber",
  "walkdir",
  "xor_name",
+]
+
+[[package]]
+name = "sn_node_launchpad"
+version = "0.1.0"
+dependencies = [
+ "better-panic",
+ "clap",
+ "color-eyre",
+ "config",
+ "crossterm",
+ "derive_deref",
+ "directories",
+ "futures",
+ "human-panic",
+ "json5",
+ "lazy_static",
+ "libc",
+ "log",
+ "pretty_assertions",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "sn-node-manager",
+ "sn_peers_acquisition",
+ "sn_service_management",
+ "strip-ansi-escapes",
+ "strum",
+ "tokio",
+ "tokio-util 0.7.10",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
+ "tui-input",
+ "vergen",
 ]
 
 [[package]]
