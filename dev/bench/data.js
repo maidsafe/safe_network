@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714584264642,
+  "lastUpdate": 1714584877884,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "a84df6f763aa91704a4138019be1ba7e69a6df6b",
-          "message": "chore(node): reduce node default logging level",
-          "timestamp": "2024-01-04T15:07:46Z",
-          "tree_id": "d3c5d80230575459435f2565c5c9d9f5b4794996",
-          "url": "https://github.com/maidsafe/safe_network/commit/a84df6f763aa91704a4138019be1ba7e69a6df6b"
-        },
-        "date": 1704383268574,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6575805588246857,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0916159199399385,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 41.75797396520042,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.926460057784915,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "79ea950913c89f7cc6f6ff92fd2d9d360e760e6a",
+          "message": "test: disable node man integration tests\n\nThese tests are no longer passing and it's not completely clear why. In any case, I think they need\nto be a bit more isolated, and operate on their own local network.\n\nAt the moment there is not enough time to address that.",
+          "timestamp": "2024-05-01T18:14:56+01:00",
+          "tree_id": "f3999ce7e9c59bd6d80427becfc5a36dc0f5867e",
+          "url": "https://github.com/maidsafe/safe_network/commit/79ea950913c89f7cc6f6ff92fd2d9d360e760e6a"
+        },
+        "date": 1714584873572,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1621442014496757,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.599405321000326,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 55.64322860540368,
             "unit": "MiB/s"
           }
         ]
