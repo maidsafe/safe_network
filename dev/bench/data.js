@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714592208393,
+  "lastUpdate": 1714592209980,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7808046377062a5fde078c9e32ba30eacd2eb317",
-          "message": "chore(deps): bump github/codeql-action from 2 to 3\n\nBumps [github/codeql-action](https://github.com/github/codeql-action) from 2 to 3.\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/v2...v3)\n\n---\nupdated-dependencies:\n- dependency-name: github/codeql-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2023-12-14T15:43:21Z",
-          "tree_id": "a4944f4592b331559a31de139a525a0bb06fc2be",
-          "url": "https://github.com/maidsafe/safe_network/commit/7808046377062a5fde078c9e32ba30eacd2eb317"
-        },
-        "date": 1702571088580,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4723,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 79158,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 16,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35989,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "ff83510da343c9763bdba5132fcdbc822e4b704e",
+          "message": "ci: add `node-launchpad` binary to release process\n\nThe new TUI for the node manager is a new, separate binary that is being added in to the release\nprocess. It will have a Github release.\n\nFor some reason it seems to have became necessary to explicitly call `rustup target` during the\nartifacts build process. Without doing it, I was getting build errors on macOS.",
+          "timestamp": "2024-05-01T20:22:23+01:00",
+          "tree_id": "1a308fde9158d5b7e52e4597c161ea2295b59311",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff83510da343c9763bdba5132fcdbc822e4b704e"
+        },
+        "date": 1714592209628,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7640,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35568,
             "unit": "ms"
           },
           {
