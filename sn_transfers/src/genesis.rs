@@ -8,7 +8,7 @@
 
 use super::wallet::HotWallet;
 
-use crate::cashnotes::CASH_NOTE_PURPOSE_FOR_GENESIS;
+use crate::cashnotes::CASHNOTE_PURPOSE_OF_GENESIS;
 use crate::{
     CashNote, DerivationIndex, Hash, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
     Transaction, TransactionBuilder, TransferError as CashNoteError,
@@ -160,7 +160,7 @@ pub fn create_first_cash_note_from_key(
         )
         .add_output(
             NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-            CASH_NOTE_PURPOSE_FOR_GENESIS.to_string(),
+            CASHNOTE_PURPOSE_OF_GENESIS.to_string(),
             main_pubkey,
             derivation_index,
         )
