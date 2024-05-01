@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714584262238,
+  "lastUpdate": 1714584264642,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "e4ec17a87f15a881673d1b3a7721306ff2a9f819",
-          "message": "chore(cli): make sequential payment fail limit a const",
-          "timestamp": "2023-12-14T11:43:34Z",
-          "tree_id": "7988b8a754094ad7bcfa7f6150b4bb50a90e3564",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4ec17a87f15a881673d1b3a7721306ff2a9f819"
-        },
-        "date": 1702556591549,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5054,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 75550,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36175,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "7c410fc1294a8186dfe5111fc144381032c41886",
+          "message": "chore: rename `node-launchpad` crate to `sn_node_launchpad`\n\nThe binary name will be `node-launchpad`, but the crate is named consistently along with the other\ncrates in the workspace (including the use of underscores rather than hyphens).",
+          "timestamp": "2024-05-01T18:02:48+01:00",
+          "tree_id": "f29c088ce36d4559ad61ba635bc31741c221780f",
+          "url": "https://github.com/maidsafe/safe_network/commit/7c410fc1294a8186dfe5111fc144381032c41886"
+        },
+        "date": 1714584263781,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7784,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35419,
             "unit": "ms"
           },
           {
