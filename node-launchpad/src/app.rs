@@ -54,7 +54,9 @@ impl App {
     pub async fn run(&mut self) -> Result<()> {
         let (action_tx, mut action_rx) = mpsc::unbounded_channel();
 
-        let mut tui = tui::Tui::new()?.tick_rate(self.tick_rate).frame_rate(self.frame_rate);
+        let mut tui = tui::Tui::new()?
+            .tick_rate(self.tick_rate)
+            .frame_rate(self.frame_rate);
         // tui.mouse(true);
         tui.enter()?;
 
@@ -102,8 +104,8 @@ impl App {
                                 }
                             }
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
 
@@ -114,7 +116,7 @@ impl App {
                 match action {
                     Action::Tick => {
                         self.last_tick_key_events.drain(..);
-                    },
+                    }
                     Action::Quit => self.should_quit = true,
                     Action::Suspend => self.should_suspend = true,
                     Action::Resume => self.should_suspend = false,
@@ -124,30 +126,34 @@ impl App {
                             for component in self.components.iter_mut() {
                                 let r = component.draw(f, f.size());
                                 if let Err(e) = r {
-                                    action_tx.send(Action::Error(format!("Failed to draw: {:?}", e))).unwrap();
+                                    action_tx
+                                        .send(Action::Error(format!("Failed to draw: {:?}", e)))
+                                        .unwrap();
                                 }
                             }
                         })?;
-                    },
+                    }
                     Action::Render => {
                         tui.draw(|f| {
                             for component in self.components.iter_mut() {
                                 let r = component.draw(f, f.size());
                                 if let Err(e) = r {
-                                    action_tx.send(Action::Error(format!("Failed to draw: {:?}", e))).unwrap();
+                                    action_tx
+                                        .send(Action::Error(format!("Failed to draw: {:?}", e)))
+                                        .unwrap();
                                 }
                             }
                         })?;
-                    },
+                    }
                     Action::SwitchScene(scene) => {
                         info!("Scene swtiched to: {scene:?}");
                         self.scene = scene;
-                    },
+                    }
                     Action::SwitchInputMode(mode) => {
                         info!("Input mode switched to: {mode:?}");
                         self.input_mode = mode;
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
                 for component in self.components.iter_mut() {
                     if let Some(action) = component.update(action.clone())? {
@@ -158,7 +164,9 @@ impl App {
             if self.should_suspend {
                 tui.suspend()?;
                 action_tx.send(Action::Resume)?;
-                tui = tui::Tui::new()?.tick_rate(self.tick_rate).frame_rate(self.frame_rate);
+                tui = tui::Tui::new()?
+                    .tick_rate(self.tick_rate)
+                    .frame_rate(self.frame_rate);
                 // tui.mouse(true);
                 tui.enter()?;
             } else if self.should_quit {

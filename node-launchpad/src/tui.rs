@@ -15,8 +15,8 @@ use color_eyre::eyre::Result;
 use crossterm::{
     cursor,
     event::{
-        DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event as CrosstermEvent,
-        KeyEvent, KeyEventKind, MouseEvent,
+        DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+        Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent,
     },
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -73,7 +73,17 @@ impl Tui {
         let task = tokio::spawn(async {});
         let mouse = false;
         let paste = false;
-        Ok(Self { terminal, task, cancellation_token, event_rx, event_tx, frame_rate, tick_rate, mouse, paste })
+        Ok(Self {
+            terminal,
+            task,
+            cancellation_token,
+            event_rx,
+            event_tx,
+            frame_rate,
+            tick_rate,
+            mouse,
+            paste,
+        })
     }
 
     pub fn tick_rate(mut self, tick_rate: f64) -> Self {

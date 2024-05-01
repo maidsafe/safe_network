@@ -30,14 +30,14 @@ impl Component for Options {
         match key.code {
             KeyCode::Esc => {
                 return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
-            },
+            }
             KeyCode::Down => {
                 // self.select_next_input_field();
-            },
+            }
             KeyCode::Up => {
                 // self.select_previous_input_field();
-            },
-            _ => {},
+            }
+            _ => {}
         }
         self.input.handle_event(&Event::Key(key));
         Ok(None)
@@ -50,7 +50,7 @@ impl Component for Options {
                 _ => self.show_scene = false,
             },
             Action::SwitchInputMode(mode) => self.input_mode = mode,
-            _ => {},
+            _ => {}
         };
         Ok(None)
     }
@@ -61,8 +61,11 @@ impl Component for Options {
         }
 
         // index 0 is reserved for tab; 2 is for keybindings
-        let layer_zero =
-            Layout::new(Direction::Vertical, [Constraint::Max(1), Constraint::Min(15), Constraint::Max(3)]).split(area);
+        let layer_zero = Layout::new(
+            Direction::Vertical,
+            [Constraint::Max(1), Constraint::Min(15), Constraint::Max(3)],
+        )
+        .split(area);
 
         // break the index 1 into sub sections
         let layer_one = Layout::new(
@@ -80,7 +83,11 @@ impl Component for Options {
 
         let input = Paragraph::new(self.input.value())
             .style(Style::default())
-            .block(Block::default().borders(Borders::ALL).title("Peer MultiAddress"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Peer MultiAddress"),
+            );
         f.render_widget(input, layer_one[0]);
         let input = Paragraph::new(self.input.value())
             .style(Style::default())
@@ -88,7 +95,11 @@ impl Component for Options {
         f.render_widget(input, layer_one[1]);
         let input = Paragraph::new(self.input.value())
             .style(Style::default())
-            .block(Block::default().borders(Borders::ALL).title("Data dir Path"));
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Data dir Path"),
+            );
         f.render_widget(input, layer_one[2]);
         let input = Paragraph::new(self.input.value())
             .style(Style::default())

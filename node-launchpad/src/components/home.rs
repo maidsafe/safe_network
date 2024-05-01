@@ -17,7 +17,7 @@ use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
-use tokio::sync::mpsc::{UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Default)]
 pub struct Home {
@@ -37,7 +37,10 @@ pub struct Home {
 
 impl Home {
     pub fn new(peers_args: PeersArgs) -> Result<Self> {
-        let mut home = Self { peers_args, ..Default::default() };
+        let mut home = Self {
+            peers_args,
+            ..Default::default()
+        };
         home.load_node_registry()?;
         home.show_scene = true;
         Ok(home)
@@ -77,7 +80,8 @@ impl Component for Home {
                         None,
                         None,
                         None,
-                        true,
+                        false,
+                        false,
                         None,
                         None,
                         None,
@@ -96,11 +100,13 @@ impl Component for Home {
                     }
                     info!("Successfully added service");
                     // todo: need to handle these properly?
-                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::AddNodeCompleted)) {
+                    if let Err(err) =
+                        action_sender.send(Action::HomeActions(HomeActions::AddNodeCompleted))
+                    {
                         error!("Error while sending action: {err:?}");
                     }
                 });
-            },
+            }
             Action::HomeActions(HomeActions::StartNodes) => {
                 if self.lock_registry {
                     error!("Registry is locked. Cannot start node now.");
@@ -111,18 +117,24 @@ impl Component for Home {
 
                 self.lock_registry = true;
                 tokio::task::spawn_local(async move {
-                    if let Err(err) =
-                        sn_node_manager::cmd::node::start(1, vec![], vec![], sn_node_manager::VerbosityLevel::Minimal)
-                            .await
+                    if let Err(err) = sn_node_manager::cmd::node::start(
+                        1,
+                        vec![],
+                        vec![],
+                        sn_node_manager::VerbosityLevel::Minimal,
+                    )
+                    .await
                     {
                         error!("Error while starting services {err:?}");
                     }
-                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted)) {
+                    if let Err(err) =
+                        action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted))
+                    {
                         error!("Error while sending action: {err:?}");
                     }
                     info!("Successfully started services");
                 });
-            },
+            }
             Action::HomeActions(HomeActions::StopNode) => {
                 if self.lock_registry {
                     error!("Registry is locked. Cannot stop node now.");
@@ -133,30 +145,36 @@ impl Component for Home {
 
                 self.lock_registry = true;
                 tokio::task::spawn_local(async move {
-                    if let Err(err) =
-                        sn_node_manager::cmd::node::stop(vec![], vec![], sn_node_manager::VerbosityLevel::Minimal).await
+                    if let Err(err) = sn_node_manager::cmd::node::stop(
+                        vec![],
+                        vec![],
+                        sn_node_manager::VerbosityLevel::Minimal,
+                    )
+                    .await
                     {
                         error!("Error while stopping services {err:?}");
                     }
-                    if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StopNodeCompleted)) {
+                    if let Err(err) =
+                        action_sender.send(Action::HomeActions(HomeActions::StopNodeCompleted))
+                    {
                         error!("Error while sending action: {err:?}");
                     }
                     info!("Successfully stopped services");
                 });
-            },
+            }
             Action::HomeActions(HomeActions::AddNodeCompleted)
             | Action::HomeActions(HomeActions::StartNodesCompleted)
             | Action::HomeActions(HomeActions::StopNodeCompleted) => {
                 self.lock_registry = false;
                 self.load_node_registry()?;
-            },
+            }
             Action::HomeActions(HomeActions::PreviousTableItem) => {
                 self.select_previous_table_item();
-            },
+            }
             Action::HomeActions(HomeActions::NextTableItem) => {
                 self.select_next_table_item();
-            },
-            _ => {},
+            }
+            _ => {}
         }
         Ok(None)
     }
@@ -169,7 +187,12 @@ impl Component for Home {
         // index 0 is reserved for tab
         let layer_zero = Layout::new(
             Direction::Vertical,
-            [Constraint::Max(1), Constraint::Min(5), Constraint::Min(3), Constraint::Max(3)],
+            [
+                Constraint::Max(1),
+                Constraint::Min(5),
+                Constraint::Min(3),
+                Constraint::Max(3),
+            ],
         )
         .split(area);
         let popup_area = Self::centered_rect(25, 25, area);
@@ -177,7 +200,11 @@ impl Component for Home {
         // top section
         //
         f.render_widget(
-            Paragraph::new("None").block(Block::default().title("Autonomi Node Status").borders(Borders::ALL)),
+            Paragraph::new("None").block(
+                Block::default()
+                    .title("Autonomi Node Status")
+                    .borders(Borders::ALL),
+            ),
             layer_zero[1],
         );
 
@@ -199,19 +226,34 @@ impl Component for Home {
             })
             .collect();
 
-        let widths = [Constraint::Max(15), Constraint::Min(30), Constraint::Max(10)];
+        let widths = [
+            Constraint::Max(15),
+            Constraint::Min(30),
+            Constraint::Max(10),
+        ];
         let table = Table::new(rows, widths)
             .column_spacing(2)
-            .header(Row::new(vec!["Service", "PeerId", "Status"]).style(Style::new().bold()).bottom_margin(1))
+            .header(
+                Row::new(vec!["Service", "PeerId", "Status"])
+                    .style(Style::new().bold())
+                    .bottom_margin(1),
+            )
             .highlight_style(Style::new().reversed())
-            .block(Block::default().title("Running Nodes").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("Running Nodes")
+                    .borders(Borders::ALL),
+            )
             .highlight_symbol(">");
 
         f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page")
-                .block(Block::default().title(" Key commands ").borders(Borders::ALL)),
+            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page").block(
+                Block::default()
+                    .title(" Key commands ")
+                    .borders(Borders::ALL),
+            ),
             layer_zero[3],
         );
 
@@ -221,7 +263,11 @@ impl Component for Home {
             f.render_widget(
                 Paragraph::new("Adding/Starting Node.. Please wait...")
                     .alignment(Alignment::Center)
-                    .block(Block::default().borders(Borders::ALL).style(Style::default().bg(Color::Reset))),
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .style(Style::default().bg(Color::Reset)),
+                    ),
                 popup_area,
             );
         }
@@ -232,14 +278,22 @@ impl Component for Home {
 
 impl Home {
     fn get_actions_sender(&self) -> Result<UnboundedSender<Action>> {
-        self.action_sender.clone().ok_or_eyre("Action sender not registered")
+        self.action_sender
+            .clone()
+            .ok_or_eyre("Action sender not registered")
     }
 
     fn load_node_registry(&mut self) -> Result<()> {
         let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-        self.running_nodes =
-            node_registry.nodes.into_iter().filter(|node| node.status != ServiceStatus::Removed).collect();
-        info!("Loaded node registry. Runnign nodes: {:?}", self.running_nodes.len());
+        self.running_nodes = node_registry
+            .nodes
+            .into_iter()
+            .filter(|node| node.status != ServiceStatus::Removed)
+            .collect();
+        info!(
+            "Loaded node registry. Runnign nodes: {:?}",
+            self.running_nodes.len()
+        );
 
         Ok(())
     }
@@ -252,7 +306,7 @@ impl Home {
                 } else {
                     i + 1
                 }
-            },
+            }
             None => 0,
         };
         self.node_table_state.select(Some(i));
@@ -266,12 +320,13 @@ impl Home {
                 } else {
                     i - 1
                 }
-            },
+            }
             None => 0,
         };
         self.node_table_state.select(Some(i));
     }
 
+    #[allow(dead_code)]
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
     }
