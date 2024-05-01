@@ -25,7 +25,10 @@ pub struct Tab {
 
 impl Default for Tab {
     fn default() -> Self {
-        Self { scene_list: vec![Scene::Home, Scene::Options], current_tab_index: 0 }
+        Self {
+            scene_list: vec![Scene::Home, Scene::Options],
+            current_tab_index: 0,
+        }
     }
 }
 
@@ -48,18 +51,21 @@ impl Component for Tab {
                 let new_scene = self.scene_list[self.current_tab_index];
                 trace!(?new_scene, "Updated tab:");
                 Some(Action::SwitchScene(new_scene))
-            },
+            }
 
             Action::TabActions(TabActions::PreviousTab) => {
                 trace!(?self.current_tab_index, "Got PreviousTab");
-                let new_index =
-                    if self.current_tab_index == 0 { self.scene_list.len() - 1 } else { self.current_tab_index - 1 };
+                let new_index = if self.current_tab_index == 0 {
+                    self.scene_list.len() - 1
+                } else {
+                    self.current_tab_index - 1
+                };
                 self.current_tab_index = new_index;
 
                 let new_scene = self.scene_list[self.current_tab_index];
                 trace!(?new_scene, "Updated tab:");
                 Some(Action::SwitchScene(new_scene))
-            },
+            }
             _ => None,
         };
         Ok(send_back)
@@ -68,10 +74,19 @@ impl Component for Tab {
     fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: ratatui::prelude::Rect) -> Result<()> {
         let layer_zero = Layout::new(
             Direction::Vertical,
-            [Constraint::Max(1), Constraint::Min(5), Constraint::Min(3), Constraint::Max(3)],
+            [
+                Constraint::Max(1),
+                Constraint::Min(5),
+                Constraint::Min(3),
+                Constraint::Max(3),
+            ],
         )
         .split(area);
-        let tab_items = self.scene_list.iter().map(|item| format!("{item:?}")).collect::<Vec<_>>();
+        let tab_items = self
+            .scene_list
+            .iter()
+            .map(|item| format!("{item:?}"))
+            .collect::<Vec<_>>();
         let tab = Tabs::new(tab_items)
             .style(Style::default().white())
             .highlight_style(Style::default().yellow())

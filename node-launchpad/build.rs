@@ -7,6 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    vergen::EmitBuilder::builder().all_build().all_git().emit()?;
+    vergen::EmitBuilder::builder()
+        .all_build()
+        .all_git()
+        .emit()?;
     Ok(())
 }
