@@ -52,7 +52,11 @@ impl Config {
         ];
         let mut found_config = false;
         for (file, format) in &config_files {
-            builder = builder.add_source(config::File::from(config_dir.join(file)).format(*format).required(false));
+            builder = builder.add_source(
+                config::File::from(config_dir.join(file))
+                    .format(*format)
+                    .required(false),
+            );
             if config_dir.join(file).exists() {
                 found_config = true
             }
@@ -66,13 +70,17 @@ impl Config {
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
             for (key, cmd) in default_bindings.iter() {
-                user_bindings.entry(key.clone()).or_insert_with(|| cmd.clone());
+                user_bindings
+                    .entry(key.clone())
+                    .or_insert_with(|| cmd.clone());
             }
         }
         for (mode, default_styles) in default_config.styles.iter() {
             let user_styles = cfg.styles.entry(*mode).or_default();
             for (style_key, style) in default_styles.iter() {
-                user_styles.entry(style_key.clone()).or_insert_with(|| *style);
+                user_styles
+                    .entry(style_key.clone())
+                    .or_insert_with(|| *style);
             }
         }
 
@@ -93,8 +101,10 @@ impl<'de> Deserialize<'de> for KeyBindings {
         let keybindings = parsed_map
             .into_iter()
             .map(|(mode, inner_map)| {
-                let converted_inner_map =
-                    inner_map.into_iter().map(|(key_str, cmd)| (parse_key_sequence(&key_str).unwrap(), cmd)).collect();
+                let converted_inner_map = inner_map
+                    .into_iter()
+                    .map(|(key_str, cmd)| (parse_key_sequence(&key_str).unwrap(), cmd))
+                    .collect();
                 (mode, converted_inner_map)
             })
             .collect();
@@ -118,15 +128,15 @@ fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
             rest if rest.starts_with("ctrl-") => {
                 modifiers.insert(KeyModifiers::CONTROL);
                 current = &rest[5..];
-            },
+            }
             rest if rest.starts_with("alt-") => {
                 modifiers.insert(KeyModifiers::ALT);
                 current = &rest[4..];
-            },
+            }
             rest if rest.starts_with("shift-") => {
                 modifiers.insert(KeyModifiers::SHIFT);
                 current = &rest[6..];
-            },
+            }
             _ => break, // break out of the loop if no known prefix is detected
         };
     }
@@ -134,7 +144,10 @@ fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
     (current, modifiers)
 }
 
-fn parse_key_code_with_modifiers(raw: &str, mut modifiers: KeyModifiers) -> Result<KeyEvent, String> {
+fn parse_key_code_with_modifiers(
+    raw: &str,
+    mut modifiers: KeyModifiers,
+) -> Result<KeyEvent, String> {
     let c = match raw {
         "esc" => KeyCode::Esc,
         "enter" => KeyCode::Enter,
@@ -149,7 +162,7 @@ fn parse_key_code_with_modifiers(raw: &str, mut modifiers: KeyModifiers) -> Resu
         "backtab" => {
             modifiers.insert(KeyModifiers::SHIFT);
             KeyCode::BackTab
-        },
+        }
         "backspace" => KeyCode::Backspace,
         "delete" => KeyCode::Delete,
         "insert" => KeyCode::Insert,
@@ -175,7 +188,7 @@ fn parse_key_code_with_modifiers(raw: &str, mut modifiers: KeyModifiers) -> Resu
                 c = c.to_ascii_uppercase();
             }
             KeyCode::Char(c)
-        },
+        }
         _ => return Err(format!("Unable to parse {raw}")),
     };
     Ok(KeyEvent::new(c, modifiers))
@@ -201,12 +214,12 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
         KeyCode::F(c) => {
             char = format!("f({c})");
             &char
-        },
+        }
         KeyCode::Char(' ') => "space",
         KeyCode::Char(c) => {
             char = c.to_string();
             &char
-        },
+        }
         KeyCode::Esc => "esc",
         KeyCode::Null => "",
         KeyCode::CapsLock => "",
@@ -284,8 +297,10 @@ impl<'de> Deserialize<'de> for Styles {
         let styles = parsed_map
             .into_iter()
             .map(|(mode, inner_map)| {
-                let converted_inner_map =
-                    inner_map.into_iter().map(|(str, style)| (str, parse_style(&style))).collect();
+                let converted_inner_map = inner_map
+                    .into_iter()
+                    .map(|(str, style)| (str, parse_style(&style)))
+                    .collect();
                 (mode, converted_inner_map)
             })
             .collect();
@@ -295,7 +310,8 @@ impl<'de> Deserialize<'de> for Styles {
 }
 
 pub fn parse_style(line: &str) -> Style {
-    let (foreground, background) = line.split_at(line.to_lowercase().find("on ").unwrap_or(line.len()));
+    let (foreground, background) =
+        line.split_at(line.to_lowercase().find("on ").unwrap_or(line.len()));
     let foreground = process_color_string(foreground);
     let background = process_color_string(&background.replace("on ", ""));
 
@@ -337,13 +353,22 @@ fn parse_color(s: &str) -> Option<Color> {
     let s = s.trim_end();
     if s.contains("bright color") {
         let s = s.trim_start_matches("bright ");
-        let c = s.trim_start_matches("color").parse::<u8>().unwrap_or_default();
+        let c = s
+            .trim_start_matches("color")
+            .parse::<u8>()
+            .unwrap_or_default();
         Some(Color::Indexed(c.wrapping_shl(8)))
     } else if s.contains("color") {
-        let c = s.trim_start_matches("color").parse::<u8>().unwrap_or_default();
+        let c = s
+            .trim_start_matches("color")
+            .parse::<u8>()
+            .unwrap_or_default();
         Some(Color::Indexed(c))
     } else if s.contains("gray") {
-        let c = 232 + s.trim_start_matches("gray").parse::<u8>().unwrap_or_default();
+        let c = 232
+            + s.trim_start_matches("gray")
+                .parse::<u8>()
+                .unwrap_or_default();
         Some(Color::Indexed(c))
     } else if s.contains("rgb") {
         let red = (s.as_bytes()[3] as char).to_digit(10).unwrap_or_default() as u8;
@@ -445,7 +470,11 @@ mod tests {
     fn test_config() -> Result<()> {
         let c = Config::new()?;
         assert_eq!(
-            c.keybindings.get(&Scene::Home).unwrap().get(&parse_key_sequence("<q>").unwrap_or_default()).unwrap(),
+            c.keybindings
+                .get(&Scene::Home)
+                .unwrap()
+                .get(&parse_key_sequence("<q>").unwrap_or_default())
+                .unwrap(),
             &Action::Quit
         );
         Ok(())
@@ -453,27 +482,48 @@ mod tests {
 
     #[test]
     fn test_simple_keys() {
-        assert_eq!(parse_key_event("a").unwrap(), KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty()));
+        assert_eq!(
+            parse_key_event("a").unwrap(),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::empty())
+        );
 
-        assert_eq!(parse_key_event("enter").unwrap(), KeyEvent::new(KeyCode::Enter, KeyModifiers::empty()));
+        assert_eq!(
+            parse_key_event("enter").unwrap(),
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::empty())
+        );
 
-        assert_eq!(parse_key_event("esc").unwrap(), KeyEvent::new(KeyCode::Esc, KeyModifiers::empty()));
+        assert_eq!(
+            parse_key_event("esc").unwrap(),
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::empty())
+        );
     }
 
     #[test]
     fn test_with_modifiers() {
-        assert_eq!(parse_key_event("ctrl-a").unwrap(), KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL));
+        assert_eq!(
+            parse_key_event("ctrl-a").unwrap(),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL)
+        );
 
-        assert_eq!(parse_key_event("alt-enter").unwrap(), KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+        assert_eq!(
+            parse_key_event("alt-enter").unwrap(),
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)
+        );
 
-        assert_eq!(parse_key_event("shift-esc").unwrap(), KeyEvent::new(KeyCode::Esc, KeyModifiers::SHIFT));
+        assert_eq!(
+            parse_key_event("shift-esc").unwrap(),
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::SHIFT)
+        );
     }
 
     #[test]
     fn test_multiple_modifiers() {
         assert_eq!(
             parse_key_event("ctrl-alt-a").unwrap(),
-            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL | KeyModifiers::ALT)
+            KeyEvent::new(
+                KeyCode::Char('a'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT
+            )
         );
 
         assert_eq!(
@@ -485,7 +535,10 @@ mod tests {
     #[test]
     fn test_reverse_multiple_modifiers() {
         assert_eq!(
-            key_event_to_string(&KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL | KeyModifiers::ALT)),
+            key_event_to_string(&KeyEvent::new(
+                KeyCode::Char('a'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT
+            )),
             "ctrl-alt-a".to_string()
         );
     }
@@ -498,8 +551,14 @@ mod tests {
 
     #[test]
     fn test_case_insensitivity() {
-        assert_eq!(parse_key_event("CTRL-a").unwrap(), KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL));
+        assert_eq!(
+            parse_key_event("CTRL-a").unwrap(),
+            KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL)
+        );
 
-        assert_eq!(parse_key_event("AlT-eNtEr").unwrap(), KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+        assert_eq!(
+            parse_key_event("AlT-eNtEr").unwrap(),
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)
+        );
     }
 }
