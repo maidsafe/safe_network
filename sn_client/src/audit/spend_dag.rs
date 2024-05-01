@@ -73,7 +73,7 @@ pub struct SpendDag {
     /// Recorded faults in the DAG
     faults: BTreeMap<SpendAddress, BTreeSet<SpendFault>>,
     /// Creation reasons (purpose) of the spends
-    creation_reasons: BTreeMap<SpendAddress, String>,
+    creation_reasons: BTreeMap<SpendAddress, (String, NanoTokens)>,
 }
 
 type DagIndex = usize;
@@ -147,7 +147,7 @@ impl SpendDag {
 
     fn get_dag_address(&self, spend_addr: &SpendAddress) -> SpendDagAddress {
         let spend_creation_reason =
-            if let Some(creation_reason) = self.creation_reasons.get(spend_addr) {
+            if let Some((creation_reason, _amount)) = self.creation_reasons.get(spend_addr) {
                 creation_reason.clone()
             } else {
                 CASH_NOTE_PURPOSE_FOR_GENESIS.to_string()
@@ -166,10 +166,10 @@ impl SpendDag {
     pub fn insert(&mut self, spend_addr: SpendAddress, spend: SignedSpend) -> bool {
         for output in spend.outputs().iter() {
             let output_spend_address = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
-            if let Some(old) = self
-                .creation_reasons
-                .insert(output_spend_address, output.purpose.clone())
-            {
+            if let Some(old) = self.creation_reasons.insert(
+                output_spend_address,
+                (output.purpose.clone(), output.amount),
+            ) {
                 error!("Spend {output_spend_address:?} already have an un-expected creation reason: {old:?}");
             }
         }
@@ -336,6 +336,23 @@ impl SpendDag {
 
     pub fn dump_dot_format(&self) -> String {
         format!("{:?}", Dot::with_config(&self.dag, &[]))
+    }
+
+    pub fn dump_creation_reasons_statistics(&self) -> String {
+        let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
+        for (_spend_addr, (reason, amount)) in self.creation_reasons.iter() {
+            let holders = statistics.entry(reason.clone()).or_default();
+            holders.push(*amount);
+        }
+        let mut content = "Purpose,Times,Amount".to_string();
+        for (purpose, payments) in statistics.iter() {
+            let total_amount: u64 = payments
+                .iter()
+                .map(|nano_tokens| nano_tokens.as_nano())
+                .sum();
+            content = format!("{content}\n{purpose},{},{total_amount}", payments.len());
+        }
+        content
     }
 
     /// Merges the given dag into ours
