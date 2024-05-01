@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714490849616,
+  "lastUpdate": 1714580506833,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "55a5d4287774d257027a3a8bad5c7017a193999a",
-          "message": "chore(cli): print the datamap's entire hex addr",
-          "timestamp": "2024-01-03T17:12:23Z",
-          "tree_id": "7063ba0509a2ceb6c117a552fab96d17fdb92cdf",
-          "url": "https://github.com/maidsafe/safe_network/commit/55a5d4287774d257027a3a8bad5c7017a193999a"
-        },
-        "date": 1704304178663,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6326505634710026,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0819067568313532,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 42.49630653945058,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.46524854759592,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "a4efbee09400ddabeee859297f79d4fb72bc8379",
+          "message": "refactor: rebased and removed custom rustfmt",
+          "timestamp": "2024-05-01T17:02:34+01:00",
+          "tree_id": "b7cf60b5b1827b18638859235bf78125ee2be956",
+          "url": "https://github.com/maidsafe/safe_network/commit/a4efbee09400ddabeee859297f79d4fb72bc8379"
+        },
+        "date": 1714580501731,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1671337348937791,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6276701444508193,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.29465374181407,
             "unit": "MiB/s"
           }
         ]
