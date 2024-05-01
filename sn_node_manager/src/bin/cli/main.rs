@@ -731,6 +731,7 @@ async fn main() -> Result<()> {
                     node_version,
                     peers,
                     true,
+                    verbosity,
                 )
                 .await
             }

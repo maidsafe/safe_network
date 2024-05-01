@@ -11,7 +11,10 @@ pub mod faucet;
 pub mod local;
 pub mod node;
 
-use crate::helpers::{download_and_extract_release, get_bin_version};
+use crate::{
+    helpers::{download_and_extract_release, get_bin_version},
+    VerbosityLevel,
+};
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
@@ -37,6 +40,7 @@ pub async fn download_and_get_upgrade_bin_path(
     release_type: ReleaseType,
     url: Option<String>,
     version: Option<String>,
+    verbosity: VerbosityLevel,
 ) -> Result<(PathBuf, Version)> {
     if let Some(path) = custom_bin_path {
         println!(
@@ -49,12 +53,19 @@ pub async fn download_and_get_upgrade_bin_path(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     if let Some(version) = version {
-        let (upgrade_bin_path, version) =
-            download_and_extract_release(release_type, None, Some(version), &*release_repo).await?;
+        let (upgrade_bin_path, version) = download_and_extract_release(
+            release_type,
+            None,
+            Some(version),
+            &*release_repo,
+            verbosity,
+        )
+        .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else if let Some(url) = url {
         let (upgrade_bin_path, version) =
-            download_and_extract_release(release_type, Some(url), None, &*release_repo).await?;
+            download_and_extract_release(release_type, Some(url), None, &*release_repo, verbosity)
+                .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else {
         println!("Retrieving latest version of {}...", release_type);
@@ -65,6 +76,7 @@ pub async fn download_and_get_upgrade_bin_path(
             None,
             Some(latest_version.to_string()),
             &*release_repo,
+            verbosity,
         )
         .await?;
         Ok((upgrade_bin_path, latest_version))
@@ -112,6 +124,7 @@ pub async fn get_bin_path(
     release_type: ReleaseType,
     version: Option<String>,
     release_repo: &dyn SafeReleaseRepoActions,
+    verbosity: VerbosityLevel,
 ) -> Result<PathBuf> {
     if build {
         build_binary(&release_type)?;
@@ -122,7 +135,8 @@ pub async fn get_bin_path(
         Ok(path)
     } else {
         let (download_path, _) =
-            download_and_extract_release(release_type, None, version, release_repo).await?;
+            download_and_extract_release(release_type, None, version, release_repo, verbosity)
+                .await?;
         Ok(download_path)
     }
 }

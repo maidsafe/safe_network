@@ -207,24 +207,25 @@ pub async fn add_node(
         std::fs::remove_file(options.safenode_src_path)?;
     }
 
-    if !added_service_data.is_empty() {
+    if !added_service_data.is_empty() && verbosity != VerbosityLevel::Minimal {
         println!("Services Added:");
         for install in added_service_data.iter() {
             println!(" {} {}", "✓".green(), install.0);
-            if verbosity != VerbosityLevel::Minimal {
-                println!("    - Safenode path: {}", install.1);
-                println!("    - Data path: {}", install.2);
-                println!("    - Log path: {}", install.3);
-                println!("    - RPC port: {}", install.4);
-            }
+
+            println!("    - Safenode path: {}", install.1);
+            println!("    - Data path: {}", install.2);
+            println!("    - Log path: {}", install.3);
+            println!("    - RPC port: {}", install.4);
         }
         println!("[!] Note: newly added services have not been started");
     }
 
     if !failed_service_data.is_empty() {
-        println!("Failed to add {} service(s):", failed_service_data.len());
-        for failed in failed_service_data.iter() {
-            println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+        if verbosity != VerbosityLevel::Minimal {
+            println!("Failed to add {} service(s):", failed_service_data.len());
+            for failed in failed_service_data.iter() {
+                println!("{} {}: {}", "✕".red(), failed.0, failed.1);
+            }
         }
         return Err(eyre!("Failed to add one or more services")
             .suggestion("However, any services that were successfully added will be usable."));

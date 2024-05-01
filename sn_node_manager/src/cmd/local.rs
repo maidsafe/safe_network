@@ -32,6 +32,7 @@ pub async fn join(
     node_version: Option<String>,
     peers: PeersArgs,
     skip_validation: bool,
+    verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
     println!("=================================================");
     println!("             Joining Local Network               ");
@@ -47,6 +48,7 @@ pub async fn join(
         ReleaseType::Faucet,
         faucet_version,
         &*release_repo,
+        verbosity,
     )
     .await?;
     let node_path = get_bin_path(
@@ -55,6 +57,7 @@ pub async fn join(
         ReleaseType::Safenode,
         node_version,
         &*release_repo,
+        verbosity,
     )
     .await?;
 
@@ -122,7 +125,7 @@ pub async fn run(
         if client_data_path.is_dir() {
             std::fs::remove_dir_all(client_data_path)?;
         }
-        kill(false, verbosity.clone())?;
+        kill(false, verbosity)?;
         NodeRegistry::load(local_node_reg_path)?
     } else {
         let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -146,6 +149,7 @@ pub async fn run(
         ReleaseType::Faucet,
         faucet_version,
         &*release_repo,
+        verbosity,
     )
     .await?;
     let node_path = get_bin_path(
@@ -154,6 +158,7 @@ pub async fn run(
         ReleaseType::Safenode,
         node_version,
         &*release_repo,
+        verbosity,
     )
     .await?;
 
