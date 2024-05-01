@@ -100,6 +100,28 @@ impl SwarmDriver {
                                 error!("Received a bad_peer notification from {detected_by:?}, targeting {bad_peer:?}, which is not us.");
                             }
                         }
+                        Request::Cmd(sn_protocol::messages::Cmd::StoragePaymentReceived {
+                            spend_addr,
+                            owner,
+                            royalty,
+                            store_cost,
+                        }) => {
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::StoragePaymentReceived(Ok(())),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            self.send_event(NetworkEvent::StoragePaymentNotification {
+                                spend_addr,
+                                owner,
+                                royalty,
+                                store_cost,
+                            })
+                        }
                         Request::Query(query) => {
                             self.send_event(NetworkEvent::QueryRequestReceived {
                                 query,

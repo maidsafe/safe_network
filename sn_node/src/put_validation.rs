@@ -7,10 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
-use libp2p::kad::{Record, RecordKey};
+use libp2p::{
+    kad::{Record, RecordKey},
+    multiaddr::Protocol,
+    PeerId,
+};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
-    messages::CmdOk,
+    messages::{Cmd, CmdOk, Request},
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
         SpendAddress,
@@ -23,7 +27,7 @@ use sn_transfers::{
     SignedSpend, Transfer, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
-use tokio::task::JoinSet;
+use tokio::{spawn, task::JoinSet};
 use xor_name::XorName;
 
 impl Node {
@@ -38,6 +42,7 @@ impl Node {
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
+                let store_cost = payment.quote.cost;
 
                 // Validate the payment and that we received what we asked.
                 // This stores any payments to disk
@@ -56,7 +61,15 @@ impl Node {
                 }
 
                 // Finally before we store, lets bail for any payment issues
-                payment_res?;
+                let spend_address = payment_res?;
+
+                // The storage payment notification will only be sent out on the first non-existing
+                let royalties_fee = calculate_royalties_fee(store_cost);
+                self.send_storage_payment_notification(
+                    NetworkAddress::from_spend_address(spend_address),
+                    royalties_fee,
+                    store_cost,
+                );
 
                 // Writing chunk to disk takes time, hence try to execute it first.
                 // So that when the replicate target asking for the copy,
@@ -217,6 +230,39 @@ impl Node {
                 self.validate_and_store_register(register, false).await
             }
         }
+    }
+
+    fn send_storage_payment_notification(
+        &self,
+        spend_addr: NetworkAddress,
+        royalties_fee: NanoTokens,
+        store_cost: NanoTokens,
+    ) {
+        let request = Request::Cmd(Cmd::StoragePaymentReceived {
+            spend_addr,
+            owner: self.owner.clone(),
+            royalty: royalties_fee.as_nano(),
+            store_cost: store_cost.as_nano(),
+        });
+        let network = self.network.clone();
+
+        // TODO: shall use a proper `collector`?
+        if let Some(target_peer) = self.get_first_initial_peer() {
+            let _handle = spawn(async move {
+                network.send_req_ignore_reply(request, target_peer);
+            });
+        }
+    }
+
+    fn get_first_initial_peer(&self) -> Option<PeerId> {
+        if let Some(first_multi_addr) = self.initial_peers.first() {
+            for protocol in first_multi_addr.iter() {
+                if let Protocol::P2p(peer_id) = protocol {
+                    return Some(peer_id);
+                }
+            }
+        }
+        None
     }
 
     /// Check key is valid compared to the network name, and if we already have this data or not.
@@ -487,7 +533,7 @@ impl Node {
         &self,
         address: &NetworkAddress,
         payment: Payment,
-    ) -> Result<()> {
+    ) -> Result<SpendAddress> {
         let key = address.to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         trace!("Validating record payment for {pretty_key}");
@@ -521,10 +567,14 @@ impl Node {
             .reward_wallet_balance
             .set(new_balance as i64);
 
-        if royalties_cash_notes_r.is_empty() {
+        // TODO: so far, it's assumed the store_cost and royalty are paid by single spend
+        //       may need to cover the case that they are covered by different input spends
+        let parent_spend_address = if let Some(cnr) = royalties_cash_notes_r.first() {
+            cnr.parent_spend
+        } else {
             warn!("No network royalties payment found for record {pretty_key}");
             return Err(Error::NoNetworkRoyaltiesPayment(pretty_key.into_owned()));
-        }
+        };
 
         // check if the quote is valid
         let storecost = payment.quote.cost;
@@ -550,7 +600,7 @@ impl Node {
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
 
-        Ok(())
+        Ok(parent_spend_address)
     }
 
     async fn register_validation(

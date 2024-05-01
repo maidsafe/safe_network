@@ -184,12 +184,12 @@ pub(crate) struct Node {
     // We keep a copy of the Sender which is clonable and we can obtain a receiver from.
     node_cmds: broadcast::Sender<NodeCmd>,
     // Peers that are dialed at startup of node.
-    initial_peers: Arc<Vec<Multiaddr>>,
+    pub(crate) initial_peers: Arc<Vec<Multiaddr>>,
     reward_address: Arc<MainPubkey>,
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: NodeMetrics,
     /// node owner's discord username, in readable format
-    owner: String,
+    pub(crate) owner: String,
 }
 
 impl Node {
@@ -483,6 +483,44 @@ impl Node {
                     // As the chunk_proof_check will be triggered every periodical replication,
                     // a low performed or cheaty peer will raise multiple issue alerts during it.
                     network.record_node_issues(peer_id, NodeIssue::FailedChunkProofCheck);
+                });
+            }
+            NetworkEvent::StoragePaymentNotification {
+                spend_addr,
+                owner,
+                royalty,
+                store_cost,
+            } => {
+                event_header = "StoragePaymentNotification";
+
+                let spend_address = if let Some(spend_address) = spend_addr.as_spend_address() {
+                    spend_address
+                } else {
+                    error!("When verify storage payment notification, cannot parse SpendAddress from {spend_addr:?}");
+                    return;
+                };
+
+                let network = self.network.clone();
+                let events_channel = self.events_channel.clone();
+                info!("Received StoragePaymentNotification, notifying owner {owner:?} received \
+                    {store_cost} tokens for store_cost and {royalty} tokens for royalty, with spend {spend_addr:?}");
+                let _handle = spawn(async move {
+                    if let Some((owner, royalty, store_cost)) = network
+                        .handle_storage_payment_notification(
+                            spend_address,
+                            owner,
+                            royalty,
+                            store_cost,
+                        )
+                        .await
+                    {
+                        events_channel.broadcast(NodeEvent::StoragePayments {
+                            spend_address,
+                            owner,
+                            royalty,
+                            store_cost,
+                        });
+                    }
                 });
             }
         }

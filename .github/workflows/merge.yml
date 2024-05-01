@@ -1020,6 +1020,21 @@ jobs:
           CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
 
+      - name: Verify spends statistics
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          min_storage_payment_times="3000"
+          storage_payment_notification_times=$(rg "Current storage statistics is" $NODE_DATA_PATH/*/logs/* -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          if (( $(echo "$storage_payment_notification_times < $min_storage_payment_times" | bc -l) )); then
+            echo "Storage payment notification times below the threshold: $storage_payment_notification_times"
+            exit 1
+          fi
+        env:
+          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+        if: always()
+
   replication_bench_with_heavy_upload:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Replication bench with heavy upload

@@ -439,6 +439,14 @@ jobs:
         if: always()
         timeout-minutes: 1
 
+      - name: Check bootstrap_node directory
+        run: |
+          ls -l $BOOTSTRAP_NODE_DATA_PATH
+          mv $BOOTSTRAP_NODE_DATA_PATH/safenode.log ./bootstrap_node.log
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
+
       - name: Upload faucet log
         uses: actions/upload-artifact@main
         with:
@@ -455,3 +463,11 @@ jobs:
       #     path: spend_dag_and_statistics.txt
       #   continue-on-error: true
       #   if: always()
+
+      - name: Upload bootstrap_node log
+        uses: actions/upload-artifact@main
+        with:
+          name: memory_check_bootstrap_node_log
+          path: bootstrap_node.log
+        continue-on-error: true
+        if: always()

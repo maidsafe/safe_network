@@ -19,8 +19,10 @@ use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
-use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
+use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl, storage::SpendAddress};
+use sn_transfers::CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES;
 use std::{
+    collections::{BTreeMap, BTreeSet},
     env,
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -335,6 +337,11 @@ You can check your reward balance by running:
 
 fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Sender<NodeCtrl>) {
     let _handle = tokio::spawn(async move {
+        let mut spends_statistics: BTreeMap<String, Vec<u64>> = Default::default();
+        let mut claimed_spends: BTreeMap<SpendAddress, BTreeSet<String>> = Default::default();
+
+        let royalty_reason = CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES.to_string();
+
         loop {
             match node_events_rx.recv().await {
                 Ok(NodeEvent::ConnectedToNetwork) => Marker::NodeConnectedToNetwork.log(),
@@ -365,6 +372,40 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         );
                         break;
                     }
+                }
+                Ok(NodeEvent::StoragePayments {
+                    spend_address,
+                    owner,
+                    royalty,
+                    store_cost,
+                }) => {
+                    let holders = claimed_spends.entry(spend_address).or_default();
+                    if !holders.insert(owner.clone()) {
+                        warn!("Owner {owner} already claimed storage payment within spend {spend_address:?}");
+                        continue;
+                    }
+                    {
+                        let holders = spends_statistics.entry(royalty_reason.clone()).or_default();
+                        holders.push(royalty);
+                    }
+                    {
+                        let holders = spends_statistics.entry(owner.clone()).or_default();
+                        holders.push(store_cost);
+                    }
+                    let statistics: Vec<_> = spends_statistics
+                        .iter()
+                        .map(|(owner, payments)| {
+                            let total_amount: u64 = payments.iter().sum();
+                            format!("{},{},{total_amount}\n", owner.clone(), payments.len())
+                        })
+                        .collect();
+
+                    let mut content = "\nCurrent storage statistics is:".to_string();
+                    content = format!("{content}\nOwner, Times, Amount\n");
+                    for entry in statistics.iter() {
+                        content = format!("{content}\n{entry}");
+                    }
+                    info!("{content}");
                 }
                 Ok(event) => {
                     /* we ignore other events */

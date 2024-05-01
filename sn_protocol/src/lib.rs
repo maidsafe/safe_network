@@ -146,6 +146,14 @@ impl NetworkAddress {
         }
     }
 
+    /// Try to return the represented `SpendAddress`.
+    pub fn as_spend_address(&self) -> Option<SpendAddress> {
+        match self {
+            NetworkAddress::SpendAddress(spend_address) => Some(*spend_address),
+            _ => None,
+        }
+    }
+
     /// Return the convertable `RecordKey`.
     pub fn to_record_key(&self) -> RecordKey {
         match self {

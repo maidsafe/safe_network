@@ -143,6 +143,13 @@ pub enum NetworkEvent {
         peer_id: PeerId,
         keys_to_verify: Vec<NetworkAddress>,
     },
+    /// Notification from peer claiming received a storage payment
+    StoragePaymentNotification {
+        spend_addr: NetworkAddress,
+        owner: String,
+        royalty: u64,
+        store_cost: u64,
+    },
 }
 
 /// Terminate node for the following reason
@@ -220,6 +227,17 @@ impl Debug for NetworkEvent {
                 write!(
                     f,
                     "NetworkEvent::ChunkProofVerification({peer_id:?} {keys_to_verify:?})"
+                )
+            }
+            NetworkEvent::StoragePaymentNotification {
+                spend_addr,
+                owner,
+                royalty,
+                store_cost,
+            } => {
+                write!(
+                    f,
+                    "NetworkEvent::StoragePaymentNotification({spend_addr:?} {owner} {store_cost} {royalty})"
                 )
             }
         }

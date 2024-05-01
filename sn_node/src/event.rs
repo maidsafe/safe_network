@@ -9,7 +9,7 @@
 use crate::error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
-use sn_protocol::storage::{ChunkAddress, RegisterAddress};
+use sn_protocol::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use sn_transfers::UniquePubkey;
 use tokio::sync::broadcast;
 
@@ -68,6 +68,17 @@ pub enum NodeEvent {
     ChannelClosed,
     /// Terminates the node
     TerminateNode(String),
+    /// StoragePayment notification
+    StoragePayments {
+        /// Address of the spend that contains the claimed storage payment
+        spend_address: SpendAddress,
+        /// Owner of the node that received the storage payment
+        owner: String,
+        /// Royalty fee paid for the storage
+        royalty: u64,
+        /// Cost paid for the storage
+        store_cost: u64,
+    },
 }
 
 impl NodeEvent {

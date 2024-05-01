@@ -41,6 +41,14 @@ pub enum Cmd {
         bad_peer: NetworkAddress,
         bad_behaviour: String,
     },
+    /// Notify the peer the send received a storage payment
+    StoragePaymentReceived {
+        // Address of the spend that holding the outputs of the storage payment
+        spend_addr: NetworkAddress,
+        owner: String,
+        royalty: u64,
+        store_cost: u64,
+    },
 }
 
 impl std::fmt::Debug for Cmd {
@@ -69,6 +77,18 @@ impl std::fmt::Debug for Cmd {
                 .field("bad_peer", bad_peer)
                 .field("bad_behaviour", bad_behaviour)
                 .finish(),
+            Cmd::StoragePaymentReceived {
+                spend_addr,
+                owner,
+                royalty,
+                store_cost,
+            } => f
+                .debug_struct("Cmd::StoragePaymentReceived")
+                .field("spend_addr", spend_addr)
+                .field("owner", owner)
+                .field("royalty", royalty)
+                .field("store_cost", store_cost)
+                .finish(),
         }
     }
 }
@@ -80,6 +100,7 @@ impl Cmd {
             Cmd::Replicate { holder, .. } => holder.clone(),
             Cmd::QuoteVerification { target, .. } => target.clone(),
             Cmd::PeerConsideredAsBad { bad_peer, .. } => bad_peer.clone(),
+            Cmd::StoragePaymentReceived { spend_addr, .. } => spend_addr.clone(),
         }
     }
 }
@@ -110,6 +131,16 @@ impl std::fmt::Display for Cmd {
                 write!(
                     f,
                     "Cmd::PeerConsideredAsBad({detected_by:?} consider peer {bad_peer:?} as bad, due to {bad_behaviour:?})")
+            }
+            Cmd::StoragePaymentReceived {
+                spend_addr,
+                owner,
+                royalty,
+                store_cost,
+            } => {
+                write!(
+                    f,
+                    "Cmd::StoragePaymentReceived({owner} received storage payment {royalty} - {store_cost} within spend {spend_addr:?})")
             }
         }
     }

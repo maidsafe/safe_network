@@ -116,6 +116,11 @@ pub enum CmdResponse {
     //
     /// Response to the considered as bad notification
     PeerConsideredAsBad(Result<()>),
+    //
+    // ===== StoragePaymentReceived =====
+    //
+    /// Response to the notification of received a storage payment
+    StoragePaymentReceived(Result<()>),
 }
 
 /// The Ok variant of a CmdResponse
