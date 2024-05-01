@@ -17,6 +17,7 @@ use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
+use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Default)]
@@ -117,6 +118,10 @@ impl Component for Home {
 
                 self.lock_registry = true;
                 tokio::task::spawn_local(async move {
+                    // I think using 1 thread is causing us to block on the below start function and not really
+                    // having a chance to set lock_registry = true and draw from that state. Since the update is slow,
+                    // the gui looks laggy. Adding a sleep basically puts this to sleep while drawing with the new state.
+                    tokio::time::sleep(Duration::from_micros(10)).await;
                     if let Err(err) = sn_node_manager::cmd::node::start(
                         1,
                         vec![],
