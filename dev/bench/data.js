@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714580506833,
+  "lastUpdate": 1714580626865,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "55a5d4287774d257027a3a8bad5c7017a193999a",
-          "message": "chore(cli): print the datamap's entire hex addr",
-          "timestamp": "2024-01-03T17:12:23Z",
-          "tree_id": "7063ba0509a2ceb6c117a552fab96d17fdb92cdf",
-          "url": "https://github.com/maidsafe/safe_network/commit/55a5d4287774d257027a3a8bad5c7017a193999a"
-        },
-        "date": 1704304320301,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20394,6 +20365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/5252242d0cbdaf9cbc1a7c58983128a7921a2d36"
         },
         "date": 1714490845091,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "a4efbee09400ddabeee859297f79d4fb72bc8379",
+          "message": "refactor: rebased and removed custom rustfmt",
+          "timestamp": "2024-05-01T17:02:34+01:00",
+          "tree_id": "b7cf60b5b1827b18638859235bf78125ee2be956",
+          "url": "https://github.com/maidsafe/safe_network/commit/a4efbee09400ddabeee859297f79d4fb72bc8379"
+        },
+        "date": 1714580625693,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
