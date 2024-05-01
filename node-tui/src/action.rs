@@ -6,18 +6,21 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::mode::Scene;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum Action {
     HomeActions(HomeActions),
+    TabActions(TabActions),
+    SwitchScene(Scene),
+
     Tick,
     Render,
     Resize(u16, u16),
     Suspend,
     Resume,
-    StartNode,
     Quit,
     Refresh,
     Error(String),
@@ -35,4 +38,10 @@ pub enum HomeActions {
 
     PreviousTableItem,
     NextTableItem,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
+pub enum TabActions {
+    NextTab,
+    PreviousTab,
 }

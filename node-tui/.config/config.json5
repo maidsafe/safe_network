@@ -5,11 +5,21 @@
       "<s>": {"HomeActions":"StartNodes"}, // Start nodes
       "<k>": {"HomeActions":"StopNode"}, // Stop nodes
       "up" : {"HomeActions":"PreviousTableItem"},
-      "down" : {"HomeActions":"NextTableItem"},
+      "down": {"HomeActions":"NextTableItem"},
+      "tab": {"TabActions":"NextTab"},
+      "<Shift-tab>": {"TabActions":"PreviousTab"},
       "<q>": "Quit", // Quit the application
       "<Ctrl-d>": "Quit", // Another way to quit
       "<Ctrl-c>": "Quit", // Yet another way to quit
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
+    "Options": {
+      "tab": {"TabActions":"NextTab"},
+      "<Shift-tab>": {"TabActions":"PreviousTab"},
+      "<q>": "Quit", // Quit the application
+      "<Ctrl-d>": "Quit", // Another way to quit
+      "<Ctrl-c>": "Quit", // Yet another way to quit
+      "<Ctrl-z>": "Suspend" // Suspend the application
+    }
   }
 }

@@ -6,15 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, path::PathBuf};
-
+use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
-
-use crate::{action::Action, mode::Mode};
+use std::{collections::HashMap, path::PathBuf};
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
@@ -83,14 +81,14 @@ impl Config {
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
-pub struct KeyBindings(pub HashMap<Mode, HashMap<Vec<KeyEvent>, Action>>);
+pub struct KeyBindings(pub HashMap<Scene, HashMap<Vec<KeyEvent>, Action>>);
 
 impl<'de> Deserialize<'de> for KeyBindings {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let parsed_map = HashMap::<Mode, HashMap<String, Action>>::deserialize(deserializer)?;
+        let parsed_map = HashMap::<Scene, HashMap<String, Action>>::deserialize(deserializer)?;
 
         let keybindings = parsed_map
             .into_iter()
@@ -274,14 +272,14 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
-pub struct Styles(pub HashMap<Mode, HashMap<String, Style>>);
+pub struct Styles(pub HashMap<Scene, HashMap<String, Style>>);
 
 impl<'de> Deserialize<'de> for Styles {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let parsed_map = HashMap::<Mode, HashMap<String, String>>::deserialize(deserializer)?;
+        let parsed_map = HashMap::<Scene, HashMap<String, String>>::deserialize(deserializer)?;
 
         let styles = parsed_map
             .into_iter()
@@ -447,7 +445,7 @@ mod tests {
     fn test_config() -> Result<()> {
         let c = Config::new()?;
         assert_eq!(
-            c.keybindings.get(&Mode::Home).unwrap().get(&parse_key_sequence("<q>").unwrap_or_default()).unwrap(),
+            c.keybindings.get(&Scene::Home).unwrap().get(&parse_key_sequence("<q>").unwrap_or_default()).unwrap(),
             &Action::Quit
         );
         Ok(())
