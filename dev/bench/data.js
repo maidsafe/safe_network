@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714592089307,
+  "lastUpdate": 1714592207022,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
-          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
-          "timestamp": "2024-01-05T09:58:06Z",
-          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
-        },
-        "date": 1704451270630,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "ff83510da343c9763bdba5132fcdbc822e4b704e",
+          "message": "ci: add `node-launchpad` binary to release process\n\nThe new TUI for the node manager is a new, separate binary that is being added in to the release\nprocess. It will have a Github release.\n\nFor some reason it seems to have became necessary to explicitly call `rustup target` during the\nartifacts build process. Without doing it, I was getting build errors on macOS.",
+          "timestamp": "2024-05-01T20:22:23+01:00",
+          "tree_id": "1a308fde9158d5b7e52e4597c161ea2295b59311",
+          "url": "https://github.com/maidsafe/safe_network/commit/ff83510da343c9763bdba5132fcdbc822e4b704e"
+        },
+        "date": 1714592206705,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 49,
             "unit": "MB"
           }
         ]
