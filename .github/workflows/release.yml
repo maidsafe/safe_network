@@ -14,7 +14,7 @@ on:
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
-  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.13.0/just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
 
 jobs:
@@ -133,8 +133,8 @@ jobs:
 
           curl -L -O $JUST_BIN_URL
           mkdir just
-          tar xvf just-1.13.0-x86_64-unknown-linux-musl.tar.gz -C just
-          rm just-1.13.0-x86_64-unknown-linux-musl.tar.gz
+          tar xvf just-1.25.2-x86_64-unknown-linux-musl.tar.gz -C just
+          rm just-1.25.2-x86_64-unknown-linux-musl.tar.gz
           sudo mv just/just /usr/local/bin
           rm -rf just
 
@@ -158,12 +158,14 @@ jobs:
           just package-release-assets "safenode_rpc_client"
           just package-release-assets "safenode-manager"
           just package-release-assets "safenodemand"
+          just package-release-assets "node-launcher"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
           just upload-release-assets-to-s3 "safenodemand"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
+          just upload-release-assets-to-s3 "node-launcher"
 
           # The `release-plz` command publishes crates which had their versions bumped, and also
           # creates Github releases. The binaries are then attached to the releases in the
@@ -184,12 +186,14 @@ jobs:
           just package-release-assets "safenode_rpc_client" "latest"
           just package-release-assets "safenode-manager" "latest"
           just package-release-assets "safenodemand" "latest"
+          just package-release-assets "node-launcher" "latest"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
           just upload-release-assets-to-s3 "safenodemand"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
+          just upload-release-assets-to-s3 "node-launcher"
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
