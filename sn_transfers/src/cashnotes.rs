@@ -15,10 +15,10 @@ mod signed_spend;
 mod transaction;
 mod unique_keys;
 
-pub const CASH_NOTE_PURPOSE_FOR_GENESIS: &str = "GENESIS";
-pub const CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES: &str = "ROYALTY";
-pub const CASH_NOTE_PURPOSE_FOR_CHANGE: &str = "CHANGE";
-pub const CASH_NOTE_PURPOSE_FOR_TRANSFER: &str = "TRANSFER";
+pub const CASHNOTE_PURPOSE_OF_GENESIS: &str = "GENESIS";
+pub const CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES: &str = "ROYALTY";
+pub const CASHNOTE_PURPOSE_OF_CHANGE: &str = "CHANGE";
+pub const CASHNOTE_PURPOSE_OF_TRANSFER: &str = "TRANSFER";
 
 pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
 pub(crate) use transaction::Input;
