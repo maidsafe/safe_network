@@ -100,8 +100,9 @@ impl Component for Home {
                     .await
                     {
                         error!("Error while adding service {err:?}")
+                    } else {
+                        info!("Successfully added service");
                     }
-                    info!("Successfully added service");
                     // todo: need to handle these properly?
                     if let Err(err) =
                         action_sender.send(Action::HomeActions(HomeActions::AddNodeCompleted))
@@ -119,27 +120,31 @@ impl Component for Home {
                 let action_sender = self.get_actions_sender()?;
 
                 self.lock_registry = true;
+                let Some(service_name) = self.get_service_name_of_selected_table_item() else {
+                    return Ok(None);
+                };
                 tokio::task::spawn_local(async move {
                     // I think using 1 thread is causing us to block on the below start function and not really
                     // having a chance to set lock_registry = true and draw from that state. Since the update is slow,
                     // the gui looks laggy. Adding a sleep basically puts this to sleep while drawing with the new state.
-                    tokio::time::sleep(Duration::from_micros(10)).await;
+                    tokio::time::sleep(Duration::from_millis(10)).await;
                     if let Err(err) = sn_node_manager::cmd::node::start(
                         1,
                         vec![],
-                        vec![],
+                        vec![service_name],
                         sn_node_manager::VerbosityLevel::Minimal,
                     )
                     .await
                     {
                         error!("Error while starting services {err:?}");
+                    } else {
+                        info!("Successfully started services");
                     }
                     if let Err(err) =
                         action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted))
                     {
                         error!("Error while sending action: {err:?}");
                     }
-                    info!("Successfully started services");
                 });
             }
             Action::HomeActions(HomeActions::StopNode) => {
@@ -151,27 +156,65 @@ impl Component for Home {
                 let action_sender = self.get_actions_sender()?;
 
                 self.lock_registry = true;
+                let Some(service_name) = self.get_service_name_of_selected_table_item() else {
+                    return Ok(None);
+                };
                 tokio::task::spawn_local(async move {
                     if let Err(err) = sn_node_manager::cmd::node::stop(
                         vec![],
-                        vec![],
+                        vec![service_name],
                         sn_node_manager::VerbosityLevel::Minimal,
                     )
                     .await
                     {
                         error!("Error while stopping services {err:?}");
+                    } else {
+                        info!("Successfully stopped services");
                     }
                     if let Err(err) =
                         action_sender.send(Action::HomeActions(HomeActions::StopNodeCompleted))
                     {
                         error!("Error while sending action: {err:?}");
                     }
-                    info!("Successfully stopped services");
+                });
+            }
+            Action::HomeActions(HomeActions::RemoveNode) => {
+                if self.lock_registry {
+                    error!("Registry is locked. Cannot remove node now.");
+                    return Ok(None);
+                }
+                info!("Removing node service");
+                let action_sender = self.get_actions_sender()?;
+
+                self.lock_registry = true;
+                let Some(service_name) = self.get_service_name_of_selected_table_item() else {
+                    return Ok(None);
+                };
+
+                tokio::task::spawn_local(async move {
+                    if let Err(err) = sn_node_manager::cmd::node::remove(
+                        false,
+                        vec![],
+                        vec![service_name],
+                        sn_node_manager::VerbosityLevel::Minimal,
+                    )
+                    .await
+                    {
+                        error!("Error while removing services {err:?}");
+                    } else {
+                        info!("Successfully removed service");
+                    }
+                    if let Err(err) =
+                        action_sender.send(Action::HomeActions(HomeActions::RemoveNodeCompleted))
+                    {
+                        error!("Error while sending action: {err:?}");
+                    }
                 });
             }
             Action::HomeActions(HomeActions::AddNodeCompleted)
             | Action::HomeActions(HomeActions::StartNodesCompleted)
-            | Action::HomeActions(HomeActions::StopNodeCompleted) => {
+            | Action::HomeActions(HomeActions::StopNodeCompleted)
+            | Action::HomeActions(HomeActions::RemoveNodeCompleted) => {
                 self.lock_registry = false;
                 self.load_node_registry()?;
             }
@@ -207,7 +250,7 @@ impl Component for Home {
         // top section
         //
         f.render_widget(
-            Paragraph::new("None").block(
+            Paragraph::new("").block(
                 Block::default()
                     .title("Autonomi Node Status")
                     .borders(Borders::ALL),
@@ -256,7 +299,7 @@ impl Component for Home {
         f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit").block(
+            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [R]emove node, [Q]uit").block(
                 Block::default()
                     .title(" Key commands ")
                     .borders(Borders::ALL),
@@ -268,7 +311,7 @@ impl Component for Home {
         if self.lock_registry {
             f.render_widget(Clear, popup_area);
             f.render_widget(
-                Paragraph::new("Adding/Starting Node.. Please wait...")
+                Paragraph::new("Please wait...")
                     .alignment(Alignment::Center)
                     .block(
                         Block::default()
@@ -336,6 +379,16 @@ impl Home {
     #[allow(dead_code)]
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
+    }
+
+    fn get_service_name_of_selected_table_item(&self) -> Option<String> {
+        let Some(service_idx) = self.node_table_state.selected() else {
+            warn!("No item selected from table, not removing anything");
+            return None;
+        };
+        self.running_nodes
+            .get(service_idx)
+            .map(|data| data.service_name.clone())
     }
 
     /// helper function to create a centered rect using up certain percentage of the available rect `r`
