@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714656390424,
+  "lastUpdate": 1714656506436,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "04db25655a133ba8953461891c3ac039267b6136",
-          "message": "feat(cli): store uploaded file metadata",
-          "timestamp": "2024-01-05T12:44:48Z",
-          "tree_id": "448285e3dea27285617629da3f82d6231311819e",
-          "url": "https://github.com/maidsafe/safe_network/commit/04db25655a133ba8953461891c3ac039267b6136"
-        },
-        "date": 1704461424995,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "36ac059e4a41cf3cd9d4fb5750e588c9855b764a",
+          "message": "chore: disable network contacts feature flag on launchpad",
+          "timestamp": "2024-05-02T14:14:07+01:00",
+          "tree_id": "877b4faa1f2b88fa434009715d017448472a5d23",
+          "url": "https://github.com/maidsafe/safe_network/commit/36ac059e4a41cf3cd9d4fb5750e588c9855b764a"
+        },
+        "date": 1714656506069,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
