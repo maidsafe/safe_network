@@ -37,16 +37,13 @@ fn current_exe_name() -> String {
         .next()
         .and_then(|arg| {
             std::path::Path::new(&arg).file_name().map(|s| {
-                let mut name = s.to_string_lossy().into_owned();
-                // remove sn_ prefix if present
-                name = name.strip_prefix("sn_").unwrap_or(&name).to_owned();
+                let mut name = s.to_string_lossy().to_string();
+                name = name.strip_prefix("sn_").unwrap_or(&name).to_string();
 
-                // remove .exe prefix on windows
                 if cfg!(windows) && name.to_lowercase().ends_with(".exe") {
-                    name = name.strip_suffix(".exe").unwrap_or(&name).to_owned();
+                    name = name.strip_suffix(".exe").unwrap_or(&name).to_string();
                 }
 
-                // if the name is safe, identify it is the client
                 if name == "safe" {
                     name = "client".to_string();
                 }
