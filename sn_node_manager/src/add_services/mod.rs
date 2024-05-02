@@ -96,7 +96,9 @@ pub async fn add_node(
         }
 
         if options.env_variables.is_some() {
-            node_registry.environment_variables = options.env_variables.clone();
+            node_registry
+                .environment_variables
+                .clone_from(&options.env_variables);
             should_save = true;
         }
 

@@ -429,7 +429,7 @@ pub async fn refresh_node_registry(
     for node in &mut node_registry.nodes {
         // The `status` command can run before a node is started and therefore before its wallet
         // exists.
-        match HotWallet::load_from(&node.data_dir_path) {
+        match HotWallet::try_load_from(&node.data_dir_path) {
             Ok(wallet) => node.reward_balance = Some(wallet.balance()),
             Err(_) => node.reward_balance = None,
         }
