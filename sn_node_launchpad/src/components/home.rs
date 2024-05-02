@@ -20,7 +20,6 @@ use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 
-#[derive(Default)]
 pub struct Home {
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
@@ -31,22 +30,22 @@ pub struct Home {
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. A simple file lock or a db like file would work.
     lock_registry: bool,
-
-    // Network Peer
-    pub peers_args: PeersArgs,
 }
 
 impl Home {
-    pub fn new(peers_args: PeersArgs) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let mut home = Self {
-            peers_args,
-            ..Default::default()
+            action_sender: Default::default(),
+            config: Default::default(),
+            show_scene: true,
+            running_nodes: Default::default(),
+            node_table_state: Default::default(),
+            lock_registry: Default::default(),
         };
         home.load_node_registry()?;
         if !home.running_nodes.is_empty() {
             home.node_table_state.select(Some(0));
         }
-        home.show_scene = true;
         Ok(home)
     }
 }
@@ -75,7 +74,7 @@ impl Component for Home {
                 }
                 info!("Adding a new node service");
 
-                let peers = self.peers_args.clone();
+                let peers = PeersArgs::default(); // will fetch from network contacts
                 let action_sender = self.get_actions_sender()?;
                 self.lock_registry = true;
 
@@ -84,7 +83,7 @@ impl Component for Home {
                         None,
                         None,
                         None,
-                        false,
+                        true,
                         false,
                         None,
                         None,

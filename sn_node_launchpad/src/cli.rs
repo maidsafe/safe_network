@@ -6,10 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use clap::Parser;
-use sn_peers_acquisition::PeersArgs;
-
 use crate::utils::version;
+use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(author, version = version(), about)]
@@ -31,7 +29,4 @@ pub struct Cli {
         default_value_t = 60.0
     )]
     pub frame_rate: f64,
-
-    #[command(flatten)]
-    pub peers: PeersArgs,
 }
