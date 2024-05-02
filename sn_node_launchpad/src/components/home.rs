@@ -43,6 +43,9 @@ impl Home {
             ..Default::default()
         };
         home.load_node_registry()?;
+        if !home.running_nodes.is_empty() {
+            home.node_table_state.select(Some(0));
+        }
         home.show_scene = true;
         Ok(home)
     }
@@ -254,7 +257,7 @@ impl Component for Home {
         f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
 
         f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit, [Tab] Next Page").block(
+            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [Q]uit").block(
                 Block::default()
                     .title(" Key commands ")
                     .borders(Borders::ALL),
