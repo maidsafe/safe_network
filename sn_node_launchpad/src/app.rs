@@ -16,7 +16,6 @@ use crate::{
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
-use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
 
 pub struct App {
@@ -32,9 +31,9 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(tick_rate: f64, frame_rate: f64, peers_args: PeersArgs) -> Result<Self> {
+    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
         let tab = Tab::default();
-        let home = Home::new(peers_args)?;
+        let home = Home::new()?;
         let config = Config::new()?;
         let scene = tab.get_current_scene();
         Ok(Self {
