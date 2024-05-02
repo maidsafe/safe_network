@@ -15,9 +15,7 @@ name = "node-launchpad"
 path = "src/main.rs"
 
 [dependencies]
-sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition", features = [
-    "network-contacts",
-] }
+sn_peers_acquisition = { verison = "0.2.10", path = "../sn_peers_acquisition" }
 sn_service_management = { verison = "0.2.4", path = "../sn_service_management" }
 better-panic = "0.3.0"
 clap = { version = "4.4.5", features = [
