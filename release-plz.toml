@@ -8,6 +8,12 @@ semver_check = false
 git_release_type = "auto"
 
 [[package]]
+name = "sn_auditor"
+changelog_update = true
+git_release_enable = false
+publish = true
+
+[[package]]
 name = "sn_build_info"
 changelog_update = true
 git_release_enable = false
@@ -74,6 +80,12 @@ changelog_include = [
     "sn_peers_acquisition",
     "sn_protocol",
 ]
+
+[[package]]
+name = "sn_node_launchpad"
+changelog_update = true
+git_release_enable = true
+publish = true
 
 [[package]]
 name = "sn_node_rpc_client"

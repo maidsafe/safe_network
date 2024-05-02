@@ -81,6 +81,15 @@ impl Node {
                 let record_key = record.key.clone();
                 let value_to_hash = record.value.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
+
+                let pretty_key = PrettyPrintRecordKey::from(&record_key);
+                for spend in spends.iter() {
+                    trace!(
+                        "Spend record {pretty_key:?} has output purposes of {:?}",
+                        spend.spend.output_purposes()
+                    );
+                }
+
                 let result = self.validate_and_store_spends(spends, &record_key).await;
                 if result.is_ok() {
                     Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();

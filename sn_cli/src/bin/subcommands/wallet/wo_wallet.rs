@@ -16,10 +16,11 @@ use color_eyre::{
 };
 use dialoguer::Confirm;
 use sn_client::transfers::{
-    DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend, UniquePubkey,
+    CashNoteOutputDetails, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend, UniquePubkey,
     WatchOnlyWallet,
 };
 use sn_client::Client;
+use sn_transfers::CASHNOTE_PURPOSE_OF_TRANSFER;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -232,7 +233,10 @@ fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Pat
         }
     };
 
-    let unsigned_transfer = wallet.build_unsigned_transaction(vec![(amount, to)], None)?;
+    let unsigned_transfer = wallet.build_unsigned_transaction(
+        vec![(CASHNOTE_PURPOSE_OF_TRANSFER.to_string(), amount, to)],
+        None,
+    )?;
 
     println!(
         "The unsigned transaction has been successfully created:\n\n{}\n",
@@ -251,7 +255,7 @@ async fn broadcast_signed_spends(
 ) -> Result<()> {
     let (signed_spends, output_details, change_id): (
         BTreeSet<SignedSpend>,
-        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        BTreeMap<UniquePubkey, CashNoteOutputDetails>,
         UniquePubkey,
     ) = rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
 

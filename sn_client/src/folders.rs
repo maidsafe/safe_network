@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{error::Result, Client, ClientRegister, WalletClient};
-use crate::{Error, FilesApi, UploadCfg};
+use crate::{acc_packet::load_account_wallet_or_create_with_mnemonic, Error, FilesApi, UploadCfg};
 use bls::{Ciphertext, PublicKey};
 use bytes::{BufMut, BytesMut};
 use self_encryption::MAX_CHUNK_SIZE;
@@ -17,7 +17,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash};
-use sn_transfers::HotWallet;
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -110,7 +110,7 @@ impl FoldersApi {
 
     /// Create a new WalletClient from the directory set.
     pub fn wallet(&self) -> Result<WalletClient> {
-        let wallet = HotWallet::load_from(&self.wallet_dir)?;
+        let wallet = load_account_wallet_or_create_with_mnemonic(&self.wallet_dir, None)?;
         Ok(WalletClient::new(self.client.clone(), wallet))
     }
 

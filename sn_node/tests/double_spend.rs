@@ -49,8 +49,18 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     let mut rng = rng::thread_rng();
 
-    let to2_unique_key = (amount, to2, DerivationIndex::random(&mut rng));
-    let to3_unique_key = (amount, to3, DerivationIndex::random(&mut rng));
+    let to2_unique_key = (
+        amount,
+        Default::default(),
+        to2,
+        DerivationIndex::random(&mut rng),
+    );
+    let to3_unique_key = (
+        amount,
+        Default::default(),
+        to3,
+        DerivationIndex::random(&mut rng),
+    );
     let reason_hash = Hash::default();
 
     let transfer_to_2 =
@@ -108,6 +118,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
     let mut rng = rng::thread_rng();
     let recipient = (
         genesis_amount,
+        Default::default(),
         first_wallet_addr,
         DerivationIndex::random(&mut rng),
     );
@@ -131,6 +142,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
     let (genesis_cashnote_and_others, exclusive_access) = first_wallet.available_cash_notes()?;
     let recipient = (
         genesis_amount,
+        Default::default(),
         second_wallet_addr,
         DerivationIndex::random(&mut rng),
     );

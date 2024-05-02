@@ -19,10 +19,17 @@ impl Node {
         cost: NanoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
+        owner: String,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp, quoting_metrics);
+        let bytes = PaymentQuote::bytes_for_signing(
+            content,
+            cost,
+            timestamp,
+            quoting_metrics,
+            owner.clone(),
+        );
 
         let Ok(signature) = network.sign(&bytes) else {
             return Err(ProtocolError::QuoteGenerationFailed);
@@ -33,6 +40,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
+            owner,
             pub_key: network.get_pub_key(),
             signature,
         };
@@ -65,6 +73,7 @@ pub(crate) fn verify_quote_for_storecost(
         quote.cost,
         quote.timestamp,
         &quote.quoting_metrics,
+        quote.owner.clone(),
     );
     let signature = quote.signature;
     if !network.verify(&bytes, &signature) {

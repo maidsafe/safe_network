@@ -9,9 +9,8 @@
 use std::path::Path;
 
 use color_eyre::Result;
-use sn_client::transfers::{
-    CashNoteRedemption, HotWallet, SpendAddress, Transfer, GENESIS_CASHNOTE,
-};
+use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
+use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_CASHNOTE};
 use sn_client::{Client, SpendDag};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
@@ -41,7 +40,14 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
 pub async fn audit(client: &Client, to_dot: bool, royalties: bool, root_dir: &Path) -> Result<()> {
     if to_dot {
         let dag = gather_spend_dag(client, root_dir).await?;
+        println!(
+            "==========================   spends DAG diagraph   ============================="
+        );
         println!("{}", dag.dump_dot_format());
+        println!(
+            "=======================   spends purpose statistics   =========================="
+        );
+        println!("{}", dag.dump_creation_reasons_statistics());
     } else if royalties {
         let dag = gather_spend_dag(client, root_dir).await?;
         let royalties = dag.all_royalties()?;
@@ -69,7 +75,7 @@ async fn redeem_royalties(
         println!("Found {} royalties.", royalties.len());
     }
 
-    let mut wallet = HotWallet::load_from(root_dir)?;
+    let mut wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
     // batch royalties per 100
     let mut batch = Vec::new();

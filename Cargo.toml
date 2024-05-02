@@ -10,6 +10,7 @@ members = [
     "sn_metrics",
     "sn_networking",
     "sn_node",
+    "sn_node_launchpad",
     "sn_node_manager",
     "sn_node_rpc_client",
     "sn_peers_acquisition",

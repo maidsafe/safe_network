@@ -12,6 +12,7 @@ use super::{
     WalletApiHelper,
 };
 use crate::get_stdin_response;
+
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{
@@ -23,7 +24,9 @@ use sn_client::transfers::{
     HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
     WalletError,
 };
-use sn_client::{Client, Error as ClientError};
+use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic, Client, Error as ClientError,
+};
 use std::{path::Path, str::FromStr};
 
 // Please do not remove the blank lines in these doc comments.
@@ -31,7 +34,13 @@ use std::{path::Path, str::FromStr};
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the wallet address.
-    Address,
+    Address {
+        /// Optional passphrase to protect the mnemonic,
+        /// it's not the source of the entropy for the mnemonic generation.
+        /// The mnemonic+passphrase will be the seed. See detail at
+        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
+        passphrase: Option<String>,
+    },
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
@@ -116,8 +125,14 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address => {
-            let wallet = WalletApiHelper::load_from(root_dir)?;
+        WalletCmds::Address {
+            passphrase: derivation_passphrase,
+        } => {
+            let wallet = load_account_wallet_or_create_with_mnemonic(
+                root_dir,
+                derivation_passphrase.as_deref(),
+            )?;
+
             println!("{:?}", wallet.address());
             Ok(())
         }
@@ -208,7 +223,8 @@ async fn send(
     root_dir: &Path,
     verify_store: bool,
 ) -> Result<()> {
-    let from = HotWallet::load_from(root_dir)?;
+    let from = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
+
     let amount = match NanoTokens::from_str(&amount) {
         Ok(amount) => amount,
         Err(err) => {
@@ -259,7 +275,8 @@ async fn send(
 }
 
 fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
-    let wallet = HotWallet::load_from(root_dir)?;
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
+
     let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
     println!("The unsigned transaction has been successfully decoded:");

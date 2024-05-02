@@ -160,179 +160,182 @@ jobs:
       - shell: bash
         run: cargo test --lib --package sn-node-manager
 
-  node-manager-e2e-tests:
-    name: node manager e2e tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: ubuntu-latest, elevated: sudo env PATH="$PATH" }
-          - { os: macos-latest, elevated: sudo }
-          - { os: windows-latest }
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - shell: bash
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
-
-      # Powershell step runs as admin by default.
-      - name: run integration test in powershell
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          curl -L -o WinSW.exe $env:WINSW_URL
-
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
-          Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
-          $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
-
-          cargo test --release --package sn-node-manager --test e2e -- --nocapture
+#
+# Temporarily disable node manager integration tests until they can be made more isolated.
+#
+  # node-manager-e2e-tests:
+  #   name: node manager e2e tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { os: ubuntu-latest, elevated: sudo env PATH="$PATH" }
+  #         - { os: macos-latest, elevated: sudo }
+  #         - { os: windows-latest }
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #
+  #     - shell: bash
+  #       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+  #       run: |
+  #         ${{ matrix.elevated }} rustup default stable
+  #         ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
+  #
+  #     # Powershell step runs as admin by default.
+  #     - name: run integration test in powershell
+  #       if: matrix.os == 'windows-latest'
+  #       shell: pwsh
+  #       run: |
+  #         curl -L -o WinSW.exe $env:WINSW_URL
+  #
+  #         New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
+  #         Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
+  #         $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
+  #
+  #         cargo test --release --package sn-node-manager --test e2e -- --nocapture
 
   # Each upgrade test needs its own VM, otherwise they will interfere with each other.
-  node-manager-upgrade-tests:
-    name: node manager upgrade tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {
-              os: ubuntu-latest,
-              elevated: sudo env PATH="$PATH",
-              test: upgrade_to_latest_version,
-            }
-          - {
-              os: ubuntu-latest,
-              elevated: sudo env PATH="$PATH",
-              test: force_upgrade_when_two_binaries_have_the_same_version,
-            }
-          - {
-              os: ubuntu-latest,
-              elevated: sudo env PATH="$PATH",
-              test: force_downgrade_to_a_previous_version,
-            }
-          - {
-              os: ubuntu-latest,
-              elevated: sudo env PATH="$PATH",
-              test: upgrade_from_older_version_to_specific_version,
-            }
-          - {
-              os: macos-latest,
-              elevated: sudo,
-              test: upgrade_to_latest_version,
-            }
-          - {
-              os: macos-latest,
-              elevated: sudo,
-              test: force_upgrade_when_two_binaries_have_the_same_version,
-            }
-          - {
-              os: macos-latest,
-              elevated: sudo,
-              test: force_downgrade_to_a_previous_version,
-            }
-          - {
-              os: macos-latest,
-              elevated: sudo,
-              test: upgrade_from_older_version_to_specific_version,
-            }
-          - { os: windows-latest, test: upgrade_to_latest_version }
-          - {
-              os: windows-latest,
-              test: force_upgrade_when_two_binaries_have_the_same_version,
-            }
-          - { os: windows-latest, test: force_downgrade_to_a_previous_version }
-          - {
-              os: windows-latest,
-              test: upgrade_from_older_version_to_specific_version,
-            }
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - shell: bash
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
-            --test upgrades ${{ matrix.test }} -- --nocapture
-
-      # Powershell step runs as admin by default.
-      - name: run integration test in powershell
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          curl -L -o WinSW.exe $env:WINSW_URL
-
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
-          Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
-          $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
-
-          cargo test --package sn-node-manager --release `
-            --test upgrades ${{ matrix.test }} -- --nocapture
-
-  # Each daemon test needs its own VM, otherwise they will interfere with each other.
-  node-manager-daemon-tests:
-    name: node manager daemon tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {
-              os: ubuntu-latest,
-              elevated: sudo env PATH="$PATH",
-              test: restart_node,
-            }
-          # todo: enable once url/version has been implemented for Daemon subcmd.
-          # - {
-          #     os: macos-latest,
-          #     elevated: sudo,
-          #     test: restart_node,
-          #   }
-          # - {
-          #     os: windows-latest,
-          #     test: restart_node,
-          #   }
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: run integration test
-        shell: bash
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
-            --test daemon ${{ matrix.test }} -- --nocapture
-
-      # Powershell step runs as admin by default.
-      - name: run integration test in powershell
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          curl -L -o WinSW.exe $env:WINSW_URL
-
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
-          Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
-          $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
-
-          cargo test --package sn-node-manager --release `
-            --test daemon ${{ matrix.test }} -- --nocapture
+  # node-manager-upgrade-tests:
+  #   name: node manager upgrade tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - {
+  #             os: ubuntu-latest,
+  #             elevated: sudo env PATH="$PATH",
+  #             test: upgrade_to_latest_version,
+  #           }
+  #         - {
+  #             os: ubuntu-latest,
+  #             elevated: sudo env PATH="$PATH",
+  #             test: force_upgrade_when_two_binaries_have_the_same_version,
+  #           }
+  #         - {
+  #             os: ubuntu-latest,
+  #             elevated: sudo env PATH="$PATH",
+  #             test: force_downgrade_to_a_previous_version,
+  #           }
+  #         - {
+  #             os: ubuntu-latest,
+  #             elevated: sudo env PATH="$PATH",
+  #             test: upgrade_from_older_version_to_specific_version,
+  #           }
+  #         - {
+  #             os: macos-latest,
+  #             elevated: sudo,
+  #             test: upgrade_to_latest_version,
+  #           }
+  #         - {
+  #             os: macos-latest,
+  #             elevated: sudo,
+  #             test: force_upgrade_when_two_binaries_have_the_same_version,
+  #           }
+  #         - {
+  #             os: macos-latest,
+  #             elevated: sudo,
+  #             test: force_downgrade_to_a_previous_version,
+  #           }
+  #         - {
+  #             os: macos-latest,
+  #             elevated: sudo,
+  #             test: upgrade_from_older_version_to_specific_version,
+  #           }
+  #         - { os: windows-latest, test: upgrade_to_latest_version }
+  #         - {
+  #             os: windows-latest,
+  #             test: force_upgrade_when_two_binaries_have_the_same_version,
+  #           }
+  #         - { os: windows-latest, test: force_downgrade_to_a_previous_version }
+  #         - {
+  #             os: windows-latest,
+  #             test: upgrade_from_older_version_to_specific_version,
+  #           }
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #
+  #     - shell: bash
+  #       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+  #       run: |
+  #         ${{ matrix.elevated }} rustup default stable
+  #         ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
+  #           --test upgrades ${{ matrix.test }} -- --nocapture
+  #
+  #     # Powershell step runs as admin by default.
+  #     - name: run integration test in powershell
+  #       if: matrix.os == 'windows-latest'
+  #       shell: pwsh
+  #       run: |
+  #         curl -L -o WinSW.exe $env:WINSW_URL
+  #
+  #         New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
+  #         Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
+  #         $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
+  #
+  #         cargo test --package sn-node-manager --release `
+  #           --test upgrades ${{ matrix.test }} -- --nocapture
+  #
+  # # Each daemon test needs its own VM, otherwise they will interfere with each other.
+  # node-manager-daemon-tests:
+  #   name: node manager daemon tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - {
+  #             os: ubuntu-latest,
+  #             elevated: sudo env PATH="$PATH",
+  #             test: restart_node,
+  #           }
+  #         # todo: enable once url/version has been implemented for Daemon subcmd.
+  #         # - {
+  #         #     os: macos-latest,
+  #         #     elevated: sudo,
+  #         #     test: restart_node,
+  #         #   }
+  #         # - {
+  #         #     os: windows-latest,
+  #         #     test: restart_node,
+  #         #   }
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
+  #
+  #     - name: run integration test
+  #       shell: bash
+  #       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+  #       run: |
+  #         ${{ matrix.elevated }} rustup default stable
+  #         ${{ matrix.elevated }} cargo test --package sn-node-manager --release \
+  #           --test daemon ${{ matrix.test }} -- --nocapture
+  #
+  #     # Powershell step runs as admin by default.
+  #     - name: run integration test in powershell
+  #       if: matrix.os == 'windows-latest'
+  #       shell: pwsh
+  #       run: |
+  #         curl -L -o WinSW.exe $env:WINSW_URL
+  #
+  #         New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
+  #         Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
+  #         $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
+  #
+  #         cargo test --package sn-node-manager --release `
+  #           --test daemon ${{ matrix.test }} -- --nocapture
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"

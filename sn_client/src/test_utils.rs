@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{send, Client, WalletClient};
+use crate::{
+    acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
+    send, Client, WalletClient,
+};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
-use sn_transfers::{create_faucet_wallet, HotWallet, NanoTokens};
+use sn_transfers::{HotWallet, NanoTokens};
 
 use bls::SecretKey;
 use bytes::Bytes;
@@ -67,8 +70,9 @@ pub async fn get_funded_wallet(client: &Client, wallet_dir: &Path) -> Result<Hot
     let wallet_balance = NanoTokens::from(AMOUNT_TO_FUND_WALLETS);
     let _guard = FAUCET_WALLET_MUTEX.lock().await;
     let from_faucet_wallet = load_faucet_wallet().await?;
-    let mut local_wallet =
-        HotWallet::load_from(wallet_dir).expect("Wallet shall be successfully created.");
+
+    let mut local_wallet = load_account_wallet_or_create_with_mnemonic(wallet_dir, None)
+        .expect("Wallet shall be successfully created.");
 
     println!("Getting {wallet_balance} tokens from the faucet...");
     info!("Getting {wallet_balance} tokens from the faucet...");
@@ -98,7 +102,9 @@ pub async fn pay_for_storage(
     wallet_dir: &Path,
     addrs2pay: Vec<NetworkAddress>,
 ) -> Result<()> {
-    let mut wallet_client = WalletClient::new(client.clone(), HotWallet::load_from(wallet_dir)?);
+    let wallet = load_account_wallet_or_create_with_mnemonic(wallet_dir, None)?;
+
+    let mut wallet_client = WalletClient::new(client.clone(), wallet);
     let _ = wallet_client.pay_for_storage(addrs2pay.into_iter()).await?;
     Ok(())
 }
@@ -107,7 +113,7 @@ async fn load_faucet_wallet() -> Result<HotWallet> {
     info!("Loading faucet...");
     let now = Instant::now();
     for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
-        let faucet_wallet = create_faucet_wallet();
+        let faucet_wallet = create_faucet_account_and_wallet();
 
         let faucet_balance = faucet_wallet.balance();
         if !faucet_balance.is_zero() {

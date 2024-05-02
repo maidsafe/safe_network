@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
+use crate::cashnotes::transaction::Output;
 use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
 
 use custom_debug::Debug;
@@ -183,6 +184,11 @@ impl SignedSpend {
         trace!("Validated parent_spends for {unique_key}");
         Ok(())
     }
+
+    /// Get a reference to the outputs
+    pub fn outputs(&self) -> &Vec<Output> {
+        &self.spend.spent_tx.outputs
+    }
 }
 
 // Impl manually to avoid clippy complaint about Hash conflict.
@@ -239,6 +245,15 @@ impl Spend {
     /// represent this Spend as a Hash
     pub fn hash(&self) -> Hash {
         Hash::hash(&self.to_bytes())
+    }
+
+    /// Returns the purpose of the outputs that associate with this Spend
+    pub fn output_purposes(&self) -> Vec<(String, NanoTokens)> {
+        self.spent_tx
+            .outputs
+            .iter()
+            .map(|output| (output.purpose.clone(), output.amount))
+            .collect()
     }
 }
 

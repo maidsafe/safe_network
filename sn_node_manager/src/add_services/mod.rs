@@ -176,6 +176,7 @@ pub async fn add_node(
                     local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
                     number: node_number,
+                    reward_balance: None,
                     rpc_socket_addr,
                     peer_id: None,
                     pid: None,

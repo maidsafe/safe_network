@@ -307,7 +307,11 @@ pub async fn status_report(
         println!("{json}");
     } else if detailed_view {
         for node in &node_registry.nodes {
-            print_banner(&node.service_name, &node.status);
+            print_banner(&format!(
+                "{} - {}",
+                &node.service_name,
+                format_status_without_colour(&node.status)
+            ));
             println!("Version: {}", node.version);
             println!(
                 "Peer ID: {}",
@@ -328,19 +332,30 @@ pub async fn status_report(
                     .as_ref()
                     .map_or("-".to_string(), |p| p.len().to_string())
             );
-            let wallet = HotWallet::load_from(&node.data_dir_path)?;
-            println!("Reward balance: {}", wallet.balance());
+            println!(
+                "Reward balance: {}",
+                node.reward_balance
+                    .map_or("-".to_string(), |b| b.to_string())
+            );
             println!();
         }
 
         if let Some(daemon) = &node_registry.daemon {
-            print_banner(&daemon.service_name, &daemon.status);
+            print_banner(&format!(
+                "{} - {}",
+                &daemon.service_name,
+                format_status(&daemon.status)
+            ));
             println!("Version: {}", daemon.version);
             println!("Bin path: {}", daemon.daemon_path.to_string_lossy());
         }
 
         if let Some(faucet) = &node_registry.faucet {
-            print_banner(&faucet.service_name, &faucet.status);
+            print_banner(&format!(
+                "{} - {}",
+                &faucet.service_name,
+                format_status(&faucet.status)
+            ));
             println!("Version: {}", faucet.version);
             println!("Bin path: {}", faucet.faucet_path.to_string_lossy());
             println!("Log path: {}", faucet.log_dir_path.to_string_lossy());
@@ -412,6 +427,13 @@ pub async fn refresh_node_registry(
     }
 
     for node in &mut node_registry.nodes {
+        // The `status` command can run before a node is started and therefore before its wallet
+        // exists.
+        match HotWallet::load_from(&node.data_dir_path) {
+            Ok(wallet) => node.reward_balance = Some(wallet.balance()),
+            Err(_) => node.reward_balance = None,
+        }
+
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         if let ServiceStatus::Running = node.status {
             if let Some(pid) = node.pid {
@@ -457,6 +479,18 @@ pub async fn refresh_node_registry(
     Ok(())
 }
 
+pub fn print_banner(text: &str) {
+    let padding = 2;
+    let text_width = text.len() + padding * 2;
+    let border_chars = 2;
+    let total_width = text_width + border_chars;
+    let top_bottom = "═".repeat(total_width);
+
+    println!("╔{}╗", top_bottom);
+    println!("║ {:^width$} ║", text, width = text_width);
+    println!("╚{}╝", top_bottom);
+}
+
 fn format_status(status: &ServiceStatus) -> String {
     match status {
         ServiceStatus::Running => "RUNNING".green().to_string(),
@@ -466,12 +500,13 @@ fn format_status(status: &ServiceStatus) -> String {
     }
 }
 
-fn print_banner(service_name: &str, status: &ServiceStatus) {
-    let service_status = format!("{} - {}", service_name, format_status(status));
-    let banner = "=".repeat(service_status.len());
-    println!("{}", banner);
-    println!("{service_status}");
-    println!("{}", banner);
+fn format_status_without_colour(status: &ServiceStatus) -> String {
+    match status {
+        ServiceStatus::Running => "RUNNING".to_string(),
+        ServiceStatus::Stopped => "STOPPED".to_string(),
+        ServiceStatus::Added => "ADDED".to_string(),
+        ServiceStatus::Removed => "REMOVED".to_string(),
+    }
 }
 
 #[cfg(test)]
@@ -490,6 +525,7 @@ mod tests {
         rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
         UpgradeOptions, UpgradeResult,
     };
+    use sn_transfers::NanoTokens;
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
         path::{Path, PathBuf},
@@ -578,6 +614,7 @@ mod tests {
             number: 1,
             peer_id: None,
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -664,6 +701,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -719,6 +757,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -810,6 +849,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -878,6 +918,7 @@ mod tests {
             number: 1,
             peer_id: None,
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -929,6 +970,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -967,6 +1009,7 @@ mod tests {
             number: 1,
             peer_id: None,
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1007,6 +1050,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1046,6 +1090,7 @@ mod tests {
             number: 1,
             peer_id: None,
             pid: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1162,6 +1207,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -1240,6 +1286,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -1360,6 +1407,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -1493,6 +1541,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -1622,6 +1671,7 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -1689,6 +1739,7 @@ mod tests {
             number: 1,
             pid: None,
             peer_id: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: safenode_bin.to_path_buf(),
             status: ServiceStatus::Stopped,
@@ -1737,6 +1788,7 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1787,14 +1839,15 @@ mod tests {
             local: false,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             number: 1,
-            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
-            status: ServiceStatus::Running,
             pid: Some(1000),
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Running,
             user: "safe".to_string(),
             version: "0.98.1".to_string(),
         };
@@ -1845,6 +1898,7 @@ mod tests {
             number: 1,
             pid: None,
             peer_id: None,
+            reward_balance: Some(NanoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: safenode_bin.to_path_buf(),
             service_name: "safenode1".to_string(),

@@ -7,11 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 #[cfg(feature = "distribution")]
-use super::WalletApiHelper;
-#[cfg(feature = "distribution")]
 use base64::Engine;
 use color_eyre::Result;
-use sn_client::transfers::{HotWallet, SpendAddress, Transfer};
+use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
+use sn_client::transfers::{SpendAddress, Transfer};
 use sn_client::Client;
 use std::{path::Path, str::FromStr};
 use url::Url;
@@ -50,7 +49,7 @@ pub async fn get_faucet(
 }
 
 pub async fn get_faucet_fixed_amount(root_dir: &Path, client: &Client, url: String) -> Result<()> {
-    let wallet = HotWallet::load_from(root_dir)?;
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
     let address_hex = wallet.address().to_hex();
     let url = if !url.contains("://") {
         format!("{}://{}", "http", url)
@@ -87,7 +86,9 @@ pub async fn get_faucet_distribution(
         url
     };
     // receive to the current local wallet
-    let wallet = WalletApiHelper::load_from(root_dir)?.address().to_hex();
+    let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?
+        .address()
+        .to_hex();
     println!("Requesting distribution for maid address {address} to local wallet {wallet}");
     // base64 uses + and / as the delimiters which doesn't go well in the query
     // string, so the signature is encoded using url safe characters.
@@ -133,7 +134,7 @@ pub async fn receive(
     println!("Successfully parsed transfer. ");
 
     println!("Verifying transfer with the Network...");
-    let mut wallet = HotWallet::load_from(root_dir)?;
+    let mut wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
     let cashnotes = match client.receive(&transfer, &wallet).await {
         Ok(cashnotes) => cashnotes,
         Err(err) => {

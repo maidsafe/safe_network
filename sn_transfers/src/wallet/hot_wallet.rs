@@ -9,7 +9,7 @@
 use super::{
     api::{WalletApi, WALLET_DIR_NAME},
     data_payments::{PaymentDetails, PaymentQuote},
-    keys::{get_main_key, store_new_keypair},
+    keys::{get_main_key_from_disk, store_new_keypair},
     wallet_file::{
         get_unconfirmed_spend_requests, load_created_cash_note, remove_cash_notes,
         remove_unconfirmed_spend_requests, store_created_cash_notes,
@@ -22,9 +22,9 @@ use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
-    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
-    MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
-    WalletError, NETWORK_ROYALTIES_PK,
+    CashNote, CashNoteOutputDetails, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash,
+    MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
+    WalletError, CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -36,6 +36,9 @@ use xor_name::XorName;
 
 /// A locked file handle, that when dropped releases the lock.
 pub type WalletExclusiveAccess = File;
+
+// TransactionPayeeDetails: (purpose, amount, address)
+pub type TransactionPayeeDetails = (String, NanoTokens, MainPubkey);
 
 /// A hot-wallet.
 pub struct HotWallet {
@@ -62,12 +65,15 @@ impl HotWallet {
 
     /// reloads the wallet from disk.
     fn reload(&mut self) -> Result<()> {
-        // placeholder random MainSecretKey to take it out
-        let current_key = std::mem::replace(&mut self.key, MainSecretKey::random());
-        let wallet =
-            Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), Some(current_key))?;
+        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None)?;
 
-        // and move the original back in
+        if *wallet.key.secret_key() != *self.key.secret_key() {
+            return Err(WalletError::CurrentAndLoadedKeyMismatch(
+                self.watchonly_wallet.wallet_dir().into(),
+            ));
+        }
+
+        // if it's a matching key, we can overwrite our wallet
         *self = wallet;
         Ok(())
     }
@@ -300,7 +306,7 @@ impl HotWallet {
 
     pub fn build_unsigned_transaction(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<TransactionPayeeDetails>,
         reason_hash: Option<Hash>,
     ) -> Result<UnsignedTransfer> {
         self.watchonly_wallet
@@ -310,14 +316,16 @@ impl HotWallet {
     /// Make a transfer and return all created cash_notes
     pub fn local_send(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<TransactionPayeeDetails>,
         reason_hash: Option<Hash>,
     ) -> Result<Vec<CashNote>> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(purpose, amount, address)| {
+                (amount, purpose, address, DerivationIndex::random(&mut rng))
+            })
             .collect();
 
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -349,7 +357,7 @@ impl HotWallet {
         signed_spends: BTreeSet<SignedSpend>,
         tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, CashNoteOutputDetails>,
     ) -> Result<Vec<CashNote>> {
         let transfer =
             OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
@@ -386,6 +394,7 @@ impl HotWallet {
         for (xorname, (main_pubkey, quote, peer_id_bytes)) in price_map.iter() {
             let storage_payee = (
                 quote.cost,
+                quote.owner.clone(),
                 *main_pubkey,
                 DerivationIndex::random(&mut rng),
                 peer_id_bytes.clone(),
@@ -393,6 +402,7 @@ impl HotWallet {
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
+                CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES.to_string(),
                 *NETWORK_ROYALTIES_PK,
                 DerivationIndex::random(&mut rng),
             );
@@ -410,7 +420,14 @@ impl HotWallet {
         // create offline transfers
         let recipients = recipients_by_xor
             .values()
-            .flat_map(|(node, roy)| vec![(node.0, node.1, node.2), *roy])
+            .flat_map(
+                |((cost, purpose, pubkey, derivation_index, _id_bytes), roy)| {
+                    vec![
+                        (*cost, purpose.clone(), *pubkey, *derivation_index),
+                        roy.clone(),
+                    ]
+                },
+            )
             .collect();
 
         trace!(
@@ -426,13 +443,13 @@ impl HotWallet {
             start.elapsed()
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let reason_hash = Default::default();
+        let input_reason_hash = Hash::hash(b"SPEND_REASON_FOR_STORAGE");
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
             recipients,
             self.address(),
-            reason_hash,
+            input_reason_hash,
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
@@ -449,7 +466,7 @@ impl HotWallet {
             .collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
-            let (pay_amount, node_key, _, peer_id_bytes) = storage_payee;
+            let (pay_amount, _purpose, node_key, _, peer_id_bytes) = storage_payee;
             let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
@@ -464,7 +481,7 @@ impl HotWallet {
             let transfer_for_node = Transfer::transfer_from_cash_note(&cash_note_for_node)?;
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
-            let royalties_key = royalties_payee.1;
+            let royalties_key = royalties_payee.2;
             let royalties_amount = royalties_payee.0;
             let cash_note_for_royalties = cashnotes_to_use
                 .iter()
@@ -591,14 +608,30 @@ impl HotWallet {
     }
 
     /// Loads a serialized wallet from a path.
+    // TODO: what's the behaviour here if path has stored key and we pass one in?
     fn load_from_path_and_key(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
-        let key = match get_main_key(wallet_dir)? {
-            Some(key) => key,
-            None => {
-                let key = main_key.unwrap_or(MainSecretKey::random());
-                store_new_keypair(wallet_dir, &key)?;
-                warn!("No main key found when loading wallet from path, generating a new one with pubkey: {:?}", key.main_pubkey());
+        let key = match get_main_key_from_disk(wallet_dir) {
+            Ok(key) => {
+                if let Some(passed_key) = main_key {
+                    if key.secret_key() != passed_key.secret_key() {
+                        warn!("main_key passed to load_from_path_and_key, but a key was found in the wallet dir. Using the one found in the wallet dir.");
+                    }
+                }
+
                 key
+            }
+            Err(error) => {
+                if let Some(key) = main_key {
+                    store_new_keypair(wallet_dir, &key)?;
+                    key
+                } else {
+                    error!(
+                        "No main key found when loading wallet from path {:?}",
+                        wallet_dir
+                    );
+
+                    return Err(error);
+                }
             }
         };
         let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
@@ -781,7 +814,8 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut depositor = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit_and_store_to_disk(&vec![genesis])?;
@@ -824,8 +858,8 @@ mod tests {
     async fn sending_decreases_balance() -> Result<()> {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
-
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -836,7 +870,11 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let created_cash_notes = sender.local_send(to, None)?;
 
         assert_eq!(1, created_cash_notes.len());
@@ -857,7 +895,9 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -866,7 +906,11 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let _created_cash_notes = sender.local_send(to, None)?;
 
         let deserialized = HotWallet::load_from(&root_dir)?;
@@ -909,8 +953,9 @@ mod tests {
     async fn store_created_cash_note_gives_file_that_try_load_cash_notes_can_use() -> Result<()> {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet)?;
 
-        let mut sender = HotWallet::load_from(&sender_root_dir)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -920,10 +965,17 @@ mod tests {
         // Send to a new address.
         let recipient_root_dir = create_temp_dir();
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
-        let mut recipient = HotWallet::load_from(&recipient_root_dir)?;
+
+        let new_wallet = MainSecretKey::random();
+        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet)?;
+
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(
+            Default::default(),
+            NanoTokens::from(send_amount),
+            recipient_main_pubkey,
+        )];
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
@@ -967,7 +1019,9 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
 
-        let mut sender = HotWallet::load_from(&root_dir)?;
+        let new_wallet = MainSecretKey::random();
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;

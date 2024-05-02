@@ -67,6 +67,7 @@ pub struct NodeBuilder {
     metrics_server_port: u16,
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
+    owner: String,
 }
 
 impl NodeBuilder {
@@ -77,6 +78,7 @@ impl NodeBuilder {
         initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: PathBuf,
+        owner: String,
     ) -> Self {
         Self {
             keypair,
@@ -87,6 +89,7 @@ impl NodeBuilder {
             #[cfg(feature = "open-metrics")]
             metrics_server_port: 0,
             is_behind_home_network: false,
+            owner,
         }
     }
 
@@ -152,6 +155,7 @@ impl NodeBuilder {
             reward_address: Arc::new(reward_address),
             #[cfg(feature = "open-metrics")]
             node_metrics,
+            owner: self.owner.clone(),
         };
         let running_node = RunningNode {
             network,
@@ -184,6 +188,8 @@ pub(crate) struct Node {
     reward_address: Arc<MainPubkey>,
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: NodeMetrics,
+    /// node owner's discord username, in readable format
+    owner: String,
 }
 
 impl Node {
@@ -385,9 +391,10 @@ impl Node {
                 event_header = "QueryRequestReceived";
                 let network = self.network.clone();
                 let payment_address = *self.reward_address;
+                let owner = self.owner.clone();
 
                 let _handle = spawn(async move {
-                    let res = Self::handle_query(&network, query, payment_address).await;
+                    let res = Self::handle_query(&network, query, payment_address, owner).await;
                     trace!("Sending response {res:?}");
 
                     network.send_response(res, channel);
@@ -560,6 +567,7 @@ impl Node {
         network: &Network,
         query: Query,
         payment_address: MainPubkey,
+        owner: String,
     ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
@@ -586,6 +594,7 @@ impl Node {
                                     cost,
                                     &address,
                                     &quoting_metrics,
+                                    owner,
                                 ),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),

@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::UniquePubkey;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, path::PathBuf};
 use thiserror::Error;
 use xor_name::XorName;
 
@@ -17,6 +17,10 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// Transfer errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// The cashnotes that were attempted to be spent have already been spent to another address
+    #[error("Attempted to reload a wallet from disk, but the disk wallet is not the same as the current wallet. Wallet path: {0}")]
+    CurrentAndLoadedKeyMismatch(PathBuf),
+
     /// The cashnotes that were attempted to be spent have already been spent to another address
     #[error("Double spend attempted with cashnotes: {0:?}")]
     DoubleSpendAttemptedForCashNotes(BTreeSet<UniquePubkey>),
@@ -48,6 +52,9 @@ pub enum Error {
     /// Main pub key not found when loading wallet from path
     #[error("Main pub key not found: {0:#?}")]
     PubkeyNotFound(std::path::PathBuf),
+    /// Main secret key not found when loading wallet from path
+    #[error("Main secret key not found: {0:#?}")]
+    MainSecretKeyNotFound(std::path::PathBuf),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,

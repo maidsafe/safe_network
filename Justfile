@@ -98,8 +98,9 @@ build-release-artifacts arch:
       sudo apt update -y
       sudo apt-get install -y musl-tools
     fi
-    rustup target add x86_64-unknown-linux-musl
   fi
+
+  rustup target add {{arch}}
 
   rm -rf artifacts
   mkdir artifacts
@@ -118,6 +119,7 @@ build-release-artifacts arch:
     cross build --release --target $arch --bin safenodemand
     cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin safenode_rpc_client
+    cross build --release --target $arch --bin node-launchpad
   else
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
@@ -125,6 +127,7 @@ build-release-artifacts arch:
     cargo build --release --target $arch --bin safenodemand
     cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin safenode_rpc_client
+    cargo build --release --target $arch --bin node-launchpad
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -168,7 +171,8 @@ package-release-assets bin version="":
 
   bin="{{bin}}"
 
-  supported_bins=("safe" "safenode" "safenode-manager" "safenodemand" "faucet" "safenode_rpc_client")
+  supported_bins=(\
+    "safe" "safenode" "safenode-manager" "safenodemand" "faucet" "safenode_rpc_client" "node-launchpad")
   crate_dir_name=""
 
   # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
@@ -192,6 +196,9 @@ package-release-assets bin version="":
       ;;
     safenode_rpc_client)
       crate_dir_name="sn_node_rpc_client"
+      ;;
+    node-launchpad)
+      crate_dir_name="sn_node_launchpad"
       ;;
     *)
       echo "The $bin binary is not supported"
@@ -234,6 +241,7 @@ upload-github-release-assets:
     "sn-node-manager"
     "sn_faucet"
     "sn_node_rpc_client"
+    "sn_node_launchpad"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -269,6 +277,10 @@ upload-github-release-assets:
           sn_node_rpc_client)
             bin_name="safenode_rpc_client"
             bucket="sn-node-rpc-client"
+            ;;
+          sn_node_launchpad)
+            bin_name="node-launchpad"
+            bucket="sn-node-launchpad"
             ;;
           *)
             echo "The $crate crate is not supported"
@@ -315,6 +327,9 @@ upload-release-assets-to-s3 bin_name:
       ;;
     safenode_rpc_client)
       bucket="sn-node-rpc-client"
+      ;;
+    node-launchpad)
+      bucket="sn-node-launchpad"
       ;;
     *)
       echo "The {{bin_name}} binary is not supported"

@@ -8,6 +8,7 @@
 
 use super::wallet::HotWallet;
 
+use crate::cashnotes::CASHNOTE_PURPOSE_OF_GENESIS;
 use crate::{
     CashNote, DerivationIndex, Hash, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
     Transaction, TransactionBuilder, TransferError as CashNoteError,
@@ -148,7 +149,7 @@ pub fn create_first_cash_note_from_key(
         amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
     };
 
-    let reason = Hash::hash(b"GENESIS");
+    let reason = Hash::hash(b"SPEND_REASON_FOR_GENESIS");
 
     let cash_note_builder = TransactionBuilder::default()
         .add_input(
@@ -159,6 +160,7 @@ pub fn create_first_cash_note_from_key(
         )
         .add_output(
             NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
+            CASHNOTE_PURPOSE_OF_GENESIS.to_string(),
             main_pubkey,
             derivation_index,
         )
@@ -184,13 +186,6 @@ pub fn create_first_cash_note_from_key(
     })?;
 
     Ok(genesis_cash_note)
-}
-
-pub fn create_faucet_wallet() -> HotWallet {
-    let root_dir = get_faucet_data_dir();
-
-    println!("Loading faucet wallet... {root_dir:#?}");
-    HotWallet::load_from(&root_dir).expect("Faucet wallet shall be created successfully.")
 }
 
 // We need deterministic and fix path for the faucet wallet.

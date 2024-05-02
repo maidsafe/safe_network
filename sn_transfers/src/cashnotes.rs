@@ -15,12 +15,17 @@ mod signed_spend;
 mod transaction;
 mod unique_keys;
 
+pub const CASHNOTE_PURPOSE_OF_GENESIS: &str = "GENESIS";
+pub const CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES: &str = "ROYALTY";
+pub const CASHNOTE_PURPOSE_OF_CHANGE: &str = "CHANGE";
+pub const CASHNOTE_PURPOSE_OF_TRANSFER: &str = "TRANSFER";
+
 pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
 pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
 pub use builder::UnsignedTransfer;
-pub use cashnote::CashNote;
+pub use cashnote::{CashNote, CashNoteOutputDetails};
 pub use nano::NanoTokens;
 pub use reason_hash::Hash;
 pub use signed_spend::{SignedSpend, Spend};
@@ -43,12 +48,17 @@ pub(crate) mod tests {
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
+            outputs: vec![Output::new(
+                derived_key.unique_pubkey(),
+                amount,
+                "maidsafe_test".to_string(),
+            )],
         };
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
+            purpose: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -70,12 +80,17 @@ pub(crate) mod tests {
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
+            outputs: vec![Output::new(
+                derived_key.unique_pubkey(),
+                amount,
+                "maidsafe_test".to_string(),
+            )],
         };
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
+            purpose: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -100,13 +115,18 @@ pub(crate) mod tests {
 
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
+            outputs: vec![Output::new(
+                derived_key.unique_pubkey(),
+                amount,
+                "maidsafe_test".to_string(),
+            )],
         };
 
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
+            purpose: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -131,13 +151,18 @@ pub(crate) mod tests {
 
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
+            outputs: vec![Output::new(
+                derived_key.unique_pubkey(),
+                amount,
+                "maidsafe_test".to_string(),
+            )],
         };
 
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
+            purpose: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };

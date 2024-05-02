@@ -150,6 +150,10 @@ struct Opt {
     #[clap(long)]
     local: bool,
 
+    /// Specify the owner(readable discord user name).
+    #[clap(long)]
+    owner: String,
+
     #[cfg(feature = "open-metrics")]
     /// Specify the port for the OpenMetrics server.
     ///
@@ -176,7 +180,10 @@ fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-    debug!("Built with git version: {}", sn_build_info::git_info());
+    debug!(
+        "safenode built with git version: {}",
+        sn_build_info::git_info()
+    );
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 
@@ -192,6 +199,7 @@ fn main() -> Result<()> {
             bootstrap_peers,
             opt.local,
             root_dir,
+            opt.owner.clone(),
         );
         node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]

@@ -27,6 +27,7 @@ pub async fn join(
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
     interval: u64,
+    owner: String,
     node_path: Option<PathBuf>,
     node_version: Option<String>,
     peers: PeersArgs,
@@ -68,6 +69,7 @@ pub async fn join(
     };
     let options = LocalNetworkOptions {
         faucet_bin_path: faucet_path,
+        owner,
         interval,
         join: true,
         node_count: count,
@@ -99,6 +101,7 @@ pub fn kill(keep_directories: bool, verbosity: VerbosityLevel) -> Result<()> {
 pub async fn run(
     build: bool,
     clean: bool,
+    owner: String,
     count: u16,
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
@@ -156,6 +159,7 @@ pub async fn run(
 
     let options = LocalNetworkOptions {
         faucet_bin_path: faucet_path,
+        owner,
         join: false,
         interval,
         node_count: count,

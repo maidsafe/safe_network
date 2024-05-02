@@ -16,9 +16,10 @@ use super::{
 };
 
 use sn_client::{
+    acc_packet::load_account_wallet_or_create_with_mnemonic,
     protocol::storage::{Chunk, RegisterAddress, RetryStrategy},
     registers::EntryHash,
-    transfers::{DerivationIndex, HotWallet, MainSecretKey},
+    transfers::{DerivationIndex, MainSecretKey},
     Client, FilesApi, FolderEntry, FoldersApi, Metadata, UploadCfg, WalletClient,
 };
 
@@ -58,7 +59,7 @@ const ACC_PACKET_OWNER_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0x1;
 /// and tools necessary to keep an instance tracking a local storage path, as well as keeping it in sync
 /// with its remote version stored on the network.
 /// A `Client` and a the location for a funded local hot-wallet are required by this object in order to be able to connect
-/// to the network, paying for data storage, and upload/retrieve information to/from the network.  
+/// to the network, paying for data storage, and upload/retrieve information to/from the network.
 ///
 /// TODO: currently only files and folders are supported, wallets, keys, etc., to be added later.
 ///
@@ -683,8 +684,9 @@ impl AccountPacket {
         let _summary = files_uploader.start_upload().await?;
 
         // Let's make the storage payment for Folders
-        let mut wallet_client =
-            WalletClient::new(self.client.clone(), HotWallet::load_from(&self.wallet_dir)?);
+        let wallet = load_account_wallet_or_create_with_mnemonic(&self.wallet_dir, None)?;
+
+        let mut wallet_client = WalletClient::new(self.client.clone(), wallet);
         let mut net_addresses = vec![];
         let mut new_folders = 0;
         // let's collect list of addresses we need to pay for

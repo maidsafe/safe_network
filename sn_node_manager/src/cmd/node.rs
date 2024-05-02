@@ -16,7 +16,7 @@ use crate::{
     },
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
+    print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
@@ -28,7 +28,7 @@ use sn_service_management::{
     control::{ServiceControl, ServiceController},
     get_local_node_registry_path,
     rpc::RpcClient,
-    NodeRegistry, NodeService, ServiceStatus, UpgradeOptions, UpgradeResult,
+    NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
 use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
@@ -57,9 +57,7 @@ pub async fn add(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Add Safenode Services              ");
-        println!("=================================================");
+        print_banner("Add Safenode Services");
         println!("{} service(s) to be added", count.unwrap_or(1));
     }
 
@@ -81,6 +79,8 @@ pub async fn add(
         download_and_extract_release(ReleaseType::Safenode, url.clone(), version, &*release_repo)
             .await?
     };
+
+    tracing::debug!("peers questions...");
 
     // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
     // manager.
@@ -124,6 +124,7 @@ pub async fn add(
     add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
     node_registry.save()?;
+    tracing::debug!("registery saved......");
 
     Ok(())
 }
@@ -134,9 +135,7 @@ pub async fn balance(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("                 Reward Balances                 ");
-        println!("=================================================");
+        print_banner("Reward Balances");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -173,9 +172,7 @@ pub async fn remove(
         return Err(eyre!("The remove command must run as the root user"));
     }
 
-    println!("=================================================");
-    println!("           Remove Safenode Services              ");
-    println!("=================================================");
+    print_banner("Remove Safenode Services");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(&mut node_registry, &ServiceController {}, true).await?;
@@ -210,9 +207,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
         return Err(eyre!("The reset command must run as the root user"));
     }
 
-    println!("=================================================");
-    println!("           Reset Safenode Services               ");
-    println!("=================================================");
+    print_banner("Reset Safenode Services");
 
     if !force {
         println!("WARNING: all safenode services, data, and logs will be removed.");
@@ -246,9 +241,7 @@ pub async fn start(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("             Start Safenode Services             ");
-        println!("=================================================");
+        print_banner("Start Safenode Services");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -268,8 +261,14 @@ pub async fn start(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity.clone());
-        debug!("Sleeping for {} milliseconds", interval);
-        std::thread::sleep(std::time::Duration::from_millis(interval));
+        if service_manager.service.status() != ServiceStatus::Running {
+            // It would be possible here to check if the service *is* running and then just
+            // continue without applying the delay. The reason for not doing so is because when
+            // `start` is called below, the user will get a message to say the service was already
+            // started, which I think is useful behaviour to retain.
+            debug!("Sleeping for {} milliseconds", interval);
+            std::thread::sleep(std::time::Duration::from_millis(interval));
+        }
         match service_manager.start().await {
             Ok(()) => {
                 node_registry.save()?;
@@ -285,9 +284,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
     let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
     if !local_node_registry.nodes.is_empty() {
         if !json {
-            println!("=================================================");
-            println!("                Local Network                    ");
-            println!("=================================================");
+            print_banner("Local Network");
         }
         status_report(
             &mut local_node_registry,
@@ -303,10 +300,8 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if !node_registry.nodes.is_empty() {
-        if !json {
-            println!("=================================================");
-            println!("                Safenode Services                ");
-            println!("=================================================");
+        if !json && !details {
+            print_banner("Safenode Services");
         }
         status_report(
             &mut node_registry,
@@ -331,9 +326,7 @@ pub async fn stop(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Stop Safenode Services             ");
-        println!("=================================================");
+        print_banner("Stop Safenode Services");
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -386,9 +379,7 @@ pub async fn upgrade(
     let use_force = force || custom_bin_path.is_some();
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("           Upgrade Safenode Services             ");
-        println!("=================================================");
+        print_banner("Upgrade Safenode Services");
     }
 
     let (upgrade_bin_path, target_version) = download_and_get_upgrade_bin_path(
@@ -443,6 +434,12 @@ pub async fn upgrade(
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
+                if upgrade_result != UpgradeResult::NotRequired {
+                    // It doesn't seem useful to apply the interval if there was no upgrade
+                    // required for the previous service.
+                    debug!("Sleeping for {} milliseconds", interval);
+                    std::thread::sleep(std::time::Duration::from_millis(interval));
+                }
                 upgrade_summary.push((
                     service_manager.service.service_data.service_name.clone(),
                     upgrade_result,
