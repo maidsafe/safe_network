@@ -36,6 +36,8 @@ pub enum HomeActions {
     StartNodesCompleted,
     StopNode,
     StopNodeCompleted,
+    RemoveNode,
+    RemoveNodeCompleted,
 
     PreviousTableItem,
     NextTableItem,

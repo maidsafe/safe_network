@@ -4,6 +4,7 @@
       "<a>": {"HomeActions":"AddNode"}, // Add nodes
       "<s>": {"HomeActions":"StartNodes"}, // Start nodes
       "<k>": {"HomeActions":"StopNode"}, // Stop nodes
+      "<r>": {"HomeActions":"RemoveNode"},
       "up" : {"HomeActions":"PreviousTableItem"},
       "down": {"HomeActions":"NextTableItem"},
       "tab": {"TabActions":"NextTab"},
