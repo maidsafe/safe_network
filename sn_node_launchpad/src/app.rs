@@ -8,7 +8,7 @@
 
 use crate::{
     action::Action,
-    components::{home::Home, options::Options, tab::Tab, Component},
+    components::{home::Home, tab::Tab, Component},
     config::Config,
     mode::{InputMode, Scene},
     tui,
@@ -36,12 +36,11 @@ impl App {
         let tab = Tab::default();
         let home = Home::new(peers_args)?;
         let config = Config::new()?;
-        let options = Options::default();
         let scene = tab.get_current_scene();
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(home), Box::new(options), Box::new(tab)],
+            components: vec![Box::new(home), Box::new(tab)],
             should_quit: false,
             should_suspend: false,
             config,
