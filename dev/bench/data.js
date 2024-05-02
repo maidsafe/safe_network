@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714667379130,
+  "lastUpdate": 1714667380731,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30619,45 +30619,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "2b13e887b41acd6fad606a9f9472a9c4eb83176e",
-          "message": "test(CI): upload same file with different names",
-          "timestamp": "2023-12-18T09:54:53Z",
-          "tree_id": "d8c28cbad62f385be51a61b09df2c9a9cc6f0bc3",
-          "url": "https://github.com/maidsafe/safe_network/commit/2b13e887b41acd6fad606a9f9472a9c4eb83176e"
-        },
-        "date": 1702897927640,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4469,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 64729,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 14,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "295fe84bbe00ed6592961fbb0e03e11de23db446",
           "message": "feat(cli): random shuffle upload chunks to allow clients co-operation",
           "timestamp": "2023-12-18T11:56:01Z",
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33884,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bc3cd63be52a8ca8c5f7bbc5e57673793de3b092",
+          "message": "fix: do not create wallet on registry refresh\n\nUse the `try_load_from` mechanism, rather than `try_load`, because the former will not create the\nwallet directory if it does not exist.\n\nThe node manager refreshes its registry when it runs commands like `start` and `stop`, which can be\nrunning as the root user. The refresh now involves getting the balance of the wallet. Therefore,\nwhen `start` ran for the first time, the `try_load` function was creating a directory owned by the\nroot user. This would cause the node to crash because it couldn't write to that directory.\n\nA new Clippy warning is also fixed and I removed the superfluous comments around the code it was\nreferring to.",
+          "timestamp": "2024-05-02T15:43:54Z",
+          "tree_id": "64e8f7e284eb81fa3ca0e4055bdcbf926149bab2",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc3cd63be52a8ca8c5f7bbc5e57673793de3b092"
+        },
+        "date": 1714667380337,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7701,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34232,
             "unit": "ms"
           },
           {
