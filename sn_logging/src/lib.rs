@@ -32,6 +32,7 @@ pub enum LogOutputDest {
     Path(PathBuf),
 }
 
+#[allow(clippy::assigning_clones)]
 fn current_exe_name() -> String {
     std::env::args()
         .next()
