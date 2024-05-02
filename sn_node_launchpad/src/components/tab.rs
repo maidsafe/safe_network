@@ -26,7 +26,7 @@ pub struct Tab {
 impl Default for Tab {
     fn default() -> Self {
         Self {
-            scene_list: vec![Scene::Home, Scene::Options],
+            scene_list: vec![Scene::Home],
             current_tab_index: 0,
         }
     }
