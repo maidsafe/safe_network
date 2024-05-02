@@ -42,10 +42,8 @@ impl Home {
             node_table_state: Default::default(),
             lock_registry: Default::default(),
         };
-        home.load_node_registry()?;
-        if !home.running_nodes.is_empty() {
-            home.node_table_state.select(Some(0));
-        }
+        home.load_node_registry_and_update_states()?;
+
         Ok(home)
     }
 }
@@ -116,13 +114,15 @@ impl Component for Home {
                     error!("Registry is locked. Cannot start node now.");
                     return Ok(None);
                 }
-                info!("Starting Node service");
-                let action_sender = self.get_actions_sender()?;
 
-                self.lock_registry = true;
                 let Some(service_name) = self.get_service_name_of_selected_table_item() else {
                     return Ok(None);
                 };
+                let action_sender = self.get_actions_sender()?;
+                self.lock_registry = true;
+
+                info!("Starting Node service: {service_name:?}");
+
                 tokio::task::spawn_local(async move {
                     // I think using 1 thread is causing us to block on the below start function and not really
                     // having a chance to set lock_registry = true and draw from that state. Since the update is slow,
@@ -152,13 +152,14 @@ impl Component for Home {
                     error!("Registry is locked. Cannot stop node now.");
                     return Ok(None);
                 }
-                info!("Stopping node service");
-                let action_sender = self.get_actions_sender()?;
 
-                self.lock_registry = true;
                 let Some(service_name) = self.get_service_name_of_selected_table_item() else {
                     return Ok(None);
                 };
+                self.lock_registry = true;
+                let action_sender = self.get_actions_sender()?;
+                info!("Stopping node service: {service_name:?}");
+
                 tokio::task::spawn_local(async move {
                     if let Err(err) = sn_node_manager::cmd::node::stop(
                         vec![],
@@ -183,13 +184,13 @@ impl Component for Home {
                     error!("Registry is locked. Cannot remove node now.");
                     return Ok(None);
                 }
-                info!("Removing node service");
-                let action_sender = self.get_actions_sender()?;
 
-                self.lock_registry = true;
                 let Some(service_name) = self.get_service_name_of_selected_table_item() else {
                     return Ok(None);
                 };
+                self.lock_registry = true;
+                let action_sender: UnboundedSender<Action> = self.get_actions_sender()?;
+                info!("Removing node service: {service_name:?}");
 
                 tokio::task::spawn_local(async move {
                     if let Err(err) = sn_node_manager::cmd::node::remove(
@@ -216,7 +217,7 @@ impl Component for Home {
             | Action::HomeActions(HomeActions::StopNodeCompleted)
             | Action::HomeActions(HomeActions::RemoveNodeCompleted) => {
                 self.lock_registry = false;
-                self.load_node_registry()?;
+                self.load_node_registry_and_update_states()?;
             }
             Action::HomeActions(HomeActions::PreviousTableItem) => {
                 self.select_previous_table_item();
@@ -333,7 +334,7 @@ impl Home {
             .ok_or_eyre("Action sender not registered")
     }
 
-    fn load_node_registry(&mut self) -> Result<()> {
+    fn load_node_registry_and_update_states(&mut self) -> Result<()> {
         let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
         self.running_nodes = node_registry
             .nodes
@@ -344,6 +345,10 @@ impl Home {
             "Loaded node registry. Runnign nodes: {:?}",
             self.running_nodes.len()
         );
+
+        if !self.running_nodes.is_empty() && self.node_table_state.selected().is_none() {
+            self.node_table_state.select(Some(0));
+        }
 
         Ok(())
     }
