@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714655478526,
+  "lastUpdate": 1714656390424,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "04db25655a133ba8953461891c3ac039267b6136",
-          "message": "feat(cli): store uploaded file metadata",
-          "timestamp": "2024-01-05T12:44:48Z",
-          "tree_id": "448285e3dea27285617629da3f82d6231311819e",
-          "url": "https://github.com/maidsafe/safe_network/commit/04db25655a133ba8953461891c3ac039267b6136"
-        },
-        "date": 1704461259602,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6570839479251545,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.086813043545819,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 41.07003803161502,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.908143878704905,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "36ac059e4a41cf3cd9d4fb5750e588c9855b764a",
+          "message": "chore: disable network contacts feature flag on launchpad",
+          "timestamp": "2024-05-02T14:14:07+01:00",
+          "tree_id": "877b4faa1f2b88fa434009715d017448472a5d23",
+          "url": "https://github.com/maidsafe/safe_network/commit/36ac059e4a41cf3cd9d4fb5750e588c9855b764a"
+        },
+        "date": 1714656386262,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2461388167573135,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6564263173155847,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.699640338600645,
             "unit": "MiB/s"
           }
         ]
