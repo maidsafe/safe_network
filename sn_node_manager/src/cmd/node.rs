@@ -183,7 +183,9 @@ pub async fn remove(
         return Err(eyre!("The remove command must run as the root user"));
     }
 
-    print_banner("Remove Safenode Services");
+    if verbosity != VerbosityLevel::Minimal {
+        print_banner("Remove Safenode Services");
+    }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
