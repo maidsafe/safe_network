@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714667377618,
+  "lastUpdate": 1714667379130,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20417,40 +20417,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "0d66585f1d7610a9715c8d01f162748df00c4a2d",
-          "message": "feat(safenode): print out error instead of unwrap",
-          "timestamp": "2024-01-05T13:05:42Z",
-          "tree_id": "46a0994f7d88305d902427d296f0b3b48c1640dd",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d66585f1d7610a9715c8d01f162748df00c4a2d"
-        },
-        "date": 1704463001205,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 207,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "be18bc442cb4e9d388ade93a8683403945e101ab",
           "message": "fix: ignore unwraps in protogen files",
@@ -30595,6 +30561,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bc3cd63be52a8ca8c5f7bbc5e57673793de3b092",
+          "message": "fix: do not create wallet on registry refresh\n\nUse the `try_load_from` mechanism, rather than `try_load`, because the former will not create the\nwallet directory if it does not exist.\n\nThe node manager refreshes its registry when it runs commands like `start` and `stop`, which can be\nrunning as the root user. The refresh now involves getting the balance of the wallet. Therefore,\nwhen `start` ran for the first time, the `try_load` function was creating a directory owned by the\nroot user. This would cause the node to crash because it couldn't write to that directory.\n\nA new Clippy warning is also fixed and I removed the superfluous comments around the code it was\nreferring to.",
+          "timestamp": "2024-05-02T15:43:54Z",
+          "tree_id": "64e8f7e284eb81fa3ca0e4055bdcbf926149bab2",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc3cd63be52a8ca8c5f7bbc5e57673793de3b092"
+        },
+        "date": 1714667378740,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
             "unit": "MB"
           },
           {
