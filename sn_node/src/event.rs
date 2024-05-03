@@ -70,6 +70,8 @@ pub enum NodeEvent {
     TerminateNode(String),
     /// StoragePayment notification
     StoragePayments {
+        /// Address of the chunk that the storage payment paid for
+        chunk_address: ChunkAddress,
         /// Address of the spend that contains the claimed storage payment
         spend_address: SpendAddress,
         /// Owner of the node that received the storage payment

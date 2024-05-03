@@ -486,6 +486,7 @@ impl Node {
                 });
             }
             NetworkEvent::StoragePaymentNotification {
+                chunk_addr,
                 spend_addr,
                 owner,
                 royalty,
@@ -503,7 +504,7 @@ impl Node {
                 let network = self.network.clone();
                 let events_channel = self.events_channel.clone();
                 info!("Received StoragePaymentNotification, notifying owner {owner:?} received \
-                    {store_cost} tokens for store_cost and {royalty} tokens for royalty, with spend {spend_addr:?}");
+                    {store_cost} tokens for store_cost and {royalty} tokens for royalty for chunk {chunk_addr:?}, with spend {spend_addr:?}");
                 let _handle = spawn(async move {
                     if let Some((owner, royalty, store_cost)) = network
                         .handle_storage_payment_notification(
@@ -515,6 +516,7 @@ impl Node {
                         .await
                     {
                         events_channel.broadcast(NodeEvent::StoragePayments {
+                            chunk_address: chunk_addr,
                             spend_address,
                             owner,
                             royalty,

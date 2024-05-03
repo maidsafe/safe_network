@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
 
-use crate::{storage::RecordType, NetworkAddress};
+use crate::{storage::RecordType, ChunkAddress, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::{Hash, PaymentQuote};
@@ -43,6 +43,8 @@ pub enum Cmd {
     },
     /// Notify the peer the send received a storage payment
     StoragePaymentReceived {
+        // ChunkAddress the this storage payment is associated with
+        chunk_addr: ChunkAddress,
         // Address of the spend that holding the outputs of the storage payment
         spend_addr: NetworkAddress,
         owner: String,
@@ -78,12 +80,14 @@ impl std::fmt::Debug for Cmd {
                 .field("bad_behaviour", bad_behaviour)
                 .finish(),
             Cmd::StoragePaymentReceived {
+                chunk_addr,
                 spend_addr,
                 owner,
                 royalty,
                 store_cost,
             } => f
                 .debug_struct("Cmd::StoragePaymentReceived")
+                .field("chunk_addr", chunk_addr)
                 .field("spend_addr", spend_addr)
                 .field("owner", owner)
                 .field("royalty", royalty)
@@ -133,6 +137,7 @@ impl std::fmt::Display for Cmd {
                     "Cmd::PeerConsideredAsBad({detected_by:?} consider peer {bad_peer:?} as bad, due to {bad_behaviour:?})")
             }
             Cmd::StoragePaymentReceived {
+                chunk_addr,
                 spend_addr,
                 owner,
                 royalty,
@@ -140,7 +145,7 @@ impl std::fmt::Display for Cmd {
             } => {
                 write!(
                     f,
-                    "Cmd::StoragePaymentReceived({owner} received storage payment {royalty} - {store_cost} within spend {spend_addr:?})")
+                    "Cmd::StoragePaymentReceived({owner} received storage payment {royalty} - {store_cost} regarding chunk {chunk_addr:?} within spend {spend_addr:?})")
             }
         }
     }

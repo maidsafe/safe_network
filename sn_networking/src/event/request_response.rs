@@ -101,6 +101,7 @@ impl SwarmDriver {
                             }
                         }
                         Request::Cmd(sn_protocol::messages::Cmd::StoragePaymentReceived {
+                            chunk_addr,
                             spend_addr,
                             owner,
                             royalty,
@@ -116,6 +117,7 @@ impl SwarmDriver {
                                 .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
 
                             self.send_event(NetworkEvent::StoragePaymentNotification {
+                                chunk_addr,
                                 spend_addr,
                                 owner,
                                 royalty,

@@ -23,6 +23,7 @@ use libp2p::{
 
 use sn_protocol::{
     messages::{Query, Request, Response},
+    storage::ChunkAddress,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::PaymentQuote;
@@ -145,6 +146,7 @@ pub enum NetworkEvent {
     },
     /// Notification from peer claiming received a storage payment
     StoragePaymentNotification {
+        chunk_addr: ChunkAddress,
         spend_addr: NetworkAddress,
         owner: String,
         royalty: u64,
@@ -230,6 +232,7 @@ impl Debug for NetworkEvent {
                 )
             }
             NetworkEvent::StoragePaymentNotification {
+                chunk_addr,
                 spend_addr,
                 owner,
                 royalty,
@@ -237,7 +240,7 @@ impl Debug for NetworkEvent {
             } => {
                 write!(
                     f,
-                    "NetworkEvent::StoragePaymentNotification({spend_addr:?} {owner} {store_cost} {royalty})"
+                    "NetworkEvent::StoragePaymentNotification({chunk_addr:?} {spend_addr:?} {owner} {store_cost} {royalty})"
                 )
             }
         }

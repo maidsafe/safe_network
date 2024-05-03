@@ -16,8 +16,8 @@ use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkEr
 use sn_protocol::{
     messages::{Cmd, CmdOk, Request},
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        SpendAddress,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
+        RecordKind, RecordType, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -66,6 +66,7 @@ impl Node {
                 // The storage payment notification will only be sent out on the first non-existing
                 let royalties_fee = calculate_royalties_fee(store_cost);
                 self.send_storage_payment_notification(
+                    *chunk.address(),
                     NetworkAddress::from_spend_address(spend_address),
                     royalties_fee,
                     store_cost,
@@ -234,11 +235,13 @@ impl Node {
 
     fn send_storage_payment_notification(
         &self,
+        chunk_addr: ChunkAddress,
         spend_addr: NetworkAddress,
         royalties_fee: NanoTokens,
         store_cost: NanoTokens,
     ) {
         let request = Request::Cmd(Cmd::StoragePaymentReceived {
+            chunk_addr,
             spend_addr,
             owner: self.owner.clone(),
             royalty: royalties_fee.as_nano(),
