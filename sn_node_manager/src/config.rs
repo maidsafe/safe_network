@@ -38,6 +38,15 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
     Ok(path.to_path_buf())
 }
 
+#[cfg(windows)]
+pub fn get_node_manager_path() -> Result<PathBuf> {
+    let path = Path::new("C:\\ProgramData\\safenode-manager");
+    if !path.exists() {
+        std::fs::create_dir_all(path)?;
+    }
+    Ok(path.to_path_buf())
+}
+
 #[cfg(unix)]
 pub fn get_node_registry_path() -> Result<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
@@ -63,6 +72,15 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
     }
 
     Ok(node_registry_path)
+}
+
+#[cfg(windows)]
+pub fn get_node_registry_path() -> Result<PathBuf> {
+    let path = Path::new("C:\\ProgramData\\safenode-manager");
+    if !path.exists() {
+        std::fs::create_dir_all(path)?;
+    }
+    Ok(path.join("node_registry.json"))
 }
 
 #[cfg(unix)]
@@ -137,15 +155,6 @@ pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
 pub fn create_owned_dir(path: PathBuf, _owner: &str) -> Result<()> {
     std::fs::create_dir_all(path)?;
     Ok(())
-}
-
-#[cfg(windows)]
-pub fn get_node_registry_path() -> Result<PathBuf> {
-    let path = Path::new("C:\\ProgramData\\safenode-manager");
-    if !path.exists() {
-        std::fs::create_dir_all(path)?;
-    }
-    Ok(path.join("node_registry.json"))
 }
 
 #[cfg(unix)]
