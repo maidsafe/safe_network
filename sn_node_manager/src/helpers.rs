@@ -14,13 +14,14 @@ use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use std::{
+    fs::create_dir_all,
     io::Read,
     path::PathBuf,
     process::{Command, Stdio},
     sync::Arc,
 };
 
-use crate::VerbosityLevel;
+use crate::{config, VerbosityLevel};
 
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
@@ -54,7 +55,7 @@ pub async fn download_and_extract_release(
         callback
     };
 
-    let temp_dir_path = create_temp_dir()?;
+    let mut download_dir_path = create_temp_dir()?;
 
     let mut download_attempts = 1;
     let archive_path = loop {
@@ -67,7 +68,7 @@ pub async fn download_and_extract_release(
                 println!("Retrieving {release_type} from {url}");
             }
             match release_repo
-                .download_release(url, &temp_dir_path, &callback)
+                .download_release(url, &download_dir_path, &callback)
                 .await
             {
                 Ok(archive_path) => break archive_path,
@@ -82,6 +83,8 @@ pub async fn download_and_extract_release(
                 }
             }
         } else {
+            download_dir_path = config::get_node_manager_path()?.join("downloads");
+            create_dir_all(&download_dir_path)?;
             let version = if let Some(version) = version.clone() {
                 Version::parse(&version)?
             } else {
@@ -90,6 +93,20 @@ pub async fn download_and_extract_release(
                 }
                 release_repo.get_latest_version(&release_type).await?
             };
+
+            let archive_name = format!(
+                "{}-{}-{}.{}",
+                release_type.to_string().to_lowercase(),
+                version,
+                &get_running_platform()?,
+                &ArchiveType::TarGz
+            );
+            let archive_path = download_dir_path.join(&archive_name);
+
+            // return if the file has been downloaded already
+            if archive_path.exists() {
+                break archive_path;
+            }
 
             if verbosity != VerbosityLevel::Minimal {
                 println!("Downloading {release_type} version {version}...");
@@ -100,7 +117,7 @@ pub async fn download_and_extract_release(
                     &version,
                     &get_running_platform()?,
                     &ArchiveType::TarGz,
-                    &temp_dir_path,
+                    &download_dir_path,
                     &callback,
                 )
                 .await
@@ -123,7 +140,7 @@ pub async fn download_and_extract_release(
     }
 
     let safenode_download_path =
-        release_repo.extract_release_archive(&archive_path, &temp_dir_path)?;
+        release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
 
     if verbosity != VerbosityLevel::Minimal {
         println!("Download completed: {}", &safenode_download_path.display());
