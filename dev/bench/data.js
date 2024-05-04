@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714863105595,
+  "lastUpdate": 1714863221342,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "26118ec56bb56764dade1d3ecf864908118b58dd",
-          "message": "fix(cli): read datamap when the xor addr of the file is provided",
-          "timestamp": "2024-01-06T13:35:17Z",
-          "tree_id": "da01517da3e1ef2a1439ff4818577e49c8c888d0",
-          "url": "https://github.com/maidsafe/safe_network/commit/26118ec56bb56764dade1d3ecf864908118b58dd"
-        },
-        "date": 1704551277238,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9",
+          "message": "ci: package launcher artifacts\n\nThis was mistakenly not added on the previous commit.",
+          "timestamp": "2024-05-04T23:39:36+01:00",
+          "tree_id": "752185a669ad15843e65117f46e077cb69ef6e14",
+          "url": "https://github.com/maidsafe/safe_network/commit/bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9"
+        },
+        "date": 1714863221044,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
