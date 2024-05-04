@@ -64,6 +64,7 @@ pub async fn add(
             version,
             &*release_repo,
             verbosity,
+            None,
         )
         .await?
     };
