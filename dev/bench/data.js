@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714830539131,
+  "lastUpdate": 1714830540406,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "be18bc442cb4e9d388ade93a8683403945e101ab",
-          "message": "fix: ignore unwraps in protogen files",
-          "timestamp": "2024-01-05T13:48:11Z",
-          "tree_id": "f7f35e90e73ac3dda5675377fe28c196c54dfdde",
-          "url": "https://github.com/maidsafe/safe_network/commit/be18bc442cb4e9d388ade93a8683403945e101ab"
-        },
-        "date": 1704465056565,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 218,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 61,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "920caec314aa6a91b7ee8590ae52fdb4481d7cbd",
+          "message": "feat(manager): reuse downloaded binaries",
+          "timestamp": "2024-05-04T14:28:58+01:00",
+          "tree_id": "252cde9041ca8d8b78fda90961817418523feb56",
+          "url": "https://github.com/maidsafe/safe_network/commit/920caec314aa6a91b7ee8590ae52fdb4481d7cbd"
+        },
+        "date": 1714830540090,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
