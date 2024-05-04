@@ -109,6 +109,7 @@ jobs:
           just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
           just package-release-assets "node-launchpad"
+          just package-release-assets "autonomi-launcher"
       - uses: actions/upload-artifact@main
         with:
           name: packaged_binaries
