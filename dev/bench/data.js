@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714861455528,
+  "lastUpdate": 1714861457449,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8fd56835ae42d864f3984bc941ae523e3ab4cdee",
-          "message": "feat(transfers): spent keys and created for others removed\n\nBREAKING_CHANGE: Updates wallet serialisation\n\nThis should top out the max size of the wallet files",
-          "timestamp": "2023-12-18T15:12:43Z",
-          "tree_id": "223048fa988360920c6c1a3ca2b660f629ea4de0",
-          "url": "https://github.com/maidsafe/safe_network/commit/8fd56835ae42d864f3984bc941ae523e3ab4cdee"
-        },
-        "date": 1702915133971,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4694,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 73442,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32687,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "a58c73a1c4306967e46d9234e8571001ecd27c84",
+          "message": "feat: provide `autonomi-launcher` binary\n\nThis small binary attempts to detect the presence of a terminal executable, then uses it to run the\n`node-launchpad` TUI inside it.\n\nThe TUI is downloaded and stored at `~/.local/bin/autonomi-launcher` on Linux/macOS and\n`%USERPROFILE%\\safe\\autonomi-launcher.exe` on Windows. Right now, the version it downloads is hard\ncoded to `0.1.0-alpha.0`. This can be changed quite easily once we get a new release.\n\nThe launcher is added to the release process as a new binary. However, there is a complication not\nyet dealt with. The `autonomi-launcher` and `node-launchpad` binaries are in the same crate, so the\nprocess for uploading assets to Github releases will need to be modified to accommodate that. We can\ncome back to it.",
+          "timestamp": "2024-05-04T23:09:58+01:00",
+          "tree_id": "2da968e97989aa880744bfc5b78668f3af1c264f",
+          "url": "https://github.com/maidsafe/safe_network/commit/a58c73a1c4306967e46d9234e8571001ecd27c84"
+        },
+        "date": 1714861456874,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7126,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32952,
             "unit": "ms"
           },
           {
