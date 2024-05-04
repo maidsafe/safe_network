@@ -14,6 +14,10 @@ build = "build.rs"
 name = "node-launchpad"
 path = "src/bin/tui/main.rs"
 
+[[bin]]
+name = "autonomi-launcher"
+path = "src/bin/launcher/main.rs"
+
 [dependencies]
 better-panic = "0.3.0"
 clap = { version = "4.4.5", features = [
@@ -29,6 +33,7 @@ config = "0.14.0"
 crossterm = { version = "0.27.0", features = ["serde", "event-stream"] }
 derive_deref = "1.1.1"
 directories = "5.0.1"
+dirs-next = "~2.0.0"
 futures = "0.3.28"
 human-panic = "1.2.0"
 json5 = "0.4.1"
@@ -42,6 +47,7 @@ serde_json = "1.0.107"
 signal-hook = "0.3.17"
 sn-node-manager = { version = "0.7.4", path = "../sn_node_manager" }
 sn_peers_acquisition = { version = "0.2.10", path = "../sn_peers_acquisition" }
+sn-releases = "0.2.1"
 sn_service_management = { version = "0.2.4", path = "../sn_service_management" }
 strip-ansi-escapes = "0.2.0"
 strum = { version = "0.26.1", features = ["derive"] }
@@ -51,6 +57,7 @@ tracing = "0.1.37"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "serde"] }
 tui-input = "0.8.0"
+which = "6.0.1"
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }

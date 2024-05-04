@@ -59,13 +59,20 @@ pub async fn download_and_get_upgrade_bin_path(
             Some(version),
             &*release_repo,
             verbosity,
+            None,
         )
         .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else if let Some(url) = url {
-        let (upgrade_bin_path, version) =
-            download_and_extract_release(release_type, Some(url), None, &*release_repo, verbosity)
-                .await?;
+        let (upgrade_bin_path, version) = download_and_extract_release(
+            release_type,
+            Some(url),
+            None,
+            &*release_repo,
+            verbosity,
+            None,
+        )
+        .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else {
         println!("Retrieving latest version of {}...", release_type);
@@ -77,6 +84,7 @@ pub async fn download_and_get_upgrade_bin_path(
             Some(latest_version.to_string()),
             &*release_repo,
             verbosity,
+            None,
         )
         .await?;
         Ok((upgrade_bin_path, latest_version))
@@ -134,9 +142,15 @@ pub async fn get_bin_path(
     } else if let Some(path) = path {
         Ok(path)
     } else {
-        let (download_path, _) =
-            download_and_extract_release(release_type, None, version, release_repo, verbosity)
-                .await?;
+        let (download_path, _) = download_and_extract_release(
+            release_type,
+            None,
+            version,
+            release_repo,
+            verbosity,
+            None,
+        )
+        .await?;
         Ok(download_path)
     }
 }
