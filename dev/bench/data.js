@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714861453676,
+  "lastUpdate": 1714861455528,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4a3c1eccbe4aecf0a0b3798fd7cee55b6809ec07",
-          "message": "docs: update root docs",
-          "timestamp": "2024-01-05T16:11:18Z",
-          "tree_id": "e1b4ffbeecceb4fd2f8e91d4729aeb730b12c5bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/4a3c1eccbe4aecf0a0b3798fd7cee55b6809ec07"
-        },
-        "date": 1704473955968,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 210,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "a58c73a1c4306967e46d9234e8571001ecd27c84",
+          "message": "feat: provide `autonomi-launcher` binary\n\nThis small binary attempts to detect the presence of a terminal executable, then uses it to run the\n`node-launchpad` TUI inside it.\n\nThe TUI is downloaded and stored at `~/.local/bin/autonomi-launcher` on Linux/macOS and\n`%USERPROFILE%\\safe\\autonomi-launcher.exe` on Windows. Right now, the version it downloads is hard\ncoded to `0.1.0-alpha.0`. This can be changed quite easily once we get a new release.\n\nThe launcher is added to the release process as a new binary. However, there is a complication not\nyet dealt with. The `autonomi-launcher` and `node-launchpad` binaries are in the same crate, so the\nprocess for uploading assets to Github releases will need to be modified to accommodate that. We can\ncome back to it.",
+          "timestamp": "2024-05-04T23:09:58+01:00",
+          "tree_id": "2da968e97989aa880744bfc5b78668f3af1c264f",
+          "url": "https://github.com/maidsafe/safe_network/commit/a58c73a1c4306967e46d9234e8571001ecd27c84"
+        },
+        "date": 1714861454937,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
