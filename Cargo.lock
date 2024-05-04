@@ -5464,7 +5464,7 @@ dependencies = [
  "prost-types",
  "regex",
  "tempfile",
- "which",
+ "which 4.4.2",
 ]
 
 [[package]]
@@ -6588,7 +6588,7 @@ dependencies = [
  "cfg-if",
  "dirs",
  "plist",
- "which",
+ "which 4.4.2",
  "xml-rs",
 ]
 
@@ -6788,9 +6788,9 @@ dependencies = [
 
 [[package]]
 name = "sn-releases"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6a96b5beffe1eb01d46e3270c0b25723ed556cc96d75301c31aacc492057a64"
+checksum = "d010c4c1a610e3a751e5942caf3ec1df54735d57cf66ca88bbedb4a8aab9f2f0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -7144,6 +7144,7 @@ dependencies = [
  "crossterm",
  "derive_deref",
  "directories",
+ "dirs-next",
  "futures",
  "human-panic",
  "json5",
@@ -7156,6 +7157,7 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "sn-node-manager",
+ "sn-releases",
  "sn_peers_acquisition",
  "sn_service_management",
  "strip-ansi-escapes",
@@ -7167,6 +7169,7 @@ dependencies = [
  "tracing-subscriber",
  "tui-input",
  "vergen",
+ "which 6.0.1",
 ]
 
 [[package]]
@@ -8661,6 +8664,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "which"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8211e4f58a2b2805adfbefbc07bab82958fc91e3836339b1ab7ae32465dce0d7"
+dependencies = [
+ "either",
+ "home",
+ "rustix",
+ "winsafe",
+]
+
+[[package]]
 name = "widestring"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8911,6 +8926,12 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "winsafe"
+version = "0.0.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d135d17ab770252ad95e9a872d365cf3090e3be864a34ab46f48555993efc904"
 
 [[package]]
 name = "wyz"

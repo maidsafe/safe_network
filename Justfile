@@ -120,6 +120,7 @@ build-release-artifacts arch:
     cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin safenode_rpc_client
     cross build --release --target $arch --bin node-launchpad
+    cross build --release --target $arch --bin autonomi-launcher
   else
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
@@ -128,6 +129,7 @@ build-release-artifacts arch:
     cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin safenode_rpc_client
     cargo build --release --target $arch --bin node-launchpad
+    cargo build --release --target $arch --bin autonomi-launcher
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -172,7 +174,14 @@ package-release-assets bin version="":
   bin="{{bin}}"
 
   supported_bins=(\
-    "safe" "safenode" "safenode-manager" "safenodemand" "faucet" "safenode_rpc_client" "node-launchpad")
+    "safe" \
+    "safenode" \
+    "safenode-manager" \
+    "safenodemand" \
+    "faucet" \
+    "safenode_rpc_client" \
+    "node-launchpad" \
+    "autonomi-launcher")
   crate_dir_name=""
 
   # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
@@ -198,6 +207,9 @@ package-release-assets bin version="":
       crate_dir_name="sn_node_rpc_client"
       ;;
     node-launchpad)
+      crate_dir_name="sn_node_launchpad"
+      ;;
+    autonomi-launcher)
       crate_dir_name="sn_node_launchpad"
       ;;
     *)
@@ -329,6 +341,9 @@ upload-release-assets-to-s3 bin_name:
       bucket="sn-node-rpc-client"
       ;;
     node-launchpad)
+      bucket="sn-node-launchpad"
+      ;;
+    autonomi-launcher-launchpad)
       bucket="sn-node-launchpad"
       ;;
     *)

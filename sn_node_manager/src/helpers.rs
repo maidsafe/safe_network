@@ -14,7 +14,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use std::{
-    fs::create_dir_all,
     io::Read,
     path::PathBuf,
     process::{Command, Stdio},
@@ -36,6 +35,7 @@ pub async fn download_and_extract_release(
     version: Option<String>,
     release_repo: &dyn SafeReleaseRepoActions,
     verbosity: VerbosityLevel,
+    download_dir_path: Option<PathBuf>,
 ) -> Result<(PathBuf, String)> {
     let mut pb = None;
     let callback = if verbosity != VerbosityLevel::Minimal {
@@ -55,7 +55,18 @@ pub async fn download_and_extract_release(
         callback
     };
 
-    let mut download_dir_path = create_temp_dir()?;
+    let download_dir_path = if let Some(path) = download_dir_path {
+        std::fs::create_dir_all(&path)?;
+        path
+    } else if url.is_some() {
+        create_temp_dir()?
+    } else {
+        // The node manager path can require root access, or can only be accessed by the service
+        // user, which is why we have an optional path for the whole function.
+        let path = config::get_node_manager_path()?.join("downloads");
+        std::fs::create_dir_all(&path)?;
+        path
+    };
 
     let mut download_attempts = 1;
     let archive_path = loop {
@@ -83,8 +94,6 @@ pub async fn download_and_extract_release(
                 }
             }
         } else {
-            download_dir_path = config::get_node_manager_path()?.join("downloads");
-            create_dir_all(&download_dir_path)?;
             let version = if let Some(version) = version.clone() {
                 Version::parse(&version)?
             } else {
@@ -102,8 +111,6 @@ pub async fn download_and_extract_release(
                 &ArchiveType::TarGz
             );
             let archive_path = download_dir_path.join(&archive_name);
-
-            // return if the file has been downloaded already
             if archive_path.exists() {
                 break archive_path;
             }
@@ -177,7 +184,7 @@ pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
 
 /// There is a `tempdir` crate that provides the same kind of functionality, but it was flagged for
 /// a security vulnerability.
-fn create_temp_dir() -> Result<PathBuf> {
+pub fn create_temp_dir() -> Result<PathBuf> {
     let temp_dir = std::env::temp_dir();
     let unique_dir_name = uuid::Uuid::new_v4().to_string();
     let new_temp_dir = temp_dir.join(unique_dir_name);
