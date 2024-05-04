@@ -6,27 +6,36 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod action;
-pub mod app;
-pub mod cli;
-pub mod components;
-pub mod config;
-pub mod mode;
-pub mod tui;
-pub mod utils;
-
-#[macro_use]
-extern crate tracing;
-
 use clap::Parser;
-use cli::Cli;
 use color_eyre::eyre::Result;
 use tokio::task::LocalSet;
 
-use crate::{
+use sn_node_launchpad::{
     app::App,
-    utils::{initialize_logging, initialize_panic_handler},
+    utils::{initialize_logging, initialize_panic_handler, version},
 };
+
+#[derive(Parser, Debug)]
+#[command(author, version = version(), about)]
+pub struct Cli {
+    #[arg(
+        short,
+        long,
+        value_name = "FLOAT",
+        help = "Tick rate, i.e. number of ticks per second",
+        default_value_t = 1.0
+    )]
+    pub tick_rate: f64,
+
+    #[arg(
+        short,
+        long,
+        value_name = "FLOAT",
+        help = "Frame rate, i.e. number of frames per second",
+        default_value_t = 60.0
+    )]
+    pub frame_rate: f64,
+}
 
 async fn tokio_main() -> Result<()> {
     initialize_logging()?;
