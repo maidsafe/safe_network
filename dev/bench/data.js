@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714861457449,
+  "lastUpdate": 1714863105595,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "26118ec56bb56764dade1d3ecf864908118b58dd",
-          "message": "fix(cli): read datamap when the xor addr of the file is provided",
-          "timestamp": "2024-01-06T13:35:17Z",
-          "tree_id": "da01517da3e1ef2a1439ff4818577e49c8c888d0",
-          "url": "https://github.com/maidsafe/safe_network/commit/26118ec56bb56764dade1d3ecf864908118b58dd"
-        },
-        "date": 1704551132079,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6489058744321792,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1019832714185887,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 42.6774062399836,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.36699175959642,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9",
+          "message": "ci: package launcher artifacts\n\nThis was mistakenly not added on the previous commit.",
+          "timestamp": "2024-05-04T23:39:36+01:00",
+          "tree_id": "752185a669ad15843e65117f46e077cb69ef6e14",
+          "url": "https://github.com/maidsafe/safe_network/commit/bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9"
+        },
+        "date": 1714863101362,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2130082744860897,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6647329676489058,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.09498170914756,
             "unit": "MiB/s"
           }
         ]
