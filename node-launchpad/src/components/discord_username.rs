@@ -16,7 +16,6 @@ use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-#[derive(Default)]
 pub struct DiscordUsernameInputBox {
     show_scene: bool,
     discord_input_filed: Input,
@@ -24,35 +23,53 @@ pub struct DiscordUsernameInputBox {
     old_value: String,
 }
 
+impl DiscordUsernameInputBox {
+    pub fn new(username: String) -> Self {
+        Self {
+            show_scene: false,
+            discord_input_filed: Input::default().with_value(username),
+            old_value: Default::default(),
+        }
+    }
+}
+
 impl Component for DiscordUsernameInputBox {
-    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
             KeyCode::Enter => {
-                // todo: save this value
-                Some(Action::SwitchScene(Scene::Home))
+                let username = self.discord_input_filed.value().to_string();
+                debug!("Got Enter, saving the discord username {username:?} and switching scene",);
+                vec![
+                    Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
+                    Action::SwitchScene(Scene::Home),
+                ]
             }
             KeyCode::Esc => {
+                debug!(
+                    "Got Esc, restoring the old value {} and switching to home",
+                    self.old_value
+                );
                 // reset to old value
                 self.discord_input_filed = self
                     .discord_input_filed
                     .clone()
                     .with_value(self.old_value.clone());
-                Some(Action::SwitchScene(Scene::Home))
+                vec![Action::SwitchScene(Scene::Home)]
             }
-            KeyCode::Char(' ') => None,
+            KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
                 self.discord_input_filed.handle_event(&Event::Key(key));
-                None
+                vec![]
             }
             _ => {
                 // max 32 limit as per discord docs
                 if self.discord_input_filed.value().len() >= 32 {
-                    return Ok(None);
+                    return Ok(vec![]);
                 }
                 self.discord_input_filed.handle_event(&Event::Key(key));
-                None
+                vec![]
             }
         };
         Ok(send_back)
@@ -122,8 +139,7 @@ impl Component for DiscordUsernameInputBox {
             layer_one[1].x
                 + ((self.discord_input_filed.visual_cursor()).max(scroll) - scroll) as u16
                 + 1,
-            // Move one line down, from the border to the input line
-            layer_one[1].y + 0,
+            layer_one[1].y,
         );
         f.render_widget(input, layer_one[1]);
 
