@@ -58,6 +58,7 @@ tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "serde"] }
 tui-input = "0.8.0"
 which = "6.0.1"
+nix = { version = "0.28.0", features = ["user"] }
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }
