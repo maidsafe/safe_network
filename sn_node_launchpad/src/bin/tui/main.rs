@@ -7,10 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::eyre::{bail, Result};
+use color_eyre::eyre::Result;
 use std::env;
-use std::process::Command;
 use tokio::task::LocalSet;
+
+mod terminal;
 
 use sn_node_launchpad::{
     app::App,
@@ -51,35 +52,11 @@ async fn tokio_main() -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(windows))]
-fn is_running_root() -> bool {
-    use nix::unistd::geteuid;
-    geteuid().is_root()
-}
-
-#[cfg(windows)]
-fn is_running_root() -> bool {
-    // Example: Attempt to read from a typically restricted system directory
-    std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
-    if !is_running_root() {
-        #[cfg(windows)]
-        {
-            bail!("Admin privilges required to run");
-        }
-
-        // Attempt to elevate privileges using sudo
-        let exe = env::current_exe()?;
-        let status = Command::new("sudo").arg(exe).status()?;
-
-        if !status.success() {
-            bail!("Failed to gain root privileges.");
-        }
-        return Ok(());
-    }
+    // now launch the terminal
+    let terminal_type = terminal::detect_and_setup_terminal()?;
+    terminal::launch_terminal(&terminal_type)?;
 
     // Construct a local task set that can run `!Send` futures.
     let local = LocalSet::new();

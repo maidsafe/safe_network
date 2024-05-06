@@ -7,21 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::{eyre::eyre, eyre::Result};
+use color_eyre::{eyre::bail, eyre::eyre, eyre::Result};
 
-use sn_node_manager::{
-    helpers::{create_temp_dir, download_and_extract_release},
-    VerbosityLevel,
-};
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{path::PathBuf, process::Command};
 use which::which;
 
 #[derive(Debug)]
-enum TerminalType {
+pub(crate) enum TerminalType {
     Alacritty(PathBuf),
     Gnome(PathBuf),
     ITerm2(PathBuf),
@@ -34,7 +26,34 @@ enum TerminalType {
     Xterm(PathBuf),
 }
 
-fn detect_terminal() -> Result<TerminalType> {
+#[cfg(not(windows))]
+fn is_running_root() -> bool {
+    use nix::unistd::geteuid;
+    geteuid().is_root()
+}
+
+#[cfg(windows)]
+fn is_running_root() -> bool {
+    // Example: Attempt to read from a typically restricted system directory
+    std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
+}
+
+pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
+    if !is_running_root() {
+        #[cfg(windows)]
+        {
+            bail!("Admin privilges required to run");
+        }
+
+        // Attempt to elevate privileges using sudo
+        let exe = std::env::current_exe()?;
+        let status = Command::new("sudo").arg(exe).status()?;
+
+        if !status.success() {
+            bail!("Failed to gain root privileges.");
+        }
+    }
+
     if cfg!(target_os = "windows") {
         if let Ok(path) = which("wt.exe") {
             Ok(TerminalType::WindowsTerminal(path))
@@ -95,8 +114,9 @@ fn try_available_linux_terminals() -> Result<TerminalType> {
     }
 }
 
-fn launch_terminal(terminal_type: &TerminalType, launchpad_path: &Path) -> Result<()> {
-    let launchpad_path = launchpad_path.to_string_lossy().to_string();
+pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
+    let launchpad_path = std::env::current_exe()?;
+
     match terminal_type {
         TerminalType::Kitty(path) | TerminalType::Konsole(path) | TerminalType::Xterm(path) => {
             Command::new(path).arg("-e").arg(launchpad_path).spawn()?;
@@ -120,21 +140,8 @@ fn launch_terminal(terminal_type: &TerminalType, launchpad_path: &Path) -> Resul
                 .spawn()?;
             Ok(())
         }
-        TerminalType::MacOS(path) => {
-            Command::new(path)
-                .arg("-e")
-                .arg(format!(
-                    "tell application \"Terminal\" to do script \"sudo {}\"",
-                    launchpad_path
-                ))
-                .spawn()?;
-            Ok(())
-        }
-        TerminalType::ITerm2(path) => {
-            Command::new(path)
-            .arg("-e")
-            .arg(format!("tell application \"iTerm\" to create window with default profile command \"sudo {}\"", launchpad_path))
-            .spawn()?;
+        TerminalType::MacOS(_path) | TerminalType::ITerm2(_path) => {
+            // Nothing necessary at the moment
             Ok(())
         }
         TerminalType::WindowsCmd(path)
@@ -153,54 +160,4 @@ pub struct Cli {
     pub launchpad_path: Option<PathBuf>,
     #[arg(long)]
     pub launchpad_version: Option<String>,
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let args = Cli::parse();
-    let launchpad_path = if let Some(path) = args.launchpad_path {
-        path
-    } else {
-        let path = get_node_launchpad_path()?;
-        if path.exists() {
-            path
-        } else {
-            println!("Retrieving latest version of Node Launchpad...");
-            let release_repo = <dyn SafeReleaseRepoActions>::default_config();
-            let (bin_path, _) = download_and_extract_release(
-                ReleaseType::NodeLaunchpad,
-                None,
-                None,
-                &*release_repo,
-                VerbosityLevel::Normal,
-                Some(create_temp_dir()?),
-            )
-            .await?;
-
-            std::fs::copy(bin_path, path.clone())?;
-            path
-        }
-    };
-
-    let terminal_type = detect_terminal()?;
-    launch_terminal(&terminal_type, &launchpad_path)?;
-    Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn get_node_launchpad_path() -> Result<PathBuf> {
-    let home_dir_path =
-        dirs_next::home_dir().ok_or_else(|| eyre!("Could not retrieve user's home directory"))?;
-    let safe_dir_path = home_dir_path.join("safe");
-    std::fs::create_dir_all(safe_dir_path.clone())?;
-    Ok(safe_dir_path.join("node-launchpad.exe"))
-}
-
-#[cfg(target_family = "unix")]
-fn get_node_launchpad_path() -> Result<PathBuf> {
-    let home_dir_path =
-        dirs_next::home_dir().ok_or_else(|| eyre!("Could not retrieve user's home directory"))?;
-    let safe_dir_path = home_dir_path.join(".local").join("bin");
-    std::fs::create_dir_all(safe_dir_path.clone())?;
-    Ok(safe_dir_path.join("node-launchpad.exe"))
 }
