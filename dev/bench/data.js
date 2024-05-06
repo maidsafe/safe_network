@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714990538636,
+  "lastUpdate": 1715008165386,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "46e2bebae9f052cb9c0f96963ad91b4ab4f5994f",
-          "message": "test(CI): replicate bench with heavy uploads",
-          "timestamp": "2024-01-08T11:28:47Z",
-          "tree_id": "77bcf0d352c1c922e3b57101f87f7abfa86f5d52",
-          "url": "https://github.com/maidsafe/safe_network/commit/46e2bebae9f052cb9c0f96963ad91b4ab4f5994f"
-        },
-        "date": 1704715565473,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6384411009165736,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.078850127922085,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 42.90573897988617,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.31546067132682,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b8094a430614fe6c75f0e0eddcca7f0b79240845",
+          "message": "chore: check DAG crawling performance",
+          "timestamp": "2024-05-06T14:22:58Z",
+          "tree_id": "9bebc727b5ae81432813b1f99f4f79fd3c60da00",
+          "url": "https://github.com/maidsafe/safe_network/commit/b8094a430614fe6c75f0e0eddcca7f0b79240845"
+        },
+        "date": 1715008161017,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.211442878337752,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6229487127275204,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 55.42232526421448,
             "unit": "MiB/s"
           }
         ]
