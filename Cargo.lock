@@ -6660,9 +6660,9 @@ dependencies = [
 
 [[package]]
 name = "service-manager"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ad5944e40978bf513d1402fe23e18743fe604be9e5394d8589ee818ad45f43c"
+checksum = "50c16631fd44f04d00709906a45d999441dc09576128401d63fe250543c48915"
 dependencies = [
  "cfg-if",
  "dirs",
