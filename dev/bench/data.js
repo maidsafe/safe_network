@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715008284244,
+  "lastUpdate": 1715008286206,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4936795c12c0e5b903c22fd4003fa8bcd036f735",
-          "message": "fix(test): tests should try to load just the faucet wallet\n- We start a faucet server before each test, so we should be not trying\n  to load the genesis wallet again, instead try to wait for the faucet\n  wallet to get filled in by the faucet_server",
-          "timestamp": "2023-12-19T12:17:13Z",
-          "tree_id": "f570bb2c76dd2f89056554e3ab5a4207406df75a",
-          "url": "https://github.com/maidsafe/safe_network/commit/4936795c12c0e5b903c22fd4003fa8bcd036f735"
-        },
-        "date": 1702990588665,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4879,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 75840,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 15,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34892,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b8094a430614fe6c75f0e0eddcca7f0b79240845",
+          "message": "chore: check DAG crawling performance",
+          "timestamp": "2024-05-06T14:22:58Z",
+          "tree_id": "9bebc727b5ae81432813b1f99f4f79fd3c60da00",
+          "url": "https://github.com/maidsafe/safe_network/commit/b8094a430614fe6c75f0e0eddcca7f0b79240845"
+        },
+        "date": 1715008285619,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7684,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36140,
             "unit": "ms"
           },
           {
