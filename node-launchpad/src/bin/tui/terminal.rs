@@ -7,8 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::{eyre::bail, eyre::eyre, eyre::Result};
-
+use color_eyre::{eyre::eyre, eyre::Result};
 use std::{path::PathBuf, process::Command};
 use which::which;
 
@@ -42,15 +41,8 @@ pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
     if !is_running_root() {
         #[cfg(windows)]
         {
-            bail!("Admin privilges required to run");
-        }
-
-        // Attempt to elevate privileges using sudo
-        let exe = std::env::current_exe()?;
-        let status = Command::new("sudo").arg(exe).status()?;
-
-        if !status.success() {
-            bail!("Failed to gain root privileges.");
+            // todo: There is no terminal to show this error message when double clicking on the exe.
+            color_eyre::eyre::bail!("Admin privileges required to run");
         }
     }
 
