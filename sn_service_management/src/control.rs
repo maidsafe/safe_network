@@ -8,8 +8,9 @@
 
 use crate::error::{Error, Result};
 use service_manager::{
-    ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
-    ServiceUninstallCtx,
+    LaunchdServiceManager, ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceManagerKind,
+    ServiceStartCtx, ServiceStopCtx, ServiceUninstallCtx, SystemdServiceManager,
+    TypedServiceManager,
 };
 use std::{
     net::{SocketAddr, TcpListener},
@@ -34,6 +35,28 @@ pub trait ServiceControl: Sync {
     fn stop(&self, service_name: &str) -> Result<()>;
     fn uninstall(&self, service_name: &str) -> Result<()>;
     fn wait(&self, delay: u64);
+}
+
+impl dyn ServiceControl {
+    /// Get the Service Manager of the native os running in userspace. Only certain service managers are supported
+    /// currently and there are no clear cut method inside the lib to get this easily, so this gets the job done for now.
+    fn get_native_userspace_service_manager() -> Result<Box<dyn ServiceManager>> {
+        let manager = if cfg!(target_os = "macos") {
+            let typed_service_manager = LaunchdServiceManager::user();
+            Box::new(typed_service_manager)
+        } else if cfg!(target_os = "linux") {
+            let manager = TypedServiceManager::target(ServiceManagerKind::Systemd);
+            if let Ok(true) = manager.available() {
+                let typed_service_manager = SystemdServiceManager::user();
+                Box::new(typed_service_manager)
+            } else {
+                <dyn ServiceManager>::native()?
+            }
+        } else {
+            <dyn ServiceManager>::native()?
+        };
+        Ok(manager)
+    }
 }
 
 pub struct ServiceController {}
@@ -181,28 +204,28 @@ impl ServiceControl for ServiceController {
     }
 
     fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {
-        let manager = <dyn ServiceManager>::native()?;
+        let manager = <dyn ServiceControl>::get_native_userspace_service_manager()?;
         manager.install(install_ctx)?;
         Ok(())
     }
 
     fn start(&self, service_name: &str) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let manager = <dyn ServiceControl>::get_native_userspace_service_manager()?;
         manager.start(ServiceStartCtx { label })?;
         Ok(())
     }
 
     fn stop(&self, service_name: &str) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let manager = <dyn ServiceControl>::get_native_userspace_service_manager()?;
         manager.stop(ServiceStopCtx { label })?;
         Ok(())
     }
 
     fn uninstall(&self, service_name: &str) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let manager = <dyn ServiceControl>::get_native_userspace_service_manager()?;
         match manager.uninstall(ServiceUninstallCtx { label }) {
             Ok(()) => Ok(()),
             Err(e) => match e.kind() {
