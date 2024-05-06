@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
-
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
@@ -46,7 +45,7 @@ impl ServiceControl for ServiceController {
 
         let output = Command::new("id").arg("-u").arg(username).output()?;
         if output.status.success() {
-            println!("The {username} user already exists");
+            tracing::info!("The {username} user already exists");
             return Ok(());
         }
 
@@ -82,7 +81,7 @@ impl ServiceControl for ServiceController {
         if !output.status.success() {
             return Err(Error::ServiceUserAccountCreationFailed);
         }
-        println!("Created {username} user account for running the service");
+        tracing::info!("Created {username} user account for running the service");
         Ok(())
     }
 
