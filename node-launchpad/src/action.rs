@@ -16,6 +16,7 @@ pub enum Action {
     TabActions(TabActions),
     SwitchScene(Scene),
     SwitchInputMode(InputMode),
+    StoreDiscordUserName(String),
 
     Tick,
     Render,

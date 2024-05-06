@@ -11,23 +11,49 @@ use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use ratatui::style::{Color, Modifier, Style};
-use serde::{de::Deserializer, Deserialize};
-use std::{collections::HashMap, path::PathBuf};
+use serde::{de::Deserializer, Deserialize, Serialize};
+use std::collections::HashMap;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
-#[derive(Clone, Debug, Deserialize, Default)]
-pub struct AppConfig {
+#[derive(Clone, Debug, Deserialize, Default, Serialize)]
+pub struct AppData {
     #[serde(default)]
-    pub _data_dir: PathBuf,
-    #[serde(default)]
-    pub _config_dir: PathBuf,
+    pub discord_username: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+impl AppData {
+    pub fn load() -> Result<Self> {
+        let config_dir = crate::utils::get_config_dir()
+            .map_err(|_| color_eyre::eyre::eyre!("Could not obtain config dir"))?;
+        let config_path = config_dir.join("app_data.json");
+
+        if !config_path.exists() {
+            return Ok(Self::default());
+        }
+
+        let data = std::fs::read_to_string(config_path)
+            .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
+        let app_data: AppData = serde_json::from_str(&data)
+            .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
+
+        Ok(app_data)
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let config_dir = crate::utils::get_config_dir()
+            .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?;
+
+        let config_path = config_dir.join("app_data.json");
+        let serialized_config = serde_json::to_string_pretty(&self)?;
+        std::fs::write(config_path, serialized_config)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
-    #[serde(default, flatten)]
-    pub config: AppConfig,
     #[serde(default)]
     pub keybindings: KeyBindings,
     #[serde(default)]
@@ -90,7 +116,7 @@ impl Config {
     }
 }
 
-#[derive(Clone, Debug, Default, Deref, DerefMut)]
+#[derive(Clone, Debug, Default, Deref, DerefMut, Serialize)]
 pub struct KeyBindings(pub HashMap<Scene, HashMap<Vec<KeyEvent>, Action>>);
 
 impl<'de> Deserialize<'de> for KeyBindings {
@@ -286,7 +312,7 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
     sequences.into_iter().map(parse_key_event).collect()
 }
 
-#[derive(Clone, Debug, Default, Deref, DerefMut)]
+#[derive(Clone, Debug, Default, Deref, DerefMut, Serialize)]
 pub struct Styles(pub HashMap<Scene, HashMap<String, Style>>);
 
 impl<'de> Deserialize<'de> for Styles {
