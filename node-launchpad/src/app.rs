@@ -11,7 +11,7 @@ use crate::{
     components::{
         discord_username::DiscordUsernameInputBox, footer::Footer, home::Home, tab::Tab, Component,
     },
-    config::Config,
+    config::{AppData, Config},
     mode::{InputMode, Scene},
     tui,
 };
@@ -22,6 +22,7 @@ use tokio::sync::mpsc;
 
 pub struct App {
     pub config: Config,
+    pub app_data: AppData,
     pub tick_rate: f64,
     pub frame_rate: f64,
     pub components: Vec<Box<dyn Component>>,
@@ -37,10 +38,14 @@ impl App {
         let tab = Tab::default();
         let home = Home::new()?;
         let config = Config::new()?;
-        let discord_username_input = DiscordUsernameInputBox::default();
+        let app_data = AppData::load()?;
+        let discord_username_input =
+            DiscordUsernameInputBox::new(app_data.discord_username.clone());
         let footer = Footer::default();
         let scene = tab.get_current_scene();
         Ok(Self {
+            config,
+            app_data,
             tick_rate,
             frame_rate,
             components: vec![
@@ -51,7 +56,6 @@ impl App {
             ],
             should_quit: false,
             should_suspend: false,
-            config,
             input_mode: InputMode::Navigation,
             scene,
             last_tick_key_events: Vec::new(),
@@ -106,7 +110,8 @@ impl App {
                             };
                         } else if self.input_mode == InputMode::Entry {
                             for component in self.components.iter_mut() {
-                                if let Some(action) = component.handle_events(Some(e.clone()))? {
+                                let send_back_actions = component.handle_events(Some(e.clone()))?;
+                                for action in send_back_actions {
                                     action_tx.send(action)?;
                                 }
                             }
@@ -159,6 +164,11 @@ impl App {
                     Action::SwitchInputMode(mode) => {
                         info!("Input mode switched to: {mode:?}");
                         self.input_mode = mode;
+                    }
+                    Action::StoreDiscordUserName(ref username) => {
+                        debug!("Storing discord username: {username:?}");
+                        self.app_data.discord_username.clone_from(username);
+                        self.app_data.save()?;
                     }
                     _ => {}
                 }

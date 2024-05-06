@@ -99,7 +99,7 @@ pub fn initialize_logging() -> Result<()> {
     std::env::set_var(
         "RUST_LOG",
         std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| format!("{}=info,debug", env!("CARGO_CRATE_NAME"))),
+            .unwrap_or_else(|_| format!("{}=trace,debug", env!("CARGO_CRATE_NAME"))),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)
