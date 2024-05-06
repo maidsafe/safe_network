@@ -13,7 +13,7 @@ use tokio::task::LocalSet;
 
 mod terminal;
 
-use sn_node_launchpad::{
+use node_launchpad::{
     app::App,
     utils::{initialize_logging, initialize_panic_handler, version},
 };

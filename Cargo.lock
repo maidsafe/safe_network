@@ -4604,7 +4604,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "node_launchpad"
+name = "node-launchpad"
 version = "0.1.0"
 dependencies = [
  "better-panic",
