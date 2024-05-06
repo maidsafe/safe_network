@@ -81,8 +81,7 @@ impl NodeBuilder {
         local: bool,
         root_dir: PathBuf,
         owner: String,
-        #[cfg(feature = "upnp")]
-        upnp: bool,
+        #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
             keypair,
