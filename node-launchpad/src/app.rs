@@ -8,7 +8,9 @@
 
 use crate::{
     action::Action,
-    components::{discord_username::DiscordUsernameInputBox, home::Home, tab::Tab, Component},
+    components::{
+        discord_username::DiscordUsernameInputBox, footer::Footer, home::Home, tab::Tab, Component,
+    },
     config::Config,
     mode::{InputMode, Scene},
     tui,
@@ -36,6 +38,7 @@ impl App {
         let home = Home::new()?;
         let config = Config::new()?;
         let discord_username_input = DiscordUsernameInputBox::default();
+        let footer = Footer::default();
         let scene = tab.get_current_scene();
         Ok(Self {
             tick_rate,
@@ -44,6 +47,7 @@ impl App {
                 Box::new(home),
                 Box::new(discord_username_input),
                 Box::new(tab),
+                Box::new(footer),
             ],
             should_quit: false,
             should_suspend: false,
