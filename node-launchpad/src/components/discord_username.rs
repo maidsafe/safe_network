@@ -20,13 +20,26 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 pub struct DiscordUsernameInputBox {
     show_scene: bool,
     discord_input_filed: Input,
+    // cache the old value incase user presses Esc.
+    old_value: String,
 }
 
 impl Component for DiscordUsernameInputBox {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
-            KeyCode::Enter => Some(Action::SwitchScene(Scene::Home)),
+            KeyCode::Enter => {
+                // todo: save this value
+                Some(Action::SwitchScene(Scene::Home))
+            }
+            KeyCode::Esc => {
+                // reset to old value
+                self.discord_input_filed = self
+                    .discord_input_filed
+                    .clone()
+                    .with_value(self.old_value.clone());
+                Some(Action::SwitchScene(Scene::Home))
+            }
             KeyCode::Char(' ') => None,
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
@@ -50,6 +63,7 @@ impl Component for DiscordUsernameInputBox {
             Action::SwitchScene(scene) => match scene {
                 Scene::DiscordUsernameInputBox => {
                     self.show_scene = true;
+                    self.old_value = self.discord_input_filed.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
