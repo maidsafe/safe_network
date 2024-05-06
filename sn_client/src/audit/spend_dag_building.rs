@@ -70,7 +70,10 @@ impl Client {
 
             // get all spends in parallel
             let mut stream = futures::stream::iter(addrs.clone())
-                .map(|a| async move { (self.get_spend_from_network(a).await, a) })
+                // For crawling, a special fetch policy is deployed to improve the performance:
+                //   1, Expect `majority` copies as it is a `Spend`;
+                //   2, But don't retry as most will be `UTXO` which won't be found.
+                .map(|a| async move { (self.crawl_spend_from_network(a).await, a) })
                 .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
             info!(
                 "Gen {gen} - Getting {} spends from {} txs in batches of: {}",
@@ -83,6 +86,7 @@ impl Client {
             while let Some((res, addr)) = stream.next().await {
                 match res {
                     Ok(spend) => {
+                        info!("Fetched spend {addr:?} from network.");
                         dag.insert(addr, spend.clone());
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
                     }
