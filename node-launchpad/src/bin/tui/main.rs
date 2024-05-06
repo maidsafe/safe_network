@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
     local
         .run_until(async {
             if let Err(e) = tokio_main().await {
-                eprintln!("{} error: Something went wrong", env!("CARGO_PKG_NAME"));
+                eprintln!("{} failed:", env!("CARGO_PKG_NAME"));
                 Err(e)
             } else {
                 Ok(())
