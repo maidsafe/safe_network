@@ -25,11 +25,11 @@ pub struct Options {
 }
 
 impl Component for Options {
-    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         match key.code {
             KeyCode::Esc => {
-                return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
+                return Ok(vec![Action::SwitchInputMode(InputMode::Navigation)]);
             }
             KeyCode::Down => {
                 // self.select_next_input_field();
@@ -40,7 +40,7 @@ impl Component for Options {
             _ => {}
         }
         self.input.handle_event(&Event::Key(key));
-        Ok(None)
+        Ok(vec![])
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
