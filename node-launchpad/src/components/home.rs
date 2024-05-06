@@ -250,6 +250,7 @@ impl Component for Home {
                 Constraint::Max(1),
                 Constraint::Min(5),
                 Constraint::Min(3),
+                // footer
                 Constraint::Max(3),
             ],
         )
@@ -306,15 +307,6 @@ impl Component for Home {
             .highlight_symbol(">");
 
         f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
-
-        f.render_widget(
-            Paragraph::new("[A]dd node, [S]tart node, [K]ill node, [R]emove node, [Q]uit").block(
-                Block::default()
-                    .title(" Key commands ")
-                    .borders(Borders::ALL),
-            ),
-            layer_zero[3],
-        );
 
         // popup
         if self.lock_registry {

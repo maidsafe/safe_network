@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub mod discord_username;
+pub mod footer;
 pub mod home;
 pub mod options;
 pub mod tab;
