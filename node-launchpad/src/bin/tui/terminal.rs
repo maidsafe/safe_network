@@ -7,8 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::{eyre::eyre, eyre::Result};
-use std::{path::PathBuf, process::Command};
+use color_eyre::eyre::{bail, eyre, Result};
+use std::{
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 use which::which;
 
 #[derive(Debug)]
@@ -39,7 +42,7 @@ fn is_running_root() -> bool {
 
 pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
     if !is_running_root() {
-        #[cfg(windows)]
+        #[cfg(target_os = "windows")]
         {
             // todo: There is no terminal to show this error message when double clicking on the exe.
             color_eyre::eyre::bail!("Admin privileges required to run");
@@ -133,7 +136,18 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
             Ok(())
         }
         TerminalType::MacOS(_path) | TerminalType::ITerm2(_path) => {
-            // Nothing necessary at the moment
+            // We need to detect here to avoid a loop on mac
+            // as the terminal is booted by default
+            if !is_running_root() {
+                let status = Command::new("sudo")
+                    .arg(launchpad_path)
+                    .stdin(Stdio::inherit())
+                    .stdout(Stdio::inherit())
+                    .status()?;
+                if !status.success() {
+                    bail!("Failed to run as root");
+                }
+            }
             Ok(())
         }
         TerminalType::WindowsCmd(path)
