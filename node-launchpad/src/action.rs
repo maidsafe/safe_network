@@ -39,6 +39,8 @@ pub enum HomeActions {
     RemoveNode,
     RemoveNodeCompleted,
 
+    InputDiscordUsername,
+
     PreviousTableItem,
     NextTableItem,
 }

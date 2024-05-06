@@ -13,6 +13,7 @@ pub enum Scene {
     #[default]
     Home,
     Options,
+    DiscordUsernameInputBox,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
