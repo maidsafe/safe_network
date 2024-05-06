@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{Component, Frame};
+use super::{utils::centered_rect, Component, Frame};
 use crate::{
     action::{Action, HomeActions},
     config::Config,
-    mode::Scene,
+    mode::{InputMode, Scene},
 };
 use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
@@ -62,7 +62,12 @@ impl Component for Home {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::Home => self.show_scene = true,
+                Scene::Home => {
+                    self.show_scene = true;
+                    // make sure we're in navigation mode
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
+                }
+                Scene::DiscordUsernameInputBox => self.show_scene = true,
                 _ => self.show_scene = false,
             },
             Action::HomeActions(HomeActions::AddNode) => {
@@ -219,6 +224,9 @@ impl Component for Home {
                 self.lock_registry = false;
                 self.load_node_registry_and_update_states()?;
             }
+            Action::HomeActions(HomeActions::InputDiscordUsername) => {
+                return Ok(Some(Action::SwitchScene(Scene::DiscordUsernameInputBox)));
+            }
             Action::HomeActions(HomeActions::PreviousTableItem) => {
                 self.select_previous_table_item();
             }
@@ -246,7 +254,7 @@ impl Component for Home {
             ],
         )
         .split(area);
-        let popup_area = Self::centered_rect(25, 25, area);
+        let popup_area = centered_rect(25, 25, area);
 
         // top section
         //
@@ -394,22 +402,5 @@ impl Home {
         self.running_nodes
             .get(service_idx)
             .map(|data| data.service_name.clone())
-    }
-
-    /// helper function to create a centered rect using up certain percentage of the available rect `r`
-    fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-        let popup_layout = Layout::vertical([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(r);
-
-        Layout::horizontal([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1]
     }
 }
