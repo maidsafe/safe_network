@@ -82,7 +82,7 @@ changelog_include = [
 ]
 
 [[package]]
-name = "sn_node_launchpad"
+name = "node-launchpad"
 changelog_update = true
 git_release_enable = true
 publish = true

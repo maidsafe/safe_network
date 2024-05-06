@@ -207,10 +207,10 @@ package-release-assets bin version="":
       crate_dir_name="sn_node_rpc_client"
       ;;
     node-launchpad)
-      crate_dir_name="sn_node_launchpad"
+      crate_dir_name="node-launchpad"
       ;;
     autonomi-launcher)
-      crate_dir_name="sn_node_launchpad"
+      crate_dir_name="node-launchpad"
       ;;
     *)
       echo "The $bin binary is not supported"
@@ -253,7 +253,7 @@ upload-github-release-assets:
     "sn-node-manager"
     "sn_faucet"
     "sn_node_rpc_client"
-    "sn_node_launchpad"
+    "node-launchpad"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -290,9 +290,9 @@ upload-github-release-assets:
             bin_name="safenode_rpc_client"
             bucket="sn-node-rpc-client"
             ;;
-          sn_node_launchpad)
+          node-launchpad)
             bin_name="node-launchpad"
-            bucket="sn-node-launchpad"
+            bucket="node-launchpad"
             ;;
           *)
             echo "The $crate crate is not supported"
