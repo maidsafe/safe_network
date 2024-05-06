@@ -6,11 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::path::PathBuf;
-
 use color_eyre::eyre::Result;
-use directories::ProjectDirs;
-use lazy_static::lazy_static;
+use std::path::PathBuf;
 use tracing::error;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
@@ -25,24 +22,6 @@ const VERSION_MESSAGE: &str = concat!(
     env!("VERGEN_BUILD_DATE"),
     ")"
 );
-
-lazy_static! {
-    pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase().to_string();
-    pub static ref DATA_FOLDER: Option<PathBuf> =
-        std::env::var(format!("{}_DATA", PROJECT_NAME.clone()))
-            .ok()
-            .map(PathBuf::from);
-    pub static ref CONFIG_FOLDER: Option<PathBuf> =
-        std::env::var(format!("{}_CONFIG", PROJECT_NAME.clone()))
-            .ok()
-            .map(PathBuf::from);
-    pub static ref LOG_ENV: String = format!("{}_LOGLEVEL", PROJECT_NAME.clone());
-    pub static ref LOG_FILE: String = format!("{}.log", env!("CARGO_PKG_NAME"));
-}
-
-fn project_directory() -> Option<ProjectDirs> {
-    ProjectDirs::from("com", "maidsafe", env!("CARGO_PKG_NAME"))
-}
 
 pub fn initialize_panic_handler() -> Result<()> {
     let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
@@ -96,38 +75,31 @@ pub fn initialize_panic_handler() -> Result<()> {
     Ok(())
 }
 
-pub fn get_data_dir() -> PathBuf {
-    let directory = if let Some(s) = DATA_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.data_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".data")
-    };
-    directory
+pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
+    home_dirs.push("safe");
+    home_dirs.push("launchpad");
+    std::fs::create_dir_all(home_dirs.as_path())?;
+    Ok(home_dirs)
 }
 
-pub fn get_config_dir() -> PathBuf {
-    let directory = if let Some(s) = CONFIG_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.config_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".config")
-    };
-    directory
+pub fn get_config_dir() -> Result<PathBuf> {
+    let config_dir = get_launchpad_data_dir_path()?.join("config");
+    std::fs::create_dir_all(&config_dir)?;
+    Ok(config_dir)
 }
 
 pub fn initialize_logging() -> Result<()> {
-    let directory = get_data_dir();
-    std::fs::create_dir_all(directory.clone())?;
-    let log_path = directory.join(LOG_FILE.clone());
-    let log_file = std::fs::File::create(log_path)?;
+    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+    let log_path = get_launchpad_data_dir_path()?
+        .join("logs")
+        .join(format!("log_{timestamp}"));
+    std::fs::create_dir_all(&log_path)?;
+    let log_file = std::fs::File::create(log_path.join("launchpad.log"))?;
     std::env::set_var(
         "RUST_LOG",
         std::env::var("RUST_LOG")
-            .or_else(|_| std::env::var(LOG_ENV.clone()))
-            .unwrap_or_else(|_| format!("{}=info", env!("CARGO_CRATE_NAME"))),
+            .unwrap_or_else(|_| format!("{}=info,debug", env!("CARGO_CRATE_NAME"))),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)
@@ -172,9 +144,7 @@ macro_rules! trace_dbg {
 pub fn version() -> String {
     let author = clap::crate_authors!();
 
-    // let current_exe_path = PathBuf::from(clap::crate_name!()).display().to_string();
-    let config_dir_path = get_config_dir().display().to_string();
-    let data_dir_path = get_data_dir().display().to_string();
+    let data_dir_path = get_launchpad_data_dir_path().unwrap().display().to_string();
 
     format!(
         "\
@@ -182,7 +152,6 @@ pub fn version() -> String {
 
 Authors: {author}
 
-Config directory: {config_dir_path}
 Data directory: {data_dir_path}"
     )
 }
