@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1714990411292,
+  "lastUpdate": 1714990535584,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11712,35 +11712,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256",
-          "message": "fix(client): reset sequential_payment_fails on batch upload success",
-          "timestamp": "2024-01-08T10:53:03Z",
-          "tree_id": "7c7ac0f13a6ed0b58fcebe4580decd1e8c86595f",
-          "url": "https://github.com/maidsafe/safe_network/commit/ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256"
-        },
-        "date": 1704714453591,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1f13f66893ef9f00720df8555e635866de4bc68c",
+          "message": "style: cargo fmt",
+          "timestamp": "2024-05-06T09:20:45Z",
+          "tree_id": "0d0e356d70f4c7d2dd943c88b523dabed9a51c05",
+          "url": "https://github.com/maidsafe/safe_network/commit/1f13f66893ef9f00720df8555e635866de4bc68c"
+        },
+        "date": 1714990535199,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
