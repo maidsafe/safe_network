@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715042004071,
+  "lastUpdate": 1715042005825,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f02a1cf49c2e91e7bf331d341c0dd80b812324da",
-          "message": "docs: more doc updates to readme files",
-          "timestamp": "2024-01-08T12:16:21Z",
-          "tree_id": "070a72574e79f4e9b13299dee5503f6d12044346",
-          "url": "https://github.com/maidsafe/safe_network/commit/f02a1cf49c2e91e7bf331d341c0dd80b812324da"
-        },
-        "date": 1704718725350,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 213,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 62,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1",
+          "message": "feat(launchpad): ensure start mac launchapd with sudo only if not set",
+          "timestamp": "2024-05-07T09:19:28+09:00",
+          "tree_id": "067f44435f18359fe969d91164280b6a4c35257e",
+          "url": "https://github.com/maidsafe/safe_network/commit/fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1"
+        },
+        "date": 1715042005231,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
