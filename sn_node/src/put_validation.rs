@@ -7,19 +7,22 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
-use libp2p::kad::{Record, RecordKey};
-use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
+use futures::future::join_all;
+use libp2p::kad::{Quorum, Record, RecordKey};
+use sn_networking::{
+    get_raw_signed_spends_from_record, GetRecordError, NetworkError, PutRecordCfg,
+};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        SpendAddress,
+        RetryStrategy, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
+    calculate_royalties_fee, CashNote, CashNoteRedemption, Hash, HotWallet, NanoTokens, Payment,
     SignedSpend, Transfer, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
@@ -502,7 +505,7 @@ impl Node {
             .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
             .await?;
 
-        trace!("Received payment of {received_fee:?} for {pretty_key}");
+        trace!("Reward forwarding received payment of {received_fee:?} for {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network.notify_payment_received();
@@ -511,9 +514,15 @@ impl Node {
         wallet.deposit_and_store_to_disk(&cash_notes)?;
         let new_balance = wallet.balance().as_nano();
         info!(
-            "The new wallet balance is {new_balance}, after earning {}",
+            "The new wallet balance is {new_balance}, after earning {}, old_balance is {old_balance}",
             new_balance - old_balance
         );
+
+        #[cfg(feature = "reward-forward")]
+        // Forwarding the reward to the specified address
+        if let Err(error) = self.forward_reward(received_fee, &mut wallet).await {
+            error!("reward forwarding completed with error {error:?}");
+        }
 
         #[cfg(feature = "open-metrics")]
         let _ = self
@@ -549,6 +558,89 @@ impl Node {
         }
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
+
+        Ok(())
+    }
+
+    #[cfg(feature = "reward-forward")]
+    async fn forward_reward(&self, amount: NanoTokens, wallet: &mut HotWallet) -> Result<()> {
+        info!("Reward forwarding {amount:?} ...");
+        let payee = vec![(
+            "reward collector".to_string(),
+            amount,
+            *NETWORK_ROYALTIES_PK,
+        )];
+        let _send_out_cash_notes =
+            wallet.local_send(payee, Some(Hash::hash(&self.owner.clone().into_bytes())))?;
+
+        let spend_requests = wallet.unconfirmed_spend_requests();
+
+        let mut tasks = Vec::new();
+        let record_kind = RecordKind::Spend;
+        let put_cfg = PutRecordCfg {
+            put_quorum: Quorum::All,
+            retry_strategy: Some(RetryStrategy::Persistent),
+            use_put_record_to: None,
+            verification: None,
+        };
+
+        for spend_request in spend_requests {
+            let unique_pubkey = *spend_request.unique_pubkey();
+            debug!("Reward forwarding to the network: {unique_pubkey:?}: {spend_request:#?}");
+
+            let network_clone = self.network.clone();
+            let put_cfg_clone = put_cfg.clone();
+
+            let the_task = async move {
+                let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
+                let network_address = NetworkAddress::from_spend_address(cash_note_addr);
+                let spend_key = spend_request.unique_pubkey();
+
+                let value = if let Ok(value) = try_serialize_record(&[spend_request], record_kind) {
+                    value
+                } else {
+                    return (
+                        spend_key,
+                        Err(NetworkError::InvalidTransfer(
+                            "Failed to serialise spend during reward forwarding".to_string(),
+                        )),
+                    );
+                };
+
+                let key = network_address.to_record_key();
+                let record = Record {
+                    key,
+                    value: value.to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+
+                let result = network_clone.put_record(record, &put_cfg_clone).await;
+
+                (spend_key, result)
+            };
+            tasks.push(the_task);
+        }
+
+        let mut errors = vec![];
+        for (spend_key, spend_attempt_result) in join_all(tasks).await {
+            match spend_attempt_result {
+                Err(e) => {
+                    warn!(
+                        "Reward forwarding errored out when sent to the network {spend_key:?}: {e}"
+                    );
+                    errors.push((spend_key, e));
+                }
+                Ok(()) => {
+                    trace!("Reward forwarding was successfully sent to the network: {spend_key:?}");
+                }
+            }
+        }
+        if errors.is_empty() {
+            wallet.clear_confirmed_spend_requests();
+        }
+
+        info!("Forwarding reward {amount:?} completed");
 
         Ok(())
     }

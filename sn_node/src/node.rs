@@ -197,7 +197,7 @@ pub(crate) struct Node {
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: NodeMetrics,
     /// node owner's discord username, in readable format
-    owner: String,
+    pub(crate) owner: String,
 }
 
 impl Node {
