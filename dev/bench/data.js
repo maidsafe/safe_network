@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715008286206,
+  "lastUpdate": 1715041889211,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f02a1cf49c2e91e7bf331d341c0dd80b812324da",
-          "message": "docs: more doc updates to readme files",
-          "timestamp": "2024-01-08T12:16:21Z",
-          "tree_id": "070a72574e79f4e9b13299dee5503f6d12044346",
-          "url": "https://github.com/maidsafe/safe_network/commit/f02a1cf49c2e91e7bf331d341c0dd80b812324da"
-        },
-        "date": 1704718569009,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6378906935389754,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0848689539578373,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 42.83656293829061,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.42232526421448,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1",
+          "message": "feat(launchpad): ensure start mac launchapd with sudo only if not set",
+          "timestamp": "2024-05-07T09:19:28+09:00",
+          "tree_id": "067f44435f18359fe969d91164280b6a4c35257e",
+          "url": "https://github.com/maidsafe/safe_network/commit/fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1"
+        },
+        "date": 1715041884735,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2205433219536541,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6669081454543568,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.90361369493903,
             "unit": "MiB/s"
           }
         ]
