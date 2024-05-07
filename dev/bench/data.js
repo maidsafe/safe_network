@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715042007743,
+  "lastUpdate": 1715055883995,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "05da1300aa51f05dba2c57e529a8e4514125fba6",
-          "message": "chore(node): simplify GetStoreCost flow",
-          "timestamp": "2024-01-08T12:49:59Z",
-          "tree_id": "93e7265d9221c579e0ac16e9837bfcbf98cc2e7e",
-          "url": "https://github.com/maidsafe/safe_network/commit/05da1300aa51f05dba2c57e529a8e4514125fba6"
-        },
-        "date": 1704720566573,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6546848301275439,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0776867128303653,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 40.58193217199828,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.90361369493903,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a96ee615673fdaf8ba12254e9970a954e806ab5d",
+          "message": "chore(ci): allow publish of creates from stable branch\n\nThis strips the workspace publish=false,\nallowing subsequent release-plz invocations to publish crates",
+          "timestamp": "2024-05-07T13:12:36+09:00",
+          "tree_id": "90b5e5af5bfc52ebc53b80066ff5e32faf360058",
+          "url": "https://github.com/maidsafe/safe_network/commit/a96ee615673fdaf8ba12254e9970a954e806ab5d"
+        },
+        "date": 1715055879880,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.219930033729734,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.649618035282426,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.15456153470433,
             "unit": "MiB/s"
           }
         ]
