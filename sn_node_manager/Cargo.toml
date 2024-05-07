@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn-node-manager"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.7.5-alpha.3"
+version = "0.7.5"
 
 [[bin]]
 name = "safenode-manager"
@@ -41,12 +41,12 @@ semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.6.0"
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.11-alpha.0" }
-sn_protocol = { path = "../sn_protocol", version = "0.16.4-alpha.0" }
-sn_service_management = { path = "../sn_service_management", version = "0.2.5-alpha.1" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.11" }
+sn_protocol = { path = "../sn_protocol", version = "0.16.5" }
+sn_service_management = { path = "../sn_service_management", version = "0.2.5" }
 sn-releases = "0.2.0"
-sn_transfers = { path = "../sn_transfers", version = "0.18.0-alpha.0" }
-sysinfo = "0.30.8"
+sn_transfers = { path = "../sn_transfers", version = "0.18.0" }
+sysinfo = "0.30.12"
 tokio = { version = "1.26", features = ["full"] }
 tracing = { version = "~0.1.26" }
 # watch out updating this, protoc compiler needs to be installed on all build systems

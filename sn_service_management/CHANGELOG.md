@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5-alpha.2](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.5-alpha.1...sn_service_management-v0.2.5-alpha.2) - 2024-05-07
+
+### Added
+- [**breaking**] provide `--home-network` arg for `add` cmd
+- distinguish failure to start during upgrade
+
+### Fixed
+- change reward balance to optional
+- apply interval only to non-running nodes
+
+### Other
+- *(versions)* sync versions with latest crates.io vs
+- use node registry for status
+- [**breaking**] output reward balance in `status --json` cmd
+- clarify client::new description
+- *(deps)* bump dependencies
+
 ## [0.2.1](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.2.0...sn_service_management-v0.2.1) - 2024-03-28
 
 ### Other

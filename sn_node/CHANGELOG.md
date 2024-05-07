@@ -5,6 +5,124 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.106.0-alpha.6](https://github.com/maidsafe/safe_network/compare/sn_node-v0.106.0-alpha.5...sn_node-v0.106.0-alpha.6) - 2024-05-07
+
+### Added
+- *(network)* add --upnp flag to node
+- spend shows the purposes of outputs created for
+- *(node)* make spend and cash_note reason field configurable
+- *(relay)* remove autonat and enable hole punching manually
+- *(relay)* impl RelayManager to perform circuit relay when behind NAT
+- *(node)* notify peer it is now considered as BAD
+- *(networking)* shift to use ilog2 bucket distance for close data calcs
+- unit testing dag, double spend poisoning tweaks
+- report protocol mismatch error
+- *(networking)* feature gate 'upnp'
+- *(networking)* add UPnP behavior to open port
+- *(relay)* remove old listen addr if we are using a relayed connection
+- *(relay)* update the relay manager if the listen addr has been closed
+- *(relay)* remove the dial flow
+- *(networking)* add in autonat server basics
+- *(neetworking)* initial tcp use by default
+- *(networking)* clear  record on valid put
+- *(node)* restrict replication fetch range when node is full
+- *(store)* load existing records in parallel
+- [**breaking**] renamings in CashNote
+- *(node)* restore historic quoting metrics to allow restart
+- *(cli)* track spend creation reasons during audit
+- *(cli)* generate a mnemonic as wallet basis if no wallet found
+- *(transfers)* do not genereate wallet by default
+- [**breaking**] rename token to amount in Spend
+- *(tui)* adding services
+- *(network)* network contacts url should point to the correct network version
+
+### Fixed
+- create faucet via account load or generation
+- more test and cli fixes
+- update calls to HotWallet::load
+- do not add reported external addressese if we are behind home network
+- *(node)* notify replication_fetcher of early completion
+- *(node)* not send out replication when failed read from local
+- *(networking)* allow wasm32 compilation
+- *(network)* remove all external addresses related to a relay server
+- *(relay_manager)* remove external addr on connection close
+- relay server should not close connections made to a reserved peer
+- short circuit identify if the peer is already present in the routitng table
+- update outdated connection removal flow
+- do not remove outdated connections
+- increase relay server capacity
+- keep idle connections forever
+- pass peer id while crafting relay address
+- *(relay)* crafted multi address should contain the P2PCircuit protocol
+- *(networking)* do not add to dialed peers
+- *(network)* do not strip out relay's PeerId
+- *(relay)* craft the correctly formatted relay address
+- *(network)* do not perform AutoNat for clients
+- *(relay_manager)* do not dial with P2PCircuit protocol
+- *(test)* quoting metrics might have live_time field changed along time
+- *(node)* avoid false alert on FailedLocalRecord
+- *(record_store)* prune only one record at a time
+- *(node)* fetcher completes on_going_fetch entry on record_key only
+- *(networking)* increase the local responsible range of nodes to K_VALUE peers away
+- *(network)* clients should not perform farthest relevant record check
+- *(node)* replication_fetch keep distance_range sync with record_store
+- *(node)* replication_list in range filter
+- transfer tests for HotWallet creation
+- *(client)* move acct_packet mnemonic into client layer
+- typo
+- *(manager)* do not print to stdout on low verbosity level
+- *(protocol)* evaluate NETWORK_VERSION_MODE at compile time
+
+### Other
+- *(versions)* sync versions with latest crates.io vs
+- cargo fmt
+- rename output reason to purpose for clarity
+- store owner info inside node instead of network
+- *(CI)* upload faucet log during CI
+- *(node)* lower some log levels to reduce log size
+- *(CI)* confirm there is no failed replication fetch
+- *(deps)* bump dependencies
+- *(node)* pass entire QuotingMetrics into calculate_cost_for_records
+- cargo fmt
+- *(network)* move event handling to its own module
+- cleanup network events
+- *(network)* remove nat detection via incoming connections check
+- enable connection keepalive timeout
+- remove non relayed listener id from relay manager
+- enable multiple relay connections
+- return early if peer is not a node
+- *(tryout)* do not add new relay candidates
+- add debug lines while adding potential relay candidates
+- do not remove old non-relayed listeners
+- clippy fix
+- *(networking)* remove empty file
+- *(networking)* re-add global_only
+- use quic again
+- log listner id
+- *(relay)* add candidate even if we are dialing
+- remove quic
+- cleanup, add in relay server behaviour, and todo
+- *(node)* optimise record_store farthest record calculation
+- *(node)* do not reset farthest_acceptance_distance
+- *(node)* remove duplicated record_store fullness check
+- *(networking)* notify network event on failed put due to prune
+- *(networking)* ensure pruned data is indeed further away than kept
+- *(networking)* remove circular vec error
+- *(node)* unit test for recover historic quoting metrics
+- *(node)* extend distance range
+- address review comments
+- refactor CASH_NOTE_REASON strings to consts
+- addres review comments
+- *(transfers)* reduce error size
+- *(transfer)* unit tests for PaymentQuote
+- *(release)* sn_auditor-v0.1.7/sn_client-v0.105.3/sn_networking-v0.14.4/sn_protocol-v0.16.3/sn_build_info-v0.1.7/sn_transfers-v0.17.2/sn_peers_acquisition-v0.2.10/sn_cli-v0.90.4/sn_faucet-v0.4.9/sn_metrics-v0.1.4/sn_node-v0.105.6/sn_service_management-v0.2.4/sn-node-manager-v0.7.4/sn_node_rpc_client-v0.6.8/token_supplies-v0.1.47
+- *(release)* sn_auditor-v0.1.3-alpha.0/sn_client-v0.105.3-alpha.0/sn_networking-v0.14.2-alpha.0/sn_protocol-v0.16.2-alpha.0/sn_build_info-v0.1.7-alpha.0/sn_transfers-v0.17.2-alpha.0/sn_peers_acquisition-v0.2.9-alpha.0/sn_cli-v0.90.3-alpha.0/sn_node-v0.105.4-alpha.0/sn-node-manager-v0.7.3-alpha.0/sn_faucet-v0.4.4-alpha.0/sn_service_management-v0.2.2-alpha.0/sn_node_rpc_client-v0.6.4-alpha.0
+- *(release)* sn_auditor-v0.1.7/sn_client-v0.105.3/sn_networking-v0.14.4/sn_protocol-v0.16.3/sn_build_info-v0.1.7/sn_transfers-v0.17.2/sn_peers_acquisition-v0.2.10/sn_cli-v0.90.4/sn_faucet-v0.4.9/sn_metrics-v0.1.4/sn_node-v0.105.6/sn_service_management-v0.2.4/sn-node-manager-v0.7.4/sn_node_rpc_client-v0.6.8/token_supplies-v0.1.47
+- *(release)* sn_client-v0.105.3-alpha.5/sn_protocol-v0.16.3-alpha.2/sn_cli-v0.90.4-alpha.5/sn_node-v0.105.6-alpha.4/sn-node-manager-v0.7.4-alpha.1/sn_auditor-v0.1.7-alpha.0/sn_networking-v0.14.4-alpha.0/sn_peers_acquisition-v0.2.10-alpha.0/sn_faucet-v0.4.9-alpha.0/sn_service_management-v0.2.4-alpha.0/sn_node_rpc_client-v0.6.8-alpha.0
+- *(release)* sn_client-v0.105.3-alpha.3/sn_protocol-v0.16.3-alpha.1/sn_peers_acquisition-v0.2.9-alpha.2/sn_cli-v0.90.4-alpha.3/sn_node-v0.105.6-alpha.1/sn_auditor-v0.1.5-alpha.0/sn_networking-v0.14.3-alpha.0/sn_faucet-v0.4.7-alpha.0/sn_service_management-v0.2.3-alpha.0/sn-node-manager-v0.7.4-alpha.0/sn_node_rpc_client-v0.6.6-alpha.0
+- *(release)* sn_auditor-v0.1.3-alpha.1/sn_client-v0.105.3-alpha.1/sn_networking-v0.14.2-alpha.1/sn_peers_acquisition-v0.2.9-alpha.1/sn_cli-v0.90.4-alpha.1/sn_metrics-v0.1.4-alpha.0/sn_node-v0.105.5-alpha.1/sn_service_management-v0.2.2-alpha.1/sn-node-manager-v0.7.3-alpha.1/sn_node_rpc_client-v0.6.4-alpha.1/token_supplies-v0.1.47-alpha.0
+- *(release)* sn_build_info-v0.1.7-alpha.1/sn_protocol-v0.16.3-alpha.0/sn_cli-v0.90.4-alpha.0/sn_faucet-v0.4.5-alpha.0/sn_node-v0.105.5-alpha.0
+
 ## [0.105.3](https://github.com/maidsafe/safe_network/compare/sn_node-v0.105.2...sn_node-v0.105.3) - 2024-03-28
 
 ### Other

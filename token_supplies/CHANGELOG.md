@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.48-alpha.2](https://github.com/maidsafe/safe_network/compare/token_supplies-v0.1.48-alpha.1...token_supplies-v0.1.48-alpha.2) - 2024-05-07
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.1.46](https://github.com/joshuef/safe_network/compare/token_supplies-v0.1.45...token_supplies-v0.1.46) - 2024-03-27
 
 ### Other
