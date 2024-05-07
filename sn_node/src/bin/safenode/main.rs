@@ -157,7 +157,7 @@ struct Opt {
 
     /// Specify the owner(readable discord user name).
     #[clap(long)]
-    owner: String,
+    owner: Option<String>,
 
     #[cfg(feature = "open-metrics")]
     /// Specify the port for the OpenMetrics server.
@@ -197,6 +197,11 @@ fn main() -> Result<()> {
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
+    let owner = if let Some(owner) = opt.owner {
+        owner.clone()
+    } else {
+        "user".to_owned()
+    };
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
@@ -204,7 +209,7 @@ fn main() -> Result<()> {
             bootstrap_peers,
             opt.local,
             root_dir,
-            opt.owner.clone(),
+            owner,
             #[cfg(feature = "upnp")]
             opt.upnp,
         );
