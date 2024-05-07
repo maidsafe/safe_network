@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715057482808,
+  "lastUpdate": 1715057484927,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "34c458e3e89d06cee3b2f5c2069436ea9b7cbc74",
-          "message": "chore: reduce default batch size",
-          "timestamp": "2023-12-20T09:04:58Z",
-          "tree_id": "b7c66be2755fa6c6b35c9f202d1c28bdaa368062",
-          "url": "https://github.com/maidsafe/safe_network/commit/34c458e3e89d06cee3b2f5c2069436ea9b7cbc74"
-        },
-        "date": 1703065329813,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3006,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 29030,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 9,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "tomek@librem.one",
             "name": "trycatch",
             "username": "thomasmarkiewicz"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32183,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
+          "message": "feat(launchpad): remove separate ai launcher bin references",
+          "timestamp": "2024-05-07T13:37:19+09:00",
+          "tree_id": "f6973a3c21ec93889eee9af7028d010bb7bc0d93",
+          "url": "https://github.com/maidsafe/safe_network/commit/62cd849cba8eb6dd22ed0279713d2747603ec99f"
+        },
+        "date": 1715057484296,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7135,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33635,
             "unit": "ms"
           },
           {
