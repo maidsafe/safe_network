@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715068102817,
+  "lastUpdate": 1715068223686,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e0a03e8a681493fdd764270e1d61869f5b52ba26",
-          "message": "feat(cli): safe wallet create saves new key",
-          "timestamp": "2024-01-09T09:37:45Z",
-          "tree_id": "ef8cced1c0d892029f09d625536d4a03d15c6468",
-          "url": "https://github.com/maidsafe/safe_network/commit/e0a03e8a681493fdd764270e1d61869f5b52ba26"
-        },
-        "date": 1704796261778,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 48,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fb767f8cf45a906c2d5d14c37c8693c2b112482f",
+          "message": "ci(release): fix stable release cargo-publish permissive step",
+          "timestamp": "2024-05-07T16:36:09+09:00",
+          "tree_id": "d5c56dc45d432daa3ad31de54ea16d0993c31e3c",
+          "url": "https://github.com/maidsafe/safe_network/commit/fb767f8cf45a906c2d5d14c37c8693c2b112482f"
+        },
+        "date": 1715068223053,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
