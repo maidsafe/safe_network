@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715068225825,
+  "lastUpdate": 1715068227897,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c0c18f8af0f4930fcbc62e0c678ccbf1182f5426",
-          "message": "fix(testnet): sleep after launching faucet",
-          "timestamp": "2023-12-28T08:50:26Z",
-          "tree_id": "ace60831e6c566b30e483675ce52b21354cc98b4",
-          "url": "https://github.com/maidsafe/safe_network/commit/c0c18f8af0f4930fcbc62e0c678ccbf1182f5426"
-        },
-        "date": 1703756217960,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5528,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 46444,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 8,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32450,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fb767f8cf45a906c2d5d14c37c8693c2b112482f",
+          "message": "ci(release): fix stable release cargo-publish permissive step",
+          "timestamp": "2024-05-07T16:36:09+09:00",
+          "tree_id": "d5c56dc45d432daa3ad31de54ea16d0993c31e3c",
+          "url": "https://github.com/maidsafe/safe_network/commit/fb767f8cf45a906c2d5d14c37c8693c2b112482f"
+        },
+        "date": 1715068227216,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7239,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34084,
             "unit": "ms"
           },
           {
