@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715056000040,
+  "lastUpdate": 1715057365400,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "94c9dc98ba4914c54c23393921a145426c6c208a",
-          "message": "refactor(client)!: refactor `Files` into `FilesUpload`",
-          "timestamp": "2024-01-08T14:27:54Z",
-          "tree_id": "cf90ed557d450e8b8575a9248d6d8b8588ac17da",
-          "url": "https://github.com/maidsafe/safe_network/commit/94c9dc98ba4914c54c23393921a145426c6c208a"
-        },
-        "date": 1704726254811,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6551795636129232,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1050381659022128,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 43.9557116746559,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.15456153470433,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
+          "message": "feat(launchpad): remove separate ai launcher bin references",
+          "timestamp": "2024-05-07T13:37:19+09:00",
+          "tree_id": "f6973a3c21ec93889eee9af7028d010bb7bc0d93",
+          "url": "https://github.com/maidsafe/safe_network/commit/62cd849cba8eb6dd22ed0279713d2747603ec99f"
+        },
+        "date": 1715057360910,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2439279794462004,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6687423679754392,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.76783812430116,
             "unit": "MiB/s"
           }
         ]
