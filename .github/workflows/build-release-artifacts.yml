@@ -108,6 +108,8 @@ jobs:
           just package-release-assets "safenode"
           just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
+          just package-release-assets "safenode-manager"
+          just package-release-assets "safenodemand"
           just package-release-assets "node-launchpad"
       - uses: actions/upload-artifact@main
         with:
