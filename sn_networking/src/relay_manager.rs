@@ -10,6 +10,7 @@ use crate::driver::NodeBehaviour;
 use libp2p::{
     core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
+use rand::Rng;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
@@ -122,7 +123,16 @@ impl RelayManager {
         while n_reservations < reservations_to_make {
             // todo: should we remove all our other `listen_addr`? And should we block from adding `add_external_address` if
             // we're behind nat?
-            if let Some((peer_id, relay_addr)) = self.candidates.pop_front() {
+
+            // Pick a random candidate from the vector. Check if empty, or `gen_range` panics for empty range.
+            let index = if self.candidates.is_empty() {
+                trace!("No more relay candidates.");
+                break;
+            } else {
+                rand::thread_rng().gen_range(0..self.candidates.len())
+            };
+
+            if let Some((peer_id, relay_addr)) = self.candidates.remove(index) {
                 if self.connected_relays.contains_key(&peer_id)
                     || self.waiting_for_reservation.contains_key(&peer_id)
                 {
