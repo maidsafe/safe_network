@@ -279,7 +279,6 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      # Disable this test temporarily as it takes too long time, which blocks the merge queue. 
       - name: Audit from genesis to collect entire spend DAG and dump to a dot file
         run: |
           cargo run --bin safe --release -- --log-output-dest=data-dir wallet audit --dot > spend_dag_and_statistics.txt
@@ -439,6 +438,14 @@ jobs:
         if: always()
         timeout-minutes: 1
 
+      - name: Move bootstrap_node log to the working directory
+        run: |
+          ls -l $BOOTSTRAP_NODE_DATA_PATH
+          mv $BOOTSTRAP_NODE_DATA_PATH/safenode.log ./bootstrap_node.log
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
+
       - name: Upload faucet log
         uses: actions/upload-artifact@main
         with:
@@ -447,7 +454,14 @@ jobs:
         continue-on-error: true
         if: always()
 
-      # Re-enable this block once the previous step of audit got enabled.
+      - name: Upload bootstrap_node log
+        uses: actions/upload-artifact@main
+        with:
+          name: memory_check_bootstrap_node_log
+          path: bootstrap_node.log
+        continue-on-error: true
+        if: always()
+
       - name: Upload spend DAG and statistics
         uses: actions/upload-artifact@main
         with:
