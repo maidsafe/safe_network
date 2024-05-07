@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715055998536,
+  "lastUpdate": 1715056000040,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "cf0c80d09a56f7860071edb0d69617dd6a7e6f25",
-          "message": "chore: add data path field to node info\n\nSince we provide the logs path, it's useful for the node manager to also have access here to the\ndata path, which it can provide to the user.\n\nI also wanted to provide the port the node is running on, but it's not easy to get access to that if\nthe port is assigned by libp2p.",
-          "timestamp": "2023-12-19T14:25:09Z",
-          "tree_id": "e3fb3bdbdbe0ce998cfaad234c8db575b2368ab0",
-          "url": "https://github.com/maidsafe/safe_network/commit/cf0c80d09a56f7860071edb0d69617dd6a7e6f25"
-        },
-        "date": 1702998267988,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4215,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 82128,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 19,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33775,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a96ee615673fdaf8ba12254e9970a954e806ab5d",
+          "message": "chore(ci): allow publish of creates from stable branch\n\nThis strips the workspace publish=false,\nallowing subsequent release-plz invocations to publish crates",
+          "timestamp": "2024-05-07T13:12:36+09:00",
+          "tree_id": "90b5e5af5bfc52ebc53b80066ff5e32faf360058",
+          "url": "https://github.com/maidsafe/safe_network/commit/a96ee615673fdaf8ba12254e9970a954e806ab5d"
+        },
+        "date": 1715055999665,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7198,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32183,
             "unit": "ms"
           },
           {
