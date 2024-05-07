@@ -12,14 +12,6 @@ if ! cargo set-version --help > /dev/null 2>&1; then
   exit 1
 fi
 
-# Ensure the suffix is either alpha or beta
-if [[ -n "$SUFFIX" ]]; then
-  if [[ "$SUFFIX" != "alpha" ]] && [[ "$SUFFIX" != "beta" ]]; then
-    echo "Invalid suffix. Suffix must be either 'alpha' or 'beta'."
-    exit 1
-  fi
-fi
-
 release-plz update 2>&1 | tee bump_version_output
 
 crates_bumped=()
