@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.14-alpha.1](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.4.14-alpha.0...sn_faucet-v0.4.14-alpha.1) - 2024-05-07
+
+### Added
+- faucet donate endpoint to feed the faucet
+- *(faucet)* fully limit any concurrency
+- *(faucet)* log from sn_client
+- report protocol mismatch error
+
+### Fixed
+- *(faucet)* cleanup unused vars
+- *(faucet)* rate limit before getting wallet
+- *(faucet)* ensure faucet is funded in main fn
+- update calls to HotWallet::load
+- *(faucet)* fix distribution 'from' wallet loading
+- *(client)* move acct_packet mnemonic into client layer
+
+### Other
+- *(versions)* sync versions with latest crates.io vs
+- addres review comments
+- *(faucet)* log initilization failure and upload faucet log
+- *(CI)* upload faucet log during CI
+- *(deps)* bump dependencies
+
 ## [0.4.3](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.4.2...sn_faucet-v0.4.3) - 2024-03-28
 
 ### Other

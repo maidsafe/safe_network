@@ -6,6 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5-alpha.4](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.7.5-alpha.3...sn-node-manager-v0.7.5-alpha.4) - 2024-05-07
+
+### Added
+- provide `autonomi-launcher` binary
+- *(manager)* reuse downloaded binaries
+- *(launchpad)* remove nodes
+- *(tui)* adding services
+- *(node)* make spend and cash_note reason field configurable
+- [**breaking**] provide `--home-network` arg for `add` cmd
+- provide `--interval` arg for `upgrade` cmd
+- provide `--path` arg for `upgrade` cmd
+- rpc restart command
+- provide `reset` command
+- provide `balance` command
+- make `--peer` argument optional
+- distinguish failure to start during upgrade
+
+### Fixed
+- *(manager)* do not print to stdout on low verbosity level
+- do not create wallet on registry refresh
+- change reward balance to optional
+- apply interval only to non-running nodes
+- do not delete custom bin on `add` cmd
+- incorrect release type reference
+
+### Other
+- *(versions)* sync versions with latest crates.io vs for nodeman
+- *(versions)* sync versions with latest crates.io vs
+- use node registry for status
+- [**breaking**] output reward balance in `status --json` cmd
+- use better banners
+- properly use node registry and surface peer ids if they're not
+- `remove` cmd operates over all services
+- provide `local` subcommand
+- clarify client::new description
+- *(deps)* bump dependencies
+
 ## [0.7.2](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.7.1...sn-node-manager-v0.7.2) - 2024-03-28
 
 ### Other

@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_metrics"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.5-alpha.1"
+version = "0.1.5"
 
 [[bin]]
 path = "src/main.rs"
