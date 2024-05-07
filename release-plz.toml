@@ -1,5 +1,5 @@
 [workspace]
-publish=false
+publish = false
 allow_dirty = false
 changelog_update = true
 dependencies_update = false
