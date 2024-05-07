@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       suffix:
-        description: 'Suffix to append to the version (alpha/beta), leave empty for no suffix.'
+        description: "Suffix to append to the version (alpha/beta), leave empty for no suffix."
         required: false
-        default: 'alpha'
+        default: "alpha"
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
@@ -69,12 +69,35 @@ jobs:
             exit 1
           fi
           ./resources/scripts/bump_version.sh ${{ github.event.inputs.suffix }}
+      
       - name: push version bump commit
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
           branch: ${{ github.ref_name }}
           tags: true
+
+
+      - name: Get the new SHA of the updated release commit
+        id: get-updated-sha
+        run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
+
+
+      - name: Cherry-pick to main if on stable
+        if: ${{ github.ref_name == 'stable' }}
+        run: |
+          git fetch origin main
+          git checkout main
+          git cherry-pick ${{ steps.get-updated-sha.outputs.sha }}
+
+
+      - name: Push updated version bump commit to main
+        if: ${{ github.ref_name == 'stable' }}
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          branch: main
+
       - name: post notification to slack on failure
         if: ${{ failure() }}
         uses: bryannice/gitactions-slack-notification@2.0.0
