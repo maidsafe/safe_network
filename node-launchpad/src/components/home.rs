@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{utils::centered_rect, Component, Frame};
+use super::{utils::centered_rect_fixed, Component, Frame};
 use crate::{
     action::{Action, HomeActions},
     config::Config,
@@ -255,7 +255,7 @@ impl Component for Home {
             ],
         )
         .split(area);
-        let popup_area = centered_rect(25, 25, area);
+        let popup_area = centered_rect_fixed(25, 3, area);
 
         // top section
         //
@@ -317,7 +317,8 @@ impl Component for Home {
                     .block(
                         Block::default()
                             .borders(Borders::ALL)
-                            .style(Style::default().bg(Color::Reset)),
+                            .border_type(BorderType::Double)
+                            .border_style(Style::new().bold()),
                     ),
                 popup_area,
             );
