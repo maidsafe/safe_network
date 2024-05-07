@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715063968518,
+  "lastUpdate": 1715063970026,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "650e12d60e3647674c7ff5a5a8a94bc3316c7102",
-          "message": "chore(node): move add_to_replicate_fetcher to driver",
-          "timestamp": "2024-01-09T09:24:57Z",
-          "tree_id": "fc2ccf2dbe9ab31b67f9668360ec4ab52538bed0",
-          "url": "https://github.com/maidsafe/safe_network/commit/650e12d60e3647674c7ff5a5a8a94bc3316c7102"
-        },
-        "date": 1704795818898,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 210,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d3de16bc5420017bbf8c229e613a85e4dd4dfa8c",
+          "message": "feat(scripts): easy updating versions to match crates.io",
+          "timestamp": "2024-05-07T15:25:27+09:00",
+          "tree_id": "e20be45bc75ddd281590be7369606f4c01462728",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3de16bc5420017bbf8c229e613a85e4dd4dfa8c"
+        },
+        "date": 1715063969608,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
