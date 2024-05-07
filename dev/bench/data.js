@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715055883995,
+  "lastUpdate": 1715055997186,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "05da1300aa51f05dba2c57e529a8e4514125fba6",
-          "message": "chore(node): simplify GetStoreCost flow",
-          "timestamp": "2024-01-08T12:49:59Z",
-          "tree_id": "93e7265d9221c579e0ac16e9837bfcbf98cc2e7e",
-          "url": "https://github.com/maidsafe/safe_network/commit/05da1300aa51f05dba2c57e529a8e4514125fba6"
-        },
-        "date": 1704720716406,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a96ee615673fdaf8ba12254e9970a954e806ab5d",
+          "message": "chore(ci): allow publish of creates from stable branch\n\nThis strips the workspace publish=false,\nallowing subsequent release-plz invocations to publish crates",
+          "timestamp": "2024-05-07T13:12:36+09:00",
+          "tree_id": "90b5e5af5bfc52ebc53b80066ff5e32faf360058",
+          "url": "https://github.com/maidsafe/safe_network/commit/a96ee615673fdaf8ba12254e9970a954e806ab5d"
+        },
+        "date": 1715055996838,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
