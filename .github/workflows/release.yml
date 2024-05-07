@@ -141,8 +141,9 @@ jobs:
       # only publish if we're on the stable branch
       - name: Conditionally remove 'publish = false' from workspace in release-plz.toml on stable branch
         if: github.ref_name == 'stable'
-        run: sed -i '' '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' release-plz.toml 
-
+        run: |
+          ls -la
+          sed -i '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' ./release-plz.toml
 
       - name: publish and release
         shell: bash
