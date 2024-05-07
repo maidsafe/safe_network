@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{utils::centered_rect, Component};
+use super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
@@ -100,8 +100,7 @@ impl Component for DiscordUsernameInputBox {
             return Ok(());
         }
 
-        // todo: y should be set to a min value, so it doesnt become too small
-        let layer_zero = centered_rect(25, 15, area);
+        let layer_zero = centered_rect_fixed(40, 5, area);
 
         let layer_one = Layout::new(
             Direction::Vertical,
@@ -120,6 +119,8 @@ impl Component for DiscordUsernameInputBox {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Double)
+                .border_style(Style::new().bold())
                 .title("Enter Discord Username"),
         );
         f.render_widget(Clear, layer_zero);
