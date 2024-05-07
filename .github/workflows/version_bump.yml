@@ -76,16 +76,12 @@ jobs:
           branch: ${{ github.ref_name }}
           tags: true
 
-      - name: Get the new SHA of the updated release commit
-        id: get-updated-sha
-        run: echo "sha=$(git log --grep='chore(release):' -n 1 --pretty=format:"%H")" >> $GITHUB_ENV
-
       - name: Cherry-pick to main if on stable
         if: ${{ github.ref_name == 'stable' }}
         run: |
           git fetch origin main
           git checkout main
-          git cherry-pick ${{ steps.get-updated-sha.outputs.sha }}
+          git cherry-pick stable
 
       - name: Push updated version bump commit to main
         if: ${{ github.ref_name == 'stable' }}
