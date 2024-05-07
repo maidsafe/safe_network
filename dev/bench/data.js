@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715042005825,
+  "lastUpdate": 1715042007743,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30609,45 +30609,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d615deb0138dc80cb855f16d9fb2d53ac794610e",
-          "message": "feat: random select payee",
-          "timestamp": "2023-12-19T13:45:26Z",
-          "tree_id": "fd1ab0e5553bdd788b75b915a3814bef3146ba10",
-          "url": "https://github.com/maidsafe/safe_network/commit/d615deb0138dc80cb855f16d9fb2d53ac794610e"
-        },
-        "date": 1702995870727,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4217,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 74346,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 17,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36140,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1",
+          "message": "feat(launchpad): ensure start mac launchapd with sudo only if not set",
+          "timestamp": "2024-05-07T09:19:28+09:00",
+          "tree_id": "067f44435f18359fe969d91164280b6a4c35257e",
+          "url": "https://github.com/maidsafe/safe_network/commit/fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1"
+        },
+        "date": 1715042007155,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7269,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33775,
             "unit": "ms"
           },
           {
