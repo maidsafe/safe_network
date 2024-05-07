@@ -24,3 +24,20 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     ])
     .split(popup_layout[1])[1]
 }
+
+/// Helper function to create a centered rect using a fixed x,y constraint.
+pub fn centered_rect_fixed(x: u16, y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(y),
+        Constraint::Fill(1),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Length(x),
+        Constraint::Fill(1),
+    ])
+    .split(popup_layout[1])[1]
+}
