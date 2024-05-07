@@ -8,6 +8,7 @@ members = [
     "sn_faucet",
     "sn_logging",
     "sn_metrics",
+    "sn_nat_detection",
     "sn_networking",
     "sn_node",
     "node-launchpad",
