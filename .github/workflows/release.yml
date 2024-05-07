@@ -165,7 +165,6 @@ jobs:
           just package-release-assets "safenode-manager"
           just package-release-assets "safenodemand"
           just package-release-assets "node-launchpad"
-          just package-release-assets "autonomi-launcher"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
@@ -194,7 +193,6 @@ jobs:
           just package-release-assets "safenode-manager" "latest"
           just package-release-assets "safenodemand" "latest"
           just package-release-assets "node-launchpad"
-          just package-release-assets "autonomi-launcher"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
@@ -202,7 +200,6 @@ jobs:
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
           just upload-release-assets-to-s3 "node-launchpad"
-          just upload-release-assets-to-s3 "autonomi-launcher"
 
       - name: post notification to slack on failure
         if: ${{ failure() }}

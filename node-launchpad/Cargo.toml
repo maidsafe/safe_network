@@ -14,7 +14,6 @@ build = "build.rs"
 name = "node-launchpad"
 path = "src/bin/tui/main.rs"
 
-
 [dependencies]
 better-panic = "0.3.0"
 clap = { version = "4.4.5", features = [
