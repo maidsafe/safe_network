@@ -204,7 +204,7 @@ package-release-assets bin version="":
       crate_dir_name="sn_node_rpc_client"
       ;;
     node-launchpad)
-      crate_dir_name="node_launchpad"
+      crate_dir_name="node-launchpad"
       ;;
    
     *)
@@ -338,6 +338,7 @@ upload-release-assets-to-s3 bin_name:
     node-launchpad)
       bucket="node-launchpad"
       ;;
+    *)
       echo "The {{bin_name}} binary is not supported"
       exit 1
       ;;
