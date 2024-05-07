@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0-alpha.1](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.18.0-alpha.0...sn_transfers-v0.18.0-alpha.1) - 2024-05-07
+
+### Added
+- *(cli)* track spend creation reasons during audit
+- spend shows the purposes of outputs created for
+- *(node)* make spend and cash_note reason field configurable
+- *(cli)* generate a mnemonic as wallet basis if no wallet found
+- *(transfers)* do not genereate wallet by default
+- [**breaking**] renamings in CashNote
+- [**breaking**] rename token to amount in Spend
+- unit testing dag, double spend poisoning tweaks
+
+### Fixed
+- create faucet via account load or generation
+- transfer tests for HotWallet creation
+- *(client)* move acct_packet mnemonic into client layer
+- typo
+
+### Other
+- *(versions)* sync versions with latest crates.io vs
+- address review comments
+- refactor CASH_NOTE_REASON strings to consts
+- rename output reason to purpose for clarity
+- addres review comments
+- *(transfers)* reduce error size
+- *(deps)* bump dependencies
+- *(transfer)* unit tests for PaymentQuote
+- *(release)* sn_auditor-v0.1.7/sn_client-v0.105.3/sn_networking-v0.14.4/sn_protocol-v0.16.3/sn_build_info-v0.1.7/sn_transfers-v0.17.2/sn_peers_acquisition-v0.2.10/sn_cli-v0.90.4/sn_faucet-v0.4.9/sn_metrics-v0.1.4/sn_node-v0.105.6/sn_service_management-v0.2.4/sn-node-manager-v0.7.4/sn_node_rpc_client-v0.6.8/token_supplies-v0.1.47
+- *(release)* sn_auditor-v0.1.3-alpha.0/sn_client-v0.105.3-alpha.0/sn_networking-v0.14.2-alpha.0/sn_protocol-v0.16.2-alpha.0/sn_build_info-v0.1.7-alpha.0/sn_transfers-v0.17.2-alpha.0/sn_peers_acquisition-v0.2.9-alpha.0/sn_cli-v0.90.3-alpha.0/sn_node-v0.105.4-alpha.0/sn-node-manager-v0.7.3-alpha.0/sn_faucet-v0.4.4-alpha.0/sn_service_management-v0.2.2-alpha.0/sn_node_rpc_client-v0.6.4-alpha.0
+
 ## [0.17.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.17.0...sn_transfers-v0.17.1) - 2024-03-28
 
 ### Added

@@ -6,6 +6,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0-alpha.6](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.15.0-alpha.5...sn_networking-v0.15.0-alpha.6) - 2024-05-07
+
+### Added
+- *(network)* add --upnp flag to node
+- *(networking)* feature gate 'upnp'
+- *(networking)* add UPnP behavior to open port
+- *(node)* make spend and cash_note reason field configurable
+- *(relay)* remove autonat and enable hole punching manually
+- *(relay)* remove old listen addr if we are using a relayed connection
+- *(relay)* update the relay manager if the listen addr has been closed
+- *(relay)* remove the dial flow
+- *(relay)* impl RelayManager to perform circuit relay when behind NAT
+- *(networking)* add in autonat server basics
+- *(neetworking)* initial tcp use by default
+- *(networking)* clear  record on valid put
+- *(node)* restrict replication fetch range when node is full
+- *(store)* load existing records in parallel
+- [**breaking**] renamings in CashNote
+- *(node)* notify peer it is now considered as BAD
+- *(node)* restore historic quoting metrics to allow restart
+- *(networking)* shift to use ilog2 bucket distance for close data calcs
+- report protocol mismatch error
+
+### Fixed
+- *(networking)* allow wasm32 compilation
+- *(network)* remove all external addresses related to a relay server
+- *(relay_manager)* remove external addr on connection close
+- relay server should not close connections made to a reserved peer
+- short circuit identify if the peer is already present in the routitng table
+- update outdated connection removal flow
+- do not remove outdated connections
+- increase relay server capacity
+- keep idle connections forever
+- pass peer id while crafting relay address
+- *(relay)* crafted multi address should contain the P2PCircuit protocol
+- do not add reported external addressese if we are behind home network
+- *(networking)* do not add to dialed peers
+- *(network)* do not strip out relay's PeerId
+- *(relay)* craft the correctly formatted relay address
+- *(network)* do not perform AutoNat for clients
+- *(relay_manager)* do not dial with P2PCircuit protocol
+- *(test)* quoting metrics might have live_time field changed along time
+- *(node)* avoid false alert on FailedLocalRecord
+- *(record_store)* prune only one record at a time
+- *(node)* notify replication_fetcher of early completion
+- *(node)* fetcher completes on_going_fetch entry on record_key only
+- *(node)* not send out replication when failed read from local
+- *(networking)* increase the local responsible range of nodes to K_VALUE peers away
+- *(network)* clients should not perform farthest relevant record check
+- *(node)* replication_fetch keep distance_range sync with record_store
+- *(node)* replication_list in range filter
+
+### Other
+- *(versions)* sync versions with latest crates.io vs
+- cargo fmt
+- rename output reason to purpose for clarity
+- store owner info inside node instead of network
+- *(network)* move event handling to its own module
+- cleanup network events
+- *(network)* remove nat detection via incoming connections check
+- enable connection keepalive timeout
+- remove non relayed listener id from relay manager
+- enable multiple relay connections
+- return early if peer is not a node
+- *(tryout)* do not add new relay candidates
+- add debug lines while adding potential relay candidates
+- do not remove old non-relayed listeners
+- clippy fix
+- *(networking)* remove empty file
+- *(networking)* re-add global_only
+- use quic again
+- log listner id
+- *(relay)* add candidate even if we are dialing
+- remove quic
+- cleanup, add in relay server behaviour, and todo
+- *(node)* lower some log levels to reduce log size
+- *(node)* optimise record_store farthest record calculation
+- *(node)* do not reset farthest_acceptance_distance
+- *(node)* remove duplicated record_store fullness check
+- *(networking)* notify network event on failed put due to prune
+- *(networking)* ensure pruned data is indeed further away than kept
+- *(CI)* confirm there is no failed replication fetch
+- *(networking)* remove circular vec error
+- *(node)* unit test for recover historic quoting metrics
+- *(deps)* bump dependencies
+- *(node)* pass entire QuotingMetrics into calculate_cost_for_records
+- *(node)* extend distance range
+
 ## [0.14.1](https://github.com/joshuef/safe_network/compare/sn_networking-v0.14.0...sn_networking-v0.14.1) - 2024-03-28
 
 ### Other
