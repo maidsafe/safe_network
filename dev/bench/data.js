@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715086139048,
+  "lastUpdate": 1715086140525,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20408,40 +20408,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "672e176f70a2fae9e6be22eae8b4d65c39432c37",
-          "message": "fix(client): empty out the download cache once the stream exits",
-          "timestamp": "2024-01-09T10:29:30Z",
-          "tree_id": "03e76183986aab45cb0c259d7d40b0eec0180c04",
-          "url": "https://github.com/maidsafe/safe_network/commit/672e176f70a2fae9e6be22eae8b4d65c39432c37"
-        },
-        "date": 1704798714924,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 217,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30600,6 +30566,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "3c1d03e47fde961a859bb5a507939b3ac44937f4",
+          "message": "feat(networking): pick random relay candidate",
+          "timestamp": "2024-05-07T11:55:08Z",
+          "tree_id": "8c8ff31b4652a3172667f59949d6e0ce894f0fac",
+          "url": "https://github.com/maidsafe/safe_network/commit/3c1d03e47fde961a859bb5a507939b3ac44937f4"
+        },
+        "date": 1715086140128,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 178,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
