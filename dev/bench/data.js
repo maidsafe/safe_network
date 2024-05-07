@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715057365400,
+  "lastUpdate": 1715057480942,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "94c9dc98ba4914c54c23393921a145426c6c208a",
-          "message": "refactor(client)!: refactor `Files` into `FilesUpload`",
-          "timestamp": "2024-01-08T14:27:54Z",
-          "tree_id": "cf90ed557d450e8b8575a9248d6d8b8588ac17da",
-          "url": "https://github.com/maidsafe/safe_network/commit/94c9dc98ba4914c54c23393921a145426c6c208a"
-        },
-        "date": 1704726387915,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
+          "message": "feat(launchpad): remove separate ai launcher bin references",
+          "timestamp": "2024-05-07T13:37:19+09:00",
+          "tree_id": "f6973a3c21ec93889eee9af7028d010bb7bc0d93",
+          "url": "https://github.com/maidsafe/safe_network/commit/62cd849cba8eb6dd22ed0279713d2747603ec99f"
+        },
+        "date": 1715057480257,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
