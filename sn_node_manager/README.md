@@ -17,11 +17,26 @@ A binary can also be obtained for your platform from the releases in this reposi
 
 The primary use case for Safenode Manager is to setup `safenode` as a long-running background service, using the service infrastructure provided by the operating system.
 
+On macOS and most distributions of Linux, user-mode services are supported. Traditionally, services
+are system-wide infrastructure that require elevated privileges to create and work with. However,
+with user-mode services, they can be defined and used without sudo. The main difference is, a
+user-mode service requires an active user session, whereas a system-wide service can run completely
+in the background, without any active session. It's a user decision as to which is more appropriate
+for their use case. On Linux, some service managers, like OpenRC, used on Alpine, do not support
+user-mode services. Most distributions use Systemd, which does have support for them.
+
+The commands defined in the rest of this guide will operate on the basis of a user-mode service, and
+so will not use `sudo`. If you would like to run system-wide services, you can go through the same
+guide, but just prefix each command with `sudo`.
+
+Windows does not support user-mode services at all, and therefore, the node manager must always be
+used in an elevated, administrative session.
+
 ### Create Services
 
 First, use the `add` command to create some services:
 ```
-$ sudo safenode-manager add --count 3 --peer /ip4/46.101.80.187/udp/58070/quic-v1/p2p/12D3KooWKgJQedzCxrp33u3dBD1mUZ9HTjEjgrxskEBvzoQWkRT9
+$ safenode-manager add --count 3 --peer /ip4/46.101.80.187/udp/58070/quic-v1/p2p/12D3KooWKgJQedzCxrp33u3dBD1mUZ9HTjEjgrxskEBvzoQWkRT9
 ```
 
 This downloads the latest version of the `safenode` binary and creates three services that will initially connect to the specified peer. Soon, specification of a peer will not be required.
@@ -49,7 +64,7 @@ We can see the services have been added, but they are not running yet.
 
 Use the `start` command to start each service:
 ```
-$ sudo safenode-manager start
+$ safenode-manager start
 ```
 
 Providing no arguments will start all available services. If need be, it's possible to start services individually, using the `--service-name` argument.
@@ -98,7 +113,7 @@ The nodes could now be left running like this, but for the purposes of this guid
 
 It's possible to run the `add` command again, as before:
 ```
-sudo safenode-manager add --count 3 --peer /ip4/46.101.80.187/udp/58070/quic-v1/p2p/12D3KooWKgJQedzCxrp33u3dBD1mUZ9HTjEjgrxskEBvzoQWkRT9
+safenode-manager add --count 3 --peer /ip4/46.101.80.187/udp/58070/quic-v1/p2p/12D3KooWKgJQedzCxrp33u3dBD1mUZ9HTjEjgrxskEBvzoQWkRT9
 ```
 
 The subsequent `status` command will show us an additional three nodes, for a total of six:
@@ -141,7 +156,7 @@ If for some reason we want to remove one of our nodes, we can do so using the `r
 
 Suppose we wanted to remove the 5th service. First of all, we need to stop the service. Run the following command:
 ```
-$ sudo safenode-manager stop --service-name safenode5
+$ safenode-manager stop --service-name safenode5
 ```
 
 Observe that `safenode5` has been stopped, but the others are still running:
@@ -162,7 +177,7 @@ safenode6          12D3KooWBip2g5FakT1dZHdrhdmnctgKqhbRBQA5ZpvtHh4XPRXJ RUNNING 
 
 Now that it's been stopped, remove it:
 ```
-$ sudo safenode-manager remove --service-name safenode5
+$ safenode-manager remove --service-name safenode5
 ```
 
 The `status` command will no longer show the service:
@@ -248,7 +263,7 @@ For brevity, the remaining output is snipped, but the four others are also at `0
 
 We can use the `upgrade` command to get each service on the latest version:
 ```
-$ sudo safenode-manager upgrade
+$ safenode-manager upgrade
 =================================================
            Upgrade Safenode Services
 =================================================
@@ -278,11 +293,11 @@ In some situations, it may be necessary to downgrade `safenode` to a previous ve
 
 ## Local Networks
 
-Safenode Manager can also create local networks, which are useful for development or quick experimentation. In a local network, nodes will run as processes rather than services.
+Safenode Manager can also create local networks, which are useful for development or quick experimentation. In a local network, nodes will run as processes rather than services. Local operations are defined under the `local` subcommand.
 
 To create a local network, use the `run` command:
 ```
-$ safenode-manager run
+$ safenode-manager local run
 =================================================
              Launching Local Network
 =================================================
@@ -342,4 +357,4 @@ So by default, 25 node processes have been launched, along with a faucet. The fa
 
 The most common scenario for using a local network is for development, but you can also use it to exercise a lot of features locally. For more details, please see the 'Using a Local Network' section of the [main README](https://github.com/maidsafe/safe_network/tree/node-man-readme?tab=readme-ov-file#using-a-local-network).
 
-Once you've finished, run `safenode-manager kill` to dispose the local network.
+Once you've finished, run `safenode-manager local kill` to dispose the local network.
