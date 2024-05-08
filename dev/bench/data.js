@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715148950734,
+  "lastUpdate": 1715183830310,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
-          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
-          "timestamp": "2024-01-11T14:42:05Z",
-          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
-          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
-        },
-        "date": 1704984863533,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.635326907942854,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.091050180892431,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 66.59752824824363,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.86773693319662,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "555b02015c98e87d04c42701ce1b4560a9c903ff",
+          "message": "fix(relay_manager): filter out bad nodes",
+          "timestamp": "2024-05-08T15:05:35Z",
+          "tree_id": "4fe1f84526be67054e7b8d6e5f6e9a3251346d74",
+          "url": "https://github.com/maidsafe/safe_network/commit/555b02015c98e87d04c42701ce1b4560a9c903ff"
+        },
+        "date": 1715183825518,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2339751949935422,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6722315211894225,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.734671328480786,
             "unit": "MiB/s"
           }
         ]
