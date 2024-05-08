@@ -133,7 +133,12 @@ impl Component for DiscordUsernameInputBox {
         let input = Paragraph::new(self.discord_input_filed.value())
             .scroll((0, scroll as u16))
             // border left so that it doesn't conflict with layer_zero's border
-            .block(Block::default().borders(Borders::LEFT));
+            .block(
+                Block::default()
+                    .borders(Borders::LEFT)
+                    .border_type(BorderType::Double)
+                    .border_style(Style::new().bold()),
+            );
 
         f.set_cursor(
             // Put cursor past the end of the input text
