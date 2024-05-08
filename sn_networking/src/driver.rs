@@ -96,6 +96,10 @@ pub(crate) type PendingGetRecord = HashMap<
     ),
 >;
 
+/// 10 is the max number of issues per node we track to avoid mem leaks
+/// The boolean flag to indicate whether the node is considered as bad or not
+pub(crate) type BadNodes = BTreeMap<PeerId, (Vec<(NodeIssue, Instant)>, bool)>;
+
 /// What is the largest packet to send over the network.
 /// Records larger than this will be rejected.
 // TODO: revisit once cashnote_redemption is in
@@ -655,9 +659,7 @@ pub struct SwarmDriver {
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
-    // 10 is the max number of issues per node we track to avoid mem leaks
-    // the boolean flag to indicate whether the node is considered as bad or not
-    pub(crate) bad_nodes: BTreeMap<PeerId, (Vec<(NodeIssue, Instant)>, bool)>,
+    pub(crate) bad_nodes: BadNodes,
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
 }
@@ -715,7 +717,7 @@ impl SwarmDriver {
                         }
                     }
                 }
-                _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm),
+                _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
             }
         }
     }

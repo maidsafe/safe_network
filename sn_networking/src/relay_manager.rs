@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::driver::NodeBehaviour;
+use crate::driver::{BadNodes, NodeBehaviour};
 use libp2p::{
     core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
@@ -64,9 +64,19 @@ impl RelayManager {
     }
 
     /// Should we keep this peer alive?
-    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
-        self.connected_relays.contains_key(peer_id)
-            || self.waiting_for_reservation.contains_key(peer_id)
+    /// If a peer is considered as a bad node, closing it's connection would remove that server from the listen addr.
+    #[allow(clippy::nonminimal_bool)]
+    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId, bad_nodes: &BadNodes) -> bool {
+        let is_not_bad = if let Some((_, is_bad)) = bad_nodes.get(peer_id) {
+            !*is_bad
+        } else {
+            true
+        };
+
+        // we disconnect from bad server
+        (self.connected_relays.contains_key(peer_id) && is_not_bad)
+            || (self.waiting_for_reservation.contains_key(peer_id) && is_not_bad)
+            // but servers provide connections to bad nodes.
             || self.reserved_by.contains(peer_id)
     }
 
@@ -77,10 +87,18 @@ impl RelayManager {
         peer_id: &PeerId,
         addrs: &HashSet<Multiaddr>,
         stream_protocols: &Vec<StreamProtocol>,
+        bad_nodes: &BadNodes,
     ) {
         if self.candidates.len() >= MAX_POTENTIAL_CANDIDATES {
             trace!("Got max relay candidates");
             return;
+        }
+
+        if let Some((_, is_bad)) = bad_nodes.get(peer_id) {
+            if *is_bad {
+                debug!("Not adding peer {peer_id:?} as relay candidate as it is a bad node.");
+                return;
+            }
         }
 
         if Self::does_it_support_relay_server_protocol(stream_protocols) {
@@ -106,7 +124,11 @@ impl RelayManager {
     // todo: how do we know if a reservation has been revoked / if the peer has gone offline?
     /// Try connecting to candidate relays if we are below the threshold connections.
     /// This is run periodically on a loop.
-    pub(crate) fn try_connecting_to_relay(&mut self, swarm: &mut Swarm<NodeBehaviour>) {
+    pub(crate) fn try_connecting_to_relay(
+        &mut self,
+        swarm: &mut Swarm<NodeBehaviour>,
+        bad_nodes: &BadNodes,
+    ) {
         if !self.enable_client {
             return;
         }
@@ -133,6 +155,14 @@ impl RelayManager {
             };
 
             if let Some((peer_id, relay_addr)) = self.candidates.remove(index) {
+                // skip if detected as a bad node
+                if let Some((_, is_bad)) = bad_nodes.get(&peer_id) {
+                    if *is_bad {
+                        trace!("Peer {peer_id:?} is considered as a bad node. Skipping it.");
+                        continue;
+                    }
+                }
+
                 if self.connected_relays.contains_key(&peer_id)
                     || self.waiting_for_reservation.contains_key(&peer_id)
                 {
@@ -209,10 +239,13 @@ impl RelayManager {
             };
             info!("Removing external addr: {addr_with_self_peer_id:?}");
             swarm.remove_external_address(&addr_with_self_peer_id);
-        } else if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
+        }
+        if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
             info!("Removed peer form waiting_for_reservation as the listener has been closed {peer_id:?}: {addr:?}");
-        } else {
-            warn!("Could not find the listen addr after making reservation to the same");
+            trace!(
+                "waiting_for_reservation len: {:?}",
+                self.waiting_for_reservation.len()
+            )
         }
     }
 
