@@ -172,7 +172,7 @@ jobs:
           just upload-release-assets-to-s3 "safenodemand"
           just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
-          just upload-release-assets-to-s3 "node-launcher"
+          just upload-release-assets-to-s3 "node-launchpad"
 
           # The `release-plz` command publishes crates which had their versions bumped, and also
           # creates Github releases. The binaries are then attached to the releases in the
