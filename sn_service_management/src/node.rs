@@ -81,7 +81,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             program: self.service_data.safenode_path.to_path_buf(),
             args,
             contents: None,
-            username: Some(self.service_data.user.to_string()),
+            username: self.service_data.user.clone(),
             working_directory: None,
             environment: options.env_variables,
         })
@@ -89,6 +89,10 @@ impl<'a> ServiceStateActions for NodeService<'a> {
 
     fn data_dir_path(&self) -> PathBuf {
         self.service_data.data_dir_path.clone()
+    }
+
+    fn is_user_mode(&self) -> bool {
+        self.service_data.user_mode
     }
 
     fn log_dir_path(&self) -> PathBuf {
@@ -168,7 +172,8 @@ pub struct NodeServiceData {
     pub safenode_path: PathBuf,
     pub service_name: String,
     pub status: ServiceStatus,
-    pub user: String,
+    pub user: Option<String>,
+    pub user_mode: bool,
     pub version: String,
 }
 
