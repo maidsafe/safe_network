@@ -21,22 +21,20 @@ while IFS= read -r line; do
   crates_bumped+=("${name}-v${version}")
 done < <(cat bump_version_output | grep "^\*")
 
-len=${#crates_bumped[@]}
-if [[ $len -eq 0 ]]; then
-  echo "No changes detected."
-  if [[ -z "$SUFFIX" ]]; then
+
+if [[ -z "$SUFFIX" ]]; then
     echo "Removing any existing suffixes and bumping versions to stable."
     for crate in $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | .name'); do
-      version=$(cargo metadata --no-deps --format-version 1 | jq -r --arg crate_name "$crate" '.packages[] | select(.name==$crate_name) | .version')
-      new_version=$(echo "$version" | sed -E 's/(-alpha\.[0-9]+|-beta\.[0-9]+)$//')
-      if [[ "$version" != "$new_version" ]]; then
+        version=$(cargo metadata --no-deps --format-version 1 | jq -r --arg crate_name "$crate" '.packages[] | select(.name==$crate_name) | .version')
+        new_version=$(echo "$version" | sed -E 's/(-alpha\.[0-9]+|-beta\.[0-9]+)$//')
+        if [[ "$version" != "$new_version" ]]; then
         echo "Removing suffix from $crate, setting version to $new_version"
         cargo set-version -p $crate $new_version
         crates_bumped+=("${crate}-v${new_version}")
-      fi
+        fi
     done
-  fi
 fi
+
 
 if [[ -n "$SUFFIX" ]]; then
   echo "We are releasing to the $SUFFIX channel"
