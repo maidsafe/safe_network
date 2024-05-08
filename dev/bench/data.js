@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715087808944,
+  "lastUpdate": 1715130990153,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "tomek@librem.one",
-            "name": "trycatch",
-            "username": "thomasmarkiewicz"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
-          "message": "feat: allow register CLI to create a public register writable to anyone",
-          "timestamp": "2024-01-10T11:59:53Z",
-          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
-          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
-        },
-        "date": 1704890715602,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6470448024263209,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0816853474045351,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 64.85557577791477,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11698,6 +11659,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.47230749674857,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "300b549d756158ab93604093aca8ae4d40835eb5",
+          "message": "ci: fix packaging for node launchpad\n\nThe \"node_launchpad\" crate name was changed to \"node-launchpad\", and there was a small syntax error\nin the Bash script which meant the switch statement was not terminated correctly.",
+          "timestamp": "2024-05-08T10:04:11+09:00",
+          "tree_id": "9b38117b7f02bae599f16a48ded69e5e2e860812",
+          "url": "https://github.com/maidsafe/safe_network/commit/300b549d756158ab93604093aca8ae4d40835eb5"
+        },
+        "date": 1715130985304,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2143738149027643,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.655883055538956,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.70473352372901,
             "unit": "MiB/s"
           }
         ]
