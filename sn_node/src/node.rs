@@ -30,7 +30,7 @@ use sn_protocol::{
     messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens};
+use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -44,6 +44,15 @@ use tokio::{
     sync::{broadcast, mpsc::Receiver},
     task::{spawn, JoinHandle},
 };
+
+#[cfg(feature = "reward-forward")]
+use libp2p::kad::{Quorum, Record};
+#[cfg(feature = "reward-forward")]
+use sn_networking::PutRecordCfg;
+#[cfg(feature = "reward-forward")]
+use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
+#[cfg(feature = "reward-forward")]
+use sn_transfers::Hash;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
@@ -233,6 +242,17 @@ impl Node {
 
             let mut rolling_index = 0;
 
+            // use a random timeout to ensure not sync when transmit messages.
+            let balance_forward_interval: u64 = 10
+                * rng.gen_range(
+                    PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+                );
+            let balance_forward_time = Duration::from_secs(balance_forward_interval);
+            debug!("BalanceForward interval set to {balance_forward_time:?}");
+
+            let mut balance_forward_interval = tokio::time::interval(balance_forward_time);
+            let _ = balance_forward_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -282,6 +302,20 @@ impl Node {
                             rolling_index = 0;
                         } else {
                             rolling_index += 1;
+                        }
+                    }
+                    // runs every balance_forward_interval time
+                    _ = balance_forward_interval.tick() => {
+                        if cfg!(feature = "reward-forward") {
+                            let start = std::time::Instant::now();
+                            trace!("Periodic balance forward triggered");
+                            let network = self.network.clone();
+                            let owner = self.owner.clone();
+
+                            let _handle = spawn(async move {
+                                let _ = Self::try_forward_blance(network, owner);
+                                info!("Periodic blance forward took {:?}", start.elapsed());
+                            });
                         }
                     }
                     node_cmd = cmds_receiver.recv() => {
@@ -725,6 +759,85 @@ impl Node {
                 debug!("Skip bad_nodes check as not having too many nodes in RT");
             }
         }
+    }
+
+    // Shall be disabled after Beta
+    #[cfg(feature = "reward-forward")]
+    fn try_forward_blance(network: Network, owner: String) -> Result<()> {
+        let mut spend_requests = vec![];
+        {
+            // load wallet
+            let mut wallet = HotWallet::load_from(&network.root_dir_path)?;
+            let balance = wallet.balance();
+
+            let payee = vec![(
+                "reward collector".to_string(),
+                balance,
+                *NETWORK_ROYALTIES_PK,
+            )];
+
+            spend_requests.extend(
+                wallet
+                    .prepare_forward_signed_spend(payee, Some(Hash::hash(&owner.into_bytes())))?,
+            );
+        }
+
+        let record_kind = RecordKind::Spend;
+        let put_cfg = PutRecordCfg {
+            put_quorum: Quorum::Majority,
+            retry_strategy: None,
+            use_put_record_to: None,
+            verification: None,
+        };
+
+        info!(
+            "Reward forwarding sending {} spends in this iteration.",
+            spend_requests.len()
+        );
+
+        for spend_request in spend_requests {
+            let network_clone = network.clone();
+            let put_cfg_clone = put_cfg.clone();
+
+            // Sent out spend in separate thread to avoid blocking the main one
+            let _handle = spawn(async move {
+                let unique_pubkey = *spend_request.unique_pubkey();
+                let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
+                let network_address = NetworkAddress::from_spend_address(cash_note_addr);
+
+                let record_key = network_address.to_record_key();
+                let pretty_key = PrettyPrintRecordKey::from(&record_key);
+
+                debug!("Reward forwarding in spend {pretty_key:?}: {spend_request:#?}");
+
+                let value = if let Ok(value) = try_serialize_record(&[spend_request], record_kind) {
+                    value
+                } else {
+                    error!("Reward forwarding: Failed to serialise spend {pretty_key:?}");
+                    return;
+                };
+
+                let record = Record {
+                    key: record_key.clone(),
+                    value: value.to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+
+                let result = network_clone.put_record(record, &put_cfg_clone).await;
+
+                match result {
+                    Ok(_) => info!("Reward forwarding completed sending spend {pretty_key:?}"),
+                    Err(err) => {
+                        info!("Reward forwarding: sending spend {pretty_key:?} failed with {err:?}")
+                    }
+                }
+            });
+
+            std::thread::sleep(Duration::from_millis(500));
+        }
+
+        Ok(())
     }
 }
 

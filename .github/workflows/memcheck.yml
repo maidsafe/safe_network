@@ -286,7 +286,8 @@ jobs:
           cat spend_dag_and_statistics.txt
         env:
           SN_LOG: "all"
-        timeout-minutes: 60
+        timeout-minutes: 5
+        if: always()
 
       - name: Check nodes running
         shell: bash
@@ -412,6 +413,20 @@ jobs:
           echo "Total swarm_driver long handling times is: $total_num_of_times"
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
+
+      - name: Verify reward forwarding using rg
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          min_reward_forwarding_times="150"
+          reward_forwarding_count=$(rg "Reward forwarding completed sending spend" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Carried out $reward_forwarding_count reward forwardings"
+          if (( $(echo "$reward_forwarding_count < $min_reward_forwarding_times" | bc -l) )); then
+            echo "Reward forwarding times below the threshold: $reward_forwarding_count"
+            exit 1
+          fi
+        if: always()
 
       - name: Upload payment wallet initialization log
         uses: actions/upload-artifact@main
