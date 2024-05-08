@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.5...sn_service_management-v0.2.6) - 2024-05-08
+
+### Other
+- updated the following local packages: sn_protocol
+
 ## [0.2.5-alpha.2](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.5-alpha.1...sn_service_management-v0.2.5-alpha.2) - 2024-05-07
 
 ### Added

@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Node Launchpad"
 name = "node-launchpad"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -42,9 +42,9 @@ serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 signal-hook = "0.3.17"
 sn-node-manager = { version = "0.7.5", path = "../sn_node_manager" }
-sn_peers_acquisition = { version = "0.2.11", path = "../sn_peers_acquisition" }
+sn_peers_acquisition = { version = "0.2.12", path = "../sn_peers_acquisition" }
 sn-releases = "0.2.1"
-sn_service_management = { version = "0.2.5", path = "../sn_service_management" }
+sn_service_management = { version = "0.2.6", path = "../sn_service_management" }
 strip-ansi-escapes = "0.2.0"
 strum = { version = "0.26.1", features = ["derive"] }
 tokio = { version = "1.32.0", features = ["full"] }

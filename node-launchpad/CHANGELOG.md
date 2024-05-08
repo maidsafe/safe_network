@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.0...node-launchpad-v0.1.1) - 2024-05-08
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.1.0](https://github.com/maidsafe/safe_network/releases/tag/node-launchpad-v0.1.0) - 2024-05-07
 
 ### Added
