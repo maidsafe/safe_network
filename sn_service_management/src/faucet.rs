@@ -83,6 +83,11 @@ impl<'a> ServiceStateActions for FaucetService<'a> {
         PathBuf::new()
     }
 
+    fn is_user_mode(&self) -> bool {
+        // The faucet service should never run in user mode.
+        false
+    }
+
     fn log_dir_path(&self) -> PathBuf {
         self.service_data.log_dir_path.clone()
     }

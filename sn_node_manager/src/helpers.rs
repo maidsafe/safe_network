@@ -182,6 +182,16 @@ pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
     Ok(version)
 }
 
+#[cfg(target_os = "windows")]
+pub fn get_username() -> Result<String> {
+    Ok(std::env::var("USERNAME")?)
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn get_username() -> Result<String> {
+    Ok(std::env::var("USER")?)
+}
+
 /// There is a `tempdir` crate that provides the same kind of functionality, but it was flagged for
 /// a security vulnerability.
 pub fn create_temp_dir() -> Result<PathBuf> {

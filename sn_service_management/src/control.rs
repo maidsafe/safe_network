@@ -9,7 +9,7 @@
 use crate::error::{Error, Result};
 
 use service_manager::{
-    ServiceInstallCtx, ServiceLabel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
+    ServiceInstallCtx, ServiceLabel, ServiceLevel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
 };
 use std::{
@@ -28,12 +28,12 @@ use sysinfo::{Pid, System};
 pub trait ServiceControl: Sync {
     fn create_service_user(&self, username: &str) -> Result<()>;
     fn get_available_port(&self) -> Result<u16>;
-    fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()>;
+    fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> Result<()>;
     fn get_process_pid(&self, path: &Path) -> Result<u32>;
     fn is_service_process_running(&self, pid: u32) -> bool;
-    fn start(&self, service_name: &str) -> Result<()>;
-    fn stop(&self, service_name: &str) -> Result<()>;
-    fn uninstall(&self, service_name: &str) -> Result<()>;
+    fn start(&self, service_name: &str, user_mode: bool) -> Result<()>;
+    fn stop(&self, service_name: &str, user_mode: bool) -> Result<()>;
+    fn uninstall(&self, service_name: &str, user_mode: bool) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
@@ -181,29 +181,41 @@ impl ServiceControl for ServiceController {
         ))
     }
 
-    fn install(&self, install_ctx: ServiceInstallCtx) -> Result<()> {
-        let manager = <dyn ServiceManager>::native()?;
+    fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> Result<()> {
+        let mut manager = <dyn ServiceManager>::native()?;
+        if user_mode {
+            manager.set_level(ServiceLevel::User)?;
+        }
         manager.install(install_ctx)?;
         Ok(())
     }
 
-    fn start(&self, service_name: &str) -> Result<()> {
+    fn start(&self, service_name: &str, user_mode: bool) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()?;
+        if user_mode {
+            manager.set_level(ServiceLevel::User)?;
+        }
         manager.start(ServiceStartCtx { label })?;
         Ok(())
     }
 
-    fn stop(&self, service_name: &str) -> Result<()> {
+    fn stop(&self, service_name: &str, user_mode: bool) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()?;
+        if user_mode {
+            manager.set_level(ServiceLevel::User)?;
+        }
         manager.stop(ServiceStopCtx { label })?;
         Ok(())
     }
 
-    fn uninstall(&self, service_name: &str) -> Result<()> {
+    fn uninstall(&self, service_name: &str, user_mode: bool) -> Result<()> {
         let label: ServiceLabel = service_name.parse()?;
-        let manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()?;
+        if user_mode {
+            manager.set_level(ServiceLevel::User)?;
+        }
         match manager.uninstall(ServiceUninstallCtx { label }) {
             Ok(()) => Ok(()),
             Err(e) => match e.kind() {
@@ -216,7 +228,6 @@ impl ServiceControl for ServiceController {
                 _ => Err(e.into()),
             },
         }
-        // Ok(())
     }
 
     /// Provide a delay for the service to start or stop.

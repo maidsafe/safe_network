@@ -47,7 +47,7 @@ pub async fn restart_node_service(
     if retain_peer_id {
         // reuse the same port and root dir to retain peer id.
         service_control
-            .uninstall(&current_node_clone.service_name)
+            .uninstall(&current_node_clone.service_name, false)
             .map_err(|err| {
                 eyre!(
                     "Error while uninstalling node {:?} with: {err:?}",
@@ -70,7 +70,7 @@ pub async fn restart_node_service(
             service_user: current_node_clone.user.clone(),
         }
         .build()?;
-        service_control.install(install_ctx).map_err(|err| {
+        service_control.install(install_ctx, false).map_err(|err| {
             eyre!(
                 "Error while installing node {:?} with: {err:?}",
                 current_node_clone.service_name
@@ -95,13 +95,28 @@ pub async fn restart_node_service(
             data_dir_path.pop();
             data_dir_path.join(&new_service_name)
         };
-        create_owned_dir(log_dir_path.clone(), &current_node_clone.user).map_err(|err| {
+
+        create_owned_dir(
+            log_dir_path.clone(),
+            current_node_clone
+                .user
+                .as_ref()
+                .ok_or_else(|| eyre!("The user must be set in the RPC context"))?,
+        )
+        .map_err(|err| {
             eyre!(
                 "Error while creating owned dir for {:?}: {err:?}",
                 current_node_clone.user
             )
         })?;
-        create_owned_dir(data_dir_path.clone(), &current_node_clone.user).map_err(|err| {
+        create_owned_dir(
+            data_dir_path.clone(),
+            current_node_clone
+                .user
+                .as_ref()
+                .ok_or_else(|| eyre!("The user must be set in the RPC context"))?,
+        )
+        .map_err(|err| {
             eyre!(
                 "Error while creating owned dir for {:?}: {err:?}",
                 current_node_clone.user
@@ -119,7 +134,14 @@ pub async fn restart_node_service(
             safenode_path.pop();
 
             let safenode_path = safenode_path.join(&new_service_name);
-            create_owned_dir(data_dir_path.clone(), &current_node_clone.user).map_err(|err| {
+            create_owned_dir(
+                data_dir_path.clone(),
+                current_node_clone
+                    .user
+                    .as_ref()
+                    .ok_or_else(|| eyre!("The user must be set in the RPC context"))?,
+            )
+            .map_err(|err| {
                 eyre!(
                     "Error while creating owned dir for {:?}: {err:?}",
                     current_node_clone.user
@@ -152,7 +174,7 @@ pub async fn restart_node_service(
             service_user: current_node_clone.user.clone(),
         }
         .build()?;
-        service_control.install(install_ctx).map_err(|err| {
+        service_control.install(install_ctx, false).map_err(|err| {
             eyre!("Error while installing node {new_service_name:?} with: {err:?}",)
         })?;
 
@@ -173,6 +195,7 @@ pub async fn restart_node_service(
             service_name: new_service_name.clone(),
             status: ServiceStatus::Added,
             user: current_node_clone.user.clone(),
+            user_mode: false,
             version: current_node_clone.version.clone(),
         };
 

@@ -76,6 +76,11 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
         PathBuf::new()
     }
 
+    fn is_user_mode(&self) -> bool {
+        // The daemon service should never run in user mode.
+        false
+    }
+
     fn log_dir_path(&self) -> PathBuf {
         PathBuf::new()
     }
