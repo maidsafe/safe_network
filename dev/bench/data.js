@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715183830310,
+  "lastUpdate": 1715183946156,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
-          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
-          "timestamp": "2024-01-11T14:42:05Z",
-          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
-          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
-        },
-        "date": 1704984976247,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "555b02015c98e87d04c42701ce1b4560a9c903ff",
+          "message": "fix(relay_manager): filter out bad nodes",
+          "timestamp": "2024-05-08T15:05:35Z",
+          "tree_id": "4fe1f84526be67054e7b8d6e5f6e9a3251346d74",
+          "url": "https://github.com/maidsafe/safe_network/commit/555b02015c98e87d04c42701ce1b4560a9c903ff"
+        },
+        "date": 1715183945574,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
