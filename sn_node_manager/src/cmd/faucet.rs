@@ -48,8 +48,11 @@ pub async fn add(
     let service_manager = ServiceController {};
     service_manager.create_service_user(service_user)?;
 
-    let service_log_dir_path =
-        config::get_service_log_dir_path(ReleaseType::Faucet, log_dir_path, service_user)?;
+    let service_log_dir_path = config::get_service_log_dir_path(
+        ReleaseType::Faucet,
+        log_dir_path,
+        Some(service_user.to_string()),
+    )?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();

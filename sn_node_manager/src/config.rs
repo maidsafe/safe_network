@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::Result;
+use color_eyre::{eyre::eyre, Result};
 use sn_releases::ReleaseType;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(unix)]
 pub fn get_daemon_install_path() -> PathBuf {
@@ -27,15 +27,25 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
     // other commands, e.g., requesting status, shouldn't require root.
     use std::os::unix::fs::PermissionsExt;
 
-    let path = Path::new("/var/safenode-manager/");
-    if is_running_as_root() && !path.exists() {
-        std::fs::create_dir_all(path)?;
-        let mut perm = std::fs::metadata(path)?.permissions();
+    let path = if is_running_as_root() {
+        let path = PathBuf::from("/var/safenode-manager/");
+        std::fs::create_dir_all(&path)?;
+        let mut perm = std::fs::metadata(&path)?.permissions();
         perm.set_mode(0o755); // set permissions to rwxr-xr-x
-        std::fs::set_permissions(path, perm)?;
+        std::fs::set_permissions(&path, perm)?;
+        path
+    } else {
+        get_user_safenode_data_dir()?
+    };
+
+    if is_running_as_root() && !path.exists() {
+        std::fs::create_dir_all(&path)?;
+        let mut perm = std::fs::metadata(&path)?.permissions();
+        perm.set_mode(0o755); // set permissions to rwxr-xr-x
+        std::fs::set_permissions(&path, perm)?;
     }
 
-    Ok(path.to_path_buf())
+    Ok(path)
 }
 
 #[cfg(windows)]
@@ -83,18 +93,34 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
     Ok(path.join("node_registry.json"))
 }
 
+/// Get the data directory for the service.
+///
+/// It's a little counter-intuitive, but the owner will be `None` in the case of a user-mode
+/// service, because it will always run as the current user. The `owner` is really to specify the
+/// non-root user for running a system-wide service.
 #[cfg(unix)]
-pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, owner: &str) -> Result<PathBuf> {
+pub fn get_service_data_dir_path(
+    custom_path: Option<PathBuf>,
+    owner: Option<String>,
+) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
-        None => PathBuf::from("/var/safenode-manager/services"),
+        None => match owner.is_some() {
+            true => PathBuf::from("/var/safenode-manager/services"),
+            false => get_user_safenode_data_dir()?,
+        },
     };
-    create_owned_dir(path.clone(), owner)?;
+    if let Some(owner) = owner {
+        create_owned_dir(path.clone(), &owner)?;
+    }
     Ok(path)
 }
 
 #[cfg(windows)]
-pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> Result<PathBuf> {
+pub fn get_service_data_dir_path(
+    custom_path: Option<PathBuf>,
+    _owner: Option<String>,
+) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
         None => PathBuf::from("C:\\ProgramData\\safenode\\data"),
@@ -103,17 +129,27 @@ pub fn get_service_data_dir_path(custom_path: Option<PathBuf>, _owner: &str) -> 
     Ok(path)
 }
 
+/// Get the logging directory for the service.
+///
+/// It's a little counter-intuitive, but the owner will be `None` in the case of a user-mode
+/// service, because it will always run as the current user. The `owner` is really to specify the
+/// non-root user for running a system-wide service.
 #[cfg(unix)]
 pub fn get_service_log_dir_path(
     bin_type: ReleaseType,
     custom_path: Option<PathBuf>,
-    owner: &str,
+    owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
-        None => PathBuf::from("/var/log").join(bin_type.to_string()),
+        None => match owner.is_some() {
+            true => PathBuf::from("/var/log").join(bin_type.to_string()),
+            false => get_user_safenode_data_dir()?,
+        },
     };
-    create_owned_dir(path.clone(), owner)?;
+    if let Some(owner) = owner {
+        create_owned_dir(path.clone(), &owner)?;
+    }
     Ok(path)
 }
 
@@ -121,7 +157,7 @@ pub fn get_service_log_dir_path(
 pub fn get_service_log_dir_path(
     bin_type: ReleaseType,
     custom_path: Option<PathBuf>,
-    _owner: &str,
+    _owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
         Some(p) => p,
@@ -135,7 +171,6 @@ pub fn get_service_log_dir_path(
 
 #[cfg(unix)]
 pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
-    use color_eyre::eyre::eyre;
     use nix::unistd::{chown, Gid, Uid};
     use std::os::unix::fs::PermissionsExt;
     use users::get_user_by_name;
@@ -166,4 +201,11 @@ pub fn is_running_as_root() -> bool {
 pub fn is_running_as_root() -> bool {
     // The Windows implementation for this will be much more complex.
     true
+}
+
+pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
+    Ok(dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Could not obtain user data directory"))?
+        .join("safe")
+        .join("node"))
 }

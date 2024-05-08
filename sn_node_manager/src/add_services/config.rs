@@ -53,7 +53,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub node_port: Option<u16>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
-    pub service_user: String,
+    pub service_user: Option<String>,
 }
 
 impl InstallNodeServiceCtxBuilder {
@@ -102,7 +102,7 @@ impl InstallNodeServiceCtxBuilder {
             program: self.safenode_path.to_path_buf(),
             args,
             contents: None,
-            username: Some(self.service_user.to_string()),
+            username: self.service_user.clone(),
             working_directory: None,
             environment: self.env_variables,
         })
@@ -125,7 +125,8 @@ pub struct AddNodeServiceOptions {
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
-    pub user: String,
+    pub user: Option<String>,
+    pub user_mode: bool,
     pub version: String,
 }
 
