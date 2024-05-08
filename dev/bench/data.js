@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715132910055,
+  "lastUpdate": 1715132920224,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,34 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "jason.burley@sedex.com",
-            "name": "jason.burley"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b0f5d6b516eb94e3be541ff1852ed7e9de601bcd",
-          "message": "docs: four step readme",
-          "timestamp": "2024-01-10T14:31:31Z",
-          "tree_id": "caf376c841e1d2f5ae8a1bffbc7224d52adfd9ac",
-          "url": "https://github.com/maidsafe/safe_network/commit/b0f5d6b516eb94e3be541ff1852ed7e9de601bcd"
-        },
-        "date": 1704899479308,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20395,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/300b549d756158ab93604093aca8ae4d40835eb5"
         },
         "date": 1715131105735,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cfe6da899ba9a472d361ecf56a6647f5bbea35da",
+          "message": "fix(launchpad): prevent loops from terminal/sudo relaunching",
+          "timestamp": "2024-05-08T10:33:20+09:00",
+          "tree_id": "f5a9b5bb2cb8d37bc06c37601fe476b2f52dd2ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/cfe6da899ba9a472d361ecf56a6647f5bbea35da"
+        },
+        "date": 1715132919780,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
