@@ -7,19 +7,23 @@ git_release_enable = true
 publish_allow_dirty = false
 semver_check = false
 git_release_type = "auto"
+release = false
 
 [[package]]
 name = "sn_auditor"
 changelog_update = true
 git_release_enable = false
+release = true
 
 [[package]]
 name = "sn_build_info"
 changelog_update = true
 git_release_enable = false
+release = true
 
 [[package]]
 name = "sn_cli"
+release = true
 changelog_update = true
 changelog_include = [
     "sn_client",
@@ -32,6 +36,7 @@ changelog_include = [
 
 [[package]]
 name = "sn_client"
+release = true
 changelog_update = true
 git_release_enable = false
 changelog_include = [
@@ -44,26 +49,31 @@ changelog_include = [
 
 [[package]]
 name = "sn_faucet"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_logging"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_metrics"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_networking"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_node"
+release = true
 changelog_update = true
 changelog_include = [
     "sn_networking",
@@ -75,46 +85,42 @@ changelog_include = [
 
 [[package]]
 name = "node-launchpad"
+release = true
 changelog_update = true
 git_release_enable = true
 
 [[package]]
 name = "sn_node_rpc_client"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_peers_acquisition"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_protocol"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_registers"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_service_management"
+release = true
 changelog_update = true
 git_release_enable = false
 
 [[package]]
 name = "sn_transfers"
-changelog_update = true
-git_release_enable = false
-
-[[package]]
-name = "test_utils"
-changelog_update = true
-git_release_enable = false
-publish = false
-
-[[package]]
-name = "token_supplies"
+release = true
 changelog_update = true
 git_release_enable = false
