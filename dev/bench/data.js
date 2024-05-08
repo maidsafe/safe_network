@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715132926102,
+  "lastUpdate": 1715133023395,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "559fb83a086af02632621666da009fb58e4bfb72",
-          "message": "chore: fixup send_spends and use ExcessiveNanoValue error",
-          "timestamp": "2024-01-10T14:56:11Z",
-          "tree_id": "b3bbb37c79454b06c37f62e59e504e463746ba4d",
-          "url": "https://github.com/maidsafe/safe_network/commit/559fb83a086af02632621666da009fb58e4bfb72"
-        },
-        "date": 1704901256273,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f59f031e47e1e2efc3d5e44ec424b6f1ba9aeeba",
+          "message": "fix(release): justfile launcher->launcpad",
+          "timestamp": "2024-05-08T10:36:45+09:00",
+          "tree_id": "f2a31ab19845c1ea67c353143fb3e804e5f85efb",
+          "url": "https://github.com/maidsafe/safe_network/commit/f59f031e47e1e2efc3d5e44ec424b6f1ba9aeeba"
+        },
+        "date": 1715133022882,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
