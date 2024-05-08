@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715148948450,
+  "lastUpdate": 1715148950734,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "55a5d4287774d257027a3a8bad5c7017a193999a",
-          "message": "chore(cli): print the datamap's entire hex addr",
-          "timestamp": "2024-01-03T17:12:23Z",
-          "tree_id": "7063ba0509a2ceb6c117a552fab96d17fdb92cdf",
-          "url": "https://github.com/maidsafe/safe_network/commit/55a5d4287774d257027a3a8bad5c7017a193999a"
-        },
-        "date": 1704304323681,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3745,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 17467,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35016,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1061c2fe9b640965e32149b79340a825b5842862",
+          "message": "chore: dont release crates by default w/ release-plz\n\nyou now have to opt in with release = true",
+          "timestamp": "2024-05-08T15:01:24+09:00",
+          "tree_id": "995c45a83fbb7d95694ac2c961d48ad92a3410b6",
+          "url": "https://github.com/maidsafe/safe_network/commit/1061c2fe9b640965e32149b79340a825b5842862"
+        },
+        "date": 1715148949905,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7664,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35689,
             "unit": "ms"
           },
           {
