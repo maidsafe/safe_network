@@ -54,9 +54,12 @@ async fn tokio_main() -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // now launch the terminal
-    let terminal_type = terminal::detect_and_setup_terminal()?;
-    terminal::launch_terminal(&terminal_type)?;
+    let is_root = terminal::is_running_root();
+    if !is_root {
+        let terminal_type = terminal::detect_and_setup_terminal(is_root)?;
+        terminal::launch_terminal(&terminal_type, is_root)?;
+        return Ok(());
+    }
 
     // Construct a local task set that can run `!Send` futures.
     let local = LocalSet::new();

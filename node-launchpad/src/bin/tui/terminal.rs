@@ -29,19 +29,19 @@ pub(crate) enum TerminalType {
 }
 
 #[cfg(not(windows))]
-fn is_running_root() -> bool {
+pub fn is_running_root() -> bool {
     use nix::unistd::geteuid;
     geteuid().is_root()
 }
 
 #[cfg(windows)]
-fn is_running_root() -> bool {
+pub fn is_running_root() -> bool {
     // Example: Attempt to read from a typically restricted system directory
     std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
 }
 
-pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
-    if !is_running_root() {
+pub(crate) fn detect_and_setup_terminal(is_root: bool) -> Result<TerminalType> {
+    if !is_root {
         #[cfg(target_os = "windows")]
         {
             // todo: There is no terminal to show this error message when double clicking on the exe.
@@ -109,7 +109,7 @@ fn try_available_linux_terminals() -> Result<TerminalType> {
     }
 }
 
-pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
+pub(crate) fn launch_terminal(terminal_type: &TerminalType, is_root: bool) -> Result<()> {
     let launchpad_path = std::env::current_exe()?;
 
     match terminal_type {
@@ -138,7 +138,7 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
         TerminalType::MacOS(_path) | TerminalType::ITerm2(_path) => {
             // We need to detect here to avoid a loop on mac
             // as the terminal is booted by default
-            if !is_running_root() {
+            if !is_root {
                 let status = Command::new("sudo")
                     .arg(launchpad_path)
                     .stdin(Stdio::inherit())
