@@ -12,6 +12,7 @@ mod cashnote;
 mod nano;
 mod reason_hash;
 mod signed_spend;
+mod spend_reason;
 mod transaction;
 mod unique_keys;
 
@@ -29,6 +30,7 @@ pub use cashnote::{CashNote, CashNoteOutputDetails};
 pub use nano::NanoTokens;
 pub use reason_hash::Hash;
 pub use signed_spend::{SignedSpend, Spend};
+pub use spend_reason::SpendReason;
 pub use transaction::Transaction;
 pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey};
 

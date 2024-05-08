@@ -45,8 +45,6 @@ pub enum TransferError {
     SignedSpendInputLenMismatch { got: usize, expected: usize },
     #[error("A SignedSpend UniquePubkey does not match an MlsagSignature UniquePubkey.")]
     SignedSpendInputIdMismatch,
-    #[error("SignedSpends for {0:?} have mismatching reasons.")]
-    SignedSpendReasonMismatch(UniquePubkey),
     #[error("Decryption failed.")]
     DecryptionBySecretKeyFailed,
     #[error("UniquePubkey not found.")]
@@ -88,4 +86,8 @@ pub enum TransferError {
 
     #[error("Bls error: {0}")]
     Blsttc(#[from] bls::error::Error),
+    #[error("User name decryption failed")]
+    UserNameDecryptFailed,
+    #[error("User name encryption failed")]
+    DiscordNameCipherTooBig,
 }

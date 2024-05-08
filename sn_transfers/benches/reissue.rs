@@ -10,8 +10,8 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
-    create_first_cash_note_from_key, rng, CashNote, DerivationIndex, Hash, MainSecretKey,
-    NanoTokens, OfflineTransfer,
+    create_first_cash_note_from_key, rng, CashNote, DerivationIndex, MainSecretKey, NanoTokens,
+    OfflineTransfer, SpendReason,
 };
 use std::collections::BTreeSet;
 
@@ -39,7 +39,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         vec![(starting_cashnote, Some(starting_main_key.derive_key(&zero)))],
         recipients,
         starting_main_key.main_pubkey(),
-        Hash::default(),
+        SpendReason::default(),
     )
     .expect("transfer to succeed");
 
@@ -98,7 +98,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         )],
         recipients,
         starting_main_key.main_pubkey(),
-        Hash::default(),
+        SpendReason::default(),
     )
     .expect("transfer to succeed");
 
@@ -142,7 +142,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         many_cashnotes,
         one_single_recipient,
         starting_main_key.main_pubkey(),
-        Hash::default(),
+        SpendReason::default(),
     )
     .expect("transfer to succeed");
     let merge_spent_tx = many_to_one_transfer.tx.clone();

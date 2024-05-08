@@ -8,8 +8,8 @@
 
 use crate::{
     cashnotes::{CashNoteBuilder, UnsignedTransfer, CASHNOTE_PURPOSE_OF_CHANGE},
-    rng, CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, Input,
-    MainPubkey, NanoTokens, Result, SignedSpend, Transaction, TransactionBuilder, TransferError,
+    rng, CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Input, MainPubkey,
+    NanoTokens, Result, SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError,
     UniquePubkey, NETWORK_ROYALTIES_PK,
 };
 
@@ -93,7 +93,7 @@ impl OfflineTransfer {
         available_cash_notes: CashNotesAndSecretKey,
         recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
         change_to: MainPubkey,
-        input_reason_hash: Hash,
+        input_reason_hash: SpendReason,
     ) -> Result<Self> {
         let total_output_amount = recipients
             .iter()
@@ -138,7 +138,7 @@ pub fn create_unsigned_transfer(
     available_cash_notes: CashNotesAndSecretKey,
     recipients: Vec<(NanoTokens, String, MainPubkey, DerivationIndex)>,
     change_to: MainPubkey,
-    reason_hash: Hash,
+    reason_hash: SpendReason,
 ) -> Result<UnsignedTransfer> {
     let total_output_amount = recipients
         .iter()
@@ -294,7 +294,7 @@ fn create_transaction_builder_with(
 /// enough peers in the network, the transaction will be completed.
 fn create_offline_transfer_with(
     selected_inputs: TransferInputs,
-    input_reason_hash: Hash,
+    input_reason: SpendReason,
 ) -> Result<OfflineTransfer> {
     // gather the network_royalties derivation indexes
     let network_royalties: Vec<DerivationIndex> = selected_inputs
@@ -307,7 +307,7 @@ fn create_offline_transfer_with(
     let (tx_builder, src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder.build(input_reason_hash, network_royalties)?;
+    let cash_note_builder = tx_builder.build(input_reason, network_royalties)?;
 
     let tx = cash_note_builder.spent_tx.clone();
 

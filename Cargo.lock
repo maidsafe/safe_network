@@ -7346,6 +7346,7 @@ dependencies = [
  "rayon",
  "rmp-serde",
  "serde",
+ "serde_bytes",
  "serde_json",
  "thiserror",
  "tiny-keccak",

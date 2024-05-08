@@ -11,8 +11,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_transfers::{
-    CashNote, DerivationIndex, Hash, MainPubkey, MainSecretKey, NanoTokens, OfflineTransfer,
-    SignedSpend, SpendAddress, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
+    CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, OfflineTransfer, SignedSpend,
+    SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
 };
 use xor_name::XorName;
 
@@ -125,7 +125,7 @@ impl MockNetwork {
             cash_notes_with_keys,
             recipient,
             from_wallet.sk.main_pubkey(),
-            Hash::default(),
+            SpendReason::default(),
         )
         .map_err(|e| eyre!("failed to create transfer: {}", e))?;
         let spends = transfer.all_spend_requests;
