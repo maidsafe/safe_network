@@ -10,8 +10,8 @@ use super::wallet::HotWallet;
 
 use crate::cashnotes::CASHNOTE_PURPOSE_OF_GENESIS;
 use crate::{
-    CashNote, DerivationIndex, Hash, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
-    Transaction, TransactionBuilder, TransferError as CashNoteError,
+    CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    SpendReason, Transaction, TransactionBuilder, TransferError as CashNoteError,
 };
 
 use bls::SecretKey;
@@ -87,7 +87,7 @@ pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
 
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
-    let bytes = spend.spend.to_bytes();
+    let bytes = spend.spend.to_bytes_for_signing();
     spend.spend.unique_pubkey == GENESIS_CASHNOTE.unique_pubkey()
         && GENESIS_CASHNOTE
             .unique_pubkey()
@@ -149,7 +149,7 @@ pub fn create_first_cash_note_from_key(
         amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
     };
 
-    let reason = Hash::hash(b"SPEND_REASON_FOR_GENESIS");
+    let reason = SpendReason::default();
 
     let cash_note_builder = TransactionBuilder::default()
         .add_input(

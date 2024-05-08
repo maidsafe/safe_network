@@ -22,9 +22,9 @@ use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
-    CashNote, CashNoteOutputDetails, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash,
-    MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, Transaction, Transfer, UniquePubkey,
-    WalletError, CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES, NETWORK_ROYALTIES_PK,
+    CashNote, CashNoteOutputDetails, CashNoteRedemption, DerivationIndex, DerivedSecretKey,
+    MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, SpendReason, Transaction, Transfer,
+    UniquePubkey, WalletError, CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -256,7 +256,7 @@ impl HotWallet {
             .into_iter()
             .map(|(spend, dindex)| {
                 let derived_sk = self.key.derive_key(&dindex);
-                let derived_key_sig = derived_sk.sign(&spend.to_bytes());
+                let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
                 SignedSpend {
                     spend,
                     derived_key_sig,
@@ -307,17 +307,16 @@ impl HotWallet {
     pub fn build_unsigned_transaction(
         &mut self,
         to: Vec<TransactionPayeeDetails>,
-        reason_hash: Option<Hash>,
+        reason: Option<SpendReason>,
     ) -> Result<UnsignedTransfer> {
-        self.watchonly_wallet
-            .build_unsigned_transaction(to, reason_hash)
+        self.watchonly_wallet.build_unsigned_transaction(to, reason)
     }
 
     /// Make a transfer and return all created cash_notes
     pub fn local_send(
         &mut self,
         to: Vec<TransactionPayeeDetails>,
-        reason_hash: Option<Hash>,
+        reason: Option<SpendReason>,
     ) -> Result<Vec<CashNote>> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
@@ -334,14 +333,10 @@ impl HotWallet {
             available_cash_notes
         );
 
-        let reason_hash = reason_hash.unwrap_or_default();
+        let reason = reason.unwrap_or_default();
 
-        let transfer = OfflineTransfer::new(
-            available_cash_notes,
-            to_unique_keys,
-            self.address(),
-            reason_hash,
-        )?;
+        let transfer =
+            OfflineTransfer::new(available_cash_notes, to_unique_keys, self.address(), reason)?;
 
         let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
@@ -443,7 +438,7 @@ impl HotWallet {
             start.elapsed()
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let input_reason_hash = Hash::hash(b"SPEND_REASON_FOR_STORAGE");
+        let input_reason_hash = SpendReason::default();
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,

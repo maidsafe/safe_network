@@ -7,8 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
+    spend_reason::SpendReason,
     transaction::{Output, Transaction},
-    CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey,
+    CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Input, MainPubkey,
     NanoTokens, SignedSpend, Spend, UniquePubkey,
 };
 
@@ -106,7 +107,7 @@ impl TransactionBuilder {
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.
     pub fn build(
         self,
-        reason: Hash,
+        reason: SpendReason,
         network_royalties: Vec<DerivationIndex>,
     ) -> Result<CashNoteBuilder> {
         let spent_tx = Transaction {
@@ -121,12 +122,12 @@ impl TransactionBuilder {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
                     spent_tx: spent_tx.clone(),
-                    reason,
+                    reason: reason.clone(),
                     amount: input.amount,
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),
                 };
-                let derived_key_sig = derived_key.sign(&spend.to_bytes());
+                let derived_key_sig = derived_key.sign(&spend.to_bytes_for_signing());
                 signed_spends.insert(SignedSpend {
                     spend,
                     derived_key_sig,
@@ -144,7 +145,7 @@ impl TransactionBuilder {
     /// Build the UnsignedTransfer which contains the generated (unsigned) Spends.
     pub fn build_unsigned_transfer(
         self,
-        reason: Hash,
+        reason: SpendReason,
         network_royalties: Vec<DerivationIndex>,
         change_id: UniquePubkey,
     ) -> Result<UnsignedTransfer> {
@@ -160,7 +161,7 @@ impl TransactionBuilder {
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
                     spent_tx: tx.clone(),
-                    reason,
+                    reason: reason.clone(),
                     amount: input.amount,
                     parent_tx: input_src_tx.clone(),
                     network_royalties: network_royalties.clone(),

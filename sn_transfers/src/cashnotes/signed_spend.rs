@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::spend_reason::SpendReason;
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
 use crate::cashnotes::transaction::Output;
 use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
@@ -56,14 +57,14 @@ impl SignedSpend {
     }
 
     /// Get reason.
-    pub fn reason(&self) -> Hash {
-        self.spend.reason
+    pub fn reason(&self) -> &SpendReason {
+        &self.spend.reason
     }
 
     /// Represent this SignedSpend as bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Default::default();
-        bytes.extend(self.spend.to_bytes());
+        bytes.extend(self.spend.to_bytes_for_signing());
         bytes.extend(self.derived_key_sig.to_bytes());
         bytes
     }
@@ -141,7 +142,7 @@ impl SignedSpend {
         if self
             .spend
             .unique_pubkey
-            .verify(&self.derived_key_sig, self.spend.to_bytes())
+            .verify(&self.derived_key_sig, self.spend.to_bytes_for_signing())
         {
             Ok(())
         } else {
@@ -217,7 +218,7 @@ pub struct Spend {
     pub spent_tx: Transaction,
     /// Reason why this CashNote was spent.
     #[debug(skip)]
-    pub reason: Hash,
+    pub reason: SpendReason,
     /// The amount of the input CashNote.
     #[debug(skip)]
     pub amount: NanoTokens,
@@ -232,11 +233,11 @@ pub struct Spend {
 impl Spend {
     /// Represent this Spend as bytes.
     /// There is no from_bytes, because this function is not symetric as it uses hashes
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes_for_signing(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Default::default();
         bytes.extend(self.unique_pubkey.to_bytes());
         bytes.extend(self.spent_tx.hash().as_ref());
-        bytes.extend(self.reason.as_ref());
+        bytes.extend(self.reason.hash().as_ref());
         bytes.extend(self.amount.to_bytes());
         bytes.extend(self.parent_tx.hash().as_ref());
         bytes
@@ -244,7 +245,7 @@ impl Spend {
 
     /// represent this Spend as a Hash
     pub fn hash(&self) -> Hash {
-        Hash::hash(&self.to_bytes())
+        Hash::hash(&self.to_bytes_for_signing())
     }
 
     /// Returns the purpose of the outputs that associate with this Spend

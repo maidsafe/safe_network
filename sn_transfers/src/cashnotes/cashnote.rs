@@ -116,16 +116,6 @@ impl CashNote {
         self.derivation_index
     }
 
-    /// Return the reason why this CashNote was spent.
-    /// Will be the default Hash (empty) if reason is none.
-    pub fn spent_reason(&self) -> Hash {
-        self.parent_spends
-            .iter()
-            .next()
-            .map(|s| s.reason())
-            .unwrap_or_default()
-    }
-
     /// Return the purpose why this CashNote was created.
     pub fn purpose(&self) -> String {
         self.purpose.clone()
@@ -155,7 +145,6 @@ impl CashNote {
 
         sha3.update(&self.purpose.clone().into_bytes());
 
-        sha3.update(self.spent_reason().as_ref());
         let mut hash = [0u8; 32];
         sha3.finalize(&mut hash);
         Hash::from(hash)
@@ -186,13 +175,6 @@ impl CashNote {
             .any(|o| unique_pubkey.eq(o.unique_pubkey()))
         {
             return Err(TransferError::CashNoteCiphersNotPresentInTransactionOutput);
-        }
-
-        // verify that all signed_spend reasons are equal
-        let spent_reason = self.spent_reason();
-        let reasons_are_equal = |s: &SignedSpend| spent_reason == s.reason();
-        if !self.parent_spends.iter().all(reasons_are_equal) {
-            return Err(TransferError::SignedSpendReasonMismatch(unique_pubkey));
         }
         Ok(())
     }

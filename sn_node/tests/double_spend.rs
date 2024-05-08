@@ -14,8 +14,8 @@ use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_transfers::{
-    rng, DerivationIndex, Hash, HotWallet, MainSecretKey, NanoTokens, OfflineTransfer, WalletError,
-    GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
+    rng, DerivationIndex, HotWallet, MainSecretKey, NanoTokens, OfflineTransfer, SpendReason,
+    WalletError, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
 };
 use tracing::info;
 
@@ -61,12 +61,12 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
         to3,
         DerivationIndex::random(&mut rng),
     );
-    let reason_hash = Hash::default();
+    let reason = SpendReason::default();
 
     let transfer_to_2 =
-        OfflineTransfer::new(some_cash_notes, vec![to2_unique_key], to1, reason_hash).unwrap();
+        OfflineTransfer::new(some_cash_notes, vec![to2_unique_key], to1, reason.clone()).unwrap();
     let transfer_to_3 =
-        OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason_hash).unwrap();
+        OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason).unwrap();
 
     // send both transfers to the network
     // upload won't error out, only error out during verification.
@@ -123,9 +123,8 @@ async fn genesis_double_spend_fail() -> Result<()> {
         DerivationIndex::random(&mut rng),
     );
     let change_addr = second_wallet_addr;
-    let reason_hash = Hash::default();
-    let transfer =
-        OfflineTransfer::new(genesis_cashnote, vec![recipient], change_addr, reason_hash)?;
+    let reason = SpendReason::default();
+    let transfer = OfflineTransfer::new(genesis_cashnote, vec![recipient], change_addr, reason)?;
 
     // send the transfer to the network which will mark genesis as a double spent
     // making its direct descendants unspendable
@@ -152,12 +151,12 @@ async fn genesis_double_spend_fail() -> Result<()> {
         .unwrap()
         .clone();
     let change_addr = first_wallet_addr;
-    let reason_hash = Hash::default();
+    let reason = SpendReason::default();
     let transfer2 = OfflineTransfer::new(
         vec![bad_genesis_descendant],
         vec![recipient],
         change_addr,
-        reason_hash,
+        reason,
     )?;
 
     // send the transfer to the network which should reject it

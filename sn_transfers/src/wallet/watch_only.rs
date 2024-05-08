@@ -19,7 +19,7 @@ use super::{
 };
 use crate::{
     transfers::create_unsigned_transfer, wallet::data_payments::PaymentDetails, CashNote,
-    DerivationIndex, Hash, MainPubkey, NanoTokens, UniquePubkey, UnsignedTransfer,
+    DerivationIndex, MainPubkey, NanoTokens, SpendReason, UniquePubkey, UnsignedTransfer,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
@@ -216,7 +216,7 @@ impl WatchOnlyWallet {
     pub fn build_unsigned_transaction(
         &mut self,
         to: Vec<TransactionPayeeDetails>,
-        reason_hash: Option<Hash>,
+        reason_hash: Option<SpendReason>,
     ) -> Result<UnsignedTransfer> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
