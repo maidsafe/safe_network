@@ -46,7 +46,16 @@ use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 /// Max number of records a node can store
+#[cfg(not(feature = "reward-forward"))]
 const MAX_RECORDS_COUNT: usize = 2048;
+#[cfg(feature = "reward-forward")]
+// A spend record is at the size of 4KB roughly.
+// Given chunk record is maxed at size of 512KB.
+// During Beta phase, it's almost one spend per chunk,
+// which makes the average record size is around 256k.
+// Given we are targeting small nodes use 1GB diskspace,
+// this shall allow around 4K records.
+const MAX_RECORDS_COUNT: usize = 4096;
 
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";

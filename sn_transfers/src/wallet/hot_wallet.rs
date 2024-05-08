@@ -340,7 +340,7 @@ impl HotWallet {
 
         let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
-        self.update_local_wallet(transfer, exclusive_access)?;
+        self.update_local_wallet(transfer, exclusive_access, true)?;
 
         trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(created_cash_notes)
@@ -365,10 +365,48 @@ impl HotWallet {
         self.reload()?;
         trace!("Wallet locked and loaded!");
 
-        self.update_local_wallet(transfer, exclusive_access)?;
+        self.update_local_wallet(transfer, exclusive_access, true)?;
 
         trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(created_cash_notes)
+    }
+
+    // Create SignedSpends directly to forward all accumulated balance to the receipient.
+    #[cfg(feature = "reward-forward")]
+    pub fn prepare_forward_signed_spend(
+        &mut self,
+        to: Vec<TransactionPayeeDetails>,
+        reason_hash: Option<Hash>,
+    ) -> Result<Vec<SignedSpend>> {
+        let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
+        debug!(
+            "Available CashNotes for local send: {:#?}",
+            available_cash_notes
+        );
+
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        // create a unique key for each output
+        let mut rng = &mut rand::rngs::OsRng;
+        let to_unique_keys: Vec<_> = to
+            .into_iter()
+            .map(|(purpose, amount, address)| {
+                (amount, purpose, address, DerivationIndex::random(&mut rng))
+            })
+            .collect();
+
+        let transfer = OfflineTransfer::new(
+            available_cash_notes,
+            to_unique_keys,
+            self.address(),
+            reason_hash,
+        )?;
+
+        let signed_spends = transfer.all_spend_requests.clone();
+
+        self.update_local_wallet(transfer, exclusive_access, false)?;
+
+        Ok(signed_spends)
     }
 
     /// Performs a payment for each content address.
@@ -519,7 +557,7 @@ impl HotWallet {
 
         // write all changes to local wallet
         let start = Instant::now();
-        self.update_local_wallet(offline_transfer, exclusive_access)?;
+        self.update_local_wallet(offline_transfer, exclusive_access, true)?;
         trace!(
             "local_send_storage_payment completed local wallet update in {:?}",
             start.elapsed()
@@ -532,6 +570,7 @@ impl HotWallet {
         &mut self,
         transfer: OfflineTransfer,
         exclusive_access: WalletExclusiveAccess,
+        insert_into_pending_spends: bool,
     ) -> Result<()> {
         // First of all, update client local state.
         let spent_unique_pubkeys: BTreeSet<_> = transfer
@@ -564,9 +603,10 @@ impl HotWallet {
                 start.elapsed()
             );
         }
-
-        for request in transfer.all_spend_requests {
-            self.unconfirmed_spend_requests.insert(request);
+        if insert_into_pending_spends {
+            for request in transfer.all_spend_requests {
+                self.unconfirmed_spend_requests.insert(request);
+            }
         }
 
         // store wallet to disk
