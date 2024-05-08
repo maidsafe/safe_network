@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::helpers::get_bin_version;
+use crate::helpers::{get_bin_version, get_username};
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -352,7 +352,8 @@ pub async fn run_node(
         safenode_path: launcher.get_safenode_path(),
         status: ServiceStatus::Running,
         service_name: format!("safenode-local{}", run_options.number),
-        user: get_username()?,
+        user: None,
+        user_mode: false,
         version: run_options.version.to_string(),
     })
 }
@@ -360,16 +361,6 @@ pub async fn run_node(
 ///
 /// Private Helpers
 ///
-
-#[cfg(target_os = "windows")]
-fn get_username() -> Result<String> {
-    Ok(std::env::var("USERNAME")?)
-}
-
-#[cfg(not(target_os = "windows"))]
-fn get_username() -> Result<String> {
-    Ok(std::env::var("USER")?)
-}
 
 async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr>) -> Result<()> {
     let mut all_peers = node_registry

@@ -68,6 +68,7 @@ pub trait ServiceStateActions {
     fn bin_path(&self) -> PathBuf;
     fn build_upgrade_install_context(&self, options: UpgradeOptions) -> Result<ServiceInstallCtx>;
     fn data_dir_path(&self) -> PathBuf;
+    fn is_user_mode(&self) -> bool;
     fn log_dir_path(&self) -> PathBuf;
     fn name(&self) -> String;
     fn pid(&self) -> Option<u32>;

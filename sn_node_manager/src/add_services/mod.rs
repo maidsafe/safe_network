@@ -13,7 +13,10 @@ use self::config::{
     AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
     InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder, PortRange,
 };
-use crate::{config::create_owned_dir, VerbosityLevel, DAEMON_SERVICE_NAME};
+use crate::{
+    config::{create_owned_dir, get_user_safenode_data_dir},
+    VerbosityLevel, DAEMON_SERVICE_NAME,
+};
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use service_manager::ServiceInstallCtx;
@@ -133,10 +136,29 @@ pub async fn add_node(
         let service_name = format!("safenode{node_number}");
         let service_data_dir_path = options.service_data_dir_path.join(service_name.clone());
         let service_safenode_path = service_data_dir_path.join(safenode_file_name.clone());
-        let service_log_dir_path = options.service_log_dir_path.join(service_name.clone());
 
-        create_owned_dir(service_data_dir_path.clone(), &options.user)?;
-        create_owned_dir(service_log_dir_path.clone(), &options.user)?;
+        // For a user mode service, if the user has *not* specified a custom directory and they are
+        // using the default, e.g., ~/.local/share/safe/node/<service-name>, an additional "logs"
+        // directory needs to be appended to the path, otherwise the log files will be output at
+        // the same directory where `secret-key` is, which is not what users expect.
+        let default_log_dir_path = get_user_safenode_data_dir()?;
+        let service_log_dir_path =
+            if options.user_mode && options.service_log_dir_path == default_log_dir_path {
+                options
+                    .service_log_dir_path
+                    .join(service_name.clone())
+                    .join("logs")
+            } else {
+                options.service_log_dir_path.join(service_name.clone())
+            };
+
+        if let Some(user) = &options.user {
+            create_owned_dir(service_data_dir_path.clone(), user)?;
+            create_owned_dir(service_log_dir_path.clone(), user)?;
+        } else {
+            std::fs::create_dir_all(service_data_dir_path.clone())?;
+            std::fs::create_dir_all(service_log_dir_path.clone())?;
+        }
 
         std::fs::copy(
             options.safenode_src_path.clone(),
@@ -159,7 +181,7 @@ pub async fn add_node(
         }
         .build()?;
 
-        match service_control.install(install_ctx) {
+        match service_control.install(install_ctx, options.user_mode) {
             Ok(()) => {
                 added_service_data.push((
                     service_name.clone(),
@@ -186,6 +208,7 @@ pub async fn add_node(
                     service_name,
                     status: ServiceStatus::Added,
                     user: options.user.clone(),
+                    user_mode: options.user_mode,
                     version: options.version.clone(),
                 });
                 // We save the node registry for each service because it's possible any number of
@@ -266,7 +289,7 @@ pub fn add_daemon(
         working_directory: None,
     };
 
-    match service_control.install(install_ctx) {
+    match service_control.install(install_ctx, false) {
         Ok(()) => {
             let daemon = DaemonServiceData {
                 daemon_path: options.daemon_install_bin_path.clone(),
@@ -327,7 +350,7 @@ pub fn add_faucet(
     }
     .build()?;
 
-    match service_control.install(install_ctx) {
+    match service_control.install(install_ctx, false) {
         Ok(()) => {
             node_registry.faucet = Some(FaucetServiceData {
                 faucet_path: install_options.faucet_install_bin_path.clone(),

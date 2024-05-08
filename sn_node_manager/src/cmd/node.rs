@@ -52,22 +52,29 @@ pub async fn add(
     version: Option<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The add command must run as the root user"));
-    }
+    let user_mode = !is_running_as_root();
 
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Add Safenode Services");
         println!("{} service(s) to be added", count.unwrap_or(1));
     }
 
-    let service_user = user.unwrap_or_else(|| "safe".to_string());
     let service_manager = ServiceController {};
-    service_manager.create_service_user(&service_user)?;
+    let service_user = if user_mode {
+        None
+    } else {
+        let service_user = user.unwrap_or_else(|| "safe".to_string());
+        service_manager.create_service_user(&service_user)?;
+        Some(service_user)
+    };
 
-    let service_data_dir_path = config::get_service_data_dir_path(data_dir_path, &service_user)?;
-    let service_log_dir_path =
-        config::get_service_log_dir_path(ReleaseType::Safenode, log_dir_path, &service_user)?;
+    let service_data_dir_path =
+        config::get_service_data_dir_path(data_dir_path, service_user.clone())?;
+    let service_log_dir_path = config::get_service_log_dir_path(
+        ReleaseType::Safenode,
+        log_dir_path,
+        service_user.clone(),
+    )?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
@@ -87,7 +94,7 @@ pub async fn add(
         .await?
     };
 
-    tracing::debug!("peers questions...");
+    tracing::debug!("Parsing peers...");
 
     // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
     // manager.
@@ -109,6 +116,7 @@ pub async fn add(
     };
 
     let options = AddNodeServiceOptions {
+        bootstrap_peers,
         count,
         delete_safenode_src: src_path.is_none(),
         env_variables,
@@ -124,14 +132,14 @@ pub async fn add(
         service_data_dir_path,
         service_log_dir_path,
         user: service_user,
+        user_mode,
         version,
-        bootstrap_peers,
     };
 
     add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
     node_registry.save()?;
-    tracing::debug!("registery saved......");
+    tracing::debug!("Node registry saved");
 
     Ok(())
 }
@@ -180,10 +188,6 @@ pub async fn remove(
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The remove command must run as the root user"));
-    }
-
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Remove Safenode Services");
     }
@@ -224,10 +228,6 @@ pub async fn remove(
 }
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The reset command must run as the root user"));
-    }
-
     print_banner("Reset Safenode Services");
 
     if !force {
@@ -257,10 +257,6 @@ pub async fn start(
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The start command must run as the root user"));
-    }
-
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Start Safenode Services");
     }
@@ -349,10 +345,6 @@ pub async fn stop(
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The stop command must run as the root user"));
-    }
-
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Stop Safenode Services");
     }
@@ -404,10 +396,6 @@ pub async fn upgrade(
     version: Option<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
-    if !is_running_as_root() {
-        return Err(eyre!("The upgrade command must run as the root user"));
-    }
-
     // In the case of a custom binary, we want to force the use of it. Regardless of its version
     // number, the user has probably built it for some special case. They may have not used the
     // `--force` flag; if they didn't, we can just do that for them here.
