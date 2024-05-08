@@ -29,13 +29,13 @@ pub(crate) enum TerminalType {
 }
 
 #[cfg(not(windows))]
-fn is_running_root() -> bool {
+pub(crate) fn is_running_root() -> bool {
     use nix::unistd::geteuid;
     geteuid().is_root()
 }
 
 #[cfg(windows)]
-fn is_running_root() -> bool {
+pub(crate) fn is_running_root() -> bool {
     // Example: Attempt to read from a typically restricted system directory
     std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
 }
