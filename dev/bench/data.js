@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715132921663,
+  "lastUpdate": 1715132923300,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "distinct": true,
-          "id": "e815224222e3d83590c926b88998dcda8a0f72ad",
-          "message": "feat: pick cheapest payee using linear pricing curve",
-          "timestamp": "2024-01-02T13:46:17Z",
-          "tree_id": "c771f4bb26215d691fb8afd853b29a90ba52ec7b",
-          "url": "https://github.com/maidsafe/safe_network/commit/e815224222e3d83590c926b88998dcda8a0f72ad"
-        },
-        "date": 1704205752940,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3712,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 16039,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
           "id": "6368b3b1cf7327af4005b6f7f1c6acc27730950d",
           "message": "fix(client): wallet not progress with unconfirmed tx",
           "timestamp": "2024-01-02T17:26:40Z",
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33240,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cfe6da899ba9a472d361ecf56a6647f5bbea35da",
+          "message": "fix(launchpad): prevent loops from terminal/sudo relaunching",
+          "timestamp": "2024-05-08T10:33:20+09:00",
+          "tree_id": "f5a9b5bb2cb8d37bc06c37601fe476b2f52dd2ad",
+          "url": "https://github.com/maidsafe/safe_network/commit/cfe6da899ba9a472d361ecf56a6647f5bbea35da"
+        },
+        "date": 1715132922965,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 8535,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 40986,
             "unit": "ms"
           },
           {
