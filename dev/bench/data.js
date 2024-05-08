@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715130990153,
+  "lastUpdate": 1715131106576,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11707,35 +11707,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "tomek@librem.one",
-            "name": "trycatch",
-            "username": "thomasmarkiewicz"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
-          "message": "feat: allow register CLI to create a public register writable to anyone",
-          "timestamp": "2024-01-10T11:59:53Z",
-          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
-          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
-        },
-        "date": 1704890830375,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "jason.burley@sedex.com",
             "name": "jason.burley"
           },
@@ -20399,6 +20370,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "300b549d756158ab93604093aca8ae4d40835eb5",
+          "message": "ci: fix packaging for node launchpad\n\nThe \"node_launchpad\" crate name was changed to \"node-launchpad\", and there was a small syntax error\nin the Bash script which meant the switch statement was not terminated correctly.",
+          "timestamp": "2024-05-08T10:04:11+09:00",
+          "tree_id": "9b38117b7f02bae599f16a48ded69e5e2e860812",
+          "url": "https://github.com/maidsafe/safe_network/commit/300b549d756158ab93604093aca8ae4d40835eb5"
+        },
+        "date": 1715131105735,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
