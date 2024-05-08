@@ -287,7 +287,8 @@ jobs:
           cat spend_dag_and_statistics.txt
         env:
           SN_LOG: "all"
-        timeout-minutes: 60
+        timeout-minutes: 5
+        if: always()
 
       - name: Check nodes running
         shell: bash

@@ -351,6 +351,47 @@ impl HotWallet {
         Ok(created_cash_notes)
     }
 
+    // Create SignedSpend directly from the received transfer
+    #[cfg(feature = "reward-forward")]
+    pub fn prepare_forward_signed_spend(
+        &self,
+        to: Vec<TransactionPayeeDetails>,
+        reason_hash: Option<Hash>,
+        received_cash_notes: &Vec<CashNote>,
+    ) -> Result<Vec<SignedSpend>> {
+        let mut rng = &mut rand::rngs::OsRng;
+        // create a unique key for each output
+        let to_unique_keys: Vec<_> = to
+            .into_iter()
+            .map(|(purpose, amount, address)| {
+                (amount, purpose, address, DerivationIndex::random(&mut rng))
+            })
+            .collect();
+
+        let mut available_cash_notes = Vec::new();
+        for cash_note in received_cash_notes {
+            if let Ok(derived_key) = cash_note.derived_key(&self.key) {
+                available_cash_notes.push((cash_note.clone(), Some(derived_key)));
+            } else {
+                warn!(
+                    "Skipping CashNote {:?} because we don't have the key to spend it",
+                    cash_note.unique_pubkey()
+                );
+            }
+        }
+
+        let reason_hash = reason_hash.unwrap_or_default();
+
+        let transfer = OfflineTransfer::new(
+            available_cash_notes,
+            to_unique_keys,
+            self.address(),
+            reason_hash,
+        )?;
+
+        Ok(transfer.all_spend_requests)
+    }
+
     /// Prepare a signed transaction in local wallet and return all created cash_notes
     pub fn prepare_signed_transfer(
         &mut self,

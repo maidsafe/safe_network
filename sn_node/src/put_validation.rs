@@ -7,27 +7,31 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
-use futures::future::join_all;
-use libp2p::kad::{Quorum, Record, RecordKey};
-use sn_networking::{
-    get_raw_signed_spends_from_record, GetRecordError, NetworkError, PutRecordCfg,
-};
+use libp2p::kad::{Record, RecordKey};
+use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     messages::CmdOk,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        RetryStrategy, SpendAddress,
+        SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{
-    calculate_royalties_fee, CashNote, CashNoteRedemption, Hash, HotWallet, NanoTokens, Payment,
+    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
     SignedSpend, Transfer, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 use xor_name::XorName;
+
+#[cfg(feature = "reward-forward")]
+use libp2p::kad::Quorum;
+#[cfg(feature = "reward-forward")]
+use sn_networking::PutRecordCfg;
+#[cfg(feature = "reward-forward")]
+use sn_transfers::Hash;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -505,30 +509,29 @@ impl Node {
             .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
             .await?;
 
-        trace!("Reward forwarding received payment of {received_fee:?} for {pretty_key}");
-
         // Notify `record_store` that the node received a payment.
         self.network.notify_payment_received();
 
-        // deposit the CashNotes in our wallet
-        wallet.deposit_and_store_to_disk(&cash_notes)?;
-        let new_balance = wallet.balance().as_nano();
-        info!(
-            "The new wallet balance is {new_balance}, after earning {}, old_balance is {old_balance}",
-            new_balance - old_balance
-        );
+        if cfg!(feature = "reward-forward") {
+            // Forwarding the reward to the specified address
+            if let Err(error) = self.forward_reward(payment.quote.cost, &wallet, &cash_notes) {
+                error!("reward forwarding completed with error {error:?}");
+            }
+        } else {
+            // deposit the CashNotes in our wallet
+            wallet.deposit_and_store_to_disk(&cash_notes)?;
+            let new_balance = wallet.balance().as_nano();
+            info!(
+                "The new wallet balance is {new_balance}, after earning {}, old_balance is {old_balance}",
+                new_balance - old_balance
+            );
 
-        #[cfg(feature = "reward-forward")]
-        // Forwarding the reward to the specified address
-        if let Err(error) = self.forward_reward(received_fee, &mut wallet).await {
-            error!("reward forwarding completed with error {error:?}");
-        }
-
-        #[cfg(feature = "open-metrics")]
-        let _ = self
-            .node_metrics
-            .reward_wallet_balance
-            .set(new_balance as i64);
+            #[cfg(feature = "open-metrics")]
+            let _ = self
+                .node_metrics
+                .reward_wallet_balance
+                .set(new_balance as i64);
+        };
 
         if royalties_cash_notes_r.is_empty() {
             warn!("No network royalties payment found for record {pretty_key}");
@@ -563,53 +566,58 @@ impl Node {
     }
 
     #[cfg(feature = "reward-forward")]
-    async fn forward_reward(&self, amount: NanoTokens, wallet: &mut HotWallet) -> Result<()> {
+    fn forward_reward(
+        &self,
+        amount: NanoTokens,
+        wallet: &HotWallet,
+        cash_notes: &Vec<CashNote>,
+    ) -> Result<()> {
         info!("Reward forwarding {amount:?} ...");
         let payee = vec![(
             "reward collector".to_string(),
             amount,
             *NETWORK_ROYALTIES_PK,
         )];
-        let _send_out_cash_notes =
-            wallet.local_send(payee, Some(Hash::hash(&self.owner.clone().into_bytes())))?;
+        let spend_requests = wallet.prepare_forward_signed_spend(
+            payee,
+            Some(Hash::hash(&self.owner.clone().into_bytes())),
+            cash_notes,
+        )?;
 
-        let spend_requests = wallet.unconfirmed_spend_requests();
-
-        let mut tasks = Vec::new();
         let record_kind = RecordKind::Spend;
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
-            retry_strategy: Some(RetryStrategy::Persistent),
+            put_quorum: Quorum::Majority,
+            retry_strategy: None,
             use_put_record_to: None,
             verification: None,
         };
 
         for spend_request in spend_requests {
-            let unique_pubkey = *spend_request.unique_pubkey();
-            debug!("Reward forwarding to the network: {unique_pubkey:?}: {spend_request:#?}");
-
             let network_clone = self.network.clone();
             let put_cfg_clone = put_cfg.clone();
 
-            let the_task = async move {
+            // Sent out spend in separate thread to avoid blocking the main one
+            let _handle = tokio::spawn(async move {
+                let unique_pubkey = *spend_request.unique_pubkey();
                 let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
                 let network_address = NetworkAddress::from_spend_address(cash_note_addr);
-                let spend_key = spend_request.unique_pubkey();
+
+                let record_key = network_address.to_record_key();
+                let pretty_key = PrettyPrintRecordKey::from(&record_key);
+
+                debug!(
+                    "Reward forwarding {amount:?} token in spend {pretty_key:?}: {spend_request:#?}"
+                );
 
                 let value = if let Ok(value) = try_serialize_record(&[spend_request], record_kind) {
                     value
                 } else {
-                    return (
-                        spend_key,
-                        Err(NetworkError::InvalidTransfer(
-                            "Failed to serialise spend during reward forwarding".to_string(),
-                        )),
-                    );
+                    error!("Reward forwarding: Failed to serialise spend {pretty_key:?}");
+                    return;
                 };
 
-                let key = network_address.to_record_key();
                 let record = Record {
-                    key,
+                    key: record_key.clone(),
                     value: value.to_vec(),
                     publisher: None,
                     expires: None,
@@ -617,30 +625,16 @@ impl Node {
 
                 let result = network_clone.put_record(record, &put_cfg_clone).await;
 
-                (spend_key, result)
-            };
-            tasks.push(the_task);
+                match result {
+                    Ok(_) => info!("Reward forwarding: sending spend {pretty_key:?} completed"),
+                    Err(err) => {
+                        info!("Reward forwarding: sending spend {pretty_key:?} failed with {err:?}")
+                    }
+                }
+            });
         }
 
-        let mut errors = vec![];
-        for (spend_key, spend_attempt_result) in join_all(tasks).await {
-            match spend_attempt_result {
-                Err(e) => {
-                    warn!(
-                        "Reward forwarding errored out when sent to the network {spend_key:?}: {e}"
-                    );
-                    errors.push((spend_key, e));
-                }
-                Ok(()) => {
-                    trace!("Reward forwarding was successfully sent to the network: {spend_key:?}");
-                }
-            }
-        }
-        if errors.is_empty() {
-            wallet.clear_confirmed_spend_requests();
-        }
-
-        info!("Forwarding reward {amount:?} completed");
+        info!("Reward forwarding {amount:?} completed.");
 
         Ok(())
     }
