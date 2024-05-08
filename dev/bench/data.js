@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715144638400,
+  "lastUpdate": 1715144755452,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "cf6634134b1e84e02f53129543fd84d1ae5ad512",
-          "message": "fix: update MAX_REG_ENTRY_SIZE",
-          "timestamp": "2024-01-11T10:21:47Z",
-          "tree_id": "f1250a1661b650150989332af23e4c2291b9d46b",
-          "url": "https://github.com/maidsafe/safe_network/commit/cf6634134b1e84e02f53129543fd84d1ae5ad512"
-        },
-        "date": 1704971168286,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 43,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/756aa5803e5ddc427605cf177ad1a67ab35bed16"
         },
         "date": 1715133046739,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0d62745ea9dbab55abdcdd51f9bba23b729ce5b5",
+          "message": "fix(bump): always strip alpha status' if we're on stable",
+          "timestamp": "2024-05-08T13:51:23+09:00",
+          "tree_id": "693411b3800a4db8525584b9b79f5f850d57009e",
+          "url": "https://github.com/maidsafe/safe_network/commit/0d62745ea9dbab55abdcdd51f9bba23b729ce5b5"
+        },
+        "date": 1715144754574,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
