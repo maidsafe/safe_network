@@ -131,6 +131,7 @@ impl SwarmDriver {
                             &peer_id,
                             &addrs,
                             &info.protocols,
+                            &self.bad_nodes,
                         );
 
                         // When received an identify from un-dialed peer, try to dial it
@@ -603,7 +604,7 @@ impl SwarmDriver {
             }
 
             // skip if the peer is a relay server that we're connected to
-            if self.relay_manager.keep_alive_peer(peer_id) {
+            if self.relay_manager.keep_alive_peer(peer_id, &self.bad_nodes) {
                 continue;
             }
 
