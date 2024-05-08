@@ -397,27 +397,26 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --features="gifting-from-genesis" --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           SN_LOG: "all"
         timeout-minutes: 5
 
       - name: Start a client to upload cost estimate
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files estimate "./resources"
+        run: ./target/release/safe --log-output-dest=data-dir files estimate "./resources"
         env:
           SN_LOG: "all"
         timeout-minutes: 15
 
       - name: Start a client to upload files
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+        run: ./target/release/safe --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 15
 
       - name: Start a client to download files
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files download --retry-strategy quick
+        run: ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 2
@@ -437,19 +436,19 @@ jobs:
         timeout-minutes: 10
 
       - name: Start a client to create a register writable by the owner only
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+        run: ./target/release/safe --log-output-dest=data-dir register create -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Start a client to get a register writable by the owner only
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+        run: ./target/release/safe --log-output-dest=data-dir register get -n baobao
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register writable by the owner only
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        run: ./target/release/safe --log-output-dest=data-dir register edit -n baobao wood
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -459,7 +458,7 @@ jobs:
       - name: Start a client to create a register writable by anyone
         id: register-address
         if: matrix.os != 'windows-latest'
-        run: echo "$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $GITHUB_OUTPUT
+        run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $GITHUB_OUTPUT
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -467,19 +466,19 @@ jobs:
       - name: Start a client to create a register writable by anyone
         id: register-address-windows
         if: matrix.os == 'windows-latest'
-        run: echo "$(cargo run --bin safe --release -- --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $ENV:GITHUB_OUTPUT
+        run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $ENV:GITHUB_OUTPUT
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Start a client to get a register writable by anyone (current client is the owner)
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n trycatch
+        run: ./target/release/safe --log-output-dest=data-dir register get -n trycatch
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register writable by anyone (current client is the owner)
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n trycatch wood
+        run: ./target/release/safe --log-output-dest=data-dir register edit -n trycatch wood
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -492,28 +491,28 @@ jobs:
       #
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os != 'windows-latest'
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
+        run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register writable by anyone (new client is not the owner)
         if: matrix.os != 'windows-latest'
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit ${{ steps.register-address.outputs.REGISTER_ADDRESS }} water
+        run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address.outputs.REGISTER_ADDRESS }} water
         env:
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: Start a client to get a register writable by anyone (new client is not the owner)
         if: matrix.os == 'windows-latest'
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
+        run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
         env:
           SN_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register writable by anyone (new client is not the owner)
         if: matrix.os == 'windows-latest'
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }} water
+        run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }} water
         env:
           SN_LOG: "all"
         timeout-minutes: 10

@@ -96,16 +96,13 @@ jobs:
       - name: Create and fund a wallet to pay for files storage
         run: |
           echo "Obtaining address for use with the faucet..."
-          address=$(cargo run \
-            --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1)
+          address=$(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1)
           echo "Sending tokens to the faucet at $address"
-          cargo run \
-            --bin faucet --release --features="gifting-from-genesis" -- \
-            --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
+          ./target/release/faucet --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt
           cat initial_balance_from_faucet.txt | tail -n 1 > transfer_hex
           cat transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
         timeout-minutes: 15
@@ -133,7 +130,7 @@ jobs:
         # -p makes files public
         run: |
           ls -l
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data.zip" --retry-strategy quick -p
+          ./target/release/safe --log-output-dest=data-dir files upload "./the-test-data.zip" --retry-strategy quick -p
         env:
           SN_LOG: "all"
         timeout-minutes: 25
@@ -151,12 +148,12 @@ jobs:
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
-          cargo run --bin faucet --release --features="gifting-from-genesis"-- --log-output-dest=data-dir send 5000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
+          ./target/release/faucet --log-output-dest=data-dir send 5000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
           cat transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./the-test-data_1.zip" --retry-strategy quick -p > second_upload.txt
+          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+          ./target/release/safe --log-output-dest=data-dir files upload "./the-test-data_1.zip" --retry-strategy quick -p > second_upload.txt
           cat second_upload.txt
           rg "New wallet balance: 5000000.000000000" second_upload.txt -c --stats
         env:
@@ -252,7 +249,7 @@ jobs:
 
       - name: Start a client to download files
         run: |
-          cargo run --bin safe --release -- --log-output-dest=data-dir files download --retry-strategy quick
+          ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
           ls -l $CLIENT_DATA_PATH/safe_files
           downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
           if [ $downloaded_files -lt 1 ]; then
@@ -266,7 +263,7 @@ jobs:
       # Download the same files again to ensure files won't get corrupted.
       - name: Start a client to download the same files again
         run: |
-          cargo run --bin safe --release -- --log-output-dest=data-dir files download --show-holders --retry-strategy quick
+          ./target/release/safe --log-output-dest=data-dir files download --show-holders --retry-strategy quick
           ls -l $CLIENT_DATA_PATH/safe_files
           downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
           if [ $downloaded_files -lt 1 ]; then
@@ -285,7 +282,7 @@ jobs:
 
       - name: Audit from genesis to collect entire spend DAG and dump to a dot file
         run: |
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet audit --dot > spend_dag_and_statistics.txt
+          ./target/release/safe --log-output-dest=data-dir wallet audit --dot > spend_dag_and_statistics.txt
           echo "=============================================================================="
           cat spend_dag_and_statistics.txt
         env:
