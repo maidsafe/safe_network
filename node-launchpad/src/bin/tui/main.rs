@@ -52,11 +52,23 @@ async fn tokio_main() -> Result<()> {
     Ok(())
 }
 
+fn is_running_in_terminal() -> bool {
+    atty::is(atty::Stream::Stdout)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // now launch the terminal
     let terminal_type = terminal::detect_and_setup_terminal()?;
-    terminal::launch_terminal(&terminal_type)?;
+
+    if !is_running_in_terminal() || !terminal::is_running_root() {
+        terminal::launch_terminal(&terminal_type)?;
+
+        // early return for _this_ process.
+        // The spawned process will be sudo'd and run in the terminal,
+        // taking over stdout/stderr/stdin.
+        return Ok(());
+    }
 
     // Construct a local task set that can run `!Send` futures.
     let local = LocalSet::new();
@@ -64,6 +76,7 @@ async fn main() -> Result<()> {
         .run_until(async {
             if let Err(e) = tokio_main().await {
                 eprintln!("{} failed:", env!("CARGO_PKG_NAME"));
+
                 Err(e)
             } else {
                 Ok(())
