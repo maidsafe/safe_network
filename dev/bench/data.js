@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715131108857,
+  "lastUpdate": 1715131111383,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30614,45 +30614,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "25e33a0b7fd029fd4323e62f59a61111ecb2799f",
-          "message": "feat: restart faucet_server from breaking point",
-          "timestamp": "2023-12-29T14:50:41Z",
-          "tree_id": "b2c5531dabb7daf65a7b20c6b5e48f3f22326ac5",
-          "url": "https://github.com/maidsafe/safe_network/commit/25e33a0b7fd029fd4323e62f59a61111ecb2799f"
-        },
-        "date": 1703864224476,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3276,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 14573,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -42296,6 +42257,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34766,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "300b549d756158ab93604093aca8ae4d40835eb5",
+          "message": "ci: fix packaging for node launchpad\n\nThe \"node_launchpad\" crate name was changed to \"node-launchpad\", and there was a small syntax error\nin the Bash script which meant the switch statement was not terminated correctly.",
+          "timestamp": "2024-05-08T10:04:11+09:00",
+          "tree_id": "9b38117b7f02bae599f16a48ded69e5e2e860812",
+          "url": "https://github.com/maidsafe/safe_network/commit/300b549d756158ab93604093aca8ae4d40835eb5"
+        },
+        "date": 1715131110524,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7349,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33240,
             "unit": "ms"
           },
           {
