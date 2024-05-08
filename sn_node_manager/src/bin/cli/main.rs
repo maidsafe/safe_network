@@ -35,7 +35,17 @@ pub enum SubCmd {
     /// By default, the latest safenode binary will be downloaded; however, it is possible to
     /// provide a binary either by specifying a URL, a local path, or a specific version number.
     ///
-    /// This command must run as the root/administrative user.
+    /// On Windows, this command must run with administrative privileges.
+    ///
+    /// On macOS and most distributions of Linux, the command does not require elevated privileges,
+    /// but it *can* be used with sudo if desired. If the command runs without sudo, services will
+    /// be defined as user-mode services; otherwise, they will be created as system-wide services.
+    /// The main difference is that user-mode services require an active user session, whereas a
+    /// system-wide service can run completely in the background, without any user session.
+    ///
+    /// On some distributions of Linux, e.g., Alpine, sudo will be required. This is because the
+    /// OpenRC service manager, which is used on Alpine, doesn't support user-mode services. Most
+    /// distributions, however, use Systemd, which *does* support user-mode services.
     #[clap(name = "add")]
     Add {
         /// The number of service instances.
@@ -49,8 +59,8 @@ pub enum SubCmd {
         /// This path is a prefix. Each installed node will have its own directory underneath it.
         ///
         /// If not provided, the default location is platform specific:
-        ///  - Linux: /var/safenode-manager/services
-        ///  - macOS: /var/safenode-manager/services
+        ///  - Linux/macOS (system-wide): /var/safenode-manager/services
+        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node
         ///  - Windows: C:\ProgramData\safenode\services
         #[clap(long, verbatim_doc_comment)]
         data_dir_path: Option<PathBuf>,
@@ -76,8 +86,8 @@ pub enum SubCmd {
         /// This path is a prefix. Each installed node will have its own directory underneath it.
         ///
         /// If not provided, the default location is platform specific:
-        ///  - Linux: /var/log/safenode
-        ///  - macOS: /var/log/safenode
+        ///  - Linux/macOS (system-wide): /var/log/safenode
+        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node/<service>/logs
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
@@ -175,7 +185,8 @@ pub enum SubCmd {
     ///
     /// Services must be stopped before they can be removed.
     ///
-    /// This command must run as the root/administrative user.
+    /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
+    /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "remove")]
     Remove {
         /// The peer ID of the service to remove.
@@ -208,7 +219,8 @@ pub enum SubCmd {
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
-    /// This command must run as the root/administrative user.
+    /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
+    /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "start")]
     Start {
         /// An interval applied between launching each service.
@@ -244,7 +256,8 @@ pub enum SubCmd {
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be stopped.
     ///
-    /// This command must run as the root/administrative user.
+    /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
+    /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "stop")]
     Stop {
         /// The peer ID of the service to stop.
@@ -265,7 +278,8 @@ pub enum SubCmd {
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
     ///
-    /// This command must run as the root/administrative user.
+    /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
+    /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "upgrade")]
     Upgrade {
         /// Set this flag to upgrade the nodes without automatically starting them.
