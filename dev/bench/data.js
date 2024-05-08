@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715148946217,
+  "lastUpdate": 1715148948450,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "8795eb1df98ad02ea4381deaafb3cb1bfdae96bb",
-          "message": "chore(client): refactor client upload flow",
-          "timestamp": "2024-01-11T12:58:40Z",
-          "tree_id": "1206d6c7a251bc66aff2c3412e24842c86304d0f",
-          "url": "https://github.com/maidsafe/safe_network/commit/8795eb1df98ad02ea4381deaafb3cb1bfdae96bb"
-        },
-        "date": 1704980791952,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 222,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "1061c2fe9b640965e32149b79340a825b5842862",
+          "message": "chore: dont release crates by default w/ release-plz\n\nyou now have to opt in with release = true",
+          "timestamp": "2024-05-08T15:01:24+09:00",
+          "tree_id": "995c45a83fbb7d95694ac2c961d48ad92a3410b6",
+          "url": "https://github.com/maidsafe/safe_network/commit/1061c2fe9b640965e32149b79340a825b5842862"
+        },
+        "date": 1715148947578,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
