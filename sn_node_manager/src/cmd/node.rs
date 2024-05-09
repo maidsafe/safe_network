@@ -34,6 +34,7 @@ use sn_transfers::HotWallet;
 use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
 use tracing::debug;
 
+/// Returns the added service names
 pub async fn add(
     count: Option<u16>,
     data_dir_path: Option<PathBuf>,
@@ -51,7 +52,7 @@ pub async fn add(
     user: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     let user_mode = !is_running_as_root();
 
     if verbosity != VerbosityLevel::Minimal {
@@ -136,12 +137,13 @@ pub async fn add(
         version,
     };
 
-    add_node(options, &mut node_registry, &service_manager, verbosity).await?;
+    let added_services_names =
+        add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
     node_registry.save()?;
     tracing::debug!("Node registry saved");
 
-    Ok(())
+    Ok(added_services_names)
 }
 
 pub async fn balance(

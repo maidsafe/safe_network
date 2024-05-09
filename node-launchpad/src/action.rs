@@ -33,14 +33,9 @@ pub enum Action {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum HomeActions {
-    AddNode,
-    AddNodeCompleted,
     StartNodes,
-    StartNodesCompleted,
-    StopNode,
-    StopNodeCompleted,
-    RemoveNode,
-    RemoveNodeCompleted,
+    StopNodes,
+    ServiceManagerOperationCompleted,
 
     TriggerDiscordUsernameInputBox,
     TriggerResourceAllocationInputBox,
