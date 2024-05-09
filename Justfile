@@ -206,7 +206,7 @@ package-release-assets bin version="":
     node-launchpad)
       crate_dir_name="node-launchpad"
       ;;
-   
+
     *)
       echo "The $bin binary is not supported"
       exit 1
@@ -301,7 +301,7 @@ upload-github-release-assets:
           if [[ $crate_with_version == $crate-v* ]]; then
             (
               cd deploy/$bin_name
-              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" ]]; then
+              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" || "$crate" == "node-launchpad" ]]; then
                 echo "Uploading $bin_name assets to $crate_with_version release..."
                 ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               fi
