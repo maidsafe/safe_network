@@ -63,32 +63,11 @@ pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
             Ok(TerminalType::MacOS(PathBuf::from("osascript")))
         }
     } else {
-        get_linux_terminal()
+        get_available_linux_terminal()
     }
 }
 
-fn get_linux_terminal() -> Result<TerminalType> {
-    match std::env::var("TERM") {
-        Ok(val) => {
-            if let Ok(path) = which(val.clone()) {
-                match val.as_str() {
-                    "alacritty" => Ok(TerminalType::Alacritty(path)),
-                    "gnome" => Ok(TerminalType::Gnome(path)),
-                    "kitty" => Ok(TerminalType::Kitty(path)),
-                    "konsole" => Ok(TerminalType::Konsole(path)),
-                    "xterm" => Ok(TerminalType::Xterm(path)),
-                    "xterm-256color" => Ok(TerminalType::Xterm(path)),
-                    _ => Err(eyre!("Terminal '{val}' is not supported")),
-                }
-            } else {
-                try_available_linux_terminals()
-            }
-        }
-        Err(_) => try_available_linux_terminals(),
-    }
-}
-
-fn try_available_linux_terminals() -> Result<TerminalType> {
+fn get_available_linux_terminal() -> Result<TerminalType> {
     if let Ok(path) = which("alacritty") {
         Ok(TerminalType::Alacritty(path))
     } else if let Ok(path) = which("gnome-terminal") {
@@ -117,7 +96,6 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
         TerminalType::Alacritty(path) => {
             Command::new(path)
                 .arg("--command")
-                .arg("sudo")
                 .arg("sh")
                 .arg("-c")
                 .arg(launchpad_path)
@@ -125,11 +103,7 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
             Ok(())
         }
         TerminalType::Gnome(path) => {
-            Command::new(path)
-                .arg("--")
-                .arg("sudo")
-                .arg(launchpad_path)
-                .spawn()?;
+            Command::new(path).arg("--").arg(launchpad_path).spawn()?;
             Ok(())
         }
         TerminalType::MacOS(_path) | TerminalType::ITerm2(_path) => {
@@ -137,9 +111,11 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
             // so nothing to do here.
             Ok(())
         }
-        TerminalType::WindowsCmd(path)
-        | TerminalType::WindowsPowershell(path)
-        | TerminalType::WindowsTerminal(path) => {
+        TerminalType::WindowsTerminal(path) => {
+            Command::new(path).arg(launchpad_path).spawn()?;
+            Ok(())
+        }
+        TerminalType::WindowsCmd(path) | TerminalType::WindowsPowershell(path) => {
             Command::new(path).arg("/c").arg(launchpad_path).spawn()?;
             Ok(())
         }
