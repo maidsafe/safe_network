@@ -276,6 +276,30 @@ impl SpendDag {
         format!("{:?}", Dot::with_config(&self.dag, &[]))
     }
 
+    pub fn dump_payment_forward_statistics(&self) -> String {
+        let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
+
+        for spend_dag_entry in self.spends.values() {
+            if let DagEntry::Spend(signed_spend, _) = spend_dag_entry {
+                if let Some(sender_hash) = signed_spend.spend.reason.get_sender_hash() {
+                    let sender = format!("{sender_hash:?}");
+                    let holders = statistics.entry(sender).or_default();
+                    holders.push(signed_spend.spend.amount);
+                }
+            }
+        }
+
+        let mut content = "Sender, Times, Amount".to_string();
+        for (sender, payments) in statistics.iter() {
+            let total_amount: u64 = payments
+                .iter()
+                .map(|nano_tokens| nano_tokens.as_nano())
+                .sum();
+            content = format!("{content}\n{sender}, {}, {total_amount}", payments.len());
+        }
+        content
+    }
+
     /// Merges the given dag into ours
     pub fn merge(&mut self, sub_dag: SpendDag) -> Result<(), DagError> {
         let source = self.source();

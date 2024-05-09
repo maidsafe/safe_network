@@ -44,6 +44,10 @@ pub async fn audit(client: &Client, to_dot: bool, royalties: bool, root_dir: &Pa
             "==========================   spends DAG diagraph   ============================="
         );
         println!("{}", dag.dump_dot_format());
+        println!(
+            "=======================   payment forward statistics  =========================="
+        );
+        println!("{}", dag.dump_payment_forward_statistics());
     } else if royalties {
         let dag = gather_spend_dag(client, root_dir).await?;
         let royalties = dag.all_royalties()?;
