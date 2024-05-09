@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715274548343,
+  "lastUpdate": 1715274667297,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "33768ed2f3a626ff6b38fc91bf83a9963254a9d2",
-          "message": "fix(client): do not store paying-out cash_notes into disk",
-          "timestamp": "2024-01-15T14:12:09Z",
-          "tree_id": "522ee3c642bc89749ba7df4777ed468e5eb5601f",
-          "url": "https://github.com/maidsafe/safe_network/commit/33768ed2f3a626ff6b38fc91bf83a9963254a9d2"
-        },
-        "date": 1705330134868,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 44,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/d841f32f7f99aa13df434e0ef46436be9e789752"
         },
         "date": 1715234677628,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1",
+          "message": "chore: add consts",
+          "timestamp": "2024-05-09T16:17:07Z",
+          "tree_id": "27a42416a0ae551862dfefbda9c4cad8698d7bc5",
+          "url": "https://github.com/maidsafe/safe_network/commit/e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1"
+        },
+        "date": 1715274666952,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
