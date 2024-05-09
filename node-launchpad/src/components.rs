@@ -21,6 +21,7 @@ pub mod discord_username;
 pub mod footer;
 pub mod home;
 pub mod options;
+pub mod resource_allocation;
 pub mod tab;
 pub mod utils;
 

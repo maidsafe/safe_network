@@ -67,7 +67,9 @@ impl Component for Home {
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::DiscordUsernameInputBox => self.show_scene = true,
+                Scene::DiscordUsernameInputBox | Scene::ResourceAllocationInputBox => {
+                    self.show_scene = true
+                }
                 _ => self.show_scene = false,
             },
             Action::HomeActions(HomeActions::AddNode) => {
@@ -224,9 +226,14 @@ impl Component for Home {
                 self.lock_registry = false;
                 self.load_node_registry_and_update_states()?;
             }
-            Action::HomeActions(HomeActions::InputDiscordUsername) => {
+            // todo: should triggers go here? Make distinction between a component + a scene and how they interact.
+            Action::HomeActions(HomeActions::TriggerDiscordUsernameInputBox) => {
                 return Ok(Some(Action::SwitchScene(Scene::DiscordUsernameInputBox)));
             }
+            Action::HomeActions(HomeActions::TriggerResourceAllocationInputBox) => {
+                return Ok(Some(Action::SwitchScene(Scene::ResourceAllocationInputBox)));
+            }
+
             Action::HomeActions(HomeActions::PreviousTableItem) => {
                 self.select_previous_table_item();
             }
