@@ -20,7 +20,7 @@ use crate::{
 
 use super::{utils::centered_rect_fixed, Component};
 
-const GB_PER_NODE: usize = 5;
+pub const GB_PER_NODE: usize = 5;
 
 pub struct ResourceAllocationInputBox {
     show_scene: bool,

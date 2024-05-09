@@ -33,7 +33,7 @@ impl Component for Footer {
 
         let text = match self.current_scene {
             Scene::Home => {
-                "[A]dd node, [S]tart node, [K]ill node, [R]emove node, [D]iscord Username, [Q]uit"
+                "[Ctrl+g] Start nodes, [Ctrl+x] Stop node, [Ctrl+o] Set Resources, [D]iscord Username, [Q]uit"
             }
             Scene::Options => "none",
             Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel",

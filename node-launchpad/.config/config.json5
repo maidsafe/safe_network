@@ -1,10 +1,9 @@
 {
   "keybindings": {
     "Home": {
-      "<a>": {"HomeActions":"AddNode"}, // Add nodes
-      "<s>": {"HomeActions":"StartNodes"}, // Start nodes
-      "<k>": {"HomeActions":"StopNode"}, // Stop nodes
-      "<r>": {"HomeActions":"RemoveNode"},
+      "<Ctrl-g>": {"HomeActions":"StartNodes"},
+      "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
+
       "up" : {"HomeActions":"PreviousTableItem"},
       "down": {"HomeActions":"NextTableItem"},
 

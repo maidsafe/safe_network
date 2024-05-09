@@ -36,10 +36,11 @@ pub struct App {
 
 impl App {
     pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
-        let tab = Tab::default();
-        let home = Home::new()?;
-        let config = Config::new()?;
         let app_data = AppData::load()?;
+
+        let tab = Tab::default();
+        let home = Home::new(app_data.allocated_disk_space)?;
+        let config = Config::new()?;
         let discord_username_input =
             DiscordUsernameInputBox::new(app_data.discord_username.clone());
         let resource_allocation_input =
