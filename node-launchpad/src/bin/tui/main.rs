@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     // now launch the terminal
     let terminal_type = terminal::detect_and_setup_terminal()?;
 
-    if !is_running_in_terminal() || !terminal::is_running_root() {
+    if !is_running_in_terminal() {
         terminal::launch_terminal(&terminal_type)?;
 
         // early return for _this_ process.
