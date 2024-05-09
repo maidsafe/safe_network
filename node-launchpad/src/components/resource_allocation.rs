@@ -24,7 +24,7 @@ pub const GB_PER_NODE: usize = 5;
 
 pub struct ResourceAllocationInputBox {
     show_scene: bool,
-    available_disk_space: usize,
+    available_disk_space_bytes: usize,
     allocated_space_input: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
@@ -34,7 +34,7 @@ impl ResourceAllocationInputBox {
     pub fn new(allocated_space: usize) -> Result<Self> {
         let new = Self {
             show_scene: false,
-            available_disk_space: Self::get_available_space_gb()?,
+            available_disk_space_bytes: Self::get_available_space_gb()?,
             allocated_space_input: Input::default().with_value(allocated_space.to_string()),
             old_value: Default::default(),
         };
@@ -50,9 +50,8 @@ impl ResourceAllocationInputBox {
             .find(|disk| disk.mount_point().starts_with(Self::get_mount_point()))
             .context("Cannot find the primary disk")?
             .available_space() as usize;
-        let available_space_gb = available_space_b / (1024 * 1024 * 1024);
 
-        Ok(available_space_gb)
+        Ok(available_space_b)
     }
 
     #[cfg(unix)]
@@ -71,15 +70,15 @@ impl Component for ResourceAllocationInputBox {
         let send_back = match key.code {
             KeyCode::Enter => {
                 let allocated_space_str = self.allocated_space_input.value().to_string();
-                let allocated_space = if let Ok(allocated_space) =
-                    allocated_space_str.trim().parse::<usize>()
-                {
-                    let allocated_space = std::cmp::min(allocated_space, self.available_disk_space);
-                    let max_nodes = allocated_space / GB_PER_NODE;
-                    max_nodes * GB_PER_NODE
-                } else {
-                    0
-                };
+                let allocated_space =
+                    if let Ok(allocated_space) = allocated_space_str.trim().parse::<usize>() {
+                        let allocated_space =
+                            std::cmp::min(allocated_space, self.available_disk_space_bytes);
+                        let max_nodes = allocated_space / GB_PER_NODE;
+                        max_nodes * GB_PER_NODE
+                    } else {
+                        0
+                    };
                 // set the new value
                 self.allocated_space_input = self
                     .allocated_space_input
@@ -155,21 +154,23 @@ impl Component for ResourceAllocationInputBox {
                 Constraint::Length(1),
                 // for the input field
                 Constraint::Min(1),
-                // for buttons maybe? todo
+                // for help text
+                Constraint::Length(1),
+                // border
                 Constraint::Length(1),
             ],
         )
         .split(layer_zero);
 
         // layer zero
+        let available_space_gb = self.available_disk_space_bytes / (1024 * 1024 * 1024);
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Double)
                 .border_style(Style::new().bold())
                 .title(format!(
-                    " Allocate space ({} GB available)",
-                    self.available_disk_space
+                    " Allocate space ({available_space_gb} GB available)",
                 )),
         );
         f.render_widget(Clear, layer_zero);
@@ -184,6 +185,7 @@ impl Component for ResourceAllocationInputBox {
             // border left so that it doesn't conflict with layer_zero's border
             .block(
                 Block::default()
+                    // todo: this has to be cleaned up
                     .borders(Borders::LEFT)
                     .border_type(BorderType::Double)
                     .border_style(Style::new().bold()),
@@ -197,6 +199,17 @@ impl Component for ResourceAllocationInputBox {
             layer_one[1].y,
         );
         f.render_widget(input, layer_one[1]);
+
+        f.render_widget(
+            Paragraph::new("      (Enter in 5GB increments)").block(
+                // todo clean up
+                Block::default()
+                    .borders(Borders::LEFT)
+                    .border_type(BorderType::Double)
+                    .border_style(Style::new().bold()),
+            ),
+            layer_one[2],
+        );
 
         Ok(())
     }

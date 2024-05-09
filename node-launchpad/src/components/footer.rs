@@ -9,7 +9,7 @@
 use std::borrow::Cow;
 
 use super::Component;
-use crate::{action::Action, components::resource_allocation::GB_PER_NODE, mode::Scene};
+use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 
@@ -39,7 +39,7 @@ impl Component for Footer {
             }
             Scene::Options => "none".into(),
             Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel".into(),
-            Scene::ResourceAllocationInputBox => format!("⏎ Accept, [Esc] Cancel. Specify in {GB_PER_NODE} increments.").into(),
+            Scene::ResourceAllocationInputBox => format!("⏎ Accept, [Esc] Cancel.").into(),
         };
 
         f.render_widget(
