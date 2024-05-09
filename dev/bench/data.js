@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715234562162,
+  "lastUpdate": 1715234678017,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d1813553ed23939cc65a17c63b566e9a5d595d0d",
-          "message": "chore(node): collect node handling time statistics",
-          "timestamp": "2024-01-15T10:37:19Z",
-          "tree_id": "02466bac3b0ff6f0506f46df216afcbfdef66b93",
-          "url": "https://github.com/maidsafe/safe_network/commit/d1813553ed23939cc65a17c63b566e9a5d595d0d"
-        },
-        "date": 1705317745501,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d841f32f7f99aa13df434e0ef46436be9e789752",
+          "message": "chore: use consistent border styles",
+          "timestamp": "2024-05-09T14:50:34+09:00",
+          "tree_id": "b1eb2f9c85f8e9e558145cc899a29010848a6456",
+          "url": "https://github.com/maidsafe/safe_network/commit/d841f32f7f99aa13df434e0ef46436be9e789752"
+        },
+        "date": 1715234677628,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
