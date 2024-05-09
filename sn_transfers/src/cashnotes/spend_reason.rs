@@ -13,6 +13,8 @@ use xor_name::XorName;
 
 use crate::{DerivationIndex, Hash, Result, TransferError};
 
+const CUSTOM_SPEND_REASON_SIZE: usize = 64;
+
 /// The attached metadata or reason for which a Spend was spent
 #[derive(Default, Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum SpendReason {
@@ -21,7 +23,7 @@ pub enum SpendReason {
     /// Reference to network data
     NetworkData(XorName),
     /// Custom field for any application data
-    Custom(#[serde(with = "serde_bytes")] [u8; 64]),
+    Custom(#[serde(with = "serde_bytes")] [u8; CUSTOM_SPEND_REASON_SIZE]),
 
     /// Beta only feature to track rewards
     /// Discord username encrypted to the Foundation's pubkey with a random nonce
@@ -43,6 +45,9 @@ lazy_static! {
     pub static ref FOUNDATION_PK: PublicKey = crate::NETWORK_ROYALTIES_PK.public_key();
 }
 const MAX_CIPHER_SIZE: usize = std::u8::MAX as usize;
+const DERIVATION_INDEX_SIZE: usize = 32;
+const HASH_SIZE: usize = 32;
+const LIMIT_SIZE: usize = HASH_SIZE + DERIVATION_INDEX_SIZE;
 
 /// Discord username encrypted to the Foundation's pubkey with a random nonce
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -62,19 +67,27 @@ struct DiscordName {
 }
 
 impl DiscordName {
-    fn to_sized_bytes(&self) -> [u8; 64] {
-        let mut bytes: [u8; 64] = [0; 64];
-        bytes[0..32].copy_from_slice(self.hash.slice());
-        bytes[32..64].copy_from_slice(&self.nonce.0);
+    fn new(user_name: &str) -> Self {
+        let rng = &mut rand::thread_rng();
+        DiscordName {
+            hash: Hash::hash(user_name.as_bytes()),
+            nonce: DerivationIndex::random(rng),
+        }
+    }
+
+    fn to_sized_bytes(&self) -> [u8; LIMIT_SIZE] {
+        let mut bytes: [u8; LIMIT_SIZE] = [0; LIMIT_SIZE];
+        bytes[0..HASH_SIZE].copy_from_slice(self.hash.slice());
+        bytes[HASH_SIZE..LIMIT_SIZE].copy_from_slice(&self.nonce.0);
         bytes
     }
 
     fn from_bytes(bytes: &[u8]) -> Self {
-        let mut hash_bytes = [0; 32];
-        hash_bytes.copy_from_slice(&bytes[0..32]);
+        let mut hash_bytes = [0; HASH_SIZE];
+        hash_bytes.copy_from_slice(&bytes[0..HASH_SIZE]);
         let hash = Hash::from(hash_bytes.to_owned());
-        let mut nonce_bytes = [0; 32];
-        nonce_bytes.copy_from_slice(&bytes[32..64]);
+        let mut nonce_bytes = [0; DERIVATION_INDEX_SIZE];
+        nonce_bytes.copy_from_slice(&bytes[HASH_SIZE..LIMIT_SIZE]);
         let nonce = DerivationIndex(nonce_bytes.to_owned());
         Self { hash, nonce }
     }
@@ -84,11 +97,7 @@ impl DiscordNameCipher {
     /// Create a new DiscordNameCipher from a Discord username
     /// it is encrypted to the given pubkey
     pub fn create(user_name: &str, foundation_pk: PublicKey) -> Result<Self> {
-        let rng = &mut rand::thread_rng();
-        let discord_name = DiscordName {
-            hash: Hash::hash(user_name.as_bytes()),
-            nonce: DerivationIndex::random(rng),
-        };
+        let discord_name = DiscordName::new(user_name);
         let cipher = foundation_pk.encrypt(discord_name.to_sized_bytes());
         let bytes = cipher.to_bytes();
         if bytes.len() > MAX_CIPHER_SIZE {
