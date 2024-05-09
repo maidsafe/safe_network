@@ -87,7 +87,7 @@ pub enum SubCmd {
         ///
         /// If not provided, the default location is platform specific:
         ///  - Linux/macOS (system-wide): /var/log/safenode
-        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node/<service>/logs
+        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node/*/logs
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
