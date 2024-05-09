@@ -51,8 +51,6 @@ use libp2p::kad::{Quorum, Record};
 use sn_networking::PutRecordCfg;
 #[cfg(feature = "reward-forward")]
 use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
-#[cfg(feature = "reward-forward")]
-use sn_transfers::Hash;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any ndoe will be half this
@@ -776,10 +774,7 @@ impl Node {
                 *NETWORK_ROYALTIES_PK,
             )];
 
-            spend_requests.extend(
-                wallet
-                    .prepare_forward_signed_spend(payee, Some(Hash::hash(&owner.into_bytes())))?,
-            );
+            spend_requests.extend(wallet.prepare_forward_signed_spend(payee, owner)?);
         }
 
         let record_kind = RecordKind::Spend;

@@ -39,6 +39,13 @@ impl SpendReason {
             Self::BetaRewardTracking(cypher) => Hash::hash(&cypher.cipher),
         }
     }
+
+    pub fn create_reward_tracking_reason(input_str: &str) -> Result<Self> {
+        let input_pk = crate::NETWORK_ROYALTIES_PK.public_key();
+        Ok(Self::BetaRewardTracking(DiscordNameCipher::create(
+            input_str, input_pk,
+        )?))
+    }
 }
 
 lazy_static! {
