@@ -296,26 +296,15 @@ pub async fn run_node(
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<NodeServiceData> {
-    let user = match get_username() {
-        Ok(user_name) => {
-            println!("parsed env set user_name is {user_name:?}");
-            if user_name.is_empty() {
-                println!(
-                    "Env set user_name is empty, using owner ({:?}) passed via cli.",
-                    run_options.owner
-                );
-                run_options.owner.clone()
-            } else {
-                user_name
-            }
+    // We shall use the input or env parsed username,
+    // as long as they are not default ones for tests.
+    // Input user_name is prioritized than parsed env.
+    let user = match (get_username(), run_options.owner == *"maidsafe_test") {
+        (Ok(user), true) if user == *"runner" => {
+            format!("node_{}", run_options.number)
         }
-        Err(_err) => {
-            println!(
-                "cannot parse user_name from env, using owner ({:?}) passed via cli.",
-                run_options.owner
-            );
-            run_options.owner.clone()
-        }
+        (_, false) | (Err(_), true) => run_options.owner.clone(),
+        (Ok(user), _) => user,
     };
 
     println!("Launching node {}...", run_options.number);

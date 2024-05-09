@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::GENESIS_CASHNOTE_SK;
 use bls::{Ciphertext, PublicKey, SecretKey};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,28 @@ impl SpendReason {
         Ok(Self::BetaRewardTracking(DiscordNameCipher::create(
             input_str, input_pk,
         )?))
+    }
+
+    pub fn get_sender_hash(&self) -> Option<Hash> {
+        match self {
+            Self::BetaRewardTracking(cypher) => {
+                let sk = match SecretKey::from_hex(GENESIS_CASHNOTE_SK) {
+                    Ok(sk) => sk,
+                    Err(err) => {
+                        error!("Failed to get GENESIS sk {err:?}");
+                        return None;
+                    }
+                };
+
+                if let Ok(hash) = cypher.decrypt_to_username_hash(&sk) {
+                    Some(hash)
+                } else {
+                    error!("Failed to decrypt BetaRewardTracking");
+                    None
+                }
+            }
+            _ => None,
+        }
     }
 }
 
