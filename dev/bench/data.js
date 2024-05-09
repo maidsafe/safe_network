@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715214680457,
+  "lastUpdate": 1715214682749,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "distinct": true,
-          "id": "71233886cd924d0470fecc6965500fa88884bf9d",
-          "message": "chore(network): collect swarm_driver handling time statistics",
-          "timestamp": "2024-01-12T11:50:15Z",
-          "tree_id": "ead0044a5e41115a3e67fe89caa05bdfd88504bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/71233886cd924d0470fecc6965500fa88884bf9d"
-        },
-        "date": 1705063647944,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 218,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
           "id": "d1813553ed23939cc65a17c63b566e9a5d595d0d",
           "message": "chore(node): collect node handling time statistics",
           "timestamp": "2024-01-15T10:37:19Z",
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7511b0c33d0456f89c155ccc4840013dc41b9faa",
+          "message": "feat(release): upload node-launchpad bins to github",
+          "timestamp": "2024-05-09T09:16:34+09:00",
+          "tree_id": "58b8dc6be919e816ae55ee2c38d8204b2a21897a",
+          "url": "https://github.com/maidsafe/safe_network/commit/7511b0c33d0456f89c155ccc4840013dc41b9faa"
+        },
+        "date": 1715214681929,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
             "unit": "MB"
           },
           {
