@@ -376,7 +376,7 @@ impl HotWallet {
     pub fn prepare_forward_signed_spend(
         &mut self,
         to: Vec<TransactionPayeeDetails>,
-        reason_hash: Option<Hash>,
+        owner: String,
     ) -> Result<Vec<SignedSpend>> {
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!(
@@ -384,7 +384,15 @@ impl HotWallet {
             available_cash_notes
         );
 
-        let reason_hash = reason_hash.unwrap_or_default();
+        let spend_reason = match SpendReason::create_reward_tracking_reason(&owner) {
+            Ok(spend_reason) => spend_reason,
+            Err(err) => {
+                error!("Failed to generate spend_reason {err:?}");
+                return Err(Error::CouldNotSendMoney(format!(
+                    "Failed to generate spend_reason {err:?}"
+                )));
+            }
+        };
 
         // create a unique key for each output
         let mut rng = &mut rand::rngs::OsRng;
@@ -399,7 +407,7 @@ impl HotWallet {
             available_cash_notes,
             to_unique_keys,
             self.address(),
-            reason_hash,
+            spend_reason,
         )?;
 
         let signed_spends = transfer.all_spend_requests.clone();
@@ -476,13 +484,21 @@ impl HotWallet {
             start.elapsed()
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
-        let input_reason_hash = SpendReason::default();
+        let spend_reason = match SpendReason::create_reward_tracking_reason("STORAGE") {
+            Ok(spend_reason) => spend_reason,
+            Err(err) => {
+                error!("Failed to generate spend_reason for local_send {err:?}");
+                return Err(Error::CouldNotSendMoney(format!(
+                    "Failed to generate spend_reason {err:?}"
+                )));
+            }
+        };
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
             recipients,
             self.address(),
-            input_reason_hash,
+            spend_reason,
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
