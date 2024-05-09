@@ -2,7 +2,9 @@
   "keybindings": {
     "Home": {
       "<Ctrl-g>": {"HomeActions":"StartNodes"},
+      "<Ctrl-G>": {"HomeActions":"StartNodes"},
       "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
+      "<Ctrl-X>": {"HomeActions":"StopNodes"}, 
 
       "up" : {"HomeActions":"PreviousTableItem"},
       "down": {"HomeActions":"NextTableItem"},
@@ -11,20 +13,27 @@
       "<Shift-tab>": {"TabActions":"PreviousTab"},
 
       "<d>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
+      "<D>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
       "<Ctrl-o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<Ctrl-O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
 
-      "<q>": "Quit", // Quit the application
-      "<Ctrl-d>": "Quit", // Another way to quit
-      "<Ctrl-c>": "Quit", // Yet another way to quit
+      "<q>": "Quit", 
+      "<Shift-q>": "Quit", 
+      "<Q>": "Quit", 
+      "<Ctrl-d>": "Quit", 
+      "<Ctrl-c>": "Quit", 
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Options": {
       "tab": {"TabActions":"NextTab"},
       "<Shift-tab>": {"TabActions":"PreviousTab"},
       "enter": {"SwitchInputMode":"Entry"},
-      "<q>": "Quit", // Quit the application
-      "<Ctrl-d>": "Quit", // Another way to quit
-      "<Ctrl-c>": "Quit", // Yet another way to quit
+      
+      "<q>": "Quit", 
+      "<Shift-q>": "Quit", 
+      "<Q>": "Quit",
+      "<Ctrl-d>": "Quit", 
+      "<Ctrl-c>": "Quit",
       "<Ctrl-z>": "Suspend" // Suspend the application
     }
   }
