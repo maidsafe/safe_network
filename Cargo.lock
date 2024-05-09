@@ -6852,7 +6852,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.13"
+version = "0.1.14"
 dependencies = [
  "blsttc",
  "clap",
@@ -6890,7 +6890,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.91.1"
+version = "0.91.2"
 dependencies = [
  "aes 0.7.5",
  "base64 0.22.1",
@@ -6932,7 +6932,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.106.1"
+version = "0.106.2"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -7017,7 +7017,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.15"
+version = "0.4.16"
 dependencies = [
  "assert_fs",
  "base64 0.22.1",
@@ -7084,7 +7084,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -7124,7 +7124,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.106.1"
+version = "0.106.2"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -7179,7 +7179,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.14"
+version = "0.6.15"
 dependencies = [
  "assert_fs",
  "async-trait",

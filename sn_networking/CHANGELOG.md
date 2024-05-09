@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.15.1...sn_networking-v0.15.2) - 2024-05-09
+
+### Fixed
+- *(relay_manager)* filter out bad nodes
+
 ## [0.15.1](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.15.0...sn_networking-v0.15.1) - 2024-05-08
 
 ### Other
