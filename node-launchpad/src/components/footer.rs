@@ -35,7 +35,7 @@ impl Component for Footer {
 
         let text: Cow<_> = match self.current_scene {
             Scene::Home => {
-                "[Ctrl+g] Start nodes, [Ctrl+x] Stop node, [Ctrl+o] Set Resources, [D]iscord Username, [Q]uit".into()
+                "[Ctrl+g] Start nodes, [Ctrl+x] Stop node, [O] Set Resources, [D]iscord Username, [Q]uit".into()
             }
             Scene::Options => "none".into(),
             Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel".into(),

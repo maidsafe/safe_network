@@ -4,7 +4,7 @@
       "<Ctrl-g>": {"HomeActions":"StartNodes"},
       "<Ctrl-G>": {"HomeActions":"StartNodes"},
       "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
-      "<Ctrl-X>": {"HomeActions":"StopNodes"}, 
+      "<Ctrl-X>": {"HomeActions":"StopNodes"},
 
       "up" : {"HomeActions":"PreviousTableItem"},
       "down": {"HomeActions":"NextTableItem"},
@@ -14,14 +14,14 @@
 
       "<d>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
       "<D>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
-      "<Ctrl-o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
-      "<Ctrl-O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
 
-      "<q>": "Quit", 
-      "<Shift-q>": "Quit", 
-      "<Q>": "Quit", 
-      "<Ctrl-d>": "Quit", 
-      "<Ctrl-c>": "Quit", 
+      "<q>": "Quit",
+      "<Shift-q>": "Quit",
+      "<Q>": "Quit",
+      "<Ctrl-d>": "Quit",
+      "<Ctrl-c>": "Quit",
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Options": {
@@ -29,10 +29,10 @@
       "<Shift-tab>": {"TabActions":"PreviousTab"},
       "enter": {"SwitchInputMode":"Entry"},
       
-      "<q>": "Quit", 
-      "<Shift-q>": "Quit", 
+      "<q>": "Quit",
+      "<Shift-q>": "Quit",
       "<Q>": "Quit",
-      "<Ctrl-d>": "Quit", 
+      "<Ctrl-d>": "Quit",
       "<Ctrl-c>": "Quit",
       "<Ctrl-z>": "Suspend" // Suspend the application
     }
