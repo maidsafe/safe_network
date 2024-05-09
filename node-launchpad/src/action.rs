@@ -16,7 +16,9 @@ pub enum Action {
     TabActions(TabActions),
     SwitchScene(Scene),
     SwitchInputMode(InputMode),
+
     StoreDiscordUserName(String),
+    StoreAllocatedDiskSpace(usize),
 
     Tick,
     Render,
@@ -40,7 +42,8 @@ pub enum HomeActions {
     RemoveNode,
     RemoveNodeCompleted,
 
-    InputDiscordUsername,
+    TriggerDiscordUsernameInputBox,
+    TriggerResourceAllocationInputBox,
 
     PreviousTableItem,
     NextTableItem,

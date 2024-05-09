@@ -37,6 +37,7 @@ impl Component for Footer {
             }
             Scene::Options => "none",
             Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel",
+            Scene::ResourceAllocationInputBox => "⏎ Accept, [Esc] Cancel",
         };
 
         f.render_widget(

@@ -9,7 +9,8 @@
 use crate::{
     action::Action,
     components::{
-        discord_username::DiscordUsernameInputBox, footer::Footer, home::Home, tab::Tab, Component,
+        discord_username::DiscordUsernameInputBox, footer::Footer, home::Home,
+        resource_allocation::ResourceAllocationInputBox, tab::Tab, Component,
     },
     config::{AppData, Config},
     mode::{InputMode, Scene},
@@ -41,7 +42,10 @@ impl App {
         let app_data = AppData::load()?;
         let discord_username_input =
             DiscordUsernameInputBox::new(app_data.discord_username.clone());
+        let resource_allocation_input =
+            ResourceAllocationInputBox::new(app_data.allocated_disk_space)?;
         let footer = Footer::default();
+
         let scene = tab.get_current_scene();
         Ok(Self {
             config,
@@ -53,6 +57,7 @@ impl App {
                 Box::new(footer),
                 Box::new(home),
                 Box::new(discord_username_input),
+                Box::new(resource_allocation_input),
             ],
             should_quit: false,
             should_suspend: false,
@@ -168,6 +173,11 @@ impl App {
                     Action::StoreDiscordUserName(ref username) => {
                         debug!("Storing discord username: {username:?}");
                         self.app_data.discord_username.clone_from(username);
+                        self.app_data.save()?;
+                    }
+                    Action::StoreAllocatedDiskSpace(space) => {
+                        debug!("Storing allocated disk space: {space:?}");
+                        self.app_data.allocated_disk_space = space;
                         self.app_data.save()?;
                     }
                     _ => {}
