@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715234679490,
+  "lastUpdate": 1715234681226,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d3ce120fe1f16b8f24813abbe0f0026a07ca3030",
-          "message": "feat(network): move the kad::put_record_to inside PutRecordCfg",
-          "timestamp": "2024-01-05T09:58:06Z",
-          "tree_id": "eeca06cbeafc7cf031d86e33a487d7161805354a",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3ce120fe1f16b8f24813abbe0f0026a07ca3030"
-        },
-        "date": 1704451273708,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4022,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 19006,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34563,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d841f32f7f99aa13df434e0ef46436be9e789752",
+          "message": "chore: use consistent border styles",
+          "timestamp": "2024-05-09T14:50:34+09:00",
+          "tree_id": "b1eb2f9c85f8e9e558145cc899a29010848a6456",
+          "url": "https://github.com/maidsafe/safe_network/commit/d841f32f7f99aa13df434e0ef46436be9e789752"
+        },
+        "date": 1715234680849,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7516,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34703,
             "unit": "ms"
           },
           {
