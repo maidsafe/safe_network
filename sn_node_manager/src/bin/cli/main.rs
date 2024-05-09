@@ -647,7 +647,7 @@ async fn main() -> Result<()> {
             user,
             version,
         } => {
-            cmd::node::add(
+            let _ = cmd::node::add(
                 count,
                 data_dir_path,
                 env_variables,
@@ -665,7 +665,8 @@ async fn main() -> Result<()> {
                 version,
                 verbosity,
             )
-            .await
+            .await?;
+            Ok(())
         }
         SubCmd::Balance {
             peer_id: peer_ids,

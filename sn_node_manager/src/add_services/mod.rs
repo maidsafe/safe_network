@@ -35,12 +35,14 @@ use std::{
 ///
 /// There are several arguments that probably seem like they could be handled within the function,
 /// but they enable more controlled unit testing.
+///
+/// Returns the service names of the added services.
 pub async fn add_node(
     options: AddNodeServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     if options.genesis {
         if let Some(count) = options.count {
             if count > 1 {
@@ -254,7 +256,12 @@ pub async fn add_node(
             .suggestion("However, any services that were successfully added will be usable."));
     }
 
-    Ok(())
+    let added_services_names = added_service_data
+        .into_iter()
+        .map(|(name, ..)| name)
+        .collect();
+
+    Ok(added_services_names)
 }
 
 /// Install the daemon as a service.
