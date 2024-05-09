@@ -14,6 +14,7 @@ pub enum Scene {
     Home,
     Options,
     DiscordUsernameInputBox,
+    ResourceAllocationInputBox,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

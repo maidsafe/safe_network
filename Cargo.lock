@@ -4636,6 +4636,7 @@ dependencies = [
  "sn_service_management",
  "strip-ansi-escapes",
  "strum",
+ "sysinfo",
  "tokio",
  "tokio-util 0.7.11",
  "tracing",
