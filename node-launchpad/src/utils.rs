@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use std::path::PathBuf;
 use tracing::error;
 use tracing_error::ErrorLayer;
@@ -95,7 +95,8 @@ pub fn initialize_logging() -> Result<()> {
         .join("logs")
         .join(format!("log_{timestamp}"));
     std::fs::create_dir_all(&log_path)?;
-    let log_file = std::fs::File::create(log_path.join("launchpad.log"))?;
+    let log_file = std::fs::File::create(log_path.join("launchpad.log"))
+        .context(format!("Failed to create file {log_path:?}"))?;
     std::env::set_var(
         "RUST_LOG",
         std::env::var("RUST_LOG")

@@ -7,11 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
-use color_eyre::eyre::{bail, eyre, Result};
-use std::{
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use color_eyre::eyre::{eyre, Result};
+use std::{path::PathBuf, process::Command};
 use which::which;
 
 #[derive(Debug)]
@@ -136,18 +133,8 @@ pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
             Ok(())
         }
         TerminalType::MacOS(_path) | TerminalType::ITerm2(_path) => {
-            // We need to detect here to avoid a loop on mac
-            // as the terminal is booted by default
-            if !is_running_root() {
-                let status = Command::new("sudo")
-                    .arg(launchpad_path)
-                    .stdin(Stdio::inherit())
-                    .stdout(Stdio::inherit())
-                    .status()?;
-                if !status.success() {
-                    bail!("Failed to run as root");
-                }
-            }
+            // Mac automatically opens a new terminal window
+            // so nothing to do here.
             Ok(())
         }
         TerminalType::WindowsCmd(path)
