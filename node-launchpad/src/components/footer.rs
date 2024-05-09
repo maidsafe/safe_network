@@ -6,8 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::borrow::Cow;
+
 use super::Component;
-use crate::{action::Action, mode::Scene};
+use crate::{action::Action, components::resource_allocation::GB_PER_NODE, mode::Scene};
 use color_eyre::eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 
@@ -31,13 +33,13 @@ impl Component for Footer {
         )
         .split(area);
 
-        let text = match self.current_scene {
+        let text: Cow<_> = match self.current_scene {
             Scene::Home => {
-                "[Ctrl+g] Start nodes, [Ctrl+x] Stop node, [Ctrl+o] Set Resources, [D]iscord Username, [Q]uit"
+                "[Ctrl+g] Start nodes, [Ctrl+x] Stop node, [Ctrl+o] Set Resources, [D]iscord Username, [Q]uit".into()
             }
-            Scene::Options => "none",
-            Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel",
-            Scene::ResourceAllocationInputBox => "⏎ Accept, [Esc] Cancel",
+            Scene::Options => "none".into(),
+            Scene::DiscordUsernameInputBox => "⏎ Accept, [Esc] Cancel".into(),
+            Scene::ResourceAllocationInputBox => format!("⏎ Accept, [Esc] Cancel. Specify in {GB_PER_NODE} increments.").into(),
         };
 
         f.render_widget(

@@ -333,6 +333,12 @@ impl Component for Home {
             Constraint::Min(30),
             Constraint::Max(10),
         ];
+        // give green borders if we are running
+        let table_border_style = if self.get_running_nodes().len() > 1 {
+            Style::default().green()
+        } else {
+            Style::default()
+        };
         let table = Table::new(rows, widths)
             .column_spacing(2)
             .header(
@@ -343,8 +349,9 @@ impl Component for Home {
             .highlight_style(Style::new().reversed())
             .block(
                 Block::default()
-                    .title("Running Nodes")
-                    .borders(Borders::ALL),
+                    .title("Node list")
+                    .borders(Borders::ALL)
+                    .border_style(table_border_style),
             )
             .highlight_symbol(">");
 
@@ -396,7 +403,7 @@ fn start_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
         // I think using 1 thread is causing us to block on the below start function and not really
         // having a chance to set lock_registry = true and draw from that state. Since the update is slow,
         // the gui looks laggy. Adding a sleep basically puts this to sleep while drawing with the new state.
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
         if let Err(err) = sn_node_manager::cmd::node::start(
             NODE_START_INTERVAL as u64,
             vec![],
