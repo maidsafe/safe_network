@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715214682749,
+  "lastUpdate": 1715214685255,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "a84df6f763aa91704a4138019be1ba7e69a6df6b",
-          "message": "chore(node): reduce node default logging level",
-          "timestamp": "2024-01-04T15:07:46Z",
-          "tree_id": "d3c5d80230575459435f2565c5c9d9f5b4794996",
-          "url": "https://github.com/maidsafe/safe_network/commit/a84df6f763aa91704a4138019be1ba7e69a6df6b"
-        },
-        "date": 1704383404012,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3010,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 15425,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33482,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7511b0c33d0456f89c155ccc4840013dc41b9faa",
+          "message": "feat(release): upload node-launchpad bins to github",
+          "timestamp": "2024-05-09T09:16:34+09:00",
+          "tree_id": "58b8dc6be919e816ae55ee2c38d8204b2a21897a",
+          "url": "https://github.com/maidsafe/safe_network/commit/7511b0c33d0456f89c155ccc4840013dc41b9faa"
+        },
+        "date": 1715214684290,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7551,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34563,
             "unit": "ms"
           },
           {
