@@ -50,6 +50,7 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 
 #[cfg(windows)]
 pub fn get_node_manager_path() -> Result<PathBuf> {
+    use std::path::Path;
     let path = Path::new("C:\\ProgramData\\safenode-manager");
     if !path.exists() {
         std::fs::create_dir_all(path)?;
@@ -86,6 +87,7 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
 
 #[cfg(windows)]
 pub fn get_node_registry_path() -> Result<PathBuf> {
+    use std::path::Path;
     let path = Path::new("C:\\ProgramData\\safenode-manager");
     if !path.exists() {
         std::fs::create_dir_all(path)?;
