@@ -426,6 +426,7 @@ pub async fn upgrade(
     )
     .await?;
 
+    println!("listen addresses: {:?}", node_registry.nodes[0].listen_addr);
     if !use_force {
         let node_versions = node_registry
             .nodes
