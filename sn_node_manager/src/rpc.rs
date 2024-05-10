@@ -188,6 +188,8 @@ pub async fn restart_node_service(
             listen_addr: None,
             local: current_node_clone.local,
             log_dir_path,
+            metrics_port: None,
+            node_port: None,
             number: new_node_number as u16,
             peer_id: None,
             pid: None,

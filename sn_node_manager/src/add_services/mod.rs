@@ -78,6 +78,18 @@ pub async fn add_node(
         }
     }
 
+    if let Some(port_option) = &options.node_port {
+        check_port_availability(port_option, &node_registry.nodes)?;
+    }
+
+    if let Some(port_option) = &options.metrics_port {
+        check_port_availability(port_option, &node_registry.nodes)?;
+    }
+
+    if let Some(port_option) = &options.rpc_port {
+        check_port_availability(port_option, &node_registry.nodes)?;
+    }
+
     let safenode_file_name = options
         .safenode_src_path
         .file_name()
@@ -202,6 +214,8 @@ pub async fn add_node(
                     listen_addr: None,
                     local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
+                    metrics_port,
+                    node_port,
                     number: node_number,
                     reward_balance: None,
                     rpc_socket_addr,
@@ -414,4 +428,33 @@ fn increment_port_option(port: Option<u16>) -> Option<u16> {
         return Some(incremented_port);
     }
     None
+}
+
+fn check_port_availability(port_option: &PortRange, nodes: &[NodeServiceData]) -> Result<()> {
+    let mut all_ports = Vec::new();
+    for node in nodes {
+        if let Some(port) = node.metrics_port {
+            all_ports.push(port);
+        }
+        if let Some(port) = node.node_port {
+            all_ports.push(port);
+        }
+        all_ports.push(node.rpc_socket_addr.port());
+    }
+
+    match port_option {
+        PortRange::Single(port) => {
+            if all_ports.iter().any(|p| *p == *port) {
+                return Err(eyre!("Port {port} is being used by another service"));
+            }
+        }
+        PortRange::Range(start, end) => {
+            for i in *start..=*end {
+                if all_ports.iter().any(|p| *p == i) {
+                    return Err(eyre!("Port {i} is being used by another service"));
+                }
+            }
+        }
+    }
+    Ok(())
 }

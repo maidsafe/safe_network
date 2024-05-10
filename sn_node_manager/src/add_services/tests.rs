@@ -208,6 +208,8 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             listen_addr: None,
             local: false,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: None,
             number: 1,
             pid: None,
             peer_id: None,
@@ -804,6 +806,8 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             listen_addr: None,
             local: false,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: None,
             number: 1,
             pid: None,
             peer_id: None,
@@ -1007,23 +1011,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     node_logs_dir.assert(predicate::path::is_dir());
 
     assert_eq!(node_registry.nodes.len(), 1);
-    assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "safenode1");
-    assert_eq!(node_registry.nodes[0].user, Some(get_username()));
-    assert_eq!(node_registry.nodes[0].number, 1);
-    assert_eq!(
-        node_registry.nodes[0].rpc_socket_addr,
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001)
-    );
-    assert_eq!(
-        node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode1")
-    );
-    assert_eq!(
-        node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode1")
-    );
-    assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
+    assert_eq!(node_registry.nodes[0].node_port, Some(custom_port));
 
     Ok(())
 }
@@ -1230,8 +1218,173 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
     assert_eq!(node_registry.nodes.len(), 3);
+    assert_eq!(node_registry.nodes[0].node_port, Some(12000));
+    assert_eq!(node_registry.nodes[1].node_port, Some(12001));
+    assert_eq!(node_registry.nodes[2].node_port, Some(12002));
 
     Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: Some(12000),
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: None,
+            node_port: Some(PortRange::Single(12000)),
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 12000 is being used by another service");
+            Ok(())
+        }
+    }
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: Some(12000),
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: Some(3),
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: None,
+            node_port: Some(PortRange::Range(12000, 12002)),
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 12000 is being used by another service");
+            Ok(())
+        }
+    }
 }
 
 #[tokio::test]
@@ -1559,12 +1712,175 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
-    node_data_dir.assert(predicate::path::is_dir());
-    node_logs_dir.assert(predicate::path::is_dir());
     assert_eq!(node_registry.nodes.len(), 3);
+    assert_eq!(node_registry.nodes[0].metrics_port, Some(12000));
+    assert_eq!(node_registry.nodes[1].metrics_port, Some(12001));
+    assert_eq!(node_registry.nodes[2].metrics_port, Some(12002));
 
     Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: Some(12000),
+            node_port: None,
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: Some(PortRange::Single(12000)),
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 12000 is being used by another service");
+            Ok(())
+        }
+    }
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_range_is_used(
+) -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: Some(12000),
+            node_port: None,
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: Some(3),
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: Some(PortRange::Range(12000, 12002)),
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 12000 is being used by another service");
+            Ok(())
+        }
+    }
 }
 
 #[tokio::test]
@@ -1761,6 +2077,169 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 20002)
     );
     Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: None,
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: Some(PortRange::Single(8081)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 8081 is being used by another service");
+            Ok(())
+        }
+    }
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_is_used(
+) -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            metrics_port: None,
+            node_port: None,
+            number: 1,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            metrics_port: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: Some(PortRange::Range(8081, 8082)),
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 8081 is being used by another service");
+            Ok(())
+        }
+    }
 }
 
 #[tokio::test]
