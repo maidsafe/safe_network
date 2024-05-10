@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715305811959,
+  "lastUpdate": 1715305814500,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "04db25655a133ba8953461891c3ac039267b6136",
-          "message": "feat(cli): store uploaded file metadata",
-          "timestamp": "2024-01-05T12:44:48Z",
-          "tree_id": "448285e3dea27285617629da3f82d6231311819e",
-          "url": "https://github.com/maidsafe/safe_network/commit/04db25655a133ba8953461891c3ac039267b6136"
-        },
-        "date": 1704461428928,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3859,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 18758,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36975,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "94591d75c59d56e57439843af2c8ab1ada37fc71",
+          "message": "chore: change terminal launch behaviour\n\nOn Linux, the `TERM` variable is not really appropriate for selecting which terminal is in use, so\nthis has been removed. It can be set to a completely different value, like `xterm-256color`, which\ndoes not necessarily correspond to the running terminal. The `sudo` was also removed from the\nterminal launch mechanism.\n\nOn the Windows front, I updated Windows Terminal to not use the `/c` argument. It simply just passes\nthe command to the terminal.\n\nAlso fixed another couple of issues:\n* Compile the node manager correctly on Windows.\n* The use of `<service>` in doc comments was being flagged as an unclosed HTML tag.",
+          "timestamp": "2024-05-10T00:28:04Z",
+          "tree_id": "d6a3d6be5293fc30f98e6feb7f796aa5bd4e7531",
+          "url": "https://github.com/maidsafe/safe_network/commit/94591d75c59d56e57439843af2c8ab1ada37fc71"
+        },
+        "date": 1715305813620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7466,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35063,
             "unit": "ms"
           },
           {
