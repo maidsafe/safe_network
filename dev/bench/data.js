@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715274670556,
+  "lastUpdate": 1715305690330,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "0ff08d00c40358174495fa24f29a69b43b0c908f",
-          "message": "ci: use node manager for running local testnets\n\nThe local testnet action now uses the node manager to launch local networks. The churn tests were\nupdated to parse the node manager's inventory, which they use to restart nodes.\n\nThe node registry from the node manager has been transferred to the `sn_protocol` crate to reduce\nduplication between `safe_network` and `sn-node-manager`, because they both need access to these\ndata structures. The local network deployment inventory is represented using the node registry.",
-          "timestamp": "2024-01-15T15:53:23Z",
-          "tree_id": "5d366894693dd34867a60f47e3016d2bae2e0717",
-          "url": "https://github.com/maidsafe/safe_network/commit/0ff08d00c40358174495fa24f29a69b43b0c908f"
-        },
-        "date": 1705334696585,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6547916620963846,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.119447165226574,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 66.7898005988022,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.85640611290369,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "94591d75c59d56e57439843af2c8ab1ada37fc71",
+          "message": "chore: change terminal launch behaviour\n\nOn Linux, the `TERM` variable is not really appropriate for selecting which terminal is in use, so\nthis has been removed. It can be set to a completely different value, like `xterm-256color`, which\ndoes not necessarily correspond to the running terminal. The `sudo` was also removed from the\nterminal launch mechanism.\n\nOn the Windows front, I updated Windows Terminal to not use the `/c` argument. It simply just passes\nthe command to the terminal.\n\nAlso fixed another couple of issues:\n* Compile the node manager correctly on Windows.\n* The use of `<service>` in doc comments was being flagged as an unclosed HTML tag.",
+          "timestamp": "2024-05-10T00:28:04Z",
+          "tree_id": "d6a3d6be5293fc30f98e6feb7f796aa5bd4e7531",
+          "url": "https://github.com/maidsafe/safe_network/commit/94591d75c59d56e57439843af2c8ab1ada37fc71"
+        },
+        "date": 1715305685367,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2239661300278621,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6499565480040936,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.929467035634055,
             "unit": "MiB/s"
           }
         ]
