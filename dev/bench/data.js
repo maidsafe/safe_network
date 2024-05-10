@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715338267951,
+  "lastUpdate": 1715338402147,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "f0f48bff0f7f392ac60a92f2dbac45463425b338",
-          "message": "fix(client): avoid deadlock during upload in case of error",
-          "timestamp": "2024-01-15T18:28:09Z",
-          "tree_id": "eecb97d46a6447a27612fabe9aa08162b2433e81",
-          "url": "https://github.com/maidsafe/safe_network/commit/f0f48bff0f7f392ac60a92f2dbac45463425b338"
-        },
-        "date": 1705345584308,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "dfa136d8bdfbbe98aa4267a00474b33188c97260",
+          "message": "chore(node): use proper SpendReason enum",
+          "timestamp": "2024-05-10T09:55:58Z",
+          "tree_id": "0afdc5f3d42379cce3de9b98fd1e62bb4dcb9c19",
+          "url": "https://github.com/maidsafe/safe_network/commit/dfa136d8bdfbbe98aa4267a00474b33188c97260"
+        },
+        "date": 1715338401544,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
