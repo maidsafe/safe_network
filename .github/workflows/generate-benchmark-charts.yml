@@ -50,7 +50,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet bin
-        run: cargo build --release --bin faucet --features local-discovery --features="gifting-from-genesis"
+        run: cargo build --release --bin faucet --features local-discovery --features gifting
         timeout-minutes: 30
 
       - name: Start a local network

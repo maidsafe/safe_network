@@ -21,6 +21,9 @@ use xor_name::XorName;
 #[derive(Debug, Error)]
 #[allow(missing_docs)]
 pub enum Error {
+    #[error("Genesis disbursement failed")]
+    GenesisDisbursement,
+
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::GenesisError),
 

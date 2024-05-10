@@ -6,8 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{wallet::send, Client, Result};
-use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey};
+use crate::{wallet::send, Client, Error, Result};
+use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey, NanoTokens};
+
+const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(1000);
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
@@ -30,10 +32,31 @@ pub async fn fund_faucet_from_genesis_wallet(
     let genesis_wallet = load_genesis_wallet()?;
     let genesis_balance = genesis_wallet.balance();
 
-    let cash_note = if cfg!(feature = "gifting-from-genesis") {
-        println!("Sending {genesis_balance} from genesis to faucet wallet..");
-        debug!("Sending {genesis_balance} from genesis to faucet wallet..");
-        let cash_note = send(
+    let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?; // DevSkim: ignore DS117838
+
+    let (foundation_cash_note, faucet_cashnote) = {
+        let foundation_balance = genesis_balance
+            .checked_sub(INITIAL_FAUCET_BALANCE)
+            .ok_or(Error::GenesisDisbursement);
+
+        println!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
+        debug!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
+
+        println!("Sending {foundation_balance:?}  from genesis to foundation wallet..");
+        debug!("Sending {foundation_balance:?}  from genesis to foundation wallet..");
+
+        let foundation_cash_note = send(
+            genesis_wallet,
+            genesis_balance,
+            foundation_key,
+            client,
+            true,
+        )
+        .await?;
+
+        let genesis_wallet = load_genesis_wallet()?;
+
+        let faucet_cash_note = send(
             genesis_wallet,
             genesis_balance,
             faucet_wallet.address(),
@@ -43,24 +66,10 @@ pub async fn fund_faucet_from_genesis_wallet(
         .await?;
 
         faucet_wallet
-            .deposit_and_store_to_disk(&vec![cash_note.clone()])
+            .deposit_and_store_to_disk(&vec![faucet_cash_note.clone()])
             .expect("Faucet wallet shall be stored successfully.");
 
-        cash_note
-    } else {
-        let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?; // DevSkim: ignore DS117838
-        println!(
-            "Sending {genesis_balance} from genesis to foundation wallet {foundation_key:?}.."
-        );
-        debug!("Sending {genesis_balance} from genesis to foundation wallet..{foundation_key:?}");
-        send(
-            genesis_wallet,
-            genesis_balance,
-            foundation_key,
-            client,
-            true,
-        )
-        .await?
+        (foundation_cash_note, faucet_cash_note)
     };
 
     println!("Faucet wallet balance: {}", faucet_wallet.balance());
@@ -68,7 +77,15 @@ pub async fn fund_faucet_from_genesis_wallet(
 
     println!("Verifying the transfer from genesis...");
     debug!("Verifying the transfer from genesis...");
-    if let Err(error) = client.verify_cashnote(&cash_note).await {
+    if let Err(error) = client.verify_cashnote(&foundation_cash_note).await {
+        error!("Could not verify the transfer from genesis: {error}. Panicking.");
+        panic!("Could not verify the transfer from genesis: {error}");
+    } else {
+        println!("Successfully verified the transfer from genesis on the second try.");
+        info!("Successfully verified the transfer from genesis on the second try.");
+    }
+
+    if let Err(error) = client.verify_cashnote(&faucet_cashnote).await {
         error!("Could not verify the transfer from genesis: {error}. Panicking.");
         panic!("Could not verify the transfer from genesis: {error}");
     } else {

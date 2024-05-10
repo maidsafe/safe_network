@@ -362,7 +362,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="gifting-from-genesis"
+        run: cargo build --release --bin faucet --features gifting
         timeout-minutes: 30
 
       - name: Start a local network
@@ -961,7 +961,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="gifting-from-genesis"
+        run: cargo build --release --bin faucet --features gifting
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1101,7 +1101,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="gifting-from-genesis"
+        run: cargo build --release --bin faucet --features gifting
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1126,7 +1126,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release --features="gifting-from-genesis" -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          cargo run --bin faucet --release --features gifting -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
