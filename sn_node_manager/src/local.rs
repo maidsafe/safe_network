@@ -344,6 +344,8 @@ pub async fn run_node(
         listen_addr: Some(listen_addrs),
         local: true,
         log_dir_path: node_info.log_path,
+        metrics_port: None,
+        node_port: None,
         number: run_options.number,
         peer_id: Some(peer_id),
         pid: Some(node_info.pid),

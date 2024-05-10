@@ -53,7 +53,7 @@ pub enum UpgradeResult {
     Error(String),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpgradeOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
