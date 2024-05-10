@@ -545,7 +545,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="local-discovery,gifting-from-genesis"
+        run: cargo build --release --bin faucet --features="local-discovery,gifting"
         timeout-minutes: 30
 
       - name: Build testing executable
@@ -618,7 +618,7 @@ jobs:
         timeout-minutes: 35
 
       - name: Build faucet binary
-        run: cargo build --release --features=local-discovery,distribution,gifting-from-genesis --bin faucet
+        run: cargo build --release --features=local-discovery,distribution,gifting --bin faucet
         timeout-minutes: 35
 
       - name: Build testing executable
@@ -692,7 +692,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build faucet binaries
-        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
+        run: cargo build --release --features="local-discovery,gifting" --bin faucet
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -822,7 +822,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build fuacet binary
-        run: cargo build --release --features="local-discovery,gifting-from-genesis" --bin faucet
+        run: cargo build --release --features="local-discovery,gifting" --bin faucet
         timeout-minutes: 30
 
       - name: Build data location and routing table tests

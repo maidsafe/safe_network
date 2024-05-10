@@ -26,14 +26,14 @@ pub use cashnotes::{
     SignedSpend, Spend, SpendAddress, SpendReason, Transaction, UniquePubkey, UnsignedTransfer,
 };
 pub use error::{Result, TransferError};
-pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
-
+pub use genesis::get_existing_genesis_wallet;
 /// Utilities exposed
 pub use genesis::{
     calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir,
     is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
     GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK, TOTAL_SUPPLY,
 };
+pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 pub use wallet::{
     bls_secret_from_hex, wallet_lockfile_name, Error as WalletError, HotWallet, Payment,
     PaymentQuote, QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet,
