@@ -352,6 +352,7 @@ pub async fn run_node(
         safenode_path: launcher.get_safenode_path(),
         status: ServiceStatus::Running,
         service_name: format!("safenode-local{}", run_options.number),
+        upnp: false,
         user: None,
         user_mode: false,
         version: run_options.version.to_string(),

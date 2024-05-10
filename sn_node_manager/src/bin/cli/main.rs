@@ -135,6 +135,11 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = parse_port_range)]
         rpc_port: Option<PortRange>,
+        /// Try to use UPnP to open a port in the home router and allow incoming connections.
+        ///
+        /// This requires a safenode binary built with the 'upnp' feature.
+        #[clap(long, default_value_t = false)]
+        upnp: bool,
         /// Provide a safenode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -643,6 +648,7 @@ async fn main() -> Result<()> {
             rpc_address,
             rpc_port,
             url,
+            upnp,
             user,
             version,
         } => {
@@ -659,6 +665,7 @@ async fn main() -> Result<()> {
                 rpc_address,
                 rpc_port,
                 path,
+                upnp,
                 url,
                 user,
                 version,
