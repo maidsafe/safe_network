@@ -149,7 +149,15 @@ pub fn create_first_cash_note_from_key(
         amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
     };
 
-    let reason = SpendReason::default();
+    let reason = match SpendReason::create_reward_tracking_reason("GENESIS") {
+        Ok(spend_reason) => spend_reason,
+        Err(err) => {
+            error!("Failed to generate spend_reason for genesis {err:?}");
+            return Err(Error::GenesisCashNoteError(format!(
+                "Failed to generate spend reason for genesis CashNote: {err}",
+            )));
+        }
+    };
 
     let cash_note_builder = TransactionBuilder::default()
         .add_input(
