@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715305809546,
+  "lastUpdate": 1715305811959,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "0ff08d00c40358174495fa24f29a69b43b0c908f",
-          "message": "ci: use node manager for running local testnets\n\nThe local testnet action now uses the node manager to launch local networks. The churn tests were\nupdated to parse the node manager's inventory, which they use to restart nodes.\n\nThe node registry from the node manager has been transferred to the `sn_protocol` crate to reduce\nduplication between `safe_network` and `sn-node-manager`, because they both need access to these\ndata structures. The local network deployment inventory is represented using the node registry.",
-          "timestamp": "2024-01-15T15:53:23Z",
-          "tree_id": "5d366894693dd34867a60f47e3016d2bae2e0717",
-          "url": "https://github.com/maidsafe/safe_network/commit/0ff08d00c40358174495fa24f29a69b43b0c908f"
-        },
-        "date": 1705334783431,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 209,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 38,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "94591d75c59d56e57439843af2c8ab1ada37fc71",
+          "message": "chore: change terminal launch behaviour\n\nOn Linux, the `TERM` variable is not really appropriate for selecting which terminal is in use, so\nthis has been removed. It can be set to a completely different value, like `xterm-256color`, which\ndoes not necessarily correspond to the running terminal. The `sudo` was also removed from the\nterminal launch mechanism.\n\nOn the Windows front, I updated Windows Terminal to not use the `/c` argument. It simply just passes\nthe command to the terminal.\n\nAlso fixed another couple of issues:\n* Compile the node manager correctly on Windows.\n* The use of `<service>` in doc comments was being flagged as an unclosed HTML tag.",
+          "timestamp": "2024-05-10T00:28:04Z",
+          "tree_id": "d6a3d6be5293fc30f98e6feb7f796aa5bd4e7531",
+          "url": "https://github.com/maidsafe/safe_network/commit/94591d75c59d56e57439843af2c8ab1ada37fc71"
+        },
+        "date": 1715305811074,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
