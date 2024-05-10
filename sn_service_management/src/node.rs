@@ -172,9 +172,15 @@ pub struct NodeServiceData {
     pub safenode_path: PathBuf,
     pub service_name: String,
     pub status: ServiceStatus,
+    #[serde(default = "default_upnp")]
+    pub upnp: bool,
     pub user: Option<String>,
     pub user_mode: bool,
     pub version: String,
+}
+
+fn default_upnp() -> bool {
+    false
 }
 
 fn serialize_peer_id<S>(value: &Option<PeerId>, serializer: S) -> Result<S::Ok, S::Error>

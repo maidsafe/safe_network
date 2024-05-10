@@ -180,6 +180,7 @@ pub async fn add_node(
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
+            upnp: options.upnp,
         }
         .build()?;
 
@@ -209,6 +210,7 @@ pub async fn add_node(
                     safenode_path: service_safenode_path,
                     service_name,
                     status: ServiceStatus::Added,
+                    upnp: options.upnp,
                     user: options.user.clone(),
                     user_mode: options.user_mode,
                     version: options.version.clone(),

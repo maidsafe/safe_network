@@ -54,6 +54,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: Option<String>,
+    pub upnp: bool,
 }
 
 impl InstallNodeServiceCtxBuilder {
@@ -76,6 +77,9 @@ impl InstallNodeServiceCtxBuilder {
         }
         if self.local {
             args.push(OsString::from("--local"));
+        }
+        if self.upnp {
+            args.push(OsString::from("--upnp"));
         }
         if let Some(node_port) = self.node_port {
             args.push(OsString::from("--port"));
@@ -125,6 +129,7 @@ pub struct AddNodeServiceOptions {
     pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
+    pub upnp: bool,
     pub user: Option<String>,
     pub user_mode: bool,
     pub version: String,
