@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715338403974,
+  "lastUpdate": 1715338406059,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30621,45 +30621,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "0d66585f1d7610a9715c8d01f162748df00c4a2d",
-          "message": "feat(safenode): print out error instead of unwrap",
-          "timestamp": "2024-01-05T13:05:42Z",
-          "tree_id": "46a0994f7d88305d902427d296f0b3b48c1640dd",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d66585f1d7610a9715c8d01f162748df00c4a2d"
-        },
-        "date": 1704463004086,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3791,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 16262,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "be18bc442cb4e9d388ade93a8683403945e101ab",
           "message": "fix: ignore unwraps in protogen files",
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "dfa136d8bdfbbe98aa4267a00474b33188c97260",
+          "message": "chore(node): use proper SpendReason enum",
+          "timestamp": "2024-05-10T09:55:58Z",
+          "tree_id": "0afdc5f3d42379cce3de9b98fd1e62bb4dcb9c19",
+          "url": "https://github.com/maidsafe/safe_network/commit/dfa136d8bdfbbe98aa4267a00474b33188c97260"
+        },
+        "date": 1715338405487,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 13200,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 71894,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
