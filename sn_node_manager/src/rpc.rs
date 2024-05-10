@@ -68,6 +68,7 @@ pub async fn restart_node_service(
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
             safenode_path: current_node_clone.safenode_path.clone(),
             service_user: current_node_clone.user.clone(),
+            upnp: current_node_clone.upnp,
         }
         .build()?;
         service_control.install(install_ctx, false).map_err(|err| {
@@ -172,6 +173,7 @@ pub async fn restart_node_service(
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
             safenode_path: safenode_path.clone(),
             service_user: current_node_clone.user.clone(),
+            upnp: current_node_clone.upnp,
         }
         .build()?;
         service_control.install(install_ctx, false).map_err(|err| {
@@ -194,6 +196,7 @@ pub async fn restart_node_service(
             safenode_path,
             service_name: new_service_name.clone(),
             status: ServiceStatus::Added,
+            upnp: current_node_clone.upnp,
             user: current_node_clone.user.clone(),
             user_mode: false,
             version: current_node_clone.version.clone(),
