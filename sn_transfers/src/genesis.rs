@@ -130,6 +130,13 @@ fn create_genesis_wallet() -> HotWallet {
         .expect("Faucet wallet (after genesis) shall be created successfully.")
 }
 
+pub fn get_existing_genesis_wallet() -> HotWallet {
+    let root_dir = get_genesis_dir();
+
+    HotWallet::load_from(&root_dir)
+        .expect("Faucet wallet (after genesis) shall be created successfully.")
+}
+
 /// Create a first CashNote given any key (i.e. not specifically the hard coded genesis key).
 /// The derivation index is hard coded to ensure deterministic creation.
 /// This is useful in tests.

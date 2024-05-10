@@ -110,7 +110,7 @@ pub async fn pay_for_storage(
 }
 
 async fn load_faucet_wallet() -> Result<HotWallet> {
-    info!("Loading faucet...");
+    info!("Loading faucet wallet...");
     let now = Instant::now();
     for attempt in 1..LOAD_FAUCET_WALLET_RETRIES + 1 {
         let faucet_wallet = create_faucet_account_and_wallet();

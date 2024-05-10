@@ -6,9 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::claim_genesis;
+#[cfg(feature = "gifting")]
+use crate::send_tokens;
 #[cfg(feature = "distribution")]
 use crate::token_distribution;
-use crate::{claim_genesis, send_tokens};
 use color_eyre::eyre::Result;
 use fs2::FileExt;
 use sn_client::{
@@ -211,6 +213,20 @@ async fn respond_to_donate_request(
     }
 }
 
+#[cfg(not(feature = "gifting"))]
+#[allow(clippy::unused_async)]
+async fn respond_to_gift_request(
+    _client: Client,
+    _key: String,
+    _semaphore: Arc<Semaphore>,
+) -> std::result::Result<impl Reply, std::convert::Infallible> {
+    let mut response = Response::new("Gifting not enabled".to_string());
+    *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+
+    Ok(response)
+}
+
+#[cfg(feature = "gifting")]
 async fn respond_to_gift_request(
     client: Client,
     key: String,
