@@ -60,9 +60,20 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         if self.service_data.local {
             args.push(OsString::from("--local"));
         }
-        if let Some(node_port) = self.service_data.get_safenode_port() {
+        if self.service_data.upnp {
+            args.push(OsString::from("--upnp"));
+        }
+        if self.service_data.home_network {
+            args.push(OsString::from("--home-network"));
+        }
+
+        if let Some(node_port) = self.service_data.node_port {
             args.push(OsString::from("--port"));
             args.push(OsString::from(node_port.to_string()));
+        }
+        if let Some(metrics_port) = self.service_data.metrics_port {
+            args.push(OsString::from("--metrics-port"));
+            args.push(OsString::from(metrics_port.to_string()));
         }
 
         if !options.bootstrap_peers.is_empty() {
@@ -77,13 +88,13 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         }
 
         Ok(ServiceInstallCtx {
-            label: label.clone(),
-            program: self.service_data.safenode_path.to_path_buf(),
             args,
             contents: None,
+            environment: options.env_variables,
+            label: label.clone(),
+            program: self.service_data.safenode_path.to_path_buf(),
             username: self.service_data.user.clone(),
             working_directory: None,
-            environment: options.env_variables,
         })
     }
 
@@ -160,6 +171,10 @@ pub struct NodeServiceData {
     pub listen_addr: Option<Vec<Multiaddr>>,
     pub local: bool,
     pub log_dir_path: PathBuf,
+    #[serde(default)]
+    pub metrics_port: Option<u16>,
+    #[serde(default)]
+    pub node_port: Option<u16>,
     pub number: u16,
     #[serde(
         serialize_with = "serialize_peer_id",
@@ -245,8 +260,10 @@ impl NodeServiceData {
     pub fn get_safenode_port(&self) -> Option<u16> {
         // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>
         if let Some(multi_addrs) = &self.listen_addr {
+            println!("Listening addresses are defined");
             for addr in multi_addrs {
                 if let Some(port) = get_port_from_multiaddr(addr) {
+                    println!("Found port: {}", port);
                     return Some(port);
                 }
             }
