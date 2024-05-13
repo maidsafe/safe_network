@@ -94,7 +94,8 @@ async fn main() -> Result<()> {
     fund_faucet_from_genesis_wallet(&client, &mut funded_faucet).await?;
 
     if let Err(err) = faucet_cmds(opt.cmd.clone(), &client, funded_faucet).await {
-        error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd)
+        error!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd);
+        eprintln!("Failed to run faucet cmd {:?} with err {err:?}", opt.cmd);
     }
 
     Ok(())

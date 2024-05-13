@@ -11,7 +11,7 @@ use sn_transfers::{
     get_existing_genesis_wallet, load_genesis_wallet, HotWallet, MainPubkey, NanoTokens,
 };
 
-const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(10000000000);
+const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(100000000000000000);
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
@@ -19,7 +19,6 @@ pub async fn fund_faucet_from_genesis_wallet(
     client: &Client,
     faucet_wallet: &mut HotWallet,
 ) -> Result<()> {
-    println!("funding faucet from genesis...");
     info!("funding faucet from genesis...");
 
     let faucet_balance = faucet_wallet.balance();
@@ -35,8 +34,8 @@ pub async fn fund_faucet_from_genesis_wallet(
     let foundation_key = MainPubkey::from_hex("a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb")?; // DevSkim: ignore DS117838
 
     let (foundation_cashnote, faucet_cashnote) = {
-        println!("Sending {genesis_balance}  from genesis to faucet wallet..");
-        debug!("Sending {genesis_balance}  from genesis to faucet wallet..");
+        println!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
+        debug!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
 
         let genesis_wallet = get_existing_genesis_wallet();
         println!("Faucet wallet balance: {}", faucet_wallet.balance());
