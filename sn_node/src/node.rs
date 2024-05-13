@@ -308,10 +308,10 @@ impl Node {
                             let start = std::time::Instant::now();
                             trace!("Periodic balance forward triggered");
                             let network = self.network.clone();
-                            let owner = self.owner.clone();
+                            let forwarding_reason = self.owner.clone();
 
                             let _handle = spawn(async move {
-                                let _ = Self::try_forward_blance(network, owner);
+                                let _ = Self::try_forward_blance(network, forwarding_reason);
                                 info!("Periodic blance forward took {:?}", start.elapsed());
                             });
                         }
@@ -756,9 +756,8 @@ impl Node {
         }
     }
 
-    // Shall be disabled after Beta
-    #[cfg(feature = "reward-forward")]
-    fn try_forward_blance(network: Network, owner: String) -> Result<()> {
+    /// Forward received rewards to another address
+    fn try_forward_blance(network: Network, forward_reason: String) -> Result<()> {
         let mut spend_requests = vec![];
         {
             // load wallet
@@ -767,7 +766,7 @@ impl Node {
 
             let payee = vec![(balance, *NETWORK_ROYALTIES_PK)];
 
-            spend_requests.extend(wallet.prepare_forward_signed_spend(payee, owner)?);
+            spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
         }
 
         let record_kind = RecordKind::Spend;

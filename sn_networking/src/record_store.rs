@@ -45,10 +45,6 @@ use tokio::sync::mpsc;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-/// Max number of records a node can store
-#[cfg(not(feature = "reward-forward"))]
-const MAX_RECORDS_COUNT: usize = 2048;
-#[cfg(feature = "reward-forward")]
 // A spend record is at the size of 4KB roughly.
 // Given chunk record is maxed at size of 512KB.
 // During Beta phase, it's almost one spend per chunk,
@@ -909,7 +905,7 @@ mod tests {
     fn test_calculate_max_cost_for_records() {
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: 2049,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: 2049,
             live_time: 1,
         });
@@ -921,7 +917,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 50 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -933,7 +929,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 60 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -946,7 +942,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 65 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -959,7 +955,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 70 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -972,7 +968,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 80 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -985,7 +981,7 @@ mod tests {
         let percent = MAX_RECORDS_COUNT * 90 / 100;
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: percent,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: percent,
             live_time: 1,
         });
@@ -997,7 +993,7 @@ mod tests {
     fn test_calculate_min_cost_for_records() {
         let sut = calculate_cost_for_records(&QuotingMetrics {
             close_records_stored: 0,
-            max_records: 2048,
+            max_records: MAX_RECORDS_COUNT,
             received_payment_count: 0,
             live_time: 1,
         });
