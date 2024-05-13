@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::helpers::{get_bin_version, get_username};
+use crate::{
+    helpers::{get_bin_version, get_username},
+    DEFAULT_CI_USER,
+};
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -18,7 +21,7 @@ use sn_service_management::{
     rpc::{RpcActions, RpcClient},
     FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::get_faucet_data_dir;
+use sn_transfers::{get_faucet_data_dir, DEFAULT_NODE_OWNER};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -299,8 +302,8 @@ pub async fn run_node(
     // We shall use the input or env parsed username,
     // as long as they are not default ones for tests.
     // Input user_name is prioritized than parsed env.
-    let user = match (get_username(), run_options.owner == *"maidsafe_test") {
-        (Ok(user), true) if user == *"runner" => {
+    let user = match (get_username(), run_options.owner == *DEFAULT_NODE_OWNER) {
+        (Ok(user), true) if user == *DEFAULT_CI_USER => {
             format!("node_{}", run_options.number)
         }
         (_, false) | (Err(_), true) => run_options.owner.clone(),

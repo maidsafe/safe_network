@@ -13,6 +13,7 @@ use sn_node_manager::{
     cmd, VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
+use sn_transfers::DEFAULT_NODE_OWNER;
 use std::{net::Ipv4Addr, path::PathBuf};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
@@ -733,7 +734,7 @@ async fn main() -> Result<()> {
                 skip_validation: _,
                 owner,
             } => {
-                let owner = owner.unwrap_or("maidsafe_test".to_string());
+                let owner = owner.unwrap_or(DEFAULT_NODE_OWNER.to_string());
                 cmd::local::join(
                     build,
                     count,
@@ -762,7 +763,7 @@ async fn main() -> Result<()> {
                 skip_validation: _,
                 owner,
             } => {
-                let owner = owner.unwrap_or("maidsafe_test".to_string());
+                let owner = owner.unwrap_or(DEFAULT_NODE_OWNER.to_string());
                 cmd::local::run(
                     build,
                     clean,

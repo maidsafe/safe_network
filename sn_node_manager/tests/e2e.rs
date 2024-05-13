@@ -8,6 +8,7 @@
 
 use assert_cmd::Command;
 use libp2p_identity::PeerId;
+use sn_node_manager::DEFAULT_CI_USER;
 use sn_service_management::{ServiceStatus, StatusSummary};
 
 /// These tests need to execute as the root user.
@@ -16,8 +17,6 @@ use sn_service_management::{ServiceStatus, StatusSummary};
 /// create real services and user accounts, and will not attempt to clean themselves up.
 ///
 /// If you run them on your own dev machine, do so at your own risk!
-
-const CI_USER: &str = "runner";
 
 /// The default behaviour is for the service to run as the `safe` user, which gets created during
 /// the process. However, there seems to be some sort of issue with adding user accounts on the GHA
@@ -30,7 +29,7 @@ fn cross_platform_service_install_and_control() {
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("add")
         .arg("--user")
-        .arg(CI_USER)
+        .arg(DEFAULT_CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
