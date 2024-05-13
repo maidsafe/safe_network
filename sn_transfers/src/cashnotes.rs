@@ -21,7 +21,7 @@ pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
 pub use builder::UnsignedTransfer;
-pub use cashnote::{CashNote, CashNoteOutputDetails};
+pub use cashnote::CashNote;
 pub use nano::NanoTokens;
 pub use reason_hash::Hash;
 pub use signed_spend::{SignedSpend, Spend};
@@ -51,7 +51,6 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -79,7 +78,6 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -111,7 +109,6 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -143,7 +140,6 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };

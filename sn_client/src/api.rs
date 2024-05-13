@@ -105,8 +105,6 @@ impl Client {
         let root_dir = std::env::temp_dir();
         trace!("Starting Kad swarm in client mode..{root_dir:?}.");
 
-        // TODO: shall client bearing owner's discord user name, to be reflected in the cash_notes?
-
         #[cfg(not(feature = "open-metrics"))]
         let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
 

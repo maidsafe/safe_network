@@ -106,8 +106,6 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
-    /// node's reason to accept the payment. Normally using its discord username
-    pub reason: String,
     /// node's public key that can verify the signature
     #[debug(skip)]
     pub pub_key: Vec<u8>,
@@ -123,7 +121,6 @@ impl PaymentQuote {
             cost: NanoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            reason: Default::default(),
             pub_key: vec![],
             signature: vec![],
         }
@@ -135,7 +132,6 @@ impl PaymentQuote {
         cost: NanoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
-        reason: String,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
         bytes.extend_from_slice(&cost.to_bytes());
@@ -151,7 +147,6 @@ impl PaymentQuote {
             Err(_err) => vec![],
         };
         bytes.extend_from_slice(&serialised_quoting_metrics);
-        bytes.extend_from_slice(&reason.into_bytes());
         bytes
     }
 
@@ -176,7 +171,6 @@ impl PaymentQuote {
             self.cost,
             self.timestamp,
             &self.quoting_metrics,
-            self.reason.clone(),
         );
 
         if !pub_key.verify(&bytes, &self.signature) {
@@ -205,7 +199,6 @@ impl PaymentQuote {
             cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            reason: Default::default(),
             pub_key: vec![],
             signature: vec![],
         }
@@ -304,7 +297,6 @@ mod tests {
             quote.cost,
             quote.timestamp,
             &quote.quoting_metrics,
-            quote.reason.clone(),
         );
         let signature = if let Ok(sig) = keypair.sign(&bytes) {
             sig

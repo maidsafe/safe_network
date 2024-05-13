@@ -26,7 +26,6 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
             let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
                 NanoTokens::from(1),
-                Default::default(),
                 main_key.main_pubkey(),
                 DerivationIndex::random(&mut rng),
             )
@@ -82,7 +81,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .map(|_| {
             (
                 NanoTokens::from(1),
-                Default::default(),
                 recipient_of_100_mainkey.main_pubkey(),
                 DerivationIndex::random(&mut rng),
             )
@@ -132,7 +130,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         .collect();
     let one_single_recipient = vec![(
         NanoTokens::from(total_amount),
-        Default::default(),
         starting_main_key.main_pubkey(),
         DerivationIndex::random(&mut rng),
     )];
