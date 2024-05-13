@@ -216,16 +216,30 @@ impl SpendDagDb {
 
     /// Returns the current state of the beta program in JSON format
     pub(crate) fn beta_program_json(&self) -> Result<String> {
-        let json = serde_json::to_string_pretty(&self.beta_rewards)?;
+        let r_handle = self.beta_rewards.clone();
+        let beta_rewards = r_handle
+            .read()
+            .map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
+        let json = serde_json::to_string_pretty(&*beta_rewards)?;
         Ok(json)
     }
 
     /// Initialize beta program tracking and gathers current rewards from the DAG
     pub(crate) async fn init_beta_program(&mut self, beta_participants: Vec<String>) -> Result<()> {
         self.beta_participants = beta_participants
-            .into_iter()
-            .map(|h| (Hash::hash(h.as_bytes()), h))
+            .iter()
+            .map(|h| (Hash::hash(h.as_bytes()), h.clone()))
             .collect();
+        {
+            let w_handle = self.beta_rewards.clone();
+            let mut beta_rewards = w_handle
+                .write()
+                .map_err(|e| eyre!("Failed to get beta rewards write lock: {e}"))?;
+            *beta_rewards = beta_participants
+                .into_iter()
+                .map(|n| (n, BTreeSet::new()))
+                .collect();
+        }
 
         // gather current rewards
         self.gather_beta_rewards().await?;
@@ -250,9 +264,9 @@ impl SpendDagDb {
                 Some(n) => n,
                 None => continue,
             };
+            let addr = spend.address();
+            let amount = spend.spend.amount;
             if let Some(user_name) = self.beta_participants.get(&user_name_hash) {
-                let addr = spend.address();
-                let amount = spend.spend.amount;
                 debug!("Got beta reward from {user_name} of {amount} at {addr:?}");
                 rewards
                     .entry(user_name.to_owned())
@@ -263,6 +277,10 @@ impl SpendDagDb {
                     "Found a beta reward for an unknown participant at {:?}: {user_name_hash:?}",
                     spend.address()
                 );
+                rewards
+                    .entry(format!("unknown participant: {user_name_hash:?}"))
+                    .or_default()
+                    .insert((addr, amount));
             }
         }
 
@@ -271,7 +289,7 @@ impl SpendDagDb {
         let mut beta_rewards = w_handle
             .write()
             .map_err(|e| eyre!("Failed to get beta rewards write lock: {e}"))?;
-        *beta_rewards = rewards.clone();
+        *beta_rewards = rewards;
         info!("Done gathering beta rewards");
         Ok(())
     }
