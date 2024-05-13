@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715612960622,
+  "lastUpdate": 1715626822631,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "abf5cce8fa982b733d16a24fe4ce8354fe537b26",
-          "message": "chore: remove arg and env variable combination\n\nOur code was setup such that the `--peer` arguments and those defined using `SAFE_PEERS` were\ncombined together to form one list. Now we use `clap` to parse one or the other.",
-          "timestamp": "2024-01-16T14:27:54Z",
-          "tree_id": "c70520758397a37060cc967540d9134ab7761104",
-          "url": "https://github.com/maidsafe/safe_network/commit/abf5cce8fa982b733d16a24fe4ce8354fe537b26"
-        },
-        "date": 1705416231238,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6577002005027408,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1333258300457874,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 64.8391718362741,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 42.70648875719671,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
+          "message": "feat(audit): intercept sender of the payment forward",
+          "timestamp": "2024-05-13T18:21:09Z",
+          "tree_id": "cbfef37ed430dcf8e609d8102e41fc149196e486",
+          "url": "https://github.com/maidsafe/safe_network/commit/f2fc4c4a4a4a6778643d0900fcf229baabf927aa"
+        },
+        "date": 1715626818001,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.229047734088477,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.9839260509552199,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 54.81663466812477,
             "unit": "MiB/s"
           }
         ]
