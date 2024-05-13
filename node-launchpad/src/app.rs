@@ -79,13 +79,7 @@ impl App {
 
         for component in self.components.iter_mut() {
             component.register_action_handler(action_tx.clone())?;
-        }
-
-        for component in self.components.iter_mut() {
             component.register_config_handler(self.config.clone())?;
-        }
-
-        for component in self.components.iter_mut() {
             component.init(tui.size()?)?;
         }
 
