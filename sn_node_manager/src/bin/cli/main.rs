@@ -561,6 +561,9 @@ pub enum LocalSubCmd {
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
+        /// Specify the owner(readable discord user name).
+        #[clap(long)]
+        owner: Option<String>,
     },
     /// Run a local network.
     ///
@@ -614,6 +617,8 @@ pub enum LocalSubCmd {
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
+        #[clap(long)]
+        owner: Option<String>,
     },
 }
 
@@ -726,13 +731,16 @@ async fn main() -> Result<()> {
                 node_version,
                 peers,
                 skip_validation: _,
+                owner,
             } => {
+                let owner = owner.unwrap_or("maidsafe_test".to_string());
                 cmd::local::join(
                     build,
                     count,
                     faucet_path,
                     faucet_version,
                     interval,
+                    owner,
                     node_path,
                     node_version,
                     peers,
@@ -752,10 +760,13 @@ async fn main() -> Result<()> {
                 node_path,
                 node_version,
                 skip_validation: _,
+                owner,
             } => {
+                let owner = owner.unwrap_or("maidsafe_test".to_string());
                 cmd::local::run(
                     build,
                     clean,
+                    owner,
                     count,
                     faucet_path,
                     faucet_version,

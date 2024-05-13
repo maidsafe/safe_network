@@ -110,16 +110,6 @@ impl CashNote {
         self.derivation_index
     }
 
-    /// Return the reason why this CashNote was spent.
-    /// Will be the default Hash (empty) if reason is none.
-    pub fn reason(&self) -> Hash {
-        self.parent_spends
-            .iter()
-            .next()
-            .map(|c| c.reason())
-            .unwrap_or_default()
-    }
-
     /// Return the value in NanoTokens for this CashNote.
     pub fn value(&self) -> Result<NanoTokens> {
         Ok(self
@@ -142,7 +132,6 @@ impl CashNote {
             sha3.update(&sp.to_bytes());
         }
 
-        sha3.update(self.reason().as_ref());
         let mut hash = [0u8; 32];
         sha3.finalize(&mut hash);
         Hash::from(hash)
