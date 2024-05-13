@@ -45,11 +45,7 @@ pub(crate) mod tests {
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(
-                derived_key.unique_pubkey(),
-                amount,
-                "maidsafe_test".to_string(),
-            )],
+            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
@@ -77,11 +73,7 @@ pub(crate) mod tests {
         let derived_key = main_key.derive_key(&derivation_index);
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(
-                derived_key.unique_pubkey(),
-                amount,
-                "maidsafe_test".to_string(),
-            )],
+            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
@@ -112,11 +104,7 @@ pub(crate) mod tests {
 
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(
-                derived_key.unique_pubkey(),
-                amount,
-                "maidsafe_test".to_string(),
-            )],
+            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
 
         let cashnote = CashNote {
@@ -148,11 +136,7 @@ pub(crate) mod tests {
 
         let tx = Transaction {
             inputs: vec![],
-            outputs: vec![Output::new(
-                derived_key.unique_pubkey(),
-                amount,
-                "maidsafe_test".to_string(),
-            )],
+            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
         };
 
         let cashnote = CashNote {
