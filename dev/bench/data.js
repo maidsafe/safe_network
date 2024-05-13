@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715626945526,
+  "lastUpdate": 1715626947112,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4a3c1eccbe4aecf0a0b3798fd7cee55b6809ec07",
-          "message": "docs: update root docs",
-          "timestamp": "2024-01-05T16:11:18Z",
-          "tree_id": "e1b4ffbeecceb4fd2f8e91d4729aeb730b12c5bf",
-          "url": "https://github.com/maidsafe/safe_network/commit/4a3c1eccbe4aecf0a0b3798fd7cee55b6809ec07"
-        },
-        "date": 1704473957727,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3481,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 17242,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
+          "message": "feat(audit): intercept sender of the payment forward",
+          "timestamp": "2024-05-13T18:21:09Z",
+          "tree_id": "cbfef37ed430dcf8e609d8102e41fc149196e486",
+          "url": "https://github.com/maidsafe/safe_network/commit/f2fc4c4a4a4a6778643d0900fcf229baabf927aa"
+        },
+        "date": 1715626946750,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14766,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 105348,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 7,
             "unit": "ms"
           }
         ]
