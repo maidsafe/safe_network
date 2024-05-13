@@ -116,7 +116,7 @@ impl OfflineTransfer {
             change: (change_amount, change_to),
         };
 
-        create_offline_transfer_with(selected_inputs, input_reason_hash)
+        create_offline_transfer_with(selected_inputs, reason_hash)
     }
 }
 

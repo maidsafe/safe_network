@@ -55,7 +55,7 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            purpose: Default::default(),
+            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -87,7 +87,7 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            purpose: Default::default(),
+            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -123,7 +123,7 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            purpose: Default::default(),
+            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -159,7 +159,7 @@ pub(crate) mod tests {
             unique_pubkey: derived_key.unique_pubkey(),
             parent_tx: tx,
             parent_spends: Default::default(),
-            purpose: Default::default(),
+            reason: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
