@@ -443,7 +443,7 @@ impl HotWallet {
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
-                CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES.to_string(),
+                "CASH_NOTE_REASON_FOR_NETWORK_ROYALTIES".to_string(),
                 *NETWORK_ROYALTIES_PK,
                 DerivationIndex::random(&mut rng),
             );
