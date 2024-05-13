@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715612796115,
+  "lastUpdate": 1715612955754,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "f2c398169f997cc58c763fa8a07c5243600d38ac",
-          "message": "fix(CI): set correct log level for bench test",
-          "timestamp": "2024-01-16T10:59:37Z",
-          "tree_id": "4cc7bbfa0a1027fc45fe4c7ecc215f1b55dc5a26",
-          "url": "https://github.com/maidsafe/safe_network/commit/f2c398169f997cc58c763fa8a07c5243600d38ac"
-        },
-        "date": 1705406010680,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 45,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "16f4b607f11968e0780194d430206a8810d30dc9",
+          "message": "chore: resolve errors after reverts",
+          "timestamp": "2024-05-13T14:15:51Z",
+          "tree_id": "2f903e8686b1d92430d44bcb6c13f2e3c132394d",
+          "url": "https://github.com/maidsafe/safe_network/commit/16f4b607f11968e0780194d430206a8810d30dc9"
+        },
+        "date": 1715612954884,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
