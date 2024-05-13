@@ -9,8 +9,8 @@
 use super::{
     spend_reason::SpendReason,
     transaction::{Output, Transaction},
-    CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, SignedSpend,
-    Spend, UniquePubkey,
+    CashNote, DerivationIndex, DerivedSecretKey, Input, MainPubkey, NanoTokens, SignedSpend, Spend,
+    UniquePubkey,
 };
 
 use crate::{Result, TransferError};

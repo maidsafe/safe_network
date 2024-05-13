@@ -22,9 +22,9 @@ use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
-    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, Hash,
-    MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, SpendReason, Transaction, Transfer,
-    UniquePubkey, WalletError, CASH_NOTE_PURPOSE_FOR_CHANGE, NETWORK_ROYALTIES_PK,
+    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey,
+    NanoTokens, SignedSpend, Spend, SpendReason, Transaction, Transfer, UniquePubkey, WalletError,
+    NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -370,7 +370,7 @@ impl HotWallet {
     #[cfg(feature = "reward-forward")]
     pub fn prepare_forward_signed_spend(
         &mut self,
-        to: Vec<TransactionPayeeDetails>,
+        to: Vec<(NanoTokens, MainPubkey)>,
         owner: String,
     ) -> Result<Vec<SignedSpend>> {
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -393,9 +393,7 @@ impl HotWallet {
         let mut rng = &mut rand::rngs::OsRng;
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(purpose, amount, address)| {
-                (amount, purpose, address, DerivationIndex::random(&mut rng))
-            })
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
             .collect();
 
         let transfer = OfflineTransfer::new(

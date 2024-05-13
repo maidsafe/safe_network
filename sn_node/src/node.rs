@@ -431,10 +431,9 @@ impl Node {
                 event_header = "QueryRequestReceived";
                 let network = self.network.clone();
                 let payment_address = *self.reward_address;
-                let owner = self.owner.clone();
 
                 let _handle = spawn(async move {
-                    let res = Self::handle_query(&network, query, payment_address, owner).await;
+                    let res = Self::handle_query(&network, query, payment_address).await;
                     trace!("Sending response {res:?}");
 
                     network.send_response(res, channel);
@@ -607,7 +606,6 @@ impl Node {
         network: &Network,
         query: Query,
         payment_address: MainPubkey,
-        owner: String,
     ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
@@ -634,7 +632,6 @@ impl Node {
                                     cost,
                                     &address,
                                     &quoting_metrics,
-                                    owner,
                                 ),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
@@ -768,11 +765,7 @@ impl Node {
             let mut wallet = HotWallet::load_from(&network.root_dir_path)?;
             let balance = wallet.balance();
 
-            let payee = vec![(
-                "reward collector".to_string(),
-                balance,
-                *NETWORK_ROYALTIES_PK,
-            )];
+            let payee = vec![(balance, *NETWORK_ROYALTIES_PK)];
 
             spend_requests.extend(wallet.prepare_forward_signed_spend(payee, owner)?);
         }

@@ -8,7 +8,7 @@
 
 use crate::{
     cashnotes::{CashNoteBuilder, UnsignedTransfer},
-    rng, CashNote, DerivationIndex, DerivedSecretKey, Hash, Input, MainPubkey, NanoTokens, Result,
+    rng, CashNote, DerivationIndex, DerivedSecretKey, Input, MainPubkey, NanoTokens, Result,
     SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError, UniquePubkey,
     NETWORK_ROYALTIES_PK,
 };
@@ -113,7 +113,7 @@ impl OfflineTransfer {
             change: (change_amount, change_to),
         };
 
-        create_offline_transfer_with(selected_inputs, reason_hash)
+        create_offline_transfer_with(selected_inputs, input_reason_hash)
     }
 }
 
