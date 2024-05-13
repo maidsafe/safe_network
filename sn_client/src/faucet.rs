@@ -21,6 +21,7 @@ pub async fn fund_faucet_from_genesis_wallet(
 ) -> Result<()> {
     info!("funding faucet from genesis...");
 
+    faucet_wallet.try_load_cash_notes()?;
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
         return Ok(());
