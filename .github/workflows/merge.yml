@@ -1126,14 +1126,14 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          cargo run --bin faucet --release --features gifting -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
         timeout-minutes: 5
 
       - name: Start a client to upload first file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
+        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 5
@@ -1167,7 +1167,7 @@ jobs:
         timeout-minutes: 6
 
       - name: Use same client to upload second file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
+        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 10
@@ -1210,8 +1210,8 @@ jobs:
           ls -l $SAFE_DATA_PATH
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 100000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
+          ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
           SAFE_DATA_PATH: /home/runner/.local/share/safe
@@ -1219,7 +1219,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Use second client to upload third file
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
+        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
         env:
           SN_LOG: "all"
         timeout-minutes: 10
