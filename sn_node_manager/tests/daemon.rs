@@ -10,7 +10,7 @@ mod utils;
 
 use assert_cmd::Command;
 use color_eyre::eyre::{bail, eyre, OptionExt, Result};
-use sn_node_manager::DAEMON_DEFAULT_PORT;
+use sn_node_manager::{DAEMON_DEFAULT_PORT, DEFAULT_CI_USER};
 use sn_service_management::safenode_manager_proto::{
     safe_node_manager_client::SafeNodeManagerClient, NodeServiceRestartRequest,
 };
@@ -23,8 +23,6 @@ use std::{
 };
 use tonic::Request;
 use utils::get_service_status;
-
-const CI_USER: &str = "runner";
 
 /// These tests need to execute as the root user.
 ///
@@ -66,7 +64,7 @@ async fn restart_node() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("add")
         .arg("--user")
-        .arg(CI_USER)
+        .arg(DEFAULT_CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
