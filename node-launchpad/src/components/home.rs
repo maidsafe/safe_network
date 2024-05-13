@@ -24,10 +24,11 @@ use tokio::sync::mpsc::UnboundedSender;
 const NODE_START_INTERVAL: usize = 10;
 
 pub struct Home {
+    /// Whether the component is active right now, capturing keystrokes + draw things.
+    active: bool,
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
-    show_scene: bool,
     node_services: Vec<NodeServiceData>,
     node_table_state: TableState,
     allocated_disk_space: usize,
@@ -41,7 +42,7 @@ impl Home {
         let mut home = Self {
             action_sender: Default::default(),
             config: Default::default(),
-            show_scene: true,
+            active: true,
             node_services: Default::default(),
             allocated_disk_space,
             node_table_state: Default::default(),
@@ -165,14 +166,14 @@ impl Component for Home {
         match action {
             Action::SwitchScene(scene) => match scene {
                 Scene::Home => {
-                    self.show_scene = true;
+                    self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
                 Scene::DiscordUsernameInputBox | Scene::ResourceAllocationInputBox => {
-                    self.show_scene = true
+                    self.active = true
                 }
-                _ => self.show_scene = false,
+                _ => self.active = false,
             },
             Action::StoreAllocatedDiskSpace(space) => {
                 self.allocated_disk_space = space;
@@ -281,7 +282,7 @@ impl Component for Home {
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
-        if !self.show_scene {
+        if !self.active {
             return Ok(());
         }
 

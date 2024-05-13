@@ -17,7 +17,8 @@ use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 pub struct DiscordUsernameInputBox {
-    show_scene: bool,
+    /// Whether the component is active right now, capturing keystrokes + draw things.
+    active: bool,
     discord_input_filed: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
@@ -26,7 +27,7 @@ pub struct DiscordUsernameInputBox {
 impl DiscordUsernameInputBox {
     pub fn new(username: String) -> Self {
         Self {
-            show_scene: false,
+            active: false,
             discord_input_filed: Input::default().with_value(username),
             old_value: Default::default(),
         }
@@ -35,6 +36,9 @@ impl DiscordUsernameInputBox {
 
 impl Component for DiscordUsernameInputBox {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        if !self.active {
+            return Ok(vec![]);
+        }
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
             KeyCode::Enter => {
@@ -79,14 +83,14 @@ impl Component for DiscordUsernameInputBox {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
                 Scene::DiscordUsernameInputBox => {
-                    self.show_scene = true;
+                    self.active = true;
                     self.old_value = self.discord_input_filed.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
                 }
                 _ => {
-                    self.show_scene = false;
+                    self.active = false;
                     None
                 }
             },
@@ -96,7 +100,7 @@ impl Component for DiscordUsernameInputBox {
     }
 
     fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: Rect) -> Result<()> {
-        if !self.show_scene {
+        if !self.active {
             return Ok(());
         }
 
