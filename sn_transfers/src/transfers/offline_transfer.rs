@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cashnotes::{CashNoteBuilder, UnsignedTransfer, CASHNOTE_PURPOSE_OF_CHANGE},
+    cashnotes::{CashNoteBuilder, UnsignedTransfer, CASH_NOTE_PURPOSE_FOR_CHANGE},
     rng, CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Input, MainPubkey,
     NanoTokens, Result, SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError,
     UniquePubkey, NETWORK_ROYALTIES_PK,
@@ -277,7 +277,7 @@ fn create_transaction_builder_with(
     if !change.is_zero() {
         tx_builder = tx_builder.add_output(
             change,
-            CASHNOTE_PURPOSE_OF_CHANGE.to_string(),
+            CASH_NOTE_PURPOSE_FOR_CHANGE.to_string(),
             change_to,
             derivation_index,
         );

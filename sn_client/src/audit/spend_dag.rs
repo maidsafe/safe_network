@@ -12,7 +12,7 @@ use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{
     is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress,
-    CASHNOTE_PURPOSE_OF_GENESIS, CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES,
+    CASH_NOTE_PURPOSE_FOR_GENESIS, CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -22,10 +22,19 @@ use std::{
 
 use super::dag_error::{DagError, SpendFault};
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct SpendDagAddress {
     address: SpendAddress,
     purpose: String,
+}
+
+impl Clone for SpendDagAddress {
+    fn clone(&self) -> Self {
+        SpendDagAddress {
+            address: self.address,
+            purpose: self.purpose.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for SpendDagAddress {
@@ -141,7 +150,7 @@ impl SpendDag {
             if let Some((creation_reason, _amount)) = self.creation_reasons.get(spend_addr) {
                 creation_reason.clone()
             } else {
-                CASHNOTE_PURPOSE_OF_GENESIS.to_string()
+                CASH_NOTE_PURPOSE_FOR_GENESIS.to_string()
             };
         SpendDagAddress {
             address: *spend_addr,
@@ -420,7 +429,7 @@ impl SpendDag {
                 royalties.push(CashNoteRedemption::new(
                     *derivation_idx,
                     spend_addr,
-                    CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES.to_string(),
+                    CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES.to_string(),
                 ));
             }
         }
