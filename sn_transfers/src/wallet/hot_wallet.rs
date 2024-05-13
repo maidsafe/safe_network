@@ -24,7 +24,7 @@ use crate::{
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
     CashNote, CashNoteOutputDetails, CashNoteRedemption, DerivationIndex, DerivedSecretKey,
     MainPubkey, MainSecretKey, NanoTokens, SignedSpend, Spend, SpendReason, Transaction, Transfer,
-    UniquePubkey, WalletError, CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES, NETWORK_ROYALTIES_PK,
+    UniquePubkey, WalletError, CASH_NOTE_PURPOSE_FOR_CHANGE, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -443,7 +443,7 @@ impl HotWallet {
             let royalties_fee = calculate_royalties_fee(quote.cost);
             let royalties_payee = (
                 royalties_fee,
-                CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES.to_string(),
+                CASH_NOTE_PURPOSE_FOR_NETWORK_ROYALTIES.to_string(),
                 *NETWORK_ROYALTIES_PK,
                 DerivationIndex::random(&mut rng),
             );

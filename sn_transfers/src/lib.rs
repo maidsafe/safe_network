@@ -21,8 +21,8 @@ pub(crate) use cashnotes::{Input, TransactionBuilder};
 pub use cashnotes::{
     CashNote, CashNoteOutputDetails, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
     MainSecretKey, NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transaction,
-    UniquePubkey, UnsignedTransfer, CASHNOTE_PURPOSE_OF_GENESIS,
-    CASHNOTE_PURPOSE_OF_NETWORK_ROYALTIES, CASHNOTE_PURPOSE_OF_TRANSFER,
+    UniquePubkey, UnsignedTransfer, CASHNOTE_PURPOSE_OF_GENESIS, CASHNOTE_PURPOSE_OF_TRANSFER,
+    CASH_NOTE_PURPOSE_FOR_CHANGE,
 };
 pub use error::{Result, TransferError};
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
