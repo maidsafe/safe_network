@@ -83,11 +83,9 @@ impl TransactionBuilder {
     ) -> Self {
         let unique_pubkey = main_pubkey.new_unique_pubkey(&derivation_index);
 
-        self.output_details.insert(
-            unique_pubkey,
-            (reason.clone(), main_pubkey, derivation_index),
-        );
-        let output = Output::new(unique_pubkey, token.as_nano(), reason);
+        self.output_details
+            .insert(unique_pubkey, (reason, main_pubkey, derivation_index));
+        let output = Output::new(unique_pubkey, token.as_nano());
         self.outputs.push(output);
 
         self
