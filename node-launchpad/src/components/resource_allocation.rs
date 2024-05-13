@@ -23,7 +23,8 @@ use super::{utils::centered_rect_fixed, Component};
 pub const GB_PER_NODE: usize = 5;
 
 pub struct ResourceAllocationInputBox {
-    show_scene: bool,
+    /// Whether the component is active right now, capturing keystrokes + draw things.
+    active: bool,
     available_disk_space_bytes: usize,
     allocated_space_input: Input,
     // cache the old value incase user presses Esc.
@@ -33,7 +34,7 @@ pub struct ResourceAllocationInputBox {
 impl ResourceAllocationInputBox {
     pub fn new(allocated_space: usize) -> Result<Self> {
         let new = Self {
-            show_scene: false,
+            active: false,
             available_disk_space_bytes: Self::get_available_space_gb()?,
             allocated_space_input: Input::default().with_value(allocated_space.to_string()),
             old_value: Default::default(),
@@ -66,6 +67,10 @@ impl ResourceAllocationInputBox {
 
 impl Component for ResourceAllocationInputBox {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        if !self.active {
+            return Ok(vec![]);
+        }
+
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
             KeyCode::Enter => {
@@ -124,14 +129,14 @@ impl Component for ResourceAllocationInputBox {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
                 Scene::ResourceAllocationInputBox => {
-                    self.show_scene = true;
+                    self.active = true;
                     self.old_value = self.allocated_space_input.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
                 }
                 _ => {
-                    self.show_scene = false;
+                    self.active = false;
                     None
                 }
             },
@@ -141,7 +146,7 @@ impl Component for ResourceAllocationInputBox {
     }
 
     fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: Rect) -> Result<()> {
-        if !self.show_scene {
+        if !self.active {
             return Ok(());
         }
 
