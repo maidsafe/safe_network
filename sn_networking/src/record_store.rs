@@ -835,11 +835,12 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
     let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
 
     // 1.05.powf(800) = 9E+16
-    // Given currently the max_records is set at 2048,
+    // Given currently the max_records is set at MAX_RECORDS,
     // hence setting the multiplier trigger at 60% of the max_records
     let exponential_pricing_trigger = 6 * max_records / 10;
 
-    let base_multiplier = 1.05_f32;
+    // Fine tuning here helps to get a desired curve
+    let base_multiplier = 1.0225_f32;
     let multiplier = max(
         1,
         base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
@@ -904,9 +905,9 @@ mod tests {
     #[test]
     fn test_calculate_max_cost_for_records() {
         let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: 2049,
+            close_records_stored: MAX_RECORDS_COUNT + 1,
             max_records: MAX_RECORDS_COUNT,
-            received_payment_count: 2049,
+            received_payment_count: MAX_RECORDS_COUNT + 1,
             live_time: 1,
         });
         assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
@@ -922,7 +923,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 10240);
+        assert_eq!(sut, 20480);
     }
     #[test]
     fn test_calculate_60_percent_cost_for_records() {
@@ -934,7 +935,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 12280);
+        assert_eq!(sut, 24570);
     }
 
     #[test]
@@ -947,7 +948,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 2023120);
+        assert_eq!(sut, 2528900);
     }
 
     #[test]
@@ -960,7 +961,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 316248770);
+        assert_eq!(sut, 262645870);
     }
 
     #[test]
@@ -973,7 +974,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 7978447975680);
+        assert_eq!(sut, 2689140767040);
     }
 
     #[test]
@@ -986,7 +987,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 198121748221132800);
+        assert_eq!(sut, 27719885856440320);
     }
 
     #[test]
