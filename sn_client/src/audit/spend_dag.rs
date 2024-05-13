@@ -10,9 +10,13 @@ use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
-use sn_transfers::{is_genesis_spend, CashNoteRedemption, NanoTokens, SignedSpend, SpendAddress};
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use sn_transfers::{
+    is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, SignedSpend, SpendAddress,
+};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 use super::dag_error::{DagError, SpendFault};
 
@@ -279,10 +283,29 @@ impl SpendDag {
     pub fn dump_payment_forward_statistics(&self) -> String {
         let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
 
+        let mut hash_dictionary: BTreeMap<Hash, String> = Default::default();
+
+        // The following three is used in the memcheck test script.
+        // Update whenever these three got changed in the script.
+        let bootstrap_string = "bootstrap".to_string();
+        let restart_string = "restart".to_string();
+        let restarted_string = "restarted".to_string();
+        let _ = hash_dictionary.insert(Hash::hash(bootstrap_string.as_bytes()), bootstrap_string);
+        let _ = hash_dictionary.insert(Hash::hash(restart_string.as_bytes()), restart_string);
+        let _ = hash_dictionary.insert(Hash::hash(restarted_string.as_bytes()), restarted_string);
+        for i in 0..50 {
+            let node_string = format!("node_{i}");
+            let _ = hash_dictionary.insert(Hash::hash(node_string.as_bytes()), node_string);
+        }
+
         for spend_dag_entry in self.spends.values() {
             if let DagEntry::Spend(signed_spend, _) = spend_dag_entry {
                 if let Some(sender_hash) = signed_spend.spend.reason.get_sender_hash() {
-                    let sender = format!("{sender_hash:?}");
+                    let sender = if let Some(readable_sender) = hash_dictionary.get(&sender_hash) {
+                        readable_sender.clone()
+                    } else {
+                        format!("{sender_hash:?}")
+                    };
                     let holders = statistics.entry(sender).or_default();
                     holders.push(signed_spend.spend.amount);
                 }
