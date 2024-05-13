@@ -51,3 +51,11 @@ pub(crate) fn not_found() -> Result<Response<Cursor<Vec<u8>>>> {
     let response = Response::from_string("404: Try /").with_status_code(404);
     Ok(response)
 }
+
+pub(crate) fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
+    let json = dag
+        .beta_program_json()
+        .map_err(|e| eyre!("Failed to get beta rewards JSON: {e}"))?;
+    let response = Response::from_data(json);
+    Ok(response)
+}

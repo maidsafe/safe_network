@@ -6,13 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::SecretKey;
 use color_eyre::eyre::{eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
 use sn_client::networking::NetworkError;
-use sn_client::transfers::{SignedSpend, SpendAddress, GENESIS_CASHNOTE};
+use sn_client::transfers::{
+    Hash, NanoTokens, SignedSpend, SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
+};
 use sn_client::Error as ClientError;
 use sn_client::{Client, SpendDag, SpendDagGet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::{
     path::PathBuf,
@@ -29,7 +33,12 @@ pub struct SpendDagDb {
     client: Option<Client>,
     path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
+    beta_rewards: Arc<RwLock<BetaRewards>>,
+    beta_participants: BTreeMap<Hash, String>,
 }
+
+/// Map of Discord usernames to their tracked beta rewards
+type BetaRewards = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SpendJsonResponse {
@@ -60,6 +69,8 @@ impl SpendDagDb {
             client: Some(client),
             path,
             dag: Arc::new(RwLock::new(dag)),
+            beta_rewards: Arc::new(RwLock::new(BTreeMap::new())),
+            beta_participants: BTreeMap::new(),
         })
     }
 
@@ -74,6 +85,8 @@ impl SpendDagDb {
             client: None,
             path,
             dag: Arc::new(RwLock::new(dag)),
+            beta_rewards: Arc::new(RwLock::new(BTreeMap::new())),
+            beta_participants: BTreeMap::new(),
         })
     }
 
@@ -181,6 +194,14 @@ impl SpendDagDb {
             }
         });
 
+        // update beta in a background thread so we don't block
+        let mut self_clone = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = self_clone.gather_beta_rewards().await {
+                error!("Failed to gather beta rewards: {e}");
+            }
+        });
+
         Ok(())
     }
 
@@ -193,6 +214,72 @@ impl SpendDagDb {
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
         w_handle.merge(other)?;
+        Ok(())
+    }
+
+    /// Returns the current state of the beta program in JSON format
+    pub(crate) fn beta_program_json(&self) -> Result<String> {
+        let json = serde_json::to_string_pretty(&self.beta_rewards)?;
+        Ok(json)
+    }
+
+    /// Initialize beta program tracking and gathers current rewards from the DAG
+    pub(crate) async fn init_beta_program(&mut self, beta_participants: Vec<String>) -> Result<()> {
+        self.beta_participants = beta_participants
+            .into_iter()
+            .map(|h| (Hash::hash(h.as_bytes()), h))
+            .collect();
+
+        // gather current rewards
+        self.gather_beta_rewards().await?;
+        Ok(())
+    }
+
+    // Gather beta rewards from the DAG
+    pub(crate) async fn gather_beta_rewards(&mut self) -> Result<()> {
+        info!("Gathering beta rewards...");
+
+        // get genesis sk
+        let sk = SecretKey::from_hex(GENESIS_CASHNOTE_SK)
+            .map_err(|e| eyre!("Failed to parse genesis sk: {e}"))?;
+
+        // gather beta rewards on current DAG
+        let r_handle = self.dag.clone();
+        let dag = r_handle
+            .read()
+            .map_err(|e| eyre!("Failed to get dag read lock for beta program: {e}"))?;
+        let w_handle = self.beta_rewards.clone();
+        let mut beta_rewards = w_handle
+            .write()
+            .map_err(|e| eyre!("Failed to get beta rewards write lock: {e}"))?;
+        let all_spends = dag.all_spends();
+        for spend in all_spends {
+            if let SpendReason::BetaRewardTracking(cipher) = spend.reason() {
+                let user_name_hash = match cipher.decrypt_to_username_hash(&sk) {
+                    Ok(h) => h,
+                    Err(e) => {
+                        warn!(
+                            "Failed to decrypt beta reward for spend at {:?}: {e}",
+                            spend.address()
+                        );
+                        continue;
+                    }
+                };
+                if let Some(user_name) = self.beta_participants.get(&user_name_hash) {
+                    let addr = spend.address();
+                    let amount = spend.spend.amount;
+                    debug!("Got beta reward from {user_name} of {amount} at {addr:?}");
+                    beta_rewards
+                        .entry(user_name.to_owned())
+                        .or_default()
+                        .insert((addr, amount));
+                } else {
+                    warn!("Found a beta reward for an unknown participant at {:?}: {user_name_hash:?}", spend.address());
+                }
+            }
+        }
+
+        info!("Done gathering beta rewards");
         Ok(())
     }
 }

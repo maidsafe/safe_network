@@ -59,6 +59,11 @@ struct Opt {
     /// If the argument is not used, the default format will be applied.
     #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
     log_format: Option<LogFormat>,
+
+    /// Beta rewards program patricipants to track
+    /// Provide a JSON file with a list of Discord usernames as argument
+    #[clap(short, long, value_name = "discord_names_file")]
+    beta_participants: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -66,6 +71,19 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
     let _log_handles = log_builder.initialize()?;
+
+    let beta_participants = if let Some(participants_file) = opt.beta_participants {
+        let raw_json = std::fs::read_to_string(&participants_file)?;
+        let discord_names: Vec<String> = serde_json::from_str(&raw_json)?;
+        println!(
+            "Tracking beta rewards for the {} discord usernames provided in {:?}",
+            discord_names.len(),
+            participants_file
+        );
+        discord_names
+    } else {
+        Vec::new()
+    };
 
     if let Some(dag_to_view) = opt.offline_viewer {
         let dag = SpendDagDb::offline(dag_to_view)?;
@@ -79,6 +97,7 @@ async fn main() -> Result<()> {
         client.clone(),
         opt.force_from_genesis,
         opt.clean,
+        beta_participants,
     )
     .await?;
     start_server(dag).await
@@ -131,6 +150,7 @@ async fn initialize_background_spend_dag_collection(
     client: Client,
     force_from_genesis: bool,
     clean: bool,
+    beta_participants: Vec<String>,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
     let path = dirs_next::data_dir()
@@ -172,6 +192,16 @@ async fn initialize_background_spend_dag_collection(
     println!("Initialize visualization...");
     dag.dump_dag_svg()?;
 
+    // initialize beta rewards program tracking
+    if !beta_participants.is_empty() {
+        println!("Initializing beta rewards program tracking...");
+        let mut d = dag.clone();
+        let _ = d
+            .init_beta_program(beta_participants)
+            .await
+            .map_err(|e| eprintln!("Could not initialize beta rewards: {e}"));
+    }
+
     // background thread to update DAG
     println!("Starting background DAG collection thread...");
     let mut d = dag.clone();
@@ -207,6 +237,7 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         let response = match request.url() {
             "/" => routes::spend_dag_svg(&dag),
             s if s.starts_with("/spend/") => routes::spend(&dag, &request),
+            "/beta_rewards" => routes::beta_rewards(&dag),
             _ => routes::not_found(),
         };
 
