@@ -8,7 +8,6 @@
 
 use super::spend_reason::SpendReason;
 use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::cashnotes::transaction::Output;
 use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
 
 use custom_debug::Debug;
@@ -184,11 +183,6 @@ impl SignedSpend {
 
         trace!("Validated parent_spends for {unique_key}");
         Ok(())
-    }
-
-    /// Get a reference to the outputs
-    pub fn outputs(&self) -> &Vec<Output> {
-        &self.spend.spent_tx.outputs
     }
 }
 
