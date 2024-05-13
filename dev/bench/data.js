@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715626944033,
+  "lastUpdate": 1715626945526,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "abf5cce8fa982b733d16a24fe4ce8354fe537b26",
-          "message": "chore: remove arg and env variable combination\n\nOur code was setup such that the `--peer` arguments and those defined using `SAFE_PEERS` were\ncombined together to form one list. Now we use `clap` to parse one or the other.",
-          "timestamp": "2024-01-16T14:27:54Z",
-          "tree_id": "c70520758397a37060cc967540d9134ab7761104",
-          "url": "https://github.com/maidsafe/safe_network/commit/abf5cce8fa982b733d16a24fe4ce8354fe537b26"
-        },
-        "date": 1705416324063,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 210,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 41,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
+          "message": "feat(audit): intercept sender of the payment forward",
+          "timestamp": "2024-05-13T18:21:09Z",
+          "tree_id": "cbfef37ed430dcf8e609d8102e41fc149196e486",
+          "url": "https://github.com/maidsafe/safe_network/commit/f2fc4c4a4a4a6778643d0900fcf229baabf927aa"
+        },
+        "date": 1715626945151,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
             "unit": "MB"
           },
           {
