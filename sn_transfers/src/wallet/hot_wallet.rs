@@ -371,7 +371,7 @@ impl HotWallet {
     pub fn prepare_forward_signed_spend(
         &mut self,
         to: Vec<(NanoTokens, MainPubkey)>,
-        owner: String,
+        reward_tracking_reason: String,
     ) -> Result<Vec<SignedSpend>> {
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
         debug!(
@@ -379,7 +379,8 @@ impl HotWallet {
             available_cash_notes
         );
 
-        let spend_reason = match SpendReason::create_reward_tracking_reason(&owner) {
+        let spend_reason = match SpendReason::create_reward_tracking_reason(&reward_tracking_reason)
+        {
             Ok(spend_reason) => spend_reason,
             Err(err) => {
                 error!("Failed to generate spend_reason {err:?}");
