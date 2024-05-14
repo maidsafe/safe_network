@@ -15,6 +15,7 @@ use libp2p::kad::{
     self, GetClosestPeersError, InboundRequest, PeerRecord, ProgressStep, QueryId, QueryResult,
     QueryStats, Record, K_VALUE,
 };
+use libp2p::metrics::Recorder;
 use sn_protocol::PrettyPrintRecordKey;
 use std::{
     collections::{hash_map::Entry, HashSet},
@@ -27,6 +28,9 @@ impl SwarmDriver {
     pub(super) fn handle_kad_event(&mut self, kad_event: libp2p::kad::Event) -> Result<()> {
         let start = Instant::now();
         let event_string;
+
+        #[cfg(feature = "open-metrics")]
+        self.network_metrics.record(&kad_event);
 
         match kad_event {
             kad::Event::OutboundQueryProgressed {

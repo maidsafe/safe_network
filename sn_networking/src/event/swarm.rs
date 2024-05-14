@@ -10,6 +10,9 @@ use crate::{
     cmd::SwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
     target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
+#[cfg(feature = "open-metrics")]
+use libp2p::metrics::Recorder;
+
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -43,10 +46,18 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 event_string = "kad_event";
+
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&kad_event);
+
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Dcutr(event)) => {
                 event_string = "dcutr_event";
+
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&(*event));
+
                 info!(
                     "Dcutr with remote peer: {:?} is: {:?}",
                     event.remote_peer_id, event.result
@@ -54,6 +65,9 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::RelayClient(event)) => {
                 event_string = "relay_client_event";
+
+                // #[cfg(feature = "open-metrics")]
+                // self.network_metrics.record(&event);
 
                 info!(?event, "relay client event");
 
@@ -68,6 +82,9 @@ impl SwarmDriver {
 
             SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
                 event_string = "relay_server_event";
+
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&(*event));
 
                 info!(?event, "relay server event");
 
@@ -87,6 +104,9 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 event_string = "identify";
+
+                #[cfg(feature = "open-metrics")]
+                self.network_metrics.record(&(*iden));
 
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
