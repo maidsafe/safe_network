@@ -23,6 +23,15 @@ pub async fn fund_faucet_from_genesis_wallet(
     faucet_wallet.try_load_cash_notes()?;
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
+        println!(
+            "Faucet wallet existing balance: {}",
+            faucet_wallet.balance()
+        );
+        debug!(
+            "Faucet wallet existing balance: {}",
+            faucet_wallet.balance()
+        );
+
         return Ok(());
     }
 
