@@ -21,7 +21,7 @@ libp2p = { version = "0.53", features = ["tokio", "tcp", "noise", "yamux", "auto
 tracing = { version = "~0.1.26" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-sn_networking = { path = "../sn_networking", version = "0.14.4" }
+sn_networking = { path = "../sn_networking", version = "0.15.2" }
 clap-verbosity-flag = "2.2.0"
 tracing-log = "0.2.0"
 
