@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715691196257,
+  "lastUpdate": 1715691198508,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256",
-          "message": "fix(client): reset sequential_payment_fails on batch upload success",
-          "timestamp": "2024-01-08T10:53:03Z",
-          "tree_id": "7c7ac0f13a6ed0b58fcebe4580decd1e8c86595f",
-          "url": "https://github.com/maidsafe/safe_network/commit/ef2e1e807a7a9d871d8b0c1f09b64f0f9dca5256"
-        },
-        "date": 1704714459038,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4260,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 19685,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 86802,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "46e4b9881906eb538da600f2e589283a560ec77f",
+          "message": "refactor(launchpad): removing redudnat for loops",
+          "timestamp": "2024-05-14T12:02:37Z",
+          "tree_id": "65194ac51f04239cdfba602eb14c89efead92e99",
+          "url": "https://github.com/maidsafe/safe_network/commit/46e4b9881906eb538da600f2e589283a560ec77f"
+        },
+        "date": 1715691197854,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14788,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 93703,
             "unit": "ms"
           },
           {
