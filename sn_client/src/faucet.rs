@@ -7,9 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_transfers::{
-    get_existing_genesis_wallet, load_genesis_wallet, HotWallet, MainPubkey, NanoTokens,
-};
+use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey, NanoTokens};
 
 const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(100000000000000000);
 
@@ -19,13 +17,13 @@ pub async fn fund_faucet_from_genesis_wallet(
     client: &Client,
     faucet_wallet: &mut HotWallet,
 ) -> Result<()> {
-    info!("funding faucet from genesis...");
-
     faucet_wallet.try_load_cash_notes()?;
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
         return Ok(());
     }
+
+    info!("funding faucet from genesis...");
 
     println!("Initiating genesis...");
     debug!("Initiating genesis...");
@@ -38,7 +36,6 @@ pub async fn fund_faucet_from_genesis_wallet(
         println!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
         debug!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
 
-        let genesis_wallet = get_existing_genesis_wallet();
         println!("Faucet wallet balance: {}", faucet_wallet.balance());
         debug!("Faucet wallet balance: {}", faucet_wallet.balance());
         let faucet_cashnote = send(
@@ -62,8 +59,7 @@ pub async fn fund_faucet_from_genesis_wallet(
         println!("Sending {foundation_balance:?} from genesis to foundation wallet..");
         debug!("Sending {foundation_balance:?} from genesis to foundation wallet..");
 
-        let mut genesis_wallet = get_existing_genesis_wallet();
-        genesis_wallet.try_load_cash_notes()?;
+        let genesis_wallet = load_genesis_wallet()?;
 
         let foundation_cashnote = send(
             genesis_wallet,
