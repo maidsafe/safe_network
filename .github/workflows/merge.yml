@@ -1182,7 +1182,7 @@ jobs:
           ls $CLIENT_DATA_PATH/wallet/cash_notes -l
           cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
           if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
-            echo "Got too many cash_note files leftover: $cash_note_files"
+            echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
             exit 1
           fi
           ls $CLIENT_DATA_PATH/wallet/payments -l
