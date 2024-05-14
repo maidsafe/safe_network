@@ -111,7 +111,7 @@ impl Client {
         #[cfg(feature = "open-metrics")]
         let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
         #[cfg(feature = "open-metrics")]
-        network_builder.metrics_registry(Registry::default());
+        network_builder.metrics_registry(Some(Registry::default()));
 
         let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");

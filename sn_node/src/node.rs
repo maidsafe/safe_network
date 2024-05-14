@@ -71,7 +71,8 @@ pub struct NodeBuilder {
     local: bool,
     root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
-    metrics_server_port: u16,
+    /// Set to Some to enable the metrics server
+    metrics_server_port: Option<u16>,
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
     owner: String,
@@ -97,7 +98,7 @@ impl NodeBuilder {
             local,
             root_dir,
             #[cfg(feature = "open-metrics")]
-            metrics_server_port: 0,
+            metrics_server_port: None,
             is_behind_home_network: false,
             owner,
             #[cfg(feature = "upnp")]
@@ -107,7 +108,7 @@ impl NodeBuilder {
 
     #[cfg(feature = "open-metrics")]
     /// Set the port for the OpenMetrics server. Defaults to a random port if not set
-    pub fn metrics_server_port(&mut self, port: u16) {
+    pub fn metrics_server_port(&mut self, port: Option<u16>) {
         self.metrics_server_port = port;
     }
 
@@ -139,10 +140,12 @@ impl NodeBuilder {
         wallet.deposit_and_store_to_disk(&vec![])?;
 
         #[cfg(feature = "open-metrics")]
-        let (metrics_registry, node_metrics) = {
+        let (metrics_registry, node_metrics) = if self.metrics_server_port.is_some() {
             let mut metrics_registry = Registry::default();
             let node_metrics = NodeMetrics::new(&mut metrics_registry);
-            (metrics_registry, node_metrics)
+            (Some(metrics_registry), Some(node_metrics))
+        } else {
+            (None, None)
         };
 
         let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
@@ -202,7 +205,7 @@ pub(crate) struct Node {
     initial_peers: Arc<Vec<Multiaddr>>,
     reward_address: Arc<MainPubkey>,
     #[cfg(feature = "open-metrics")]
-    pub(crate) node_metrics: NodeMetrics,
+    pub(crate) node_metrics: Option<NodeMetrics>,
     /// node owner's discord username, in readable format
     owner: String,
 }
@@ -334,7 +337,9 @@ impl Node {
     pub(crate) fn record_metrics(&self, marker: Marker) {
         marker.log();
         #[cfg(feature = "open-metrics")]
-        self.node_metrics.record(marker);
+        if let Some(node_metrics) = &self.node_metrics {
+            node_metrics.record(marker)
+        }
     }
 
     // **** Private helpers *****
