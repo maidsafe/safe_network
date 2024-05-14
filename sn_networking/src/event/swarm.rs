@@ -58,6 +58,11 @@ impl SwarmDriver {
                 self.handle_kad_event(kad_event)?;
             }
             SwarmEvent::Behaviour(NodeEvent::Dcutr(event)) => {
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics.record(&(*event));
+                }
+
                 event_string = "dcutr_event";
                 info!(
                     "Dcutr with remote peer: {:?} is: {:?}",
@@ -79,6 +84,11 @@ impl SwarmDriver {
             }
 
             SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics.record(&(*event));
+                }
+
                 event_string = "relay_server_event";
 
                 info!(?event, "relay server event");

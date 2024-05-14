@@ -96,8 +96,22 @@ impl NetworkMetrics {
     }
 }
 
+/// Impl the Recorder traits again for our struct.
+
 impl Recorder<libp2p::kad::Event> for NetworkMetrics {
     fn record(&self, event: &libp2p::kad::Event) {
+        self.libp2p_metrics.record(event)
+    }
+}
+
+impl Recorder<libp2p::dcutr::Event> for NetworkMetrics {
+    fn record(&self, event: &libp2p::dcutr::Event) {
+        self.libp2p_metrics.record(event)
+    }
+}
+
+impl Recorder<libp2p::relay::Event> for NetworkMetrics {
+    fn record(&self, event: &libp2p::relay::Event) {
         self.libp2p_metrics.record(event)
     }
 }
