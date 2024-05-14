@@ -415,6 +415,9 @@ jobs:
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
 
+      - name: Wait before verifying reward forwarding
+        run: sleep 120
+
       - name: Verify reward forwarding using rg
         shell: bash
         timeout-minutes: 1
@@ -424,7 +427,7 @@ jobs:
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $reward_forwarding_count reward forwardings"
           if (( $(echo "$reward_forwarding_count < $min_reward_forwarding_times" | bc -l) )); then
-            echo "Reward forwarding times below the threshold: $reward_forwarding_count"
+            echo "Reward forwarding times below the threshold: $min_reward_forwarding_times"
             exit 1
           fi
         if: always()
