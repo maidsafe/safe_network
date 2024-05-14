@@ -23,6 +23,7 @@ pub(crate) struct NetworkMetrics {
 
     // metrics from sn_networking
     pub(crate) records_stored: Gauge,
+    pub(crate) estimated_network_size: Gauge,
 
     // system info
     process_memory_used_mb: Gauge,
@@ -39,6 +40,13 @@ impl NetworkMetrics {
             "records_stored",
             "The number of records stored locally",
             records_stored.clone(),
+        );
+
+        let estimated_network_size = Gauge::default();
+        sub_registry.register(
+            "estimated_network_size",
+            "The estimated number of nodes in the network calculated by the peers in our RT",
+            estimated_network_size.clone(),
         );
 
         let process_memory_used_mb = Gauge::default();
@@ -58,6 +66,7 @@ impl NetworkMetrics {
         let network_metrics = Self {
             libp2p_metrics,
             records_stored,
+            estimated_network_size,
             process_memory_used_mb,
             process_cpu_usage_percentage,
         };
