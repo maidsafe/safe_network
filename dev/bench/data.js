@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715678722476,
+  "lastUpdate": 1715691065023,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4367fb710be752b45534a02cea5d0cf98970915f",
-          "message": "chore(CI): upload logs manually within the large_file_upload test",
-          "timestamp": "2024-01-16T15:27:40Z",
-          "tree_id": "c6de35a7bbbe00661e0202776eb4f2025286cae1",
-          "url": "https://github.com/maidsafe/safe_network/commit/4367fb710be752b45534a02cea5d0cf98970915f"
-        },
-        "date": 1705421373697,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6588311132833679,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1315640363307333,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 65.65326448201478,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 46.04838248022743,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "46e4b9881906eb538da600f2e589283a560ec77f",
+          "message": "refactor(launchpad): removing redudnat for loops",
+          "timestamp": "2024-05-14T12:02:37Z",
+          "tree_id": "65194ac51f04239cdfba602eb14c89efead92e99",
+          "url": "https://github.com/maidsafe/safe_network/commit/46e4b9881906eb538da600f2e589283a560ec77f"
+        },
+        "date": 1715691060492,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1680849057350697,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0629414903663703,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 45.50571223379633,
             "unit": "MiB/s"
           }
         ]
