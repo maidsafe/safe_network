@@ -324,7 +324,8 @@ impl EventLoop {
             } => {
                 info!(?peer_id, %connection_id, "Dialing peer");
             }
-            _ => warn!("Unknown SwarmEvent"),
+            SwarmEvent::NewExternalAddrOfPeer { .. } => { /* ignore */ }
+            event => warn!(?event, "Unknown SwarmEvent"),
         }
     }
 }
