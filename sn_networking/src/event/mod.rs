@@ -294,6 +294,7 @@ impl SwarmDriver {
 
         let estimated_network_size =
             Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
+        #[cfg(feature = "open-metrics")]
         if let Some(metrics) = &self.network_metrics {
             let _ = metrics
                 .estimated_network_size
