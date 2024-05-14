@@ -25,6 +25,7 @@ pub fn load_account_wallet_or_create_with_mnemonic(
         Ok(wallet) => Ok(wallet),
         Err(error) => {
             warn!("Issue loading wallet, creating a new one: {error}");
+            println!("Issue loading wallet from {root_dir:?}, creating a new one: {error}");
             let mnemonic = user_secret::random_eip2333_mnemonic()?;
             user_secret::write_mnemonic_to_disk(root_dir, &mnemonic)?;
 
