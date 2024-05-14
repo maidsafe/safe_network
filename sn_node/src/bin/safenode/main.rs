@@ -162,9 +162,21 @@ struct Opt {
     #[cfg(feature = "open-metrics")]
     /// Specify the port for the OpenMetrics server.
     ///
-    /// If not specified, a port will be selected at random.
+    /// If set, `--enable-metrics-server` will automatically be set to true.
+    /// If not set, you must manually specify `--enable-metrics-server` and a port will be selected at random.
     #[clap(long, default_value_t = 0)]
     metrics_server_port: u16,
+
+    #[cfg(feature = "open-metrics")]
+    /// Start the metrics server.
+    ///
+    /// This is automatically enabled if `metrics_server_port` is specified.
+    #[clap(
+        long,
+        default_value_t = false,
+        required_if_eq("metrics_server_port", "0")
+    )]
+    enable_metrics_server: bool,
 }
 
 fn main() -> Result<()> {
@@ -216,8 +228,14 @@ fn main() -> Result<()> {
         node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
+        // if enable flag is provided or only if the port is specified then enable the server by setting Some()
+        let metrics_server_port = if opt.enable_metrics_server || opt.metrics_server_port != 0 {
+            Some(opt.metrics_server_port)
+        } else {
+            None
+        };
         #[cfg(feature = "open-metrics")]
-        node_builder.metrics_server_port(opt.metrics_server_port);
+        node_builder.metrics_server_port(metrics_server_port);
         let restart_options =
             run_node(node_builder, opt.rpc, &log_output_dest, log_reload_handle).await?;
 

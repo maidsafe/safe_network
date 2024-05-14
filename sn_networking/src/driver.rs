@@ -211,7 +211,8 @@ pub struct NetworkBuilder {
     #[cfg(feature = "open-metrics")]
     metrics_registry: Option<Registry>,
     #[cfg(feature = "open-metrics")]
-    metrics_server_port: u16,
+    /// Set to Some to enable the metrics server
+    metrics_server_port: Option<u16>,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
@@ -230,7 +231,7 @@ impl NetworkBuilder {
             #[cfg(feature = "open-metrics")]
             metrics_registry: None,
             #[cfg(feature = "open-metrics")]
-            metrics_server_port: 0,
+            metrics_server_port: None,
             #[cfg(feature = "upnp")]
             upnp: false,
         }
@@ -257,12 +258,12 @@ impl NetworkBuilder {
     }
 
     #[cfg(feature = "open-metrics")]
-    pub fn metrics_registry(&mut self, metrics_registry: Registry) {
-        self.metrics_registry = Some(metrics_registry);
+    pub fn metrics_registry(&mut self, metrics_registry: Option<Registry>) {
+        self.metrics_registry = metrics_registry;
     }
 
     #[cfg(feature = "open-metrics")]
-    pub fn metrics_server_port(&mut self, port: u16) {
+    pub fn metrics_server_port(&mut self, port: Option<u16>) {
         self.metrics_server_port = port;
     }
 
@@ -422,11 +423,13 @@ impl NetworkBuilder {
         );
 
         #[cfg(feature = "open-metrics")]
-        let network_metrics = {
+        let network_metrics = if let Some(port) = self.metrics_server_port {
             let mut metrics_registry = self.metrics_registry.unwrap_or_default();
             let metrics = NetworkMetrics::new(&mut metrics_registry);
-            run_metrics_server(metrics_registry, self.metrics_server_port);
-            metrics
+            run_metrics_server(metrics_registry, port);
+            Some(metrics)
+        } else {
+            None
         };
 
         // RequestResponse Behaviour
@@ -454,15 +457,18 @@ impl NetworkBuilder {
         let kademlia = {
             match record_store_cfg {
                 Some(store_cfg) => {
-                    let node_record_store = NodeRecordStore::with_config(
+                    let mut node_record_store = NodeRecordStore::with_config(
                         peer_id,
                         store_cfg,
                         network_event_sender.clone(),
                         swarm_cmd_sender.clone(),
                     );
                     #[cfg(feature = "open-metrics")]
-                    let node_record_store = node_record_store
-                        .set_record_count_metric(network_metrics.records_stored.clone());
+                    if let Some(metrics) = &network_metrics {
+                        node_record_store = node_record_store
+                            .set_record_count_metric(metrics.records_stored.clone());
+                    }
+
                     let store = UnifiedRecordStore::Node(node_record_store);
                     debug!("Using Kademlia with NodeRecordStore!");
                     kad::Behaviour::with_config(peer_id, store, kad_cfg)
@@ -636,7 +642,7 @@ pub struct SwarmDriver {
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
     #[allow(unused)]
-    pub(crate) network_metrics: NetworkMetrics,
+    pub(crate) network_metrics: Option<NetworkMetrics>,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
