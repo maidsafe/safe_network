@@ -13,6 +13,8 @@ use crate::{
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
+#[cfg(feature = "open-metrics")]
+use libp2p::metrics::Recorder;
 use libp2p::{
     kad::K_VALUE,
     multiaddr::Protocol,
@@ -32,6 +34,12 @@ use tokio::time::Duration;
 impl SwarmDriver {
     /// Handle `SwarmEvents`
     pub(crate) fn handle_swarm_events(&mut self, event: SwarmEvent<NodeEvent>) -> Result<()> {
+        // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
+        // called individually on each behaviour.
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics) = &self.network_metrics {
+            metrics.record(&event);
+        }
         let start = Instant::now();
         let event_string;
         match event {
@@ -42,6 +50,10 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics.record(&kad_event);
+                }
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
             }
@@ -86,6 +98,11 @@ impl SwarmDriver {
                 }
             }
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
+                // Record the Identify event for metrics if the feature is enabled.
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics.record(&(*iden));
+                }
                 event_string = "identify";
 
                 match *iden {
