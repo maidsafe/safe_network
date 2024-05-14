@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715691198508,
+  "lastUpdate": 1715726367406,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "digital@engineer.com",
-            "name": "Jason Paul",
-            "username": "mofobit"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "44939878c8dad60ffb5d6cd07ce950c1e6ce7c1c",
-          "message": "docs: new wallet client example",
-          "timestamp": "2024-01-17T09:16:13Z",
-          "tree_id": "ba949addd66283dac9b31287c1fe086cfb0db597",
-          "url": "https://github.com/maidsafe/safe_network/commit/44939878c8dad60ffb5d6cd07ce950c1e6ce7c1c"
-        },
-        "date": 1705486034921,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.668352907730369,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1308700686930133,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 68.53157153569192,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 45.50571223379633,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "ddca19415067d59e8b8bfab533c2337010c5daf9",
+          "message": "fix: beta rewards participants overwriting and renamings",
+          "timestamp": "2024-05-14T21:52:40Z",
+          "tree_id": "abbf6c66a3433790fba0bafa13acf40ce24d3962",
+          "url": "https://github.com/maidsafe/safe_network/commit/ddca19415067d59e8b8bfab533c2337010c5daf9"
+        },
+        "date": 1715726362947,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1757011175809442,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0565275674810222,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 54.13064598973049,
             "unit": "MiB/s"
           }
         ]
