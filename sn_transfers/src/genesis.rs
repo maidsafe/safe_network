@@ -9,8 +9,9 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
-    SpendReason, Transaction, TransactionBuilder, TransferError as CashNoteError,
+    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
+    NanoTokens, SignedSpend, SpendReason, Transaction, TransactionBuilder,
+    TransferError as CashNoteError,
 };
 
 use bls::SecretKey;
@@ -97,6 +98,10 @@ pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
     info!("Loading genesis...");
+    if let Ok(wallet) = get_existing_genesis_wallet() {
+        return Ok(wallet);
+    }
+
     let mut genesis_wallet = create_genesis_wallet();
 
     info!(
@@ -130,11 +135,13 @@ fn create_genesis_wallet() -> HotWallet {
         .expect("Faucet wallet (after genesis) shall be created successfully.")
 }
 
-pub fn get_existing_genesis_wallet() -> HotWallet {
+fn get_existing_genesis_wallet() -> WalletResult<HotWallet> {
     let root_dir = get_genesis_dir();
 
-    HotWallet::load_from(&root_dir)
-        .expect("Faucet wallet (after genesis) shall be created successfully.")
+    let mut wallet = HotWallet::load_from(&root_dir)?;
+    wallet.try_load_cash_notes()?;
+
+    Ok(wallet)
 }
 
 /// Create a first CashNote given any key (i.e. not specifically the hard coded genesis key).

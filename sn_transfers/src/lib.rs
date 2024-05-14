@@ -26,7 +26,6 @@ pub use cashnotes::{
     SignedSpend, Spend, SpendAddress, SpendReason, Transaction, UniquePubkey, UnsignedTransfer,
 };
 pub use error::{Result, TransferError};
-pub use genesis::get_existing_genesis_wallet;
 /// Utilities exposed
 pub use genesis::{
     calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir,

@@ -1130,7 +1130,6 @@ jobs:
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
-          SAFE_DATA_PATH: /home/runner/.local/share/safe
         timeout-minutes: 5
 
       - name: Start a client to upload first file
