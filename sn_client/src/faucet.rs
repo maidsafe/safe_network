@@ -9,7 +9,7 @@
 use crate::{wallet::send, Client, Error, Result};
 use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey, NanoTokens};
 
-const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(100000000000000000);
+const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
