@@ -43,6 +43,8 @@ mod behaviour;
 const CONFIDENCE_MAX: usize = 2;
 const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 
+/// A tool to detect NAT status of the machine. It can be run in server mode or client mode.
+/// The program will exit with an error code if NAT status is determined to be private.
 #[derive(Debug, Parser)]
 #[clap(name = "libp2p autonat")]
 struct Opt {
