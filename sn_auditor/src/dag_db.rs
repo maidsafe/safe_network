@@ -30,12 +30,12 @@ pub struct SpendDagDb {
     client: Option<Client>,
     path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
-    beta_rewards: Arc<RwLock<BetaRewards>>,
+    forwarded_payments: Arc<RwLock<ForwardedPayments>>,
     beta_participants: BTreeMap<Hash, String>,
 }
 
-/// Map of Discord usernames to their tracked beta rewards
-type BetaRewards = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
+/// Map of Discord usernames to their tracked forwarded payments
+type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SpendJsonResponse {
@@ -66,7 +66,7 @@ impl SpendDagDb {
             client: Some(client),
             path,
             dag: Arc::new(RwLock::new(dag)),
-            beta_rewards: Arc::new(RwLock::new(BTreeMap::new())),
+            forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
         })
     }
@@ -82,7 +82,7 @@ impl SpendDagDb {
             client: None,
             path,
             dag: Arc::new(RwLock::new(dag)),
-            beta_rewards: Arc::new(RwLock::new(BTreeMap::new())),
+            forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
         })
     }
@@ -191,11 +191,11 @@ impl SpendDagDb {
             }
         });
 
-        // update beta in a background thread so we don't block
+        // gather forwarded payments in a background thread so we don't block
         let mut self_clone = self.clone();
         tokio::spawn(async move {
-            if let Err(e) = self_clone.gather_beta_rewards().await {
-                error!("Failed to gather beta rewards: {e}");
+            if let Err(e) = self_clone.gather_forwarded_payments().await {
+                error!("Failed to gather forwarded payments: {e}");
             }
         });
 
@@ -216,7 +216,7 @@ impl SpendDagDb {
 
     /// Returns the current state of the beta program in JSON format
     pub(crate) fn beta_program_json(&self) -> Result<String> {
-        let r_handle = self.beta_rewards.clone();
+        let r_handle = self.forwarded_payments.clone();
         let beta_rewards = r_handle
             .read()
             .map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
@@ -224,41 +224,43 @@ impl SpendDagDb {
         Ok(json)
     }
 
-    /// Initialize beta program tracking and gathers current rewards from the DAG
-    pub(crate) async fn init_beta_program(&mut self, beta_participants: Vec<String>) -> Result<()> {
-        self.beta_participants = beta_participants
+    /// Initialize reward forward tracking, gathers current rewards from the DAG
+    pub(crate) async fn init_reward_forward_tracking(
+        &mut self,
+        participants: Vec<String>,
+    ) -> Result<()> {
+        self.beta_participants = participants
             .iter()
             .map(|h| (Hash::hash(h.as_bytes()), h.clone()))
             .collect();
         {
-            let w_handle = self.beta_rewards.clone();
-            let mut beta_rewards = w_handle
+            let w_handle = self.forwarded_payments.clone();
+            let mut fwd_payments = w_handle
                 .write()
-                .map_err(|e| eyre!("Failed to get beta rewards write lock: {e}"))?;
-            *beta_rewards = beta_participants
+                .map_err(|e| eyre!("Failed to get forwarded payments write lock: {e}"))?;
+            *fwd_payments = participants
                 .into_iter()
                 .map(|n| (n, BTreeSet::new()))
                 .collect();
         }
 
-        // gather current rewards
-        self.gather_beta_rewards().await?;
+        self.gather_forwarded_payments().await?;
         Ok(())
     }
 
-    // Gather beta rewards from the DAG
-    pub(crate) async fn gather_beta_rewards(&mut self) -> Result<()> {
-        info!("Gathering beta rewards...");
+    // Gather forwarded payments from the DAG
+    pub(crate) async fn gather_forwarded_payments(&mut self) -> Result<()> {
+        info!("Gathering forwarded payments...");
 
         // get spends from current DAG
         let r_handle = self.dag.clone();
-        let dag = r_handle
-            .read()
-            .map_err(|e| eyre!("Failed to get dag read lock for beta program: {e}"))?;
+        let dag = r_handle.read().map_err(|e| {
+            eyre!("Failed to get dag read lock for gathering forwarded payments: {e}")
+        })?;
         let all_spends = dag.all_spends();
 
-        // find spends with rewards
-        let mut rewards: BetaRewards = BTreeMap::new();
+        // find spends with payments
+        let mut payments: ForwardedPayments = BTreeMap::new();
         for spend in all_spends {
             let user_name_hash = match spend.reason().get_sender_hash() {
                 Some(n) => n,
@@ -267,30 +269,30 @@ impl SpendDagDb {
             let addr = spend.address();
             let amount = spend.spend.amount;
             if let Some(user_name) = self.beta_participants.get(&user_name_hash) {
-                debug!("Got beta reward from {user_name} of {amount} at {addr:?}");
-                rewards
+                debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+                payments
                     .entry(user_name.to_owned())
                     .or_default()
                     .insert((addr, amount));
             } else {
-                warn!(
-                    "Found a beta reward for an unknown participant at {:?}: {user_name_hash:?}",
+                info!(
+                    "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
                     spend.address()
                 );
-                rewards
+                payments
                     .entry(format!("unknown participant: {user_name_hash:?}"))
                     .or_default()
                     .insert((addr, amount));
             }
         }
 
-        // save new beta rewards
-        let w_handle = self.beta_rewards.clone();
-        let mut beta_rewards = w_handle
+        // save new payments
+        let w_handle = self.forwarded_payments.clone();
+        let mut self_payments = w_handle
             .write()
-            .map_err(|e| eyre!("Failed to get beta rewards write lock: {e}"))?;
-        *beta_rewards = rewards;
-        info!("Done gathering beta rewards");
+            .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
+        self_payments.extend(payments);
+        info!("Done gathering forwarded payments");
         Ok(())
     }
 }
