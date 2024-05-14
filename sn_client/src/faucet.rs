@@ -79,19 +79,21 @@ pub async fn fund_faucet_from_genesis_wallet(
     println!("Verifying the transfer from genesis...");
     debug!("Verifying the transfer from genesis...");
     if let Err(error) = client.verify_cashnote(&foundation_cashnote).await {
-        error!("Could not verify the transfer from genesis: {error}. Panicking.");
-        panic!("Could not verify the transfer from genesis: {error}");
+        error!("Could not verify the transfer from genesis to foundation: {error}. Panicking.");
+        panic!("Could not verify the transfer from genesis to foundation: {error}");
     } else {
-        println!("Successfully verified the transfer from genesis on the second try.");
-        info!("Successfully verified the transfer from genesis on the second try.");
+        println!(
+            "Successfully verified the transfer from genesis to foundation on the second try."
+        );
+        info!("Successfully verified the transfer from genesis to foundation on the second try.");
     }
 
     if let Err(error) = client.verify_cashnote(&faucet_cashnote).await {
-        error!("Could not verify the transfer from genesis: {error}. Panicking.");
-        panic!("Could not verify the transfer from genesis: {error}");
+        error!("Could not verify the transfer from genesis to faucet: {error}. Panicking.");
+        panic!("Could not verify the transfer from genesis to faucet: {error}");
     } else {
-        println!("Successfully verified the transfer from genesis on the second try.");
-        info!("Successfully verified the transfer from genesis on the second try.");
+        println!("Successfully verified the transfer from genesis to faucet on the second try.");
+        info!("Successfully verified the transfer from genesis to faucet on the second try.");
     }
 
     Ok(())
