@@ -197,7 +197,7 @@ async fn initialize_background_spend_dag_collection(
         println!("Initializing beta rewards program tracking...");
         let mut d = dag.clone();
         let _ = d
-            .init_beta_program(beta_participants)
+            .init_reward_forward_tracking(beta_participants)
             .await
             .map_err(|e| eprintln!("Could not initialize beta rewards: {e}"));
     }
