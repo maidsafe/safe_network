@@ -641,7 +641,6 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
-    #[allow(unused)]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
