@@ -16,7 +16,7 @@ use custom_debug::Debug as CustomDebug;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
 use libp2p::{
-    kad::{Record, RecordKey},
+    kad::{Record, RecordKey, K_VALUE},
     request_response::ResponseChannel as PeerResponseChannel,
     Multiaddr, PeerId,
 };
@@ -259,24 +259,55 @@ impl SwarmDriver {
         }
     }
 
+    /// Logs the kbuckets also records the bucket info.
     pub(crate) fn log_kbuckets(&mut self, peer: &PeerId) {
         let distance = NetworkAddress::from_peer(self.self_peer_id)
             .distance(&NetworkAddress::from_peer(*peer));
         info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
+
         let mut kbucket_table_stats = vec![];
         let mut index = 0;
         let mut total_peers = 0;
+
+        let mut peers_in_non_full_buckets = 0;
+        let mut num_of_full_buckets = 0;
+
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             let range = kbucket.range();
-            total_peers += kbucket.num_entries();
+            let num_entires = kbucket.num_entries();
+
+            if num_entires >= K_VALUE.get() {
+                num_of_full_buckets += 1;
+            } else {
+                peers_in_non_full_buckets += num_entires;
+            }
+
+            total_peers += num_entires;
             if let Some(distance) = range.0.ilog2() {
-                kbucket_table_stats.push((index, kbucket.num_entries(), distance));
+                kbucket_table_stats.push((index, num_entires, distance));
             } else {
                 // This shall never happen.
                 error!("bucket #{index:?} is ourself ???!!!");
             }
             index += 1;
         }
-        info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}");
+
+        let estimated_network_size =
+            Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
+        if let Some(metrics) = &self.network_metrics {
+            let _ = metrics
+                .estimated_network_size
+                .set(estimated_network_size as i64);
+        }
+
+        info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}, estimated network size: {estimated_network_size:?}");
+    }
+
+    /// Estimate the number of nodes in the network
+    fn estimate_network_size(
+        peers_in_non_full_buckets: usize,
+        num_of_full_buckets: usize,
+    ) -> usize {
+        (peers_in_non_full_buckets + 1) * (2_usize.pow(num_of_full_buckets as u32))
     }
 }
