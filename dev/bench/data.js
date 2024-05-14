@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715726490602,
+  "lastUpdate": 1715726492361,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "46e2bebae9f052cb9c0f96963ad91b4ab4f5994f",
-          "message": "test(CI): replicate bench with heavy uploads",
-          "timestamp": "2024-01-08T11:28:47Z",
-          "tree_id": "77bcf0d352c1c922e3b57101f87f7abfa86f5d52",
-          "url": "https://github.com/maidsafe/safe_network/commit/46e2bebae9f052cb9c0f96963ad91b4ab4f5994f"
-        },
-        "date": 1704715723791,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 4005,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 19975,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "ddca19415067d59e8b8bfab533c2337010c5daf9",
+          "message": "fix: beta rewards participants overwriting and renamings",
+          "timestamp": "2024-05-14T21:52:40Z",
+          "tree_id": "abbf6c66a3433790fba0bafa13acf40ce24d3962",
+          "url": "https://github.com/maidsafe/safe_network/commit/ddca19415067d59e8b8bfab533c2337010c5daf9"
+        },
+        "date": 1715726491968,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14826,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 112834,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 7,
             "unit": "ms"
           }
         ]
