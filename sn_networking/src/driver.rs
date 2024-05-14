@@ -457,12 +457,14 @@ impl NetworkBuilder {
         let kademlia = {
             match record_store_cfg {
                 Some(store_cfg) => {
-                    let mut node_record_store = NodeRecordStore::with_config(
+                    let node_record_store = NodeRecordStore::with_config(
                         peer_id,
                         store_cfg,
                         network_event_sender.clone(),
                         swarm_cmd_sender.clone(),
                     );
+                    #[cfg(feature = "open-metrics")]
+                    let mut node_record_store = node_record_store;
                     #[cfg(feature = "open-metrics")]
                     if let Some(metrics) = &network_metrics {
                         node_record_store = node_record_store
