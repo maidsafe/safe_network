@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715691194434,
+  "lastUpdate": 1715691196257,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4367fb710be752b45534a02cea5d0cf98970915f",
-          "message": "chore(CI): upload logs manually within the large_file_upload test",
-          "timestamp": "2024-01-16T15:27:40Z",
-          "tree_id": "c6de35a7bbbe00661e0202776eb4f2025286cae1",
-          "url": "https://github.com/maidsafe/safe_network/commit/4367fb710be752b45534a02cea5d0cf98970915f"
-        },
-        "date": 1705421466152,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 224,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 41,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "digital@engineer.com",
             "name": "Jason Paul",
             "username": "mofobit"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "46e4b9881906eb538da600f2e589283a560ec77f",
+          "message": "refactor(launchpad): removing redudnat for loops",
+          "timestamp": "2024-05-14T12:02:37Z",
+          "tree_id": "65194ac51f04239cdfba602eb14c89efead92e99",
+          "url": "https://github.com/maidsafe/safe_network/commit/46e4b9881906eb538da600f2e589283a560ec77f"
+        },
+        "date": 1715691195678,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
