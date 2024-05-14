@@ -12,7 +12,7 @@ use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey, NanoTokens};
 const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
 
 /// Foundation wallet public key (used to receive initial disbursment from the genesis wallet)
-const FOUNDATION_PK: &str = "a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb"; // DevSkim: ignore DS117838
+const FOUNDATION_PK: &str = "a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb"; // DevSkim: ignore DS173237
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
