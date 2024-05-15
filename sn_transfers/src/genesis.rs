@@ -9,9 +9,8 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, SpendReason, Transaction, TransactionBuilder,
-    TransferError as CashNoteError,
+    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainSecretKey, NanoTokens,
+    SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError as CashNoteError,
 };
 
 use bls::SecretKey;
@@ -75,9 +74,6 @@ lazy_static! {
             Err(err) => panic!("Failed to create genesis CashNote: {err:?}"),
         }
     };
-
-    /// Public key where network royalties payments are expected to be made to.
-    pub static ref NETWORK_ROYALTIES_PK: MainPubkey = *GENESIS_CASHNOTE.main_pubkey();
 }
 
 /// Return if provided Transaction is genesis parent tx.

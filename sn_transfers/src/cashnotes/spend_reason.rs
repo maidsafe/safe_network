@@ -8,7 +8,6 @@
 
 use crate::GENESIS_CASHNOTE_SK;
 use bls::{Ciphertext, PublicKey, SecretKey};
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
@@ -71,9 +70,6 @@ impl SpendReason {
     }
 }
 
-lazy_static! {
-    pub static ref FOUNDATION_PK: PublicKey = crate::NETWORK_ROYALTIES_PK.public_key();
-}
 const MAX_CIPHER_SIZE: usize = std::u8::MAX as usize;
 const DERIVATION_INDEX_SIZE: usize = 32;
 const HASH_SIZE: usize = 32;

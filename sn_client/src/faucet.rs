@@ -7,12 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_transfers::{load_genesis_wallet, HotWallet, MainPubkey, NanoTokens};
+use sn_transfers::{load_genesis_wallet, HotWallet, NanoTokens, FOUNDATION_PK};
 
 const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
-
-/// Foundation wallet public key (used to receive initial disbursment from the genesis wallet)
-const FOUNDATION_PK: &str = "a4bd3f928c585a63ab6070337316c1832bffd92be8efe9b235ec1c631f03b4bb91e29bbad34994ddf9f77d9858ddb0bb"; // DevSkim: ignore DS173237
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
@@ -41,8 +38,6 @@ pub async fn fund_faucet_from_genesis_wallet(
     debug!("Initiating genesis...");
     let genesis_wallet = load_genesis_wallet()?;
     let genesis_balance = genesis_wallet.balance();
-
-    let foundation_key = MainPubkey::from_hex(FOUNDATION_PK)?; // DevSkim: ignore DS117838
 
     let (foundation_cashnote, faucet_cashnote) = {
         println!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
@@ -76,7 +71,7 @@ pub async fn fund_faucet_from_genesis_wallet(
         let foundation_cashnote = send(
             genesis_wallet,
             foundation_balance,
-            foundation_key,
+            *FOUNDATION_PK,
             client,
             true,
         )
