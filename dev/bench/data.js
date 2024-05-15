@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715749690917,
+  "lastUpdate": 1715749835866,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "bc44d3c188266e77450571025392d50ddd46cf3f",
-          "message": "feat(faucet): download snapshot of maid balances",
-          "timestamp": "2024-01-18T08:54:02+01:00",
-          "tree_id": "e8f8e9d6533283bcee58a322be1c448e977b3d40",
-          "url": "https://github.com/maidsafe/safe_network/commit/bc44d3c188266e77450571025392d50ddd46cf3f"
-        },
-        "date": 1705565491069,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 42,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
+          "message": "chore(faucet): devskim ignore",
+          "timestamp": "2024-05-15T04:26:48Z",
+          "tree_id": "e9b084627c96af1c0ec0c589c2e947e07c12ba70",
+          "url": "https://github.com/maidsafe/safe_network/commit/bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21"
+        },
+        "date": 1715749835501,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
