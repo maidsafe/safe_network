@@ -14,16 +14,15 @@ name = "detect-nat"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { version = "1.32.0", features = ["full"] }
 clap = { version = "4.5.4", features = ["derive"] }
+clap-verbosity-flag = "2.2.0"
 futures = "~0.3.13"
 libp2p = { version = "0.53", features = ["tokio", "tcp", "noise", "yamux", "autonat", "identify", "macros"] }
-tracing = { version = "~0.1.26" }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
 sn_networking = { path = "../sn_networking", version = "0.15.2" }
-clap-verbosity-flag = "2.2.0"
+tokio = { version = "1.32.0", features = ["full"] }
+tracing = { version = "~0.1.26" }
 tracing-log = "0.2.0"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints]
 workspace = true

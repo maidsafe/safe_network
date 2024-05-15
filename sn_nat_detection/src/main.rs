@@ -198,8 +198,8 @@ impl EventLoop {
                 }
             }
             State::Probing(old_confidence) => {
-                let confidence = self.swarm.behaviour().auto_nat.confidence();
-                let status = self.swarm.behaviour().auto_nat.nat_status();
+                let confidence = self.swarm.behaviour().autonat.confidence();
+                let status = self.swarm.behaviour().autonat.nat_status();
 
                 if confidence == CONFIDENCE_MAX {
                     debug!(confidence, ?status, "probing complete");
@@ -232,7 +232,7 @@ impl EventLoop {
             // We delegate the specific behaviour events to their respective methods.
             SwarmEvent::Behaviour(event) => match event {
                 BehaviourEvent::Identify(event) => self.on_event_identify(event),
-                BehaviourEvent::AutoNat(event) => self.on_event_autonat(event),
+                BehaviourEvent::Autonat(event) => self.on_event_autonat(event),
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 debug!(%address, "Listening on new address");
