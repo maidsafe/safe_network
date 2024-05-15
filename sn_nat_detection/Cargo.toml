@@ -1,0 +1,29 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network NAT detection tool"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_nat_detection"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[[bin]]
+name = "detect-nat"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+clap-verbosity-flag = "2.2.0"
+color-eyre = { version = "0.6", default-features = false }
+futures = "~0.3.13"
+libp2p = { version = "0.53", features = ["tokio", "tcp", "noise", "yamux", "autonat", "identify", "macros", "upnp"] }
+sn_networking = { path = "../sn_networking", version = "0.15.2" }
+tokio = { version = "1.32.0", features = ["full"] }
+tracing = { version = "~0.1.26" }
+tracing-log = "0.2.0"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true

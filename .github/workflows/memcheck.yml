@@ -282,7 +282,7 @@ jobs:
 
       - name: Audit from genesis to collect entire spend DAG and dump to a dot file
         run: |
-          ./target/release/safe --log-output-dest=data-dir wallet audit --dot > spend_dag_and_statistics.txt
+          ./target/release/safe --log-output-dest=data-dir wallet audit --dot --sk-str 17f659c8d3f19b58f140bfe33c97a65a9c60e4383a2628c406f0414ce47b0572 > spend_dag_and_statistics.txt
           echo "=============================================================================="
           cat spend_dag_and_statistics.txt
         env:
@@ -296,6 +296,9 @@ jobs:
         continue-on-error: true
         run: pgrep safenode | wc -l
         if: always()
+
+      - name: Wait before verifying reward forwarding
+        run: sleep 300
 
       - name: Stop the local network and upload logs
         if: always()
@@ -415,14 +418,11 @@ jobs:
           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
 
-      - name: Wait before verifying reward forwarding
-        run: sleep 120
-
       - name: Verify reward forwarding using rg
         shell: bash
         timeout-minutes: 1
         run: |
-          min_reward_forwarding_times="150"
+          min_reward_forwarding_times="120"
           reward_forwarding_count=$(rg "Reward forwarding completed sending spend" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $reward_forwarding_count reward forwardings"

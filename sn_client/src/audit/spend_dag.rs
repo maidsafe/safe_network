@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::SecretKey;
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
@@ -280,7 +281,7 @@ impl SpendDag {
         format!("{:?}", Dot::with_config(&self.dag, &[]))
     }
 
-    pub fn dump_payment_forward_statistics(&self) -> String {
+    pub fn dump_payment_forward_statistics(&self, sk: &SecretKey) -> String {
         let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
 
         let mut hash_dictionary: BTreeMap<Hash, String> = Default::default();
@@ -300,7 +301,7 @@ impl SpendDag {
 
         for spend_dag_entry in self.spends.values() {
             if let DagEntry::Spend(signed_spend, _) = spend_dag_entry {
-                if let Some(sender_hash) = signed_spend.spend.reason.get_sender_hash() {
+                if let Some(sender_hash) = signed_spend.spend.reason.get_sender_hash(sk) {
                     let sender = if let Some(readable_sender) = hash_dictionary.get(&sender_hash) {
                         readable_sender.clone()
                     } else {
