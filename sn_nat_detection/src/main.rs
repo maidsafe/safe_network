@@ -7,13 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Parser;
+use color_eyre::eyre::{eyre, Result};
 use futures::StreamExt;
 use libp2p::autonat::NatStatus;
 use libp2p::core::{multiaddr::Protocol, Multiaddr};
 use libp2p::swarm::SwarmEvent;
 use libp2p::{noise, tcp, yamux};
 use std::collections::HashSet;
-use std::error::Error;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 use tracing::{debug, info, warn};
@@ -60,7 +60,9 @@ struct Opt {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
+    color_eyre::install()?;
+
     // Process command line arguments.
     let opt = Opt::parse();
 
@@ -104,10 +106,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     builder = builder.upnp(true);
                     running_with_upnp = true;
                 } else {
-                    break Err("NAT is private".into());
+                    break Err(eyre!("NAT is private"));
                 }
             }
-            NatStatus::Unknown => break Err("NAT is unknown".into()),
+            NatStatus::Unknown => break Err(eyre!("NAT is unknown")),
         }
     }
 }
@@ -180,9 +182,9 @@ impl App {
                     // `SwarmEvent::Dialing` is only triggered when peer ID is included, so
                     // we log here too to make sure we log that we're dialing a server.
                     if let Err(e) = self.swarm.dial(addr.clone()) {
-                        warn!(%addr, ?e, "failed to dial server");
+                        warn!(%addr, ?e, "Failed to dial server");
                     } else {
-                        info!(%addr, "dialing server");
+                        info!(%addr, "Dialing server");
                     }
                 }
             }
@@ -206,7 +208,7 @@ impl App {
                         info!(
                             ?status,
                             %confidence,
-                            "confidence in NAT status {}",
+                            "Confidence in NAT status {}",
                             if confidence > old_confidence {
                                 "increased"
                             } else {
@@ -330,7 +332,7 @@ fn parse_peer_addr(addr: &str) -> Result<Multiaddr, &'static str> {
         return Ok(addr);
     }
 
-    Err("could not parse address")
+    Err("Could not parse address")
 }
 
 struct AppBuilder {
@@ -363,7 +365,7 @@ impl AppBuilder {
         self
     }
 
-    fn build(&self) -> Result<App, Box<dyn Error>> {
+    fn build(&self) -> Result<App> {
         // If no servers are provided, we are in server mode. Conversely, with servers
         // provided, we are in client mode.
         let client_mode = !self.servers.is_empty();
@@ -391,7 +393,7 @@ impl AppBuilder {
 
         info!(
             peer_id=%swarm.local_peer_id(),
-            "starting in {} mode",
+            "Starting in {} mode",
             if client_mode { "client" } else { "server" }
         );
 
