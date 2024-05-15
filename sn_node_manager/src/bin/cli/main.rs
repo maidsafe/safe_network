@@ -165,6 +165,8 @@ pub enum SubCmd {
         #[clap(long)]
         version: Option<String>,
     },
+    #[clap(subcommand)]
+    Auditor(AuditorSubCmd),
     /// Get node reward balances.
     #[clap(name = "balance")]
     Balance {
@@ -325,6 +327,106 @@ pub enum SubCmd {
         /// The name of the service to upgrade
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Vec<String>,
+        /// Provide a binary to upgrade to using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This can be useful for testing scenarios.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Upgrade to a specific version rather than the latest version.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        #[clap(long)]
+        version: Option<String>,
+    },
+}
+
+/// Manage the Auditor service.
+#[derive(Subcommand, Debug)]
+pub enum AuditorSubCmd {
+    /// Add an auditor service to collect and verify Spends from the network.
+    ///
+    /// By default, the latest sn_auditor binary will be downloaded; however, it is possible to
+    /// provide a binary either by specifying a URL, a local path, or a specific version number.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "add")]
+    Add {
+        /// Provide environment variables for the auditor service.
+        ///
+        /// Useful to set log levels. Variables should be comma separated without spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
+        /// Provide the path for the log directory for the auditor.
+        ///
+        /// If not provided, the default location /var/log/auditor.
+        #[clap(long, verbatim_doc_comment)]
+        log_dir_path: Option<PathBuf>,
+        /// Provide a path for the auditor binary to be used by the service.
+        ///
+        /// Useful for creating the auditor service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Provide a auditor binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a auditor binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Provide a specific version of the auditor to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The binary will be downloaded.
+        #[clap(long)]
+        version: Option<String>,
+    },
+    /// Start the auditor service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "start")]
+    Start {},
+    /// Stop the auditor service.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "stop")]
+    Stop {},
+    /// Upgrade the Auditor.
+    ///
+    /// The running auditor will be stopped, its binary will be replaced, then it will be started
+    /// again.
+    ///
+    /// This command must run as the root/administrative user.
+    #[clap(name = "upgrade")]
+    Upgrade {
+        /// Set this flag to upgrade the auditor without starting it.
+        ///
+        /// Can be useful for testing scenarios.
+        #[clap(long)]
+        do_not_start: bool,
+        /// Set this flag to force the upgrade command to replace binaries without comparing any
+        /// version numbers.
+        ///
+        /// Required if we want to downgrade, or for testing purposes.
+        #[clap(long)]
+        force: bool,
+        /// Provide environment variables for the auditor service.
+        ///
+        /// Values set when the service was added will be overridden.
+        ///
+        /// Useful to set log levels. Variables should be comma separated without spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
         /// Provide a binary to upgrade to using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -674,6 +776,36 @@ async fn main() -> Result<()> {
             )
             .await?;
             Ok(())
+        }
+        SubCmd::Auditor(AuditorSubCmd::Add {
+            env_variables,
+            log_dir_path,
+            path,
+            peers,
+            url,
+            version,
+        }) => {
+            cmd::auditor::add(
+                env_variables,
+                log_dir_path,
+                peers,
+                path,
+                url,
+                version,
+                verbosity,
+            )
+            .await
+        }
+        SubCmd::Auditor(AuditorSubCmd::Start {}) => cmd::auditor::start(verbosity).await,
+        SubCmd::Auditor(AuditorSubCmd::Stop {}) => cmd::auditor::stop(verbosity).await,
+        SubCmd::Auditor(AuditorSubCmd::Upgrade {
+            do_not_start,
+            force,
+            env_variables,
+            url,
+            version,
+        }) => {
+            cmd::auditor::upgrade(do_not_start, force, env_variables, url, version, verbosity).await
         }
         SubCmd::Balance {
             peer_id: peer_ids,

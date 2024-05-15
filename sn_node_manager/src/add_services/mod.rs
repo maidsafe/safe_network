@@ -10,8 +10,9 @@ pub mod config;
 mod tests;
 
 use self::config::{
-    AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
-    InstallFaucetServiceCtxBuilder, InstallNodeServiceCtxBuilder, PortRange,
+    AddAuditorServiceOptions, AddDaemonServiceOptions, AddFaucetServiceOptions,
+    AddNodeServiceOptions, InstallAuditorServiceCtxBuilder, InstallFaucetServiceCtxBuilder,
+    InstallNodeServiceCtxBuilder, PortRange,
 };
 use crate::{
     config::{create_owned_dir, get_user_safenode_data_dir},
@@ -21,8 +22,8 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use service_manager::ServiceInstallCtx;
 use sn_service_management::{
-    control::ServiceControl, DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData,
-    ServiceStatus,
+    auditor::AuditorServiceData, control::ServiceControl, DaemonServiceData, FaucetServiceData,
+    NodeRegistry, NodeServiceData, ServiceStatus,
 };
 use std::{
     ffi::OsString,
@@ -278,6 +279,76 @@ pub async fn add_node(
         .collect();
 
     Ok(added_services_names)
+}
+
+/// Install the auditor as a service.
+///
+/// This only defines the service; it does not start it.
+///
+/// There are several arguments that probably seem like they could be handled within the function,
+/// but they enable more controlled unit testing.
+pub fn add_auditor(
+    install_options: AddAuditorServiceOptions,
+    node_registry: &mut NodeRegistry,
+    service_control: &dyn ServiceControl,
+    verbosity: VerbosityLevel,
+) -> Result<()> {
+    if node_registry.auditor.is_some() {
+        return Err(eyre!("An Auditor service has already been created"));
+    }
+
+    create_owned_dir(
+        install_options.service_log_dir_path.clone(),
+        &install_options.user,
+    )?;
+
+    std::fs::copy(
+        install_options.auditor_src_bin_path.clone(),
+        install_options.auditor_install_bin_path.clone(),
+    )?;
+
+    let install_ctx = InstallAuditorServiceCtxBuilder {
+        bootstrap_peers: install_options.bootstrap_peers.clone(),
+        env_variables: install_options.env_variables.clone(),
+        auditor_path: install_options.auditor_install_bin_path.clone(),
+        log_dir_path: install_options.service_log_dir_path.clone(),
+        name: "auditor".to_string(),
+        service_user: install_options.user.clone(),
+    }
+    .build()?;
+
+    match service_control.install(install_ctx, false) {
+        Ok(()) => {
+            node_registry.auditor = Some(AuditorServiceData {
+                auditor_path: install_options.auditor_install_bin_path.clone(),
+                log_dir_path: install_options.service_log_dir_path.clone(),
+                pid: None,
+                service_name: "auditor".to_string(),
+                status: ServiceStatus::Added,
+                user: install_options.user.clone(),
+                version: install_options.version,
+            });
+            println!("Auditor service added {}", "✓".green());
+            if verbosity != VerbosityLevel::Minimal {
+                println!(
+                    "  - Bin path: {}",
+                    install_options.auditor_install_bin_path.to_string_lossy()
+                );
+                println!(
+                    "  - Log path: {}",
+                    install_options.service_log_dir_path.to_string_lossy()
+                );
+            }
+            println!("[!] Note: the service has not been started");
+            std::fs::remove_file(install_options.auditor_src_bin_path)?;
+            node_registry.save()?;
+            Ok(())
+        }
+        Err(e) => {
+            println!("Failed to add auditor service: {e}");
+            Err(e.into())
+        }
+    }
 }
 
 /// Install the daemon as a service.

@@ -136,6 +136,46 @@ pub struct AddNodeServiceOptions {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct InstallAuditorServiceCtxBuilder {
+    pub bootstrap_peers: Vec<Multiaddr>,
+    pub env_variables: Option<Vec<(String, String)>>,
+    pub auditor_path: PathBuf,
+    pub log_dir_path: PathBuf,
+    pub name: String,
+    pub service_user: String,
+}
+
+impl InstallAuditorServiceCtxBuilder {
+    pub fn build(self) -> Result<ServiceInstallCtx> {
+        let mut args = vec![
+            OsString::from("--log-output-dest"),
+            OsString::from(self.log_dir_path.to_string_lossy().to_string()),
+        ];
+
+        if !self.bootstrap_peers.is_empty() {
+            let peers_str = self
+                .bootstrap_peers
+                .iter()
+                .map(|peer| peer.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+            args.push(OsString::from("--peer"));
+            args.push(OsString::from(peers_str));
+        }
+
+        Ok(ServiceInstallCtx {
+            label: self.name.parse()?,
+            program: self.auditor_path.to_path_buf(),
+            args,
+            contents: None,
+            username: Some(self.service_user.to_string()),
+            working_directory: None,
+            environment: self.env_variables,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct InstallFaucetServiceCtxBuilder {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
@@ -176,6 +216,16 @@ impl InstallFaucetServiceCtxBuilder {
             environment: self.env_variables,
         })
     }
+}
+
+pub struct AddAuditorServiceOptions {
+    pub bootstrap_peers: Vec<Multiaddr>,
+    pub env_variables: Option<Vec<(String, String)>>,
+    pub auditor_install_bin_path: PathBuf,
+    pub auditor_src_bin_path: PathBuf,
+    pub service_log_dir_path: PathBuf,
+    pub user: String,
+    pub version: String,
 }
 
 pub struct AddFaucetServiceOptions {

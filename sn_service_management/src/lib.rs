@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+pub mod auditor;
 pub mod control;
 pub mod daemon;
 pub mod error;
@@ -19,6 +20,7 @@ pub mod safenode_manager_proto {
 
 use crate::error::{Error, Result};
 use async_trait::async_trait;
+use auditor::AuditorServiceData;
 use libp2p::Multiaddr;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -89,6 +91,7 @@ pub struct StatusSummary {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
+    pub auditor: Option<AuditorServiceData>,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub daemon: Option<DaemonServiceData>,
     pub environment_variables: Option<Vec<(String, String)>>,
@@ -113,6 +116,7 @@ impl NodeRegistry {
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
             return Ok(NodeRegistry {
+                auditor: None,
                 bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
@@ -130,6 +134,7 @@ impl NodeRegistry {
         // services were added.
         if contents.is_empty() {
             return Ok(NodeRegistry {
+                auditor: None,
                 bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
