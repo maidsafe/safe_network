@@ -159,20 +159,22 @@ jobs:
           # from S3, using that version number. Uploading the binaries to S3 before publishing
           # ensures that they will exist after the new crate has been published.
 
+          just package-release-assets "faucet"
+          just package-release-assets "node-launchpad"
           just package-release-assets "safe"
           just package-release-assets "safenode"
-          just package-release-assets "faucet"
           just package-release-assets "safenode_rpc_client"
           just package-release-assets "safenode-manager"
           just package-release-assets "safenodemand"
-          just package-release-assets "node-launchpad"
+          just package-release-assets "sn_auditor"
+          just upload-release-assets-to-s3 "faucet"
+          just upload-release-assets-to-s3 "node-launchpad"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
           just upload-release-assets-to-s3 "safenodemand"
-          just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
-          just upload-release-assets-to-s3 "node-launchpad"
+          just upload-release-assets-to-s3 "sn_auditor"
 
           # The `release-plz` command publishes crates which had their versions bumped, and also
           # creates Github releases. The binaries are then attached to the releases in the
@@ -187,20 +189,22 @@ jobs:
 
           # Now upload the 'latest' versions to S3. This can be done later because the node manager
           # does not depend on these existing.
+          just package-release-assets "faucet" "latest"
+          just package-release-assets "node-launchpad" "latest"
           just package-release-assets "safe" "latest"
           just package-release-assets "safenode" "latest"
-          just package-release-assets "faucet" "latest"
           just package-release-assets "safenode_rpc_client" "latest"
           just package-release-assets "safenode-manager" "latest"
           just package-release-assets "safenodemand" "latest"
-          just package-release-assets "node-launchpad"
+          just package-release-assets "sn_auditor" "latest"
+          just upload-release-assets-to-s3 "node-launchpad"
+          just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
           just upload-release-assets-to-s3 "safenodemand"
-          just upload-release-assets-to-s3 "faucet"
           just upload-release-assets-to-s3 "safenode_rpc_client"
-          just upload-release-assets-to-s3 "node-launchpad"
+          just upload-release-assets-to-s3 "sn_auditor"
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
