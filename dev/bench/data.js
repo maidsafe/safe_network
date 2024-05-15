@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715736583657,
+  "lastUpdate": 1715736585290,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "f02a1cf49c2e91e7bf331d341c0dd80b812324da",
-          "message": "docs: more doc updates to readme files",
-          "timestamp": "2024-01-08T12:16:21Z",
-          "tree_id": "070a72574e79f4e9b13299dee5503f6d12044346",
-          "url": "https://github.com/maidsafe/safe_network/commit/f02a1cf49c2e91e7bf331d341c0dd80b812324da"
-        },
-        "date": 1704718727009,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3904,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 18897,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 7,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "01edbadbdcbd63e8ce0d73f835f83eeea40a6383",
+          "message": "chore: clippy fixes for open metrics feature",
+          "timestamp": "2024-05-15T00:14:59Z",
+          "tree_id": "f63e87c5899c69b237cb9f48de0de0fceab002fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/01edbadbdcbd63e8ce0d73f835f83eeea40a6383"
+        },
+        "date": 1715736584960,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15808,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 98774,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
