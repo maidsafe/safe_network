@@ -28,7 +28,9 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
             println!("Starting from Genesis as found no local spend dag on disk...");
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
-            client.spend_dag_build_from(genesis_addr, None).await?
+            client
+                .spend_dag_build_from(genesis_addr, None, true)
+                .await?
         }
     };
 
