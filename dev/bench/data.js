@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715749837360,
+  "lastUpdate": 1715749839081,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "94c9dc98ba4914c54c23393921a145426c6c208a",
-          "message": "refactor(client)!: refactor `Files` into `FilesUpload`",
-          "timestamp": "2024-01-08T14:27:54Z",
-          "tree_id": "cf90ed557d450e8b8575a9248d6d8b8588ac17da",
-          "url": "https://github.com/maidsafe/safe_network/commit/94c9dc98ba4914c54c23393921a145426c6c208a"
-        },
-        "date": 1704726391959,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3551,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 17687,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
+          "message": "chore(faucet): devskim ignore",
+          "timestamp": "2024-05-15T04:26:48Z",
+          "tree_id": "e9b084627c96af1c0ec0c589c2e947e07c12ba70",
+          "url": "https://github.com/maidsafe/safe_network/commit/bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21"
+        },
+        "date": 1715749838702,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15727,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 119426,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 7,
             "unit": "ms"
           }
         ]
