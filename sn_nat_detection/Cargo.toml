@@ -1,6 +1,6 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-description = "Safe Network AutoNAT probing"
+description = "Safe Network NAT detection tool"
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"

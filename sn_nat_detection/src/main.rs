@@ -32,7 +32,7 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 /// A tool to detect NAT status of the machine. It can be run in server mode or client mode.
 /// The program will exit with an error code if NAT status is determined to be private.
 #[derive(Debug, Parser)]
-#[clap(name = "libp2p autonat")]
+#[clap(version, author, about)]
 struct Opt {
     /// Port to listen on.
     ///
@@ -40,7 +40,9 @@ struct Opt {
     #[clap(long, short, default_value_t = 0)]
     port: u16,
 
-    /// Servers to send dial-back requests to, in a 'multiaddr' format.
+    /// Servers to send dial-back requests to as a client, in a 'multiaddr' format.
+    ///
+    /// If no servers are provided, the program will run in server mode.
     ///
     /// A multiaddr looks like `/ip4/1.2.3.4/tcp/1200/tcp` where `1.2.3.4` is the IP and `1200` is the port.
     /// Alternatively, the address can be written as `1.2.3.4:1200`.
@@ -196,7 +198,7 @@ impl App {
                 let confidence = self.swarm.behaviour().autonat.confidence();
                 let status = self.swarm.behaviour().autonat.nat_status();
 
-                if confidence == CONFIDENCE_MAX {
+                if confidence >= CONFIDENCE_MAX {
                     debug!(confidence, ?status, "probing complete");
                     self.client_state = Some(State::Done(status));
                 } else {
