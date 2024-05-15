@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715749839081,
+  "lastUpdate": 1715791120947,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e0075322593241dca80c16626e06d28813a89ec4",
-          "message": "feat: set quic as default transport\n\nBREADKING CHANGE: quic and tcp are not compatible",
-          "timestamp": "2024-01-18T10:42:20+01:00",
-          "tree_id": "efe17dde2c1ef64084b0839e32116f231d262f41",
-          "url": "https://github.com/maidsafe/safe_network/commit/e0075322593241dca80c16626e06d28813a89ec4"
-        },
-        "date": 1705571838463,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.354495431406241,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9450848873925644,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.22755764796662,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 49.006540587791335,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "09246c227e50bebe0c761a9ea753cf4a0d8cb71c",
+          "message": "feat(nat): use color-eyre and uniform error msg",
+          "timestamp": "2024-05-15T15:42:25Z",
+          "tree_id": "fc18714a33c2b8ec0b4ac386093af3f0c28496d7",
+          "url": "https://github.com/maidsafe/safe_network/commit/09246c227e50bebe0c761a9ea753cf4a0d8cb71c"
+        },
+        "date": 1715791108249,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2195081482139056,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.4812978138622976,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 48.71822865635939,
             "unit": "MiB/s"
           }
         ]
