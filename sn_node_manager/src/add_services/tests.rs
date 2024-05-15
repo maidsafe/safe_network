@@ -8,10 +8,10 @@
 
 use crate::{
     add_services::{
-        add_daemon, add_faucet, add_node,
+        add_auditor, add_daemon, add_faucet, add_node,
         config::{
-            AddDaemonServiceOptions, AddFaucetServiceOptions, AddNodeServiceOptions,
-            InstallNodeServiceCtxBuilder, PortRange,
+            AddAuditorServiceOptions, AddDaemonServiceOptions, AddFaucetServiceOptions,
+            AddNodeServiceOptions, InstallNodeServiceCtxBuilder, PortRange,
         },
     },
     VerbosityLevel,
@@ -23,8 +23,8 @@ use libp2p::Multiaddr;
 use mockall::{mock, predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
-use sn_service_management::control::ServiceControl;
 use sn_service_management::error::Result as ServiceControlResult;
+use sn_service_management::{auditor::AuditorServiceData, control::ServiceControl};
 use sn_service_management::{
     DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
@@ -40,6 +40,10 @@ use std::{
 const SAFENODE_FILE_NAME: &str = "safenode";
 #[cfg(target_os = "windows")]
 const SAFENODE_FILE_NAME: &str = "safenode.exe";
+#[cfg(not(target_os = "windows"))]
+const AUDITOR_FILE_NAME: &str = "sn_auditor";
+#[cfg(target_os = "windows")]
+const AUDITOR_FILE_NAME: &str = "sn_auditor.exe";
 #[cfg(not(target_os = "windows"))]
 const FAUCET_FILE_NAME: &str = "faucet";
 #[cfg(target_os = "windows")]
@@ -89,6 +93,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     safenode_download_path.write_binary(b"fake safenode bin")?;
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -198,6 +203,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
 
     let latest_version = "0.96.4";
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -282,6 +288,7 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
     let mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -343,6 +350,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -560,6 +568,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     let new_peers = vec![Multiaddr::from_str("/ip4/178.62.78.116/udp/45442/quic-v1/p2p/12D3KooWLH4E68xFqoSKuF2JPQQhzaAg7GNvN1vpxoLMgJq6Zqz8")?];
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -681,6 +690,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     ]);
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -796,6 +806,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
 
     let latest_version = "0.96.4";
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -925,6 +936,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -1024,6 +1036,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -1231,6 +1244,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -1312,6 +1326,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -1393,6 +1408,7 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -1457,6 +1473,7 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -1522,6 +1539,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -1726,6 +1744,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -1808,6 +1827,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -1891,6 +1911,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -2085,6 +2106,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -2167,6 +2189,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![NodeServiceData {
@@ -2243,6 +2266,151 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
 }
 
 #[tokio::test]
+async fn add_auditor_should_add_a_auditor_service() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let auditor_logs_dir = temp_dir.child("logs");
+    auditor_logs_dir.create_dir_all()?;
+    let auditor_install_dir = temp_dir.child("install");
+    auditor_install_dir.create_dir_all()?;
+    let auditor_install_path = auditor_install_dir.child(AUDITOR_FILE_NAME);
+    let auditor_download_path = temp_dir.child(AUDITOR_FILE_NAME);
+    auditor_download_path.write_binary(b"fake auditor bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: None,
+        auditor: None,
+        faucet: None,
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--log-output-dest"),
+                    OsString::from(auditor_logs_dir.to_path_buf().as_os_str()),
+                ],
+                contents: None,
+                environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+                label: "auditor".parse()?,
+                program: auditor_install_path.to_path_buf(),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()));
+
+    add_auditor(
+        AddAuditorServiceOptions {
+            bootstrap_peers: vec![],
+            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            auditor_src_bin_path: auditor_download_path.to_path_buf(),
+            auditor_install_bin_path: auditor_install_path.to_path_buf(),
+            service_log_dir_path: auditor_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )?;
+
+    auditor_download_path.assert(predicate::path::missing());
+    auditor_install_path.assert(predicate::path::is_file());
+    auditor_logs_dir.assert(predicate::path::is_dir());
+
+    node_reg_path.assert(predicates::path::is_file());
+
+    let saved_auditor = node_registry.auditor.unwrap();
+    assert_eq!(
+        saved_auditor.auditor_path,
+        auditor_install_path.to_path_buf()
+    );
+    assert_eq!(saved_auditor.log_dir_path, auditor_logs_dir.to_path_buf());
+    assert!(saved_auditor.pid.is_none());
+    assert_eq!(saved_auditor.service_name, "auditor");
+    assert_eq!(saved_auditor.status, ServiceStatus::Added);
+    assert_eq!(saved_auditor.user, get_username());
+    assert_eq!(saved_auditor.version, latest_version);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_created() -> Result<()>
+{
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let auditor_logs_dir = temp_dir.child("logs");
+    auditor_logs_dir.create_dir_all()?;
+    let auditor_install_dir = temp_dir.child("install");
+    auditor_install_dir.create_dir_all()?;
+    let auditor_install_path = auditor_install_dir.child(AUDITOR_FILE_NAME);
+    let auditor_download_path = temp_dir.child(AUDITOR_FILE_NAME);
+    auditor_download_path.write_binary(b"fake auditor bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: None,
+        auditor: Some(AuditorServiceData {
+            auditor_path: auditor_download_path.to_path_buf(),
+            log_dir_path: PathBuf::from("/var/log/auditor"),
+            pid: Some(1000),
+            service_name: "auditor".to_string(),
+            status: ServiceStatus::Running,
+            user: "safe".to_string(),
+            version: latest_version.to_string(),
+        }),
+        faucet: None,
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let result = add_auditor(
+        AddAuditorServiceOptions {
+            bootstrap_peers: vec![],
+            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            auditor_src_bin_path: auditor_download_path.to_path_buf(),
+            auditor_install_bin_path: auditor_install_path.to_path_buf(),
+            service_log_dir_path: auditor_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    );
+
+    match result {
+        Ok(_) => panic!("This test should result in an error"),
+        Err(e) => {
+            assert_eq!(
+                format!("An auditor service has already been created"),
+                e.to_string()
+            )
+        }
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;
     let node_reg_path = tmp_data_dir.child("node_reg.json");
@@ -2262,6 +2430,7 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
     let mut node_registry = NodeRegistry {
         bootstrap_peers: vec![],
         daemon: None,
+        auditor: None,
         faucet: None,
         environment_variables: None,
         nodes: vec![],
@@ -2347,6 +2516,7 @@ async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_creat
     let mut node_registry = NodeRegistry {
         bootstrap_peers: vec![],
         daemon: None,
+        auditor: None,
         faucet: Some(FaucetServiceData {
             faucet_path: faucet_download_path.to_path_buf(),
             local: false,
@@ -2408,6 +2578,7 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
     let mut node_registry = NodeRegistry {
         bootstrap_peers: vec![],
         daemon: None,
+        auditor: None,
         faucet: None,
         environment_variables: None,
         nodes: vec![],
@@ -2493,6 +2664,7 @@ async fn add_daemon_should_return_an_error_if_a_daemon_service_was_already_creat
             status: ServiceStatus::Running,
             version: latest_version.to_string(),
         }),
+        auditor: None,
         faucet: None,
         environment_variables: None,
         nodes: vec![],
@@ -2534,6 +2706,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -2629,6 +2802,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -2724,6 +2898,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
@@ -2817,6 +2992,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
     let mut mock_service_control = MockServiceControl::new();
 
     let mut node_registry = NodeRegistry {
+        auditor: None,
         faucet: None,
         save_path: node_reg_path.to_path_buf(),
         nodes: vec![],
