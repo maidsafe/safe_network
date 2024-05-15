@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715812907395,
+  "lastUpdate": 1715812909024,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "22f19ac98a928c1cfeeed8e9fce9d20bda44a7ce",
-          "message": "fix(ci): use latest testnet action log upload changes",
-          "timestamp": "2024-01-18T19:22:46Z",
-          "tree_id": "9456874807b12ca9ba13416bd8152b69f9f21a4e",
-          "url": "https://github.com/maidsafe/safe_network/commit/22f19ac98a928c1cfeeed8e9fce9d20bda44a7ce"
-        },
-        "date": 1705608636150,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 232,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 89,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "6e872539cfdf0470c58d2bcfa7fe919a27b98a20",
+          "message": "feat: package and release auditor binary",
+          "timestamp": "2024-05-15T21:51:48Z",
+          "tree_id": "a0ecd883f1bea4320bec2a518153fbbf18b2214e",
+          "url": "https://github.com/maidsafe/safe_network/commit/6e872539cfdf0470c58d2bcfa7fe919a27b98a20"
+        },
+        "date": 1715812908479,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
             "unit": "MB"
           },
           {
