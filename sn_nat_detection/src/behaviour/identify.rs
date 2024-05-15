@@ -43,7 +43,7 @@ impl EventLoop {
                     for addr in info.listen_addrs.into_iter().filter(multiaddr_is_global) {
                         self.swarm
                             .behaviour_mut()
-                            .auto_nat
+                            .autonat
                             .add_server(peer_id, Some(addr));
                     }
                 }

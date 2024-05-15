@@ -65,7 +65,7 @@ impl EventLoop {
                 info!(
                     ?new,
                     ?old,
-                    confidence = self.swarm.behaviour().auto_nat.confidence(),
+                    confidence = self.swarm.behaviour().autonat.confidence(),
                     "AutoNAT status changed"
                 );
                 self.check_state();
