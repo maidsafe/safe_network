@@ -8,16 +8,16 @@ impl App {
     pub(crate) fn on_event_upnp(&mut self, event: upnp::Event) {
         match event {
             upnp::Event::NewExternalAddr(addr) => {
-                info!(%addr, "UPnP: New external address detected");
+                info!(%addr, "Successfully mapped UPnP port");
             }
             upnp::Event::ExpiredExternalAddr(addr) => {
-                debug!(%addr, "UPnP: External address expired");
+                debug!(%addr, "External UPnP port mapping expired");
             }
             upnp::Event::GatewayNotFound => {
-                error!("UPnP: No gateway not found");
+                error!("No UPnP gateway not found");
             }
             upnp::Event::NonRoutableGateway => {
-                error!("UPnP: Gateway is not routable");
+                error!("UPnP gateway is not routable");
             }
         }
     }

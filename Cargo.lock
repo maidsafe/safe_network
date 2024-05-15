@@ -7172,6 +7172,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
+ "color-eyre",
  "futures",
  "libp2p",
  "sn_networking",
