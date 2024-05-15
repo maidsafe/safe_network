@@ -30,7 +30,7 @@ pub use error::{Result, TransferError};
 pub use genesis::{
     calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir,
     is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
-    GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, NETWORK_ROYALTIES_PK, TOTAL_SUPPLY,
+    GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, TOTAL_SUPPLY,
 };
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 pub use wallet::{
@@ -38,6 +38,33 @@ pub use wallet::{
     PaymentQuote, QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet,
     QUOTE_EXPIRATION_SECS, WALLET_DIR_NAME,
 };
+
+use lazy_static::lazy_static;
+
+/// The following PKs shall be updated to match its correspondent SKs before the formal release
+///
+/// Foundation wallet public key (used to receive initial disbursment from the genesis wallet)
+const FOUNDATION_PK_STR: &str = "8f73b97377f30bed96df1c92daf9f21b4a82c862615439fab8095e68860a5d0dff9f97dba5aef503a26c065e5cb3c7ca"; // DevSkim: ignore DS173237
+/// Public key where network royalties payments are expected to be made to.
+const NETWORK_ROYALTIES_STR: &str = "b4243ec9ceaec374ef992684cd911b209758c5de53d1e406b395bc37ebc8ce50e68755ea6d32da480ae927e1af4ddadb"; // DevSkim: ignore DS173237
+
+lazy_static! {
+    pub static ref FOUNDATION_PK: MainPubkey = {
+        match MainPubkey::from_hex(FOUNDATION_PK_STR) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse hard-coded foundation PK: {err:?}"),
+        }
+    };
+}
+
+lazy_static! {
+    pub static ref NETWORK_ROYALTIES_PK: MainPubkey = {
+        match MainPubkey::from_hex(NETWORK_ROYALTIES_STR) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse hard-coded network royalty PK: {err:?}"),
+        }
+    };
+}
 
 // re-export crates used in our public API
 pub use bls::{self, rand, Ciphertext, Signature};
