@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715806246778,
+  "lastUpdate": 1715806249378,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "650e12d60e3647674c7ff5a5a8a94bc3316c7102",
-          "message": "chore(node): move add_to_replicate_fetcher to driver",
-          "timestamp": "2024-01-09T09:24:57Z",
-          "tree_id": "fc2ccf2dbe9ab31b67f9668360ec4ab52538bed0",
-          "url": "https://github.com/maidsafe/safe_network/commit/650e12d60e3647674c7ff5a5a8a94bc3316c7102"
-        },
-        "date": 1704795820976,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3756,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 16637,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "ian@iancoleman.io",
             "name": "Ian Coleman",
             "username": "iancoleman"
@@ -42299,6 +42260,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 73514,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "fe3f0c14968ad655713ce848205b7dae9cfa250c",
+          "message": "fix(CI): shall wait before stop the local testnet",
+          "timestamp": "2024-05-15T20:03:27Z",
+          "tree_id": "ba57848109f2e2721babe4f6fc4b9ffa86606cf4",
+          "url": "https://github.com/maidsafe/safe_network/commit/fe3f0c14968ad655713ce848205b7dae9cfa250c"
+        },
+        "date": 1715806248509,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 16022,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 94215,
             "unit": "ms"
           },
           {
