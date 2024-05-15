@@ -470,16 +470,7 @@ impl HotWallet {
         );
         debug!("Available CashNotes: {:#?}", available_cash_notes);
 
-        let spend_reason = match SpendReason::create_reward_tracking_reason("STORAGE") {
-            Ok(spend_reason) => spend_reason,
-            Err(err) => {
-                error!("Failed to generate spend_reason for local_send {err:?}");
-                return Err(Error::CouldNotSendMoney(format!(
-                    "Failed to generate spend_reason {err:?}"
-                )));
-            }
-        };
-
+        let spend_reason = Default::default();
         let start = Instant::now();
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
