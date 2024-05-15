@@ -16,11 +16,12 @@ use std::collections::BTreeSet;
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
-    /// Once the DAG collected, verifies and records errors in the DAG
+    /// Once the DAG collected, optionally verifies and records errors in the DAG
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
         max_depth: Option<u32>,
+        verify: bool,
     ) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
         let mut dag = SpendDag::new(spend_addr);
@@ -120,17 +121,19 @@ impl Client {
         info!("Finished building SpendDAG from {spend_addr:?} in {elapsed:?}");
 
         // verify the DAG
-        info!("Now verifying SpendDAG from {spend_addr:?} and recording errors...");
-        let start = std::time::Instant::now();
-        if let Err(e) = dag.record_faults(&dag.source()) {
-            let s = format!(
-                "Collected DAG starting at {spend_addr:?} is invalid, this is probably a bug: {e}"
-            );
-            error!("{s}");
-            return Err(WalletError::Dag(s));
+        if verify {
+            info!("Now verifying SpendDAG from {spend_addr:?} and recording errors...");
+            let start = std::time::Instant::now();
+            if let Err(e) = dag.record_faults(&dag.source()) {
+                let s = format!(
+                    "Collected DAG starting at {spend_addr:?} is invalid, this is probably a bug: {e}"
+                );
+                error!("{s}");
+                return Err(WalletError::Dag(s));
+            }
+            let elapsed = start.elapsed();
+            info!("Finished verifying SpendDAG from {spend_addr:?} in {elapsed:?}");
         }
-        let elapsed = start.elapsed();
-        info!("Finished verifying SpendDAG from {spend_addr:?} in {elapsed:?}");
         Ok(dag)
     }
 
@@ -271,7 +274,10 @@ impl Client {
         let mut stream = futures::stream::iter(utxos.into_iter())
             .map(|utxo| async move {
                 debug!("Queuing task to gather DAG from utxo: {:?}", utxo);
-                (self.spend_dag_build_from(utxo, max_depth).await, utxo)
+                (
+                    self.spend_dag_build_from(utxo, max_depth, false).await,
+                    utxo,
+                )
             })
             .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
 
@@ -286,9 +292,6 @@ impl Client {
                 Err(e) => warn!("Failed to gather sub dag from {addr:?}: {e}"),
             };
         }
-
-        dag.record_faults(&dag.source())
-            .map_err(|e| WalletError::Dag(e.to_string()))?;
 
         info!("Done gathering spend DAG from utxos");
         Ok(())
