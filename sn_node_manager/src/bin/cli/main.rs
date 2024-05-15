@@ -8,6 +8,7 @@
 
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
+use sn_logging::LogFormat;
 use sn_node_manager::{
     add_services::config::{parse_port_range, PortRange},
     cmd, VerbosityLevel,
@@ -92,6 +93,13 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
+        /// Specify the logging format for started nodes.
+        ///
+        /// Valid values are "default" or "json".
+        ///
+        /// If the argument is not used, the default format will be applied.
+        #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
+        log_format: Option<LogFormat>,
         /// Specify a port for the open metrics server.
         ///
         /// This argument should only be used with a safenode binary that has the open-metrics
@@ -652,6 +660,13 @@ pub enum LocalSubCmd {
         /// Units are milliseconds.
         #[clap(long, default_value_t = 200)]
         interval: u64,
+        /// Specify the logging format.
+        ///
+        /// Valid values are "default" or "json".
+        ///
+        /// If the argument is not used, the default format will be applied.
+        #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
+        log_format: Option<LogFormat>,
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -710,6 +725,13 @@ pub enum LocalSubCmd {
         /// Units are milliseconds.
         #[clap(long, default_value_t = 200)]
         interval: u64,
+        /// Specify the logging format.
+        ///
+        /// Valid values are "default" or "json".
+        ///
+        /// If the argument is not used, the default format will be applied.
+        #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
+        log_format: Option<LogFormat>,
         /// Path to a safenode binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -744,6 +766,7 @@ async fn main() -> Result<()> {
             home_network,
             local,
             log_dir_path,
+            log_format,
             metrics_port,
             node_port,
             path,
@@ -762,6 +785,7 @@ async fn main() -> Result<()> {
                 home_network,
                 local,
                 log_dir_path,
+                log_format,
                 metrics_port,
                 node_port,
                 peers,
@@ -870,6 +894,7 @@ async fn main() -> Result<()> {
                 interval,
                 node_path,
                 node_version,
+                log_format,
                 peers,
                 skip_validation: _,
                 owner,
@@ -884,6 +909,7 @@ async fn main() -> Result<()> {
                     owner,
                     node_path,
                     node_version,
+                    log_format,
                     peers,
                     true,
                     verbosity,
@@ -900,6 +926,7 @@ async fn main() -> Result<()> {
                 interval,
                 node_path,
                 node_version,
+                log_format,
                 skip_validation: _,
                 owner,
             } => {
@@ -914,6 +941,7 @@ async fn main() -> Result<()> {
                     interval,
                     node_path,
                     node_version,
+                    log_format,
                     true,
                     verbosity,
                 )

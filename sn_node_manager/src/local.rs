@@ -16,6 +16,8 @@ use colored::Colorize;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
+
+use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
@@ -39,6 +41,7 @@ pub trait Launcher {
         owner: String,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
+        log_format: Option<LogFormat>,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -73,6 +76,7 @@ impl Launcher for LocalSafeLauncher {
         owner: String,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
+        log_format: Option<LogFormat>,
     ) -> Result<()> {
         let mut args = Vec::new();
 
@@ -87,6 +91,12 @@ impl Launcher for LocalSafeLauncher {
                 args.push(peer.to_string());
             }
         }
+
+        if let Some(log_format) = log_format {
+            args.push("--log-format".to_string());
+            args.push(log_format.as_str().to_string());
+        }
+
         args.push("--local".to_string());
         args.push("--rpc".to_string());
         args.push(rpc_socket_addr.to_string());
@@ -178,6 +188,7 @@ pub struct LocalNetworkOptions {
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
+    pub log_format: Option<LogFormat>,
 }
 
 pub async fn run_network(
@@ -216,6 +227,7 @@ pub async fn run_network(
                 interval: options.interval,
                 rpc_socket_addr,
                 bootstrap_peers: vec![],
+                log_format: options.log_format,
             },
             &launcher,
             &rpc_client,
@@ -244,6 +256,7 @@ pub async fn run_network(
                 interval: options.interval,
                 rpc_socket_addr,
                 bootstrap_peers: bootstrap_peers.clone(),
+                log_format: options.log_format,
             },
             &launcher,
             &rpc_client,
@@ -290,6 +303,7 @@ pub struct RunNodeOptions {
     pub number: u16,
     pub genesis: bool,
     pub interval: u64,
+    pub log_format: Option<LogFormat>,
     pub rpc_socket_addr: SocketAddr,
     pub bootstrap_peers: Vec<Multiaddr>,
 }
@@ -315,6 +329,7 @@ pub async fn run_node(
         user.clone(),
         run_options.rpc_socket_addr,
         run_options.bootstrap_peers.clone(),
+        run_options.log_format,
     )?;
     launcher.wait(run_options.interval);
 
@@ -336,6 +351,7 @@ pub async fn run_node(
         listen_addr: Some(listen_addrs),
         local: true,
         log_dir_path: node_info.log_path,
+        log_format: run_options.log_format,
         metrics_port: None,
         node_port: None,
         number: run_options.number,
@@ -438,9 +454,9 @@ mod tests {
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_launch_node()
-            .with(eq(owner.clone()), eq(rpc_socket_addr), eq(vec![]))
+            .with(eq(owner.clone()), eq(rpc_socket_addr), eq(vec![]), eq(None))
             .times(1)
-            .returning(|_, _, _| Ok(()));
+            .returning(|_, _, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -478,6 +494,7 @@ mod tests {
             RunNodeOptions {
                 version: "0.100.12".to_string(),
                 owner,
+                log_format: None,
                 number: 1,
                 genesis: true,
                 interval: 100,

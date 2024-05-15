@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use service_manager::{ServiceInstallCtx, ServiceLabel};
+use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr};
@@ -59,6 +60,10 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         }
         if self.service_data.local {
             args.push(OsString::from("--local"));
+        }
+        if let Some(log_fmt) = self.service_data.log_format {
+            args.push(OsString::from("--log-format"));
+            args.push(OsString::from(log_fmt.as_str()));
         }
         if self.service_data.upnp {
             args.push(OsString::from("--upnp"));
@@ -171,6 +176,7 @@ pub struct NodeServiceData {
     pub listen_addr: Option<Vec<Multiaddr>>,
     pub local: bool,
     pub log_dir_path: PathBuf,
+    pub log_format: Option<LogFormat>,
     #[serde(default)]
     pub metrics_port: Option<u16>,
     #[serde(default)]
