@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.15](https://github.com/maidsafe/safe_network/compare/sn_auditor-v0.1.14...sn_auditor-v0.1.15) - 2024-05-15
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.1.14](https://github.com/maidsafe/safe_network/compare/sn_auditor-v0.1.13...sn_auditor-v0.1.14) - 2024-05-09
 
 ### Other
