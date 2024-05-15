@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715726492361,
+  "lastUpdate": 1715736451161,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "5a30ae7f5c833191aadcf192bd90fd608ff1582e",
-          "message": "fix(docs): update Client signature for doc test",
-          "timestamp": "2024-01-17T11:40:09Z",
-          "tree_id": "1684baa570e89313b06591aea7cf2ad5a1ec60e0",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a30ae7f5c833191aadcf192bd90fd608ff1582e"
-        },
-        "date": 1705494508086,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 0.6629339369637813,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1211972730913091,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 66.43187023418693,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 54.13064598973049,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "01edbadbdcbd63e8ce0d73f835f83eeea40a6383",
+          "message": "chore: clippy fixes for open metrics feature",
+          "timestamp": "2024-05-15T00:14:59Z",
+          "tree_id": "f63e87c5899c69b237cb9f48de0de0fceab002fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/01edbadbdcbd63e8ce0d73f835f83eeea40a6383"
+        },
+        "date": 1715736446659,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1845764271123662,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0624634919445766,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 51.69403101947326,
             "unit": "MiB/s"
           }
         ]
