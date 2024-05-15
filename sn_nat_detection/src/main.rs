@@ -233,6 +233,7 @@ impl EventLoop {
             SwarmEvent::Behaviour(event) => match event {
                 BehaviourEvent::Identify(event) => self.on_event_identify(event),
                 BehaviourEvent::Autonat(event) => self.on_event_autonat(event),
+                BehaviourEvent::Upnp(event) => self.on_event_upnp(event),
             },
             SwarmEvent::NewListenAddr { address, .. } => {
                 debug!(%address, "Listening on new address");
@@ -310,7 +311,7 @@ impl EventLoop {
                 peer_id,
                 connection_id,
             } => {
-                info!(?peer_id, %connection_id, "Dialing peer");
+                info!(?peer_id, conn_id=%connection_id, "Dialing peer");
             }
             SwarmEvent::NewExternalAddrOfPeer { .. } => { /* ignore */ }
             event => warn!(?event, "Unknown SwarmEvent"),
