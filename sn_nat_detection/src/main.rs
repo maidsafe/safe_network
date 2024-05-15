@@ -49,6 +49,10 @@ struct Opt {
     #[clap(name = "SERVER", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr)]
     server_addr: Vec<Multiaddr>,
 
+    /// Disable use of UPnP to open a port on the router, before detecting NAT status.
+    #[clap(long, short, default_value_t = false)]
+    no_upnp: bool,
+
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
 }
@@ -70,48 +74,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
         registry.with(filter).try_init()
     };
 
-    // If no servers are provided, we are in server mode. Conversely, with servers
-    // provided, we are in client mode.
-    let client_mode = !opt.server_addr.is_empty();
+    let mut builder = AppBuilder::new()
+        .servers(opt.server_addr)
+        .upnp(false)
+        .port(opt.port);
 
-    let mut swarm = libp2p::SwarmBuilder::with_new_identity()
-        .with_tokio()
-        .with_tcp(
-            tcp::Config::default(),
-            noise::Config::new,
-            yamux::Config::default,
-        )?
-        .with_behaviour(|key| Behaviour::new(key.public(), client_mode))?
-        // Make it so that we retry just before idling out, to prevent quickly disconnecting/connecting
-        // to the same server.
-        .with_swarm_config(|c| {
-            c.with_idle_connection_timeout(RETRY_INTERVAL + Duration::from_secs(2))
-        })
-        .build();
+    // Run the program twice, to first detect NAT status without UPnP,
+    // and then with UPnP enabled. (Unless `--no-upnp` was given.)
+    let mut running_with_upnp = false;
+    loop {
+        let status = builder
+            .build()?
+            // The main loop will exit once it has gained enough confidence in the NAT status.
+            .run()
+            .await;
 
-    swarm.listen_on(
-        Multiaddr::empty()
-            .with(Protocol::Ip4(Ipv4Addr::UNSPECIFIED))
-            .with(Protocol::Tcp(opt.port)),
-    )?;
-
-    info!(
-        peer_id=%swarm.local_peer_id(),
-        "starting in {} mode",
-        if client_mode { "client" } else { "server" }
-    );
-
-    let event_loop = EventLoop::new(swarm, opt.server_addr);
-    // The main loop will exit once it has gained enough confidence in the NAT status.
-    let status = event_loop.run().await;
-
-    match status {
-        NatStatus::Public(addr) => {
-            info!(%addr, "NAT is public");
-            Ok(())
+        match status {
+            NatStatus::Public(addr) => {
+                info!(%addr, "NAT is public{}", if running_with_upnp { " (with UPnP)" } else { "" });
+                break Ok(());
+            }
+            NatStatus::Private => {
+                // Unless `--no-upnp` is set, rerun the program with UPnP enabled.
+                if !opt.no_upnp && !running_with_upnp {
+                    warn!("NAT is private, rerunning program with UPnP enabled in 2 seconds...");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    builder = builder.upnp(true);
+                    running_with_upnp = true;
+                } else {
+                    break Err("NAT is private".into());
+                }
+            }
+            NatStatus::Unknown => break Err("NAT is unknown".into()),
         }
-        NatStatus::Private => Err("NAT is private".into()),
-        NatStatus::Unknown => Err("NAT is unknown".into()),
     }
 }
 
@@ -127,7 +122,7 @@ enum State {
     Done(NatStatus),
 }
 
-struct EventLoop {
+struct App {
     swarm: libp2p::Swarm<Behaviour>,
     // Interval with which to check the state of the program. (State is also checked on events.)
     interval: tokio::time::Interval,
@@ -137,7 +132,7 @@ struct EventLoop {
     candidate_addrs: HashSet<Multiaddr>,
 }
 
-impl EventLoop {
+impl App {
     fn new(swarm: libp2p::Swarm<Behaviour>, servers: Vec<Multiaddr>) -> Self {
         Self {
             swarm,
@@ -334,4 +329,72 @@ fn parse_peer_addr(addr: &str) -> Result<Multiaddr, &'static str> {
     }
 
     Err("could not parse address")
+}
+
+struct AppBuilder {
+    port: u16,
+    servers: Vec<Multiaddr>,
+    upnp: bool,
+}
+
+impl AppBuilder {
+    fn new() -> Self {
+        Self {
+            port: 0,
+            upnp: false,
+            servers: vec![],
+        }
+    }
+
+    fn port(mut self, port: u16) -> Self {
+        self.port = port;
+        self
+    }
+
+    fn upnp(mut self, upnp: bool) -> Self {
+        self.upnp = upnp;
+        self
+    }
+
+    fn servers(mut self, servers: Vec<Multiaddr>) -> Self {
+        self.servers = servers;
+        self
+    }
+
+    fn build(&self) -> Result<App, Box<dyn Error>> {
+        // If no servers are provided, we are in server mode. Conversely, with servers
+        // provided, we are in client mode.
+        let client_mode = !self.servers.is_empty();
+
+        let mut swarm = libp2p::SwarmBuilder::with_new_identity()
+            .with_tokio()
+            .with_tcp(
+                tcp::Config::default(),
+                noise::Config::new,
+                yamux::Config::default,
+            )?
+            .with_behaviour(|key| Behaviour::new(key.public(), client_mode, self.upnp))?
+            // Make it so that we retry just before idling out, to prevent quickly disconnecting/connecting
+            // to the same server.
+            .with_swarm_config(|c| {
+                c.with_idle_connection_timeout(RETRY_INTERVAL + Duration::from_secs(2))
+            })
+            .build();
+
+        swarm.listen_on(
+            Multiaddr::empty()
+                .with(Protocol::Ip4(Ipv4Addr::UNSPECIFIED))
+                .with(Protocol::Tcp(self.port)),
+        )?;
+
+        info!(
+            peer_id=%swarm.local_peer_id(),
+            "starting in {} mode",
+            if client_mode { "client" } else { "server" }
+        );
+
+        let app = App::new(swarm, self.servers.clone());
+
+        Ok(app)
+    }
 }

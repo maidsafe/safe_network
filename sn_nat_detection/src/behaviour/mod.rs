@@ -19,7 +19,11 @@ pub(crate) struct Behaviour {
 }
 
 impl Behaviour {
-    pub(crate) fn new(local_public_key: identity::PublicKey, client_mode: bool) -> Self {
+    pub(crate) fn new(
+        local_public_key: identity::PublicKey,
+        client_mode: bool,
+        upnp: bool,
+    ) -> Self {
         let far_future = Duration::MAX / 10; // `MAX` on itself causes overflows. This is a workaround.
         Self {
             autonat: libp2p::autonat::Behaviour::new(
@@ -28,8 +32,13 @@ impl Behaviour {
                     libp2p::autonat::Config {
                         // Use dialed peers for probing.
                         use_connected: true,
-                        // Start probing 3 seconds after swarm init. This gives us time to connect to the dialed server.
-                        boot_delay: Duration::from_secs(3),
+                        // Start probing a few seconds after swarm init. This gives us time to connect to the dialed server.
+                        // With UPnP enabled, give it a bit more time to possibly open up the port.
+                        boot_delay: if upnp {
+                            Duration::from_secs(7)
+                        } else {
+                            Duration::from_secs(3)
+                        },
                         // Reuse probe server immediately even if it's the only one.
                         throttle_server_period: Duration::ZERO,
                         retry_interval: Duration::from_secs(10),
@@ -56,7 +65,7 @@ impl Behaviour {
                 // Exchange information every 5 minutes.
                 .with_interval(Duration::from_secs(5 * 60)),
             ),
-            upnp: Toggle::from(Some(libp2p::upnp::tokio::Behaviour::default())),
+            upnp: upnp.then(libp2p::upnp::tokio::Behaviour::default).into(),
         }
     }
 }

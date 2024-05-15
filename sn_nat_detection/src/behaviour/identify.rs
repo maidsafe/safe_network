@@ -2,9 +2,9 @@ use libp2p::{autonat, identify};
 use sn_networking::multiaddr_is_global;
 use tracing::{debug, info, warn};
 
-use crate::{behaviour::PROTOCOL_VERSION, EventLoop};
+use crate::{behaviour::PROTOCOL_VERSION, App};
 
-impl EventLoop {
+impl App {
     pub(crate) fn on_event_identify(&mut self, event: identify::Event) {
         match event {
             identify::Event::Received { peer_id, info } => {
