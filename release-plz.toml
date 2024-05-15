@@ -12,7 +12,7 @@ release = false
 [[package]]
 name = "sn_auditor"
 changelog_update = true
-git_release_enable = false
+git_release_enable = true
 release = true
 
 [[package]]

@@ -113,21 +113,23 @@ build-release-artifacts arch:
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross
+    cross build --release --target $arch --bin faucet --features=distribution
+    cross build --release --target $arch --bin node-launchpad
     cross build --release --features="network-contacts,distribution" --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
     cross build --release --target $arch --bin safenode-manager
     cross build --release --target $arch --bin safenodemand
-    cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin safenode_rpc_client
-    cross build --release --target $arch --bin node-launchpad
+    cross build --release --target $arch --bin sn_auditor
   else
+    cargo build --release --target $arch --bin faucet --features=distribution
+    cargo build --release --target $arch --bin node-launchpad
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
     cargo build --release --target $arch --bin safenode-manager
     cargo build --release --target $arch --bin safenodemand
-    cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin safenode_rpc_client
-    cargo build --release --target $arch --bin node-launchpad
+    cross build --release --target $arch --bin sn_auditor
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -172,19 +174,26 @@ package-release-assets bin version="":
   bin="{{bin}}"
 
   supported_bins=(\
+    "faucet" \
+    "node-launchpad" \
     "safe" \
     "safenode" \
     "safenode-manager" \
     "safenodemand" \
-    "faucet" \
     "safenode_rpc_client" \
-    "node-launchpad")
+    "sn_auditor")
   crate_dir_name=""
 
   # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
   # directory it's in is `sn_node_manager`.
   bin="{{bin}}"
   case "$bin" in
+    faucet)
+      crate_dir_name="sn_faucet"
+      ;;
+    node-launchpad)
+      crate_dir_name="node-launchpad"
+      ;;
     safe)
       crate_dir_name="sn_cli"
       ;;
@@ -197,14 +206,11 @@ package-release-assets bin version="":
     safenodemand)
       crate_dir_name="sn_node_manager"
       ;;
-    faucet)
-      crate_dir_name="sn_faucet"
-      ;;
     safenode_rpc_client)
       crate_dir_name="sn_node_rpc_client"
       ;;
-    node-launchpad)
-      crate_dir_name="node-launchpad"
+    sn_auditor)
+      crate_dir_name="sn_auditor"
       ;;
 
     *)
@@ -243,12 +249,13 @@ upload-github-release-assets:
   set -e
 
   binary_crates=(
+    "sn_faucet"
+    "node-launchpad"
     "sn_cli"
     "sn_node"
     "sn-node-manager"
-    "sn_faucet"
     "sn_node_rpc_client"
-    "node-launchpad"
+    "sn_auditor"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -265,6 +272,14 @@ upload-github-release-assets:
     for binary_crate in "${binary_crates[@]}"; do
       if [[ "$crate" == "$binary_crate" ]]; then
         case "$crate" in
+          sn_faucet)
+            bin_name="faucet"
+            bucket="sn-faucet"
+            ;;
+          node-launchpad)
+            bin_name="node-launchpad"
+            bucket="node-launchpad"
+            ;;
           sn_cli)
             bin_name="safe"
             bucket="sn-cli"
@@ -277,17 +292,13 @@ upload-github-release-assets:
             bin_name="safenode-manager"
             bucket="sn-node-manager"
             ;;
-          sn_faucet)
-            bin_name="faucet"
-            bucket="sn-faucet"
-            ;;
           sn_node_rpc_client)
             bin_name="safenode_rpc_client"
             bucket="sn-node-rpc-client"
             ;;
-          node-launchpad)
-            bin_name="node-launchpad"
-            bucket="node-launchpad"
+          sn_auditor)
+            bin_name="sn_auditor"
+            bucket="sn-auditor"
             ;;
           *)
             echo "The $crate crate is not supported"
@@ -301,7 +312,7 @@ upload-github-release-assets:
           if [[ $crate_with_version == $crate-v* ]]; then
             (
               cd deploy/$bin_name
-              if [[ "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" || "$crate" == "node-launchpad" ]]; then
+              if [[ "$crate" == "node-launchpad" || "$crate" == "sn_cli" || "$crate" == "sn_node" || "$crate" == "sn-node-manager" || "$crate" == "sn_auditor" ]]; then
                 echo "Uploading $bin_name assets to $crate_with_version release..."
                 ls | xargs gh release upload $crate_with_version --repo {{release_repo}}
               fi
@@ -317,6 +328,12 @@ upload-release-assets-to-s3 bin_name:
   set -e
 
   case "{{bin_name}}" in
+    faucet)
+      bucket="sn-faucet"
+      ;;
+    node-launchpad)
+      bucket="node-launchpad"
+      ;;
     safe)
       bucket="sn-cli"
       ;;
@@ -329,14 +346,11 @@ upload-release-assets-to-s3 bin_name:
     safenodemand)
       bucket="sn-node-manager"
       ;;
-    faucet)
-      bucket="sn-faucet"
-      ;;
     safenode_rpc_client)
       bucket="sn-node-rpc-client"
       ;;
-    node-launchpad)
-      bucket="node-launchpad"
+    sn_auditor)
+      bucket="sn-auditor"
       ;;
     *)
       echo "The {{bin_name}} binary is not supported"
