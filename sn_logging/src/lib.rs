@@ -14,6 +14,7 @@ pub mod metrics;
 
 use crate::error::Result;
 use layers::TracingLayers;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::info;
 use tracing_appender::non_blocking::WorkerGuard;
@@ -92,7 +93,7 @@ impl std::fmt::Display for LogOutputDest {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LogFormat {
     Default,
     Json,
@@ -106,6 +107,13 @@ impl LogFormat {
             _ => Err(Error::LoggingConfiguration(
                 "The only valid values for this argument are \"default\" or \"json\"".to_string(),
             )),
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LogFormat::Default => "default",
+            LogFormat::Json => "json",
         }
     }
 }

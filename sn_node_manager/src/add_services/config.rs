@@ -9,6 +9,7 @@
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
+use sn_logging::LogFormat;
 use std::{
     ffi::OsString,
     net::{Ipv4Addr, SocketAddr},
@@ -48,6 +49,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub home_network: bool,
     pub local: bool,
     pub log_dir_path: PathBuf,
+    pub log_format: Option<LogFormat>,
     pub name: String,
     pub metrics_port: Option<u16>,
     pub node_port: Option<u16>,
@@ -78,6 +80,10 @@ impl InstallNodeServiceCtxBuilder {
         if self.local {
             args.push(OsString::from("--local"));
         }
+        if let Some(log_format) = self.log_format {
+            args.push(OsString::from("--log-format"));
+            args.push(OsString::from(log_format.as_str()));
+        }
         if self.upnp {
             args.push(OsString::from("--upnp"));
         }
@@ -89,7 +95,6 @@ impl InstallNodeServiceCtxBuilder {
             args.push(OsString::from("--metrics-server-port"));
             args.push(OsString::from(metrics_port.to_string()));
         }
-
         if !self.bootstrap_peers.is_empty() {
             let peers_str = self
                 .bootstrap_peers
@@ -121,6 +126,7 @@ pub struct AddNodeServiceOptions {
     pub genesis: bool,
     pub home_network: bool,
     pub local: bool,
+    pub log_format: Option<LogFormat>,
     pub metrics_port: Option<PortRange>,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,

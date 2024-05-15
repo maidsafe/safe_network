@@ -14,6 +14,7 @@ use crate::{
     print_banner, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
+use sn_logging::LogFormat;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
@@ -30,6 +31,7 @@ pub async fn join(
     owner: String,
     node_path: Option<PathBuf>,
     node_version: Option<String>,
+    log_format: Option<LogFormat>,
     peers: PeersArgs,
     skip_validation: bool,
     verbosity: VerbosityLevel,
@@ -79,6 +81,7 @@ pub async fn join(
         peers,
         safenode_bin_path: node_path,
         skip_validation,
+        log_format,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
     Ok(())
@@ -109,6 +112,7 @@ pub async fn run(
     interval: u64,
     node_path: Option<PathBuf>,
     node_version: Option<String>,
+    log_format: Option<LogFormat>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -167,6 +171,7 @@ pub async fn run(
         peers: None,
         safenode_bin_path: node_path,
         skip_validation,
+        log_format,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
 

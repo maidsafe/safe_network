@@ -22,6 +22,7 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
+use sn_logging::LogFormat;
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
@@ -42,6 +43,7 @@ pub async fn add(
     home_network: bool,
     local: bool,
     log_dir_path: Option<PathBuf>,
+    log_format: Option<LogFormat>,
     metrics_port: Option<PortRange>,
     node_port: Option<PortRange>,
     peers: PeersArgs,
@@ -125,6 +127,7 @@ pub async fn add(
         genesis: is_first,
         home_network,
         local,
+        log_format,
         metrics_port,
         node_port,
         rpc_address,
