@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.6...sn_service_management-v0.2.7) - 2024-05-15
+
+### Added
+- run safenode services in user mode
+
+### Other
+- upgrade service manager crate
+
 ## [0.2.6](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.5...sn_service_management-v0.2.6) - 2024-05-08
 
 ### Other
