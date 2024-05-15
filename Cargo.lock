@@ -4631,7 +4631,7 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "sn-node-manager",
- "sn-releases",
+ "sn-releases 0.2.1",
  "sn_peers_acquisition",
  "sn_service_management",
  "strip-ansi-escapes",
@@ -6840,7 +6840,7 @@ dependencies = [
  "serde",
  "serde_json",
  "service-manager",
- "sn-releases",
+ "sn-releases 0.2.2",
  "sn_peers_acquisition",
  "sn_protocol",
  "sn_service_management",
@@ -6858,6 +6858,25 @@ name = "sn-releases"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d010c4c1a610e3a751e5942caf3ec1df54735d57cf66ca88bbedb4a8aab9f2f0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "flate2",
+ "lazy_static",
+ "regex",
+ "reqwest 0.11.27",
+ "semver",
+ "serde_json",
+ "tar",
+ "thiserror",
+ "tokio",
+ "zip",
+]
+
+[[package]]
+name = "sn-releases"
+version = "0.2.2"
+source = "git+https://github.com/RolandSherwin/sn-releases?branch=auditor_release#cea2826298a5f9a2c5a1d060754c6495048c380f"
 dependencies = [
  "async-trait",
  "chrono",
