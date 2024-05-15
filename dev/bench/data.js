@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715806111144,
+  "lastUpdate": 1715806244517,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d2e69a5a29abbbd8dbaede3e0fada12e48fa212b",
-          "message": "fix(test): get fixed amounts for Droplet and NonDroplet tests",
-          "timestamp": "2024-01-18T10:53:38Z",
-          "tree_id": "06e1379dc5bd835a762a8722200a6ff2d3caa02a",
-          "url": "https://github.com/maidsafe/safe_network/commit/d2e69a5a29abbbd8dbaede3e0fada12e48fa212b"
-        },
-        "date": 1705577985165,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "fe3f0c14968ad655713ce848205b7dae9cfa250c",
+          "message": "fix(CI): shall wait before stop the local testnet",
+          "timestamp": "2024-05-15T20:03:27Z",
+          "tree_id": "ba57848109f2e2721babe4f6fc4b9ffa86606cf4",
+          "url": "https://github.com/maidsafe/safe_network/commit/fe3f0c14968ad655713ce848205b7dae9cfa250c"
+        },
+        "date": 1715806243624,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
