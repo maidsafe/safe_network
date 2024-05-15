@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715736582239,
+  "lastUpdate": 1715736583657,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "5a30ae7f5c833191aadcf192bd90fd608ff1582e",
-          "message": "fix(docs): update Client signature for doc test",
-          "timestamp": "2024-01-17T11:40:09Z",
-          "tree_id": "1684baa570e89313b06591aea7cf2ad5a1ec60e0",
-          "url": "https://github.com/maidsafe/safe_network/commit/5a30ae7f5c833191aadcf192bd90fd608ff1582e"
-        },
-        "date": 1705494596286,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 217,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 39,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "digital@engineer.com",
             "name": "Jason Paul",
             "username": "mofobit"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 89,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "01edbadbdcbd63e8ce0d73f835f83eeea40a6383",
+          "message": "chore: clippy fixes for open metrics feature",
+          "timestamp": "2024-05-15T00:14:59Z",
+          "tree_id": "f63e87c5899c69b237cb9f48de0de0fceab002fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/01edbadbdcbd63e8ce0d73f835f83eeea40a6383"
+        },
+        "date": 1715736583288,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
