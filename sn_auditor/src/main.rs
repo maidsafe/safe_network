@@ -64,6 +64,10 @@ struct Opt {
     /// Provide a JSON file with a list of Discord usernames as argument
     #[clap(short, long, value_name = "discord_names_file")]
     beta_participants: Option<PathBuf>,
+
+    /// Hex string of the Foundation SK.
+    #[clap(name = "sk")]
+    sk_str: String,
 }
 
 #[tokio::main]
@@ -85,8 +89,16 @@ async fn main() -> Result<()> {
         Vec::new()
     };
 
+    let sk = match SecretKey::from_hex(&opt.sk_str) {
+        Ok(sk) => sk,
+        Err(err) => panic!(
+            "Cann't parse Foundation SK from input string: {} {err:?}",
+            opt.sk_str
+        ),
+    };
+
     if let Some(dag_to_view) = opt.offline_viewer {
-        let dag = SpendDagDb::offline(dag_to_view)?;
+        let dag = SpendDagDb::offline(dag_to_view, sk)?;
         dag.dump_dag_svg()?;
         start_server(dag).await?;
         return Ok(());
@@ -98,6 +110,7 @@ async fn main() -> Result<()> {
         opt.force_from_genesis,
         opt.clean,
         beta_participants,
+        sk,
     )
     .await?;
     start_server(dag).await
@@ -151,6 +164,7 @@ async fn initialize_background_spend_dag_collection(
     force_from_genesis: bool,
     clean: bool,
     beta_participants: Vec<String>,
+    sk: SecretKey,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
     let path = dirs_next::data_dir()
@@ -166,7 +180,7 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize the DAG
-    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone())
+    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone(), sk)
         .await
         .map_err(|e| eyre!("Could not create SpendDag Db: {e}"))?;
 

@@ -8,6 +8,7 @@
 
 use std::path::Path;
 
+use bls::SecretKey;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
 use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_CASHNOTE};
@@ -37,7 +38,13 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
     Ok(dag)
 }
 
-pub async fn audit(client: &Client, to_dot: bool, royalties: bool, root_dir: &Path) -> Result<()> {
+pub async fn audit(
+    client: &Client,
+    to_dot: bool,
+    royalties: bool,
+    root_dir: &Path,
+    sk: &SecretKey,
+) -> Result<()> {
     if to_dot {
         let dag = gather_spend_dag(client, root_dir).await?;
         println!(
@@ -47,7 +54,7 @@ pub async fn audit(client: &Client, to_dot: bool, royalties: bool, root_dir: &Pa
         println!(
             "=======================   payment forward statistics  =========================="
         );
-        println!("{}", dag.dump_payment_forward_statistics());
+        println!("{}", dag.dump_payment_forward_statistics(sk));
     } else if royalties {
         let dag = gather_spend_dag(client, root_dir).await?;
         let royalties = dag.all_royalties()?;

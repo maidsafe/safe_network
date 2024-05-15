@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::SecretKey;
 use color_eyre::eyre::{eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
     beta_participants: BTreeMap<Hash, String>,
+    foundation_sk: SecretKey,
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
@@ -49,7 +51,7 @@ impl SpendDagDb {
     /// Create a new SpendDagDb
     /// If a local spend DAG file is found, it will be loaded
     /// Else a new DAG will be created containing only Genesis
-    pub async fn new(path: PathBuf, client: Client) -> Result<Self> {
+    pub async fn new(path: PathBuf, client: Client, foundation_sk: SecretKey) -> Result<Self> {
         let dag_path = path.join(SPEND_DAG_FILENAME);
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
@@ -68,11 +70,12 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
+            foundation_sk,
         })
     }
 
     /// Create a new SpendDagDb from a local file and no network connection
-    pub fn offline(dag_path: PathBuf) -> Result<Self> {
+    pub fn offline(dag_path: PathBuf, foundation_sk: SecretKey) -> Result<Self> {
         let path = dag_path
             .parent()
             .ok_or_else(|| eyre!("Failed to get parent path"))?
@@ -84,6 +87,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
+            foundation_sk,
         })
     }
 
@@ -262,7 +266,7 @@ impl SpendDagDb {
         // find spends with payments
         let mut payments: ForwardedPayments = BTreeMap::new();
         for spend in all_spends {
-            let user_name_hash = match spend.reason().get_sender_hash() {
+            let user_name_hash = match spend.reason().get_sender_hash(&self.foundation_sk) {
                 Some(n) => n,
                 None => continue,
             };

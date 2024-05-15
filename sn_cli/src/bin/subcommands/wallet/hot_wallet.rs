@@ -120,6 +120,9 @@ pub enum WalletCmds {
         /// EXPERIMENTAL redeem all royalties
         #[clap(long, default_value = "false")]
         royalties: bool,
+        /// Hex string of the Foundation SK.
+        #[clap(long, name = "sk_str")]
+        sk_str: String,
     },
 }
 
@@ -205,7 +208,22 @@ pub(crate) async fn wallet_cmds(
             maid_address,
             signature,
         } => get_faucet(root_dir, client, url.clone(), maid_address, signature).await,
-        WalletCmds::Audit { dot, royalties } => audit(client, dot, royalties, root_dir).await,
+        WalletCmds::Audit {
+            dot,
+            royalties,
+            sk_str,
+        } => {
+            let sk_key = match SecretKey::from_hex(&sk_str) {
+                Ok(sk_key) => sk_key,
+                Err(err) => {
+                    return Err(eyre!(
+                        "Cann't parse Foundation SK from input string: {sk_str} {err:?}"
+                    ))
+                }
+            };
+
+            audit(client, dot, royalties, root_dir, &sk_key).await
+        }
         WalletCmds::Verify {
             spend_address,
             genesis,
