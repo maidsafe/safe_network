@@ -1,9 +1,10 @@
 use libp2p::upnp;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
+use tracing_log::log::error;
 
-use crate::EventLoop;
+use crate::App;
 
-impl EventLoop {
+impl App {
     pub(crate) fn on_event_upnp(&mut self, event: upnp::Event) {
         match event {
             upnp::Event::NewExternalAddr(addr) => {
@@ -13,10 +14,10 @@ impl EventLoop {
                 debug!(%addr, "UPnP: External address expired");
             }
             upnp::Event::GatewayNotFound => {
-                warn!("UPnP: Gateway not found");
+                error!("UPnP: No gateway not found");
             }
             upnp::Event::NonRoutableGateway => {
-                warn!("UPnP: Gateway is not routable");
+                error!("UPnP: Gateway is not routable");
             }
         }
     }

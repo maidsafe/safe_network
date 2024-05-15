@@ -1,9 +1,9 @@
 use libp2p::autonat;
 use tracing::{debug, info, warn};
 
-use crate::EventLoop;
+use crate::App;
 
-impl EventLoop {
+impl App {
     pub(crate) fn on_event_autonat(&mut self, event: autonat::Event) {
         match event {
             autonat::Event::InboundProbe(event) => match event {
