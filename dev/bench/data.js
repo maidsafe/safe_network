@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715814003357,
+  "lastUpdate": 1715814004962,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b8925fed87528fdd6b682fc7f971a9827754b8c1",
-          "message": "chore(deps): update deps to fix h2 vulnerability error",
-          "timestamp": "2024-01-21T20:18:56Z",
-          "tree_id": "e2e696984dc71aa720259eece798c896c28ea1c8",
-          "url": "https://github.com/maidsafe/safe_network/commit/b8925fed87528fdd6b682fc7f971a9827754b8c1"
-        },
-        "date": 1705870822178,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 240,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 200,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "ca75e52539db6385abbb329ae1463418ed7b950e",
+          "message": "fix: invalid spend reason in data payments",
+          "timestamp": "2024-05-15T22:09:57Z",
+          "tree_id": "8430414051190ccccc0a9b05d90c05a43195103c",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca75e52539db6385abbb329ae1463418ed7b950e"
+        },
+        "date": 1715814004555,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
             "unit": "MB"
           },
           {
