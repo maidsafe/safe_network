@@ -4633,7 +4633,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "atty",
  "better-panic",
@@ -6848,7 +6848,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "assert_cmd",
  "assert_fs",

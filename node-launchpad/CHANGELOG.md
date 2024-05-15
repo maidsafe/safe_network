@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.2...node-launchpad-v0.1.3) - 2024-05-15
+
+### Added
+- *(launchpad)* initial automatic resource allocation logic
+- run safenode services in user mode
+
+### Other
+- *(release)* sn_auditor-v0.1.15/sn_cli-v0.91.3/sn_faucet-v0.4.17/sn_metrics-v0.1.6/sn_node-v0.106.3/sn_service_management-v0.2.7/node-launchpad-v0.1.2/sn_node_rpc_client-v0.6.16
+- change terminal launch behaviour
+- update cli and readme for user-mode services
+- upgrade service manager crate
+- *(release)* sn_auditor-v0.1.13/sn_client-v0.106.1/sn_networking-v0.15.1/sn_protocol-v0.16.6/sn_cli-v0.91.1/sn_faucet-v0.4.15/sn_node-v0.106.1/node-launchpad-v0.1.1/sn_node_rpc_client-v0.6.14/sn_peers_acquisition-v0.2.12/sn_service_management-v0.2.6
+
 ## [0.1.2](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.1...node-launchpad-v0.1.2) - 2024-05-15
 
 ### Added
