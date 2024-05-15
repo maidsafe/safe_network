@@ -84,10 +84,24 @@ changelog_include = [
 ]
 
 [[package]]
+name = "sn-node-manager"
+release = true
+changelog_update = true
+changelog_include = [
+    "sn_node",
+    "sn_peers_acquisition",
+    "sn_protocol",
+    "sn_service_management",
+    "sn_transfers",
+]
+
+
+[[package]]
 name = "node-launchpad"
 release = true
 changelog_update = true
 git_release_enable = true
+changelog_include = ["sn_node", "sn_protocol", "sn-node-manager"]
 
 [[package]]
 name = "sn_node_rpc_client"
