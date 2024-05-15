@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715791288463,
+  "lastUpdate": 1715791290066,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "fad0b936a9ff8baf0e5bbd231dc0becde0882622",
-          "message": "feat: provide `--first` argument for `safenode`\n\nIn the previous setup, if the `network-contacts` feature was enabled, running `safenode` with no\n`--peer` args caused the peers to be retrieved from the default network contacts file. In the\nsituation where we're launching a genesis node, we don't want this behaviour, and hence we introduce\na `--first` flag to make a distinction.\n\nThe `safenode` binary was changed to remove the use of `unwrap_or` when calling\n`get_peers_from_args` so that an error will actually occur when peers are not obtainable, rather\nthan swallowing it by returning an empty peer list.\n\nThe `testnet` binary was also updated to use the `--first` argument when a new network was being\ncreated. This necessitated a change to the memcheck workflow, which starts a testnet in a slightly\nunusual fashion. The `--first` argument had to be applied to the initial node that is launched, and\nthen the subsequent local testnet launch had to be changed to use a join rather than starting a new\nnetwork. This is because the first peer launched by `testnet`, using `--first`, did not have the\ninitial node launched outside of `testnet` in its peer list. For the test to work correctly, an\nenvironment variable was introduced to control the starting port deployment inventory, because using\na join network means the port range starts one digit higher. We will be able to remove this when we\nswitch over to using the node manager.\n\nBREAKING CHANGE: the `parse_peer_args` function was renamed `get_peers_from_args` and the error\nhandling was changed. The new function name is semantically more accurate, and because\n`sn_peers_acquisition` is a library crate, we should prefer an `Error` type rather than using\n`eyre`.\n\nTried to add some unit tests for the `get_peers_from_args` function, but Tokio being an optional\ndependency proved to be problematic.",
-          "timestamp": "2024-01-08T16:46:36Z",
-          "tree_id": "9ad1c400a409314a5664da467007ef7f44363d0e",
-          "url": "https://github.com/maidsafe/safe_network/commit/fad0b936a9ff8baf0e5bbd231dc0becde0882622"
-        },
-        "date": 1704734648573,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3747,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 17410,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 7,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "09246c227e50bebe0c761a9ea753cf4a0d8cb71c",
+          "message": "feat(nat): use color-eyre and uniform error msg",
+          "timestamp": "2024-05-15T15:42:25Z",
+          "tree_id": "fc18714a33c2b8ec0b4ac386093af3f0c28496d7",
+          "url": "https://github.com/maidsafe/safe_network/commit/09246c227e50bebe0c761a9ea753cf4a0d8cb71c"
+        },
+        "date": 1715791289721,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 13332,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 73514,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
