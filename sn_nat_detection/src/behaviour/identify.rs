@@ -31,7 +31,6 @@ impl App {
                 {
                     warn!(%peer_id, "Peer does not support AutoNAT. Disconnecting from peer.");
                     let _ = self.swarm.disconnect_peer_id(peer_id);
-                    #[allow(clippy::needless_return)]
                     return;
                 }
 
