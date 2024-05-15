@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715812911211,
+  "lastUpdate": 1715813870886,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b8925fed87528fdd6b682fc7f971a9827754b8c1",
-          "message": "chore(deps): update deps to fix h2 vulnerability error",
-          "timestamp": "2024-01-21T20:18:56Z",
-          "tree_id": "e2e696984dc71aa720259eece798c896c28ea1c8",
-          "url": "https://github.com/maidsafe/safe_network/commit/b8925fed87528fdd6b682fc7f971a9827754b8c1"
-        },
-        "date": 1705870736783,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3511941130750067,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9589175601253466,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.887181989573996,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.45390788453376,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "ca75e52539db6385abbb329ae1463418ed7b950e",
+          "message": "fix: invalid spend reason in data payments",
+          "timestamp": "2024-05-15T22:09:57Z",
+          "tree_id": "8430414051190ccccc0a9b05d90c05a43195103c",
+          "url": "https://github.com/maidsafe/safe_network/commit/ca75e52539db6385abbb329ae1463418ed7b950e"
+        },
+        "date": 1715813866502,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1459503052139999,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1103059805877868,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 51.8086502787351,
             "unit": "MiB/s"
           }
         ]
