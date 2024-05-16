@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715880171367,
+  "lastUpdate": 1715880174049,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d47b4520155d355aa6d6d6c8552e3770767afa31",
-          "message": "chore(node): reduce MAX_UNCOMPRESSED_LOG_FILES to 10",
-          "timestamp": "2024-01-23T16:09:31Z",
-          "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
-          "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
-        },
-        "date": 1706088952914,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 210,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd",
+          "message": "feat: pass genesis_cn pub fields separate to hide sk",
+          "timestamp": "2024-05-16T16:29:50Z",
+          "tree_id": "b62de0bac7c65bf0ba79e0ce2825ac9dbe42a629",
+          "url": "https://github.com/maidsafe/safe_network/commit/e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd"
+        },
+        "date": 1715880172931,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 211,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 90,
             "unit": "MB"
           }
         ]
