@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715872908814,
+  "lastUpdate": 1715880025369,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d47b4520155d355aa6d6d6c8552e3770767afa31",
-          "message": "chore(node): reduce MAX_UNCOMPRESSED_LOG_FILES to 10",
-          "timestamp": "2024-01-23T16:09:31Z",
-          "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
-          "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
-        },
-        "date": 1706088858858,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2447115552734627,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8403163531121294,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.41821935840201,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 45.63572533058432,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd",
+          "message": "feat: pass genesis_cn pub fields separate to hide sk",
+          "timestamp": "2024-05-16T16:29:50Z",
+          "tree_id": "b62de0bac7c65bf0ba79e0ce2825ac9dbe42a629",
+          "url": "https://github.com/maidsafe/safe_network/commit/e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd"
+        },
+        "date": 1715880018315,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1753329250761528,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0505295016878633,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 55.24928109604046,
             "unit": "MiB/s"
           }
         ]
