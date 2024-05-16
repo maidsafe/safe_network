@@ -266,6 +266,7 @@ impl Client {
         &self,
         dag: &mut SpendDag,
         max_depth: Option<u32>,
+        verify: bool,
     ) -> WalletResult<()> {
         let main_dag_src = dag.source();
         info!("Expanding spend DAG with source: {main_dag_src:?} from utxos...");
@@ -285,7 +286,7 @@ impl Client {
             match res {
                 Ok(sub_dag) => {
                     debug!("Gathered sub DAG from: {addr:?}");
-                    if let Err(e) = dag.merge(sub_dag) {
+                    if let Err(e) = dag.merge(sub_dag, verify) {
                         warn!("Failed to merge sub dag from {addr:?} into dag: {e}");
                     }
                 }

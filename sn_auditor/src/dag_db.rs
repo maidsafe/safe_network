@@ -34,7 +34,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
     beta_participants: BTreeMap<Hash, String>,
-    encrption_sk: SecretKey,
+    encryption_sk: Option<SecretKey>,
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
@@ -52,7 +52,7 @@ impl SpendDagDb {
     /// Create a new SpendDagDb
     /// If a local spend DAG file is found, it will be loaded
     /// Else a new DAG will be created containing only Genesis
-    pub async fn new(path: PathBuf, client: Client, encrption_sk: SecretKey) -> Result<Self> {
+    pub async fn new(path: PathBuf, client: Client) -> Result<Self> {
         let dag_path = path.join(SPEND_DAG_FILENAME);
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
@@ -71,12 +71,12 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
-            encrption_sk,
+            encryption_sk: None,
         })
     }
 
     /// Create a new SpendDagDb from a local file and no network connection
-    pub fn offline(dag_path: PathBuf, encrption_sk: SecretKey) -> Result<Self> {
+    pub fn offline(dag_path: PathBuf) -> Result<Self> {
         let path = dag_path
             .parent()
             .ok_or_else(|| eyre!("Failed to get parent path"))?
@@ -88,7 +88,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
             beta_participants: BTreeMap::new(),
-            encrption_sk,
+            encryption_sk: None,
         })
     }
 
@@ -178,7 +178,7 @@ impl SpendDagDb {
         self.client
             .clone()
             .ok_or(eyre!("Cannot update in offline mode"))?
-            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN))
+            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN), true)
             .await?;
 
         // write update to DAG
@@ -220,7 +220,7 @@ impl SpendDagDb {
         let mut w_handle = dag_ref
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
-        w_handle.merge(other)?;
+        w_handle.merge(other, true)?;
         Ok(())
     }
 
@@ -248,6 +248,7 @@ impl SpendDagDb {
     pub(crate) async fn init_reward_forward_tracking(
         &mut self,
         participants: Vec<String>,
+        sk: SecretKey,
     ) -> Result<()> {
         self.beta_participants = participants
             .iter()
@@ -263,6 +264,7 @@ impl SpendDagDb {
                 .map(|n| (n, BTreeSet::new()))
                 .collect();
         }
+        self.encryption_sk = Some(sk);
 
         self.gather_forwarded_payments().await?;
         Ok(())
@@ -271,6 +273,12 @@ impl SpendDagDb {
     // Gather forwarded payments from the DAG
     pub(crate) async fn gather_forwarded_payments(&mut self) -> Result<()> {
         info!("Gathering forwarded payments...");
+
+        // make sure we have the foundation secret key
+        let sk = self
+            .encryption_sk
+            .clone()
+            .ok_or_else(|| eyre!("Foundation secret key not set"))?;
 
         // get spends from current DAG
         let r_handle = self.dag.clone();
@@ -282,7 +290,7 @@ impl SpendDagDb {
         // find spends with payments
         let mut payments: ForwardedPayments = BTreeMap::new();
         for spend in all_spends {
-            let user_name_hash = match spend.reason().get_sender_hash(&self.encrption_sk) {
+            let user_name_hash = match spend.reason().get_sender_hash(&sk) {
                 Some(n) => n,
                 None => continue,
             };
