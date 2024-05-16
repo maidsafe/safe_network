@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715871316362,
+  "lastUpdate": 1715871318193,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "559fb83a086af02632621666da009fb58e4bfb72",
-          "message": "chore: fixup send_spends and use ExcessiveNanoValue error",
-          "timestamp": "2024-01-10T14:56:11Z",
-          "tree_id": "b3bbb37c79454b06c37f62e59e504e463746ba4d",
-          "url": "https://github.com/maidsafe/safe_network/commit/559fb83a086af02632621666da009fb58e4bfb72"
-        },
-        "date": 1704901261440,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3500,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 15643,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "be2006833674d0232b857e8c7f9f3f052e5432ca",
+          "message": "feat(node-launchpad): discord name widget styling\n\nJust centering the title and the input.",
+          "timestamp": "2024-05-16T14:05:23Z",
+          "tree_id": "b203c6e5635827f9907a72d31bcb1afa92f98550",
+          "url": "https://github.com/maidsafe/safe_network/commit/be2006833674d0232b857e8c7f9f3f052e5432ca"
+        },
+        "date": 1715871317797,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14086,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 78721,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
