@@ -14,8 +14,8 @@ use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_logging::LogBuilder;
 use sn_transfers::{
-    rng, DerivationIndex, HotWallet, MainSecretKey, NanoTokens, OfflineTransfer, SpendReason,
-    WalletError, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
+    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, OfflineTransfer, SpendReason,
+    WalletError, GENESIS_CASHNOTE,
 };
 use tracing::info;
 
@@ -95,9 +95,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
 
     // create a new genesis wallet with the intention to spend genesis again
     let second_wallet_dir = TempDir::new()?;
-    let secret_key = bls::SecretKey::from_hex(GENESIS_CASHNOTE_SK)?;
-    let main_key = MainSecretKey::new(secret_key);
-    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, main_key)?;
+    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, get_genesis_sk())?;
     second_wallet.deposit_and_store_to_disk(&vec![GENESIS_CASHNOTE.clone()])?;
     let genesis_amount = GENESIS_CASHNOTE.value()?;
     let second_wallet_addr = second_wallet.address();
