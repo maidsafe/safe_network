@@ -110,7 +110,7 @@ impl Component for DiscordUsernameInputBox {
             Direction::Vertical,
             [
                 // for the layer 0 border
-                Constraint::Length(1),
+                Constraint::Length(2),
                 // for the input field
                 Constraint::Min(1),
                 // for buttons maybe? todo
@@ -125,30 +125,24 @@ impl Component for DiscordUsernameInputBox {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Double)
                 .border_style(Style::new().bold())
-                .title("Enter Discord Username"),
+                .title(" Enter Discord Username ")
+                .title_alignment(Alignment::Center),
         );
         f.render_widget(Clear, layer_zero);
         f.render_widget(pop_up_border, layer_zero);
 
-        // layer one - 1
-        let width = layer_one[1].width.max(3) - 3;
-
-        let scroll = self.discord_input_filed.visual_scroll(width as usize);
-        let input = Paragraph::new(self.discord_input_filed.value())
-            .scroll((0, scroll as u16))
-            // border left so that it doesn't conflict with layer_zero's border
-            .block(
-                Block::default()
-                    .borders(Borders::LEFT)
-                    .border_type(BorderType::Double)
-                    .border_style(Style::new().bold()),
-            );
+        let input = Paragraph::new(self.discord_input_filed.value()).alignment(Alignment::Center);
 
         f.set_cursor(
             // Put cursor past the end of the input text
-            layer_one[1].x
-                + ((self.discord_input_filed.visual_cursor()).max(scroll) - scroll) as u16
-                + 1,
+            layer_one[2].x
+                + (layer_one[1].width / 2) as u16
+                + (self.discord_input_filed.value().len() / 2) as u16
+                + if self.discord_input_filed.value().len() % 2 != 0 {
+                    1
+                } else {
+                    0
+                },
             layer_one[1].y,
         );
         f.render_widget(input, layer_one[1]);
