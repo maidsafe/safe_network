@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715836825099,
+  "lastUpdate": 1715862796403,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d004fb588d63539a7b15d4a7457ee31feb1fde53",
-          "message": "docs: wallet docs",
-          "timestamp": "2024-01-22T15:01:40Z",
-          "tree_id": "b975ba4969f20352e094278ec897116ae3ccdcde",
-          "url": "https://github.com/maidsafe/safe_network/commit/d004fb588d63539a7b15d4a7457ee31feb1fde53"
-        },
-        "date": 1705938028305,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3649643035934413,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.9072165310175901,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.82359361551722,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 48.287434760943256,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9812d39e759786d19702a87a2ead2b088bbcc94b",
+          "message": "feat(node-launchpad): tweaks on resource allocation widget\n\nAdded support for arrow up/down to increment/decrement allocated space.\nValidation when using arrow up/down to avoid going over/under available disk space.\nMinor widget styling: removed cursor, centered title, footer and input field.\nCreated some constants.",
+          "timestamp": "2024-05-16T11:44:23Z",
+          "tree_id": "cdeffe69fa3cb9dd6c40172acf9c1c57a0614b13",
+          "url": "https://github.com/maidsafe/safe_network/commit/9812d39e759786d19702a87a2ead2b088bbcc94b"
+        },
+        "date": 1715862790220,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.157491427352266,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0065738079241744,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 47.76589575983346,
             "unit": "MiB/s"
           }
         ]
