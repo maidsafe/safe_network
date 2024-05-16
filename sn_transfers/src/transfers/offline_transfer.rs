@@ -299,7 +299,7 @@ fn create_offline_transfer_with(
     let (tx_builder, src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder.build(input_reason, network_royalties)?;
+    let cash_note_builder = tx_builder.build(input_reason, network_royalties);
 
     let tx = cash_note_builder.spent_tx.clone();
 

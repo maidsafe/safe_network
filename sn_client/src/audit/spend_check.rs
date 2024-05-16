@@ -87,9 +87,9 @@ impl Client {
 
                 // check if we reached the genesis Tx
                 if parent_tx == *sn_transfers::GENESIS_CASHNOTE_PARENT_TX
-                    && spends.iter().all(|s| {
-                        s.spend.unique_pubkey == *sn_transfers::GENESIS_CASHNOTE_UNIQUE_KEY
-                    })
+                    && spends
+                        .iter()
+                        .all(|s| s.spend.unique_pubkey == *sn_transfers::GENESIS_SPEND_UNIQUE_KEY)
                     && spends.len() == 1
                 {
                     debug!("Depth {depth} - Reached genesis Tx on one branch: {parent_tx_hash:?}");

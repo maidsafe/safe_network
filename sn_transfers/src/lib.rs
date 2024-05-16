@@ -15,7 +15,7 @@ mod genesis;
 mod transfers;
 mod wallet;
 
-pub(crate) use cashnotes::{Input, TransactionBuilder};
+pub(crate) use cashnotes::{Input, Output, TransactionBuilder};
 
 /// Default value as a node owner
 pub const DEFAULT_NODE_OWNER: &str = "maidsafe_test";
@@ -30,7 +30,7 @@ pub use error::{Result, TransferError};
 pub use genesis::{
     calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir, get_genesis_sk,
     is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
-    GENESIS_CASHNOTE, GENESIS_CASHNOTE_PARENT_TX, GENESIS_CASHNOTE_UNIQUE_KEY, GENESIS_PK,
+    GENESIS_CASHNOTE, GENESIS_CASHNOTE_PARENT_TX, GENESIS_PK, GENESIS_SPEND_UNIQUE_KEY,
     TOTAL_SUPPLY,
 };
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};

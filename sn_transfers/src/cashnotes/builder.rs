@@ -106,7 +106,7 @@ impl TransactionBuilder {
         self,
         reason: SpendReason,
         network_royalties: Vec<DerivationIndex>,
-    ) -> Result<CashNoteBuilder> {
+    ) -> CashNoteBuilder {
         let spent_tx = Transaction {
             inputs: self.inputs,
             outputs: self.outputs,
@@ -132,11 +132,7 @@ impl TransactionBuilder {
             }
         }
 
-        Ok(CashNoteBuilder::new(
-            spent_tx,
-            self.output_details,
-            signed_spends,
-        ))
+        CashNoteBuilder::new(spent_tx, self.output_details, signed_spends)
     }
 
     /// Build the UnsignedTransfer which contains the generated (unsigned) Spends.
