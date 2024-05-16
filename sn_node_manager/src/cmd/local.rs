@@ -11,7 +11,7 @@
 use super::get_bin_path;
 use crate::{
     local::{kill_network, run_network, LocalNetworkOptions},
-    VerbosityLevel,
+    print_banner, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
 use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
@@ -34,9 +34,9 @@ pub async fn join(
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
-    println!("=================================================");
-    println!("             Joining Local Network               ");
-    println!("=================================================");
+    if verbosity != VerbosityLevel::Minimal {
+        print_banner("Joining Local Network");
+    }
 
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -91,9 +91,7 @@ pub fn kill(keep_directories: bool, verbosity: VerbosityLevel) -> Result<()> {
         println!("No local network is currently running");
     } else {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Killing Local Network               ");
-            println!("=================================================");
+            print_banner("Killing Local Network");
         }
         kill_network(&local_node_registry, keep_directories)?;
         std::fs::remove_file(local_reg_path)?;
@@ -137,9 +135,7 @@ pub async fn run(
     };
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("             Launching Local Network             ");
-        println!("=================================================");
+        print_banner("Launching Local Network");
     }
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();

@@ -11,7 +11,7 @@ use crate::{
     add_services::{add_daemon, config::AddDaemonServiceOptions},
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    ServiceManager, VerbosityLevel,
+    print_banner, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -35,9 +35,7 @@ pub async fn add(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Add Daemon Service                 ");
-        println!("=================================================");
+        print_banner("Add Daemon Service");
     }
 
     let service_user = "safe";
@@ -90,9 +88,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Start Daemon Service                ");
-            println!("=================================================");
+            print_banner("Start Daemon Service");
         }
 
         let service = DaemonService::new(daemon, Box::new(ServiceController {}));
@@ -124,9 +120,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(daemon) = &mut node_registry.daemon {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Stop Daemon Service                 ");
-            println!("=================================================");
+            print_banner("Stop Daemon Service");
         }
 
         let service = DaemonService::new(daemon, Box::new(ServiceController {}));
