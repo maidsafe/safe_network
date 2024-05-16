@@ -120,6 +120,15 @@ pub enum SubCmd {
         path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
+        /// Specify the owner for the node service.
+        ///
+        /// This is mainly used for the 'Beta Rewards' programme, for linking your Discord username
+        /// to the node.
+        ///
+        /// If the option is not used, the node will assign its own username and the service will
+        /// run as normal.
+        #[clap(long)]
+        owner: Option<String>,
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
         /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
@@ -666,12 +675,14 @@ pub enum LocalSubCmd {
         node_version: Option<String>,
         #[command(flatten)]
         peers: PeersArgs,
+        /// Specify the owner for the node.
+        ///
+        /// For local networks, this is mostly useful in a testing context.
+        #[clap(long)]
+        owner: Option<String>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
-        /// Specify the owner(readable discord user name).
-        #[clap(long)]
-        owner: Option<String>,
     },
     /// Run a local network.
     ///
@@ -722,11 +733,14 @@ pub enum LocalSubCmd {
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         node_version: Option<String>,
+        /// Specify the owner for the node.
+        ///
+        /// For local networks, this is mostly useful in a testing context.
+        #[clap(long)]
+        owner: Option<String>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
-        #[clap(long)]
-        owner: Option<String>,
     },
 }
 
@@ -746,6 +760,7 @@ async fn main() -> Result<()> {
             log_dir_path,
             metrics_port,
             node_port,
+            owner,
             path,
             peers,
             rpc_address,
@@ -764,6 +779,7 @@ async fn main() -> Result<()> {
                 log_dir_path,
                 metrics_port,
                 node_port,
+                owner,
                 peers,
                 rpc_address,
                 rpc_port,

@@ -339,6 +339,7 @@ pub async fn run_node(
         metrics_port: None,
         node_port: None,
         number: run_options.number,
+        owner: None,
         peer_id: Some(peer_id),
         pid: Some(node_info.pid),
         reward_balance: None,

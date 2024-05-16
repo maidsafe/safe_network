@@ -51,6 +51,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub name: String,
     pub metrics_port: Option<u16>,
     pub node_port: Option<u16>,
+    pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_user: Option<String>,
@@ -89,6 +90,10 @@ impl InstallNodeServiceCtxBuilder {
             args.push(OsString::from("--metrics-server-port"));
             args.push(OsString::from(metrics_port.to_string()));
         }
+        if let Some(owner) = self.owner {
+            args.push(OsString::from("--owner"));
+            args.push(OsString::from(owner));
+        }
 
         if !self.bootstrap_peers.is_empty() {
             let peers_str = self
@@ -122,6 +127,7 @@ pub struct AddNodeServiceOptions {
     pub home_network: bool,
     pub local: bool,
     pub metrics_port: Option<PortRange>,
+    pub owner: Option<String>,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
     pub rpc_port: Option<PortRange>,
