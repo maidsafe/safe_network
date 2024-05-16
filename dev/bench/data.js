@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715862796403,
+  "lastUpdate": 1715862960219,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d004fb588d63539a7b15d4a7457ee31feb1fde53",
-          "message": "docs: wallet docs",
-          "timestamp": "2024-01-22T15:01:40Z",
-          "tree_id": "b975ba4969f20352e094278ec897116ae3ccdcde",
-          "url": "https://github.com/maidsafe/safe_network/commit/d004fb588d63539a7b15d4a7457ee31feb1fde53"
-        },
-        "date": 1705938116295,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9812d39e759786d19702a87a2ead2b088bbcc94b",
+          "message": "feat(node-launchpad): tweaks on resource allocation widget\n\nAdded support for arrow up/down to increment/decrement allocated space.\nValidation when using arrow up/down to avoid going over/under available disk space.\nMinor widget styling: removed cursor, centered title, footer and input field.\nCreated some constants.",
+          "timestamp": "2024-05-16T11:44:23Z",
+          "tree_id": "cdeffe69fa3cb9dd6c40172acf9c1c57a0614b13",
+          "url": "https://github.com/maidsafe/safe_network/commit/9812d39e759786d19702a87a2ead2b088bbcc94b"
+        },
+        "date": 1715862959810,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 64,
             "unit": "MB"
           }
         ]
