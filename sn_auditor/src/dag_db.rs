@@ -11,9 +11,7 @@ use color_eyre::eyre::{eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
 use sn_client::networking::NetworkError;
-use sn_client::transfers::{
-    Hash, NanoTokens, SignedSpend, SpendAddress, GENESIS_CASHNOTE_UNIQUE_KEY,
-};
+use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress, GENESIS_SPEND_UNIQUE_KEY};
 use sn_client::Error as ClientError;
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
@@ -304,7 +302,7 @@ impl SpendDagDb {
 }
 
 pub async fn new_dag_with_genesis_only(client: &Client) -> Result<SpendDag> {
-    let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE_UNIQUE_KEY);
+    let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
     let mut dag = SpendDag::new(genesis_addr);
     let genesis_spend = match client.get_spend_from_network(genesis_addr).await {
         Ok(s) => s,

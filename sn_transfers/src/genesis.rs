@@ -10,7 +10,7 @@ use super::wallet::HotWallet;
 
 use crate::{
     wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, SpendReason, Transaction, TransactionBuilder,
+    NanoTokens, Output, SignedSpend, SpendReason, Transaction, TransactionBuilder,
     TransferError as CashNoteError, UniquePubkey,
 };
 
@@ -24,6 +24,13 @@ use thiserror::Error;
 /// Each whole token can be subdivided 10^9 times,
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
+
+/// The derivation index for the genesis Spend.
+const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
+
+/// Default genesis PK and SK for testing purpose. Be sure to pass the correct values via env.
+const TESTING_GENESIS_PK: &str = "b814bc39a357e6f6000f4946da52dcfc72e19efe91e31d4e94e9cb408d765a4a6cf3bf2df14806f8fa524bd7ebb9bb4e"; // DevSkim: ignore DS173237
+const TESTING_GENESIS_SK: &str = "23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9"; // DevSkim: ignore DS173237
 
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
 /// Network royalties fee is expected to be 15% of the payment amount, i.e. 85% of store cost + 15% royalties fees.
@@ -58,7 +65,7 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
-        let pk_str = std::env::var("GENESIS_PK").unwrap_or("b814bc39a357e6f6000f4946da52dcfc72e19efe91e31d4e94e9cb408d765a4a6cf3bf2df14806f8fa524bd7ebb9bb4e".to_string());  // DevSkim: ignore DS173237
+        let pk_str = std::env::var("GENESIS_PK").unwrap_or(TESTING_GENESIS_PK.to_string());
 
         match MainPubkey::from_hex(pk_str) {
             Ok(pk) => pk,
@@ -68,28 +75,22 @@ lazy_static! {
 }
 
 lazy_static! {
-    /// This key is public for auditing purposes.
-    /// The hard coded value is for production release, allows all nodes to validate it.
-    /// The env set value is only used for testing purpose.
-    pub static ref GENESIS_CASHNOTE_UNIQUE_KEY: UniquePubkey = {
-        let pk_str = std::env::var("GENESIS_CN_UNIQUE_KEY").unwrap_or("9524860078012d0cef2561b5e668bff150fae00675658310d4d3ffe5310b7436dca143cd459e87b08ce8467756bde6e7".to_string());  // DevSkim: ignore DS173237
-        match UniquePubkey::from_hex(pk_str) {
-            Ok(pk) => pk,
-            Err(err) => panic!("Failed to parse genesis_cashnote.unique_key: {err:?}"),
-        }
-    };
+    /// This is the unique key for the genesis Spend
+    pub static ref GENESIS_SPEND_UNIQUE_KEY: UniquePubkey = GENESIS_PK.new_unique_pubkey(&GENESIS_DERIVATION_INDEX);
 }
 
 lazy_static! {
-    /// This trasnsaction is public for auditing purposes.
-    /// The hard coded value is for production release, allows all nodes to validate it.
-    /// The env set value is only used for testing purpose.
     pub static ref GENESIS_CASHNOTE_PARENT_TX: Transaction = {
-        let tx_str = std::env::var("GENESIS_CN_PARENT_TX").unwrap_or("005d1eeeffa2e111cf37653665646236353737363438656338306237386539353464633334316163643633343762303133356566663364346430313338353635373630306561663035316666623836366535623136353266656330643231303837303036383432353960d99291005d1eeeffa2e111cf37653665646236353737363438656338306237386539353464633334316163643633343762303133356566663364346430313338353635373630306561663035316666623836366535623136353266656330643231303837303036383432353960d9929192".to_string());  // DevSkim: ignore DS173237
-        match Transaction::from_hex(&tx_str) {
-            Ok(tx) => tx,
-            Err(err) => panic!("Failed to parse genesis_cashnote.parent_tx: {err:?}"),
-        }
+        let mut tx = Transaction::empty();
+        tx.inputs = vec![Input {
+            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
+            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
+        }];
+        tx.outputs = vec![Output {
+            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
+            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
+        }];
+        tx
     };
 }
 
@@ -97,7 +98,7 @@ lazy_static! {
     /// Unlike the `GENESIS_PK`, the hard coded secret_key is for testing purpose.
     /// The one for live network shall be passed in via env set.
     static ref GENESIS_SK_STR: String = {
-        std::env::var("GENESIS_SK").unwrap_or("23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9".to_string())  // DevSkim: ignore DS173237
+        std::env::var("GENESIS_SK").unwrap_or(TESTING_GENESIS_SK.to_string())
     };
 }
 
@@ -129,8 +130,8 @@ pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
     let bytes = spend.spend.to_bytes_for_signing();
-    spend.spend.unique_pubkey == *GENESIS_CASHNOTE_UNIQUE_KEY
-        && GENESIS_CASHNOTE_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
+    spend.spend.unique_pubkey == *GENESIS_SPEND_UNIQUE_KEY
+        && GENESIS_SPEND_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
         && is_genesis_parent_tx(&spend.spend.parent_tx)
         && spend.spend.amount == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
@@ -187,8 +188,7 @@ pub fn create_first_cash_note_from_key(
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
     debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
-    let derivation_index = DerivationIndex([0u8; 32]);
-    let derived_key = first_cash_note_key.derive_key(&derivation_index);
+    let derived_key = first_cash_note_key.derive_key(&GENESIS_DERIVATION_INDEX);
 
     // Use the same key as the input and output of Genesis Tx.
     // The src tx is empty as this is the first CashNote.
@@ -204,19 +204,14 @@ pub fn create_first_cash_note_from_key(
             genesis_input,
             Some(derived_key),
             Transaction::empty(),
-            derivation_index,
+            GENESIS_DERIVATION_INDEX,
         )
         .add_output(
             NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
             main_pubkey,
-            derivation_index,
+            GENESIS_DERIVATION_INDEX,
         )
-        .build(reason, vec![])
-        .map_err(|err| {
-            Error::GenesisCashNoteError(format!(
-                "Failed to build the CashNote transaction for genesis CashNote: {err}",
-            ))
-        })?;
+        .build(reason, vec![]);
 
     // build the output CashNotes
     let output_cash_notes = cash_note_builder.build_without_verifying().map_err(|err| {
