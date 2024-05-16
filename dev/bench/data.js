@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715836821119,
+  "lastUpdate": 1715836822935,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bbcbd222feeffc0a331825550000bd2c0b484a87",
-          "message": "feat: spend dag utils",
-          "timestamp": "2024-01-22T08:08:29Z",
-          "tree_id": "03e95828c7909bebdf9ddbf5982d3c3c923c8f67",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbcbd222feeffc0a331825550000bd2c0b484a87"
-        },
-        "date": 1705914693545,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 229,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 89,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "bba9a50de4f4cd8a897c4821391e5417376d80ae",
+          "message": "perf: improve DAG verification redundancy",
+          "timestamp": "2024-05-16T04:36:56Z",
+          "tree_id": "2e83f4a5725967c36fb961ba6eb18a256069cb82",
+          "url": "https://github.com/maidsafe/safe_network/commit/bba9a50de4f4cd8a897c4821391e5417376d80ae"
+        },
+        "date": 1715836822284,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
