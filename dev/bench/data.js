@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715886980862,
+  "lastUpdate": 1715886982301,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "c0bd504905959a117ed94cadd9fd478baab238a4",
-          "message": "fix(node): warn if \"(deleted)\" exists in exe name during restart",
-          "timestamp": "2024-01-24T11:34:25Z",
-          "tree_id": "bd5b5ab3bf56b54ffb2eb08bfb7019a1d6365073",
-          "url": "https://github.com/maidsafe/safe_network/commit/c0bd504905959a117ed94cadd9fd478baab238a4"
-        },
-        "date": 1706098511698,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 214,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "780d1e7d9f53840baa8d1b8c9e0b7c42612ec259",
           "message": "fix(node): add missing rpc feat for sn_protocol",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 90,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "6b0cdac4f8c64fbece495effab2e104b87e65705",
+          "message": "fix: genesis_cn public fields generated from hard coded value",
+          "timestamp": "2024-05-16T18:23:37Z",
+          "tree_id": "93ad63bb74070f8c412265993e6b365ab665aaaf",
+          "url": "https://github.com/maidsafe/safe_network/commit/6b0cdac4f8c64fbece495effab2e104b87e65705"
+        },
+        "date": 1715886981925,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 209,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
             "unit": "MB"
           }
         ]
