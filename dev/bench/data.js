@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715872907085,
+  "lastUpdate": 1715872908814,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4d031a1ad0f5618d867e8afc5b22a6032a10252f",
-          "message": "refactor(record_store): emit swarm cmd directly after writing a record",
-          "timestamp": "2024-01-11T07:40:56Z",
-          "tree_id": "3b669d394a3a9b3a113b6fe3bc084f4fb55d65be",
-          "url": "https://github.com/maidsafe/safe_network/commit/4d031a1ad0f5618d867e8afc5b22a6032a10252f"
-        },
-        "date": 1704961214115,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3218,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 14599,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 78721,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e52a1ddabcc752d25dd86ca09ef58178dc5a1e15",
+          "message": "feat: hide genesis keypair",
+          "timestamp": "2024-05-16T14:29:21Z",
+          "tree_id": "b30a07f1041f0492205393e2af4aa8ac9d0d60b3",
+          "url": "https://github.com/maidsafe/safe_network/commit/e52a1ddabcc752d25dd86ca09ef58178dc5a1e15"
+        },
+        "date": 1715872908400,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14432,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 82157,
             "unit": "ms"
           },
           {
