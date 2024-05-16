@@ -11,7 +11,7 @@ use crate::{
     add_services::{add_auditor, config::AddAuditorServiceOptions},
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    ServiceManager, VerbosityLevel,
+    print_banner, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -39,9 +39,7 @@ pub async fn add(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("             Add Auditor Service                 ");
-        println!("=================================================");
+        print_banner("Add Auditor Service");
     }
 
     let service_user = "safe";
@@ -98,9 +96,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(auditor) = &mut node_registry.auditor {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("            Start Auditor Service                ");
-            println!("=================================================");
+            print_banner("Start Auditor Service");
         }
 
         let service = AuditorService::new(auditor, Box::new(ServiceController {}));
@@ -126,9 +122,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(auditor) = &mut node_registry.auditor {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("            Stop Auditor Service                 ");
-            println!("=================================================");
+            print_banner("Stop Auditor Service");
         }
 
         let service = AuditorService::new(auditor, Box::new(ServiceController {}));
@@ -163,9 +157,7 @@ pub async fn upgrade(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("          Upgrade Auditor Service                ");
-        println!("=================================================");
+        print_banner("Upgrade Auditor Service");
     }
 
     let (upgrade_bin_path, target_version) =

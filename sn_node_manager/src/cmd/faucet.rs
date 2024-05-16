@@ -11,7 +11,7 @@ use crate::{
     add_services::{add_faucet, config::AddFaucetServiceOptions},
     config,
     helpers::{download_and_extract_release, get_bin_version},
-    ServiceManager, VerbosityLevel,
+    print_banner, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -39,9 +39,7 @@ pub async fn add(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("              Add Faucet Service                 ");
-        println!("=================================================");
+        print_banner("Add Faucet Service");
     }
 
     let service_user = "safe";
@@ -100,9 +98,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(faucet) = &mut node_registry.faucet {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Start Faucet Service                ");
-            println!("=================================================");
+            print_banner("Start Faucet Service");
         }
 
         let service = FaucetService::new(faucet, Box::new(ServiceController {}));
@@ -128,9 +124,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(faucet) = &mut node_registry.faucet {
         if verbosity != VerbosityLevel::Minimal {
-            println!("=================================================");
-            println!("             Stop Faucet Service                 ");
-            println!("=================================================");
+            print_banner("Stop Faucet Service");
         }
 
         let service = FaucetService::new(faucet, Box::new(ServiceController {}));
@@ -165,9 +159,7 @@ pub async fn upgrade(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("=================================================");
-        println!("           Upgrade Faucet Service                ");
-        println!("=================================================");
+        print_banner("Upgrade Faucet Service");
     }
 
     let (upgrade_bin_path, target_version) =
