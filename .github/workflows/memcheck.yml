@@ -310,7 +310,7 @@ jobs:
           cat spend_dag_and_statistics.txt
         env:
           SN_LOG: "all"
-        timeout-minutes: 5
+        timeout-minutes: 15
         if: always()
 
       - name: Ensure discord_ids decrypted
