@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715871314719,
+  "lastUpdate": 1715871316362,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f118bc6e620f75f871fe762f1d4e10fb5aa8164c",
-          "message": "chore(deps): bump wagoid/commitlint-github-action from 5.4.4 to 5.4.5\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 5.4.4 to 5.4.5.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/0d749a1a91d4770e983a7b8f83d4a3f0e7e0874e...5ce82f5d814d4010519d15f0552aec4f17a1e1fe)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-01-23T16:20:22+01:00",
-          "tree_id": "fcab8887a8668c6f4863ae8fab73b28edf3e1c90",
-          "url": "https://github.com/maidsafe/safe_network/commit/f118bc6e620f75f871fe762f1d4e10fb5aa8164c"
-        },
-        "date": 1706024285290,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 226,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 88,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "be2006833674d0232b857e8c7f9f3f052e5432ca",
+          "message": "feat(node-launchpad): discord name widget styling\n\nJust centering the title and the input.",
+          "timestamp": "2024-05-16T14:05:23Z",
+          "tree_id": "b203c6e5635827f9907a72d31bcb1afa92f98550",
+          "url": "https://github.com/maidsafe/safe_network/commit/be2006833674d0232b857e8c7f9f3f052e5432ca"
+        },
+        "date": 1715871315985,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
