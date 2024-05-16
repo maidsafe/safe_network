@@ -30,7 +30,8 @@ pub use error::{Result, TransferError};
 pub use genesis::{
     calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir, get_genesis_sk,
     is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
-    GENESIS_CASHNOTE, GENESIS_PK, TOTAL_SUPPLY,
+    GENESIS_CASHNOTE, GENESIS_CASHNOTE_PARENT_TX, GENESIS_CASHNOTE_UNIQUE_KEY, GENESIS_PK,
+    TOTAL_SUPPLY,
 };
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 pub use wallet::{

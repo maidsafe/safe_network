@@ -11,7 +11,9 @@ use std::path::Path;
 use bls::SecretKey;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
-use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_CASHNOTE};
+use sn_client::transfers::{
+    CashNoteRedemption, SpendAddress, Transfer, GENESIS_CASHNOTE_UNIQUE_KEY,
+};
 use sn_client::{Client, SpendDag};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
@@ -27,7 +29,7 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
         Err(err) => {
             println!("Starting from Genesis as found no local spend dag on disk...");
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
-            let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
+            let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE_UNIQUE_KEY);
             client
                 .spend_dag_build_from(genesis_addr, None, true)
                 .await?
@@ -64,7 +66,7 @@ pub async fn audit(
     } else {
         //NB TODO use the above DAG to audit too
         println!("Auditing the Currency, note that this might take a very long time...");
-        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey());
+        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE_UNIQUE_KEY);
         client.follow_spend(genesis_addr).await?;
     }
     Ok(())

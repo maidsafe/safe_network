@@ -214,4 +214,22 @@ impl Transaction {
         // Verify that the transaction is balanced
         self.verify_balanced()
     }
+
+    /// Deserializes a `Transaction` represented as a hex string to a `Transaction`.
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        let mut bytes =
+            hex::decode(hex).map_err(|_| TransferError::TransferDeserializationFailed)?;
+        bytes.reverse();
+        let transaction: Self = rmp_serde::from_slice(&bytes)
+            .map_err(|_| TransferError::TransferDeserializationFailed)?;
+        Ok(transaction)
+    }
+
+    /// Serialize this `Transaction` instance to a readable hex string that a human can copy paste
+    pub fn to_hex(&self) -> Result<String> {
+        let mut serialized =
+            rmp_serde::to_vec(&self).map_err(|_| TransferError::TransferSerializationFailed)?;
+        serialized.reverse();
+        Ok(hex::encode(serialized))
+    }
 }
