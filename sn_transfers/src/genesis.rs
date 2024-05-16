@@ -72,14 +72,10 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_CASHNOTE_UNIQUE_KEY: UniquePubkey = {
-        match std::env::var("GENESIS_CN_UNIQUE_KEY") {
-            Ok(pk_str) => {
-                match UniquePubkey::from_hex(pk_str) {
-                    Ok(pk) => pk,
-                    Err(err) => panic!("Failed to parse genesis_cashnote.unique_key: {err:?}"),
-                }
-            }
-            _ => GENESIS_CASHNOTE.unique_pubkey(),
+        let pk_str = std::env::var("GENESIS_CN_UNIQUE_KEY").unwrap_or("9524860078012d0cef2561b5e668bff150fae00675658310d4d3ffe5310b7436dca143cd459e87b08ce8467756bde6e7".to_string());  // DevSkim: ignore DS173237
+        match UniquePubkey::from_hex(pk_str) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse genesis_cashnote.unique_key: {err:?}"),
         }
     };
 }
@@ -89,14 +85,10 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_CASHNOTE_PARENT_TX: Transaction = {
-        match std::env::var("GENESIS_CN_PARENT_TX") {
-            Ok(tx_str) => {
-                match Transaction::from_hex(&tx_str) {
-                    Ok(tx) => tx,
-                    Err(err) => panic!("Failed to parse genesis_cashnote.parent_tx: {err:?}"),
-                }
-            }
-            _ => GENESIS_CASHNOTE.parent_tx.clone(),
+        let tx_str = std::env::var("GENESIS_CN_PARENT_TX").unwrap_or("005d1eeeffa2e111cf37653665646236353737363438656338306237386539353464633334316163643633343762303133356566663364346430313338353635373630306561663035316666623836366535623136353266656330643231303837303036383432353960d99291005d1eeeffa2e111cf37653665646236353737363438656338306237386539353464633334316163643633343762303133356566663364346430313338353635373630306561663035316666623836366535623136353266656330643231303837303036383432353960d9929192".to_string());  // DevSkim: ignore DS173237
+        match Transaction::from_hex(&tx_str) {
+            Ok(tx) => tx,
+            Err(err) => panic!("Failed to parse genesis_cashnote.parent_tx: {err:?}"),
         }
     };
 }
