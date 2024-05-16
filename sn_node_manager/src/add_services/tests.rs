@@ -2401,7 +2401,7 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
         Ok(_) => panic!("This test should result in an error"),
         Err(e) => {
             assert_eq!(
-                format!("An auditor service has already been created"),
+                format!("An Auditor service has already been created"),
                 e.to_string()
             )
         }

@@ -129,7 +129,7 @@ build-release-artifacts arch:
     cargo build --release --target $arch --bin safenode-manager
     cargo build --release --target $arch --bin safenodemand
     cargo build --release --target $arch --bin safenode_rpc_client
-    cross build --release --target $arch --bin sn_auditor
+    cargo build --release --target $arch --bin sn_auditor
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
