@@ -21,6 +21,7 @@ use crate::{
 use super::{utils::centered_rect_fixed, Component};
 
 pub const GB_PER_NODE: usize = 5;
+pub const GB: usize = 1024 * 1024 * 1024;
 
 pub struct ResourceAllocationInputBox {
     /// Whether the component is active right now, capturing keystrokes + draw things.
@@ -71,7 +72,7 @@ impl Component for ResourceAllocationInputBox {
             return Ok(vec![]);
         }
 
-        // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
+        // while in entry mode, key bindings are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
             KeyCode::Enter => {
                 let allocated_space_str = self.allocated_space_input.value().to_string();
@@ -118,6 +119,35 @@ impl Component for ResourceAllocationInputBox {
                 self.allocated_space_input.handle_event(&Event::Key(key));
                 vec![]
             }
+            KeyCode::Up | KeyCode::Down => {
+                let allocated_space_str = self.allocated_space_input.value().to_string();
+                let allocated_space = if let Ok(allocated_space) =
+                    allocated_space_str.trim().parse::<usize>()
+                {
+                    if key.code == KeyCode::Up {
+                        if allocated_space + GB_PER_NODE <= self.available_disk_space_bytes / GB {
+                            allocated_space + GB_PER_NODE
+                        } else {
+                            allocated_space
+                        }
+                    } else {
+                        // Key::Down
+                        if allocated_space >= GB_PER_NODE {
+                            allocated_space - GB_PER_NODE
+                        } else {
+                            allocated_space
+                        }
+                    }
+                } else {
+                    0
+                };
+                // set the new value
+                self.allocated_space_input = self
+                    .allocated_space_input
+                    .clone()
+                    .with_value(allocated_space.to_string());
+                vec![]
+            }
             _ => {
                 vec![]
             }
@@ -156,7 +186,7 @@ impl Component for ResourceAllocationInputBox {
             Direction::Vertical,
             [
                 // for the layer 0 border
-                Constraint::Length(1),
+                Constraint::Length(2),
                 // for the input field
                 Constraint::Min(1),
                 // for help text
@@ -168,16 +198,18 @@ impl Component for ResourceAllocationInputBox {
         .split(layer_zero);
 
         // layer zero
-        let available_space_gb = self.available_disk_space_bytes / (1024 * 1024 * 1024);
+        let available_space_gb = self.available_disk_space_bytes / GB;
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Double)
                 .border_style(Style::new().bold())
                 .title(format!(
-                    " Allocate space ({available_space_gb} GB available)",
-                )),
+                    " Allocate space ({available_space_gb} GB available) ",
+                ))
+                .title_alignment(Alignment::Center),
         );
+
         f.render_widget(Clear, layer_zero);
         f.render_widget(pop_up_border, layer_zero);
 
@@ -187,33 +219,14 @@ impl Component for ResourceAllocationInputBox {
         let scroll = self.allocated_space_input.visual_scroll(width as usize);
         let input = Paragraph::new(self.allocated_space_input.value())
             .scroll((0, scroll as u16))
-            // border left so that it doesn't conflict with layer_zero's border
-            .block(
-                Block::default()
-                    // todo: this has to be cleaned up
-                    .borders(Borders::LEFT)
-                    .border_type(BorderType::Double)
-                    .border_style(Style::new().bold()),
-            );
+            .alignment(Alignment::Center);
 
-        f.set_cursor(
-            // Put cursor past the end of the input text
-            layer_one[1].x
-                + ((self.allocated_space_input.visual_cursor()).max(scroll) - scroll) as u16
-                + 1,
-            layer_one[1].y,
-        );
         f.render_widget(input, layer_one[1]);
 
         f.render_widget(
-            Paragraph::new("      (Enter in 5GB increments)").block(
-                // todo clean up
-                Block::default()
-                    .borders(Borders::LEFT)
-                    .border_type(BorderType::Double)
-                    .border_style(Style::new().bold()),
-            ),
-            layer_one[2],
+            Paragraph::new(format!(" (Enter in {GB_PER_NODE}GB increments)↑↓ "))
+                .alignment(Alignment::Center),
+            layer_one[3],
         );
 
         Ok(())
