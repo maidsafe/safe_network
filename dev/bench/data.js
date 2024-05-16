@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715862961804,
+  "lastUpdate": 1715862965604,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "tomek@librem.one",
-            "name": "trycatch",
-            "username": "thomasmarkiewicz"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6db1b7813a6160c4469b10a269e82f02871d511a",
-          "message": "feat: allow register CLI to create a public register writable to anyone",
-          "timestamp": "2024-01-10T11:59:53Z",
-          "tree_id": "7a6e0e9072062788ce29d240c497587be3f6eadc",
-          "url": "https://github.com/maidsafe/safe_network/commit/6db1b7813a6160c4469b10a269e82f02871d511a"
-        },
-        "date": 1704890834189,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3434,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 15375,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "jason.burley@sedex.com",
             "name": "jason.burley"
           },
@@ -42304,6 +42265,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "9812d39e759786d19702a87a2ead2b088bbcc94b",
+          "message": "feat(node-launchpad): tweaks on resource allocation widget\n\nAdded support for arrow up/down to increment/decrement allocated space.\nValidation when using arrow up/down to avoid going over/under available disk space.\nMinor widget styling: removed cursor, centered title, footer and input field.\nCreated some constants.",
+          "timestamp": "2024-05-16T11:44:23Z",
+          "tree_id": "cdeffe69fa3cb9dd6c40172acf9c1c57a0614b13",
+          "url": "https://github.com/maidsafe/safe_network/commit/9812d39e759786d19702a87a2ead2b088bbcc94b"
+        },
+        "date": 1715862964277,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15663,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 171997,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 10,
             "unit": "ms"
           }
         ]
