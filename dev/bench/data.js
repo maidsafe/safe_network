@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715814006796,
+  "lastUpdate": 1715836685266,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bbcbd222feeffc0a331825550000bd2c0b484a87",
-          "message": "feat: spend dag utils",
-          "timestamp": "2024-01-22T08:08:29Z",
-          "tree_id": "03e95828c7909bebdf9ddbf5982d3c3c923c8f67",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbcbd222feeffc0a331825550000bd2c0b484a87"
-        },
-        "date": 1705914605062,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2844439168439776,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.935915627813738,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.20890265564822,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 51.8086502787351,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "bba9a50de4f4cd8a897c4821391e5417376d80ae",
+          "message": "perf: improve DAG verification redundancy",
+          "timestamp": "2024-05-16T04:36:56Z",
+          "tree_id": "2e83f4a5725967c36fb961ba6eb18a256069cb82",
+          "url": "https://github.com/maidsafe/safe_network/commit/bba9a50de4f4cd8a897c4821391e5417376d80ae"
+        },
+        "date": 1715836678764,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2050548376710122,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1228233814410216,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 48.287434760943256,
             "unit": "MiB/s"
           }
         ]
