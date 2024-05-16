@@ -201,9 +201,9 @@ impl Client {
                 trace!("Spends for {parent_tx_hash:?} - {spends:?}");
 
                 // check if we reached the genesis Tx
-                if parent_tx == sn_transfers::GENESIS_CASHNOTE.parent_tx
+                if parent_tx == *sn_transfers::GENESIS_CASHNOTE_PARENT_TX
                     && spends.iter().all(|s| {
-                        s.spend.unique_pubkey == sn_transfers::GENESIS_CASHNOTE.unique_pubkey
+                        s.spend.unique_pubkey == *sn_transfers::GENESIS_CASHNOTE_UNIQUE_KEY
                     })
                     && spends.len() == 1
                 {

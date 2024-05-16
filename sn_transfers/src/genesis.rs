@@ -11,7 +11,7 @@ use super::wallet::HotWallet;
 use crate::{
     wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
     NanoTokens, SignedSpend, SpendReason, Transaction, TransactionBuilder,
-    TransferError as CashNoteError,
+    TransferError as CashNoteError, UniquePubkey,
 };
 
 use bls::SecretKey;
@@ -58,7 +58,7 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
-        let pk_str = std::env::var("GENESIS_PK").unwrap_or("96d3f6fb55ab504307d56f4085856dc61806ca5285eba1d8b9d1ce83db2604b41de9f2f50a0ea3dd160b65c1e8798b43".to_string());  // DevSkim: ignore DS173237
+        let pk_str = std::env::var("GENESIS_PK").unwrap_or("b814bc39a357e6f6000f4946da52dcfc72e19efe91e31d4e94e9cb408d765a4a6cf3bf2df14806f8fa524bd7ebb9bb4e".to_string());  // DevSkim: ignore DS173237
 
         match MainPubkey::from_hex(pk_str) {
             Ok(pk) => pk,
@@ -68,10 +68,44 @@ lazy_static! {
 }
 
 lazy_static! {
+    /// This key is public for auditing purposes.
+    /// The hard coded value is for production release, allows all nodes to validate it.
+    /// The env set value is only used for testing purpose.
+    pub static ref GENESIS_CASHNOTE_UNIQUE_KEY: UniquePubkey = {
+        match std::env::var("GENESIS_CN_UNIQUE_KEY") {
+            Ok(pk_str) => {
+                match UniquePubkey::from_hex(pk_str) {
+                    Ok(pk) => pk,
+                    Err(err) => panic!("Failed to parse genesis_cashnote.unique_key: {err:?}"),
+                }
+            }
+            _ => GENESIS_CASHNOTE.unique_pubkey(),
+        }
+    };
+}
+
+lazy_static! {
+    /// This trasnsaction is public for auditing purposes.
+    /// The hard coded value is for production release, allows all nodes to validate it.
+    /// The env set value is only used for testing purpose.
+    pub static ref GENESIS_CASHNOTE_PARENT_TX: Transaction = {
+        match std::env::var("GENESIS_CN_PARENT_TX") {
+            Ok(tx_str) => {
+                match Transaction::from_hex(&tx_str) {
+                    Ok(tx) => tx,
+                    Err(err) => panic!("Failed to parse genesis_cashnote.parent_tx: {err:?}"),
+                }
+            }
+            _ => GENESIS_CASHNOTE.parent_tx.clone(),
+        }
+    };
+}
+
+lazy_static! {
     /// Unlike the `GENESIS_PK`, the hard coded secret_key is for testing purpose.
     /// The one for live network shall be passed in via env set.
     static ref GENESIS_SK_STR: String = {
-        std::env::var("GENESIS_SK").unwrap_or("141a4ccbce0ef0992c3db01ad2215f89ff5249c0d6749d979f37745c3c0170c9".to_string())  // DevSkim: ignore DS173237
+        std::env::var("GENESIS_SK").unwrap_or("23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9".to_string())  // DevSkim: ignore DS173237
     };
 }
 
@@ -97,16 +131,14 @@ pub fn get_genesis_sk() -> MainSecretKey {
 
 /// Return if provided Transaction is genesis parent tx.
 pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
-    parent_tx == &GENESIS_CASHNOTE.parent_tx
+    parent_tx == &*GENESIS_CASHNOTE_PARENT_TX
 }
 
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
     let bytes = spend.spend.to_bytes_for_signing();
-    spend.spend.unique_pubkey == GENESIS_CASHNOTE.unique_pubkey()
-        && GENESIS_CASHNOTE
-            .unique_pubkey()
-            .verify(&spend.derived_key_sig, bytes)
+    spend.spend.unique_pubkey == *GENESIS_CASHNOTE_UNIQUE_KEY
+        && GENESIS_CASHNOTE_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
         && is_genesis_parent_tx(&spend.spend.parent_tx)
         && spend.spend.amount == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
@@ -231,4 +263,33 @@ fn get_genesis_dir() -> PathBuf {
     std::fs::create_dir_all(data_dirs.as_path())
         .expect("Genesis test path to be successfully created.");
     data_dirs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_genesis() {
+        for _ in 0..10 {
+            let sk = bls::SecretKey::random();
+            let sk_str = sk.to_hex();
+            let genesis_sk = MainSecretKey::new(sk);
+            let main_pubkey = genesis_sk.main_pubkey();
+
+            let genesis_cn = match create_first_cash_note_from_key(&genesis_sk) {
+                Ok(cash_note) => cash_note,
+                Err(err) => panic!("Failed to create genesis CashNote: {err:?}"),
+            };
+
+            println!("=============================");
+            println!("secret_key: {sk_str:?}");
+            println!("main_pub_key: {:?}", main_pubkey.to_hex());
+            println!(
+                "genesis_cn.unique_pubkey: {:?}",
+                genesis_cn.unique_pubkey().to_hex()
+            );
+            println!("genesis_cn.parent_tx: {:?}", genesis_cn.parent_tx.to_hex());
+        }
+    }
 }
