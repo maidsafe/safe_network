@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715901068674,
+  "lastUpdate": 1715901070705,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "98160cdd394e329d62c2c81183de3bd2e2e22f40",
-          "message": "chore: make `first` argument public\n\nThis needs to be publicly accessible for applications like the node manager to be able to check if\n`--first` has been used.",
-          "timestamp": "2024-01-11T14:42:05Z",
-          "tree_id": "ae68d8316cb29eb2a322b04b1a1df5d92676b55b",
-          "url": "https://github.com/maidsafe/safe_network/commit/98160cdd394e329d62c2c81183de3bd2e2e22f40"
-        },
-        "date": 1704984979439,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 2953,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 14319,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e29c863a5f5d9c4b29bce80c994b3ba37e81bc50",
+          "message": "chore: build auditor in release artifacts workflow\n\nThis workflow is useful for testing and I can use it to produce auditor artifacts that can manually\nbe uploaded to S3.",
+          "timestamp": "2024-05-16T22:21:04Z",
+          "tree_id": "03d5ee274f7facbc19d07c3a590f2eb76c5d1112",
+          "url": "https://github.com/maidsafe/safe_network/commit/e29c863a5f5d9c4b29bce80c994b3ba37e81bc50"
+        },
+        "date": 1715901070159,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15748,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 99601,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
