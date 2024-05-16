@@ -28,9 +28,9 @@ pub use cashnotes::{
 pub use error::{Result, TransferError};
 /// Utilities exposed
 pub use genesis::{
-    calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir,
+    calculate_royalties_fee, create_first_cash_note_from_key, get_faucet_data_dir, get_genesis_sk,
     is_genesis_parent_tx, is_genesis_spend, load_genesis_wallet, Error as GenesisError,
-    GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK, TOTAL_SUPPLY,
+    GENESIS_CASHNOTE, GENESIS_PK, TOTAL_SUPPLY,
 };
 pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
 pub use wallet::{

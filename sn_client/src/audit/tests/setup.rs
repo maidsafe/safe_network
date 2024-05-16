@@ -11,8 +11,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_transfers::{
-    CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, OfflineTransfer, SignedSpend,
-    SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_CASHNOTE_SK,
+    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens,
+    OfflineTransfer, SignedSpend, SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_PK,
 };
 use xor_name::XorName;
 
@@ -39,15 +39,11 @@ impl MockNetwork {
 
         // create genesis wallet
         let genesis_cn = GENESIS_CASHNOTE.clone();
-        let genesis_sk = MainSecretKey::new(
-            SecretKey::from_hex(GENESIS_CASHNOTE_SK)
-                .map_err(|e| eyre!("failed to parse genesis pk: {e}"))?,
-        );
-        let genesis_pk = genesis_sk.main_pubkey();
+        let genesis_pk = *GENESIS_PK;
         net.wallets.insert(
             genesis_pk,
             MockWallet {
-                sk: genesis_sk,
+                sk: get_genesis_sk(),
                 cn: vec![genesis_cn],
             },
         );

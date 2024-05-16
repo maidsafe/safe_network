@@ -9,8 +9,9 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainSecretKey, NanoTokens,
-    SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError as CashNoteError,
+    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
+    NanoTokens, SignedSpend, SpendReason, Transaction, TransactionBuilder,
+    TransferError as CashNoteError,
 };
 
 use bls::SecretKey;
@@ -38,13 +39,6 @@ pub(super) type GenesisResult<T> = Result<T, Error>;
 /// Total supply of tokens that will eventually exist in the network: 4,294,967,295 * 10^9 = 4,294,967,295,000,000,000.
 pub const TOTAL_SUPPLY: u64 = u32::MAX as u64 * u64::pow(10, 9);
 
-/// The secret key for the genesis CashNote.
-///
-/// This key is public for auditing purposes. Hard coding its value means all nodes will be able to
-/// validate it.
-pub const GENESIS_CASHNOTE_SK: &str =
-    "5f15ae2ea589007e1474e049bbc32904d583265f12ce1f8153f955076a9af49b";
-
 /// Main error type for the crate.
 #[derive(Error, Debug, Clone)]
 pub enum Error {
@@ -60,20 +54,45 @@ pub enum Error {
 }
 
 lazy_static! {
+    /// This key is public for auditing purposes.
+    /// The hard coded value is for production release, allows all nodes to validate it.
+    /// The env set value is only used for testing purpose.
+    pub static ref GENESIS_PK: MainPubkey = {
+        let pk_str = std::env::var("GENESIS_PK").unwrap_or("96d3f6fb55ab504307d56f4085856dc61806ca5285eba1d8b9d1ce83db2604b41de9f2f50a0ea3dd160b65c1e8798b43".to_string());
+
+        match MainPubkey::from_hex(pk_str) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse genesis PK: {err:?}"),
+        }
+    };
+}
+
+lazy_static! {
+    /// Unlike the `GENESIS_PK`, the hard coded secret_key is for testing purpose.
+    /// The one for live network shall be passed in via env set.
+    static ref GENESIS_SK_STR: String = {
+        std::env::var("GENESIS_SK").unwrap_or("141a4ccbce0ef0992c3db01ad2215f89ff5249c0d6749d979f37745c3c0170c9".to_string())
+    };
+}
+
+lazy_static! {
     /// Load the genesis CashNote.
     /// The genesis CashNote is the first CashNote in the network. It is created without
     /// a source transaction, as there was nothing before it.
     pub static ref GENESIS_CASHNOTE: CashNote = {
-        let main_key = match SecretKey::from_hex(GENESIS_CASHNOTE_SK) {
-            Ok(sk) => MainSecretKey::new(sk),
-            Err(err) => panic!("Failed to parse hard-coded genesis CashNote SK: {err:?}"),
-        };
-
-        match create_first_cash_note_from_key(&main_key) {
+        match create_first_cash_note_from_key(&get_genesis_sk()) {
             Ok(cash_note) => cash_note,
             Err(err) => panic!("Failed to create genesis CashNote: {err:?}"),
         }
     };
+}
+
+/// Returns genesis SK (normally for testing purpose).
+pub fn get_genesis_sk() -> MainSecretKey {
+    match SecretKey::from_hex(&GENESIS_SK_STR) {
+        Ok(sk) => MainSecretKey::new(sk),
+        Err(err) => panic!("Failed to parse genesis SK: {err:?}"),
+    }
 }
 
 /// Return if provided Transaction is genesis parent tx.
@@ -120,11 +139,7 @@ fn create_genesis_wallet() -> HotWallet {
     let wallet_dir = root_dir.join("wallet");
     std::fs::create_dir_all(&wallet_dir).expect("Genesis wallet path to be successfully created.");
 
-    let secret_key = bls::SecretKey::from_hex(GENESIS_CASHNOTE_SK)
-        .expect("Genesis key hex shall be successfully parsed.");
-    debug!("genesis wallet pubkey: {:?}", secret_key.public_key());
-    let main_key = MainSecretKey::new(secret_key);
-    crate::wallet::store_new_keypair(&wallet_dir, &main_key)
+    crate::wallet::store_new_keypair(&wallet_dir, &get_genesis_sk())
         .expect("Genesis key shall be successfully stored.");
 
     HotWallet::load_from(&root_dir)
