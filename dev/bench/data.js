@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715872777539,
+  "lastUpdate": 1715872905592,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11724,35 +11724,6 @@ window.BENCHMARK_DATA = {
           "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
           "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
         },
-        "date": 1706029417385,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "d47b4520155d355aa6d6d6c8552e3770767afa31",
-          "message": "chore(node): reduce MAX_UNCOMPRESSED_LOG_FILES to 10",
-          "timestamp": "2024-01-23T16:09:31Z",
-          "tree_id": "7b8546635eff249c8bcbe218079f6657f00ea77d",
-          "url": "https://github.com/maidsafe/safe_network/commit/d47b4520155d355aa6d6d6c8552e3770767afa31"
-        },
         "date": 1706088951219,
         "tool": "customSmallerIsBetter",
         "benches": [
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e52a1ddabcc752d25dd86ca09ef58178dc5a1e15",
+          "message": "feat: hide genesis keypair",
+          "timestamp": "2024-05-16T14:29:21Z",
+          "tree_id": "b30a07f1041f0492205393e2af4aa8ac9d0d60b3",
+          "url": "https://github.com/maidsafe/safe_network/commit/e52a1ddabcc752d25dd86ca09ef58178dc5a1e15"
+        },
+        "date": 1715872905213,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
