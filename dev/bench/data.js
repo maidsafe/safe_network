@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715880174049,
+  "lastUpdate": 1715880177260,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "cf6634134b1e84e02f53129543fd84d1ae5ad512",
-          "message": "fix: update MAX_REG_ENTRY_SIZE",
-          "timestamp": "2024-01-11T10:21:47Z",
-          "tree_id": "f1250a1661b650150989332af23e4c2291b9d46b",
-          "url": "https://github.com/maidsafe/safe_network/commit/cf6634134b1e84e02f53129543fd84d1ae5ad512"
-        },
-        "date": 1704971173206,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3186,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 14856,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd",
+          "message": "feat: pass genesis_cn pub fields separate to hide sk",
+          "timestamp": "2024-05-16T16:29:50Z",
+          "tree_id": "b62de0bac7c65bf0ba79e0ce2825ac9dbe42a629",
+          "url": "https://github.com/maidsafe/safe_network/commit/e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd"
+        },
+        "date": 1715880175914,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17833,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 143003,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 8,
             "unit": "ms"
           }
         ]
