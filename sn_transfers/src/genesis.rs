@@ -58,7 +58,7 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
-        let pk_str = std::env::var("GENESIS_PK").unwrap_or("96d3f6fb55ab504307d56f4085856dc61806ca5285eba1d8b9d1ce83db2604b41de9f2f50a0ea3dd160b65c1e8798b43".to_string());
+        let pk_str = std::env::var("GENESIS_PK").unwrap_or("96d3f6fb55ab504307d56f4085856dc61806ca5285eba1d8b9d1ce83db2604b41de9f2f50a0ea3dd160b65c1e8798b43".to_string());  // DevSkim: ignore DS173237
 
         match MainPubkey::from_hex(pk_str) {
             Ok(pk) => pk,
@@ -71,7 +71,7 @@ lazy_static! {
     /// Unlike the `GENESIS_PK`, the hard coded secret_key is for testing purpose.
     /// The one for live network shall be passed in via env set.
     static ref GENESIS_SK_STR: String = {
-        std::env::var("GENESIS_SK").unwrap_or("141a4ccbce0ef0992c3db01ad2215f89ff5249c0d6749d979f37745c3c0170c9".to_string())
+        std::env::var("GENESIS_SK").unwrap_or("141a4ccbce0ef0992c3db01ad2215f89ff5249c0d6749d979f37745c3c0170c9".to_string())  // DevSkim: ignore DS173237
     };
 }
 
