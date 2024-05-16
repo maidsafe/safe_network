@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715870381178,
+  "lastUpdate": 1715870516831,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac",
-          "message": "fix: create parent directories\n\nWhen saving the node registry, it should create all the directories in its path.",
-          "timestamp": "2024-01-22T16:30:12+01:00",
-          "tree_id": "3eb64d4aff9cffab6209f874ca14e27f0d7e4ea7",
-          "url": "https://github.com/maidsafe/safe_network/commit/f4d24f4c3075f9ce8f5e79553cba58fd6e2202ac"
-        },
-        "date": 1705938406635,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 69,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 64,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "7568040a0405b4aba419abff15a7ed0e40609ab9",
+          "message": "fix: retain options on upgrade and prevent dup ports\n\nThe following options that can be specified when the service is created are now retained on an\nupgrade:\n\n* Custom `--node-port` value\n* Custom `--metrics-port` value\n* The `--home-network` flag\n* The `--upnp` flag\n\nTests were added for all of these, and in addition, a test was added for the retention of custom RPC\nports, though these were already being retained on upgrade.\n\nAlthough the node port was being tracked as part of the `listen_addr` field in `NodeServiceData`, a\nnew `node_port` field was explicitly added, because it's possible that a service can be upgraded\nbefore it starts, and the `listen_addr` is not assigned until the service starts.\n\nI also discovered the `add` command did not prevent specifying custom ports that were already in\nuse. That was fixed too, and some tests were added.",
+          "timestamp": "2024-05-16T13:46:15Z",
+          "tree_id": "397a2e44ce0c399a474d86bb384330a753edcd97",
+          "url": "https://github.com/maidsafe/safe_network/commit/7568040a0405b4aba419abff15a7ed0e40609ab9"
+        },
+        "date": 1715870515961,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
