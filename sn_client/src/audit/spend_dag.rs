@@ -324,8 +324,10 @@ impl SpendDag {
         content
     }
 
-    /// Merges the given dag into ours
-    pub fn merge(&mut self, sub_dag: SpendDag) -> Result<(), DagError> {
+    /// Merges the given dag into ours, optionally recomputing the faults after merge
+    /// If verify is set to false, the faults will not be computed, this can be useful when batching merges to avoid re-verifying
+    /// be sure to manually verify afterwards
+    pub fn merge(&mut self, sub_dag: SpendDag, verify: bool) -> Result<(), DagError> {
         let source = self.source();
         info!(
             "Merging sub DAG starting at {:?} into our DAG with source {:?}",
@@ -350,7 +352,11 @@ impl SpendDag {
         }
 
         // recompute faults
-        self.record_faults(&source)
+        if verify {
+            self.record_faults(&source)?;
+        }
+
+        Ok(())
     }
 
     /// Get the spend at a given address
@@ -386,6 +392,11 @@ impl SpendDag {
             .values()
             .flat_map(|entry| entry.spends())
             .collect()
+    }
+
+    /// Get the faults recorded in the DAG
+    pub fn faults(&self) -> &BTreeMap<SpendAddress, BTreeSet<SpendFault>> {
+        &self.faults
     }
 
     /// Get all royalties from the DAG

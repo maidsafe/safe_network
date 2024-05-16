@@ -65,9 +65,10 @@ struct Opt {
     #[clap(short, long, value_name = "discord_names_file")]
     beta_participants: Option<PathBuf>,
 
-    /// Hex string of the Foundation SK.
+    /// Hex string of the Foundation SK used to decrypt discord usernames
+    /// found in the DAG for the beta program
     #[clap(name = "sk")]
-    sk_str: String,
+    sk_str: Option<String>,
 }
 
 #[tokio::main]
@@ -94,16 +95,17 @@ async fn main() -> Result<()> {
         Vec::new()
     };
 
-    let sk = match SecretKey::from_hex(&opt.sk_str) {
-        Ok(sk) => sk,
-        Err(err) => panic!(
-            "Cann't parse Foundation SK from input string: {} {err:?}",
-            opt.sk_str
-        ),
+    let maybe_sk = if let Some(sk_str) = opt.sk_str {
+        match SecretKey::from_hex(&sk_str) {
+            Ok(sk) => Some(sk),
+            Err(err) => panic!("Cann't parse Foundation SK from input string: {sk_str}: {err:?}",),
+        }
+    } else {
+        None
     };
 
     if let Some(dag_to_view) = opt.offline_viewer {
-        let dag = SpendDagDb::offline(dag_to_view, sk)?;
+        let dag = SpendDagDb::offline(dag_to_view)?;
         #[cfg(feature = "svg-dag")]
         {
             dag.dump_dag_svg()?;
@@ -118,7 +120,7 @@ async fn main() -> Result<()> {
         opt.force_from_genesis,
         opt.clean,
         beta_participants,
-        sk,
+        maybe_sk,
     )
     .await?;
     start_server(dag).await
@@ -172,7 +174,7 @@ async fn initialize_background_spend_dag_collection(
     force_from_genesis: bool,
     clean: bool,
     beta_participants: Vec<String>,
-    sk: SecretKey,
+    foundation_sk: Option<SecretKey>,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
     let path = dirs_next::data_dir()
@@ -188,7 +190,7 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize the DAG
-    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone(), sk)
+    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone())
         .await
         .map_err(|e| eyre!("Could not create SpendDag Db: {e}"))?;
 
@@ -201,7 +203,7 @@ async fn initialize_background_spend_dag_collection(
             .map_err(|e| eyre!("Could not create new DAG from genesis: {e}"))?;
         tokio::spawn(async move {
             let _ = client
-                .spend_dag_continue_from_utxos(&mut genesis_dag, None)
+                .spend_dag_continue_from_utxos(&mut genesis_dag, None, true)
                 .await
                 .map_err(|e| eprintln!("Could not update DAG from genesis: {e}"));
             let _ = d
@@ -216,10 +218,15 @@ async fn initialize_background_spend_dag_collection(
 
     // initialize beta rewards program tracking
     if !beta_participants.is_empty() {
+        let sk = match foundation_sk {
+            Some(sk) => sk,
+            None => panic!("Foundation SK required to initialize beta rewards program"),
+        };
+
         println!("Initializing beta rewards program tracking...");
         let mut d = dag.clone();
         let _ = d
-            .init_reward_forward_tracking(beta_participants)
+            .init_reward_forward_tracking(beta_participants, sk)
             .await
             .map_err(|e| eprintln!("Could not initialize beta rewards: {e}"));
     }

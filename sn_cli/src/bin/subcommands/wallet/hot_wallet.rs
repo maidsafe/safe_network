@@ -122,7 +122,7 @@ pub enum WalletCmds {
         royalties: bool,
         /// Hex string of the Foundation SK.
         #[clap(long, name = "sk_str")]
-        sk_str: String,
+        sk_str: Option<String>,
     },
 }
 
@@ -213,16 +213,19 @@ pub(crate) async fn wallet_cmds(
             royalties,
             sk_str,
         } => {
-            let sk_key = match SecretKey::from_hex(&sk_str) {
-                Ok(sk_key) => sk_key,
-                Err(err) => {
-                    return Err(eyre!(
-                        "Cann't parse Foundation SK from input string: {sk_str} {err:?}"
-                    ))
+            let sk_key = if let Some(s) = sk_str {
+                match SecretKey::from_hex(&s) {
+                    Ok(sk_key) => Some(sk_key),
+                    Err(err) => {
+                        return Err(eyre!(
+                            "Cann't parse Foundation SK from input string: {s} {err:?}"
+                        ))
+                    }
                 }
+            } else {
+                None
             };
-
-            audit(client, dot, royalties, root_dir, &sk_key).await
+            audit(client, dot, royalties, root_dir, sk_key).await
         }
         WalletCmds::Verify {
             spend_address,

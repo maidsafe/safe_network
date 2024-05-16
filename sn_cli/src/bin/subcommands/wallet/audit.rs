@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use bls::SecretKey;
@@ -16,12 +17,50 @@ use sn_client::{Client, SpendDag};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
 
+async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) -> Result<SpendDag> {
+    // collect the spend DAG generation by generation without verifying
+    let verify_after = false;
+    let start_time = std::time::Instant::now();
+    let mut gen = 0;
+    let mut current_utxos = dag.get_utxos();
+    let mut last_utxos = BTreeSet::new();
+
+    println!("Gathering the Spend DAG, note that this might take a very long time...");
+    while last_utxos != current_utxos {
+        last_utxos = std::mem::take(&mut current_utxos);
+
+        client
+            .spend_dag_continue_from_utxos(&mut dag, Some(1), verify_after)
+            .await?;
+
+        gen += 1;
+        current_utxos = dag.get_utxos();
+        let dag_size = dag.all_spends().len();
+        println!(
+            "Depth {gen}: the DAG now has {dag_size} spends and {} UTXOs",
+            current_utxos.len()
+        );
+    }
+    println!("Done gathering the Spend DAG in {:?}", start_time.elapsed());
+
+    // verify the DAG
+    if let Err(e) = dag.record_faults(&dag.source()) {
+        println!("DAG verification failed: {e}");
+    } else {
+        let faults_len = dag.faults().len();
+        println!("DAG verification successful, identified {faults_len} faults.",);
+        if faults_len > 0 {
+            println!("Logging identified faults: {:#?}", dag.faults());
+        }
+    }
+    Ok(dag)
+}
+
 async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> {
     let dag_path = root_dir.join(SPEND_DAG_FILENAME);
-    let dag = match SpendDag::load_from_file(&dag_path) {
-        Ok(mut dag) => {
-            println!("Starting from the loaded spend dag on disk...");
-            client.spend_dag_continue_from_utxos(&mut dag, None).await?;
+    let inital_dag = match SpendDag::load_from_file(&dag_path) {
+        Ok(dag) => {
+            println!("Found a local spend dag on disk, continuing from it...");
             dag
         }
         Err(err) => {
@@ -29,12 +68,13 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
             client
-                .spend_dag_build_from(genesis_addr, None, true)
+                .spend_dag_build_from(genesis_addr, Some(1), true)
                 .await?
         }
     };
+    let dag = step_by_step_spend_dag_gathering(client, inital_dag).await?;
 
-    println!("Creating a local backup to disk...");
+    println!("Saving DAG to disk at: {dag_path:?}");
     dag.dump_to_file(dag_path)?;
 
     Ok(dag)
@@ -45,28 +85,25 @@ pub async fn audit(
     to_dot: bool,
     royalties: bool,
     root_dir: &Path,
-    sk: &SecretKey,
+    foundation_sk: Option<SecretKey>,
 ) -> Result<()> {
+    let dag = gather_spend_dag(client, root_dir).await?;
+
     if to_dot {
-        let dag = gather_spend_dag(client, root_dir).await?;
-        println!(
-            "==========================   spends DAG diagraph   ============================="
-        );
+        println!("==========================   spends DAG digraph   =============================");
         println!("{}", dag.dump_dot_format());
+    } else if let Some(sk) = foundation_sk {
         println!(
             "=======================   payment forward statistics  =========================="
         );
-        println!("{}", dag.dump_payment_forward_statistics(sk));
+        println!("{}", dag.dump_payment_forward_statistics(&sk));
     } else if royalties {
-        let dag = gather_spend_dag(client, root_dir).await?;
         let royalties = dag.all_royalties()?;
         redeem_royalties(royalties, client, root_dir).await?;
     } else {
-        //NB TODO use the above DAG to audit too
-        println!("Auditing the Currency, note that this might take a very long time...");
-        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
-        client.follow_spend(genesis_addr).await?;
+        println!("Audit completed successfully.");
     }
+
     Ok(())
 }
 
