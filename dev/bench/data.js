@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715900933056,
+  "lastUpdate": 1715901066978,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "780d1e7d9f53840baa8d1b8c9e0b7c42612ec259",
-          "message": "fix(node): add missing rpc feat for sn_protocol",
-          "timestamp": "2024-01-24T14:37:28+01:00",
-          "tree_id": "52ec7de108a872cf75b9815725383d23991b6cba",
-          "url": "https://github.com/maidsafe/safe_network/commit/780d1e7d9f53840baa8d1b8c9e0b7c42612ec259"
-        },
-        "date": 1706104529917,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e29c863a5f5d9c4b29bce80c994b3ba37e81bc50",
+          "message": "chore: build auditor in release artifacts workflow\n\nThis workflow is useful for testing and I can use it to produce auditor artifacts that can manually\nbe uploaded to S3.",
+          "timestamp": "2024-05-16T22:21:04Z",
+          "tree_id": "03d5ee274f7facbc19d07c3a590f2eb76c5d1112",
+          "url": "https://github.com/maidsafe/safe_network/commit/e29c863a5f5d9c4b29bce80c994b3ba37e81bc50"
+        },
+        "date": 1715901066440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
