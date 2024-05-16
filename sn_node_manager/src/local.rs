@@ -416,10 +416,8 @@ fn get_node_owner(
 ) -> Option<String> {
     if let Some(prefix) = owner_prefix {
         Some(format!("{}_{}", prefix, number))
-    } else if let Some(owner) = owner {
-        Some(owner.clone())
     } else {
-        None
+        owner.clone()
     }
 }
 
