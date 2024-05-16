@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715870519132,
+  "lastUpdate": 1715870521983,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,44 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "jason.burley@sedex.com",
-            "name": "jason.burley"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "b0f5d6b516eb94e3be541ff1852ed7e9de601bcd",
-          "message": "docs: four step readme",
-          "timestamp": "2024-01-10T14:31:31Z",
-          "tree_id": "caf376c841e1d2f5ae8a1bffbc7224d52adfd9ac",
-          "url": "https://github.com/maidsafe/safe_network/commit/b0f5d6b516eb94e3be541ff1852ed7e9de601bcd"
-        },
-        "date": 1704899484366,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3295,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 13981,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42304,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 10,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "7568040a0405b4aba419abff15a7ed0e40609ab9",
+          "message": "fix: retain options on upgrade and prevent dup ports\n\nThe following options that can be specified when the service is created are now retained on an\nupgrade:\n\n* Custom `--node-port` value\n* Custom `--metrics-port` value\n* The `--home-network` flag\n* The `--upnp` flag\n\nTests were added for all of these, and in addition, a test was added for the retention of custom RPC\nports, though these were already being retained on upgrade.\n\nAlthough the node port was being tracked as part of the `listen_addr` field in `NodeServiceData`, a\nnew `node_port` field was explicitly added, because it's possible that a service can be upgraded\nbefore it starts, and the `listen_addr` is not assigned until the service starts.\n\nI also discovered the `add` command did not prevent specifying custom ports that were already in\nuse. That was fixed too, and some tests were added.",
+          "timestamp": "2024-05-16T13:46:15Z",
+          "tree_id": "397a2e44ce0c399a474d86bb384330a753edcd97",
+          "url": "https://github.com/maidsafe/safe_network/commit/7568040a0405b4aba419abff15a7ed0e40609ab9"
+        },
+        "date": 1715870521056,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15126,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 96644,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
