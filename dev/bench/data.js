@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715904379952,
+  "lastUpdate": 1715904382877,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "distinct": true,
-          "id": "71233886cd924d0470fecc6965500fa88884bf9d",
-          "message": "chore(network): collect swarm_driver handling time statistics",
-          "timestamp": "2024-01-12T11:50:15Z",
-          "tree_id": "ead0044a5e41115a3e67fe89caa05bdfd88504bc",
-          "url": "https://github.com/maidsafe/safe_network/commit/71233886cd924d0470fecc6965500fa88884bf9d"
-        },
-        "date": 1705063650905,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3333,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 15260,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
           "id": "d1813553ed23939cc65a17c63b566e9a5d595d0d",
           "message": "chore(node): collect node handling time statistics",
           "timestamp": "2024-01-15T10:37:19Z",
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "05c8dc677b91a8bcdb4fd256c8f8c90be86885d6",
+          "message": "chore: use helper function to print banners",
+          "timestamp": "2024-05-16T23:13:22Z",
+          "tree_id": "97a6597cd4e11314290d604f306880827ee5e657",
+          "url": "https://github.com/maidsafe/safe_network/commit/05c8dc677b91a8bcdb4fd256c8f8c90be86885d6"
+        },
+        "date": 1715904382040,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17096,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 97692,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
