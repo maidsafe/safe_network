@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715963021018,
+  "lastUpdate": 1715963167533,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8d7cc12ca0fd91fc51d6be2aea56db050e21866d",
-          "message": "ci: move websockets and wasm to cross platform workflow file",
-          "timestamp": "2024-01-25T11:23:10+01:00",
-          "tree_id": "92a8cfef5c506ff12aed3892e61140c9ef60175d",
-          "url": "https://github.com/maidsafe/safe_network/commit/8d7cc12ca0fd91fc51d6be2aea56db050e21866d"
-        },
-        "date": 1706179254520,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "8b43ee774267e470ed2f7351100f6e3e04a86c77",
+          "message": "test(nodemanager): upgrade_should_retain_the_log_format_flag",
+          "timestamp": "2024-05-17T15:33:25Z",
+          "tree_id": "a95f1949816c72b1ef8c48ff929dc269926d625a",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b43ee774267e470ed2f7351100f6e3e04a86c77"
+        },
+        "date": 1715963166998,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
