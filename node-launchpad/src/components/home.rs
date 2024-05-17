@@ -32,13 +32,14 @@ pub struct Home {
     node_services: Vec<NodeServiceData>,
     node_table_state: TableState,
     allocated_disk_space: usize,
+    discord_username: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. A simple file lock or a db like file would work.
     lock_registry: bool,
 }
 
 impl Home {
-    pub fn new(allocated_disk_space: usize) -> Result<Self> {
+    pub fn new(allocated_disk_space: usize, discord_username: &str) -> Result<Self> {
         let mut home = Self {
             action_sender: Default::default(),
             config: Default::default(),
@@ -47,6 +48,7 @@ impl Home {
             allocated_disk_space,
             node_table_state: Default::default(),
             lock_registry: Default::default(),
+            discord_username: discord_username.to_string(),
         };
         home.load_node_registry_and_update_states()?;
 
@@ -178,6 +180,9 @@ impl Component for Home {
             Action::StoreAllocatedDiskSpace(space) => {
                 self.allocated_disk_space = space;
             }
+            Action::StoreDiscordUserName(username) => {
+                self.discord_username = username;
+            }
             Action::HomeActions(HomeActions::StartNodes) => {
                 if self.lock_registry {
                     error!("Registry is locked. Cannot start node now.");
@@ -185,17 +190,22 @@ impl Component for Home {
                 }
 
                 if self.allocated_disk_space == 0 {
-                    info!("Disk space not allocated, ask for input");
-                    // trigger resource allocation if not set
+                    info!("Disk space not allocated. Ask for input.");
                     return Ok(Some(Action::HomeActions(
                         HomeActions::TriggerResourceAllocationInputBox,
                     )));
                 }
+                if self.discord_username.is_empty() {
+                    info!("Discord username not assigned. Ask for input.");
+                    return Ok(Some(Action::HomeActions(
+                        HomeActions::TriggerDiscordUsernameInputBox,
+                    )));
+                }
+
                 let node_count = self.allocated_disk_space / GB_PER_NODE;
                 let running_nodes = self.get_running_nodes();
 
                 if running_nodes.len() > node_count {
-                    // stop some nodes
                     let to_stop_count = running_nodes.len() - node_count;
                     let nodes_to_stop = running_nodes
                         .into_iter()
@@ -212,7 +222,6 @@ impl Component for Home {
                     self.lock_registry = true;
                     stop_nodes(nodes_to_stop, action_sender);
                 } else if running_nodes.len() < node_count {
-                    // run some nodes
                     let to_start_count = node_count - running_nodes.len();
 
                     let inactive_nodes = self.get_inactive_nodes();
@@ -229,7 +238,12 @@ impl Component for Home {
                             ?to_add_count,
                             "We are adding+starting {to_add_count:?} nodes + starting these services: {inactive_nodes:?}"
                         );
-                        add_and_start_nodes(to_add_count, inactive_nodes, action_sender);
+                        add_and_start_nodes(
+                            to_add_count,
+                            self.discord_username.clone(),
+                            inactive_nodes,
+                            action_sender,
+                        );
                     } else {
                         // start these nodes
                         let nodes_to_start =
@@ -427,6 +441,7 @@ fn start_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
 
 fn add_and_start_nodes(
     count: usize,
+    owner: String,
     mut nodes_to_start: Vec<String>,
     action_sender: UnboundedSender<Action>,
 ) {
@@ -443,7 +458,7 @@ fn add_and_start_nodes(
             None,
             None,
             None,
-            None,
+            Some(owner),
             peers,
             None,
             None,

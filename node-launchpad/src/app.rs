@@ -39,7 +39,7 @@ impl App {
         let app_data = AppData::load()?;
 
         let tab = Tab::default();
-        let home = Home::new(app_data.allocated_disk_space)?;
+        let home = Home::new(app_data.allocated_disk_space, &app_data.discord_username)?;
         let config = Config::new()?;
         let discord_username_input =
             DiscordUsernameInputBox::new(app_data.discord_username.clone());
