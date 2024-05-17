@@ -21,7 +21,7 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
     // collect the spend DAG generation by generation without verifying
     let verify_after = false;
     let start_time = std::time::Instant::now();
-    let mut gen = 0;
+    let mut depth_exponential = 1;
     let mut current_utxos = dag.get_utxos();
     let mut last_utxos = BTreeSet::new();
 
@@ -30,14 +30,14 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
         last_utxos = std::mem::take(&mut current_utxos);
 
         client
-            .spend_dag_continue_from_utxos(&mut dag, Some(1), verify_after)
+            .spend_dag_continue_from_utxos(&mut dag, Some(depth_exponential), verify_after)
             .await?;
 
-        gen += 1;
+        depth_exponential += depth_exponential;
         current_utxos = dag.get_utxos();
         let dag_size = dag.all_spends().len();
         println!(
-            "Depth {gen}: the DAG now has {dag_size} spends and {} UTXOs",
+            "Depth {depth_exponential}: the DAG now has {dag_size} spends and {} UTXOs",
             current_utxos.len()
         );
     }
