@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715904202821,
+  "lastUpdate": 1715904377563,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176",
-          "message": "chore(test): lift up the expectations within address sim test",
-          "timestamp": "2024-01-24T13:25:21Z",
-          "tree_id": "1337b090c980eca5ef5f025f697d9e3c61e4e0a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/0e9eecc2bfe71e536c70f7f7a62e6f7bf9d67176"
-        },
-        "date": 1706106566782,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 59,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "05c8dc677b91a8bcdb4fd256c8f8c90be86885d6",
+          "message": "chore: use helper function to print banners",
+          "timestamp": "2024-05-16T23:13:22Z",
+          "tree_id": "97a6597cd4e11314290d604f306880827ee5e657",
+          "url": "https://github.com/maidsafe/safe_network/commit/05c8dc677b91a8bcdb4fd256c8f8c90be86885d6"
+        },
+        "date": 1715904376743,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 58,
             "unit": "MB"
           }
         ]
