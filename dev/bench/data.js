@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715963169200,
+  "lastUpdate": 1715963171167,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "33768ed2f3a626ff6b38fc91bf83a9963254a9d2",
-          "message": "fix(client): do not store paying-out cash_notes into disk",
-          "timestamp": "2024-01-15T14:12:09Z",
-          "tree_id": "522ee3c642bc89749ba7df4777ed468e5eb5601f",
-          "url": "https://github.com/maidsafe/safe_network/commit/33768ed2f3a626ff6b38fc91bf83a9963254a9d2"
-        },
-        "date": 1705330137920,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3084,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 14391,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "e8f21591958fb17171b6fa71b76e2db702c24be8",
           "message": "fix(CI): log in trace during generate bench chart run",
           "timestamp": "2024-01-25T12:55:06+01:00",
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "8b43ee774267e470ed2f7351100f6e3e04a86c77",
+          "message": "test(nodemanager): upgrade_should_retain_the_log_format_flag",
+          "timestamp": "2024-05-17T15:33:25Z",
+          "tree_id": "a95f1949816c72b1ef8c48ff929dc269926d625a",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b43ee774267e470ed2f7351100f6e3e04a86c77"
+        },
+        "date": 1715963170630,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 13731,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 78878,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
