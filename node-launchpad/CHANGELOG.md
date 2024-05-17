@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.3...node-launchpad-v0.1.4) - 2024-05-17
+
+### Added
+- *(node-launchpad)* discord name widget styling
+- *(node-launchpad)* tweaks on resource allocation widget
+
 ## [0.1.3](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.2...node-launchpad-v0.1.3) - 2024-05-15
 
 ### Added
