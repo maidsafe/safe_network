@@ -51,8 +51,6 @@ use tracing::debug;
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
 pub const DAEMON_SERVICE_NAME: &str = "safenodemand";
 
-pub const DEFAULT_CI_USER: &str = "runner";
-
 const RPC_START_UP_DELAY_MS: u64 = 3000;
 
 pub struct ServiceManager<T: ServiceStateActions + Send> {
@@ -361,6 +359,12 @@ pub async fn status_report(
                 "Reward balance: {}",
                 node.reward_balance
                     .map_or("-".to_string(), |b| b.to_string())
+            );
+            println!(
+                "Owner: {}",
+                node.owner
+                    .as_ref()
+                    .map_or("-".to_string(), |o| o.to_string())
             );
             println!();
         }

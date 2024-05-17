@@ -28,10 +28,11 @@ pub async fn join(
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
     interval: u64,
-    owner: String,
     node_path: Option<PathBuf>,
     node_version: Option<String>,
     log_format: Option<LogFormat>,
+    owner: Option<String>,
+    owner_prefix: Option<String>,
     peers: PeersArgs,
     skip_validation: bool,
     verbosity: VerbosityLevel,
@@ -74,10 +75,11 @@ pub async fn join(
     };
     let options = LocalNetworkOptions {
         faucet_bin_path: faucet_path,
-        owner,
         interval,
         join: true,
         node_count: count,
+        owner,
+        owner_prefix,
         peers,
         safenode_bin_path: node_path,
         skip_validation,
@@ -105,7 +107,6 @@ pub fn kill(keep_directories: bool, verbosity: VerbosityLevel) -> Result<()> {
 pub async fn run(
     build: bool,
     clean: bool,
-    owner: String,
     count: u16,
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
@@ -113,6 +114,8 @@ pub async fn run(
     node_path: Option<PathBuf>,
     node_version: Option<String>,
     log_format: Option<LogFormat>,
+    owner: Option<String>,
+    owner_prefix: Option<String>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -164,10 +167,11 @@ pub async fn run(
 
     let options = LocalNetworkOptions {
         faucet_bin_path: faucet_path,
-        owner,
         join: false,
         interval,
         node_count: count,
+        owner,
+        owner_prefix,
         peers: None,
         safenode_bin_path: node_path,
         skip_validation,

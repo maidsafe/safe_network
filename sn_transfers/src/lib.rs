@@ -17,9 +17,6 @@ mod wallet;
 
 pub(crate) use cashnotes::{Input, Output, TransactionBuilder};
 
-/// Default value as a node owner
-pub const DEFAULT_NODE_OWNER: &str = "maidsafe_test";
-
 /// Types used in the public API
 pub use cashnotes::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
