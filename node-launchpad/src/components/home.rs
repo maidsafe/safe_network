@@ -443,6 +443,7 @@ fn add_and_start_nodes(
             None,
             None,
             None,
+            None,
             peers,
             None,
             None,

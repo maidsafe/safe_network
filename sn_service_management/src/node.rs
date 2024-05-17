@@ -81,6 +81,11 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             args.push(OsString::from(metrics_port.to_string()));
         }
 
+        if let Some(owner) = &self.service_data.owner {
+            args.push(OsString::from("--owner"));
+            args.push(OsString::from(owner));
+        }
+
         if !options.bootstrap_peers.is_empty() {
             let peers_str = options
                 .bootstrap_peers
@@ -179,6 +184,8 @@ pub struct NodeServiceData {
     pub log_format: Option<LogFormat>,
     #[serde(default)]
     pub metrics_port: Option<u16>,
+    #[serde(default)]
+    pub owner: Option<String>,
     #[serde(default)]
     pub node_port: Option<u16>,
     pub number: u16,
