@@ -8,7 +8,6 @@
 
 use assert_cmd::Command;
 use libp2p_identity::PeerId;
-use sn_node_manager::DEFAULT_CI_USER;
 use sn_service_management::{ServiceStatus, StatusSummary};
 
 /// These tests need to execute as the root user.
@@ -29,7 +28,7 @@ fn cross_platform_service_install_and_control() {
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("add")
         .arg("--user")
-        .arg(DEFAULT_CI_USER)
+        .arg("runner")
         .arg("--count")
         .arg("3")
         .arg("--peer")

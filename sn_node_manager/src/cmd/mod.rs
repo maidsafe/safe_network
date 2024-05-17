@@ -14,7 +14,7 @@ pub mod node;
 
 use crate::{
     helpers::{download_and_extract_release, get_bin_version},
-    VerbosityLevel,
+    print_banner, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -187,9 +187,7 @@ fn build_binary(bin_type: &ReleaseType) -> Result<()> {
         args.extend(["--features", "open-metrics"]);
     }
 
-    let build_binary_msg = format!("Building {} binary", bin_name);
-    let banner = "=".repeat(build_binary_msg.len());
-    println!("{}\n{}\n{}", banner, build_binary_msg, banner);
+    print_banner(&format!("Building {} binary", bin_name));
 
     let mut build_result = Command::new("cargo");
     let _ = build_result.args(args.clone());

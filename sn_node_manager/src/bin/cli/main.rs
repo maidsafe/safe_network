@@ -14,7 +14,6 @@ use sn_node_manager::{
     cmd, VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
-use sn_transfers::DEFAULT_NODE_OWNER;
 use std::{net::Ipv4Addr, path::PathBuf};
 
 const DEFAULT_NODE_COUNT: u16 = 25;
@@ -690,11 +689,19 @@ pub enum LocalSubCmd {
         node_version: Option<String>,
         #[command(flatten)]
         peers: PeersArgs,
-        /// Specify the owner for the node.
+        /// Specify the owner for each node in the local network
         ///
-        /// For local networks, this is mostly useful in a testing context.
-        #[clap(long)]
+        /// The argument exists to support testing scenarios.
+        #[clap(long, conflicts_with = "owner_prefix")]
         owner: Option<String>,
+        /// Use this argument to launch each node in the network with an individual owner.
+        ///
+        /// Assigned owners will take the form "prefix_1", "prefix_2" etc., where "prefix" will be
+        /// replaced by the value specified by this argument.
+        ///
+        /// The argument exists to support testing scenarios.
+        #[clap(long, conflicts_with = "owner")]
+        owner_prefix: Option<String>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -755,11 +762,20 @@ pub enum LocalSubCmd {
         /// The version and path arguments are mutually exclusive.
         #[clap(long, conflicts_with = "build")]
         node_version: Option<String>,
-        /// Specify the owner for the node.
+        /// Specify the owner for each node in the local network
         ///
-        /// For local networks, this is mostly useful in a testing context.
-        #[clap(long)]
+        /// The argument exists to support testing scenarios.
+        #[clap(long, conflicts_with = "owner_prefix")]
         owner: Option<String>,
+        /// Use this argument to launch each node in the network with an individual owner.
+        ///
+        /// Assigned owners will take the form "prefix_1", "prefix_2" etc., where "prefix" will be
+        /// replaced by the value specified by this argument.
+        ///
+        /// The argument exists to support testing scenarios.
+        #[clap(long)]
+        #[clap(long, conflicts_with = "owner")]
+        owner_prefix: Option<String>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -911,21 +927,22 @@ async fn main() -> Result<()> {
                 node_path,
                 node_version,
                 log_format,
+                owner,
+                owner_prefix,
                 peers,
                 skip_validation: _,
-                owner,
             } => {
-                let owner = owner.unwrap_or(DEFAULT_NODE_OWNER.to_string());
                 cmd::local::join(
                     build,
                     count,
                     faucet_path,
                     faucet_version,
                     interval,
-                    owner,
                     node_path,
                     node_version,
                     log_format,
+                    owner,
+                    owner_prefix,
                     peers,
                     true,
                     verbosity,
@@ -940,17 +957,16 @@ async fn main() -> Result<()> {
                 faucet_path,
                 faucet_version,
                 interval,
+                owner,
+                owner_prefix,
                 node_path,
                 node_version,
                 log_format,
                 skip_validation: _,
-                owner,
             } => {
-                let owner = owner.unwrap_or(DEFAULT_NODE_OWNER.to_string());
                 cmd::local::run(
                     build,
                     clean,
-                    owner,
                     count,
                     faucet_path,
                     faucet_version,
@@ -958,6 +974,8 @@ async fn main() -> Result<()> {
                     node_path,
                     node_version,
                     log_format,
+                    owner,
+                    owner_prefix,
                     true,
                     verbosity,
                 )

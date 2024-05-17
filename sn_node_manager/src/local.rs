@@ -6,10 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    helpers::{get_bin_version, get_username},
-    DEFAULT_CI_USER,
-};
+use crate::helpers::{get_bin_version, get_username};
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -23,7 +20,7 @@ use sn_service_management::{
     rpc::{RpcActions, RpcClient},
     FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::{get_faucet_data_dir, DEFAULT_NODE_OWNER};
+use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -38,7 +35,7 @@ pub trait Launcher {
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
     fn launch_node(
         &self,
-        owner: String,
+        owner: Option<String>,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
@@ -73,15 +70,17 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_node(
         &self,
-        owner: String,
+        owner: Option<String>,
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
     ) -> Result<()> {
         let mut args = Vec::new();
 
-        args.push("--owner".to_string());
-        args.push(owner);
+        if let Some(owner) = owner {
+            args.push("--owner".to_string());
+            args.push(owner);
+        }
 
         if bootstrap_peers.is_empty() {
             args.push("--first".to_string())
@@ -181,10 +180,11 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 
 pub struct LocalNetworkOptions {
     pub faucet_bin_path: PathBuf,
-    pub owner: String,
     pub join: bool,
     pub interval: u64,
     pub node_count: u16,
+    pub owner: Option<String>,
+    pub owner_prefix: Option<String>,
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
@@ -218,16 +218,17 @@ pub async fn run_network(
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
+        let owner = get_node_owner(&options.owner_prefix, &options.owner, &number);
         let node = run_node(
             RunNodeOptions {
-                version: get_bin_version(&launcher.get_safenode_path())?,
-                owner: options.owner.clone(),
-                number,
+                bootstrap_peers: vec![],
                 genesis: true,
                 interval: options.interval,
-                rpc_socket_addr,
-                bootstrap_peers: vec![],
                 log_format: options.log_format,
+                number,
+                owner,
+                rpc_socket_addr,
+                version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
             &rpc_client,
@@ -247,16 +248,17 @@ pub async fn run_network(
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
+        let owner = get_node_owner(&options.owner_prefix, &options.owner, &number);
         let node = run_node(
             RunNodeOptions {
-                version: get_bin_version(&launcher.get_safenode_path())?,
-                owner: options.owner.clone(),
-                number,
+                bootstrap_peers: bootstrap_peers.clone(),
                 genesis: false,
                 interval: options.interval,
-                rpc_socket_addr,
-                bootstrap_peers: bootstrap_peers.clone(),
                 log_format: options.log_format,
+                number,
+                owner,
+                rpc_socket_addr,
+                version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
             &rpc_client,
@@ -298,14 +300,14 @@ pub async fn run_network(
 }
 
 pub struct RunNodeOptions {
-    pub version: String,
-    pub owner: String,
-    pub number: u16,
+    pub bootstrap_peers: Vec<Multiaddr>,
     pub genesis: bool,
     pub interval: u64,
     pub log_format: Option<LogFormat>,
+    pub number: u16,
+    pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
-    pub bootstrap_peers: Vec<Multiaddr>,
+    pub version: String,
 }
 
 pub async fn run_node(
@@ -313,20 +315,9 @@ pub async fn run_node(
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<NodeServiceData> {
-    // We shall use the input or env parsed username,
-    // as long as they are not default ones for tests.
-    // Input user_name is prioritized than parsed env.
-    let user = match (get_username(), run_options.owner == *DEFAULT_NODE_OWNER) {
-        (Ok(user), true) if user == *DEFAULT_CI_USER => {
-            format!("node_{}", run_options.number)
-        }
-        (_, false) | (Err(_), true) => run_options.owner.clone(),
-        (Ok(user), _) => user,
-    };
-
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
-        user.clone(),
+        run_options.owner.clone(),
         run_options.rpc_socket_addr,
         run_options.bootstrap_peers.clone(),
         run_options.log_format,
@@ -355,7 +346,7 @@ pub async fn run_node(
         metrics_port: None,
         node_port: None,
         number: run_options.number,
-        owner: None,
+        owner: run_options.owner,
         peer_id: Some(peer_id),
         pid: Some(node_info.pid),
         reward_balance: None,
@@ -418,6 +409,20 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
     Ok(())
 }
 
+fn get_node_owner(
+    owner_prefix: &Option<String>,
+    owner: &Option<String>,
+    number: &u16,
+) -> Option<String> {
+    if let Some(prefix) = owner_prefix {
+        Some(format!("{}_{}", prefix, number))
+    } else if let Some(owner) = owner {
+        Some(owner.clone())
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -449,13 +454,12 @@ mod tests {
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut mock_rpc_client = MockRpcClient::new();
-        let owner = get_username()?;
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_launch_node()
-            .with(eq(owner.clone()), eq(rpc_socket_addr), eq(vec![]), eq(None))
+            .with(eq(None), eq(rpc_socket_addr), eq(vec![]), eq(None))
             .times(1)
             .returning(|_, _, _, _| Ok(()));
         mock_launcher
@@ -493,14 +497,14 @@ mod tests {
 
         let node = run_node(
             RunNodeOptions {
-                version: "0.100.12".to_string(),
-                owner,
-                log_format: None,
-                number: 1,
+                bootstrap_peers: vec![],
                 genesis: true,
                 interval: 100,
+                log_format: None,
+                number: 1,
+                owner: None,
                 rpc_socket_addr,
-                bootstrap_peers: vec![],
+                version: "0.100.12".to_string(),
             },
             &mock_launcher,
             &mock_rpc_client,

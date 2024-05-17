@@ -10,7 +10,6 @@ mod utils;
 
 use assert_cmd::Command;
 use color_eyre::Result;
-use sn_node_manager::DEFAULT_CI_USER;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use utils::get_service_status;
 
@@ -23,12 +22,14 @@ use utils::get_service_status;
 ///
 /// If you run them on your own dev machine, do so at your own risk!
 
+const CI_USER: &str = "runner";
+
 #[tokio::test]
 async fn upgrade_to_latest_version() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("add")
         .arg("--user")
-        .arg(DEFAULT_CI_USER)
+        .arg(CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
@@ -84,7 +85,7 @@ async fn force_upgrade_when_two_binaries_have_the_same_version() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("add")
         .arg("--user")
-        .arg(DEFAULT_CI_USER)
+        .arg(CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
@@ -144,7 +145,7 @@ async fn force_downgrade_to_a_previous_version() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("add")
         .arg("--user")
-        .arg(DEFAULT_CI_USER)
+        .arg(CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
@@ -204,7 +205,7 @@ async fn upgrade_from_older_version_to_specific_version() -> Result<()> {
     let mut cmd = Command::cargo_bin("safenode-manager")?;
     cmd.arg("add")
         .arg("--user")
-        .arg(DEFAULT_CI_USER)
+        .arg(CI_USER)
         .arg("--count")
         .arg("3")
         .arg("--peer")
