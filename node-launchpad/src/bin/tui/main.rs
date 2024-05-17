@@ -58,15 +58,11 @@ fn is_running_in_terminal() -> bool {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // now launch the terminal
-    let terminal_type = terminal::detect_and_setup_terminal()?;
-
     if !is_running_in_terminal() {
+        // If we weren't already running in a terminal, this process returns early, having spawned
+        // a new process that launches a terminal.
+        let terminal_type = terminal::detect_and_setup_terminal()?;
         terminal::launch_terminal(&terminal_type)?;
-
-        // early return for _this_ process.
-        // The spawned process will be sudo'd and run in the terminal,
-        // taking over stdout/stderr/stdin.
         return Ok(());
     }
 
