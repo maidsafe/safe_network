@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1715918961460,
+  "lastUpdate": 1715963021018,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8d7cc12ca0fd91fc51d6be2aea56db050e21866d",
-          "message": "ci: move websockets and wasm to cross platform workflow file",
-          "timestamp": "2024-01-25T11:23:10+01:00",
-          "tree_id": "92a8cfef5c506ff12aed3892e61140c9ef60175d",
-          "url": "https://github.com/maidsafe/safe_network/commit/8d7cc12ca0fd91fc51d6be2aea56db050e21866d"
-        },
-        "date": 1706179154461,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3018085035058207,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8745485651398341,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.384780602819,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 53.81394016198434,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "8b43ee774267e470ed2f7351100f6e3e04a86c77",
+          "message": "test(nodemanager): upgrade_should_retain_the_log_format_flag",
+          "timestamp": "2024-05-17T15:33:25Z",
+          "tree_id": "a95f1949816c72b1ef8c48ff929dc269926d625a",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b43ee774267e470ed2f7351100f6e3e04a86c77"
+        },
+        "date": 1715963014668,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1331839424381867,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1827685382375368,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.53126121235633,
             "unit": "MiB/s"
           }
         ]
