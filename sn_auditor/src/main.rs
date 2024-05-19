@@ -77,8 +77,13 @@ async fn main() -> Result<()> {
     let _log_handles = log_builder.initialize()?;
 
     let beta_participants = if let Some(participants_file) = opt.beta_participants {
-        let raw_json = std::fs::read_to_string(&participants_file)?;
-        let discord_names: Vec<String> = serde_json::from_str(&raw_json)?;
+        let raw_data = std::fs::read_to_string(&participants_file)?;
+        // instead of serde_json, just use a line separated file
+        let discord_names = raw_data
+            .lines()
+            .map(|line| line.trim().to_string())
+            .collect::<Vec<String>>();
+
         println!(
             "Tracking beta rewards for the {} discord usernames provided in {:?}",
             discord_names.len(),
@@ -203,7 +208,6 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize svg
-    println!("Initialize visualization...");
     dag.dump_dag_svg()?;
 
     // initialize beta rewards program tracking
@@ -239,7 +243,7 @@ async fn initialize_background_spend_dag_collection(
 
 async fn start_server(dag: SpendDagDb) -> Result<()> {
     let server = Server::http("0.0.0.0:4242").expect("Failed to start server");
-    println!("Starting http server listening on port 4242...");
+    println!("Starting dag-query server listening on port 4242...");
     for request in server.incoming_requests() {
         println!(
             "Received request! method: {:?}, url: {:?}",
@@ -251,7 +255,7 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         let response = match request.url() {
             "/" => routes::spend_dag_svg(&dag),
             s if s.starts_with("/spend/") => routes::spend(&dag, &request),
-            "/beta_rewards" => routes::beta_rewards(&dag),
+            "/beta-rewards" => routes::beta_rewards(&dag),
             _ => routes::not_found(),
         };
 
