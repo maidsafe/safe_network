@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716079875990,
+  "lastUpdate": 1716080000729,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e2f68048f58f69a2e507e3f8c4281bd12b24655d",
-          "message": "ci: build node manager on local network start\n\nThis is required until we update the Github Action to pull the latest release of the node manager.\nThis couldn't be done initially because we were moving the releases to the `safe_network`\nrepository, but it should be doable now.",
-          "timestamp": "2024-01-30T16:18:53+01:00",
-          "tree_id": "9225280e0e85850135bd77ace378122e2af6c8d8",
-          "url": "https://github.com/maidsafe/safe_network/commit/e2f68048f58f69a2e507e3f8c4281bd12b24655d"
-        },
-        "date": 1706630467185,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2217269170190985,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6938701052467218,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 53.75318430076641,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 37.74191692693209,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "db8be2d6bbb3b67e305b59d2e827d768aa25edf0",
+          "message": "chore: check we are in terminal before creating one\n\nI tried to run `node-launchpad` in a headless VM and it said it couldn't find a terminal. We don't\nneed to find a terminal if we are already running in one, so the check here is changed slightly.\n\nWe will probably want to reconfigure the elevated privilege to be a separate thing from configuring\na terminal, but on Windows this will be a bit more complex and will better be done as a separate\npiece of work.",
+          "timestamp": "2024-05-19T00:00:15Z",
+          "tree_id": "7df74059593f860217b5190d48b8bec8721501a5",
+          "url": "https://github.com/maidsafe/safe_network/commit/db8be2d6bbb3b67e305b59d2e827d768aa25edf0"
+        },
+        "date": 1716079995660,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.189157700762508,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0045186795554633,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 50.791993126360715,
             "unit": "MiB/s"
           }
         ]
