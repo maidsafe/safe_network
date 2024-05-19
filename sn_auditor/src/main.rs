@@ -104,7 +104,10 @@ async fn main() -> Result<()> {
 
     if let Some(dag_to_view) = opt.offline_viewer {
         let dag = SpendDagDb::offline(dag_to_view, sk)?;
-        dag.dump_dag_svg()?;
+        #[cfg(feature = "svg")]
+        {
+            dag.dump_dag_svg()?;
+        }
         start_server(dag).await?;
         return Ok(());
     }
@@ -208,6 +211,7 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize svg
+    #[cfg(feature = "svg")]
     dag.dump_dag_svg()?;
 
     // initialize beta rewards program tracking
