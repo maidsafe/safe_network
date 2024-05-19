@@ -210,6 +210,7 @@ fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
     let owner = if let Some(owner) = opt.owner {
+        debug!("Node's owner set to: {owner}");
         owner.clone()
     } else {
         "user".to_owned()
