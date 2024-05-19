@@ -28,9 +28,10 @@ pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u
 /// The derivation index for the genesis Spend.
 const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
 
-/// Default genesis PK and SK for testing purpose. Be sure to pass the correct values via env.
-const TESTING_GENESIS_PK: &str = "b814bc39a357e6f6000f4946da52dcfc72e19efe91e31d4e94e9cb408d765a4a6cf3bf2df14806f8fa524bd7ebb9bb4e"; // DevSkim: ignore DS173237
+/// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_PK` value via env.
 const TESTING_GENESIS_SK: &str = "23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9"; // DevSkim: ignore DS173237
+/// Genesis PK for live network. Be sure to pass the correct `GENESIS_SK` value via env when to use.
+const LIVE_GENESIS_PK: &str = "b814bc39a357e6f6000f4946da52dcfc72e19efe91e31d4e94e9cb408d765a4a6cf3bf2df14806f8fa524bd7ebb9bb4e"; // DevSkim: ignore DS173237
 
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
 /// Network royalties fee is expected to be 15% of the payment amount, i.e. 85% of store cost + 15% royalties fees.
@@ -65,7 +66,7 @@ lazy_static! {
     /// The hard coded value is for production release, allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
-        let pk_str = std::env::var("GENESIS_PK").unwrap_or(TESTING_GENESIS_PK.to_string());
+        let pk_str = std::env::var("GENESIS_PK").unwrap_or(LIVE_GENESIS_PK.to_string());
 
         match MainPubkey::from_hex(pk_str) {
             Ok(pk) => pk,
