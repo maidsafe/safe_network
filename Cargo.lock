@@ -4606,7 +4606,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "atty",
  "better-panic",
@@ -6817,7 +6817,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -6874,7 +6874,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "blsttc",
  "clap",
@@ -6912,7 +6912,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.91.3"
+version = "0.91.4"
 dependencies = [
  "aes 0.7.5",
  "base64 0.22.1",
@@ -7039,7 +7039,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.17"
+version = "0.4.18"
 dependencies = [
  "assert_fs",
  "base64 0.22.1",
@@ -7092,7 +7092,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "clap",
  "color-eyre",
@@ -7146,7 +7146,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.106.3"
+version = "0.106.4"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -7201,7 +7201,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.16"
+version = "0.6.17"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -7290,7 +7290,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "async-trait",
  "dirs-next",

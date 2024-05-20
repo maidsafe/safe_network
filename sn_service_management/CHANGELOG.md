@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.7...sn_service_management-v0.2.8) - 2024-05-20
+
+### Added
+- *(node_manager)* add auditor support
+- provide `--upnp` flag for `add` command
+
+### Fixed
+- retain options on upgrade and prevent dup ports
+
 ## [0.2.7](https://github.com/maidsafe/safe_network/compare/sn_service_management-v0.2.6...sn_service_management-v0.2.7) - 2024-05-15
 
 ### Added
