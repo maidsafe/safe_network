@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716235666966,
+  "lastUpdate": 1716235810705,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "718a99dd066d924576c10fe7ade2adb74bf127b2",
-          "message": "fix(network): refactor cfg to allow get_record reattempts",
-          "timestamp": "2024-02-01T10:41:13Z",
-          "tree_id": "53b4b5459af7a58e84f6c683e06232888bf44a56",
-          "url": "https://github.com/maidsafe/safe_network/commit/718a99dd066d924576c10fe7ade2adb74bf127b2"
-        },
-        "date": 1706788257753,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 58,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c63a34f1a21f19951cf157f380c7f3e3fab78d09",
+          "message": "fix(node): notify fetch completion earlier to avoid being skipped",
+          "timestamp": "2024-05-20T19:17:42Z",
+          "tree_id": "49550f20298b17f262ba0feda52727fa6db38adb",
+          "url": "https://github.com/maidsafe/safe_network/commit/c63a34f1a21f19951cf157f380c7f3e3fab78d09"
+        },
+        "date": 1716235809641,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 63,
             "unit": "MB"
           }
         ]
