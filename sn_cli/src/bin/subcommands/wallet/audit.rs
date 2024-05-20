@@ -107,20 +107,21 @@ pub async fn audit(
     let dag = gather_spend_dag(client, root_dir, fast_mode).await?;
 
     if to_dot {
-        println!("==========================   spends DAG digraph   =============================");
+        println!("==========================   spends DAG digraph   ==========================");
         println!("{}", dag.dump_dot_format());
-    } else if let Some(sk) = foundation_sk {
+    }
+    if let Some(sk) = foundation_sk {
         println!(
-            "=======================   payment forward statistics  =========================="
+            "==========================   payment forward statistics  =========================="
         );
         println!("{}", dag.dump_payment_forward_statistics(&sk));
-    } else if royalties {
+    }
+    if royalties {
         let royalties = dag.all_royalties()?;
         redeem_royalties(royalties, client, root_dir).await?;
-    } else {
-        println!("Audit completed successfully.");
     }
 
+    println!("Audit completed successfully.");
     Ok(())
 }
 
