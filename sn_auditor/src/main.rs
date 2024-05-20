@@ -66,7 +66,7 @@ struct Opt {
     beta_participants: Option<PathBuf>,
 
     /// Hex string of the Foundation SK.
-    #[clap(name = "sk")]
+    #[clap(long, name = "sk")]
     sk_str: String,
 }
 

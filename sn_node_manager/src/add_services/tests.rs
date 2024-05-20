@@ -2370,6 +2370,8 @@ async fn add_auditor_should_add_a_auditor_service() -> Result<()> {
                 args: vec![
                     OsString::from("--log-output-dest"),
                     OsString::from(auditor_logs_dir.to_path_buf().as_os_str()),
+                    OsString::from("--sk-str"),
+                    OsString::from("test"),
                 ],
                 contents: None,
                 environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
@@ -2385,6 +2387,7 @@ async fn add_auditor_should_add_a_auditor_service() -> Result<()> {
     add_auditor(
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
+            foundation_sk_string: "test".to_string(),
             env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
@@ -2455,6 +2458,7 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
     let result = add_auditor(
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
+            foundation_sk_string: "test".to_string(),
             env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),

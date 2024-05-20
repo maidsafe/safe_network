@@ -388,6 +388,9 @@ pub enum AuditorSubCmd {
         path: Option<PathBuf>,
         #[command(flatten)]
         peers: PeersArgs,
+        /// Hex string of the Foundation SK.
+        #[clap(long, name = "sk")]
+        sk_str: String,
         /// Provide a auditor binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -838,6 +841,7 @@ async fn main() -> Result<()> {
             log_dir_path,
             path,
             peers,
+            sk_str,
             url,
             version,
         }) => {
@@ -845,6 +849,7 @@ async fn main() -> Result<()> {
                 env_variables,
                 log_dir_path,
                 peers,
+                sk_str,
                 path,
                 url,
                 version,

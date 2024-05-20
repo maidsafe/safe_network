@@ -150,9 +150,10 @@ pub struct AddNodeServiceOptions {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallAuditorServiceCtxBuilder {
+    pub auditor_path: PathBuf,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
-    pub auditor_path: PathBuf,
+    pub foundation_sk_string: String,
     pub log_dir_path: PathBuf,
     pub name: String,
     pub service_user: String,
@@ -175,6 +176,8 @@ impl InstallAuditorServiceCtxBuilder {
             args.push(OsString::from("--peer"));
             args.push(OsString::from(peers_str));
         }
+        args.push(OsString::from("--sk-str"));
+        args.push(OsString::from(self.foundation_sk_string));
 
         Ok(ServiceInstallCtx {
             label: self.name.parse()?,
@@ -233,6 +236,7 @@ impl InstallFaucetServiceCtxBuilder {
 
 pub struct AddAuditorServiceOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
+    pub foundation_sk_string: String,
     pub env_variables: Option<Vec<(String, String)>>,
     pub auditor_install_bin_path: PathBuf,
     pub auditor_src_bin_path: PathBuf,
