@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716228469135,
+  "lastUpdate": 1716228472125,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "06a9b80f1f3544501eef894ea4147616904cda6f",
-          "message": "chore: remove the `sn_testnet` crate\n\nThis crate is made obsolete by the node manager, which we can now switch to for development work.\n\nIt had already been removed from the release process, but I did discover references to it in two\nother scripts, which are not used any more, so I also removed those.",
-          "timestamp": "2024-01-31T18:45:50Z",
-          "tree_id": "a3c79a68dd8c21b1b23f03714252a293c32b2346",
-          "url": "https://github.com/maidsafe/safe_network/commit/06a9b80f1f3544501eef894ea4147616904cda6f"
-        },
-        "date": 1706730093652,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 17115,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 99033,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b32a9ccae350b956414605640a244b91224a3d41",
+          "message": "chore: enable default features during faucet release",
+          "timestamp": "2024-05-20T17:16:08Z",
+          "tree_id": "e53aa0e21b8edbe78e50086823ba68eaad58165f",
+          "url": "https://github.com/maidsafe/safe_network/commit/b32a9ccae350b956414605640a244b91224a3d41"
+        },
+        "date": 1716228470999,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14886,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 95119,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
