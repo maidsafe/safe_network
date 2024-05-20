@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716201127471,
+  "lastUpdate": 1716201265660,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34",
-          "message": "docs: nano tokens to network address",
-          "timestamp": "2024-01-31T15:53:23Z",
-          "tree_id": "522aeb4ed4d1ce663baad2cc0f81802e4cbf5fb3",
-          "url": "https://github.com/maidsafe/safe_network/commit/7b3df6434bfc3d9092cc3b2f8a067d6411dbfd34"
-        },
-        "date": 1706719567734,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6a0ac8d492a2601b1faf6bf8af3601f02b980c36",
+          "message": "test(CI): ensure discord_ids got decrypted properly",
+          "timestamp": "2024-05-20T09:34:43Z",
+          "tree_id": "24af95f1bd3bfb13843a1602f97bf4fee2fb5ddb",
+          "url": "https://github.com/maidsafe/safe_network/commit/6a0ac8d492a2601b1faf6bf8af3601f02b980c36"
+        },
+        "date": 1716201265123,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
