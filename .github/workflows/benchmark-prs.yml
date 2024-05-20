@@ -7,7 +7,6 @@ env:
   RUST_BACKTRACE: 1
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  GENESIS_PK: 9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee
 
 jobs:
   benchmark-cli:
