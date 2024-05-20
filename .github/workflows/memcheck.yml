@@ -292,6 +292,12 @@ jobs:
         timeout-minutes: 5
         if: always()
 
+      - name: Ensure discord_ids decrypted
+        run: |
+          rg 'node_' ./spend_dag_and_statistics.txt -o
+        timeout-minutes: 1
+        if: always()
+
       - name: Check nodes running
         shell: bash
         timeout-minutes: 1
