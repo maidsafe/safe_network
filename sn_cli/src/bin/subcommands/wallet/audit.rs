@@ -61,9 +61,9 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
     Ok(dag)
 }
 
-async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> {
+async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> Result<SpendDag> {
     let dag_path = root_dir.join(SPEND_DAG_FILENAME);
-    let inital_dag = match SpendDag::load_from_file(&dag_path) {
+    let mut inital_dag = match SpendDag::load_from_file(&dag_path) {
         Ok(dag) => {
             println!("Found a local spend dag on disk, continuing from it...");
             dag
@@ -77,7 +77,18 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path) -> Result<SpendDag> 
                 .await?
         }
     };
-    let dag = step_by_step_spend_dag_gathering(client, inital_dag).await?;
+
+    let dag = match fast_mode {
+        // fast but silent DAG collection
+        true => {
+            client
+                .spend_dag_continue_from_utxos(&mut inital_dag, None, false)
+                .await?;
+            inital_dag
+        }
+        // slow but step by step narrated DAG collection
+        false => step_by_step_spend_dag_gathering(client, inital_dag).await?,
+    };
 
     println!("Saving DAG to disk at: {dag_path:?}");
     dag.dump_to_file(dag_path)?;
@@ -92,7 +103,8 @@ pub async fn audit(
     root_dir: &Path,
     foundation_sk: Option<SecretKey>,
 ) -> Result<()> {
-    let dag = gather_spend_dag(client, root_dir).await?;
+    let fast_mode = to_dot || royalties;
+    let dag = gather_spend_dag(client, root_dir, fast_mode).await?;
 
     if to_dot {
         println!("==========================   spends DAG digraph   =============================");
