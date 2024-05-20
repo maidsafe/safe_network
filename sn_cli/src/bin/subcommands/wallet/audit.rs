@@ -18,7 +18,6 @@ use sn_client::{Client, SpendDag};
 const SPEND_DAG_FILENAME: &str = "spend_dag";
 
 async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) -> Result<SpendDag> {
-    // collect the spend DAG generation by generation without verifying
     let verify_after = false;
     let start_time = std::time::Instant::now();
     let mut depth_exponential = 1;
@@ -27,10 +26,16 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
 
     println!("Gathering the Spend DAG, note that this might take a very long time...");
     while last_utxos != current_utxos {
+        let unexplored_utxos = current_utxos.difference(&last_utxos).cloned().collect();
         last_utxos = std::mem::take(&mut current_utxos);
 
         client
-            .spend_dag_continue_from_utxos(&mut dag, Some(depth_exponential), verify_after)
+            .spend_dag_continue_from(
+                &mut dag,
+                unexplored_utxos,
+                Some(depth_exponential),
+                verify_after,
+            )
             .await?;
 
         depth_exponential += depth_exponential;

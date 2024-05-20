@@ -258,19 +258,21 @@ impl Client {
         Ok(())
     }
 
-    /// Extends an existing SpendDag starting from the utxos in this DAG
-    /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
-    /// Records errors in the new DAG branches if any
+    /// Extends an existing SpendDag starting from the given utxos
+    /// If verify is true, records faults in the DAG
     /// Stops gathering after max_depth generations
-    pub async fn spend_dag_continue_from_utxos(
+    pub async fn spend_dag_continue_from(
         &self,
         dag: &mut SpendDag,
+        utxos: BTreeSet<SpendAddress>,
         max_depth: Option<u32>,
         verify: bool,
     ) -> WalletResult<()> {
         let main_dag_src = dag.source();
-        info!("Expanding spend DAG with source: {main_dag_src:?} from utxos...");
-        let utxos = dag.get_utxos();
+        info!(
+            "Expanding spend DAG with source: {main_dag_src:?} from {} utxos",
+            utxos.len()
+        );
 
         let mut stream = futures::stream::iter(utxos.into_iter())
             .map(|utxo| async move {
@@ -296,5 +298,20 @@ impl Client {
 
         info!("Done gathering spend DAG from utxos");
         Ok(())
+    }
+
+    /// Extends an existing SpendDag starting from the utxos in this DAG
+    /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
+    /// If verify is true, records faults in the DAG
+    /// Stops gathering after max_depth generations
+    pub async fn spend_dag_continue_from_utxos(
+        &self,
+        dag: &mut SpendDag,
+        max_depth: Option<u32>,
+        verify: bool,
+    ) -> WalletResult<()> {
+        let utxos = dag.get_utxos();
+        self.spend_dag_continue_from(dag, utxos, max_depth, verify)
+            .await
     }
 }
