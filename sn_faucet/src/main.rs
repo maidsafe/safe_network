@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod faucet_server;
-
 #[cfg(feature = "distribution")]
 mod token_distribution;
 
