@@ -76,7 +76,10 @@ lazy_static! {
         };
 
         match MainPubkey::from_hex(pk_str) {
-            Ok(pk) => pk,
+            Ok(pk) => {
+                info!("Genesis PK: {pk:?}");
+                pk
+            },
             Err(err) => panic!("Failed to parse genesis PK: {err:?}"),
         }
     };
