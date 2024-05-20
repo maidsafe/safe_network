@@ -369,6 +369,10 @@ pub enum AuditorSubCmd {
     /// This command must run as the root/administrative user.
     #[clap(name = "add")]
     Add {
+        /// Secret encryption key of the beta rewards to decypher
+        /// discord usernames of the beta participants
+        #[clap(short = 'k', long, value_name = "hex_secret_key")]
+        beta_encryption_key: Option<String>,
         /// Provide environment variables for the auditor service.
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
@@ -847,6 +851,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         SubCmd::Auditor(AuditorSubCmd::Add {
+            beta_encryption_key,
             env_variables,
             log_dir_path,
             path,
@@ -855,6 +860,7 @@ async fn main() -> Result<()> {
             version,
         }) => {
             cmd::auditor::add(
+                beta_encryption_key,
                 env_variables,
                 log_dir_path,
                 peers,

@@ -312,9 +312,10 @@ pub fn add_auditor(
     )?;
 
     let install_ctx = InstallAuditorServiceCtxBuilder {
+        auditor_path: install_options.auditor_install_bin_path.clone(),
+        beta_encryption_key: install_options.beta_encryption_key.clone(),
         bootstrap_peers: install_options.bootstrap_peers.clone(),
         env_variables: install_options.env_variables.clone(),
-        auditor_path: install_options.auditor_install_bin_path.clone(),
         log_dir_path: install_options.service_log_dir_path.clone(),
         name: "auditor".to_string(),
         service_user: install_options.user.clone(),

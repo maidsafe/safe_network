@@ -2385,6 +2385,7 @@ async fn add_auditor_should_add_a_auditor_service() -> Result<()> {
     add_auditor(
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
+            beta_encryption_key: None,
             env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
@@ -2455,6 +2456,7 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
     let result = add_auditor(
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
+            beta_encryption_key: None,
             env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
@@ -2476,6 +2478,92 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
             )
         }
     }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_auditor_should_include_beta_encryption_key_if_specified() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let auditor_logs_dir = temp_dir.child("logs");
+    auditor_logs_dir.create_dir_all()?;
+    let auditor_install_dir = temp_dir.child("install");
+    auditor_install_dir.create_dir_all()?;
+    let auditor_install_path = auditor_install_dir.child(AUDITOR_FILE_NAME);
+    let auditor_download_path = temp_dir.child(AUDITOR_FILE_NAME);
+    auditor_download_path.write_binary(b"fake auditor bin")?;
+
+    let mut node_registry = NodeRegistry {
+        bootstrap_peers: vec![],
+        daemon: None,
+        auditor: None,
+        faucet: None,
+        environment_variables: None,
+        nodes: vec![],
+        save_path: node_reg_path.to_path_buf(),
+    };
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--log-output-dest"),
+                    OsString::from(auditor_logs_dir.to_path_buf().as_os_str()),
+                    OsString::from("--beta-encryption-key"),
+                    OsString::from("test"),
+                ],
+                contents: None,
+                environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+                label: "auditor".parse()?,
+                program: auditor_install_path.to_path_buf(),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()));
+
+    add_auditor(
+        AddAuditorServiceOptions {
+            bootstrap_peers: vec![],
+            beta_encryption_key: Some("test".to_string()),
+            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            auditor_src_bin_path: auditor_download_path.to_path_buf(),
+            auditor_install_bin_path: auditor_install_path.to_path_buf(),
+            service_log_dir_path: auditor_logs_dir.to_path_buf(),
+            user: get_username(),
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )?;
+
+    auditor_download_path.assert(predicate::path::missing());
+    auditor_install_path.assert(predicate::path::is_file());
+    auditor_logs_dir.assert(predicate::path::is_dir());
+
+    node_reg_path.assert(predicates::path::is_file());
+
+    let saved_auditor = node_registry.auditor.unwrap();
+    assert_eq!(
+        saved_auditor.auditor_path,
+        auditor_install_path.to_path_buf()
+    );
+    assert_eq!(saved_auditor.log_dir_path, auditor_logs_dir.to_path_buf());
+    assert!(saved_auditor.pid.is_none());
+    assert_eq!(saved_auditor.service_name, "auditor");
+    assert_eq!(saved_auditor.status, ServiceStatus::Added);
+    assert_eq!(saved_auditor.user, get_username());
+    assert_eq!(saved_auditor.version, latest_version);
 
     Ok(())
 }

@@ -25,7 +25,9 @@ use sn_service_management::{
 };
 use std::path::PathBuf;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn add(
+    beta_encryption_key: Option<String>,
     env_variables: Option<Vec<(String, String)>>,
     log_dir_path: Option<PathBuf>,
     peers: PeersArgs,
@@ -72,10 +74,11 @@ pub async fn add(
 
     add_auditor(
         AddAuditorServiceOptions {
-            bootstrap_peers: get_peers_from_args(peers).await?,
-            env_variables,
             auditor_src_bin_path,
             auditor_install_bin_path: PathBuf::from("/usr/local/bin/auditor"),
+            beta_encryption_key,
+            bootstrap_peers: get_peers_from_args(peers).await?,
+            env_variables,
             service_log_dir_path,
             user: service_user.to_string(),
             version,

@@ -150,9 +150,10 @@ pub struct AddNodeServiceOptions {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallAuditorServiceCtxBuilder {
+    pub auditor_path: PathBuf,
+    pub beta_encryption_key: Option<String>,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
-    pub auditor_path: PathBuf,
     pub log_dir_path: PathBuf,
     pub name: String,
     pub service_user: String,
@@ -174,6 +175,10 @@ impl InstallAuditorServiceCtxBuilder {
                 .join(",");
             args.push(OsString::from("--peer"));
             args.push(OsString::from(peers_str));
+        }
+        if let Some(beta_encryption_key) = self.beta_encryption_key {
+            args.push(OsString::from("--beta-encryption-key"));
+            args.push(OsString::from(beta_encryption_key));
         }
 
         Ok(ServiceInstallCtx {
@@ -232,10 +237,11 @@ impl InstallFaucetServiceCtxBuilder {
 }
 
 pub struct AddAuditorServiceOptions {
-    pub bootstrap_peers: Vec<Multiaddr>,
-    pub env_variables: Option<Vec<(String, String)>>,
     pub auditor_install_bin_path: PathBuf,
     pub auditor_src_bin_path: PathBuf,
+    pub beta_encryption_key: Option<String>,
+    pub bootstrap_peers: Vec<Multiaddr>,
+    pub env_variables: Option<Vec<(String, String)>>,
     pub service_log_dir_path: PathBuf,
     pub user: String,
     pub version: String,
