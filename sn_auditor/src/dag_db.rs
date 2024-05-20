@@ -8,7 +8,7 @@
 
 use bls::SecretKey;
 use color_eyre::eyre::{eyre, Result};
-#[cfg(feature = "svg")]
+#[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
 use sn_client::networking::NetworkError;
@@ -147,7 +147,7 @@ impl SpendDagDb {
     }
 
     /// Dump current DAG as svg to disk
-    #[cfg(feature = "svg")]
+    #[cfg(feature = "svg-dag")]
     pub fn dump_dag_svg(&self) -> Result<()> {
         info!("Dumping DAG to svg...");
         std::fs::create_dir_all(&self.path)?;
@@ -189,7 +189,7 @@ impl SpendDagDb {
         *w_handle = dag;
         std::mem::drop(w_handle);
 
-        #[cfg(feature = "svg")]
+        #[cfg(feature = "svg-dag")]
         {
             // update and save svg to file in a background thread so we don't block
             //
@@ -327,7 +327,7 @@ pub async fn new_dag_with_genesis_only(client: &Client) -> Result<SpendDag> {
     Ok(dag)
 }
 
-#[cfg(feature = "svg")]
+#[cfg(feature = "svg-dag")]
 fn dag_to_svg(dag: &SpendDag) -> Result<Vec<u8>> {
     let dot = dag.dump_dot_format();
     let graph = parse(&dot).map_err(|err| eyre!("Failed to parse dag from dot: {err}"))?;
@@ -347,7 +347,7 @@ fn dag_to_svg(dag: &SpendDag) -> Result<Vec<u8>> {
 // - marks poisoned spends as red
 // - marks UTXOs and unknown ancestors as yellow
 // - just pray it works on windows
-#[cfg(feature = "svg")]
+#[cfg(feature = "svg-dag")]
 fn quick_edit_svg(svg: Vec<u8>, dag: &SpendDag) -> Result<Vec<u8>> {
     let mut str = String::from_utf8(svg).map_err(|err| eyre!("Failed svg conversion: {err}"))?;
 
