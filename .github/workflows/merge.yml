@@ -976,6 +976,13 @@ jobs:
           platform: ubuntu-latest
           build: true
 
+      - name: Check we're _not_ warned about using default genesis
+        run: |
+          if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+            exit 1
+          fi
+        shell: bash
+
       # The test currently fails because the GH runner runs out of disk space. So we clear out the target dir here.
       # Might be related to additional deps used in the codebase.
       - name: Move built binaries and clear out target dir

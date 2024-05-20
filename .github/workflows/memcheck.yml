@@ -89,6 +89,9 @@ jobs:
           platform: ubuntu-latest
           set-safe-peers: false
 
+      - name: Check we're warned about using default genesis
+        run: rg "USING DEFAULT" "$NODE_DATA_PATH" -u
+        shell: bash
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
         shell: bash
