@@ -113,9 +113,9 @@ impl DiscordName {
 impl DiscordNameCipher {
     /// Create a new DiscordNameCipher from a Discord username
     /// it is encrypted to the given pubkey
-    pub fn create(user_name: &str, foundation_pk: PublicKey) -> Result<Self> {
+    pub fn create(user_name: &str, encryption_pk: PublicKey) -> Result<Self> {
         let discord_name = DiscordName::new(user_name);
-        let cipher = foundation_pk.encrypt(discord_name.to_sized_bytes());
+        let cipher = encryption_pk.encrypt(discord_name.to_sized_bytes());
         let bytes = cipher.to_bytes();
         if bytes.len() > MAX_CIPHER_SIZE {
             return Err(TransferError::DiscordNameCipherTooBig);
@@ -145,24 +145,24 @@ mod tests {
 
     #[test]
     fn test_discord_name_cyphering() {
-        let foundation_sk = SecretKey::random();
-        let foundation_pk = foundation_sk.public_key();
+        let encryption_sk = SecretKey::random();
+        let encryption_pk = encryption_sk.public_key();
 
         let user_name = "JohnDoe#1234";
         let user_name_hash = Hash::hash(user_name.as_bytes());
         let cypher =
-            DiscordNameCipher::create(user_name, foundation_pk).expect("cypher creation failed");
+            DiscordNameCipher::create(user_name, encryption_pk).expect("cypher creation failed");
         let recovered_hash = cypher
-            .decrypt_to_username_hash(&foundation_sk)
+            .decrypt_to_username_hash(&encryption_sk)
             .expect("decryption failed");
         assert_eq!(user_name_hash, recovered_hash);
 
         let user_name2 = "JackMa#5678";
         let user_name_hash2 = Hash::hash(user_name2.as_bytes());
         let cypher =
-            DiscordNameCipher::create(user_name2, foundation_pk).expect("cypher creation failed");
+            DiscordNameCipher::create(user_name2, encryption_pk).expect("cypher creation failed");
         let recovered_hash = cypher
-            .decrypt_to_username_hash(&foundation_sk)
+            .decrypt_to_username_hash(&encryption_sk)
             .expect("decryption failed");
         assert_eq!(user_name_hash2, recovered_hash);
 
