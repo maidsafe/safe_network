@@ -8,8 +8,6 @@ on:
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
-  GENESIS_PK: aa07e487122eb31021301b95f4fb2b01363653cad582a6eb8ba0cfce937e51604350d7fb8a718596411f35d399cbdf28
-  GENESIS_SK: ${{ secrets.CI_TESTING_GENESIS_SK }}
 jobs:
   e2e:
     name: E2E tests
