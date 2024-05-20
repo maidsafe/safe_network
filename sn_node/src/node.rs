@@ -30,7 +30,7 @@ use sn_protocol::{
     messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, NETWORK_ROYALTIES_PK};
+use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -769,7 +769,7 @@ impl Node {
             let mut wallet = HotWallet::load_from(&network.root_dir_path)?;
             let balance = wallet.balance();
 
-            let payee = vec![(balance, *NETWORK_ROYALTIES_PK)];
+            let payee = vec![(balance, *PAYMENT_FORWARD_PK)];
 
             spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
         }

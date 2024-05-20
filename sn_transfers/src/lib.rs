@@ -45,6 +45,8 @@ use lazy_static::lazy_static;
 const FOUNDATION_PK_STR: &str = "8f73b97377f30bed96df1c92daf9f21b4a82c862615439fab8095e68860a5d0dff9f97dba5aef503a26c065e5cb3c7ca"; // DevSkim: ignore DS173237
 /// Public key where network royalties payments are expected to be made to.
 const NETWORK_ROYALTIES_STR: &str = "b4243ec9ceaec374ef992684cd911b209758c5de53d1e406b395bc37ebc8ce50e68755ea6d32da480ae927e1af4ddadb"; // DevSkim: ignore DS173237
+/// Public key where payment forward to be targeted.
+const PAYMENT_FORWARD_STR: &str = "a585839f0502713a0ed6a327f3bd0c301f9e8fe298c93dd00ed7869d8e6804244f0d3014e90df45cd344a7ccd702865c"; // DevSkim: ignore DS173237
 
 lazy_static! {
     pub static ref FOUNDATION_PK: MainPubkey = {
@@ -60,6 +62,15 @@ lazy_static! {
         match MainPubkey::from_hex(NETWORK_ROYALTIES_STR) {
             Ok(pk) => pk,
             Err(err) => panic!("Failed to parse hard-coded network royalty PK: {err:?}"),
+        }
+    };
+}
+
+lazy_static! {
+    pub static ref PAYMENT_FORWARD_PK: MainPubkey = {
+        match MainPubkey::from_hex(PAYMENT_FORWARD_STR) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse hard-coded payment forward PK: {err:?}"),
         }
     };
 }
