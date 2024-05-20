@@ -284,7 +284,7 @@ jobs:
 
       - name: Audit from genesis to collect entire spend DAG and dump to a dot file
         run: |
-          ./target/release/safe --log-output-dest=data-dir wallet audit --dot --sk-str 17f659c8d3f19b58f140bfe33c97a65a9c60e4383a2628c406f0414ce47b0572 > spend_dag_and_statistics.txt
+          ./target/release/safe --log-output-dest=data-dir wallet audit --dot --sk-str 49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a > spend_dag_and_statistics.txt
           echo "=============================================================================="
           cat spend_dag_and_statistics.txt
         env:
