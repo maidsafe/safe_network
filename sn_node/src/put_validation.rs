@@ -31,6 +31,11 @@ impl Node {
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<CmdOk> {
         let record_header = RecordHeader::from_record(&record)?;
 
+        // Notify replication_fetcher to mark the attempt as completed.
+        // Send the notification earlier to avoid it got skipped due to:
+        // the record becomes stored during the fetch because of other interleaved process.
+        self.network.notify_fetch_completed(record.key.clone());
+
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
@@ -89,9 +94,6 @@ impl Node {
                         record_key,
                         RecordType::NonChunk(content_hash),
                     );
-                } else {
-                    // Notify replication_fetcher to mark the attempt as completed.
-                    self.network.notify_fetch_completed(record.key.clone());
                 }
                 result
             }

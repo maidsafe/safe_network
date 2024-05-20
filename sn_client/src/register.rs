@@ -526,7 +526,7 @@ impl ClientRegister {
             // any error here will result in a repayment of the register
             // TODO: be smart about this and only pay for storage if we need to
             Err(err) => {
-                debug!("Failed to fetch register: {err:?}");
+                debug!("Failed to get register: {err:?}");
                 debug!("Creating Register as it doesn't exist at {addr:?}!");
                 let cmd = RegisterCmd::Create {
                     register: self.register.clone(),

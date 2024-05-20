@@ -440,6 +440,16 @@ jobs:
           fi
         if: always()
 
+      - name: check there is no failed replication fetch
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          if grep -r "failed to fetch" $NODE_DATA_PATH
+          then
+            echo "We find failed replication fetch"
+            exit 1
+          fi
+
       - name: Upload payment wallet initialization log
         uses: actions/upload-artifact@main
         with:
