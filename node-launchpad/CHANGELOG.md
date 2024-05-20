@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.4...node-launchpad-v0.1.5) - 2024-05-20
+
+### Added
+- *(node_manager)* add auditor support
+- provide `--upnp` flag for `add` command
+
+### Fixed
+- retain options on upgrade and prevent dup ports
+
+### Other
+- use published versions of deps
+- update Cargo.lock dependencies
+- use helper function to print banners
+
 ## [0.1.4](https://github.com/maidsafe/safe_network/compare/node-launchpad-v0.1.3...node-launchpad-v0.1.4) - 2024-05-17
 
 ### Added

@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.7](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.7.6...sn-node-manager-v0.7.7) - 2024-05-20
+
+### Added
+- *(node_manager)* add auditor support
+- provide `--upnp` flag for `add` command
+
+### Fixed
+- retain options on upgrade and prevent dup ports
+
+### Other
+- use helper function to print banners
+- use published versions of deps
+- update Cargo.lock dependencies
+
 ## [0.7.6](https://github.com/maidsafe/safe_network/compare/sn-node-manager-v0.7.5...sn-node-manager-v0.7.6) - 2024-05-15
 
 ### Added
