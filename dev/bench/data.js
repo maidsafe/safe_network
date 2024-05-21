@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716303684810,
+  "lastUpdate": 1716303686708,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f0f851cbaca85048adfbe22904473b52bd946e3e",
-          "message": "feat(nodes): make encryption of records a feature, disabled by default",
-          "timestamp": "2024-02-02T14:42:36Z",
-          "tree_id": "cd083ee7152523c7e2fdd414fec0790a94da57c1",
-          "url": "https://github.com/maidsafe/safe_network/commit/f0f851cbaca85048adfbe22904473b52bd946e3e"
-        },
-        "date": 1706888815812,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 195,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 208,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "45151a8edb30c6d42097bba234f137d4de70be45",
+          "message": "feat(launchpad): accept peers args",
+          "timestamp": "2024-05-21T13:42:20Z",
+          "tree_id": "046dd7ab1b4ab74b24a9a2359ccbc66424243442",
+          "url": "https://github.com/maidsafe/safe_network/commit/45151a8edb30c6d42097bba234f137d4de70be45"
+        },
+        "date": 1716303686003,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
             "unit": "MB"
           },
           {
