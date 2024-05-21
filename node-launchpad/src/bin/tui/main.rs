@@ -8,6 +8,7 @@
 
 use clap::Parser;
 use color_eyre::eyre::Result;
+use sn_peers_acquisition::PeersArgs;
 use std::env;
 use tokio::task::LocalSet;
 
@@ -38,6 +39,9 @@ pub struct Cli {
         default_value_t = 60.0
     )]
     pub frame_rate: f64,
+
+    #[command(flatten)]
+    pub(crate) peers: PeersArgs,
 }
 
 async fn tokio_main() -> Result<()> {
@@ -46,7 +50,8 @@ async fn tokio_main() -> Result<()> {
     initialize_panic_handler()?;
 
     let args = Cli::parse();
-    let mut app = App::new(args.tick_rate, args.frame_rate)?;
+
+    let mut app = App::new(args.tick_rate, args.frame_rate, args.peers)?;
     app.run().await?;
 
     Ok(())

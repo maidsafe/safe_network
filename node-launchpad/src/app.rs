@@ -19,6 +19,7 @@ use crate::{
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
+use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
 
 pub struct App {
@@ -35,11 +36,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+    pub fn new(tick_rate: f64, frame_rate: f64, peers_args: PeersArgs) -> Result<Self> {
         let app_data = AppData::load()?;
 
         let tab = Tab::default();
-        let home = Home::new(app_data.allocated_disk_space, &app_data.discord_username)?;
+        let home = Home::new(
+            app_data.allocated_disk_space,
+            &app_data.discord_username,
+            peers_args,
+        )?;
         let config = Config::new()?;
         let discord_username_input =
             DiscordUsernameInputBox::new(app_data.discord_username.clone());
