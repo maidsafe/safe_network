@@ -24,6 +24,12 @@ use sn_peers_acquisition::PeersArgs;
 use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
+/// Interval in seconds to update the DAG, save to disk, and update beta participants
+const DAG_UPDATE_INTERVAL_SECS: u64 = 5 * 60;
+
+/// Backup the beta rewards in a timestamped json file
+const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60 * 60;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Opt {
@@ -103,13 +109,13 @@ async fn main() -> Result<()> {
     } else {
         None
     };
+    let beta_rewards_on = maybe_sk.is_some();
 
     if let Some(dag_to_view) = opt.offline_viewer {
         let mut dag = SpendDagDb::offline(dag_to_view)?;
         #[cfg(feature = "svg-dag")]
-        {
-            dag.dump_dag_svg()?;
-        }
+        dag.dump_dag_svg()?;
+
         dag.set_encryption_sk(maybe_sk);
         start_server(dag).await?;
         return Ok(());
@@ -124,6 +130,11 @@ async fn main() -> Result<()> {
         maybe_sk,
     )
     .await?;
+
+    if beta_rewards_on {
+        initialize_background_rewards_backup(dag.clone());
+    }
+
     start_server(dag).await
 }
 
@@ -165,6 +176,26 @@ async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
 
     println!("Connected to the network");
     Ok(client)
+}
+
+/// Regularly backup the rewards in a timestamped json file
+fn initialize_background_rewards_backup(dag: SpendDagDb) {
+    tokio::spawn(async move {
+        loop {
+            trace!(
+                "Sleeping for {BETA_REWARDS_BACKOUP_INTERVAL_SECS} seconds before next backup..."
+            );
+            tokio::time::sleep(tokio::time::Duration::from_secs(
+                BETA_REWARDS_BACKOUP_INTERVAL_SECS,
+            ))
+            .await;
+            println!("Backing up beta rewards...");
+
+            if let Err(e) = dag.backup_rewards() {
+                eprintln!("Failed to backup beta rewards: {e}");
+            }
+        }
+    });
 }
 
 /// Get DAG from disk or initialize it if it doesn't exist
@@ -245,8 +276,8 @@ async fn initialize_background_spend_dag_collection(
             let _ = d
                 .dump()
                 .map_err(|e| eprintln!("Could not dump DAG to disk: {e}"));
-            println!("Sleeping for 60 seconds...");
-            tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+            println!("Sleeping for {DAG_UPDATE_INTERVAL_SECS} seconds...");
+            tokio::time::sleep(tokio::time::Duration::from_secs(DAG_UPDATE_INTERVAL_SECS)).await;
         }
     });
 
