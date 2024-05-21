@@ -28,13 +28,15 @@ use std::{
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
 #[cfg(feature = "svg-dag")]
 pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
+/// Store a locally copy to restore on restart
+pub const BETA_PARTICIPANTS_FILENAME: &str = "beta_participants.txt";
 
 /// Abstraction for the Spend DAG database
 /// Currently in memory, with disk backup, but should probably be a real DB at scale
 #[derive(Clone)]
 pub struct SpendDagDb {
     client: Option<Client>,
-    path: PathBuf,
+    pub(crate) path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
     pub(crate) beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
