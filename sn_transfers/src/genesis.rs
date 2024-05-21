@@ -29,9 +29,10 @@ pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u
 const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
 
 /// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_PK` value via env.
-const TESTING_GENESIS_SK: &str = "23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9"; // DevSkim: ignore DS173237
+const DEFAULT_LIVE_GENESIS_SK: &str =
+    "23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9"; // DevSkim: ignore DS173237
 
-/// Genesis PK for live network. Be sure to pass the correct `GENESIS_SK` value via env when to use.
+/// Default genesis PK for tsting purposes. Be sure to pass the correct `GENESIS_SK` value via env when to use.
 const DEFAULT_LIVE_GENESIS_PK: &str = "9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee"; // DevSkim: ignore DS173237
 
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
@@ -64,14 +65,16 @@ pub enum Error {
 
 lazy_static! {
     /// This key is public for auditing purposes.
-    /// The hard coded value is for production release, allows all nodes to validate it.
+    /// The hard coded value is for testing purposes,
+    /// In production a hard-coded PK should be set at build time.
+    /// This allows all nodes to validate it.
     /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
         let pk_str =  if let Ok(pk_str) = std::env::var("GENESIS_PK") {
             pk_str
         }
         else {
-            warn!("USING DEFAULT GENESIS PK FOR TESTING PURPOSES!");
+            warn!("USING DEFAULT GENESIS SK (9934c2) FOR TESTING PURPOSES! EXPECTING PAIRED SK (23746b) TO BE USED!");
             DEFAULT_LIVE_GENESIS_PK.to_string()
         };
 
@@ -106,15 +109,15 @@ lazy_static! {
 }
 
 lazy_static! {
-    /// Unlike the `GENESIS_PK`, the hard coded secret_key is for testing purpose.
+    /// Secret_key for testing purposes.
     /// The one for live network shall be passed in via env set.
     static ref GENESIS_SK_STR: String = {
         if let Ok(sk) = std::env::var("GENESIS_SK") {
             sk
         }
         else {
-            warn!("USING DEFAULT GENESIS SK FOR TESTING PURPOSES!");
-            TESTING_GENESIS_SK.to_string()
+             warn!("USING DEFAULT GENESIS SK (23746b) FOR TESTING PURPOSES! EXPECTING PAIRED PK (9934c2) TO BE USED!");
+            DEFAULT_LIVE_GENESIS_SK.to_string()
         }
     };
 }
