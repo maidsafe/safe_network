@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716287244230,
+  "lastUpdate": 1716287397930,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0934948e69f4cf0830951e88c29a8e0d1e04a758",
-          "message": "fix: minreq as optional dep",
-          "timestamp": "2024-02-02T08:10:45Z",
-          "tree_id": "9104067953c318deacb4c19a5609d3bf25f310d8",
-          "url": "https://github.com/maidsafe/safe_network/commit/0934948e69f4cf0830951e88c29a8e0d1e04a758"
-        },
-        "date": 1706865083495,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "721852e91f0cd0c29fe4de9bc5a1d0e11bf54f0e",
+          "message": "ci: move when we check for genesis warning",
+          "timestamp": "2024-05-21T09:34:45Z",
+          "tree_id": "eec084e496abcfd662f28d601ce92c26e4c66bbf",
+          "url": "https://github.com/maidsafe/safe_network/commit/721852e91f0cd0c29fe4de9bc5a1d0e11bf54f0e"
+        },
+        "date": 1716287397326,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 61,
             "unit": "MB"
           }
         ]
