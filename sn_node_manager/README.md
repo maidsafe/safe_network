@@ -358,3 +358,17 @@ So by default, 25 node processes have been launched, along with a faucet. The fa
 The most common scenario for using a local network is for development, but you can also use it to exercise a lot of features locally. For more details, please see the 'Using a Local Network' section of the [main README](https://github.com/maidsafe/safe_network/tree/node-man-readme?tab=readme-ov-file#using-a-local-network).
 
 Once you've finished, run `safenode-manager local kill` to dispose the local network.
+
+## Running Integration Tests
+
+Sometimes it will be necessary to run the integration tests in a local setup. The problem is, the system-wide tests need root access to run, and they will also create real services, which you don't necessarily want on your development machine.
+
+The tests can be run from a VM, which is provided by a `Vagrantfile` in the `sn_node_manager` crate directory. The machine is defined to use libvirt rather than Virtualbox, so an installation of that is required, but that is beyond the scope of this document.
+
+Assuming that you did have an installation of libvirt, you can get the VM by running `vagrant up`. Once the machine is available, run `vagrant ssh` to get a shell session inside it. For running the tests, switch to the root user using `sudo su -`. As part of the provisioning process, the current `safe_network` code is copied to the root user's home directory. To run the tests:
+```
+cd safe_network
+just node-man-integration-tests
+```
+
+The target in the `Justfile` will create a local network and the tests will then run against that.

@@ -9,13 +9,21 @@
 use assert_cmd::Command;
 use libp2p_identity::PeerId;
 use sn_service_management::{ServiceStatus, StatusSummary};
+use std::path::PathBuf;
 
 /// These tests need to execute as the root user.
 ///
 /// They are intended to run on a CI-based environment with a fresh build agent because they will
 /// create real services and user accounts, and will not attempt to clean themselves up.
 ///
-/// If you run them on your own dev machine, do so at your own risk!
+/// They are assuming the existence of a `safenode` binary produced by the release process, and a
+/// running local network, with SAFE_PEERS set to a local node.
+
+const CI_USER: &str = "runner";
+#[cfg(unix)]
+const SAFENODE_BIN_NAME: &str = "safenode";
+#[cfg(windows)]
+const SAFENODE_BIN_NAME: &str = "safenode.exe";
 
 /// The default behaviour is for the service to run as the `safe` user, which gets created during
 /// the process. However, there seems to be some sort of issue with adding user accounts on the GHA
@@ -23,18 +31,19 @@ use sn_service_management::{ServiceStatus, StatusSummary};
 /// build agent.
 #[test]
 fn cross_platform_service_install_and_control() {
-    // An explicit version of `safenode` will be used to avoid any rate limiting from Github when
-    // retrieving the latest version number.
+    let safenode_path = PathBuf::from("..")
+        .join("target")
+        .join("release")
+        .join(SAFENODE_BIN_NAME);
     let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
     cmd.arg("add")
+        .arg("--local")
         .arg("--user")
-        .arg("runner")
+        .arg(CI_USER)
         .arg("--count")
         .arg("3")
-        .arg("--peer")
-        .arg("/ip4/127.0.0.1/tcp/46091/p2p/12D3KooWAWnbQLxqspWeB3M8HB3ab3CSj6FYzsJxEG9XdVnGNCod")
-        .arg("--version")
-        .arg("0.98.27")
+        .arg("--path")
+        .arg(safenode_path.to_string_lossy().to_string())
         .assert()
         .success();
 
@@ -171,7 +180,14 @@ fn cross_platform_service_install_and_control() {
         .assert()
         .success();
     let registry = get_status();
-    assert_eq!(registry.nodes.len(), 1);
+    assert_eq!(
+        1,
+        registry
+            .nodes
+            .iter()
+            .filter(|n| n.status != ServiceStatus::Removed)
+            .count()
+    );
 }
 
 fn get_status() -> StatusSummary {

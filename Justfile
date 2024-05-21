@@ -360,5 +360,17 @@ upload-release-assets-to-s3 bin_name:
 
   cd deploy/{{bin_name}}
   for file in *.zip *.tar.gz; do
-    aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
-  done
+    aws s3 cp "$file" "s3://$bucket/$file" --acl public-read done
+
+node-man-integration-tests:
+  #!/usr/bin/env bash
+  set -e
+
+  cargo build --release --bin safenode --bin faucet --bin safenode-manager
+  cargo run --release --bin safenode-manager -- local run \
+    --node-path target/release/safenode \
+    --faucet-path target/release/faucet
+  peer=$(cargo run --release --bin safenode-manager -- local status \
+    --json | jq -r .nodes[-1].listen_addr[0])
+  export SAFE_PEERS=$peer
+  cargo test --release --package sn-node-manager --test e2e -- --nocapture
