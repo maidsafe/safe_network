@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use bls::SecretKey;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{bail, eyre, Result};
 #[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
@@ -17,12 +17,14 @@ use sn_client::Error as ClientError;
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
+#[cfg(feature = "svg-dag")]
 pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 
 /// Abstraction for the Spend DAG database
@@ -145,6 +147,7 @@ impl SpendDagDb {
     }
 
     /// Load current DAG svg from disk
+    #[cfg(feature = "svg-dag")]
     pub fn load_svg(&self) -> Result<Vec<u8>> {
         let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
         let svg = std::fs::read(svg_path)?;
@@ -326,6 +329,26 @@ impl SpendDagDb {
             .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
         self_payments.extend(payments);
         info!("Done gathering forwarded payments");
+        Ok(())
+    }
+
+    /// Backup beta rewards to a timestamped json file
+    pub(crate) fn backup_rewards(&self) -> Result<()> {
+        info!("Beta rewards backup requested");
+        let json = match self.beta_program_json() {
+            Ok(j) => j,
+            Err(e) => bail!("Failed to get beta rewards json: {e}"),
+        };
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|t| format!("{t:?}"))
+            .unwrap_or_default();
+        let backup_file = self.path.join(format!("beta_rewards_{timestamp}.json"));
+        info!("Writing rewards backup to {backup_file:?}");
+        std::fs::write(backup_file, json)
+            .map_err(|e| eyre!("Could not write rewards backup to disk: {e}"))?;
+
         Ok(())
     }
 }
