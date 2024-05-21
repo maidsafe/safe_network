@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use bls::SecretKey;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Context, Result};
 #[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ pub struct SpendDagDb {
     path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
-    beta_participants: BTreeMap<Hash, String>,
+    beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
     encrption_sk: SecretKey,
 }
 
@@ -54,6 +54,7 @@ impl SpendDagDb {
     /// Else a new DAG will be created containing only Genesis
     pub async fn new(path: PathBuf, client: Client, encrption_sk: SecretKey) -> Result<Self> {
         let dag_path = path.join(SPEND_DAG_FILENAME);
+        info!("Loading DAG from {dag_path:?}...");
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
                 println!("Found a local spend DAG file");
@@ -70,7 +71,7 @@ impl SpendDagDb {
             path,
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
-            beta_participants: BTreeMap::new(),
+            beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
             encrption_sk,
         })
     }
@@ -87,7 +88,7 @@ impl SpendDagDb {
             path,
             dag: Arc::new(RwLock::new(dag)),
             forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
-            beta_participants: BTreeMap::new(),
+            beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
             encrption_sk,
         })
     }
@@ -142,7 +143,8 @@ impl SpendDagDb {
     /// Load current DAG svg from disk
     pub fn load_svg(&self) -> Result<Vec<u8>> {
         let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
-        let svg = std::fs::read(svg_path)?;
+        let svg = std::fs::read(&svg_path)
+            .context(format!("Could not load svg from path: {svg_path:?}"))?;
         Ok(svg)
     }
 
@@ -182,12 +184,12 @@ impl SpendDagDb {
             .await?;
 
         // write update to DAG
-        let dag_ref = self.dag.clone();
-        let mut w_handle = dag_ref
+        let mut dag_w_handle = self
+            .dag
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
-        *w_handle = dag;
-        std::mem::drop(w_handle);
+        *dag_w_handle = dag;
+        std::mem::drop(dag_w_handle);
 
         #[cfg(feature = "svg-dag")]
         {
@@ -202,7 +204,7 @@ impl SpendDagDb {
         }
 
         // gather forwarded payments in a background thread so we don't block
-        let mut self_clone = self.clone();
+        let self_clone = self.clone();
         tokio::spawn(async move {
             if let Err(e) = self_clone.gather_forwarded_payments().await {
                 error!("Failed to gather forwarded payments: {e}");
@@ -216,8 +218,8 @@ impl SpendDagDb {
     /// This can be used to enrich our DAG with a DAG from another node to avoid costly computations
     /// Make sure to verify the other DAG is trustworthy before calling this function to merge it in
     pub fn merge(&mut self, other: SpendDag) -> Result<()> {
-        let dag_ref = self.dag.clone();
-        let mut w_handle = dag_ref
+        let mut w_handle = self
+            .dag
             .write()
             .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
         w_handle.merge(other)?;
@@ -244,18 +246,22 @@ impl SpendDagDb {
         Ok(json)
     }
 
-    /// Initialize reward forward tracking, gathers current rewards from the DAG
-    pub(crate) async fn init_reward_forward_tracking(
-        &mut self,
-        participants: Vec<String>,
-    ) -> Result<()> {
-        self.beta_participants = participants
-            .iter()
-            .map(|h| (Hash::hash(h.as_bytes()), h.clone()))
-            .collect();
+    /// Track new beta participants. This just add the participants to the list of tracked participants.
+    pub(crate) fn track_new_beta_participants(&self, participants: Vec<String>) -> Result<()> {
+        // track new participants
         {
-            let w_handle = self.forwarded_payments.clone();
-            let mut fwd_payments = w_handle
+            let mut beta_participants = self
+                .beta_participants
+                .write()
+                .map_err(|e| eyre!("Failed to get beta participants write lock: {e}"))?;
+            for p in participants.iter() {
+                beta_participants.insert(Hash::hash(p.as_bytes()), p.clone());
+            }
+        }
+        // initialize forwarded payments
+        {
+            let mut fwd_payments = self
+                .forwarded_payments
                 .write()
                 .map_err(|e| eyre!("Failed to get forwarded payments write lock: {e}"))?;
             *fwd_payments = participants
@@ -263,18 +269,25 @@ impl SpendDagDb {
                 .map(|n| (n, BTreeSet::new()))
                 .collect();
         }
+        Ok(())
+    }
 
+    /// Initialize reward forward tracking, gathers current rewards from the DAG
+    pub(crate) async fn init_reward_forward_tracking(
+        &self,
+        participants: Vec<String>,
+    ) -> Result<()> {
+        self.track_new_beta_participants(participants)?;
         self.gather_forwarded_payments().await?;
         Ok(())
     }
 
     // Gather forwarded payments from the DAG
-    pub(crate) async fn gather_forwarded_payments(&mut self) -> Result<()> {
+    pub(crate) async fn gather_forwarded_payments(&self) -> Result<()> {
         info!("Gathering forwarded payments...");
 
         // get spends from current DAG
-        let r_handle = self.dag.clone();
-        let dag = r_handle.read().map_err(|e| {
+        let dag = self.dag.read().map_err(|e| {
             eyre!("Failed to get dag read lock for gathering forwarded payments: {e}")
         })?;
         let all_spends = dag.all_spends();
@@ -288,7 +301,11 @@ impl SpendDagDb {
             };
             let addr = spend.address();
             let amount = spend.spend.amount;
-            if let Some(user_name) = self.beta_participants.get(&user_name_hash) {
+            let beta_participants_read = self
+                .beta_participants
+                .read()
+                .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
+            if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
                 debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
                 payments
                     .entry(user_name.to_owned())
@@ -307,8 +324,8 @@ impl SpendDagDb {
         }
 
         // save new payments
-        let w_handle = self.forwarded_payments.clone();
-        let mut self_payments = w_handle
+        let mut self_payments = self
+            .forwarded_payments
             .write()
             .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
         self_payments.extend(payments);

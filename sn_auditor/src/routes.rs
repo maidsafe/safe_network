@@ -59,3 +59,31 @@ pub(crate) fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>
     let response = Response::from_data(json);
     Ok(response)
 }
+
+pub(crate) fn add_participant(
+    dag: &SpendDagDb,
+    request: &Request,
+) -> Result<Response<Cursor<Vec<u8>>>> {
+    let discord_id = match request.url().split('/').last() {
+        Some(discord_id) => discord_id,
+        None => {
+            return Ok(Response::from_string(
+                "No discord_id provided. Should be /add-participant/[your_discord_id_here]",
+            )
+            .with_status_code(400))
+        }
+    };
+
+    if discord_id.chars().count() >= 32 {
+        return Ok(
+            Response::from_string("discord_id cannot be more than 32 chars").with_status_code(400),
+        );
+    }
+
+    match dag.track_new_beta_participants(vec![discord_id.to_owned()]) {
+        Ok(()) => Ok(Response::from_string("Added participant")),
+        Err(e) => Ok(
+            Response::from_string(format!("Failed to add participant: {e}")).with_status_code(500),
+        ),
+    }
+}

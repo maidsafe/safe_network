@@ -217,8 +217,7 @@ async fn initialize_background_spend_dag_collection(
     // initialize beta rewards program tracking
     if !beta_participants.is_empty() {
         println!("Initializing beta rewards program tracking...");
-        let mut d = dag.clone();
-        let _ = d
+        let _ = dag
             .init_reward_forward_tracking(beta_participants)
             .await
             .map_err(|e| eprintln!("Could not initialize beta rewards: {e}"));
@@ -259,6 +258,7 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         let response = match request.url() {
             "/" => routes::spend_dag_svg(&dag),
             s if s.starts_with("/spend/") => routes::spend(&dag, &request),
+            s if s.starts_with("/add-participant/") => routes::add_participant(&dag, &request),
             "/beta-rewards" => routes::beta_rewards(&dag),
             _ => routes::not_found(),
         };
