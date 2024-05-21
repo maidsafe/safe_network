@@ -8,7 +8,6 @@ on:
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
-  GENESIS_PK: 9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee
 
 jobs:
   e2e:

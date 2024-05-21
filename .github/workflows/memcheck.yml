@@ -16,7 +16,6 @@ env:
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
   RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
   FAUCET_LOG_PATH: /home/runner/.local/share/safe/test_faucet/logs
-  GENESIS_PK: 9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee
 
 jobs:
   memory-check:
@@ -24,6 +23,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Check we're on the right commit
+        run: git log -1 --oneline
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -136,6 +138,25 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 25
+
+        # this check needs to be after some transfer activity
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $RESTART_TEST_NODE_DATA_PATH
+          cat $RESTART_TEST_NODE_DATA_PATH/safenode.log
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $BOOTSTRAP_NODE_DATA_PATH
+          cat $BOOTSTRAP_NODE_DATA_PATH/safenode.log
+
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $NODE_DATA_PATH
+          rg "USING DEFAULT" "$NODE_DATA_PATH" -u
+        shell: bash
 
       # Uploading same file using different client shall not incur any payment neither uploads
       # Note rg will throw an error directly in case of failed to find a matching pattern.
