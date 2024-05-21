@@ -92,23 +92,6 @@ jobs:
           platform: ubuntu-latest
           set-safe-peers: false
 
-      - name: Check we're warned about using default genesis
-        run: |
-          git log -1 --oneline
-          ls -la $RESTART_TEST_NODE_DATA_PATH
-          cat $RESTART_TEST_NODE_DATA_PATH/safenode.log
-      - name: Check we're warned about using default genesis
-        run: |
-          git log -1 --oneline
-          ls -la $BOOTSTRAP_NODE_DATA_PATH
-          cat $BOOTSTRAP_NODE_DATA_PATH/safenode.log
-      - name: Check we're warned about using default genesis
-        run: |
-          git log -1 --oneline
-          ls -la $NODE_DATA_PATH
-          cat $NODE_DATA_PATH/safenode.log
-
-        shell: bash
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
         shell: bash
@@ -155,6 +138,25 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 25
+
+        # this check needs to be after some transfer activity
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $RESTART_TEST_NODE_DATA_PATH
+          cat $RESTART_TEST_NODE_DATA_PATH/safenode.log
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $BOOTSTRAP_NODE_DATA_PATH
+          cat $BOOTSTRAP_NODE_DATA_PATH/safenode.log
+
+      - name: Check we're warned about using default genesis
+        run: |
+          git log -1 --oneline
+          ls -la $NODE_DATA_PATH
+          rg "USING DEFAULT" "$NODE_DATA_PATH" -u
+        shell: bash
 
       # Uploading same file using different client shall not incur any payment neither uploads
       # Note rg will throw an error directly in case of failed to find a matching pattern.
