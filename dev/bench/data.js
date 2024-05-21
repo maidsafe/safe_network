@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716309903466,
+  "lastUpdate": 1716318379631,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "507285f58b467b963fd9682678cb2e2c1b2722b2",
-          "message": "fix: node manager `status` permissions error\n\nA user reported an issue in the `status` command resulting in an error. The `status` command\nactually attempts to report on two different things: installed services and a local network. It\nfirst tried to report on the status of services, and in the process, it attempts to create the\n`/var/safenode-manager` directory if it does not exist, because that's where the node registry file\nis stored. So, if you ran the command as a non-root user, it would result in a permissions error.\nThe error didn't occur on on my machine because it happened to be the case that I had already\ncreated that directory.\n\nI've now changed the command so that it will first query whether a local network exists, then return\nif that is the case, without trying to query for installed services. In the case of no local\nnetwork, when a query is made for installed services, the command will run without root access.",
-          "timestamp": "2024-02-05T08:04:16Z",
-          "tree_id": "0493aac5a72d33b30fdbafa5af70f11541025e9a",
-          "url": "https://github.com/maidsafe/safe_network/commit/507285f58b467b963fd9682678cb2e2c1b2722b2"
-        },
-        "date": 1707123596294,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2245086098684088,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.789808966273672,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.504148551783075,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 54.481852214234635,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "d542383071122d61f6306f05e8a55fa321db59c0",
+          "message": "fix: auditor key arg to match docs",
+          "timestamp": "2024-05-21T18:17:01Z",
+          "tree_id": "4f605ae94011c476fa7354be92c931db99680d42",
+          "url": "https://github.com/maidsafe/safe_network/commit/d542383071122d61f6306f05e8a55fa321db59c0"
+        },
+        "date": 1716318375033,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.140333021188341,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.302507667376363,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 43.293541558755145,
             "unit": "MiB/s"
           }
         ]
