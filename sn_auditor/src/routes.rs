@@ -13,11 +13,17 @@ use tiny_http::{Request, Response};
 
 use crate::dag_db::SpendDagDb;
 
-pub(crate) fn spend_dag_svg(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
-    let svg = dag
-        .load_svg()
-        .map_err(|e| eyre!("Failed to get SVG: {e}"))?;
-    let response = Response::from_data(svg);
+pub(crate) fn spend_dag_svg(_dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
+    #[cfg(feature = "svg-dag")]
+    let response = {
+        let svg = _dag
+            .load_svg()
+            .map_err(|e| eyre!("Failed to get SVG: {e}"))?;
+        Response::from_data(svg)
+    };
+    #[cfg(not(feature = "svg-dag"))]
+    let response = Response::from_string("SVG DAG feature not enabled").with_status_code(501);
+
     Ok(response)
 }
 

@@ -23,6 +23,7 @@ use std::{
 };
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
+#[cfg(feature = "svg-dag")]
 pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 
 /// Abstraction for the Spend DAG database
@@ -140,6 +141,7 @@ impl SpendDagDb {
     }
 
     /// Load current DAG svg from disk
+    #[cfg(feature = "svg-dag")]
     pub fn load_svg(&self) -> Result<Vec<u8>> {
         let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
         let svg = std::fs::read(svg_path)?;
