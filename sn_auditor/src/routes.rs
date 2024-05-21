@@ -12,7 +12,6 @@ use sn_client::transfers::SpendAddress;
 use std::{
     fs::{File, OpenOptions},
     io::{Cursor, Write},
-    path::PathBuf,
     str::FromStr,
 };
 use tiny_http::{Request, Response};
@@ -93,20 +92,9 @@ pub(crate) fn add_participant(
         );
     }
 
-    if let Err(err) = dag.track_new_beta_participants(vec![discord_id.to_owned()]) {
+    if let Err(err) = track_new_participant(dag, discord_id.to_owned()) {
         return Ok(
-            Response::from_string(format!("Failed to add participant: {err}"))
-                .with_status_code(400),
-        );
-    }
-
-    // append the new participant to the local file
-    let local_participants_file = dag.path.join(dag_db::BETA_PARTICIPANTS_FILENAME);
-    if let Err(err) =
-        write_discord_id_to_local_file(&local_participants_file, discord_id.to_owned())
-    {
-        return Ok(
-            Response::from_string(format!("Failed to cache participant to file: {err}"))
+            Response::from_string(format!("Failed to track new participant: {err}"))
                 .with_status_code(400),
         );
     }
@@ -114,16 +102,26 @@ pub(crate) fn add_participant(
     Ok(Response::from_string("Successfully added participant "))
 }
 
-fn write_discord_id_to_local_file(path: &PathBuf, id: String) -> Result<()> {
-    if path.exists() {
+fn track_new_participant(dag: &SpendDagDb, discord_id: String) -> Result<()> {
+    dag.track_new_beta_participants(vec![discord_id.to_owned()])?;
+
+    // only append new ids
+    if dag.is_participant_tracked(&discord_id)? {
+        return Ok(());
+    }
+
+    let local_participants_file = dag.path.join(dag_db::BETA_PARTICIPANTS_FILENAME);
+
+    if local_participants_file.exists() {
         let mut file = OpenOptions::new()
             .append(true)
-            .open(path)
+            .open(local_participants_file)
             .map_err(|e| eyre!("Failed to open file: {e}"))?;
-        writeln!(file, "{id}")?;
+        writeln!(file, "{discord_id}")?;
     } else {
-        let mut file = File::create(path).map_err(|e| eyre!("Failed to create file: {e}"))?;
-        writeln!(file, "{id}")?;
+        let mut file = File::create(local_participants_file)
+            .map_err(|e| eyre!("Failed to create file: {e}"))?;
+        writeln!(file, "{discord_id}")?;
     }
 
     Ok(())
