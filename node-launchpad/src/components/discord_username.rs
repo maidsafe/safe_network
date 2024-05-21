@@ -69,7 +69,7 @@ impl Component for DiscordUsernameInputBox {
             }
             _ => {
                 // max 32 limit as per discord docs
-                if self.discord_input_filed.value().len() >= 32 {
+                if self.discord_input_filed.value().chars().count() >= 32 {
                     return Ok(vec![]);
                 }
                 self.discord_input_filed.handle_event(&Event::Key(key));

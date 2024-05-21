@@ -112,11 +112,10 @@ async fn main() -> Result<()> {
     let beta_rewards_on = maybe_sk.is_some();
 
     if let Some(dag_to_view) = opt.offline_viewer {
-        let mut dag = SpendDagDb::offline(dag_to_view)?;
+        let dag = SpendDagDb::offline(dag_to_view, maybe_sk)?;
         #[cfg(feature = "svg-dag")]
         dag.dump_dag_svg()?;
 
-        dag.set_encryption_sk(maybe_sk);
         start_server(dag).await?;
         return Ok(());
     }
@@ -222,7 +221,7 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize the DAG
-    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone())
+    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone(), foundation_sk)
         .await
         .map_err(|e| eyre!("Could not create SpendDag Db: {e}"))?;
 
@@ -250,17 +249,15 @@ async fn initialize_background_spend_dag_collection(
 
     // initialize beta rewards program tracking
     if !beta_participants.is_empty() {
-        let sk = match foundation_sk {
-            Some(sk) => sk,
-            None => panic!("Foundation SK required to initialize beta rewards program"),
+        if !dag.has_encryption_sk() {
+            panic!("Foundation SK required to initialize beta rewards program");
         };
 
         println!("Initializing beta rewards program tracking...");
-        let mut d = dag.clone();
-        let _ = d
-            .init_reward_forward_tracking(beta_participants, sk)
-            .await
-            .map_err(|e| eprintln!("Could not initialize beta rewards: {e}"));
+        if let Err(e) = dag.init_reward_forward_tracking(beta_participants).await {
+            eprintln!("Could not initialize beta rewards: {e}");
+            return Err(e);
+        }
     }
 
     // background thread to update DAG
@@ -298,6 +295,7 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         let response = match request.url() {
             "/" => routes::spend_dag_svg(&dag),
             s if s.starts_with("/spend/") => routes::spend(&dag, &request),
+            s if s.starts_with("/add-participant/") => routes::add_participant(&dag, &request),
             "/beta-rewards" => routes::beta_rewards(&dag),
             _ => routes::not_found(),
         };
