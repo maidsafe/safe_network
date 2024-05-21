@@ -27,7 +27,6 @@ use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
-    get_local_node_registry_path,
     rpc::RpcClient,
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
@@ -314,23 +313,6 @@ pub async fn start(
 }
 
 pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
-    let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
-    if !local_node_registry.nodes.is_empty() {
-        if !json {
-            print_banner("Local Network");
-        }
-        status_report(
-            &mut local_node_registry,
-            &ServiceController {},
-            details,
-            json,
-            fail,
-        )
-        .await?;
-        local_node_registry.save()?;
-        return Ok(());
-    }
-
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if !node_registry.nodes.is_empty() {
         if !json && !details {

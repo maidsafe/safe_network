@@ -780,6 +780,19 @@ pub enum LocalSubCmd {
         #[clap(long)]
         skip_validation: bool,
     },
+    /// Get the status of the local nodes.
+    #[clap(name = "status")]
+    Status {
+        /// Set this flag to display more details
+        #[clap(long)]
+        details: bool,
+        /// Set this flag to return an error if any nodes are not running
+        #[clap(long)]
+        fail: bool,
+        /// Set this flag to output the status as a JSON document
+        #[clap(long, conflicts_with = "details")]
+        json: bool,
+    },
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -981,6 +994,11 @@ async fn main() -> Result<()> {
                 )
                 .await
             }
+            LocalSubCmd::Status {
+                details,
+                fail,
+                json,
+            } => cmd::local::status(details, fail, json).await,
         },
         SubCmd::Remove {
             keep_directories,

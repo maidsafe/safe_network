@@ -11,7 +11,7 @@
 use super::get_bin_path;
 use crate::{
     local::{kill_network, run_network, LocalNetworkOptions},
-    print_banner, VerbosityLevel,
+    print_banner, status_report, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
 use sn_logging::LogFormat;
@@ -179,6 +179,23 @@ pub async fn run(
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
 
+    local_node_registry.save()?;
+    Ok(())
+}
+
+pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
+    let mut local_node_registry = NodeRegistry::load(&get_local_node_registry_path()?)?;
+    if !json {
+        print_banner("Local Network");
+    }
+    status_report(
+        &mut local_node_registry,
+        &ServiceController {},
+        details,
+        json,
+        fail,
+    )
+    .await?;
     local_node_registry.save()?;
     Ok(())
 }
