@@ -61,32 +61,35 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
     Ok(dag)
 }
 
+/// Gather the Spend DAG from the Network and store it on disk
+/// If a DAG is found on disk, it will continue from it
+/// If fast_mode is true, gathers in a silent and fast way
+/// else enjoy a step by step slow narrated gathering
 async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> Result<SpendDag> {
     let dag_path = root_dir.join(SPEND_DAG_FILENAME);
-    let mut inital_dag = match SpendDag::load_from_file(&dag_path) {
-        Ok(dag) => {
+    let inital_dag = match SpendDag::load_from_file(&dag_path) {
+        Ok(mut dag) => {
             println!("Found a local spend dag on disk, continuing from it...");
+            if fast_mode {
+                client
+                    .spend_dag_continue_from_utxos(&mut dag, None, false)
+                    .await?;
+            }
             dag
         }
         Err(err) => {
             println!("Starting from Genesis as found no local spend dag on disk...");
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
+            let stop_after = if fast_mode { None } else { Some(1) };
             client
-                .spend_dag_build_from(genesis_addr, Some(1), true)
+                .spend_dag_build_from(genesis_addr, stop_after, true)
                 .await?
         }
     };
 
     let dag = match fast_mode {
-        // fast but silent DAG collection
-        true => {
-            client
-                .spend_dag_continue_from_utxos(&mut inital_dag, None, false)
-                .await?;
-            inital_dag
-        }
-        // slow but step by step narrated DAG collection
+        true => inital_dag,
         false => step_by_step_spend_dag_gathering(client, inital_dag).await?,
     };
 
@@ -103,7 +106,7 @@ pub async fn audit(
     root_dir: &Path,
     foundation_sk: Option<SecretKey>,
 ) -> Result<()> {
-    let fast_mode = to_dot || royalties;
+    let fast_mode = to_dot || royalties || foundation_sk.is_some();
     let dag = gather_spend_dag(client, root_dir, fast_mode).await?;
 
     if to_dot {

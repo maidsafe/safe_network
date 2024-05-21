@@ -113,6 +113,9 @@ pub enum WalletCmds {
     /// Audit the Currency
     /// Note that this might take a very long time
     /// Analogous to verifying the entire blockchain in Bitcoin
+    ///
+    /// When run without any flags, runs in verbose mode,
+    /// a slower but more informative mode where DAG collection progress is diplayed
     Audit {
         /// EXPERIMENTAL Dump Audit DAG in dot format on stdout
         #[clap(long, default_value = "false")]
@@ -121,6 +124,7 @@ pub enum WalletCmds {
         #[clap(long, default_value = "false")]
         royalties: bool,
         /// Hex string of the Foundation SK.
+        /// Providing this key allow displaying rewards statistics gathered from the DAG.
         #[clap(long, name = "sk_str")]
         sk_str: Option<String>,
     },
