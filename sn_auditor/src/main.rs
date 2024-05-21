@@ -60,7 +60,7 @@ struct Opt {
     #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
     log_format: Option<LogFormat>,
 
-    /// Beta rewards program patricipants to track
+    /// Beta rewards program participants to track
     /// Provide a JSON file with a list of Discord usernames as argument
     #[clap(short, long, value_name = "discord_names_file")]
     beta_participants: Option<PathBuf>,
