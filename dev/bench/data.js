@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716287399703,
+  "lastUpdate": 1716287401701,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0934948e69f4cf0830951e88c29a8e0d1e04a758",
-          "message": "fix: minreq as optional dep",
-          "timestamp": "2024-02-02T08:10:45Z",
-          "tree_id": "9104067953c318deacb4c19a5609d3bf25f310d8",
-          "url": "https://github.com/maidsafe/safe_network/commit/0934948e69f4cf0830951e88c29a8e0d1e04a758"
-        },
-        "date": 1706865086318,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 18295,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 100943,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 81269,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "721852e91f0cd0c29fe4de9bc5a1d0e11bf54f0e",
+          "message": "ci: move when we check for genesis warning",
+          "timestamp": "2024-05-21T09:34:45Z",
+          "tree_id": "eec084e496abcfd662f28d601ce92c26e4c66bbf",
+          "url": "https://github.com/maidsafe/safe_network/commit/721852e91f0cd0c29fe4de9bc5a1d0e11bf54f0e"
+        },
+        "date": 1716287401118,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14631,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 82456,
             "unit": "ms"
           },
           {
