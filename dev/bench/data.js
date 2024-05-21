@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716309764796,
+  "lastUpdate": 1716309899179,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "b9aaadf803c6f2deec28f1e75316ff7f91c2d73a",
-          "message": "fix(ci): update references to point to the main repo",
-          "timestamp": "2024-02-02T16:40:10Z",
-          "tree_id": "e361de3387edc8ff097e8691c03345c410580317",
-          "url": "https://github.com/maidsafe/safe_network/commit/b9aaadf803c6f2deec28f1e75316ff7f91c2d73a"
-        },
-        "date": 1706895406928,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "938d157dac251f60cfab03c5aede29e624316d52",
+          "message": "fix(cli): avoid mis-estimation due to overflow",
+          "timestamp": "2024-05-21T15:45:24Z",
+          "tree_id": "cb0cf5464c8668d97c9b2efad6e0ddc835356c5a",
+          "url": "https://github.com/maidsafe/safe_network/commit/938d157dac251f60cfab03c5aede29e624316d52"
+        },
+        "date": 1716309898546,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
