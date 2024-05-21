@@ -224,13 +224,23 @@ impl SpendDagDb {
         Ok(())
     }
 
-    /// Returns the current state of the beta program in JSON format
+    /// Returns the current state of the beta program in JSON format, including total rewards for each participant
     pub(crate) fn beta_program_json(&self) -> Result<String> {
         let r_handle = self.forwarded_payments.clone();
-        let beta_rewards = r_handle
-            .read()
-            .map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
-        let json = serde_json::to_string_pretty(&*beta_rewards)?;
+        let beta_rewards = r_handle.read();
+
+        let participants =
+            beta_rewards.map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
+        let mut rewards_output = vec![];
+        for (participant, rewards) in participants.iter() {
+            let total_rewards = rewards
+                .iter()
+                .map(|(_, amount)| amount.as_nano())
+                .sum::<u64>();
+
+            rewards_output.push((participant.clone(), total_rewards));
+        }
+        let json = serde_json::to_string_pretty(&rewards_output)?;
         Ok(json)
     }
 
