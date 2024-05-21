@@ -97,6 +97,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check we're on the right commit
+        run: git log -1 --oneline
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
