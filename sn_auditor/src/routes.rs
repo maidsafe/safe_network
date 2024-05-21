@@ -6,12 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::dag_db::{self, SpendDagDb};
 use color_eyre::eyre::{eyre, Result};
 use sn_client::transfers::SpendAddress;
-use std::{io::Cursor, str::FromStr};
+use std::{
+    fs::{File, OpenOptions},
+    io::{Cursor, Write},
+    path::PathBuf,
+    str::FromStr,
+};
 use tiny_http::{Request, Response};
-
-use crate::dag_db::SpendDagDb;
 
 pub(crate) fn spend_dag_svg(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
     let svg = dag
@@ -80,10 +84,38 @@ pub(crate) fn add_participant(
         );
     }
 
-    match dag.track_new_beta_participants(vec![discord_id.to_owned()]) {
-        Ok(()) => Ok(Response::from_string("Added participant")),
-        Err(e) => Ok(
-            Response::from_string(format!("Failed to add participant: {e}")).with_status_code(500),
-        ),
+    if let Err(err) = dag.track_new_beta_participants(vec![discord_id.to_owned()]) {
+        return Ok(
+            Response::from_string(format!("Failed to add participant: {err}"))
+                .with_status_code(400),
+        );
     }
+
+    // append the new participant to the local file
+    let local_participants_file = dag.path.join(dag_db::BETA_PARTICIPANTS_FILENAME);
+    if let Err(err) =
+        write_discord_id_to_local_file(&local_participants_file, discord_id.to_owned())
+    {
+        return Ok(
+            Response::from_string(format!("Failed to cache participant to file: {err}"))
+                .with_status_code(400),
+        );
+    }
+
+    Ok(Response::from_string("Successfully added participant "))
+}
+
+fn write_discord_id_to_local_file(path: &PathBuf, id: String) -> Result<()> {
+    if path.exists() {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(path)
+            .map_err(|e| eyre!("Failed to open file: {e}"))?;
+        writeln!(file, "{id}")?;
+    } else {
+        let mut file = File::create(path).map_err(|e| eyre!("Failed to create file: {e}"))?;
+        writeln!(file, "{id}")?;
+    }
+
+    Ok(())
 }

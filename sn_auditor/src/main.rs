@@ -12,11 +12,10 @@ extern crate tracing;
 mod dag_db;
 mod routes;
 
-use dag_db::SpendDagDb;
-
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
+use dag_db::SpendDagDb;
 use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::get_peers_from_args;
@@ -76,23 +75,7 @@ async fn main() -> Result<()> {
     let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
     let _log_handles = log_builder.initialize()?;
 
-    let beta_participants = if let Some(participants_file) = opt.beta_participants {
-        let raw_data = std::fs::read_to_string(&participants_file)?;
-        // instead of serde_json, just use a line separated file
-        let discord_names = raw_data
-            .lines()
-            .map(|line| line.trim().to_string())
-            .collect::<Vec<String>>();
-
-        println!(
-            "Tracking beta rewards for the {} discord usernames provided in {:?}",
-            discord_names.len(),
-            participants_file
-        );
-        discord_names
-    } else {
-        Vec::new()
-    };
+    let beta_participants = load_and_update_beta_participants(opt.beta_participants)?;
 
     let sk = match SecretKey::from_hex(&opt.sk_str) {
         Ok(sk) => sk,
@@ -175,10 +158,7 @@ async fn initialize_background_spend_dag_collection(
     sk: SecretKey,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
-    let path = dirs_next::data_dir()
-        .ok_or(eyre!("Could not obtain data directory path"))?
-        .join("safe")
-        .join("auditor");
+    let path = get_auditor_data_dir_path()?;
 
     // clean the local spend DAG if requested
     if clean {
@@ -280,4 +260,56 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         }
     }
     Ok(())
+}
+
+// get the data dir path for auditor
+fn get_auditor_data_dir_path() -> Result<PathBuf> {
+    let path = dirs_next::data_dir()
+        .ok_or(eyre!("Could not obtain data directory path"))?
+        .join("safe")
+        .join("auditor");
+
+    Ok(path)
+}
+
+fn load_and_update_beta_participants(
+    provided_participants_file: Option<PathBuf>,
+) -> Result<Vec<String>> {
+    let mut beta_participants = if let Some(participants_file) = provided_participants_file {
+        let raw_data = std::fs::read_to_string(&participants_file)?;
+        // instead of serde_json, just use a line separated file
+        let discord_names = raw_data
+            .lines()
+            .map(|line| line.trim().to_string())
+            .collect::<Vec<String>>();
+        println!(
+            "Tracking beta rewards for the {} discord usernames provided in {:?}",
+            discord_names.len(),
+            participants_file
+        );
+        discord_names
+    } else {
+        vec![]
+    };
+    // restore beta participants from local cached copy
+    let local_participants_file =
+        get_auditor_data_dir_path()?.join(dag_db::BETA_PARTICIPANTS_FILENAME);
+    if local_participants_file.exists() {
+        let raw_data = std::fs::read_to_string(&local_participants_file)?;
+        let discord_names = raw_data
+            .lines()
+            .map(|line| line.trim().to_string())
+            .collect::<Vec<String>>();
+        println!(
+            "Restoring beta rewards for the {} discord usernames from {:?}",
+            discord_names.len(),
+            local_participants_file
+        );
+        beta_participants.extend(discord_names);
+    }
+    // write the beta participants to disk
+    let _ = std::fs::write(local_participants_file, beta_participants.join("\n"))
+        .map_err(|e| eprintln!("Failed to write beta participants to disk: {e}"));
+
+    Ok(beta_participants)
 }
