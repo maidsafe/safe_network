@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716254594040,
+  "lastUpdate": 1716254725787,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "230775fda3e1c7b132f8916813540e9e405053c6",
-          "message": "fix(node): clean up on_going_fetch as well",
-          "timestamp": "2024-02-01T16:45:42Z",
-          "tree_id": "4b06b4f9a4492d4fb3afa0f625ac6b449aa9ebca",
-          "url": "https://github.com/maidsafe/safe_network/commit/230775fda3e1c7b132f8916813540e9e405053c6"
-        },
-        "date": 1706809680259,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 62,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "3f89f682a2829988099897b070985fd495b8f820",
+          "message": "feat: use different key for payment forward",
+          "timestamp": "2024-05-21T00:25:07Z",
+          "tree_id": "2493baece241354a5d73f2fe146ec1bd7e2679d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/3f89f682a2829988099897b070985fd495b8f820"
+        },
+        "date": 1716254725414,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
