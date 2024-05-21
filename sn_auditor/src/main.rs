@@ -105,11 +105,12 @@ async fn main() -> Result<()> {
     };
 
     if let Some(dag_to_view) = opt.offline_viewer {
-        let dag = SpendDagDb::offline(dag_to_view)?;
+        let mut dag = SpendDagDb::offline(dag_to_view)?;
         #[cfg(feature = "svg-dag")]
         {
             dag.dump_dag_svg()?;
         }
+        dag.set_encryption_sk(maybe_sk);
         start_server(dag).await?;
         return Ok(());
     }

@@ -92,6 +92,11 @@ impl SpendDagDb {
         })
     }
 
+    /// Set encryption secret key for beta program
+    pub fn set_encryption_sk(&mut self, sk: Option<SecretKey>) {
+        self.encryption_sk = sk;
+    }
+
     /// Get info about a single spend in JSON format
     pub fn spend_json(&self, address: SpendAddress) -> Result<String> {
         let dag_ref = self.dag.clone();
