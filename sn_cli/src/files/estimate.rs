@@ -67,7 +67,7 @@ impl Estimator {
             .expect("estimate_cost: Concurrency error.");
         }
 
-        let total = balance - estimate;
+        let total = balance.saturating_sub(estimate);
 
         println!("**************************************");
         println!("Your current balance: {}", NanoTokens::from(balance));
