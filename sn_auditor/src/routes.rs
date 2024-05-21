@@ -11,8 +11,6 @@ use sn_client::transfers::SpendAddress;
 use std::{io::Cursor, str::FromStr};
 use tiny_http::{Request, Response};
 
-use crate::dag_db::SpendDagDb;
-
 pub(crate) fn spend_dag_svg(_dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
     #[cfg(not(feature = "svg-dag"))]
     return Ok(Response::from_string(
@@ -67,4 +65,32 @@ pub(crate) fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>
         .map_err(|e| eyre!("Failed to get beta rewards JSON: {e}"))?;
     let response = Response::from_data(json);
     Ok(response)
+}
+
+pub(crate) fn add_participant(
+    dag: &SpendDagDb,
+    request: &Request,
+) -> Result<Response<Cursor<Vec<u8>>>> {
+    let discord_id = match request.url().split('/').last() {
+        Some(discord_id) => discord_id,
+        None => {
+            return Ok(Response::from_string(
+                "No discord_id provided. Should be /add-participant/[your_discord_id_here]",
+            )
+            .with_status_code(400))
+        }
+    };
+
+    if discord_id.chars().count() >= 32 {
+        return Ok(
+            Response::from_string("discord_id cannot be more than 32 chars").with_status_code(400),
+        );
+    }
+
+    match dag.track_new_beta_participants(vec![discord_id.to_owned()]) {
+        Ok(()) => Ok(Response::from_string("Added participant")),
+        Err(e) => Ok(
+            Response::from_string(format!("Failed to add participant: {e}")).with_status_code(500),
+        ),
+    }
 }
