@@ -36,11 +36,18 @@ pub struct Home {
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. A simple file lock or a db like file would work.
     lock_registry: bool,
+    // Peers to pass into nodes for startup
+    peers_args: PeersArgs,
 }
 
 impl Home {
-    pub fn new(allocated_disk_space: usize, discord_username: &str) -> Result<Self> {
+    pub fn new(
+        allocated_disk_space: usize,
+        discord_username: &str,
+        peers_args: PeersArgs,
+    ) -> Result<Self> {
         let mut home = Self {
+            peers_args,
             action_sender: Default::default(),
             config: Default::default(),
             active: true,
@@ -243,6 +250,7 @@ impl Component for Home {
                             self.discord_username.clone(),
                             inactive_nodes,
                             action_sender,
+                            self.peers_args.clone(),
                         );
                     } else {
                         // start these nodes
@@ -444,9 +452,8 @@ fn add_and_start_nodes(
     owner: String,
     mut nodes_to_start: Vec<String>,
     action_sender: UnboundedSender<Action>,
+    peers_args: PeersArgs,
 ) {
-    let peers = PeersArgs::default(); // will fetch from network contacts
-
     tokio::task::spawn_local(async move {
         let result = sn_node_manager::cmd::node::add(
             Some(count as u16),
@@ -459,7 +466,7 @@ fn add_and_start_nodes(
             None,
             None,
             Some(owner),
-            peers,
+            peers_args,
             None,
             None,
             None,
