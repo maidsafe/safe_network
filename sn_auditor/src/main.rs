@@ -65,10 +65,10 @@ struct Opt {
     #[clap(short, long, value_name = "discord_names_file")]
     beta_participants: Option<PathBuf>,
 
-    /// Hex string of the Foundation SK used to decrypt discord usernames
-    /// found in the DAG for the beta program
-    #[clap(name = "sk")]
-    sk_str: Option<String>,
+    /// Secret encryption key of the beta rewards to decypher
+    /// discord usernames of the beta participants
+    #[clap(short = 'k', long, value_name = "hex_secret_key")]
+    beta_encryption_key: Option<String>,
 }
 
 #[tokio::main]
@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
         Vec::new()
     };
 
-    let maybe_sk = if let Some(sk_str) = opt.sk_str {
+    let maybe_sk = if let Some(sk_str) = opt.beta_encryption_key {
         match SecretKey::from_hex(&sk_str) {
             Ok(sk) => Some(sk),
             Err(err) => panic!("Cann't parse Foundation SK from input string: {sk_str}: {err:?}",),
