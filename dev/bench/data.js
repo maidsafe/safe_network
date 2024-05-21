@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716297097903,
+  "lastUpdate": 1716297099621,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "99bcf7272fd40788d968935f27647c223c85f370",
-          "message": "docs(cli): minor changes to cli comments",
-          "timestamp": "2024-02-02T10:38:39Z",
-          "tree_id": "af2fe4a728cdb1339139cd7e816f828001823df5",
-          "url": "https://github.com/maidsafe/safe_network/commit/99bcf7272fd40788d968935f27647c223c85f370"
-        },
-        "date": 1706874159514,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 17010,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 96920,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "c109828e5034400f03e196d7a7bb1cf7d87c68eb",
+          "message": "fix(CI): remove strict check\n\nThere is node churning during the memcheck and location verification\ntests, which does havea chance of failed fetch alarm against dead node.\nHence move the check only to be undertaken withn the large file test,\nwhich all nodes are persistant.",
+          "timestamp": "2024-05-21T12:00:41Z",
+          "tree_id": "286395a39da62777c1918e89f9e83cf9ae1e58fb",
+          "url": "https://github.com/maidsafe/safe_network/commit/c109828e5034400f03e196d7a7bb1cf7d87c68eb"
+        },
+        "date": 1716297099219,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14841,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 99043,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
