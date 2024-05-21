@@ -90,7 +90,10 @@ jobs:
           set-safe-peers: false
 
       - name: Check we're warned about using default genesis
-        run: rg "USING DEFAULT" "$NODE_DATA_PATH" -u
+        run: |
+          git log -1 --oneline
+          ls -la $RESTART_TEST_NODE_DATA_PATH
+          rg "USING DEFAULT" "$RESTART_TEST_NODE_DATA_PATH" -u
         shell: bash
       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
       - name: Check SAFE_PEERS was not changed
