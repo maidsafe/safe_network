@@ -35,7 +35,7 @@ pub struct SpendDagDb {
     pub(crate) path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
-    beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
+    pub(crate) beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
     encrption_sk: SecretKey,
 }
 
@@ -256,9 +256,11 @@ impl SpendDagDb {
                 .beta_participants
                 .write()
                 .map_err(|e| eyre!("Failed to get beta participants write lock: {e}"))?;
-            for p in participants.iter() {
-                beta_participants.insert(Hash::hash(p.as_bytes()), p.clone());
-            }
+            beta_participants.extend(
+                participants
+                    .iter()
+                    .map(|p| (Hash::hash(p.as_bytes()), p.clone())),
+            );
         }
         // initialize forwarded payments
         {
@@ -266,12 +268,18 @@ impl SpendDagDb {
                 .forwarded_payments
                 .write()
                 .map_err(|e| eyre!("Failed to get forwarded payments write lock: {e}"))?;
-            *fwd_payments = participants
-                .into_iter()
-                .map(|n| (n, BTreeSet::new()))
-                .collect();
+            fwd_payments.extend(participants.into_iter().map(|p| (p, BTreeSet::new())));
         }
         Ok(())
+    }
+
+    /// Check if a participant is being tracked
+    pub(crate) fn is_participant_tracked(&self, discord_id: &str) -> Result<bool> {
+        let beta_participants = self
+            .beta_participants
+            .read()
+            .map_err(|e| eyre!("Failed to get beta participants read lock: {e}"))?;
+        Ok(beta_participants.contains_key(&Hash::hash(discord_id.as_bytes())))
     }
 
     /// Initialize reward forward tracking, gathers current rewards from the DAG
