@@ -90,6 +90,8 @@ pub(crate) fn add_participant(
         return Ok(
             Response::from_string("discord_id cannot be more than 32 chars").with_status_code(400),
         );
+    } else if discord_id.chars().count() == 0 {
+        return Ok(Response::from_string("discord_id cannot be empty").with_status_code(400));
     }
 
     if let Err(err) = track_new_participant(dag, discord_id.to_owned()) {
