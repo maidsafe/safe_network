@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716386821354,
+  "lastUpdate": 1716389134851,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d799a29ad276c8ae1ec9613691f4787930ea8c63",
-          "message": "feat: register example with two users in a simple cli chat app\n- add cli option to provide xor address\n- user entering blank line gets latest register values\n- documented in main README",
-          "timestamp": "2024-02-06T09:12:32+01:00",
-          "tree_id": "e4eb63c12132764d0687e3dc499418fffedad533",
-          "url": "https://github.com/maidsafe/safe_network/commit/d799a29ad276c8ae1ec9613691f4787930ea8c63"
-        },
-        "date": 1707207865141,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2759150723584978,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8487101133334545,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.26158119052988,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.602442892482955,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "0fba624083c4affa7a5b8c7ceaedc33ec2f597e9",
+          "message": "feat(metrics): expose store cost value",
+          "timestamp": "2024-05-22T13:56:59Z",
+          "tree_id": "09c05e24f0308393da3bdb50731a5462fce38e60",
+          "url": "https://github.com/maidsafe/safe_network/commit/0fba624083c4affa7a5b8c7ceaedc33ec2f597e9"
+        },
+        "date": 1716389126134,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2088159355728163,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1115648648510248,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 39.07665570144737,
             "unit": "MiB/s"
           }
         ]
