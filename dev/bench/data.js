@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716340188356,
+  "lastUpdate": 1716340190475,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0dc5d98f8bad7bd78b37168b8b60aecd334bc944",
-          "message": "chore(ci): make deps optional if used only inside a feature",
-          "timestamp": "2024-02-05T14:45:21Z",
-          "tree_id": "54ee50bf645b4fe435671a3140895f6be3b62fd3",
-          "url": "https://github.com/maidsafe/safe_network/commit/0dc5d98f8bad7bd78b37168b8b60aecd334bc944"
-        },
-        "date": 1707149260581,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6579,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 37255,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 9,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "537f22489a44ca3626be959b80ea36711bda27f8",
+          "message": "test: enable node man integration tests\n\nThese tests are enabled again, along with some changes to the setup.\n\nHere are the important points:\n\n* The tests now run against an isolated local network and binary built during CI is supplied.\n* The workflow runs the e2e tests for both system-wide and user-mode services.\n* The test definitions are moved to a new workflow file, but it has the same conditions as the merge\n  workflow. The reason is just because the merge workflow file is already large and difficult to\n  navigate.\n* The upgrade integration tests are removed because since the service management refactor, unit\n  tests cover the upgrade scenarios well. What we are more concerned with in the upgrade process is\n  the logic of how different upgrade scenarios are handled.\n* The daemon integration tests are removed. The test that was setup was really trying to cover the\n  scenario where peer retention was specified for restart commands, but we have agreed that the\n  semantics of this command is wrong and that it needs to be broken down. In general, the daemon\n  commands will correspond to the operations of the node manager, and the node manager operations\n  should already be quite well tested.\n* Some documentation.",
+          "timestamp": "2024-05-22T00:19:40Z",
+          "tree_id": "2ae3a5ea9f43754a67531404c16b2dfba05acde4",
+          "url": "https://github.com/maidsafe/safe_network/commit/537f22489a44ca3626be959b80ea36711bda27f8"
+        },
+        "date": 1716340189863,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14753,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 89023,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
