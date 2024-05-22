@@ -18,6 +18,7 @@ use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
+use std::path::PathBuf;
 use tokio::sync::mpsc::UnboundedSender;
 
 const NODE_START_INTERVAL: usize = 10;
@@ -37,6 +38,8 @@ pub struct Home {
     lock_registry: bool,
     // Peers to pass into nodes for startup
     peers_args: PeersArgs,
+    // If path is provided, we don't fetch the binary from the network
+    safenode_path: Option<PathBuf>,
 }
 
 impl Home {
@@ -44,6 +47,7 @@ impl Home {
         allocated_disk_space: usize,
         discord_username: &str,
         peers_args: PeersArgs,
+        safenode_path: Option<PathBuf>,
     ) -> Result<Self> {
         let mut home = Self {
             peers_args,
@@ -55,6 +59,7 @@ impl Home {
             node_table_state: Default::default(),
             lock_registry: Default::default(),
             discord_username: discord_username.to_string(),
+            safenode_path,
         };
         home.load_node_registry_and_update_states()?;
 
@@ -203,6 +208,7 @@ impl Component for Home {
                     node_count as u16,
                     self.discord_username.clone(),
                     self.peers_args.clone(),
+                    self.safenode_path.clone(),
                     action_sender,
                 );
             }
@@ -364,6 +370,7 @@ fn maintain_n_running_nodes(
     count: u16,
     owner: String,
     peers_args: PeersArgs,
+    safenode_path: Option<PathBuf>,
     action_sender: UnboundedSender<Action>,
 ) {
     tokio::task::spawn_local(async move {
@@ -381,7 +388,7 @@ fn maintain_n_running_nodes(
             peers_args,
             None,
             None,
-            None,
+            safenode_path,
             None,
             true,
             None,

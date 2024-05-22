@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::path::PathBuf;
+
 use crate::{
     action::Action,
     components::{
@@ -36,7 +38,12 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(tick_rate: f64, frame_rate: f64, peers_args: PeersArgs) -> Result<Self> {
+    pub fn new(
+        tick_rate: f64,
+        frame_rate: f64,
+        peers_args: PeersArgs,
+        safenode_path: Option<PathBuf>,
+    ) -> Result<Self> {
         let app_data = AppData::load()?;
 
         let tab = Tab::default();
@@ -44,6 +51,7 @@ impl App {
             app_data.allocated_disk_space,
             &app_data.discord_username,
             peers_args,
+            safenode_path,
         )?;
         let config = Config::new()?;
         let discord_username_input =
