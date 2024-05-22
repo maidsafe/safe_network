@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716340190475,
+  "lastUpdate": 1716367821715,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "439522916dff685a674e991dd68e920da3987056",
-          "message": "fix: avoid log raw bytes of key accidently",
-          "timestamp": "2024-02-05T15:07:08Z",
-          "tree_id": "9d02ef4c9063bdd742de1d1abb3778297c82ee8d",
-          "url": "https://github.com/maidsafe/safe_network/commit/439522916dff685a674e991dd68e920da3987056"
-        },
-        "date": 1707151994805,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2411162605381236,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8133191908604513,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.37913004948824,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 49.1768541833714,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "80eeefd62e418cf2e1cf96dc7a87fde1e34b49a2",
+          "message": "fix(auditor): discord id cannot be empty",
+          "timestamp": "2024-05-22T07:59:49Z",
+          "tree_id": "8af1b7df2b295fa0a5e006915ceaceff7692c885",
+          "url": "https://github.com/maidsafe/safe_network/commit/80eeefd62e418cf2e1cf96dc7a87fde1e34b49a2"
+        },
+        "date": 1716367816424,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1775243339819335,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.3139193986640083,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.75774019406061,
             "unit": "MiB/s"
           }
         ]
