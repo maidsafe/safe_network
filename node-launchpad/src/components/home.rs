@@ -398,9 +398,9 @@ fn maintain_n_running_nodes(
         )
         .await
         {
-            error!("Error while maintaining n running nodes {err:?}");
+            error!("Error while maintaining {count:?} running nodes {err:?}");
         } else {
-            info!("Maintain node run count successful.");
+            info!("Maintained {count} running nodes successfully.");
         }
         if let Err(err) = action_sender.send(Action::HomeActions(
             HomeActions::ServiceManagerOperationCompleted,

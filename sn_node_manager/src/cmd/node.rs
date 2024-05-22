@@ -492,7 +492,7 @@ pub async fn upgrade(
     Ok(())
 }
 
-/// This functions makes sure that we run exactly the provided count nodes at any time by stopping nodes or
+/// This function ensures running exactly the provided number of nodes at any time by stopping nodes or
 /// by adding + starting nodes if required.
 ///
 /// The arguments here are used during add() mostly.
