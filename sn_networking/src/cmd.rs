@@ -353,13 +353,18 @@ impl SwarmDriver {
             }
             SwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
-                let _res = sender.send(
-                    self.swarm
-                        .behaviour_mut()
-                        .kademlia
-                        .store_mut()
-                        .store_cost(&key),
-                );
+                let cost = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .store_cost(&key);
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    let _ = metrics.store_cost.set(cost.0.as_nano() as i64);
+                }
+
+                let _res = sender.send(cost);
             }
             SwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";
