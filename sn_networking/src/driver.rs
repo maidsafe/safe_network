@@ -326,6 +326,7 @@ impl NetworkBuilder {
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
+                historic_quote_dir: self.root_dir.clone(),
                 ..Default::default()
             }
         };
