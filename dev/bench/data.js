@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716339984608,
+  "lastUpdate": 1716340042330,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "0dc5d98f8bad7bd78b37168b8b60aecd334bc944",
-          "message": "chore(ci): make deps optional if used only inside a feature",
-          "timestamp": "2024-02-05T14:45:21Z",
-          "tree_id": "54ee50bf645b4fe435671a3140895f6be3b62fd3",
-          "url": "https://github.com/maidsafe/safe_network/commit/0dc5d98f8bad7bd78b37168b8b60aecd334bc944"
-        },
-        "date": 1707149153216,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2706642582666585,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8692309853302629,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.59256850741337,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 48.68947906667519,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "537f22489a44ca3626be959b80ea36711bda27f8",
+          "message": "test: enable node man integration tests\n\nThese tests are enabled again, along with some changes to the setup.\n\nHere are the important points:\n\n* The tests now run against an isolated local network and binary built during CI is supplied.\n* The workflow runs the e2e tests for both system-wide and user-mode services.\n* The test definitions are moved to a new workflow file, but it has the same conditions as the merge\n  workflow. The reason is just because the merge workflow file is already large and difficult to\n  navigate.\n* The upgrade integration tests are removed because since the service management refactor, unit\n  tests cover the upgrade scenarios well. What we are more concerned with in the upgrade process is\n  the logic of how different upgrade scenarios are handled.\n* The daemon integration tests are removed. The test that was setup was really trying to cover the\n  scenario where peer retention was specified for restart commands, but we have agreed that the\n  semantics of this command is wrong and that it needs to be broken down. In general, the daemon\n  commands will correspond to the operations of the node manager, and the node manager operations\n  should already be quite well tested.\n* Some documentation.",
+          "timestamp": "2024-05-22T00:19:40Z",
+          "tree_id": "2ae3a5ea9f43754a67531404c16b2dfba05acde4",
+          "url": "https://github.com/maidsafe/safe_network/commit/537f22489a44ca3626be959b80ea36711bda27f8"
+        },
+        "date": 1716340037402,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1654016777542449,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1906799193611708,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 49.1768541833714,
             "unit": "MiB/s"
           }
         ]
