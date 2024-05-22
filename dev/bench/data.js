@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716389273949,
+  "lastUpdate": 1716393571937,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3b7dd48cac22d3c5301a485afff8f05eb4208f94",
-          "message": "chore(ci): upgrade libp2p version to be consistent across crates",
-          "timestamp": "2024-02-06T13:31:16+01:00",
-          "tree_id": "ea544d951034803a3ea6563c2477098848f099a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/3b7dd48cac22d3c5301a485afff8f05eb4208f94"
-        },
-        "date": 1707223729093,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2980587397328023,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7931897588446577,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 54.50779164598584,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 39.07665570144737,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5b99e0a443cd42ef75ce32aa18048a13aa2c9cf2",
+          "message": "feat(node_manager): pass beta encryption sk to the auditor",
+          "timestamp": "2024-05-22T15:10:10Z",
+          "tree_id": "1db901c5c8a8a76c5a171bbe16867aa8b74c1a3b",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b99e0a443cd42ef75ce32aa18048a13aa2c9cf2"
+        },
+        "date": 1716393559098,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.105311148305809,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 0.9893820207863517,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 47.21324288632356,
             "unit": "MiB/s"
           }
         ]
