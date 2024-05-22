@@ -253,8 +253,13 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
     stop(vec![], vec![], verbosity).await?;
     remove(false, vec![], vec![], verbosity).await?;
 
+    // Due the possibility of repeated runs of the `reset` command, we need to check for the
+    // existence of this file before attempting to delete it, since `remove_file` will return an
+    // error if the file doesn't exist. On Windows this has been observed to happen.
     let node_registry_path = config::get_node_registry_path()?;
-    std::fs::remove_file(node_registry_path)?;
+    if node_registry_path.exists() {
+        std::fs::remove_file(node_registry_path)?;
+    }
 
     Ok(())
 }
