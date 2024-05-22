@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716393571937,
+  "lastUpdate": 1716393710828,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3b7dd48cac22d3c5301a485afff8f05eb4208f94",
-          "message": "chore(ci): upgrade libp2p version to be consistent across crates",
-          "timestamp": "2024-02-06T13:31:16+01:00",
-          "tree_id": "ea544d951034803a3ea6563c2477098848f099a1",
-          "url": "https://github.com/maidsafe/safe_network/commit/3b7dd48cac22d3c5301a485afff8f05eb4208f94"
-        },
-        "date": 1707223834865,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "5b99e0a443cd42ef75ce32aa18048a13aa2c9cf2",
+          "message": "feat(node_manager): pass beta encryption sk to the auditor",
+          "timestamp": "2024-05-22T15:10:10Z",
+          "tree_id": "1db901c5c8a8a76c5a171bbe16867aa8b74c1a3b",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b99e0a443cd42ef75ce32aa18048a13aa2c9cf2"
+        },
+        "date": 1716393710472,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 69,
             "unit": "MB"
           }
         ]
