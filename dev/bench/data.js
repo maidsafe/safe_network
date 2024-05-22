@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716418893046,
+  "lastUpdate": 1716419025341,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "66e0be740269ef1cdb370f29d1c79ebf1c8a2684",
-          "message": "fix(node): derive reward_key from main keypair",
-          "timestamp": "2024-02-06T15:01:48+01:00",
-          "tree_id": "6256900b191e32c45bcba910ec980fb3edf99dad",
-          "url": "https://github.com/maidsafe/safe_network/commit/66e0be740269ef1cdb370f29d1c79ebf1c8a2684"
-        },
-        "date": 1707228914098,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "df945bfa31ae197f35e8dbe381282e69b4961142",
           "message": "chore: roll back to log more",
           "timestamp": "2024-02-06T15:46:48+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b26db13547c2430c96d2ff2b8fa2c1856dae3a74",
+          "message": "chore: move historic_quoting_metrics out of the record_store dir",
+          "timestamp": "2024-05-22T22:14:58Z",
+          "tree_id": "9802715520e8ba758cfb3f60f4c1e614ccf5d058",
+          "url": "https://github.com/maidsafe/safe_network/commit/b26db13547c2430c96d2ff2b8fa2c1856dae3a74"
+        },
+        "date": 1716419024490,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
