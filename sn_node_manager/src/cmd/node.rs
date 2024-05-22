@@ -31,7 +31,7 @@ use sn_service_management::{
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::{io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
 use tracing::debug;
 
 /// Returns the added service names
@@ -487,6 +487,138 @@ pub async fn upgrade(
         return Err(eyre!("There was a problem upgrading one or more nodes").suggestion(
             "For any services that were upgraded but did not start, you can attempt to start them \
                 again using the 'start' command."));
+    }
+
+    Ok(())
+}
+
+/// This functions makes sure that we run exactly the provided count nodes at any time by stopping nodes or
+/// by adding + starting nodes if required.
+///
+/// The arguments here are used during add() mostly.
+pub async fn maintain_n_running_nodes(
+    max_nodes_to_run: u16,
+    data_dir_path: Option<PathBuf>,
+    env_variables: Option<Vec<(String, String)>>,
+    home_network: bool,
+    local: bool,
+    log_dir_path: Option<PathBuf>,
+    log_format: Option<LogFormat>,
+    metrics_port: Option<PortRange>,
+    node_port: Option<PortRange>,
+    owner: Option<String>,
+    peers: PeersArgs,
+    rpc_address: Option<Ipv4Addr>,
+    rpc_port: Option<PortRange>,
+    src_path: Option<PathBuf>,
+    url: Option<String>,
+    upnp: bool,
+    user: Option<String>,
+    version: Option<String>,
+    verbosity: VerbosityLevel,
+    start_node_interval: u64,
+) -> Result<()> {
+    let node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    let running_nodes = node_registry
+        .nodes
+        .iter()
+        .filter_map(|node| {
+            if node.status == ServiceStatus::Running {
+                Some(node.service_name.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    match running_nodes.len().cmp(&(max_nodes_to_run as usize)) {
+        Ordering::Greater => {
+            // stop some nodes if we are running more nodes than needed.
+            let to_stop_count = running_nodes.len() - max_nodes_to_run as usize;
+            let services_to_stop = running_nodes
+                .into_iter()
+                .take(to_stop_count)
+                .collect::<Vec<_>>();
+
+            info!(
+                ?max_nodes_to_run,
+                ?to_stop_count,
+                "We are stopping these services: {services_to_stop:?}"
+            );
+
+            stop(vec![], services_to_stop, verbosity).await?;
+        }
+        Ordering::Less => {
+            // Run some nodes
+            let to_start_count = max_nodes_to_run as usize - running_nodes.len();
+
+            let mut inactive_nodes = node_registry
+                .nodes
+                .iter()
+                .filter_map(|node| {
+                    if node.status == ServiceStatus::Stopped || node.status == ServiceStatus::Added
+                    {
+                        Some(node.service_name.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            // If we have enough inactive nodes, then we can just start them. Else we might have to add new ones and
+            // then start them.
+            if to_start_count <= inactive_nodes.len() {
+                // start these nodes
+                let nodes_to_start = inactive_nodes.into_iter().take(to_start_count).collect();
+                info!(
+                    ?max_nodes_to_run,
+                    ?to_start_count,
+                    "We are starting these pre-existing services: {nodes_to_start:?}"
+                );
+                start(start_node_interval, vec![], nodes_to_start, verbosity).await?;
+            } else {
+                // add + start nodes
+                let to_add_count = to_start_count - inactive_nodes.len();
+
+                info!(
+                 ?max_nodes_to_run,
+                 ?to_add_count,
+                 "We are adding+starting {to_add_count:?} nodes + starting these services: {inactive_nodes:?}"
+             );
+
+                let added_service_list = add(
+                    Some(to_add_count as u16),
+                    data_dir_path,
+                    env_variables,
+                    home_network,
+                    local,
+                    log_dir_path,
+                    log_format,
+                    metrics_port,
+                    node_port,
+                    owner,
+                    peers,
+                    rpc_address,
+                    rpc_port,
+                    src_path,
+                    upnp,
+                    url,
+                    user,
+                    version,
+                    verbosity,
+                )
+                .await?;
+                inactive_nodes.extend(added_service_list);
+
+                start(start_node_interval, vec![], inactive_nodes, verbosity).await?;
+            }
+        }
+        Ordering::Equal => {
+            info!(
+                ?max_nodes_to_run,
+                "We already have the correct number of nodes. Do nothing."
+            );
+        }
     }
 
     Ok(())

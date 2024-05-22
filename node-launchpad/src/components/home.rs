@@ -15,10 +15,9 @@ use crate::{
 };
 use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::config::get_node_registry_path;
+use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
-use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 
 const NODE_START_INTERVAL: usize = 10;
@@ -92,20 +91,6 @@ impl Home {
             .iter()
             .filter_map(|node| {
                 if node.status == ServiceStatus::Running {
-                    Some(node.service_name.clone())
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    /// Gets both the Added/Stopped nodes
-    fn get_inactive_nodes(&self) -> Vec<String> {
-        self.node_services
-            .iter()
-            .filter_map(|node| {
-                if node.status == ServiceStatus::Stopped || node.status == ServiceStatus::Added {
                     Some(node.service_name.clone())
                 } else {
                     None
@@ -210,62 +195,16 @@ impl Component for Home {
                 }
 
                 let node_count = self.allocated_disk_space / GB_PER_NODE;
-                let running_nodes = self.get_running_nodes();
+                self.lock_registry = true;
+                let action_sender = self.get_actions_sender()?;
+                info!("Running maintain node count: {node_count:?}");
 
-                if running_nodes.len() > node_count {
-                    let to_stop_count = running_nodes.len() - node_count;
-                    let nodes_to_stop = running_nodes
-                        .into_iter()
-                        .take(to_stop_count)
-                        .collect::<Vec<_>>();
-
-                    info!(
-                        ?node_count,
-                        ?to_stop_count,
-                        "We are stopping these services: {nodes_to_stop:?}"
-                    );
-
-                    let action_sender = self.get_actions_sender()?;
-                    self.lock_registry = true;
-                    stop_nodes(nodes_to_stop, action_sender);
-                } else if running_nodes.len() < node_count {
-                    let to_start_count = node_count - running_nodes.len();
-
-                    let inactive_nodes = self.get_inactive_nodes();
-
-                    let action_sender = self.get_actions_sender()?;
-                    self.lock_registry = true;
-
-                    if to_start_count > inactive_nodes.len() {
-                        // add + start nodes
-                        let to_add_count = to_start_count - inactive_nodes.len();
-
-                        info!(
-                            ?node_count,
-                            ?to_add_count,
-                            "We are adding+starting {to_add_count:?} nodes + starting these services: {inactive_nodes:?}"
-                        );
-                        add_and_start_nodes(
-                            to_add_count,
-                            self.discord_username.clone(),
-                            inactive_nodes,
-                            action_sender,
-                            self.peers_args.clone(),
-                        );
-                    } else {
-                        // start these nodes
-                        let nodes_to_start =
-                            inactive_nodes.into_iter().take(to_start_count).collect();
-                        info!(
-                            ?node_count,
-                            ?to_start_count,
-                            "We are starting these pre-existing services: {nodes_to_start:?}"
-                        );
-                        start_nodes(nodes_to_start, action_sender)
-                    }
-                } else {
-                    info!("We already have the correct number of nodes");
-                }
+                maintain_n_running_nodes(
+                    node_count as u16,
+                    self.discord_username.clone(),
+                    self.peers_args.clone(),
+                    action_sender,
+                );
             }
             Action::HomeActions(HomeActions::StopNodes) => {
                 if self.lock_registry {
@@ -421,42 +360,15 @@ fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     });
 }
 
-fn start_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
-    tokio::task::spawn_local(async move {
-        // I think using 1 thread is causing us to block on the below start function and not really
-        // having a chance to set lock_registry = true and draw from that state. Since the update is slow,
-        // the gui looks laggy. Adding a sleep basically puts this to sleep while drawing with the new state.
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        if let Err(err) = sn_node_manager::cmd::node::start(
-            NODE_START_INTERVAL as u64,
-            vec![],
-            services,
-            sn_node_manager::VerbosityLevel::Minimal,
-        )
-        .await
-        {
-            error!("Error while starting services {err:?}");
-        } else {
-            info!("Successfully started services");
-        }
-        if let Err(err) = action_sender.send(Action::HomeActions(
-            HomeActions::ServiceManagerOperationCompleted,
-        )) {
-            error!("Error while sending action: {err:?}");
-        }
-    });
-}
-
-fn add_and_start_nodes(
-    count: usize,
+fn maintain_n_running_nodes(
+    count: u16,
     owner: String,
-    mut nodes_to_start: Vec<String>,
-    action_sender: UnboundedSender<Action>,
     peers_args: PeersArgs,
+    action_sender: UnboundedSender<Action>,
 ) {
     tokio::task::spawn_local(async move {
-        let result = sn_node_manager::cmd::node::add(
-            Some(count as u16),
+        if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
+            count,
             None,
             None,
             true,
@@ -470,34 +382,18 @@ fn add_and_start_nodes(
             None,
             None,
             None,
-            false,
+            None,
+            true,
             None,
             None,
-            None,
-            sn_node_manager::VerbosityLevel::Minimal,
-        )
-        .await;
-        match result {
-            Ok(added_services) => {
-                info!("Successfully added service: {added_services:?}");
-                nodes_to_start.extend(added_services);
-            }
-            Err(err) => {
-                error!("Error while adding service {err:?}")
-            }
-        };
-
-        if let Err(err) = sn_node_manager::cmd::node::start(
+            VerbosityLevel::Minimal,
             NODE_START_INTERVAL as u64,
-            vec![],
-            nodes_to_start,
-            sn_node_manager::VerbosityLevel::Minimal,
         )
         .await
         {
-            error!("Error while starting services {err:?}");
+            error!("Error while maintaining n running nodes {err:?}");
         } else {
-            info!("Successfully started services");
+            info!("Maintain node run count successful.");
         }
         if let Err(err) = action_sender.send(Action::HomeActions(
             HomeActions::ServiceManagerOperationCompleted,
