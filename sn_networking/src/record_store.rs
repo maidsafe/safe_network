@@ -93,6 +93,9 @@ pub struct NodeRecordStore {
 pub struct NodeRecordStoreConfig {
     /// The directory where the records are stored.
     pub storage_dir: PathBuf,
+    /// The directory where the historic quote to be stored
+    /// (normally to be the parent dir of the storage_dir)
+    pub historic_quote_dir: PathBuf,
     /// The maximum number of records.
     pub max_records: usize,
     /// The maximum size of record values, in bytes.
@@ -101,8 +104,10 @@ pub struct NodeRecordStoreConfig {
 
 impl Default for NodeRecordStoreConfig {
     fn default() -> Self {
+        let historic_quote_dir = std::env::temp_dir();
         Self {
-            storage_dir: std::env::temp_dir(),
+            storage_dir: historic_quote_dir.clone(),
+            historic_quote_dir,
             max_records: MAX_RECORDS_COUNT,
             max_value_bytes: 65 * 1024,
         }
@@ -212,7 +217,7 @@ impl NodeRecordStore {
     fn flush_historic_quoting_metrics(&self) {
         let file_path = self
             .config
-            .storage_dir
+            .historic_quote_dir
             .join(HISTORICAL_QUOTING_METRICS_FILENAME);
 
         let historic_quoting_metrics = HistoricQuotingMetrics {
@@ -245,7 +250,7 @@ impl NodeRecordStore {
         // Recover the quoting_metrics first, as the historical file will be cleaned by
         // the later on update_records_from_an_existing_store function
         let (received_payment_count, timestamp) = if let Some(historic_quoting_metrics) =
-            Self::restore_quoting_metrics(&config.storage_dir)
+            Self::restore_quoting_metrics(&config.historic_quote_dir)
         {
             (
                 historic_quoting_metrics.received_payment_count,
@@ -1309,9 +1314,11 @@ mod tests {
         let unique_dir_name = uuid::Uuid::new_v4().to_string();
         let storage_dir = temp_dir.join(unique_dir_name);
         fs::create_dir_all(&storage_dir).expect("Failed to create directory");
+        let historic_quote_dir = storage_dir.clone();
 
         let store_config = NodeRecordStoreConfig {
             storage_dir,
+            historic_quote_dir,
             ..Default::default()
         };
         let self_id = PeerId::random();
