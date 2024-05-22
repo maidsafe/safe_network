@@ -8,8 +8,10 @@
 
 use std::collections::BTreeSet;
 use std::path::Path;
+use std::str::FromStr;
 
 use bls::SecretKey;
+use color_eyre::eyre::bail;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
 use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_SPEND_UNIQUE_KEY};
@@ -162,5 +164,64 @@ async fn redeem_royalties(
             println!("Current balance: {}", wallet.balance());
         }
     }
+    Ok(())
+}
+
+/// Verify a spend's existance on the Network.
+/// If genesis is true, verify all the way to Genesis, note that this might take A VERY LONG TIME
+pub async fn verify_spend_at(
+    spend_address: String,
+    genesis: bool,
+    client: &Client,
+    root_dir: &Path,
+) -> Result<()> {
+    // get spend
+    println!("Verifying spend's existance at: {spend_address}");
+    let addr = SpendAddress::from_str(&spend_address)?;
+    let spend = match client.get_spend_from_network(addr).await {
+        Ok(s) => {
+            println!("Confirmed spend's existance on the Network at {addr:?}");
+            s
+        }
+        Err(err) => {
+            bail!("Could not confirm spend's validity, be careful: {err}")
+        }
+    };
+
+    // stop here if we don't go all the way to Genesis
+    if !genesis {
+        return Ok(());
+    }
+    println!("Verifying spend all the way to Genesis, note that this might take a while...");
+
+    // extend DAG until spend
+    let dag_path = root_dir.join(SPEND_DAG_FILENAME);
+    let mut dag = match SpendDag::load_from_file(&dag_path) {
+        Ok(d) => {
+            println!("Found a local spend dag on disk, continuing from it, this might make things faster...");
+            d
+        }
+        Err(err) => {
+            info!("Starting verification from an empty DAG as failed to load spend dag from disk: {err}");
+            let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
+            SpendDag::new(genesis_addr)
+        }
+    };
+    info!("Extending DAG with {spend_address} {addr:?}");
+    client.spend_dag_extend_until(&mut dag, addr, spend).await?;
+    info!("Saving DAG locally at: {dag_path:?}");
+    dag.dump_to_file(dag_path)?;
+
+    // verify spend is not faulty
+    let faults = dag.get_spend_faults(&addr);
+    if faults.is_empty() {
+        println!(
+            "Successfully confirmed spend at {spend_address} is valid, and comes from Genesis!"
+        );
+    } else {
+        println!("Spend at {spend_address} has {} faults", faults.len());
+        println!("{faults:#?}");
+    }
+
     Ok(())
 }

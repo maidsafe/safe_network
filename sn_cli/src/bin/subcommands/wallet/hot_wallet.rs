@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    audit::audit,
-    helpers::{get_faucet, receive, verify_spend_at},
+    audit::{audit, verify_spend_at},
+    helpers::{get_faucet, receive},
     WalletApiHelper,
 };
 use crate::get_stdin_response;
@@ -234,7 +234,7 @@ pub(crate) async fn wallet_cmds(
         WalletCmds::Verify {
             spend_address,
             genesis,
-        } => verify_spend_at(spend_address, genesis, client).await,
+        } => verify_spend_at(spend_address, genesis, client, root_dir).await,
         cmd => Err(eyre!(
             "{cmd:?} has to be processed before connecting to the network"
         )),
