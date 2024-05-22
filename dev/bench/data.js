@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716367821715,
+  "lastUpdate": 1716367970921,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "439522916dff685a674e991dd68e920da3987056",
-          "message": "fix: avoid log raw bytes of key accidently",
-          "timestamp": "2024-02-05T15:07:08Z",
-          "tree_id": "9d02ef4c9063bdd742de1d1abb3778297c82ee8d",
-          "url": "https://github.com/maidsafe/safe_network/commit/439522916dff685a674e991dd68e920da3987056"
-        },
-        "date": 1707152097614,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "95bb701e0d0847047ea472fe61ed3dd327d7a84b",
           "message": "fix(node): avoid logging record value",
           "timestamp": "2024-02-05T17:40:17Z",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 70,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "80eeefd62e418cf2e1cf96dc7a87fde1e34b49a2",
+          "message": "fix(auditor): discord id cannot be empty",
+          "timestamp": "2024-05-22T07:59:49Z",
+          "tree_id": "8af1b7df2b295fa0a5e006915ceaceff7692c885",
+          "url": "https://github.com/maidsafe/safe_network/commit/80eeefd62e418cf2e1cf96dc7a87fde1e34b49a2"
+        },
+        "date": 1716367970549,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
