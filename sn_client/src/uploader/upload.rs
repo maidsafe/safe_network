@@ -36,6 +36,9 @@ use xor_name::XorName;
 
 /// The number of repayments to attempt for a failed item before returning an error.
 /// If value = 1, we do an initial payment & 1 repayment. Thus we make a max 2 payments per data item.
+#[cfg(not(test))]
+pub(super) const MAX_REPAYMENTS_PER_FAILED_ITEM: usize = 3;
+#[cfg(test)]
 pub(super) const MAX_REPAYMENTS_PER_FAILED_ITEM: usize = 1;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
@@ -119,6 +122,14 @@ pub(super) async fn start_upload(
                     .balance();
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
+
+            if !uploader.max_repayments_reached.is_empty() {
+                error!(
+                    "The maximum repayments were reached for these addresses: {:?}",
+                    uploader.max_repayments_reached
+                );
+                return Err(ClientError::MaximumRepaymentsReached);
+            }
 
             let summary = UploadSummary {
                 storage_cost: uploader.upload_storage_cost,
@@ -353,16 +364,18 @@ pub(super) async fn start_upload(
                 max_repayments_reached,
             } => {
                 let _ = uploader.on_going_get_cost.remove(&xorname);
-                // use the same strategy. The repay different payee is set only if upload fails.
-                uploader
-                    .pending_to_get_store_cost
-                    .push((xorname, get_store_cost_strategy.clone()));
                 trace!("GetStoreCostErr for {xorname:?} , get_store_cost_strategy: {get_store_cost_strategy:?}, max_repayments_reached: {max_repayments_reached:?}");
 
-                // should we do something more here?
+                // If max repayments reached, track it separately. Else retry get_store_cost.
                 if max_repayments_reached {
-                    error!("Max repayments reached for {xorname:?}");
-                    return Err(ClientError::MaximumRepaymentsReached(xorname));
+                    error!("Max repayments reached for {xorname:?}. Skipping upload for it");
+                    uploader.max_repayments_reached.insert(xorname);
+                    uploader.all_upload_items.remove(&xorname);
+                } else {
+                    // use the same strategy. The repay different payee is set only if upload fails.
+                    uploader
+                        .pending_to_get_store_cost
+                        .push((xorname, get_store_cost_strategy.clone()));
                 }
                 uploader.get_store_cost_errors += 1;
                 if uploader.get_store_cost_errors > MAX_SEQUENTIAL_NETWORK_ERRORS {
@@ -522,7 +535,7 @@ impl UploaderInterface for Uploader {
                     error!("Encountered error {err:?} when getting store_cost for {xorname:?}",);
 
                     let max_repayments_reached =
-                        matches!(&err, ClientError::MaximumRepaymentsReached(_));
+                        matches!(&err, ClientError::MaximumRepaymentsReached);
 
                     TaskResult::GetStoreCostErr {
                         xorname,
@@ -672,6 +685,7 @@ pub(super) struct InnerUploader {
     pub(super) upload_storage_cost: NanoTokens,
     pub(super) upload_royalty_fees: NanoTokens,
     pub(super) upload_final_balance: NanoTokens,
+    pub(super) max_repayments_reached: BTreeSet<XorName>,
     pub(super) uploaded_addresses: BTreeSet<NetworkAddress>,
     pub(super) uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
     pub(super) uploaded_count: usize,
@@ -712,6 +726,7 @@ impl InnerUploader {
             n_errors_during_uploads: Default::default(),
             push_register_errors: Default::default(),
             get_store_cost_errors: Default::default(),
+            max_repayments_reached: Default::default(),
             make_payments_errors: Default::default(),
 
             upload_storage_cost: NanoTokens::zero(),
@@ -925,7 +940,7 @@ impl InnerUploader {
                     max_repayments_for_failed_data,
                 ) {
                     // error is used by the caller.
-                    return Err(ClientError::MaximumRepaymentsReached(xorname));
+                    return Err(ClientError::MaximumRepaymentsReached);
                 }
 
                 debug!("Filtering out payments from {filter_list:?} during get_store_cost for {xorname:?}");

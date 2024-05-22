@@ -140,8 +140,8 @@ pub enum Error {
     #[error("Too many sequential payment errors reported during upload")]
     SequentialUploadPaymentError,
 
-    #[error("The maximum specified repayments were made for the address: {0:?}")]
-    MaximumRepaymentsReached(XorName),
+    #[error("The maximum specified repayments has been reached")]
+    MaximumRepaymentsReached,
 
     #[error("Error occurred when access wallet file")]
     FailedToAccessWallet,
