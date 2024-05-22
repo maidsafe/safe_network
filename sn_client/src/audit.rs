@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod dag_error;
-mod spend_check;
 mod spend_dag;
 mod spend_dag_building;
 

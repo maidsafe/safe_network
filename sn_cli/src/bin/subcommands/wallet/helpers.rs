@@ -10,9 +10,9 @@
 use base64::Engine;
 use color_eyre::Result;
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
-use sn_client::transfers::{SpendAddress, Transfer};
+use sn_client::transfers::Transfer;
 use sn_client::Client;
-use std::{path::Path, str::FromStr};
+use std::path::Path;
 use url::Url;
 
 #[cfg(feature = "distribution")]
@@ -151,24 +151,6 @@ pub async fn receive(
     println!("Successfully stored cash_note to wallet dir.");
     println!("Old balance: {old_balance}");
     println!("New balance: {new_balance}");
-
-    Ok(())
-}
-
-/// Verify a spend on the Network.
-/// if genesis is true, verify all the way to Genesis, note that this might take A VERY LONG TIME
-pub async fn verify_spend_at(spend_address: String, genesis: bool, client: &Client) -> Result<()> {
-    if genesis {
-        println!("Verifying spend all the way to Genesis, note that this might take a while...");
-    } else {
-        println!("Verifying spend...");
-    }
-
-    let addr = SpendAddress::from_str(&spend_address)?;
-    match client.verify_spend_at(addr, genesis).await {
-        Ok(()) => println!("Spend verified to be stored and unique at {addr:?}"),
-        Err(e) => println!("Failed to verify spend at {addr:?}: {e}"),
-    }
 
     Ok(())
 }

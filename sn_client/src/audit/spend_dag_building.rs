@@ -186,7 +186,7 @@ impl Client {
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
                     .clone()
-                    .map(|a| self.get_spend_from_network(a))
+                    .map(|a| self.crawl_spend_from_network(a))
                     .collect();
                 let spends = join_all(tasks).await
                     .into_iter()
