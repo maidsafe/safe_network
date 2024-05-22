@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716340112689,
+  "lastUpdate": 1716340114360,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": false,
-          "id": "ca3c08d54fcd1ce6a091b75ef895924ffb75567b",
-          "message": "chore(ci): disable scripts as the logs are currently overwritten by new node",
-          "timestamp": "2024-02-05T14:20:57Z",
-          "tree_id": "d460a1ad43aaa228b890f93c2c9d77d83f785e3f",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca3c08d54fcd1ce6a091b75ef895924ffb75567b"
-        },
-        "date": 1707146512386,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6695,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 37922,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
           "id": "0dc5d98f8bad7bd78b37168b8b60aecd334bc944",
           "message": "chore(ci): make deps optional if used only inside a feature",
           "timestamp": "2024-02-05T14:45:21Z",
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "d123c0f31c7f62e2a782a99a7d0b16813d8f6eee",
+          "message": "feat: backup rewards json to disk regularly",
+          "timestamp": "2024-05-22T00:18:22Z",
+          "tree_id": "7f37b79a9383bc7c07da6b019995dd32113474f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/d123c0f31c7f62e2a782a99a7d0b16813d8f6eee"
+        },
+        "date": 1716340113995,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15011,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 143012,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 9,
             "unit": "ms"
           }
         ]
