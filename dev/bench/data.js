@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716422144471,
+  "lastUpdate": 1716422146058,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "df945bfa31ae197f35e8dbe381282e69b4961142",
-          "message": "chore: roll back to log more",
-          "timestamp": "2024-02-06T15:46:48+01:00",
-          "tree_id": "af1d86e51048eeac4ec0f725f92257ac9fa0794b",
-          "url": "https://github.com/maidsafe/safe_network/commit/df945bfa31ae197f35e8dbe381282e69b4961142"
-        },
-        "date": 1707231647109,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6913,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 40955,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 97518,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bfc0e4e16e52cb80ab8fb1b77a344cde5158805f",
+          "message": "fix: check node registry exists before deleting it\n\nThe `remove_file` command returns an error if the file we are attempting to delete does not exist.\nThis meant on Windows, subsequent runs of the `reset` command could produce an error. It did not\noccur on Linux or macOS because the registry file is briefly recreated on those platforms so that\nit can be assigned special permissions; this does not apply on Windows.",
+          "timestamp": "2024-05-22T22:48:48Z",
+          "tree_id": "7546fcac5995316704687e8acaf6dd7cb32cecae",
+          "url": "https://github.com/maidsafe/safe_network/commit/bfc0e4e16e52cb80ab8fb1b77a344cde5158805f"
+        },
+        "date": 1716422145728,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15544,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 94359,
             "unit": "ms"
           },
           {
